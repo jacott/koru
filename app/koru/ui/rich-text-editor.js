@@ -455,7 +455,7 @@ define((require, exports, module)=>{
           so = isLine && sc.nodeType === TEXT_NODE ? range.startOffset : 0,
           ec = null;
 
-      const line = isLine ? DomNav.selectLine(range) : range;
+      const line = DomNav.restrictRange(isLine ? DomNav.selectLine(range) : range, pre);
 
       if (isLine && line.startContainer.nodeType === TEXT_NODE)
         line.setStart(line.startContainer.parentNode, Dom.nodeIndex(line.startContainer));
@@ -469,7 +469,9 @@ define((require, exports, module)=>{
         ec = frag.lastChild;
       }
 
-      DomNav.clearEmptyText(pre.firstChild);
+      DomNav.clearEmptyInline(frag);
+
+      DomNav.clearEmptyInline(pre);
 
       if (pre.firstChild === null) {
         insertFragContents(frag, pn, pre, 'PRE');
@@ -480,10 +482,13 @@ define((require, exports, module)=>{
         insertFragContents(frag, pn, before, 'PRE');
 
         const pre2Frag = DomNav.clearTrailingBR(pre2Range.extractContents());
+        DomNav.clearEmptyInline(pre2Frag);
         if (pre2Frag.firstChild !== null) {
           insertFragContents(pre2Frag, pre2, null, 'PRE');
           pn.insertBefore(pre2, before);
         }
+
+        DomNav.clearEmptyInline(pre);
 
         if (pre.firstChild === null)
           pre.remove();

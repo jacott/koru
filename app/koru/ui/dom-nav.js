@@ -4,32 +4,32 @@ define((require)=>{
 
   const {ELEMENT_NODE, TEXT_NODE} = document;
 
-  const INLINE_TAGS = util.toMap('B U I S A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
+  const INLINE_TAGS = util.toMap(
+    'A ABBR AUDIO B BDI BDO BUTTON CANVAS CITE CODE DATA DATALIST DEL DFN EM EMBED FONT I IFRAME IMG INPUT INS KBD LABEL MAP MARK MATHML MATH METER NOSCRIPT OBJECT OUTPUT PICTURE PROGRESS Q RUBY RT RP S SAMP SELECT SLOT SMALL SPAN STRONG SUB SUP SVG TEMPLATE TEXTAREA TIME TT U VAR VIDEO WBR'
+      .split(' '));
 
   const lastInnerMostNode = (node)=>{
-    let other;
-    if (node.nodeType === TEXT_NODE) {
+    if (node.nodeType === TEXT_NODE)
       return node;
 
-      other = node.previousSibling;
-      return other && lastInnerMostNode(other);
+    let nn = node.lastChild;
+    while (nn !== null) {
+      node = nn;
+      nn = nn.lastChild;
     }
-    if (other = node.lastChild) {
-      return lastInnerMostNode(other) || other;
-    }
+    return node;
   };
 
   const firstInnerMostNode = (node)=>{
-    let other;
-    if (node.nodeType === TEXT_NODE) {
+    if (node.nodeType === TEXT_NODE)
       return node;
 
-      other = node.nextSibling;
-      return other && firstInnerMostNode(other);
+    let nn = node.firstChild;
+    while (nn !== null) {
+      node = nn;
+      nn = nn.firstChild;
     }
-    if (other = node.firstChild) {
-      return firstInnerMostNode(other) || other;
-    }
+    return node;
   };
 
   const forwardOneChar = (top, obj)=>{
@@ -140,19 +140,76 @@ define((require)=>{
     return range;
   };
 
+  const restrictRange = (range, within)=>{
+    const ca = range.commonAncestorContainer;
+    if (within !== ca && within.contains(ca)) return range;
+    const withinLen = within.childNodes.length;
+    const sc = range.startContainer;
+    if ((within === sc && range.startOffset == withinLen) ||
+        (within !== sc && ! within.contains(sc))) {
+      range.setStart(firstInnerMostNode(within), 0);
+    }
+    const ec = range.endContainer;
+    if ((within === ec && range.endOffset == withinLen) ||
+        (within !== ec && ! within.contains(ec))) {
+      const node = lastInnerMostNode(within);
+      range.setEnd(node, nodeEndOffset(node));
+    }
+    return range;
+  };
+
+
   const isInlineNode = item => item.nodeType === TEXT_NODE || !! INLINE_TAGS[item.tagName];
 
   const isBlockNode = node => node.nodeType === ELEMENT_NODE && ! INLINE_TAGS[node.tagName];
 
-  const rangeStartNode = (range)=>{
-    const {startContainer: elm, startOffset} = range;
-    if (elm === null || elm.nodeType !== ELEMENT_NODE)
-      return elm;
+  const previousNode = (node, top)=>{
+    let nn = node.previousSibling;
+    if (nn !== null) return lastInnerMostNode(nn);
+    node = node.parentNode;
+    if (node === top) return null;
+    while (node !== null) {
+      nn = node.previousSibling;
+      if (nn === null) {
+        if (node === top) return null;
+        node = node.parentNode;
+      } else {
+        return lastInnerMostNode(nn);
+      }
+    }
+    return null;
+  };
 
-    const {childNodes} = elm;
-    return startOffset == childNodes.length
-      ? (startOffset == 0 ? elm : undefined)
-    :  childNodes[startOffset];
+  const nextNode = (node, top)=>{
+    let nn = node.nextSibling;
+    if (nn !== null) return firstInnerMostNode(nn);
+    node = node.parentNode;
+    if (node === top) return null;
+    while (node !== null) {
+      nn = node.nextSibling;
+      if (nn === null) {
+        if (node === top) return null;
+        node = node.parentNode;
+      } else {
+        return firstInnerMostNode(nn);
+      }
+    }
+    return null;
+  };
+
+
+  const rangeStartNode = (range, top)=>{
+    const {startContainer: node, startOffset} = range;
+    if (node === null || node.nodeType !== ELEMENT_NODE)
+      return node;
+
+    const {childNodes} = node;
+    if (startOffset == childNodes.length) {
+      return node === top
+        ? null
+        : startOffset == 0 ? node : nextNode(node);
+    } else
+      return childNodes[startOffset];
   };
 
 
@@ -205,76 +262,148 @@ define((require)=>{
     }
   };
 
-  const setEndOfElm = (range, elm)=>{
-    range.setStart(elm, elm.nodeType === TEXT_NODE ? elm.nodeValue.length : elm.childNodes.length);
+  const clearEmptyInlineForward = (node)=>{
+    while (node !== null) {
+      if (node.nodeType === TEXT_NODE) {
+        if (node.nodeValue !== '') break;
+      } else {
+        if (! isInlineNode(node)) break;
+        clearEmptyInline(node);
+        if (node.firstChild !== null)
+          break;
+      }
+      const nn = node.nextSibling;
+      node.remove();
+      node = nn;
+    }
+  };
+  const clearEmptyInlineReverse = (node)=>{
+    while (node !== null) {
+      if (node.nodeType === TEXT_NODE) {
+        if (node.nodeValue !== '') break;
+      } else {
+        if (! isInlineNode(node)) break;
+        clearEmptyInline(node);
+        if (node.firstChild !== null)
+          break;
+      }
+      const nn = node.previousSibling;
+      node.remove();
+      node = nn;
+    }
+  };
+
+  const clearEmptyInline = (node=null)=>{
+    if (node === null) return;
+    clearEmptyInlineForward(node.firstChild);
+    clearEmptyInlineReverse(node.lastChild);
+  };
+
+  const nodeEndOffset = node => node.nodeType === TEXT_NODE
+        ? node.nodeValue.length : node.childNodes.length;
+
+  const setEndOfNode = (range, node)=>{
+    range.setStart(node, nodeEndOffset(node));
     normRange(range);
     return range;
   };
 
+  const previousInline = node => {
+    let prev = node.previousSibling;
+    if (prev === null) {
+      prev = node.parentNode;
+      return prev === null || ! isInlineNode(prev)
+        ? node : prev;
+    } else return isInlineNode(prev)
+      ? lastInnerMostNode(prev) : node;
+  };
+
+  const nextInline = node => {
+    if (node.tagName === 'BR') return node;
+    let nn = node.nextSibling;
+    if (nn === null) {
+      nn = node.parentNode;
+      return nn === null || ! isInlineNode(nn)
+        ? node : nn;
+    } else return isInlineNode(nn)
+      ? firstInnerMostNode(nn) : node;
+  };
+
   const startOfLine = (range=Dom.getRange())=>{
-    let elm = rangeStartNode(range);
-    if (elm === undefined) elm = range.startContainer.lastChild;
-    if (elm === null) return null;
+    let node = rangeStartNode(range);
+    if (node === null) return null;
 
-    if (elm !== null && elm.tagName === 'BR')
-      elm = elm.previousSibling || elm.parentNode;
+    let prev = previousInline(node);
 
-    while(elm !== null && isInlineNode(elm)) {
-      elm = elm.previousSibling || elm.parentNode;
+    while(prev !== null && prev !== node && isInlineNode(prev)) {
+      prev = previousInline(node = prev);
     }
-    if (elm === null) return null;
+
     const ans = document.createRange();
-    if (elm.firstChild == null) {
-      if (elm.nextSibling == null) {
-        elm = elm.parentNode;
-        ans.setStart(elm, elm.childNodes.length);
-      } else {
-        ans.setStart(elm.nextSibling, 0);
-      }
-    } else {
-      ans.setStart(elm.firstChild, 0);
-    }
+    ans.setStart(node, 0);
     normRange(ans);
     return ans;
   };
 
-  const lastElmInLine = (range)=>{
-    let elm = rangeStartNode(range);
-    if (elm === null) return null;
-    if (elm === undefined)
-      elm = range.startContainer;
-    else {
-      while(elm != null && isInlineNode(elm)) {
-        elm = elm.nextSibling || elm.parentNode;
+  const endOfLineNode = (node)=>{
+    if (node === null) return null;
+
+    let nn = nextInline(node);
+
+    while (nn !== null && nn !== node) {
+      if (! isInlineNode(nn)) {
+        if (nn.tagName === 'BR') node = nn;
+        break;
       }
+      nn = nextInline(node = nn);
     }
-    return elm;
-  };
 
-
-  const startOfNextLine = (range=Dom.getRange())=>{
-    let elm = lastElmInLine(range);
-    if (elm === null) return null;
-
-    const ns = elm.nextSibling;
-
-    const ans = document.createRange();
-    if (ns !== null && ns.tagName === 'BR')
-      ans.setStart(ns.parentNode, Dom.nodeIndex(ns));
-    else
-      ans.setStart(elm.parentNode, Dom.nodeIndex(elm)+1);
-    normRange(ans);
-    return ans;
+    return node;
   };
 
   const endOfLine = (range=Dom.getRange())=>{
-    let elm = lastElmInLine(range);
-    if (elm === null) return null;
+    const node = endOfLineNode(rangeStartNode(range));
+    if (node === null) return null;
+
     const ans = document.createRange();
-    if (elm.lastChild != null) {
-      elm = elm.lastChild;
+    setEndOfNode(ans, node);
+    return ans;
+  };
+
+  const commonAncestor = (startNode, endNode)=>{
+    const range = document.createRange();
+    range.setStart(startNode, 0);
+    range.setEnd(endNode, 0);
+    return range.commonAncestorContainer;
+  };
+
+  const childOfBlock = (node, top)=>{
+    while (node !== null && node !== top) {
+      if (isBlockNode(node)) return true;
+      node = node.parentNode;
     }
-    setEndOfElm(ans, elm);
+    return false;
+  };
+
+  const startOfNextLine = (range=Dom.getRange())=>{
+    let node = endOfLineNode(rangeStartNode(range));
+    if (node === null) return null;
+
+    let nn = nextNode(node);
+    if (nn !== null) {
+      if (! childOfBlock(node, commonAncestor(node, nn))) {
+        node = nn;
+        if (node.tagName === 'BR') {
+          nn = nextNode(node);
+        }
+      }
+    }
+
+    const ans = document.createRange();
+    if (nn === null)
+      ans.setStart(node.parentNode, Dom.nodeIndex(node)+1);
+    else
+      ans.setStart(nn, 0);
     return ans;
   };
 
@@ -310,28 +439,20 @@ define((require)=>{
       return null;
     },
 
+    restrictRange,
     normRange,
+    previousNode,
+    nextNode,
     rangeStartNode,
 
     isBlockNode,
-
-    findContainingBlock: (top, node)=>{
-      if (isBlockNode(node)) return node;
-      node = findBeforeBlock(top, node);
-      if (node.nodeType === TEXT_NODE || INLINE_TAGS[node.tagName])
-        return node.parentNode;
-
-      return node;
-    },
-
-    findBeforeBlock,
 
     startOfLine,
     startOfNextLine,
 
     endOfLine,
 
-    setEndOfElm,
+    setEndOfNode,
 
     clearTrailingBR(frag) {
       let last = frag.lastChild;
@@ -380,6 +501,7 @@ define((require)=>{
     },
 
     clearEmptyText,
+    clearEmptyInline,
     insertNode,
 
     selectNode: node =>{

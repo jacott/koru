@@ -228,7 +228,7 @@ isClient && define((require, exports, module)=>{
       group("exit", ()=>{
         const preContent = {
           'data-lang': 'Rust',
-          pre: ['one', {br: ''}, 'two', {b: '2'}, {br: ''}, 'three']};
+          pre: [{span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}]};
 
         test("empty", ()=>{
           const pre = Dom.h({pre: [{br: ''}, '']});
@@ -239,44 +239,46 @@ isClient && define((require, exports, module)=>{
           undo.recordNow();
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          assert.equals(htj(inputElm).div, [{br: ''}, '']);
+          assert.equals(htj(inputElm).div, {br: ''});
         });
 
         test("selection begining", ()=>{
           const pre = Dom.h(preContent);
 
           inputElm.appendChild(pre);
-          TH.setRange(pre.firstChild, 0, pre.childNodes[2], 2);
+          TH.setRange(pre.firstChild, 0, pre.childNodes[2].firstChild, 2);
           focusin(inputElm);
 
           undo.recordNow();
           TH.keydown(pre, 'À', {ctrlKey: true});
 
           assert.equals(htj(inputElm).div, [
-            'one', {br: ''}, 'tw',
-            {"data-lang": 'Rust', pre: ['o', {b: '2'}, {br: ''}, 'three']},
+            {span: 'one'}, {br: ''}, {span: 'tw'},
+            {"data-lang": 'Rust', pre: [{span: 'o'}, {b: '2'}, {br: ''}, {span: 'three'}]},
           ]);
 
-          assert.rangeEquals(undefined, inputElm.childNodes[0], 0, inputElm.childNodes[2], 2);
+          assert.rangeEquals(undefined, inputElm.childNodes[0].firstChild, 0,
+                             inputElm.childNodes[2], 1);
         });
 
         test("selection middle", ()=>{
           const pre = Dom.h(preContent);
 
           inputElm.appendChild(pre);
-          TH.setRange(pre.childNodes[2], 2, pre.lastChild, 3);
+          TH.setRange(pre.childNodes[2].firstChild, 2, pre.lastChild.firstChild, 3);
           focusin(inputElm);
 
           undo.recordNow();
           TH.keydown(pre, 'À', {ctrlKey: true});
 
           assert.equals(htj(inputElm).div, [
-            {"data-lang": 'Rust', pre: ['one', {br: ''}, 'tw']},
-            'o', {b: '2'}, {br: ''}, 'thr',
-            {"data-lang": 'Rust', pre: ['', 'ee']},
+            {"data-lang": 'Rust', pre: [{span: 'one'}, {br: ''}, {span: 'tw'}]},
+            {span: 'o'}, {b: '2'}, {br: ''}, {span: 'thr'},
+            {"data-lang": 'Rust', pre: {span: 'ee'}},
           ]);
 
-          assert.rangeEquals(undefined, inputElm.childNodes[1], 0, inputElm.childNodes[4], 3);
+          assert.rangeEquals(undefined, inputElm.childNodes[1].firstChild, 0,
+                             inputElm.childNodes[4], 1);
         });
 
         test("first line", ()=>{
@@ -291,11 +293,10 @@ isClient && define((require, exports, module)=>{
           TH.keydown(pre, 'À', {ctrlKey: true});
 
           assert.equals(htj(inputElm).div, [
-            'one', {br: ''}, '',
+            {span: 'one'}, {br: ''},
             {"data-lang": 'Rust', pre: [
-              'two', {b: '2'}, {br: ''},
-              'three']},
-          ]);
+              {span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}]
+            }]);
 
           undo.undo();
           assert.equals(htj(inputElm).div, preContent);
@@ -317,9 +318,9 @@ isClient && define((require, exports, module)=>{
           TH.keydown(pre, 'À', {ctrlKey: true});
 
           const ans = [
-            {"data-lang": 'Rust', pre: ['one', {br: ''}]},
-            {br: ''}, '',
-            {"data-lang": 'Rust', pre: ['two', {b: '2'}, {br: ''}, 'three']},
+            {"data-lang": 'Rust', pre: [{span: 'one'}, {br: ''}]},
+            {br: ''},
+            {"data-lang": 'Rust', pre: [{span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}]},
           ];
           assert.equals(htj(inputElm).div, ans);
 
@@ -336,7 +337,7 @@ isClient && define((require, exports, module)=>{
           const ctx = Dom.ctx(inputElm);
           const pre = Dom.h(preContent);
           inputElm.appendChild(pre);
-          TH.setRange(pre.childNodes[2], 2);
+          TH.setRange(pre.childNodes[2].firstChild, 2);
           focusin(inputElm);
 
           undo.recordNow();
@@ -354,10 +355,9 @@ isClient && define((require, exports, module)=>{
           assert.calledWith(cmStub, undefined);
 
           assert.equals(htj(inputElm).div, [
-            {"data-lang": 'Rust', pre: ['one', {br: ''}]},
-            'two', {b: '2'}, {br: ''}, '',
-            {"data-lang": 'Rust', pre: ['three']},
-          ]);
+            {"data-lang": 'Rust', pre: [{span: 'one'}, {br: ''}]},
+            {span: 'two'}, {b: '2'}, {br: ''},
+            {"data-lang": 'Rust', pre: {span: 'three'}}]);
 
           TH.keydown(pre, 'Z', {ctrlKey: true});
           assert.equals(htj(inputElm).div, preContent);
@@ -370,7 +370,7 @@ isClient && define((require, exports, module)=>{
           const pre = Dom.h(preContent);
           inputElm.appendChild(pre);
 
-          TH.setRange(pre.lastChild, 1);
+          TH.setRange(pre.lastChild.firstChild, 'three'.length);
           focusin(inputElm);
 
           undo.recordNow();
@@ -379,9 +379,8 @@ isClient && define((require, exports, module)=>{
 
           assert.equals(htj(inputElm).div, [
             {"data-lang": 'Rust', pre: [
-              'one', {br: ''}, 'two', {b: '2'}, {br: ''}]},
-            'three',
-          ]);
+              {span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}]},
+            'three']);
 
           TH.keydown(pre, 'Z', {ctrlKey: true});
           assert.equals(htj(inputElm).div, preContent);
@@ -450,7 +449,7 @@ isClient && define((require, exports, module)=>{
 
           const pre = Dom('pre[data-lang="text"]');
           const range = Dom.getRange();
-          assert.rangeEquals(range, pre.firstChild, 0, pre.lastChild, 3);
+          assert.rangeEquals(range, pre, 0, pre, 3);
           range.collapse();
           Dom.setRange(range);
           sut.insert(' foo');

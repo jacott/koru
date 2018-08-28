@@ -35,6 +35,20 @@ isClient && define((require, exports, module)=>{
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}]);
     });
 
+    test("clearEmptyInline", ()=>{
+      const div = Dom.h({div: [
+        {span: ["", "", {span: ["", ""]}]}, "",
+        {span: {b: {i: ''}}}, "stop", "", {br: ''},
+        {b: ["", "", {i: ["", ""]}]}, "",
+      ]});
+      sut.clearEmptyInline(div);
+      assert.equals(Dom.htmlToJson(div).div, ["stop", '', {br: ''}]);
+
+      const div2 = Dom.h({div: [{br: ''}, 'two', {br: ''}]});
+      sut.clearEmptyInline(div2);
+      assert.equals(Dom.htmlToJson(div2).div, [{br: ''}, 'two', {br: ''}]);
+    });
+
     test("clearTrailingBR", ()=>{
       const div = Dom.h({});
       div.appendChild(sut.clearTrailingBR(Dom.h(['one', {br: ''}, {br: ''}, '', ''])));
@@ -243,201 +257,384 @@ isClient && define((require, exports, module)=>{
 
     });
 
-    group("selecting", ()=>{
-      const divLine = Dom.h({id: 'divLine', div: ["hello world"]});
-      const ebr1 = Dom.h ({id: 'ebr1', br: ''}), ebr2 = Dom.h({id: 'ebr2', br: ''});
-      const emptyLine = Dom.h({id: 'emptyLine', div: ["be", ebr1, ebr2, 'ae']});
-      const line2 = Dom.h({id: 'line2', div: ['text', {b: 'bold'}, 'more text']});
+    group("positioning", ()=>{
+      const spanStartBr = Dom.h({span: [{br: ''}, 'end']}),
+            spanEndBr = Dom.h({span: ['start', {br: ''}]}),
+            midText = Dom.h('mid text');
+      const divTextOnly = Dom.h({id: 'divLine', div: ["hello world"]});
+      const divWithB = Dom.h({id: 'line2', div: ['text', {b: 'bold'}, 'more text']});
       const br = Dom.h({id: 'br', br: ''}), br2 = Dom.h({id: 'br2', br: ''}),
             br3 = Dom.h({id: 'br3', br: ''});
+      const ebr1 = Dom.h ({id: 'ebr1', br: ''}), ebr2 = Dom.h({id: 'ebr2', br: ''});
+      const emptyLine = Dom.h({id: 'emptyLine', div: ["be", ebr1, ebr2, 'ae']});
+      const spanWithBr = Dom.h({span: ['span start', {br: ''}, 'span end']});
 
-      before(()=>{
+      const spanBeginsWithBr = ()=>{
         inputElm.appendChild(Dom.h([
-          divLine,
-          line2,
+          br2,
+          midText,
+          spanStartBr,
+        ]));
+      };
+
+      const spanEndsWithBr = ()=>{
+        inputElm.appendChild(Dom.h([
+          spanEndBr,
+          midText,
+          br2,
+        ]));
+      };
+
+      const complexLines = ()=>{
+        inputElm.appendChild(Dom.h([
+          divTextOnly,
+          divWithB,
           br,
           'before ', {i: ['a']}, ' break', br2,
           br3,
-          emptyLine]));
+          emptyLine,
+          spanWithBr, ' end',
+        ]));
+      };
+
+      group("restrictRange", ()=>{
+        before(()=>{complexLines()});
+
+        test("completely within", ()=>{
+          TH.setRange(divWithB, 1, divWithB.lastChild, 3);
+          assert.rangeEquals(
+            sut.restrictRange(Dom.getRange(), inputElm),
+            divWithB, 1, divWithB.lastChild, 3);
+        });
+
+        test("within", ()=>{
+          TH.setRange(divWithB, 1, divWithB.lastChild, 3);
+          assert.rangeEquals(
+            sut.restrictRange(Dom.getRange(), divWithB),
+            divWithB, 1, divWithB.lastChild, 3);
+        });
+
+        test("both outside", ()=>{
+          TH.setRange(divTextOnly, 0, br3, 0);
+          assert.rangeEquals(
+            sut.restrictRange(Dom.getRange(), divWithB),
+            divWithB.firstChild, 0, divWithB.lastChild, divWithB.lastChild.nodeValue.length
+          );
+
+        });
       });
 
-      group("empty nested line line", ()=>{
-        beforeEach(()=>{
-          TH.setRange(emptyLine, 2);
-        });
+      test("previousNode", ()=>{
+        complexLines();
 
-        test("normRange", ()=>{
-          const range = document.createRange();
-          range.setStart(ebr2, 0);
+        assert.same(sut.previousNode(divWithB.firstChild, divWithB), null);
 
-          sut.normRange(range);
+        assert.same(sut.previousNode(inputElm.firstChild, inputElm), null);
 
-          assert.same(range.startOffset, 2);
-          assert.same(range.startContainer, emptyLine);
-        });
+        assert.same(sut.previousNode(divWithB.querySelector('b').firstChild, divWithB),
+                    divWithB.firstChild);
 
-        test("startOfLine", ()=>{
-          let range = sut.startOfLine();
-          assert.same(range.startContainer, emptyLine);
-          assert.same(range.startOffset, 2);
+        let node = inputElm.lastChild;
 
-          range.setStart(ebr2, 0);
-          range = sut.startOfLine();
-          assert.same(range.startContainer, emptyLine);
-          assert.same(range.startOffset, 2);
-        });
-
-        test("startOfNextLine", ()=>{
-          let range = sut.startOfNextLine();
-          assert.same(range.startContainer.nodeValue, 'ae');
-          assert.same(range.startOffset, 0);
-
-          range.setStart(ebr2, 0);
-          range = sut.startOfNextLine();
-          assert.same(range.startContainer.nodeValue, 'ae');
-          assert.same(range.startOffset, 0);
-        });
-
-        test("endOfLine", ()=>{
-          let range = sut.endOfLine();
-          assert.same(range.startContainer, emptyLine);
-          assert.same(range.startOffset, 2);
-
-          range.setStart(ebr2, 0);
-          range = sut.endOfLine();
-          assert.same(range.startContainer, emptyLine);
-          assert.same(range.startOffset, 2);
-        });
-
-        test("selectLine", ()=>{
-          const range = sut.selectLine();
-          assert.same(range.startContainer, emptyLine);
-          assert.same(range.startOffset, 2);
-
-          assert.same(range.endContainer.nodeValue, 'ae');
-          assert.same(range.endOffset, 0);
-       });
+        assert.same((node = sut.previousNode(node)).nodeValue, 'span end');
+        assert.same(node = sut.previousNode(node), spanWithBr.childNodes[1]);
+        assert.same(node = sut.previousNode(node), spanWithBr.firstChild);
+        assert.same((node = sut.previousNode(node)).nodeValue, 'ae');
+        assert.same(node = sut.previousNode(node), ebr2);
+        assert.same(node = sut.previousNode(node), ebr1);
+        assert.same((node = sut.previousNode(node)).nodeValue, 'be');
+        assert.same(node = sut.previousNode(node), br3);
+        assert.same(node = sut.previousNode(node), br2);
+        assert.same((node = sut.previousNode(node)).nodeValue, ' break');
+        assert.same((node = sut.previousNode(node)).nodeValue, 'a');
+        assert.same(node = sut.previousNode(node), br.nextSibling);
+        assert.same(node = sut.previousNode(node), br);
       });
 
-      group("startOfLine", ()=>{
-        test("end of unwrapped line", ()=>{
-          TH.setRange(br2, 0);
-          const range = sut.startOfLine();
-          assert.same(range.startContainer.nodeValue, 'before ');
-          assert.same(range.startOffset, 0);
-        });
+      test("nextNode", ()=>{
+        complexLines();
 
-        test("middle of unwrapped line", ()=>{
-          TH.setRange(br2.previousSibling, 3);
-          const range = sut.startOfLine();
-          assert.same(range.startContainer.nodeValue, 'before ');
-          assert.same(range.startOffset, 0);
-        });
+        assert.same(sut.nextNode(divWithB.lastChild, divWithB), null);
 
-        test("middle of complex line", ()=>{
-          TH.setRange(line2.lastChild, 6);
-          const range = sut.startOfLine();
-          assert.same(range.startContainer, line2.firstChild);
-          assert.same(range.startOffset, 0);
-        });
-      }),
+        assert.same(sut.nextNode(inputElm.lastChild), null);
 
-      group("startOfNextLine", ()=>{
-        test("start of complex line", ()=>{
-          TH.setRange(line2.firstChild, 0);
-          const range = sut.startOfNextLine();
-          assert.same(range.startContainer, br.parentNode);
-          assert.same(range.startOffset, Dom.nodeIndex(br));
+        assert.same(sut.nextNode(divWithB.querySelector('b').firstChild, divWithB),
+                    divWithB.lastChild);
+
+        let node = divTextOnly.firstChild;
+
+        assert.same(node = sut.nextNode(node), divWithB.firstChild);
+        assert.same((node = sut.nextNode(node)).nodeValue, 'bold');
+        assert.same(node = sut.nextNode(node), divWithB.lastChild);
+        assert.same(node = sut.nextNode(node), br);
+        assert.same(node = sut.nextNode(node), br.nextSibling);
+        assert.same((node = sut.nextNode(node)).nodeValue, 'a');
+        assert.same((node = sut.nextNode(node)).nodeValue, ' break');
+        assert.same(node = sut.nextNode(node), br2);
+        assert.same(node = sut.nextNode(node), br3);
+        assert.same((node = sut.nextNode(node)).nodeValue, 'be');
+        assert.same(node = sut.nextNode(node), ebr1);
+        assert.same(node = sut.nextNode(node), ebr2);
+        assert.same((node = sut.nextNode(node)).nodeValue, 'ae');
+      });
+
+      test("rangeStartNode", ()=>{
+        complexLines();
+
+        const range = document.createRange();
+
+        range.setStart(inputElm, 0);
+        assert.same(sut.rangeStartNode(range), inputElm.firstChild);
+
+        range.setStart(inputElm, inputElm.childNodes.length);
+        assert.same(sut.rangeStartNode(range), null);
+
+        range.setStart(divWithB, divWithB.childNodes.length);
+        assert.same(sut.rangeStartNode(range, inputElm), br);
+        assert.same(sut.rangeStartNode(range, divWithB), null);
+
+        range.setStart(ebr1, 0);
+        assert.same(sut.rangeStartNode(range), ebr1);
+      });
+
+      group("", ()=>{
+
+      });
+
+      group("selectLine", ()=>{
+        before(()=>{
+          complexLines();
         });
 
         test("end complex line", ()=>{
-          TH.setRange(line2.lastChild, 6);
-          const range = sut.startOfNextLine();
-          assert.same(range.startContainer, br.parentNode);
-          assert.same(range.startOffset, Dom.nodeIndex(br));
+          TH.setRange(divWithB.lastChild, 6);
+          assert.rangeEquals(sut.selectLine(),
+                             divWithB.firstChild, 0,
+                             br, 0);
         });
 
-        test("text only line", ()=>{
-          TH.setRange(inputElm.firstChild, 0);
-          const range = sut.startOfNextLine();
-          assert.same(range.startContainer.nodeValue, "text");
-          assert.same(range.startOffset, 0);
+        test("divTextOnly", ()=>{
+          TH.setRange(divWithB.firstChild, 4);
+          assert.rangeEquals(sut.selectLine(), divWithB.firstChild, 0, br, 0);
+        });
+      });
+
+      group("startOfNextLine", ()=>{
+         test("spanBeginsWithBr", ()=>{
+           spanBeginsWithBr();
+
+           TH.setRange(midText, 4);
+           assert.rangeEquals(sut.startOfNextLine(), spanStartBr.lastChild, 0);
+
+           TH.setRange(spanStartBr.lastChild, 0);
+           assert.rangeEquals(sut.startOfNextLine(), inputElm, inputElm.childNodes.length);
+         });
+
+        test("spanEndsWithBr", ()=>{
+          spanEndsWithBr();
+
+          TH.setRange(midText, 4);
+          assert.rangeEquals(sut.startOfNextLine(), inputElm, inputElm.childNodes.length);
         });
 
-        test("on unwrapped line", ()=>{
-          TH.setRange(br.nextSibling, 3);
-          const range = sut.startOfNextLine();
-          assert.same(range.startContainer, br3.parentNode);
-          assert.same(range.startOffset, Dom.nodeIndex(br3));
+        group("complexLines", ()=>{
+          before(()=>{
+            complexLines();
+          });
+
+          test("empty nested line line", ()=>{
+            TH.setRange(emptyLine, 2);
+            assert.rangeEquals(sut.startOfNextLine(), emptyLine.lastChild, 0);
+
+            TH.setRange(ebr2, 0);
+            assert.rangeEquals(sut.startOfNextLine(), emptyLine.lastChild, 0);
+          });
+
+          test("start of complex line", ()=>{
+            TH.setRange(divWithB.firstChild, 0);
+            assert.rangeEquals(sut.startOfNextLine(), br, 0);
+          });
+
+          test("end complex line", ()=>{
+            TH.setRange(divWithB.lastChild, 6);
+            assert.rangeEquals(sut.startOfNextLine(), br, 0);
+          });
+
+          test("text only line", ()=>{
+            TH.setRange(inputElm.firstChild, 0);
+            assert.rangeEquals(sut.startOfNextLine(), divWithB.firstChild, 0);
+          });
+
+          test("before complex line", ()=>{
+            TH.setRange(br.nextSibling, 3);
+            assert.rangeEquals(sut.startOfNextLine(), br3, 0);
+          });
+
+          test("before empty line", ()=>{
+            TH.setRange(br2.previousSibling, 3);
+            assert.rangeEquals(sut.startOfNextLine(), br3, 0);
+          });
+
+          test("end of spanWithBr", ()=>{
+            TH.setRange(spanWithBr.firstChild, 4);
+            assert.rangeEquals(sut.startOfNextLine(), spanWithBr.lastChild, 0);
+          });
+
+          test("on br of spanWithBr", ()=>{
+            TH.setRange(spanWithBr.querySelector('br'), 0);
+            assert.rangeEquals(sut.startOfNextLine(), spanWithBr.lastChild, 0);
+          });
+
+          test("last line", ()=>{
+            TH.setRange(spanWithBr.lastChild, 0);
+            assert.rangeEquals(sut.startOfNextLine(),
+                               inputElm, inputElm.childNodes.length);
+          });
         });
       });
 
       group("endOfLine", ()=>{
-        test("start of complex line", ()=>{
-          TH.setRange(line2.firstChild, 0);
-          const range = sut.endOfLine();
-          assert.same(range.startContainer, line2.lastChild);
-          assert.same(range.startOffset, 9);
+         test("spanBeginsWithBr", ()=>{
+           spanBeginsWithBr();
+
+           TH.setRange(midText, 4);
+           assert.rangeEquals(sut.endOfLine(), spanStartBr, 0);
+         });
+
+        test("spanEndsWithBr", ()=>{
+          spanEndsWithBr();
+
+          TH.setRange(midText, 4);
+          assert.rangeEquals(sut.endOfLine(), midText, midText.nodeValue.length);
         });
 
-        test("end complex line", ()=>{
-          TH.setRange(line2.lastChild, 6);
-          const range = sut.endOfLine();
-          assert.same(range.startContainer.nodeValue, "more text");
-          assert.same(range.startOffset, 9);
-        });
+        group("complexLines", ()=>{
+          before(()=>{
+            complexLines();
+          });
 
-        test("text only line", ()=>{
-          TH.setRange(inputElm.firstChild, 0);
-          const range = sut.endOfLine();
-          assert.same(range.startContainer.nodeValue, "hello world");
-          assert.same(range.startOffset, 11);
-        });
+          test("empty nested line line", ()=>{
+            TH.setRange(emptyLine, 2);
+            assert.rangeEquals(sut.endOfLine(), emptyLine, 2);
 
-        test("before complex line", ()=>{
-          TH.setRange(br.nextSibling, 3);
-          const range = sut.endOfLine();
-          assert.same(range.startContainer, br2.parentNode);
-          assert.same(range.startOffset, Dom.nodeIndex(br2));
-        });
+            TH.setRange(ebr2, 0);
+            assert.rangeEquals(sut.endOfLine(), emptyLine, 2);
+          });
 
-        test("before empty line", ()=>{
-          TH.setRange(br2.previousSibling, 3);
-          const range = sut.endOfLine();
-          assert.same(range.endContainer, br2.parentNode);
-          assert.same(range.endOffset, Dom.nodeIndex(br2));
+          test("start of complex line", ()=>{
+            TH.setRange(divWithB.firstChild, 0);
+            const range = sut.endOfLine();
+            assert.same(range.startContainer, divWithB.lastChild);
+            assert.same(range.startOffset, 9);
+          });
+
+          test("end complex line", ()=>{
+            TH.setRange(divWithB.lastChild, 6);
+            const range = sut.endOfLine();
+            assert.same(range.startContainer.nodeValue, "more text");
+            assert.same(range.startOffset, 9);
+          });
+
+          test("text only line", ()=>{
+            TH.setRange(inputElm.firstChild, 0);
+            const range = sut.endOfLine();
+            assert.same(range.startContainer.nodeValue, "hello world");
+            assert.same(range.startOffset, 11);
+          });
+
+          test("before complex line", ()=>{
+            TH.setRange(br.nextSibling, 3);
+            assert.rangeEquals(sut.endOfLine(), br2.previousSibling, 6);
+          });
+
+          test("before empty line", ()=>{
+            TH.setRange(br2.previousSibling, 3);
+            assert.rangeEquals(sut.endOfLine(), br2.previousSibling, 6);
+          });
+
+          test("end of spanWithBr", ()=>{
+            const node = spanWithBr.firstChild;
+            TH.setRange(node, 4);
+            assert.rangeEquals(sut.endOfLine(), node, node.nodeValue.length);
+          });
+
+          test("on br of spanWithBr", ()=>{
+            TH.setRange(spanWithBr.querySelector('br'), 0);
+            assert.rangeEquals(sut.endOfLine(), spanWithBr, 1);
+          });
+
+          test("last line", ()=>{
+            TH.setRange(spanWithBr.lastChild, 0);
+            assert.rangeEquals(sut.endOfLine(),
+                               inputElm.lastChild, inputElm.lastChild.nodeValue.length);
+          });
         });
       });
 
-      group("selectLine", ()=>{
-        test("text line", ()=>{
-          TH.setRange(divLine.firstChild, 5);
-          const range = sut.selectLine();
-          assert.isFalse(range.collapsed);
-          assert.same(range.startContainer.nodeValue, "hello world");
-          assert.same(range.startOffset, 0);
-          assert.same(range.endContainer, line2.firstChild);
-          assert.same(range.endOffset, 0);
+      group("startOfLine", ()=>{
+        test("spanBeginsWithBr", ()=>{
+          spanBeginsWithBr();
+
+          TH.setRange(midText, 4);
+          assert.rangeEquals(sut.startOfLine(), midText, 0);
+
+          TH.setRange(spanStartBr, 0);
+          assert.rangeEquals(sut.startOfLine(), midText, 0);
+
+          TH.setRange(spanStartBr.lastChild, 2);
+          assert.rangeEquals(sut.startOfLine(), spanStartBr.lastChild, 0);
         });
 
-        test("complex line", ()=>{
-          TH.setRange(line2.lastChild, 6);
-          const range = sut.selectLine();
-          assert.same(range.endContainer, br.parentNode);
-          assert.same(range.endOffset, Dom.nodeIndex(br));
-          assert.same(range.startContainer, line2.firstChild);
-          assert.same(range.startOffset, 0);
-          assert.isFalse(range.collapsed);
+        test("spanEndsWithBr", ()=>{
+          spanEndsWithBr();
+
+          TH.setRange(midText, 4);
+          assert.rangeEquals(sut.startOfLine(), midText, 0);
         });
 
-        test("before empty line", ()=>{
-          TH.setRange(br2.previousSibling, 3);
-          const range = sut.selectLine();
-          assert.isFalse(range.collapsed);
-          assert.same(range.startContainer, br.nextSibling);
-          assert.same(range.startOffset, 0);
-          assert.same(range.endContainer, br2.parentNode);
-          assert.same(range.endOffset, Dom.nodeIndex(br2)+1);
+        group("complexLines", ()=>{
+          before(()=>{
+            complexLines();
+          });
+
+          test("empty nested line line", ()=>{
+            TH.setRange(emptyLine, 2);
+            assert.rangeEquals(sut.startOfLine(), emptyLine, 2);
+
+            TH.setRange(ebr2, 0);
+            assert.rangeEquals(sut.startOfLine(), emptyLine, 2);
+          });
+
+          test("end of unwrapped line", ()=>{
+            TH.setRange(br2, 0);
+            assert.rangeEquals(
+              sut.startOfLine(),
+              br.nextSibling, 0);
+          });
+
+          test("middle of unwrapped line", ()=>{
+            TH.setRange(br2.previousSibling, 3);
+            const range = sut.startOfLine();
+            assert.same(range.startContainer.nodeValue, 'before ');
+            assert.same(range.startOffset, 0);
+          });
+
+          test("middle of complex line", ()=>{
+            TH.setRange(divWithB.lastChild, 6);
+            const range = sut.startOfLine();
+            assert.same(range.startContainer, divWithB.firstChild);
+            assert.same(range.startOffset, 0);
+          });
+
+          test("end of spanWithBr", ()=>{
+            TH.setRange(spanWithBr.lastChild, 4);
+            assert.rangeEquals(sut.startOfLine(), spanWithBr.lastChild, 0);
+          });
+
+          test("on br of spanWithBr", ()=>{
+            TH.setRange(spanWithBr.querySelector('br'), 0);
+            assert.rangeEquals(sut.startOfLine(), spanWithBr.firstChild, 0);
+          });
         });
       });
     });
