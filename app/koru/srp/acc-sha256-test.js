@@ -15,7 +15,8 @@ define((require, exports, module)=>{
        *
        * @param text The message to add to `hash`
        *
-       * @param hash should be an array of 8 32bit integers. The default is a good set.
+       * @param hash should be an array of 8 32bit integers. The default is the standard sha256
+       * initial hash values.
        *
        * @return the modified `hash`; not a copy.
        **/
