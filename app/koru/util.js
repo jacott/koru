@@ -1026,10 +1026,5 @@ define((require)=>{
     },
   });
 
-  /**
-   * @deprecated reverseExtend
-   */
-  util.reverseExtend = util.reverseMerge;
-
   return util;
 });

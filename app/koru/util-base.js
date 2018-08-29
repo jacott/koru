@@ -125,10 +125,5 @@ define((require, exports, module)=>{
     qstr, qlabel,
   };
 
-  /**
-   * @deprecated extend - too confusing with class extends so use merge
-   **/
-  util.extend = util.merge;
-
   return util;
 });
