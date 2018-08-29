@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const Dom             = require('koru/dom/base');
   const util            = require('koru/util');
 
@@ -327,13 +327,11 @@ define((require, exports, module)=>{
     getValue: (name, ...args)=> getValue(currentCtx.data, name, args),
   };
 
-  module.exports = Ctx;
-
   Ctx[private$] = {
     getValue: getValue,
     evalArgs: evalArgs,
-    set currentElement(value) {
-      return currentElement = value;
-    }
+    set currentElement(value) {currentElement = value}
   };
+
+  return Ctx;
 });

@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const AccSha256       = require('koru/srp/acc-sha256');
   const util            = require('koru/util');
 

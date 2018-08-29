@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const format         = require('../format');
   const koru           = require('../main');
   const match          = require('../match');
@@ -13,7 +13,7 @@ define((require, exports, module)=>{
 
   const ID_SPEC = {_id: 'id'};
 
-  const Val = module.exports = {
+  const Val = {
     error$,
     Error: {
       msgFor(doc, field, other_error) {
@@ -386,4 +386,6 @@ define((require, exports, module)=>{
       type.$test(args[i])  || accessDenied(`expected ${type}`);
     }
   };
+
+  return Val;
 });

@@ -1,5 +1,5 @@
 define((require, exports, module)=>{
-  const TH   = require('koru/test-helper');
+  const TH              = require('koru/test-helper');
 
   const sut  = require('./sha256');
 

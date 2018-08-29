@@ -18,7 +18,7 @@ define((require)=>{
   }
 
   const Compiler = {
-    toJavascript(code, filename) {
+    toJavascript: (code, filename)=>{
       let template;
       let result = '';
       try {
@@ -71,6 +71,133 @@ define((require)=>{
         throw e;
       }
     }
+  };
+
+  const nodeToHash = (node)=>{
+    if (typeof node === 'string' || node.shift)
+      return node;
+
+    const result =  {name: node.name, attrs: node.attrs, ns: node.ns};
+    if (node.children.length)
+      result.children = node.children.map(node => nodeToHash(node));
+
+    return result;
+  };
+
+  const extractBraces = (text)=>{
+    const parts = text.split(/({{[\s\S]*?}})/);
+
+    if (parts.length === 1) return text;
+    if (parts[parts.length-1] === '') parts.pop();
+    if (parts[0] === '') parts.shift();
+
+    for(let i = 0; i < parts.length; ++i) {
+      const part = parts[i];
+      if (/^{{[\s\S]*?}}$/.test(part))
+        parts[i] = [compileBraceExpr(part.slice(2,-2).trim())];
+    }
+
+    return parts;
+  };
+
+  const compileBraceExpr = (bexpr)=>{
+    let result;
+    if (bexpr.match(/^[!#>\/]/)) {
+      result = [bexpr[0]];
+      bexpr = bexpr.slice(1).trim();
+    } else {
+      result = [''];
+    }
+    tokenizeWithQuotes(bexpr, result);
+    return result;
+  };
+
+  const extractAttrs = (attrs)=>{
+    const tokens = [];
+    const result = [];
+    tokenizeWithQuotes(attrs, tokens);
+
+    tokens.forEach(token => {
+      if (typeof token === 'string') {
+        result.push(justOne(extractBraces(token[0] === '"' ? token.slice(1) : token)));
+
+      } else {
+        token[2] = justOne(extractBraces(token[2][0] === '"' ? token[2].slice(1) : token[2]));
+        result.push(token);
+      }
+    });
+
+    return result;
+  };
+
+  const justOne = (nodes)=>{
+    if (typeof nodes === 'string') return nodes;
+
+
+    for(let i=0; i < nodes.length; ++i) {
+      let row = nodes[i];
+      if (row) {
+        if (typeof row === 'string') continue;
+        row = nodes[i] = row[0];
+        if (typeof row === 'string' || row.length < 3) continue;
+        for(let j = 0; j < row.length; ++j) {
+          const part = row[j];
+          if (part.indexOf('.') !== -1) {
+            row[j] = '.' + part;
+          }
+        }
+
+        //        return row;
+      }
+    }
+    if (nodes.length == 1) return nodes[0];
+    const ans = ['', 'join'];
+    for(let i=0; i < nodes.length; ++i) {
+      const row = nodes[i];
+      if (typeof row === 'string')
+        ans.push('"'+row);
+      else {
+        if (row.length == 2)
+          ans.push(row[1]);
+        else
+          ans.push(row);
+      }
+
+    }
+    return ans;
+  };
+
+  const tokenizeWithQuotes = (bexpr, result)=>{
+    // split by tokens
+    while(bexpr !== '') {
+      bexpr = bexpr.trim();
+      if (bexpr.length === 0) return;
+
+      const m = /^((?:"[^"]*"|'[^']*')|{{[\s\S]*?}}|[:-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
+
+      if (m) {
+        addToken(m[1], result);
+        bexpr = m[2];
+      } else {
+        return addToken(bexpr, result);
+      }
+    }
+  };
+
+  const addToken = (token, result)=>{
+    const m = /^([:-\w]+)=([\s\S]*)$/.exec(token);
+    if (m) {
+      IGNORE[m[1]] || result.push(['=', m[1], quotenorm(m[2])]);
+    } else {
+      result.push(quotenorm(token));
+    }
+  };
+
+  const quotenorm = (token)=>{
+    if (token.match(/^(['"])[\s\S]*\1$/))
+      return '"' + token.slice(1,-1);
+    else
+      return token;
   };
 
   class Template {
@@ -140,135 +267,6 @@ define((require)=>{
       this.nested.push(child);
       return this;
     }
-  }
-
-  function nodeToHash(node) {
-    if (typeof node === 'string' || node.shift)
-      return node;
-
-    const result =  {name: node.name, attrs: node.attrs, ns: node.ns};
-    if (node.children.length)
-      result.children = node.children.map(node => nodeToHash(node));
-
-    return result;
-  }
-
-  function extractBraces(text) {
-    const parts = text.split(/({{[\s\S]*?}})/);
-
-    if (parts.length === 1) return text;
-    if (parts[parts.length-1] === '') parts.pop();
-    if (parts[0] === '') parts.shift();
-
-    for(let i = 0; i < parts.length; ++i) {
-      const part = parts[i];
-      if (/^{{[\s\S]*?}}$/.test(part))
-        parts[i] = [compileBraceExpr(part.slice(2,-2).trim())];
-    }
-
-    return parts;
-  }
-
-  function compileBraceExpr(bexpr) {
-    let result;
-    if (bexpr.match(/^[!#>\/]/)) {
-      result = [bexpr[0]];
-      bexpr = bexpr.slice(1).trim();
-    } else {
-      result = [''];
-    }
-    tokenizeWithQuotes(bexpr, result);
-    return result;
-  }
-
-
-  function extractAttrs(attrs) {
-    const tokens = [];
-    const result = [];
-    tokenizeWithQuotes(attrs, tokens);
-
-    tokens.forEach(token => {
-      if (typeof token === 'string') {
-        result.push(justOne(extractBraces(token[0] === '"' ? token.slice(1) : token)));
-
-      } else {
-        token[2] = justOne(extractBraces(token[2][0] === '"' ? token[2].slice(1) : token[2]));
-        result.push(token);
-      }
-    });
-
-    return result;
-  }
-
-
-  function justOne(nodes) {
-    if (typeof nodes === 'string') return nodes;
-
-
-    for(let i=0; i < nodes.length; ++i) {
-      let row = nodes[i];
-      if (row) {
-        if (typeof row === 'string') continue;
-        row = nodes[i] = row[0];
-        if (typeof row === 'string' || row.length < 3) continue;
-        for(let j = 0; j < row.length; ++j) {
-          const part = row[j];
-          if (part.indexOf('.') !== -1) {
-            row[j] = '.' + part;
-          }
-        }
-
-//        return row;
-      }
-    }
-    if (nodes.length == 1) return nodes[0];
-    const ans = ['', 'join'];
-    for(let i=0; i < nodes.length; ++i) {
-      const row = nodes[i];
-      if (typeof row === 'string')
-        ans.push('"'+row);
-      else {
-        if (row.length == 2)
-          ans.push(row[1]);
-        else
-          ans.push(row);
-      }
-
-    }
-    return ans;
-  }
-
-  function tokenizeWithQuotes(bexpr, result) {
-    // split by tokens
-    while(bexpr !== '') {
-      bexpr = bexpr.trim();
-      if (bexpr.length === 0) return;
-
-      const m = /^((?:"[^"]*"|'[^']*')|{{[\s\S]*?}}|[:-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
-
-      if (m) {
-        addToken(m[1], result);
-        bexpr = m[2];
-      } else {
-        return addToken(bexpr, result);
-      }
-    }
-  }
-
-  function addToken(token, result) {
-    const m = /^([:-\w]+)=([\s\S]*)$/.exec(token);
-    if (m) {
-      IGNORE[m[1]] || result.push(['=', m[1], quotenorm(m[2])]);
-    } else {
-      result.push(quotenorm(token));
-    }
-  }
-
-  function quotenorm(token) {
-    if (token.match(/^(['"])[\s\S]*\1$/))
-      return '"' + token.slice(1,-1);
-    else
-      return token;
   }
 
   Compilers.set('html', (type, path, outPath)=>{

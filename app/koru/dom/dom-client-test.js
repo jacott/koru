@@ -23,6 +23,7 @@ define((require, exports, module)=>{
       Dom.removeChildren(document.body);
       delete Dom.Foo;
       v = {};
+      Ctx[private$].currentElement = null;
     });
 
     test("supports passive", ()=>{

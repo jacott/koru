@@ -1,5 +1,4 @@
 define((require, exports, module)=>{
-  const koru            = require('koru');
   const Dom             = require('koru/dom/base');
   const htmlEncode      = require('koru/dom/html-encode');
   const util            = require('koru/util');
@@ -623,7 +622,7 @@ define((require, exports, module)=>{
       });
     });
 
-  koru.onunload(module, () => global.document = null);
+  module.onUnload(() => global.document = null);
 
   return Document;
 });

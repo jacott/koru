@@ -9,10 +9,9 @@ define((require, exports, module)=>{
   const onEnd$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
+  const {ctx} = module;
 
   const {inspect$} = require('koru/symbols');
-
-  const ctx = module.ctx;
 
   const Element = (isClient ? window : global).Element || {};
 

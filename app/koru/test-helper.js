@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const koru            = require('koru');
   const Test            = require('koru/test');
 

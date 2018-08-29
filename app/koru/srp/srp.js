@@ -1,6 +1,5 @@
-define((require, exports, module)=>{
+define((require)=>{
   const Random          = require('../random').global;
-  const util            = require('../util');
   const BigInteger      = require('./big-integer');
   const SHA256          = require('./sha256');
 
@@ -12,292 +11,6 @@ define((require, exports, module)=>{
    *
    * Based on code from Meteor.com: meteor/packages/srp/srp.js
    */
-
-  const SRP = exports;
-
-  /////// PUBLIC CLIENT
-
-  /**
-   * Generate a new SRP verifier. Password is the plaintext password.
-   *
-   * options is optional and can include:
-   * - identity: String. The SRP username to user. Mostly this is passed
-   *   in for testing.  Random UUID if not provided.
-   * - salt: String. A salt to use.  Mostly this is passed in for
-   *   testing.  Random UUID if not provided.
-   * - SRP parameters (see _defaults and paramsFromOptions below)
-   */
-  SRP.generateVerifier = (password, options)=>{
-    const params = paramsFromOptions(options);
-
-    const identity = (options && options.identity) || Random.id();
-    const salt = (options && options.salt) || Random.id();
-
-    const x = params.hash(salt + params.hash(identity + ":" + password));
-    const xi = new BigInteger(x, 16);
-    const v = params.g.modPow(xi, params.N);
-
-
-    return {
-      identity: identity,
-      salt: salt,
-      verifier: v.toString(16)
-    };
-  };
-
-  // For use with check().
-  SRP.matchVerifier = {
-    identity: String,
-    salt: String,
-    verifier: String
-  };
-
-
-  /**
-   * Generate a new SRP client object. Password is the plaintext password.
-   *
-   * options is optional and can include:
-   * - a: client's private ephemeral value. String or
-   *      BigInteger. Normally, this is picked randomly, but it can be
-   *      passed in for testing.
-   * - SRP parameters (see _defaults and paramsFromOptions below)
-   */
-  SRP.Client = function (password, options) {
-    this.params = paramsFromOptions(options);
-    this.password = password;
-
-    // shorthand
-    const N = this.params.N;
-    const g = this.params.g;
-
-    // construct public and private keys.
-    let a, A;
-    if (options && options.a) {
-      if (typeof options.a === "string")
-        a = new BigInteger(options.a, 16);
-      else if (options.a instanceof BigInteger)
-        a = options.a;
-      else
-        throw new Error("Invalid parameter: a");
-
-      A = g.modPow(a, N);
-
-      if (A.mod(N) === 0)
-        throw new Error("Invalid parameter: a: A mod N == 0.");
-
-    } else {
-      while (!A || A.mod(N) === 0) {
-        a = randInt();
-        A = g.modPow(a, N);
-      }
-    }
-
-    this.a = a;
-    this.A = A;
-    this.Astr = A.toString(16);
-  };
-
-
-  /**
-   * Initiate an SRP exchange.
-   *
-   * returns { A: 'client public ephemeral key. hex encoded integer.' }
-   */
-  SRP.Client.prototype.startExchange = function () {
-    return {
-      A: this.Astr
-    };
-  };
-
-  /**
-   * Respond to the server's challenge with a proof of password.
-   *
-   * challenge is an object with
-   * - B: server public ephemeral key. hex encoded integer.
-   * - identity: user's identity (SRP username).
-   * - salt: user's salt.
-   *
-   * returns { M: 'client proof of password. hex encoded integer.' }
-   * throws an error if it got an invalid challenge.
-   */
-  SRP.Client.prototype.respondToChallenge = function (challenge) {
-    // shorthand
-    const N = this.params.N;
-    const g = this.params.g;
-    const k = this.params.k;
-    const H = this.params.hash;
-
-    // XXX check for missing / bad parameters.
-    this.identity = challenge.identity;
-    this.salt = challenge.salt;
-    this.Bstr = challenge.B;
-    this.B = new BigInteger(this.Bstr, 16);
-
-    if (this.B.mod(N) === 0)
-      throw new Error("Server sent invalid key: B mod N == 0.");
-
-    const u = new BigInteger(H(this.Astr + this.Bstr), 16);
-    const x = new BigInteger(
-      H(this.salt + H(this.identity + ":" + this.password)), 16);
-
-    const kgx = k.multiply(g.modPow(x, N));
-    const aux = this.a.add(u.multiply(x));
-    const S = this.B.subtract(kgx).modPow(aux, N);
-    const M = H(this.Astr + this.Bstr + S.toString(16));
-    const HAMK = H(this.Astr + M + S.toString(16));
-
-    this.S = S;
-    this.HAMK = HAMK;
-
-    return {
-      M: M
-    };
-  };
-
-
-  /**
-   * Verify server's confirmation message.
-   *
-   * confirmation is an object with
-   * - HAMK: server's proof of password.
-   *
-   * returns true or false.
-   */
-  SRP.Client.prototype.verifyConfirmation = function (confirmation) {
-    return (this.HAMK && (confirmation.HAMK === this.HAMK));
-  };
-
-
-
-  /////// PUBLIC SERVER
-
-
-  /**
-   * Generate a new SRP server object. Password is the plaintext password.
-   *
-   * options is optional and can include:
-   * - b: server's private ephemeral value. String or
-   *      BigInteger. Normally, this is picked randomly, but it can be
-   *      passed in for testing.
-   * - SRP parameters (see _defaults and paramsFromOptions below)
-   */
-  SRP.Server = function (verifier, options) {
-    this.params = paramsFromOptions(options);
-    this.verifier = verifier;
-
-    // shorthand
-    const N = this.params.N;
-    const g = this.params.g;
-    const k = this.params.k;
-    const v = new BigInteger(this.verifier.verifier, 16);
-
-    // construct public and private keys.
-    let b, B;
-    if (options && options.b) {
-      if (typeof options.b === "string")
-        b = new BigInteger(options.b, 16);
-      else if (options.b instanceof BigInteger)
-        b = options.b;
-      else
-        throw new Error("Invalid parameter: b");
-
-      B = k.multiply(v).add(g.modPow(b, N)).mod(N);
-
-      if (B.mod(N) === 0)
-        throw new Error("Invalid parameter: b: B mod N == 0.");
-
-    } else {
-      while (!B || B.mod(N) === 0) {
-        b = randInt();
-        B = k.multiply(v).add(g.modPow(b, N)).mod(N);
-      }
-    }
-
-    this.b = b;
-    this.B = B;
-    this.Bstr = B.toString(16);
-
-  };
-
-
-  /**
-   * Issue a challenge to the client.
-   *
-   * Takes a request from the client containing:
-   * - A: hex encoded int.
-   *
-   * Returns a challenge with:
-   * - B: server public ephemeral key. hex encoded integer.
-   * - identity: user's identity (SRP username).
-   * - salt: user's salt.
-   *
-   * Throws an error if issued a bad request.
-   */
-  SRP.Server.prototype.issueChallenge = function (request) {
-    // XXX check for missing / bad parameters.
-    this.Astr = request.A;
-    this.A = new BigInteger(this.Astr, 16);
-
-    if (this.A.mod(this.params.N) === 0)
-      throw new Error("Client sent invalid key: A mod N == 0.");
-
-    // shorthand
-    const N = this.params.N;
-    const H = this.params.hash;
-
-    // Compute M and HAMK in advance. Don't send to client yet.
-    const u = new BigInteger(H(this.Astr + this.Bstr), 16);
-    const v = new BigInteger(this.verifier.verifier, 16);
-    const avu = this.A.multiply(v.modPow(u, N));
-    this.S = avu.modPow(this.b, N);
-    this.M = H(this.Astr + this.Bstr + this.S.toString(16));
-    this.HAMK = H(this.Astr + this.M + this.S.toString(16));
-
-    return {
-      identity: this.verifier.identity,
-      salt: this.verifier.salt,
-      B: this.Bstr
-    };
-  };
-
-
-  /**
-   * Verify a response from the client and return confirmation.
-   *
-   * Takes a challenge response from the client containing:
-   * - M: client proof of password. hex encoded int.
-   *
-   * Returns a confirmation if the client's proof is good:
-   * - HAMK: server proof of password. hex encoded integer.
-   * OR null if the client's proof doesn't match.
-   */
-  SRP.Server.prototype.verifyResponse = function (response) {
-    if (response.M !== this.M)
-      return null;
-
-    return {
-      HAMK: this.HAMK
-    };
-  };
-
-  /**
-   * Assert that password matches verifier.
-   */
-  SRP.checkPassword = (password, verifier)=>{
-    // Client -> Server
-    const csrp = new SRP.Client(password);
-    const request = csrp.startExchange();
-
-    // Server <- Client
-    const ssrp = new SRP.Server(verifier);
-    const challenge = ssrp.issueChallenge({A: request.A});
-
-    // Client -> Server
-    const response = csrp.respondToChallenge(challenge);
-    return response.M === ssrp.M;
-  };
-
-  /////// INTERNAL
 
   /**
    * Default parameter values for SRP.
@@ -329,7 +42,7 @@ define((require, exports, module)=>{
 
     const ret = Object.assign({}, _defaults);
 
-    util.forEach(['N', 'g', 'k'], function (p) {
+    for (const p of ['N', 'g', 'k']) {
       if (options[p]) {
         if (typeof options[p] === "string")
           ret[p] = new BigInteger(options[p], 16);
@@ -338,10 +51,10 @@ define((require, exports, module)=>{
         else
           throw new Error("Invalid parameter: " + p);
       }
-    });
+    }
 
     if (options.hash)
-      ret.hash = function (x) { return options.hash(x).toLowerCase(); };
+      ret.hash = x => options.hash(x).toLowerCase();
 
     if (!options.k && (options.N || options.g || options.hash)) {
       ret.k = ret.hash(ret.N.toString(16) + ret.g.toString(16));
@@ -350,6 +63,257 @@ define((require, exports, module)=>{
     return ret;
   };
 
-
   const randInt = ()=> new BigInteger(Random.hexString(36), 16);
+
+  /**
+   * Generate a new SRP client object. Password is the plaintext password.
+   *
+   * options is optional and can include:
+   * - a: client's private ephemeral value. String or
+   *      BigInteger. Normally, this is picked randomly, but it can be
+   *      passed in for testing.
+   * - SRP parameters (see _defaults and paramsFromOptions below)
+   */
+  class Client {
+    constructor(password, options) {
+      this.params = paramsFromOptions(options);
+      this.password = password;
+
+      // shorthand
+      const {N, g} = this.params;
+
+      // construct public and private keys.
+      let a, A;
+      if (options && options.a) {
+        if (typeof options.a === "string")
+          a = new BigInteger(options.a, 16);
+        else if (options.a instanceof BigInteger)
+          a = options.a;
+        else
+          throw new Error("Invalid parameter: a");
+
+        A = g.modPow(a, N);
+
+        if (A.mod(N) === 0)
+          throw new Error("Invalid parameter: a: A mod N == 0.");
+
+      } else {
+        while (!A || A.mod(N) === 0) {
+          a = randInt();
+          A = g.modPow(a, N);
+        }
+      }
+
+      this.a = a;
+      this.A = A;
+      this.Astr = A.toString(16);
+    }
+
+
+    /**
+     * Initiate an SRP exchange.
+     *
+     * returns { A: 'client public ephemeral key. hex encoded integer.' }
+     */
+    startExchange() {return {A: this.Astr}}
+
+    /**
+     * Respond to the server's challenge with a proof of password.
+     *
+     * challenge is an object with
+     * - B: server public ephemeral key. hex encoded integer.
+     * - identity: user's identity (SRP username).
+     * - salt: user's salt.
+     *
+     * returns { M: 'client proof of password. hex encoded integer.' }
+     * throws an error if it got an invalid challenge.
+     */
+    respondToChallenge(challenge) {
+      // shorthand
+      const {N, g, k, hash: H} = this.params;
+
+      // XXX check for missing / bad parameters.
+      this.identity = challenge.identity;
+      this.salt = challenge.salt;
+      this.Bstr = challenge.B;
+      this.B = new BigInteger(this.Bstr, 16);
+
+      if (this.B.mod(N) === 0)
+        throw new Error("Server sent invalid key: B mod N == 0.");
+
+      const u = new BigInteger(H(this.Astr + this.Bstr), 16);
+      const x = new BigInteger(
+        H(this.salt + H(this.identity + ":" + this.password)), 16);
+
+      const kgx = k.multiply(g.modPow(x, N));
+      const aux = this.a.add(u.multiply(x));
+      const S = this.B.subtract(kgx).modPow(aux, N);
+      const M = H(this.Astr + this.Bstr + S.toString(16));
+      const HAMK = H(this.Astr + M + S.toString(16));
+
+      this.S = S;
+      this.HAMK = HAMK;
+
+      return {M};
+    }
+
+    /**
+     * Verify server's confirmation message.
+     *
+     * confirmation is an object with
+     * - HAMK: server's proof of password.
+     *
+     * returns true or false.
+     */
+    verifyConfirmation(confirmation) {
+      return (this.HAMK && (confirmation.HAMK === this.HAMK));
+    }
+  }
+
+  /**
+   * Generate a new SRP server object. Password is the plaintext password.
+   *
+   * options is optional and can include:
+   * - b: server's private ephemeral value. String or
+   *      BigInteger. Normally, this is picked randomly, but it can be
+   *      passed in for testing.
+   * - SRP parameters (see _defaults and paramsFromOptions below)
+   */
+  class Server {
+    constructor(verifier, options) {
+      this.params = paramsFromOptions(options);
+      this.verifier = verifier;
+
+      // shorthand
+      const {N, g, k} = this.params;
+      const v = new BigInteger(this.verifier.verifier, 16);
+
+      // construct public and private keys.
+      let b, B;
+      if (options && options.b) {
+        if (typeof options.b === "string")
+          b = new BigInteger(options.b, 16);
+        else if (options.b instanceof BigInteger)
+          b = options.b;
+        else
+          throw new Error("Invalid parameter: b");
+
+        B = k.multiply(v).add(g.modPow(b, N)).mod(N);
+
+        if (B.mod(N) === 0)
+          throw new Error("Invalid parameter: b: B mod N == 0.");
+
+      } else {
+        while (!B || B.mod(N) === 0) {
+          b = randInt();
+          B = k.multiply(v).add(g.modPow(b, N)).mod(N);
+        }
+      }
+
+      this.b = b;
+      this.B = B;
+      this.Bstr = B.toString(16);
+    }
+
+    /**
+     * Issue a challenge to the client.
+     *
+     * Takes a request from the client containing:
+     * - A: hex encoded int.
+     *
+     * Returns a challenge with:
+     * - B: server public ephemeral key. hex encoded integer.
+     * - identity: user's identity (SRP username).
+     * - salt: user's salt.
+     *
+     * Throws an error if issued a bad request.
+     */
+    issueChallenge(request) {
+      // XXX check for missing / bad parameters.
+      this.Astr = request.A;
+      this.A = new BigInteger(this.Astr, 16);
+
+      if (this.A.mod(this.params.N) === 0)
+        throw new Error("Client sent invalid key: A mod N == 0.");
+
+      // shorthand
+      const {N, hash: H} = this.params;
+
+      // Compute M and HAMK in advance. Don't send to client yet.
+      const u = new BigInteger(H(this.Astr + this.Bstr), 16);
+      const v = new BigInteger(this.verifier.verifier, 16);
+      const avu = this.A.multiply(v.modPow(u, N));
+      this.S = avu.modPow(this.b, N);
+      this.M = H(this.Astr + this.Bstr + this.S.toString(16));
+      this.HAMK = H(this.Astr + this.M + this.S.toString(16));
+
+      return {
+        identity: this.verifier.identity,
+        salt: this.verifier.salt,
+        B: this.Bstr
+      };
+    }
+
+    /**
+     * Verify a response from the client and return confirmation.
+     *
+     * Takes a challenge response from the client containing:
+     * - M: client proof of password. hex encoded int.
+     *
+     * Returns a confirmation if the client's proof is good:
+     * - HAMK: server proof of password. hex encoded integer.
+     * OR null if the client's proof doesn't match.
+     */
+    verifyResponse(response) {return response.M !== this.M ? null : {HAMK: this.HAMK}}
+  }
+
+  const SRP = {
+    Client, Server,
+
+    /**
+     * Generate a new SRP verifier. Password is the plaintext password.
+     *
+     * options is optional and can include:
+     * - identity: String. The SRP username to user. Mostly this is passed
+     *   in for testing.  Random UUID if not provided.
+     * - salt: String. A salt to use.  Mostly this is passed in for
+     *   testing.  Random UUID if not provided.
+     * - SRP parameters (see _defaults and paramsFromOptions below)
+     */
+    generateVerifier: (password, options)=>{
+      const params = paramsFromOptions(options);
+
+      const identity = (options && options.identity) || Random.id();
+      const salt = (options && options.salt) || Random.id();
+
+      const x = params.hash(salt + params.hash(identity + ":" + password));
+      const xi = new BigInteger(x, 16);
+      const v = params.g.modPow(xi, params.N);
+
+      return {
+        identity,
+        salt,
+        verifier: v.toString(16)
+      };
+    },
+
+    /**
+     * Assert that password matches verifier.
+     */
+    checkPassword: (password, verifier)=>{
+      // Client -> Server
+      const csrp = new SRP.Client(password);
+      const request = csrp.startExchange();
+
+      // Server <- Client
+      const ssrp = new SRP.Server(verifier);
+      const challenge = ssrp.issueChallenge({A: request.A});
+
+      // Client -> Server
+      const response = csrp.respondToChallenge(challenge);
+      return response.M === ssrp.M;
+    }
+  };
+
+  return SRP;
 });

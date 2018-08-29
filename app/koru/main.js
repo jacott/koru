@@ -2,10 +2,10 @@ define((require, exports, module)=>{
   const KoruError       = require('koru/koru-error');
   const util            = require('./util');
 
-  function reload(mod) {
+  const reload = mod =>{
     console.log(`Unloading ${mod.id}`);
-    return koru.reload();
-  }
+    koru.reload();
+  };
 
   const onunload = (moduleOrId, callback)=>{
     if (callback === 'reload')

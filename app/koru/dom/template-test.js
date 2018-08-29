@@ -702,7 +702,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("setBoolean", ()=>{
-        assert.exception(()=>{Dom.setBoolean('disabled', true)});
+        refute.exception(()=>{Dom.setBoolean('disabled', true)});
 
         assert.dom(document.createElement('div'), function () {
           Dom.setBoolean('checked', true, this);

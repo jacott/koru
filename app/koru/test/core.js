@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const format          = require('koru/format');
   const util            = require('koru/util');
   const match           = require('koru/match').__initBase__();

@@ -9,8 +9,6 @@ define((require, exports, module)=>{
   function webSocketServerFactory(session, execWrapper) {
     const Connection = require('./server-connection-factory')(session);
 
-    koru.onunload(module, 'reload');
-
     let sessCounter = 0;
     const globalDictAdders = {};
     let _globalDict, _globalDictEncoded;
@@ -211,5 +209,7 @@ define((require, exports, module)=>{
     return session;
   };
 
-  module.exports = webSocketServerFactory;
+  koru.onunload(module, 'reload');
+
+  return webSocketServerFactory;
 });

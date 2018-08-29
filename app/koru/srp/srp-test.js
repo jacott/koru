@@ -1,6 +1,5 @@
 define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
-  const util            = require('../util');
   const SRP             = require('./srp');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{

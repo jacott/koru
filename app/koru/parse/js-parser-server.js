@@ -1,4 +1,4 @@
-define((require, exports, module)=> JsPaser => {
+define((require)=> JsPaser => {
   const koru            = require('koru');
   const htmlDoc         = require('koru/dom/html-doc');
   const util            = require('koru/util');

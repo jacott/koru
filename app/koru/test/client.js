@@ -1,10 +1,11 @@
 define((require, exports, module)=>{
-  const SessionBase  = new (require('koru/session/base').constructor)('test');
+  const SessionBase = new (require('koru/session/base').constructor)('test');
   const koru            = require('koru/client'); // load client so we can override koru.logger
   const localStorage    = require('koru/local-storage');
   const sessState       = require('koru/session/state').constructor();
   const util            = require('koru/util');
   const test            = require('./main');
+
 
   const Module = module.constructor;
   const session = require('koru/session/main-client')(SessionBase, sessState);
@@ -39,7 +40,7 @@ define((require, exports, module)=>{
   const clear = localStorage.clear;
   const removeItem = localStorage.removeItem;
 
-  koru.onunload(module, () => {requirejs.onError = null});
+  module.onUnload(() => {requirejs.onError = null});
 
   test.Core.abort = ex => {
     const {name, location: {name: fn, line}} = test.Core.test;

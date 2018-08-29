@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const koru            = require('koru');
   const Ctx             = require('koru/dom/ctx');
   const makeSubject     = require('koru/make-subject');
@@ -509,7 +509,7 @@ ${ex.message}`});
 
     static get _currentEvent() {return currentEvent}
     static set _currentEvent(value) {currentEvent =  value}
-  }; module.exports = DomTemplate;
+  };
 
   const nativeOn = (parent, eventType, selector, func)=>{
     const events = parent[ctx$].__events || (parent[ctx$].__events = {});
@@ -565,4 +565,6 @@ ${ex.message}`});
       ? fetchTemplate(tpl, name)
       : fetchTemplate(tpl, m[1], m[2].split("."));
   };
+
+  return DomTemplate;
 });

@@ -33,67 +33,42 @@
  **/
 
 define(()=>{
-  // Bits per digit
-
-  // (public) Constructor
-  function BigInteger(a,b,c) {
-    if(a != null)
-      if("number" == typeof a) this.fromNumber(a,b,c);
-    else if(b == null && "string" != typeof a) this.fromString(a,256);
-    else this.fromString(a,b);
-  }
-
+  // bits per digit
+  const dbits = 28;
   // return new, unset BigInteger
   const nbi = ()=> new BigInteger(null);
+
+  // (public) Constructor
+  class BigInteger {
+    constructor(a,b,c) {
+      if(a != null)
+        if("number" == typeof a) this.fromNumber(a,b,c);
+      else if(b == null && "string" != typeof a) this.fromString(a,256);
+      else this.fromString(a,b);
+    }
+
 
   // am: Compute w_j += (x*this_i), propagate carries,
   // c is initial carry, returns final carry.
   // c < 3*dvalue, x < 2*dvalue, this_i < dvalue
   // We need to select the fastest one that works in this environment.
 
-  // am1: use a single mult and divide to get the high bits,
-  // max digit bits should be 26 because
-  // max internal value = 2*dvalue^2-2*dvalue (< 2^53)
-  function am1(i,x,w,j,c,n) {
-    while(--n >= 0) {
-      const v = x*this[i++]+w[j]+c;
-      c = Math.floor(v/0x4000000);
-      w[j++] = v&0x3ffffff;
-    }
-    return c;
-  }
-  // am2 avoids a big mult-and-extract completely.
-  // Max digit bits should be <= 30 because we do bitwise ops
-  // on values up to 2*hdvalue^2-hdvalue-1 (< 2^31)
-  function am2(i,x,w,j,c,n) {
-    const xl = x&0x7fff, xh = x>>15;
-    while(--n >= 0) {
-      let l = this[i]&0x7fff;
-      const h = this[i++]>>15;
-      const m = xh*l+h*xl;
-      l = xl*l+((m&0x7fff)<<15)+w[j]+(c&0x3fffffff);
-      c = (l>>>30)+(m>>>15)+xh*h+(c>>>30);
-      w[j++] = l&0x3fffffff;
-    }
-    return c;
-  }
   // Alternately, set max digit bits to 28 since some
   // browsers slow down when dealing with 32-bit numbers.
-  function am3(i,x,w,j,c,n) {
-    const xl = x&0x3fff, xh = x>>14;
-    while(--n >= 0) {
-      let l = this[i]&0x3fff;
-      const h = this[i++]>>14;
-      const m = xh*l+h*xl;
-      l = xl*l+((m&0x3fff)<<14)+w[j]+c;
-      c = (l>>28)+(m>>14)+xh*h;
-      w[j++] = l&0xfffffff;
+    am(i,x,w,j,c,n) {
+      const xl = x&0x3fff, xh = x>>14;
+      while(--n >= 0) {
+        let l = this[i]&0x3fff;
+        const h = this[i++]>>14;
+        const m = xh*l+h*xl;
+        l = xl*l+((m&0x3fff)<<14)+w[j]+c;
+        c = (l>>28)+(m>>14)+xh*h;
+        w[j++] = l&0xfffffff;
+      }
+      return c;
     }
-    return c;
+    clone() { const r = nbi(); this.copyTo(r); return r; }
   }
-
-  BigInteger.prototype.am = am3;
-  const dbits = 28;
 
   BigInteger.prototype.DB = dbits;
   BigInteger.prototype.DM = ((1<<dbits)-1);
@@ -573,7 +548,6 @@ define(()=>{
 
 
   // (public)
-  function bnClone() { const r = nbi(); this.copyTo(r); return r; }
 
   // (public) return value as integer
   function bnIntValue() {
@@ -680,56 +654,49 @@ define(()=>{
   }
 
   // A "null" reducer
-  function NullExp() {}
-  function nNop(x) { return x; }
-  function nMulTo(x,y,r) { x.multiplyTo(y,r); }
-  function nSqrTo(x,r) { x.squareTo(r); }
-
-  NullExp.prototype.convert = nNop;
-  NullExp.prototype.revert = nNop;
-  NullExp.prototype.mulTo = nMulTo;
-  NullExp.prototype.sqrTo = nSqrTo;
+  class NullExp {
+    convert(x) {return x}
+    revert(x) {return x}
+    mulTo(x,y,r) {x.multiplyTo(y,r)}
+    sqrTo(x,r) {x.squareTo(r)}
+  }
 
   // Barrett modular reduction
-  function Barrett(m) {
-    // setup Barrett
-    this.r2 = nbi();
-    this.q3 = nbi();
-    BigInteger.ONE.dlShiftTo(2*m.t,this.r2);
-    this.mu = this.r2.divide(m);
-    this.m = m;
+  class Barrett {
+    constructor(m) {
+      // setup Barrett
+      this.r2 = nbi();
+      this.q3 = nbi();
+      BigInteger.ONE.dlShiftTo(2*m.t,this.r2);
+      this.mu = this.r2.divide(m);
+      this.m = m;
+    }
+
+    convert(x) {
+      if(x.s < 0 || x.t > 2*this.m.t) return x.mod(this.m);
+      else if(x.compareTo(this.m) < 0) return x;
+      else { const r = nbi(); x.copyTo(r); this.reduce(r); return r; }
+    }
+
+    revert(x) { return x; }
+
+    // x = x mod m (HAC 14.42)
+    reduce(x) {
+      x.drShiftTo(this.m.t-1,this.r2);
+      if(x.t > this.m.t+1) { x.t = this.m.t+1; x.clamp(); }
+      this.mu.multiplyUpperTo(this.r2,this.m.t+1,this.q3);
+      this.m.multiplyLowerTo(this.q3,this.m.t+1,this.r2);
+      while(x.compareTo(this.r2) < 0) x.dAddOffset(1,this.m.t+1);
+      x.subTo(this.r2,x);
+      while(x.compareTo(this.m) >= 0) x.subTo(this.m,x);
+    }
+
+    // r = x^2 mod m; x != r
+    sqrTo(x,r) { x.squareTo(r); this.reduce(r); }
+
+    // r = x*y mod m; x,y != r
+    mulTo(x,y,r) { x.multiplyTo(y,r); this.reduce(r); }
   }
-
-  function barrettConvert(x) {
-    if(x.s < 0 || x.t > 2*this.m.t) return x.mod(this.m);
-    else if(x.compareTo(this.m) < 0) return x;
-    else { const r = nbi(); x.copyTo(r); this.reduce(r); return r; }
-  }
-
-  function barrettRevert(x) { return x; }
-
-  // x = x mod m (HAC 14.42)
-  function barrettReduce(x) {
-    x.drShiftTo(this.m.t-1,this.r2);
-    if(x.t > this.m.t+1) { x.t = this.m.t+1; x.clamp(); }
-    this.mu.multiplyUpperTo(this.r2,this.m.t+1,this.q3);
-    this.m.multiplyLowerTo(this.q3,this.m.t+1,this.r2);
-    while(x.compareTo(this.r2) < 0) x.dAddOffset(1,this.m.t+1);
-    x.subTo(this.r2,x);
-    while(x.compareTo(this.m) >= 0) x.subTo(this.m,x);
-  }
-
-  // r = x^2 mod m; x != r
-  function barrettSqrTo(x,r) { x.squareTo(r); this.reduce(r); }
-
-  // r = x*y mod m; x,y != r
-  function barrettMulTo(x,y,r) { x.multiplyTo(y,r); this.reduce(r); }
-
-  Barrett.prototype.convert = barrettConvert;
-  Barrett.prototype.revert = barrettRevert;
-  Barrett.prototype.reduce = barrettReduce;
-  Barrett.prototype.mulTo = barrettMulTo;
-  Barrett.prototype.sqrTo = barrettSqrTo;
 
   // (public) this^e % m (HAC 14.85)
   function bnModPow(e,m) {
@@ -799,7 +766,6 @@ define(()=>{
   BigInteger.prototype.dAddOffset = bnpDAddOffset;
 
   // // public
-  BigInteger.prototype.clone = bnClone;
   BigInteger.prototype.intValue = bnIntValue;
   BigInteger.prototype.add = bnAdd;
   BigInteger.prototype.subtract = bnSubtract;
