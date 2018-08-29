@@ -349,29 +349,6 @@ define((require, exports, module)=>{
       assert.equals(exclude, {b: "abc", c: {value: true}});
     });
 
-
-    test("egal", ()=>{
-      assert.same(util.egal, util.is);
-      assert.isTrue(util.egal(null, null));
-      assert.isTrue(util.egal(NaN, NaN));
-      assert.isTrue(util.egal(-0, -0));
-      assert.isTrue(util.egal("str", "str"));
-      assert.isTrue(util.egal(0, 0));
-      assert.isTrue(util.egal(Infinity, Infinity));
-      assert.isTrue(util.egal(-Infinity, -Infinity));
-      assert.isTrue(util.egal(1, 1));
-      assert.isTrue(util.egal(true, true));
-
-      assert.isFalse(util.egal(true, false));
-      assert.isFalse(util.egal(null, undefined));
-      assert.isFalse(util.egal("", 0));
-      assert.isFalse(util.egal(0, -0));
-      assert.isFalse(util.egal(Infinity, -Infinity));
-      assert.isFalse(util.egal(NaN, 1));
-      assert.isFalse(util.egal(1, 2));
-      assert.isFalse(util.egal("a", "b"));
-    });
-
     test("shallowEqual arrays", ()=>{
       assert.isTrue(util.shallowEqual([1, 2, 3], [1, 2, 3]));
       assert.isFalse(util.shallowEqual([1, {}, 3], [1, {}, 3]));

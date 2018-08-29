@@ -6,6 +6,8 @@ define((require)=>{
 
   const {withId$} = require('koru/symbols');
 
+  const {is} = Object;
+
   const TYPEORDER = {
     undefined: 0,
     string: 1,
@@ -23,20 +25,6 @@ define((require)=>{
   let timeAdjust = 0, timeUncertainty = 0;
 
   const slice = Array.prototype.slice;
-
-  const egal = Object.is === undefined ? (x, y) => {
-    if (x === y) {
-      // 0 === -0, but they are not identical
-      return x !== 0 || 1 / x === 1 / y;
-    }
-
-    // NaN !== NaN, but they are identical.
-    // NaNs are the only non-reflexive value, i.e., if x !== x,
-    // then x is a NaN.
-    // isNaN is broken: it converts its argument to number, so
-    // isNaN("foo") => true
-    return x !== x && y !== y;
-  } : Object.is;
 
   const enUsCollator = new Intl.Collator("en-US");
   const {compare} = enUsCollator;
@@ -102,7 +90,7 @@ define((require)=>{
 
 
   const deepEqual = (actual, expected, maxLevel=util.MAXLEVEL) => {
-    if (egal(actual, expected)) {
+    if (is(actual, expected)) {
       return true;
     }
 
@@ -138,7 +126,7 @@ define((require)=>{
     for (const key in expected) {
       const vale = expected[key];
       const vala = actual[key];
-      if (egal(vala, vale)) continue;
+      if (is(vala, vale)) continue;
       if (vala === undefined || vale === undefined) return false;
       if (! deepEqual(vala, vale, maxLevel-1))
         return false;
@@ -308,17 +296,9 @@ define((require)=>{
     },
 
     /**
-     * Fixes NaN === NaN (should be true) and
-     * -0 === +0 (should be false)
-     *  http://wiki.ecmascript.org/doku.php?id=harmony:egal
-     */
-    egal,
-    is: egal,
-
-    /**
      * Only for undefined, null, number, string, boolean, date, array
      * and object. All the immutable types are compared with
-     * egal. Dates are compared via getTime. Array and Object
+     * Object.is. Dates are compared via getTime. Array and Object
      * enumerables with deepEqual.
      *
      * Any other types will always return false.

@@ -4,6 +4,7 @@ define((require, exports, module)=>{
   const {inspect$} = require('koru/symbols');
 
   const {hasOwn} = util;
+  const {is} = Object;
 
   function Constructor() {
     const match = (test, name) => new Match(test, name);
@@ -70,7 +71,7 @@ define((require, exports, module)=>{
         return match(value => {return util.deepEqual(value, expected)}, name);
       },
       is(expected, name=()=> `match.is(${util.inspect(expected)})`) {
-        return match(value => util.is(value, expected), name);
+        return match(value => is(value, expected), name);
       },
       regExp(regexp, name='match.regExp') {
         return match(value => typeof value === 'string' &&

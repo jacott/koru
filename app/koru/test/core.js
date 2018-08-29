@@ -3,7 +3,9 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const match           = require('koru/match').__initBase__();
 
-  const {inspect, extractError, hasOwn, egal} = util;
+  const {inspect, extractError, hasOwn} = util;
+
+  const {is} = Object;
 
   class AssertionError extends Error {
   }
@@ -92,7 +94,7 @@ define((require, exports, module)=>{
   };
 
   const deepEqual = (actual, expected, hint, hintField)=>{
-    if (egal(actual, expected)) {
+    if (is(actual, expected)) {
       return true;
     }
 
