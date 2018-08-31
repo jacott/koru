@@ -3,6 +3,7 @@ isClient && define((require, exports, module)=>{
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, util} = TH;
+  const {htmlToJson: htj, h} = Dom;
 
   const sut = require('./dom-nav');
 
@@ -17,7 +18,7 @@ isClient && define((require, exports, module)=>{
     };
 
     beforeEach(()=>{
-      document.body.appendChild(inputElm = Dom.h({contenteditable: 'true', div: []}));
+      document.body.appendChild(inputElm = h({contenteditable: 'true', div: []}));
       inputElm.focus();
     });
 
@@ -26,52 +27,59 @@ isClient && define((require, exports, module)=>{
     });
 
     test("clearEmptyText", ()=>{
-      inputElm.appendChild(Dom.h(["text", "", "", "stop", "", {br: ''}, ""]));
+      inputElm.appendChild(h(["text", "", "", "stop", "", {br: ''}, ""]));
       sut.clearEmptyText(inputElm.childNodes[1]);
-      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", '', {br: ''}, '']);
+      assert.equals(htj(inputElm).div, ['text', "stop", '', {br: ''}, '']);
       sut.clearEmptyText(inputElm.childNodes[2]);
-      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}, '']);
+      assert.equals(htj(inputElm).div, ['text', "stop", {br: ''}, '']);
       sut.clearEmptyText(inputElm.childNodes[3]);
-      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}]);
+      assert.equals(htj(inputElm).div, ['text', "stop", {br: ''}]);
     });
 
     test("clearEmptyInline", ()=>{
-      const div = Dom.h({div: [
+      const div = h({div: [
         {span: ["", "", {span: ["", ""]}]}, "",
         {span: {b: {i: ''}}}, "stop", "", {br: ''},
         {b: ["", "", {i: ["", ""]}]}, "",
       ]});
       sut.clearEmptyInline(div);
-      assert.equals(Dom.htmlToJson(div).div, ["stop", '', {br: ''}]);
+      assert.equals(htj(div).div, ["stop", '', {br: ''}]);
 
-      const div2 = Dom.h({div: [{br: ''}, 'two', {br: ''}]});
+      const div2 = h({div: [{br: ''}, 'two', {br: ''}]});
       sut.clearEmptyInline(div2);
-      assert.equals(Dom.htmlToJson(div2).div, [{br: ''}, 'two', {br: ''}]);
+      assert.equals(htj(div2).div, [{br: ''}, 'two', {br: ''}]);
     });
 
     test("clearTrailingBR", ()=>{
-      const div = Dom.h({});
-      div.appendChild(sut.clearTrailingBR(Dom.h(['one', {br: ''}, {br: ''}, '', ''])));
-      assert.equals(Dom.htmlToJson(div).div, ['one', {br: ''}]);
+      const div = h({});
+      div.appendChild(sut.clearTrailingBR(h(['one', {br: ''}, {br: ''}, '', ''])));
+      assert.equals(htj(div).div, ['one', {br: ''}]);
       sut.clearTrailingBR(div);
-      assert.equals(Dom.htmlToJson(div).div, 'one');
+      assert.equals(htj(div).div, 'one');
 
       sut.clearTrailingBR(div);
-      assert.equals(Dom.htmlToJson(div).div, 'one');
+      assert.equals(htj(div).div, 'one');
     });
 
     test("newline", ()=>{
-      inputElm.appendChild(Dom.h(["text", "", ""]));
-      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "", ""]);
+      inputElm.appendChild(h(["text", "", ""]));
+      assert.equals(htj(inputElm).div, ['text', "", ""]);
       TH.setRange(inputElm, 1);
       sut.newline();
-      assert.equals(Dom.htmlToJson(inputElm).div, ['text', {br: ''}, {br: ''}]);
+      assert.equals(htj(inputElm).div, ['text', {br: ''}, {br: ''}]);
+
+      const boldText = h('bold');
+      inputElm.insertBefore(h({blockquote: {span: {b: boldText}}}), inputElm.firstChild);
+      TH.setRange(boldText, boldText.length);
+      sut.newline();
+
+      assert.equals(htj(inputElm.firstChild).blockquote, {span: {b: ['bold', {br: ''}, {br: ''}]}});
     });
 
     group("range", ()=>{
       let range;
       before(()=>{
-        inputElm.appendChild(Dom.h([
+        inputElm.appendChild(h([
           "one ",
           {id: 'br0', br: ''},
           {id: 'br0e', br: ''},
@@ -167,7 +175,7 @@ isClient && define((require, exports, module)=>{
 
       group("normRange", ()=>{
         test("empty Div", ()=>{
-          const div = Dom.h({});
+          const div = h({});
           inputElm.appendChild(div);
           onEnd(()=>{div.remove()});
 
@@ -220,7 +228,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("getTag", ()=>{
-      inputElm.appendChild(Dom.h([
+      inputElm.appendChild(h([
         {div: {ol: {li: 'one'}}},
         {div: {ul: {li: 'two'}}},
       ]));
@@ -242,11 +250,11 @@ isClient && define((require, exports, module)=>{
 
     group("insertNode", ()=>{
       test("replace text", ()=>{
-        inputElm.appendChild(Dom.h(["one ", "two ", "three"]));
+        inputElm.appendChild(h(["one ", "two ", "three"]));
         TH.setRange(inputElm.childNodes[1]);
-        sut.insertNode(Dom.h({b: '2 '}));
+        sut.insertNode(h({b: '2 '}));
 
-        assert.equals(Dom.htmlToJson(inputElm).div, ['one ', '', {b: '2 '}, '', 'three']);
+        assert.equals(htj(inputElm).div, ['one ', '', {b: '2 '}, '', 'three']);
 
         const range = Dom.getRange();
         assert.same(range.startContainer, inputElm.childNodes[3]);
@@ -258,19 +266,19 @@ isClient && define((require, exports, module)=>{
     });
 
     group("positioning", ()=>{
-      const spanStartBr = Dom.h({span: [{br: ''}, 'end']}),
-            spanEndBr = Dom.h({span: ['start', {br: ''}]}),
-            midText = Dom.h('mid text');
-      const divTextOnly = Dom.h({id: 'divLine', div: ["hello world"]});
-      const divWithB = Dom.h({id: 'line2', div: ['text', {b: 'bold'}, 'more text']});
-      const br = Dom.h({id: 'br', br: ''}), br2 = Dom.h({id: 'br2', br: ''}),
-            br3 = Dom.h({id: 'br3', br: ''});
-      const ebr1 = Dom.h ({id: 'ebr1', br: ''}), ebr2 = Dom.h({id: 'ebr2', br: ''});
-      const emptyLine = Dom.h({id: 'emptyLine', div: ["be", ebr1, ebr2, 'ae']});
-      const spanWithBr = Dom.h({span: ['span start', {br: ''}, 'span end']});
+      const spanStartBr = h({span: [{br: ''}, 'end']}),
+            spanEndBr = h({span: ['start', {br: ''}]}),
+            midText = h('mid text');
+      const divTextOnly = h({id: 'divLine', div: ["hello world"]});
+      const divWithB = h({id: 'line2', div: ['text', {b: 'bold'}, 'more text']});
+      const br = h({id: 'br', br: ''}), br2 = h({id: 'br2', br: ''}),
+            br3 = h({id: 'br3', br: ''});
+      const ebr1 = Dom.h ({id: 'ebr1', br: ''}), ebr2 = h({id: 'ebr2', br: ''});
+      const emptyLine = h({id: 'emptyLine', div: ["be", ebr1, ebr2, 'ae']});
+      const spanWithBr = h({span: ['span start', {br: ''}, 'span end']});
 
       const spanBeginsWithBr = ()=>{
-        inputElm.appendChild(Dom.h([
+        inputElm.appendChild(h([
           br2,
           midText,
           spanStartBr,
@@ -278,7 +286,7 @@ isClient && define((require, exports, module)=>{
       };
 
       const spanEndsWithBr = ()=>{
-        inputElm.appendChild(Dom.h([
+        inputElm.appendChild(h([
           spanEndBr,
           midText,
           br2,
@@ -286,7 +294,7 @@ isClient && define((require, exports, module)=>{
       };
 
       const complexLines = ()=>{
-        inputElm.appendChild(Dom.h([
+        inputElm.appendChild(h([
           divTextOnly,
           divWithB,
           br,
@@ -641,7 +649,7 @@ isClient && define((require, exports, module)=>{
 
     group("selectRange", ()=>{
       test("within text node ", ()=>{
-        inputElm.appendChild(Dom.h({div: "hello world"}));
+        inputElm.appendChild(h({div: "hello world"}));
         TH.setRange(sut.firstInnerMostNode(inputElm),5);
 
         Dom.setRange(sut.selectRange(inputElm, 'char', 1));

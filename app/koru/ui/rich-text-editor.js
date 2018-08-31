@@ -442,7 +442,7 @@ define((require, exports, module)=>{
     bold: false,
     italic: false,
     underline: false,
-    newline,
+    newline: ()=>{newline()},
     code: (event)=>{
       const ctx = Tpl.$ctx(event.target);
       const pre = Dom.getClosest(ctx.lastElm, 'pre');
@@ -481,7 +481,7 @@ define((require, exports, module)=>{
 
         insertFragContents(frag, pn, before, 'PRE');
 
-        const pre2Frag = DomNav.clearTrailingBR(pre2Range.extractContents());
+        const pre2Frag = pre2Range.extractContents();
         DomNav.clearEmptyInline(pre2Frag);
         if (pre2Frag.firstChild !== null) {
           insertFragContents(pre2Frag, pre2, null, 'PRE');
@@ -816,7 +816,7 @@ define((require, exports, module)=>{
       if (event.shiftKey) {
         if (event.which === 13) {
           Dom.stopEvent(event);
-          newline();
+          newline($.ctx.inputElm);
           return;
         }
       }

@@ -380,10 +380,29 @@ isClient && define((require, exports, module)=>{
           assert.equals(htj(inputElm).div, [
             {"data-lang": 'Rust', pre: [
               {span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}]},
-            'three']);
+            {span: 'three'}]);
 
           TH.keydown(pre, 'Z', {ctrlKey: true});
           assert.equals(htj(inputElm).div, preContent);
+        });
+
+        test("inner last line", ()=>{
+          const pre = Dom.h(preContent);
+          const br = Dom.h({br: ''});
+          pre.lastChild.appendChild(br);
+          inputElm.appendChild(pre);
+
+          TH.setRange(br, 0);
+          focusin(inputElm);
+
+          undo.recordNow();
+
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [
+            {"data-lang": 'Rust', pre: [
+              {span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}]},
+            {span: ['three', {br: ''}]}]);
         });
       });
 

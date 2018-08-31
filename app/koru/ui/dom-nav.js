@@ -159,7 +159,8 @@ define((require)=>{
 
   const isInlineNode = item => item.nodeType === TEXT_NODE || !! INLINE_TAGS[item.tagName];
 
-  const isBlockNode = node => node.nodeType === ELEMENT_NODE && ! INLINE_TAGS[node.tagName];
+  const isBlockNode = node => node.nodeType === ELEMENT_NODE && node.tagName !== 'BR' &&
+        ! INLINE_TAGS[node.tagName];
 
   const previousNode = (node, top)=>{
     let nn = node.previousSibling;
@@ -186,8 +187,8 @@ define((require)=>{
     while (node !== null) {
       nn = node.nextSibling;
       if (nn === null) {
-        if (node === top) return null;
         node = node.parentNode;
+        if (node === top) return null;
       } else {
         return firstInnerMostNode(nn);
       }
@@ -211,15 +212,16 @@ define((require)=>{
   };
 
 
-  const findBeforeBlock = (top, node)=>{
-    let last = node;
-    node = node.parentNode;
-    while (node && node !== top && INLINE_TAGS[node.tagName]) {
-      last = node;
-      node = node.parentNode;
+  const containingBlock = (node, top)=>{
+    let nn = node;
+    while (nn !== null) {
+      if (nn === top || isBlockNode(nn))
+        return nn;
+      node = nn;
+      nn = nn.parentNode;
     }
 
-    return last;
+    return node;
   };
 
   const containingNode = range =>{
@@ -490,11 +492,12 @@ define((require)=>{
       return range;
     },
 
-    newline: ()=>{
+    newline: (top)=>{
       const br = document.createElement('BR');
       insertNode(br);
       clearEmptyText(br.nextSibling);
-      if (br.nextSibling == null)
+      const nn = nextNode(br, containingBlock(br, top));
+      if (nn == null || nn === br)
         br.parentNode.appendChild(document.createElement('BR'));
     },
 
