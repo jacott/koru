@@ -147,13 +147,11 @@ define((require)=>{
     const sc = range.startContainer;
     if ((within === sc && range.startOffset == withinLen) ||
         (within !== sc && ! within.contains(sc))) {
-      range.setStart(firstInnerMostNode(within), 0);
+      range.setStart(within, 0);
     }
     const ec = range.endContainer;
-    if ((within === ec && range.endOffset == withinLen) ||
-        (within !== ec && ! within.contains(ec))) {
-      const node = lastInnerMostNode(within);
-      range.setEnd(node, nodeEndOffset(node));
+    if ((within !== ec && ! within.contains(ec))) {
+      range.setEnd(within, nodeEndOffset(within));
     }
     return range;
   };

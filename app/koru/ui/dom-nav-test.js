@@ -318,7 +318,7 @@ isClient && define((require, exports, module)=>{
           TH.setRange(divTextOnly, 0, br3, 0);
           assert.rangeEquals(
             sut.restrictRange(Dom.getRange(), divWithB),
-            divWithB.firstChild, 0, divWithB.lastChild, divWithB.lastChild.nodeValue.length
+            divWithB, 0, divWithB, divWithB.childNodes.length
           );
 
         });
