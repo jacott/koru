@@ -256,7 +256,7 @@ define((require)=>{
     const addText = text =>{
       const cIdx = lines.length - 1;
       const lPos = lines[cIdx].length;
-      lines[cIdx] += text;
+      lines[cIdx] += text.replace(/\u00A0/g, ' ');
       if (hlCode !== undefined && lines[cIdx].length !== lPos) {
         builder.markup.push(hlCode, builder.relative(cIdx), lPos - prevLen, lines[cIdx].length - lPos);
         hlCode = undefined;

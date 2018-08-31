@@ -279,8 +279,8 @@ define((require, exports, module)=>{
 
 
       assertBothConvert(
-        '<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
-        '<pre data-lang="javascript"><span class="k">var</span> foo;<br><br>foo = <span class="s2">_bzr_</span>;</pre>');
+        '<pre data-lang="javascript"><span class="k">var</span> \u00A0foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
+        '<pre data-lang="javascript"><span class="k">var</span>  foo;<br><br>foo = <span class="s2">_bzr_</span>;</pre>');
       assertBothConvert('<div><pre><ol><li>hello</li><li>wo<b>rl</b>d</li></ol></pre></div>',
                         '<pre data-lang="text">hello<br>world</pre>');
       assertBothConvert('<div><pre>hello<div><br></div>new<br>world<div>now</div></pre></div>',
