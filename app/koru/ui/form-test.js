@@ -5,7 +5,7 @@ isClient && define((require, exports, module)=>{
   const Route   = require('./route');
   const TH      = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const {error$} = require('koru/symbols');
 
@@ -155,7 +155,7 @@ isClient && define((require, exports, module)=>{
 
     test("genderList", ()=>{
       assert.equals(Dom._helpers.genderList(), [
-        ['', TH.match(elm => elm.outerHTML === '<i class="blank"></i>')],
+        ['', m(elm => util.deepEqual(Dom.htmlToJson(elm), {class: 'blank', i: 'None'}))],
         ['f', 'Female'],
         ['m', 'Male'],
       ]);
