@@ -1,9 +1,9 @@
 define((require, exports, module)=>{
   'use strict';
   const koru            = require('koru');
-  const makeSubject     = require('koru/make-subject');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
+  const Observable      = require('koru/observable');
   const Random          = require('koru/random');
   const session         = require('koru/session/client-rpc');
   const util            = require('koru/util');
@@ -11,11 +11,11 @@ define((require, exports, module)=>{
   const clientIndex     = require('./index-client');
 
   const {stopGap$, error$} = require('koru/symbols');
-  const {isObjEmpty} = util;
+  const {isObjEmpty, createDictionary} = util;
 
   let _support;
 
-  const dbs = util.createDictionary();
+  const dbs = createDictionary();
 
   const newDB = (name)=>{
     const db = dbs[name] = {};
@@ -211,13 +211,7 @@ define((require, exports, module)=>{
 
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
-      const setDocs = ()=>{
-        const obj = Object.create(null);
-        obj.x = 1;
-        delete obj.x; // try to make JSVM use dictionary mode
-        return obj;
-      };
-      const anyChange = makeSubject({});
+      const anyChange = new Observable();
 
       util.merge(model, {
         notify(...args) {
@@ -226,12 +220,12 @@ define((require, exports, module)=>{
           if (subject)
             subject.notify(...args);
 
-          anyChange.notify.apply(subject, args);
+          anyChange.notify(...args);
         },
-        onAnyChange: anyChange.onChange,
+        onAnyChange: callback => anyChange.add(callback),
         onChange(callback) {
           chkdb();
-          const subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
+          const subject = getSetProp(dbId, modelName, 'notify', () => new Observable());
 
           return subject.onChange(callback);
         },
@@ -239,7 +233,7 @@ define((require, exports, module)=>{
         get docs() {
           chkdb();
           if (docs) return docs;
-          docs = getSetProp(dbId, modelName, 'docs', setDocs);
+          docs = getSetProp(dbId, modelName, 'docs', createDictionary);
           return docs;
         },
         set docs(value) {

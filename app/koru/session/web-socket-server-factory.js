@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
+  const Observable      = require('koru/observable');
   const Random          = require('koru/random');
   const accSha256       = require('koru/srp/acc-sha256');
   const koru            = require('../main');
-  const makeSubject     = require('../make-subject');
   const util            = require('../util');
   const message         = require('./message');
 
@@ -158,7 +158,7 @@ define((require, exports, module)=>{
     const globalDictEncoded =
             () => session.globalDict === undefined ? undefined : _globalDictEncoded;
 
-    makeSubject(session.countNotify = {});
+    session.countNotify = new Observable();
 
     session.provide('M', function (data) {
       const msgId = data[0];

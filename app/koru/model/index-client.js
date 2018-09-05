@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
-  const BTree       = require('koru/btree');
-  const util        = require('koru/util');
-  const makeSubject = require('../make-subject');
+  const BTree           = require('koru/btree');
+  const Observable      = require('koru/observable');
+  const util            = require('koru/util');
 
   const emptyIdx = ()=>{
     const ans = {tmp: null};
@@ -13,14 +13,11 @@ define((require, exports, module)=>{
   const nullToUndef= val=>val === null ? undefined : val;
 
   return model => {
-    model._indexUpdate = makeSubject({
-      indexes: new Map,
-      reloadAll() {
-        for(const idx of this.indexes.values()) {
-          idx.reload();
-        }
-      },
-    });
+    model._indexUpdate = new Observable();
+    model._indexUpdate.indexes = new Map;
+    model._indexUpdate.reloadAll = function () {
+      for(const idx of this.indexes.values()) idx.reload();
+    };
 
     model.addIndex = (...fields) => {
       const condition = extractCondition(fields);

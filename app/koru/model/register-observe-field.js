@@ -1,5 +1,4 @@
 define((require)=>{
-  const makeSubject     = require('../make-subject');
   const util            = require('../util');
   const dbBroker        = require('./db-broker');
 

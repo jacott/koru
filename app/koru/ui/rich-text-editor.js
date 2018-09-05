@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
-  const makeSubject     = require('koru/make-subject');
+  const Observable      = require('koru/observable');
   const DomNav          = require('koru/ui/dom-nav');
   const DomUndo         = require('koru/ui/dom-undo');
   const util            = require('koru/util');
@@ -671,7 +671,7 @@ define((require, exports, module)=>{
     $created: (ctx, elm)=>{
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
-      ctx.caretMoved = makeSubject({});
+      ctx.caretMoved = new Observable();
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
       ctx.mode = standardMode;

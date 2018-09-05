@@ -334,7 +334,7 @@ define((require, exports, module)=>{
       /**
        * Observe changes to documents matching query
        *
-       * See {#koru/make-subject::makeSubject().onChange}
+       * See {#koru/observable#add}
        **/
       api.protoMethod('onChange');
 

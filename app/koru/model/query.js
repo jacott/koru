@@ -1,7 +1,8 @@
 define((require, exports, module)=>{
-  const makeSubject = require('koru/make-subject');
-  const koru        = require('../main');
-  const util        = require('../util');
+  const makeSubject     = require('koru/make-subject');
+  const Observable      = require('koru/observable');
+  const koru            = require('../main');
+  const util            = require('../util');
 
   const {inspect$} = require('koru/symbols');
 
@@ -342,7 +343,8 @@ define((require, exports, module)=>{
 
       onChange(callback) {
         if (this[onChange$] === undefined) {
-          const subject = this[onChange$] = makeSubject({stop: this.model.onChange((doc, undo) =>{
+          const subject = this[onChange$] = new Observable(()=>subject.stop());
+          subject.stop = this.model.onChange((doc, undo) =>{
             let old = doc != null ? doc.$withChanges(undo) : undo;
             if (doc != null && ! this.matches(doc)) doc = null;
             if (old != null && ! this.matches(old)) old = null;
@@ -350,10 +352,7 @@ define((require, exports, module)=>{
 
             subject.notify(doc, doc == null ? old : old && undo);
 
-          }).stop}, 'onChange', 'notify', {
-            allStopped(subject) {subject.stop()}
-          });
-
+          }).stop;
         }
         return this[onChange$].onChange(callback);
       }

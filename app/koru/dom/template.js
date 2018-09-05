@@ -1,7 +1,6 @@
 define((require)=>{
   const koru            = require('koru');
   const Ctx             = require('koru/dom/ctx');
-  const makeSubject     = require('koru/make-subject');
   const util            = require('koru/util');
   const Dom             = require('./base');
 

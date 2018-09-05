@@ -2,9 +2,9 @@ define((require, exports, module)=>{
   const Changes         = require('koru/changes');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
+  const Observable      = require('koru/observable');
   const driver          = require('../config!DBDriver');
   const koru            = require('../main');
-  const makeSubject     = require('../make-subject');
   const Random          = require('../random');
   const session         = require('../session');
   const util            = require('../util');
@@ -254,13 +254,11 @@ define((require, exports, module)=>{
 
     setupModel(model) {
       const notifyMap$ = Symbol(), docCache$ = Symbol(), dbMap$ = Symbol();
-
-      const anyChange = makeSubject({});
-
+      const anyChange = new Observable();
 
       let docs, db;
 
-      _resetDocs[model.modelName] = function () {
+      _resetDocs[model.modelName] = ()=>{
         if (db !== undefined) {
           db[dbMap$] = undefined;
           db = docs = undefined;
@@ -276,13 +274,13 @@ define((require, exports, module)=>{
         notify(...args) {
           const subject = model.db[notifyMap$];
           if (subject)
-            subject.notify.apply(subject, args);
+            subject.notify(...args);
 
-          anyChange.notify.apply(subject, args);
+          anyChange.notify(...args);
         },
-        onAnyChange: anyChange.onChange,
+        onAnyChange: callback => anyChange.add(callback),
         onChange(callback) {
-          const subject = model.db[notifyMap$] || (model.db[notifyMap$] =  makeSubject({}));
+          const subject = model.db[notifyMap$] || (model.db[notifyMap$] =  new Observable());
           return subject.onChange(callback);
         },
         get docs() {

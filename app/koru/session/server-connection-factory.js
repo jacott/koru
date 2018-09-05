@@ -1,11 +1,12 @@
 define((require)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
-  const makeSubject     = require('koru/make-subject');
+  const Observable      = require('koru/observable');
   const BatchMessage    = require('koru/session/batch-message');
   const util            = require('koru/util');
   const Match           = require('./match');
   const message         = require('./message');
+
   const crypto          = requirejs.nodeRequire('crypto');
 
   const sideQueue$ = Symbol();
@@ -43,7 +44,7 @@ define((require)=>{
     }
 
     onClose (func) {
-      const subj = this._onClose || (this._onClose = makeSubject({}));
+      const subj = this._onClose || (this._onClose = new Observable());
       return subj.onChange(func);
     }
 

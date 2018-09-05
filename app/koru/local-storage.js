@@ -1,11 +1,12 @@
 define((require, exports, module)=>{
-  const makeSubject = require('koru/make-subject');
+  const Observable      = require('koru/observable');
 
   let observers;
   const storageChanged = event =>{
     if (observers === undefined) return;
     const keyOb = observers[event.key];
     if (keyOb === undefined) return;
+
 
     keyOb.notify(event);
   };
@@ -33,7 +34,7 @@ define((require, exports, module)=>{
         window.addEventListener('storage', storageChanged);
       }
 
-      const keyOb = observers[key] || (observers[key] = makeSubject());
+      const keyOb = observers[key] || (observers[key] = new Observable());
       return keyOb.onChange(callback);
     },
 

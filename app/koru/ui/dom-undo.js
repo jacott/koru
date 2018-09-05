@@ -1,6 +1,6 @@
 define((require)=>{
   const Dom             = require('koru/dom');
-  const makeSubject     = require('koru/make-subject');
+  const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
   const {test$} = require('koru/symbols');
@@ -253,7 +253,7 @@ define((require)=>{
       const ctx = Dom.ctx(target);
       ctx === null || ctx.onDestroy(()=>{this.disconnect()});
       this.reconnect();
-      this[onchange$] = makeSubject();
+      this[onchange$] = new Observable();
       this[paused$] = false;
     }
 

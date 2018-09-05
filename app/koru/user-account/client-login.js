@@ -1,7 +1,6 @@
-define((require, exports, module)=>{
-  const koru            = require('../main');
-  const makeSubject     = require('../make-subject');
-  const util            = require('../util');
+define((require)=>{
+  const Observable      = require('koru/observable');
+  const util            = require('koru/util');
 
   const sessMap = {};
 
@@ -14,7 +13,7 @@ define((require, exports, module)=>{
 
   return {
     onChange(session, func) {
-      const subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
+      const subject = sessMap[session._id] || (sessMap[session._id] = new Observable());
       return subject.onChange(func);
     },
     setUserId(session, id) {

@@ -1,6 +1,7 @@
 define((require)=>{
   const koru            = require('koru');
   const makeSubject     = require('koru/make-subject');
+  const Observable      = require('koru/observable');
   const Trace           = require('koru/trace');
   const util            = require('koru/util');
 
@@ -72,7 +73,7 @@ define((require)=>{
       pendingCount() {return count},
       pendingUpdateCount() {return updateCount},
 
-      pending: makeSubject({}),
+      pending: new Observable(),
 
       incPending(isUpdate) {
         debug_pending && koru._incPendingStack.push(

@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
   const Libpq = requirejs.nodeRequire('pg-libpq');
+  const Observable      = require('koru/observable');
   const koru            = require('../main');
-  const makeSubject     = require('../make-subject');
   const match           = require('../match');
   const Pool            = require('../pool-server');
   const util            = require('../util');
@@ -405,9 +405,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       if (this._ready === true) return;
 
       if (typeof this._ready === 'object') {
-        if (this._ready === null) this._ready = makeSubject({});
+        if (this._ready === null) this._ready = new Observable();
         const future = new Future;
-        const handle = this._ready.onChange(() => future.return());
+        const handle = this._ready.add(() => future.return());
         try {
           future.wait();
         } finally {
