@@ -363,7 +363,13 @@ define((require, exports, module)=>{
       assert.isTrue(util.deepEqual(null, undefined));
       assert.isFalse(util.deepEqual(null, ""));
       assert.isTrue(util.deepEqual({}, {}));
-      refute.isTrue(util.deepEqual({}, []));
+      assert.isTrue(util.deepEqual(/abc/i, /abc/i));
+      assert.isFalse(util.deepEqual(/abc/i, /abc/));
+      const now = Date.now();
+      assert.isTrue(util.deepEqual(new Date(now), new Date(now)));
+      assert.isFalse(util.deepEqual(new Date(now), new Date(now+1)));
+
+      assert.isFalse(util.deepEqual({}, []));
       assert.isFalse(util.deepEqual(0, -0));
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
       assert.isFalse(util.deepEqual({a: null}, {b: null}));

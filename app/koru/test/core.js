@@ -93,7 +93,7 @@ define((require)=>{
     };
   };
 
-  const deepEqual = (actual, expected, hint, hintField)=>{
+  const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL)=>{
     if (is(actual, expected)) {
       return true;
     }
@@ -144,8 +144,17 @@ define((require)=>{
 
     if (actual == null || expected == null) return setHint();
 
-    if (actual.getTime && expected.getTime)
-      return actual.getTime() === expected.getTime() || setHint();
+    if (Object.getPrototypeOf(actual) === Object.getPrototypeOf(expected)) {
+      if (actual instanceof Date)
+        return actual.getTime() === expected.getTime() || setHint();
+
+      if (actual instanceof RegExp) {
+        return actual.source === expected.source && actual.flags === expected.flags;
+      }
+    }
+
+    if (maxLevel == 0)
+      throw new Error('deepEqual maxLevel exceeded');
 
     if (Array.isArray(actual)) {
       if (! Array.isArray(expected))
@@ -154,12 +163,10 @@ define((require)=>{
       if (expected.length !== len)
         return hint ? setHint(actual, expected, ' lengths differ: ' + actual.length + ' != ' + expected.length) : false;
       for(let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i], hint, hintField)) return setHint();
+        if (! deepEqual(actual[i], expected[i], hint, hintField, maxLevel-1)) return setHint();
       }
       return true;
-    }
-
-    if (Array.isArray(expected))
+    } else if (Array.isArray(expected))
       return setHint(actual, expected);
 
     const akeys = Object.keys(actual);
@@ -172,7 +179,7 @@ define((require)=>{
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key], hint, hintField))
+      if (! deepEqual(actual[key], expected[key], hint, hintField, maxLevel-1))
         return badKey(key);
     }
     for (let i = 0; i < akeys.length; ++i) {
@@ -181,10 +188,7 @@ define((require)=>{
         return badKey(key);
     }
     return true;
-
   };
-
-
 
   const Core = {
     _init() {

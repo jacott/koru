@@ -88,7 +88,6 @@ define((require)=>{
     }
   };
 
-
   const deepEqual = (actual, expected, maxLevel=util.MAXLEVEL) => {
     if (is(actual, expected)) {
       return true;
@@ -103,8 +102,6 @@ define((require)=>{
 
     if (actual == null || expected == null) return false;
 
-    if (actual.getTime && expected.getTime) return actual.getTime() === expected.getTime();
-
     if (maxLevel == 0)
       throw new Error('deepEqual maxLevel exceeded');
 
@@ -118,8 +115,14 @@ define((require)=>{
       return true;
     }
 
-    if (Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected))
+    const proto = Object.getPrototypeOf(actual);
+    if (proto !== Object.getPrototypeOf(expected))
       return false;
+
+    if (proto === Date.prototype) return actual.getTime() === expected.getTime();
+
+    if (proto === RegExp.prototype)
+      return actual.source === expected.source && actual.flags === expected.flags;
 
     const akeys = Object.keys(actual);
 
