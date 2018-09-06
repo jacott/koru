@@ -3,7 +3,7 @@ define((require)=>{
   const util            = require('koru/util');
 
   const {private$, ctx$, endMarker$} = require('koru/symbols');
-  const {onDestroy$} = Symbol();
+  const {onDestroy$} = Symbol(), autoUpdate$ = Symbol(), data$ = Symbol();
 
   const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
@@ -204,15 +204,54 @@ define((require)=>{
       document.body.removeEventListener('animationend', animationEnd, true);
   }
 
+  const autoUpdateChange = (ctx)=>{
+    const {data} = ctx;
+    stopAutoUpdate(ctx);
+    ctx.autoUpdate();
+  };
 
+  const stopAutoUpdate = (ctx)=>{
+    ctx[autoUpdate$].stop();
+    ctx[autoUpdate$] = undefined;
+  };
+
+  const nullDataAutoHandle = {stop: ()=>{}};
 
   class Ctx {
     constructor(template, parentCtx, data) {
       this.template = template;
       this.parentCtx = parentCtx;
-      this.data = data;
+      this[data$] = data;
       this.evals = [];
       this.attrEvals = [];
+    }
+
+    get data() {return this[data$]}
+    set data(value) {
+      if (this[data$] !== value) {
+        this[data$] = value;
+        this[autoUpdate$] === undefined || autoUpdateChange(this);
+      }
+    }
+
+    _destroyData(elm) {
+      if (this[autoUpdate$] !== undefined) stopAutoUpdate(this);
+
+      if (this[onDestroy$] !== undefined) {
+        const list = this[onDestroy$];
+        this[onDestroy$] = undefined;
+        for(let i = list.length - 1; i >=0; --i) {
+          const row = list[i];
+          if (typeof row === 'function')
+            row.call(this, this, elm);
+          else
+            row.stop(this, elm);
+        }
+      }
+      this.destroyed !== undefined && this.destroyed(this, elm);
+      const tpl = this.template;
+      tpl != null && tpl.$destroyed !== undefined && tpl.$destroyed.call(tpl, this, elm);
+
     }
 
     onDestroy(obj) {
@@ -227,14 +266,18 @@ define((require)=>{
     }
 
     updateAllTags(data) {
+      if (data === undefined)
+        data = this[data$];
+      else if (data !== this[data$]) {
+        this[data$] = data;
+        if (this[autoUpdate$] !== undefined) {
+          autoUpdateChange(this);
+        }
+      }
       const activeElement = document.activeElement;
       const prevCtx = currentCtx;
       const prevElm = currentElement;
       currentCtx = this;
-      if (data === undefined)
-        data = this.data;
-      else
-        this.data = data;
       try {
         const {evals, attrEvals} = this;
         for(let i = 0; i < attrEvals.length; ++i) {
@@ -299,6 +342,43 @@ define((require)=>{
       if (func != null && repeat === 'repeat')
         this.animationEndRepeat = true;
       old != null && old(this, this.element());
+    }
+
+    autoUpdate({subject=this.data, removed}={}) {
+      if (this[autoUpdate$])
+        stopAutoUpdate(this);
+      if (subject == null) {
+        if (subject === this.data) {
+          this[autoUpdate$] = nullDataAutoHandle;
+        }
+        return;
+      }
+      const model = subject.constructor;
+      const handle = model.observeId ? model.observeId(subject._id, (doc, undo)=>{
+        if (doc == null) {
+          handle.stop();
+          removed !== undefined && removed(undo);
+        } else {
+          if (subject !== doc) this[data$] = subject = doc;
+          this.updateAllTags();
+        }
+      }) : model.onChange((doc, undo)=>{
+        if (doc == null) {
+          if (undo === subject) {
+            handle.stop();
+            removed !== undefined && removed(undo);
+          }
+        } else if (doc === subject) {
+          this.updateAllTags();
+        }
+      });
+
+      if (subject === this.data)
+        return this[autoUpdate$] = handle;
+      else {
+        this.onDestroy(handle.stop);
+        return handle;
+      }
     }
 
     static get _currentCtx() {return currentCtx}

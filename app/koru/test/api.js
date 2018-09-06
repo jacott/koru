@@ -809,8 +809,12 @@ define((require, exports, module)=>{
 
   const method = (api, methodKey, obj, intro, methods)=>{
     const {test} = TH;
+    const {mode} = test;
     if (methodKey == null) {
-      methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
+      if (mode === 'running')
+        methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
+      else
+        methodKey = TH.Core.currentTestCase.name;
     }
     const func = obj[methodKey];
     if (func == undefined)
@@ -834,7 +838,8 @@ define((require, exports, module)=>{
       details = methods[methodName] = {
         test,
         sig,
-        intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
+        intro: typeof intro === 'string'
+          ? intro : docComment(intro || mode === 'running' ? test.func : TH.Core.currentTestCase.body),
         subject: api.valueTag(api.subject),
         calls
       };

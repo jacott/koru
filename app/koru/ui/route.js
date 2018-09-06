@@ -3,7 +3,6 @@ define((require, exports, module)=>{
   const koru            = require('koru/main');
   const makeSubject     = require('koru/make-subject');
   const Trace           = require('koru/trace');
-  require('koru/ui/dom-ext');
   const util            = require('koru/util');
 
   const {hasOwn} = util;

@@ -204,6 +204,7 @@ define((require, exports, module)=>{
       this.tc = tc;
       this.topTC = tc.topTestCase();
       this.func = func;
+      this.mode = 'init';
     }
 
     onEnd(func) {
@@ -287,6 +288,7 @@ define((require, exports, module)=>{
       const ntc = new TestCase(name, otc);
       try {
         currentTC = ntc;
+        ntc.body = body;
         body(ntc);
         return ntc;
       } finally {
@@ -366,6 +368,7 @@ define((require, exports, module)=>{
     const runTest = (oldTest, newTest)=>{
       const common = commonTC(oldTest, newTest);
       if (oldTest !== undefined) {
+        oldTest.mode = 'after';
         runTearDowns(oldTest.tc, common);
         Core.runCallBacks('testEnd', oldTest);
       }
@@ -373,8 +376,10 @@ define((require, exports, module)=>{
         lastTest = Core.test = tests = undefined;
         Core.runCallBacks('end');
       } else {
+        newTest.mode = 'before';
         Core.runCallBacks('testStart', newTest);
         runSetups(newTest.tc, common);
+        newTest.mode = 'running';
         try {
           if (newTest.func.length === 1) {
             const done = doneFunc(newTest, _runNext);

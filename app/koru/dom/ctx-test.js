@@ -1,5 +1,4 @@
 isClient && define((require, exports, module)=>{
-  'use strict';
   /**
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
@@ -17,7 +16,7 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       api.module();
     });
@@ -33,6 +32,151 @@ isClient && define((require, exports, module)=>{
         assert.equals(Ctx[private$].evalArgs(
           {}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]
         ), ['name', {type: 'text', count: '5'}]);
+      });
+    });
+
+    group("autoUpdate", ()=>{
+      /**
+       * Update template contents whenever the `ctx.data` contents changes or the `ctx.data` object
+       * itself changes.
+       *
+       * `ctx.data` (or supplied subject) must have either an `observeId` method or an `onChange`
+       * method in its class otherwise no observation will occur. `observeId` is used in
+       * preference to `onChange`. {#koru/model/base-model} is such a class.
+       *
+       * @param subject override `ctx.data` as the subject. Custom subjects cannot be auto changed.
+
+       * @param {function} [removed] a function that will be called if the subject is removed.
+
+       * @returns handle with a `stop` method to stop listening for changes. This is automatically
+       * called when the data goes out of scope.
+       **/
+
+      before(()=>{
+        api.protoMethod();
+
+        Dom.newTemplate({
+          name: "Foo",
+          nodes:[{
+            name:"section",
+            children:[['', "child.name"], ['', "_id"]],
+          }],
+        });
+      });
+
+      test("options", ()=>{
+        //[
+        class Custom {
+          static onChange(onChange) {
+            this._onChange = onChange;
+            return {stop: stub()};
+          }
+        }
+
+        const doc = new Custom();
+        const foo = Dom.Foo.$render({child: doc});
+        const ctx = Dom.myCtx(foo);
+
+        const removed = stub();
+
+        const handle = ctx.autoUpdate({subject: doc, removed});
+
+        doc.name = "new name";
+        Custom._onChange(doc, {name: 'old name'}); // change
+
+        assert.equals(foo.textContent, "new name");
+        //]
+
+        refute.called(removed);
+        refute.called(handle.stop);
+        spy(ctx, 'updateAllTags');
+
+        Custom._onChange(null, doc); // remove subject
+        assert.calledWith(removed, doc);
+        assert.called(handle.stop);
+        refute.called(ctx.updateAllTags);
+      });
+
+      group("observeId", ()=>{
+        class MyModel {
+          constructor(id, child) {
+            this._id = id;
+            this.child = child;
+          }
+
+          static observeId(id, onChange) {
+            this._id = id;
+            this._onChange = onChange;
+            return this._handle = {stop: stub()};
+          }
+        }
+
+        afterEach(()=>{
+          MyModel._id = MyModel._onChange = MyModel._handle = undefined;
+        });
+
+        test("remove", ()=>{
+          const foo = Dom.Foo.$render();
+          const ctx = Dom.myCtx(foo);
+          spy(ctx, 'updateAllTags');
+
+          ctx.data = new MyModel("id1", {name: 'name 1'});
+          const removed = stub();
+          ctx.autoUpdate({removed});
+
+          MyModel._onChange(null, ctx.data);
+          assert.called(MyModel._handle.stop);
+          refute.called(ctx.updateAllTags);
+          assert.calledWith(removed, ctx.data);
+
+          ctx.data = new MyModel("id2", {name: 'x'});
+
+          assert.same(MyModel._id, "id2");
+          refute.called(ctx.updateAllTags);
+
+          ctx.data.child.name = 'name 2';
+          MyModel._onChange(ctx.data, {});
+          assert.same(foo.textContent, 'name 2id2');
+
+          Dom.remove(foo);
+          assert.called(MyModel._handle.stop);
+        });
+
+        test("change", ()=>{
+          const ctx = new Ctx();
+          ctx.updateAllTags = stub();
+
+          const doc = new MyModel("id1");
+          ctx.autoUpdate();
+
+          ctx.data = doc;
+          assert.same(MyModel._id, "id1");
+
+          const doc1 = new MyModel("id1");
+          MyModel._onChange(doc1, {});
+          assert.called(ctx.updateAllTags);
+          assert.same(ctx.data, doc1);
+          ctx.updateAllTags.reset();
+
+          MyModel._onChange(doc, {});
+          assert.called(ctx.updateAllTags);
+          ctx.updateAllTags.reset();
+
+          const h1 = MyModel._handle;
+          refute.called(h1.stop);
+
+          const doc2 = new MyModel("id2");
+          ctx.data = doc2;
+
+          assert.called(h1.stop);
+
+          assert.same(MyModel._id, "id2");
+          refute.same(h1, MyModel._handle);
+
+          ctx._destroyData();
+
+          assert.called(MyModel._handle.stop);
+        });
       });
     });
 
@@ -194,5 +338,5 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(document.body.removeEventListener,
                         'animationend', v.animationEndFunc, true);
     });
- });
+  });
 });

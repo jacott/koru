@@ -536,11 +536,6 @@ const {stub, spy, intercept} = TH;
         });
 
         group("methods", ()=>{
-          beforeEach(()=>{
-            sApi.protoMethod();
-            sApi.example(setupExample);
-          });
-
           test("getCall", ()=>{
             /**
              * Get the details of a particular call to stub.
@@ -550,6 +545,8 @@ const {stub, spy, intercept} = TH;
              * @return the call object.
              *
              **/
+            sApi.protoMethod();
+            sApi.example(setupExample);
             //[
             assert.equals(aStub.getCall(1).args, [4, 5, 6]);
             //]
@@ -562,6 +559,8 @@ const {stub, spy, intercept} = TH;
              * @param after a stub to test against
              *
              **/
+            sApi.protoMethod();
+            sApi.example(setupExample);
             //[
             const stub2 = stubber.stub();
             stub2();
@@ -576,6 +575,8 @@ const {stub, spy, intercept} = TH;
              * @param before a stub to test against
              *
              **/
+            sApi.protoMethod();
+            sApi.example(setupExample);
             //[
             const stub2 = stubber.stub();
             stub2();
@@ -592,6 +593,7 @@ const {stub, spy, intercept} = TH;
              * @returns true when the stub was called with `args`.
              **/
             sApi.protoMethod();
+            sApi.example(setupExample);
             //[
             const aStub = stubber.stub();
 
@@ -615,6 +617,7 @@ const {stub, spy, intercept} = TH;
              *
              **/
             sApi.protoMethod();
+            sApi.example(setupExample);
             //[
             const aStub = stubber.stub();
 

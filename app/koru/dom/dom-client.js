@@ -372,20 +372,7 @@ define((require)=>{
           }
         }
 
-        if (ctx[onDestroy$] !== undefined) {
-          const list = ctx[onDestroy$];
-          ctx[onDestroy$] = undefined;
-          for(let i = list.length - 1; i >=0; --i) {
-            const row = list[i];
-            if (typeof row === 'function')
-              row.call(ctx, ctx, elm);
-            else
-              row.stop(ctx, elm);
-          }
-        }
-        ctx.destroyed !== undefined && ctx.destroyed(ctx, elm);
-        const tpl = ctx.template;
-        tpl != null && tpl.$destroyed !== undefined && tpl.$destroyed.call(tpl, ctx, elm);
+        ctx._destroyData(elm);
         elm[ctx$] = null;
       }
       Dom.destroyChildren(elm);
