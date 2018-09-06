@@ -1,31 +1,37 @@
 define((require)=>{
+  const Observable      = require('koru/observable');
   const util            = require('../util');
   const dbBroker        = require('./db-broker');
+
+  const token$ = Symbol();
+
+  const {createDictionary} = util;
 
   return model => {
     const {modelName} = model;
 
     const callObservers = (observers, called, doc, undo, value)=>{
       const cbs = observers[value];
-      if (cbs) for(const key in cbs) {
-        const options = cbs[key];
-        if (! (options[0] in called)) {
-          called[options[0]] = true;
-          options[1](doc, undo);
+      if (cbs === undefined) return;
+      cbs.forEach(handle =>{
+        const token = handle[token$];
+        if (! called.has(token)) {
+          called.add(token);
+          handle.callback(doc, undo);
         }
-      }
+      });
     };
 
-    const getModelOb = (modelObMap, field, observers)=>{
+    const ensureModelOb = (modelObMap, field, observers)=>{
       const t = modelObMap[dbBroker.dbId];
       if (t) return t;
 
       const ob = model.onChange((doc, undo) => {
-        const nowValue = doc == null ? undefined : doc[field];
         const asBefore = doc == null ? undo : undo == null ? undefined : doc.$withChanges(undo);
+        const nowValue = doc == null ? undefined : doc[field];
         const oldValue = asBefore === undefined ? undefined : asBefore[field];
 
-        const called = {}; // ensure only called once;
+        const called = new Set; // ensure only called once;
 
         if (oldValue != undefined) {
           if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
@@ -44,77 +50,63 @@ define((require)=>{
         }
       });
 
-      return modelObMap[dbBroker.dbId] = ob;
+      modelObMap[dbBroker.dbId] = ob;
     };
 
     model.registerObserveField = field=>{
       const dbObservers = Object.create(null);
       const modelObMap = Object.create(null);
-      let key = 0;
-      const fields = Object.create(null);
-        fields[field] = 1;
-      const findFieldOpts = {transform: null, fields};
 
-      const observeValue = (value, options)=>{
+      const observeValue = (value, callback, token)=>{
         const observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
-        const obs = observers[value] || (observers[value] = Object.create(null));
-        obs[options[0]] = options;
-        const modelObserver = getModelOb(modelObMap, field, observers);
-        return stopObserver(value, obs, options, observers);
+        const obs = observers[value] || (observers[value] = new Observable(()=>{
+          delete observers[value];
+          for(const _ in observers) return;
+          const modelObserver = modelObMap[dbBroker.dbId];
+          if (modelObserver) {
+            modelObserver.stop();
+            delete modelObMap[dbBroker.dbId];
+          }
+        }));
+
+        ensureModelOb(modelObMap, field, observers);
+        const handle = obs.add(callback);
+        handle[token$] = token;
+        handle.value = value;
+        return handle;
       };
 
-      const stopObserver = (value, obs, options, observers)=>{
+      const stopObservers = (obsSet, callback, token)=>{
         return {
-          stop() {
-            delete obs[options[0]];
-            for(const _ in obs) return;
-            delete observers[value];
-            for(const _ in observers) return;
-            const modelObserver = modelObMap[dbBroker.dbId];
-            if (modelObserver) {
-              modelObserver.stop();
-              delete modelObMap[dbBroker.dbId];
-            }
-          },
-
-          value: value
-        };
-      };
-
-      const stopObservers = (obsSet, options)=>{
-        return {
-          stop() {
+          stop: ()=>{
             for(const key in obsSet) obsSet[key].stop();
           },
 
-          addValue(value) {
-            value = value.toString();
-            if (value in obsSet) return;
-            obsSet[value] = observeValue(value, options);
+          addValue: (value)=>{
+            const str = ''+value;
+            if (str in obsSet) return;
+            obsSet[value] = observeValue(str, callback, token);
           },
 
-          removeValue(value) {
-            value = value.toString();
+          removeValue: (value)=>{
+            const str = ''+value;
             const ob = obsSet[value];
-            if (! ob) return;
+            if (ob === undefined) return;
 
             ob.stop();
             delete obsSet[value];
           },
 
-          replaceValues(newValues) {
+          replaceValues: (newValues)=>{
             const delObs = obsSet;
-            obsSet = {};
-            const addValues = [];
+            obsSet = createDictionary();
             for(let i = 0; i < newValues.length; ++i) {
-              var newValue = newValues[i].toString(); // only use strings for keys
+              const newValue = ''+newValues[i]; // only use strings for keys
               if (newValue in delObs) {
                 obsSet[newValue] = delObs[newValue];
                 delete delObs[newValue];
               } else {
-                const rawValue = newValues[i];
-                addValues.push(rawValue);
-                obsSet[newValue] = observeValue(rawValue, options);
+                obsSet[newValue] = observeValue(newValue, callback, token);
               }
             }
             for(const value in delObs) delObs[value].stop();
@@ -123,17 +115,18 @@ define((require)=>{
       };
 
       model['observe'+ util.capitalize(field)] = (values, callback) => {
-        const obsSet = Object.create(null);
-        const options = [++key, callback];
+        const obsSet = createDictionary();
         if (values.constructor !== Array)
           throw new Error('values must be an array');
 
+        const token = Symbol();
+
         for(let i = 0;i < values.length;++i) {
-          const ob = observeValue(values[i], options);
+          const ob = observeValue(values[i], callback, token);
           obsSet[ob.value]=ob;
         }
 
-        return stopObservers(obsSet, options);
+        return stopObservers(obsSet, callback, token);
       };
     };
   };

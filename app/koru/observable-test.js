@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const Observable = require('./observable');
 
@@ -99,6 +99,32 @@ define((require, exports, module)=>{
 
       assert.calledWith(observer1, 123, 'abc');
       assert.calledWith(observer2, 123, 'abc');
+      //]
+    });
+
+    test("forEach", ()=>{
+      /**
+       * visit each observer
+       *
+       * @param {function} visitor called for each observer with the `handle` (returned from
+       * {##add}) as the argument.
+       *
+       **/
+       api.protoMethod();
+      //[
+      const subject = new Observable();
+
+      const observer1 = stub(), observer2 = stub();
+      const exp = [
+        m.is(subject.add(observer1)),
+        m.is(subject.add(observer2))
+      ];
+
+      const ans = [];
+
+      subject.forEach(h => {ans.push(h)});
+
+      assert.equals(ans, exp);
       //]
     });
 

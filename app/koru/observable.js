@@ -59,6 +59,13 @@ define(()=>{
       return args[0];
     }
 
+    forEach(callback) {
+      for(let node = this[head$]; node !== this; node = node[next$]) {
+        if (node.callback !== null)
+          callback(node);
+      }
+    }
+
     stopAll() {
       let node = this[head$];
       if (node === this) return;

@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const Model    = require('./main');
   const TH       = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, matchModel: mm, match: m} = TH;
 
   let v = {};
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
@@ -17,10 +17,7 @@ define((require, exports, module)=>{
 
     afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
-      for(var i = 0; i < v.obs.length; ++i) {
-        var row = v.obs[i];
-        row.stop();
-      }
+      for(let i = 0; i < v.obs.length; ++i) v.obs[i].stop();
       v = {};
     });
 
@@ -33,19 +30,19 @@ define((require, exports, module)=>{
 
     test("multi dbs", ()=>{
       v.TestModel.registerObserveField('toys');
-      var origId = v.dbId = dbBroker.dbId;
+      const origId = v.dbId = dbBroker.dbId;
       intercept(dbBroker, 'dbId');
       Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
-      var oc = spy(v.TestModel, 'onChange');
+      const oc = spy(v.TestModel, 'onChange');
 
       v.obs.push(v.TestModel.observeToys(['robot'], v.origOb = stub()));
       v.dbId = 'alt';
       assert.same(dbBroker.dbId, 'alt');
 
-      assert.calledWith(oc, TH.match(func => v.oFunc = func));
+      assert.calledWith(oc, m(func => v.oFunc = func));
       oc.reset();
       v.obs.push(v.altHandle = v.TestModel.observeToys(['robot'], v.altOb = stub()));
-      assert.calledWith(oc, TH.match(func => v.altFunc = func));
+      assert.calledWith(oc, m(func => v.altFunc = func));
       v.oFunc(v.doc, {name: 'old'});
       assert.calledWith(v.origOb, v.doc);
       refute.called(v.altOb);
@@ -76,34 +73,34 @@ define((require, exports, module)=>{
       });
 
       test("adding observed field", ()=>{
-        var doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
+        const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
 
-        assert.calledOnceWith(v.callback, TH.matchModel(doc), null);
+        assert.calledOnceWith(v.callback, mm(doc), null);
       });
 
       test("adding two observed fields", ()=>{
-        var doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
+        const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
 
-        assert.calledOnceWith(v.callback, TH.matchModel(doc), null);
+        assert.calledOnceWith(v.callback, mm(doc), null);
       });
 
       test("updating observered field", ()=>{
         v.doc.toys = v.attrs = ['woody', 'slinky'];
         v.doc.$$save();
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {toys: ['robot']});
+        assert.calledWith(v.callback, mm(v.doc.$reload()), {toys: ['robot']});
       });
 
       test("add/remove to observered field", ()=>{
         v.doc.$onThis.addItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {$partial: {
+        assert.calledWith(v.callback, mm(v.doc.$reload()), {$partial: {
           toys: ['$remove', ['woody']]}});
 
         v.callback.reset();
         v.doc.$onThis.removeItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {$partial: {
+        assert.calledWith(v.callback, mm(v.doc.$reload()), {$partial: {
           toys: ['$add', ['woody']]}});
       });
 
@@ -115,7 +112,7 @@ define((require, exports, module)=>{
         v.doc.$reload().age = 8;
         v.doc.$$save();
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {age: 5});
+        assert.calledWith(v.callback, mm(v.doc.$reload()), {age: 5});
       });
     });
 
@@ -135,7 +132,7 @@ define((require, exports, module)=>{
 
         v.doc3.name = "changed";
         v.doc3.$$save();
-        assert.calledWith(v.callback, TH.matchModel(v.doc3.$reload()), {name: 'Helen'});
+        assert.calledWith(v.callback, mm(v.doc3.$reload()), {name: 'Helen'});
         v.callback.reset();
 
         v.ids.stop();
@@ -148,9 +145,9 @@ define((require, exports, module)=>{
       test("addValue", ()=>{
         v.ids.addValue(25);
 
-        var doc = v.TestModel.create({_id: '123', name: 'Mamma', age: 25});
+        const doc = v.TestModel.create({_id: '123', name: 'Mamma', age: 25});
 
-        assert.calledWith(v.callback, TH.matchModel(doc));
+        assert.calledWith(v.callback, mm(doc));
       });
 
       test("removeValue", ()=>{
@@ -159,7 +156,7 @@ define((require, exports, module)=>{
         v.doc2.age = 5;
         v.doc2.$$save();
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc2.$reload()));
+        assert.calledWith(v.callback, mm(v.doc2.$reload()));
 
         v.callback.reset();
 

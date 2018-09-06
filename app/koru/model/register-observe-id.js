@@ -30,9 +30,9 @@ define((require)=>{
     model.observeIds = observeIds;
 
     const stopObservers = (obs, callback)=>({
-      stop() {for(let i = 0; i < obs.length; ++i) obs[i].stop()},
+      stop: ()=>{for(let i = 0; i < obs.length; ++i) obs[i].stop()},
 
-      replaceIds(newIds) {
+      replaceIds: newIds =>{
         const set = Object.create(null);
         for(let i = 0; i < obs.length; ++i) {
           const ob = obs[i];
