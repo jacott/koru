@@ -25,13 +25,13 @@ isClient && define((require, exports, module)=>{
     });
 
     test("defaults", ()=>{
-      var sut = Dom.InPlaceForm.$render({doc: {}});
+      const sut = Dom.InPlaceForm.$render({doc: {}});
 
-      assert.dom(sut, function () {
-        assert.dom('input[type=text][name=name]', function () {
-          assert.same(this.value, '');
+      assert.dom(sut, ()=>{
+        assert.dom('input[type=text][name=name]', input =>{
+          assert.same(input.value, '');
         });
-        assert.dom('.actions', function () {
+        assert.dom('.actions', ()=>{
           assert.dom('button[name=apply]', 'Apply');
         });
       });
@@ -49,30 +49,30 @@ isClient && define((require, exports, module)=>{
     });
 
     test("no doc", ()=>{
-      var sut = Dom.InPlaceForm.$render({value: "foo"});
+      const sut = Dom.InPlaceForm.$render({value: "foo"});
 
-      assert.dom(sut, function () {
-        assert.dom('input[type=text][name=name]', function () {
-          assert.same(this.value, 'foo');
+      assert.dom(sut, ()=>{
+        assert.dom('input[type=text][name=name]', input =>{
+          assert.same(input.value, 'foo');
         });
-        assert.dom('.actions', function () {
+        assert.dom('.actions', ()=>{
           assert.dom('button[name=apply]', 'Apply');
         });
       });
     });
 
     test("render", ()=>{
-      var sut = Dom.InPlaceForm.$render({
+      const sut = Dom.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
         name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
 
-      assert.dom(sut, function () {
-        assert.same(this.id, "MyFormId");
+      assert.dom(sut, ()=>{
+        assert.same(sut.id, "MyFormId");
 
-        assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', function () {
-          assert.same(this.value, 'abc');
+        assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', input =>{
+          assert.same(input.value, 'abc');
         });
-        assert.dom('.actions', function () {
+        assert.dom('.actions', ()=>{
           assert.dom('button[name=apply]', 'Save');
         });
       });
@@ -80,16 +80,16 @@ isClient && define((require, exports, module)=>{
 
     test("custom Show/Edit templates", ()=>{
       sut.autoRegister(v.Ipf);
-      var doc = {autoShowEdit: 'bar'};
+      const doc = {autoShowEdit: 'bar'};
       document.body.appendChild(v.Ipf.$autoRender(doc));
 
-      assert.dom('#InPlaceFormTest', function () {
+      assert.dom('#InPlaceFormTest', elm =>{
         assert.dom('[name=autoShowEdit].ui-editable.showTpl', 'bar');
 
         doc.autoShowEdit = 'foo';
 
         // this was stopping custom edit template from showing
-        Dom.myCtx(this).updateAllTags();
+        Dom.myCtx(elm).updateAllTags();
 
         TH.click('[name=autoShowEdit].ui-editable.showTpl', 'foo');
 
@@ -99,10 +99,10 @@ isClient && define((require, exports, module)=>{
 
     test("click with selection does nothing", ()=>{
       sut.autoRegister(v.Ipf);
-      var doc = {autoShowEdit: 'bar', $reload: stub()};
+      const doc = {autoShowEdit: 'bar', $reload: stub()};
       document.body.appendChild(v.Ipf.$autoRender(doc));
 
-      assert.dom('#InPlaceFormTest', function () {
+      assert.dom('#InPlaceFormTest', ()=>{
         const range = document.createRange();
         Dom.setRange(range);
         const editable = Dom('[name=autoShowEdit].ui-editable.showTpl');
@@ -140,7 +140,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("apply event", ()=>{
-      var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
+      const widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
@@ -148,7 +148,7 @@ isClient && define((require, exports, module)=>{
 
       v.parent.appendChild(widget.element);
 
-      assert.dom(widget.element, function () {
+      assert.dom(widget.element, ()=>{
         TH.input('input', 'new text');
         TH.click('[name=apply]');
       });
@@ -163,7 +163,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("ctrl or meta+enter event", ()=>{
-      var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
+      const widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
@@ -195,7 +195,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("enterSubmits", ()=>{
-      var widget = Dom.InPlaceForm.newWidget({
+      const widget = Dom.InPlaceForm.newWidget({
         doc: {name: 'abc'},
         enterSubmits: true,
       });
@@ -206,7 +206,7 @@ isClient && define((require, exports, module)=>{
 
       v.parent.appendChild(widget.element);
 
-      assert.dom(widget.element, function () {
+      assert.dom(widget.element, ()=>{
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13, shiftKey: true});
         refute.same(v.arg, 'new text');
@@ -216,8 +216,9 @@ isClient && define((require, exports, module)=>{
     });
 
     test("delete event", ()=>{
-      var widget = Dom.InPlaceForm.newWidget({
+      const widget = Dom.InPlaceForm.newWidget({
         doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
+
       widget.onDelete(function () {
         assert.same(this, widget);
         v.arg = true;
@@ -225,11 +226,11 @@ isClient && define((require, exports, module)=>{
 
       v.parent.appendChild(widget.element);
 
-      assert.dom(widget.element, function () {
+      assert.dom(widget.element, ()=>{
         TH.click('[name=delete]', 'Delete me');
       });
 
-      assert.dom('.Confirm.Dialog', function () {
+      assert.dom('.Confirm.Dialog', ()=>{
         assert.dom('.ui-dialog.warn.cl>div', 'Are you sure about it?');
         TH.click('button[name=cancel]');
       });
@@ -248,13 +249,13 @@ isClient && define((require, exports, module)=>{
     test("swap cancel", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      var widget = Dom.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.InPlaceForm.swapFor(v.elm);
 
       assert.same(widget.swap, v.elm);
 
 
-      assert.dom(v.parent, function () {
-        assert.dom('form', function () {
+      assert.dom(v.parent, ()=>{
+        assert.dom('form', ()=>{
           TH.click('[name=cancel]');
         });
 
@@ -269,12 +270,12 @@ isClient && define((require, exports, module)=>{
     test("swap escape", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      var widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
+      const widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
 
       assert.same(widget.swap, v.elm);
 
 
-      assert.dom(v.parent, function () {
+      assert.dom(v.parent, ()=>{
         TH.trigger('form [name=name]', 'keydown', {which: 65});
 
         refute.dom('>span');
@@ -293,10 +294,10 @@ isClient && define((require, exports, module)=>{
     test("swap close", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      var widget = Dom.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.InPlaceForm.swapFor(v.elm);
       widget.close();
 
-      assert.dom(v.parent, function () {
+      assert.dom(v.parent, ()=>{
         assert.dom('>span');
       });
 

@@ -21,9 +21,9 @@ define((require, exports, module)=>{
     '<=': '<=',
   };
 
-  const id$ = Symbol(), onCommit$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
+  const onCommit$ = Symbol(), pool$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
-  const pools = Object.create(null);
+
   let clientCount = 0;
   let cursorCount = 0;
   let conns = 0;
@@ -67,10 +67,10 @@ define((require, exports, module)=>{
   };
 
   const fetchPool = client =>{
-    const pool = pools[client[id$]];
-    if (pool) return pool;
-    return pools[client[id$]] = new Pool({
-      name: client[id$],
+    const pool = client[pool$];
+    if (pool !== undefined) return pool;
+    return client[pool$] = new Pool({
+      name: client.name,
       create(callback) {
         ++conns;
         new Connection(client, callback);
@@ -157,7 +157,6 @@ define((require, exports, module)=>{
 
   class Client {
     constructor(url, name) {
-      this[id$] = Symbol();
       this[tx$] = Symbol();
       this._url = url;
       this.name = name || this.schemaName;
@@ -179,11 +178,11 @@ define((require, exports, module)=>{
     }
 
     end() {
-      const pool = pools[this[id$]];
-      if (pool) {
+      const pool = this[pool$];
+      if (pool !== undefined) {
         pool.drain();
       }
-      delete pools[this[id$]];
+      this[pool$] = undefined;
     }
 
     onCommit(action) {
@@ -1156,7 +1155,6 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
       return new Client(url, name);
     },
   };
-  Driver[private$] = {id$};
 
   koru.onunload(module, closeDefaultDb);
   koru.onunload(module, 'reload');

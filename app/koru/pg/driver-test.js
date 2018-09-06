@@ -15,7 +15,6 @@ isServer && define((require, exports, module)=>{
 
   const {private$} = require('koru/symbols');
   const pg = require('./driver');
-  const {id$} = pg[private$];
 
   const mf = TH.match.field;
   let v = {};

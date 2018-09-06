@@ -29,7 +29,7 @@ const {stub, spy, intercept} = TH;
        * Create a {#::Stub}. Can stub a object function or be unattached.
        *
        **/
-      api.method('stub');
+      api.method();
       //[
       const standalone = stubber.stub();
       standalone();
@@ -54,7 +54,7 @@ const {stub, spy, intercept} = TH;
       /**
        * Create a spy. A spy is a {#::Stub} that calls the original function.
        **/
-      api.method('spy');
+      api.method();
       //[
       const Book = {
         lastReadPage: 0,

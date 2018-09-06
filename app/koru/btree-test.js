@@ -362,7 +362,9 @@ r  170 *
       insertNodes(tree, [123, 456]);
       assert.equals(Array.from(tree), [123, 456]);
       assert.equals(Array.from(tree), [123, 456]);
+      const i = tree[Symbol.iterator]();
       tree.add(53);
+      assert.equals(i.next().value, 53);
       assert.equals(Array.from(tree), [53, 123, 456]);
     });
 

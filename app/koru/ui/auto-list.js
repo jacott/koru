@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const BTree = require('koru/btree');
   const Dom   = require('koru/dom');
 

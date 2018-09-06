@@ -4,6 +4,8 @@ define((require)=>{
   const Dialog          = require('./dialog');
   const Form            = require('./form');
 
+  const widget$ = Symbol();
+
   const {error$} = require('koru/symbols');
 
   const Tpl = Dom.newTemplate(require('../html!./in-place-form'));
@@ -13,7 +15,7 @@ define((require)=>{
     constructor (options) {
       const element = this.element = Tpl.$autoRender(options);
       const ctx = this.ctx = Dom.ctx(element);
-      ctx._widget = this;
+      ctx[widget$] = this;
     }
 
     onSubmit(func) {
@@ -35,55 +37,52 @@ define((require)=>{
 
   Tpl.$helpers({
     htmlAttrs() {
-      var options = this;
-      var elm = $.element;
+      const elm = $.element;
 
-      for(var key in options) {
-        var m = /^html-form-(.*)$/.exec(key);
-        if (m)
-          elm.setAttribute(m[1], options[key]);
+      for(const key in this) {
+        const m = /^html-form-(.*)$/.exec(key);
+        if (m !== null)
+          elm.setAttribute(m[1], this[key]);
       }
     },
 
     field() {
-      var options = this;
+      if (this.editTpl) return this.editTpl.$autoRender(this);
 
-      if (options.editTpl) return options.editTpl.$autoRender(options);
-
-      var fieldOptions = {
-        type: options.type,
+      const fieldOptions = {
+        type: this.type,
       };
 
-      for(var key in options) {
-        var m = /^html-(form-)?(.*)$/.exec(key);
-        if (m && !m[1])
-          fieldOptions[m[2]] = options[key];
+      for(const key in this) {
+        const m = /^html-(form-)?(.*)$/.exec(key);
+        if (m !== null && m[1] === undefined)
+          fieldOptions[m[2]] = this[key];
       }
 
-      var name = options.name || 'name';
-      var doc = options.doc;
-      if (! doc) {
+      const name = this.name || 'name';
+      let {doc} = this;
+      if (doc == null) {
         doc = {};
-        doc[name] = options.value;
+        doc[name] = this.value;
       }
 
-      return Dom.Form.field(doc, name, fieldOptions, options);
+      return Dom.Form.field(doc, name, fieldOptions, this);
     },
 
     deleteButton() {
-      var elm = $.element;
-
       if (! this.deleteName)
         return '';
 
-      if (! elm.tagName !== 'BUTTON') {
-        elm =document.createElement('button');
+      const elm = $.element;
+      if (elm.tagName === 'BUTTON')
+        return elm;
+      else {
+        const elm = document.createElement('button');
         elm.setAttribute('type', 'button');
         elm.setAttribute('name', 'delete');
         elm.textContent = this.deleteName;
+        return elm;
       }
-
-      return elm;
     },
 
     applyName() {
@@ -110,21 +109,21 @@ define((require)=>{
   function submit(event) {
     Dom.stopEvent();
 
-    var ctx = Dom.ctx(this);
-    var widget = ctx._widget;
+    const ctx = Dom.ctx(this);
+    const widget = ctx[widget$];
 
-    var input = this.firstChild;
+    const input = this.firstChild;
 
-    var value = input.value;
+    const {value} = input;
 
     widget._onSubmit && widget._onSubmit(value, this);
   }
 
   const cancel = (elm)=>{
-    var ctx = Dom.ctx(elm);
-    var data = ctx.data;
+    const ctx = Dom.ctx(elm);
+    const {data} = ctx;
     data && data.doc && data.doc.$reload();
-    ctx._widget.close();
+    ctx[widget$].close();
   };
 
   Tpl.$events({
@@ -147,8 +146,8 @@ define((require)=>{
 
     'click [name=delete]'(event) {
       Dom.stopEvent();
-      var ctx = Dom.ctx(this);
-      var widget = ctx._widget;
+      const ctx = Dom.ctx(this);
+      const widget = ctx[widget$];
 
       Dialog.confirm({
         classes: 'warn cl',
@@ -170,18 +169,16 @@ define((require)=>{
 
 
   Tpl.$extend({
-    $created(ctx, elm) {
-      var editTpl = ctx.data && ctx.data.editTpl;
-      if (editTpl && '$opened' in editTpl) {
+    $created: (ctx, elm)=>{
+      const editTpl = ctx.data && ctx.data.editTpl;
+      if (editTpl && ('$opened' in editTpl)) {
         editTpl.$opened(elm);
       }
     },
-    newWidget(options) {
-      return new Widget(options);
-    },
+    newWidget: options => new Widget(options),
 
-    swapFor(elm, options) {
-      var widget = new Widget(options);
+    swapFor: (elm, options)=>{
+      const widget = new Widget(options);
       elm.parentNode.replaceChild(widget.element, elm);
       widget.swap = elm;
 
@@ -191,7 +188,7 @@ define((require)=>{
       return widget;
     },
 
-    autoRegister(template, func) {
+    autoRegister: (template, func)=>{
       template.$events({
         'click .ui-editable'(event) {
           Dom.stopEvent();
@@ -218,7 +215,7 @@ define((require)=>{
       return this;
     },
 
-    saveField(doc, form, widget) {
+    saveField: (doc, form, widget)=>{
       if (doc[error$] === undefined) for(const _ in doc.changes) {
         doc.$save();
         break;
@@ -229,23 +226,23 @@ define((require)=>{
       } else {
         widget == null || widget.close(form);
       }
-
     },
   });
 
   Dom.registerHelpers({
     editInPlace(options) {
-      var elm = $.element;
+      let elm = $.element;
 
+      let ctx;
       if (elm.nodeType !== document.ELEMENT_NODE) {
-        var pTpl = $.ctx.template;
-        var tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
+        const pTpl = $.ctx.template;
+        const tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
         elm = tpl.$render();
-        var ctx = Dom.ctx(elm);
+        ctx = Dom.ctx(elm);
         options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
         ctx.options = options;
       } else {
-        var ctx = Dom.ctx(elm);
+        ctx = Dom.ctx(elm);
       }
 
       ctx == null || ctx.updateAllTags({doc: this, options: options});

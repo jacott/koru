@@ -4,6 +4,40 @@ define((require)=>{
 
   const {private$} = require('koru/symbols');
 
+  const clearWait = (v, err)=>{
+    let head;
+    while(head = fetchHead(v, 'wait')) {
+      head.future.throw(err);
+    }
+  };
+
+  const fetchHead = (v, name)=>{
+    const nameHead = name+'Head';
+
+    const head = v[nameHead];
+    if (! head) return;
+
+    if (! (v[nameHead] = head.next))
+      v[name+'Tail'] = null;
+    else
+      head.next.prev = null;
+
+    return head;
+  };
+
+  const addTail = (v, name, node)=>{
+    const nameHead = name+'Head';
+    const nameTail = name+'Tail';
+    node.prev = v[nameTail];
+    v[nameTail] = node;
+    if (v[nameTail].prev) {
+      v[nameTail].prev.next = v[nameTail];
+    } else if (! v[nameHead]) {
+      v[nameHead] = v[nameTail];
+      return true;
+    }
+  };
+
   class Pool {
     constructor(config) {
       const v = this[private$] = Object.assign({
@@ -15,16 +49,16 @@ define((require)=>{
     }
 
     acquire() {
-      var v = this[private$];
+      const v = this[private$];
       if (v.draining) throw new Error('The pool is closed for draining');
-      var head = fetchHead(v, 'idle');
+      const head = fetchHead(v, 'idle');
       if (head) {
         ++v.count;
         return head.conn;
       }
 
       if (v.count === v.max) {
-        var future = new util.Future;
+        const future = new util.Future;
         addTail(v, 'wait', {future: future});
 
         return future.wait();
@@ -32,8 +66,8 @@ define((require)=>{
 
       ++v.count;
 
-      var future = new util.Future;
-      v.create(function (err, conn) {
+      const future = new util.Future;
+      v.create((err, conn)=>{
         if (err) {
           --v.count;
           future.throw(err);
@@ -47,32 +81,17 @@ define((require)=>{
     }
 
     release(conn) {
-      var v = this[private$];
+      const v = this[private$];
 
-      var wait = fetchHead(v, 'wait');
+      const wait = fetchHead(v, 'wait');
 
-      var now = util.dateNow();
+      const now = util.dateNow();
       addTail(v, 'idle', {conn: conn, at: now+v.idleTimeoutMillis});
-      if (! v.idleTimeout) {
-        if (wait) {
-          fetchHead(v, 'idle');
-          wait.future.return(conn);
-        } else {
-          v.idleTimeout = global.setTimeout(clearIdle, v.idleTimeoutMillis);
-        }
-      } else if (wait) {
-        global.clearTimeout(v.idleTimeout);
-        var idle = fetchHead(v, 'idle');
-        v.idleTimeout = global.setTimeout(clearIdle, idle.at - now);
-        wait.future.return(idle.conn);
-      } else {
-        --v.count;
-      }
 
-      function clearIdle() {
+      const clearIdle = ()=>{
         v.idleTimeout = null;
 
-        var now = util.dateNow();
+        const now = util.dateNow();
         while(v.idleHead) {
           if (v.idleHead.at <= now) {
             --v.count;
@@ -82,6 +101,22 @@ define((require)=>{
             break;
           }
         }
+      };
+
+      if (! v.idleTimeout) {
+        if (wait) {
+          fetchHead(v, 'idle');
+          wait.future.return(conn);
+        } else {
+          v.idleTimeout = global.setTimeout(clearIdle, v.idleTimeoutMillis);
+        }
+      } else if (wait) {
+        global.clearTimeout(v.idleTimeout);
+        const idle = fetchHead(v, 'idle');
+        v.idleTimeout = global.setTimeout(clearIdle, idle.at - now);
+        wait.future.return(idle.conn);
+      } else {
+        --v.count;
       }
     }
 
@@ -100,40 +135,6 @@ define((require)=>{
       v.draining = false;
     }
   };
-
-  function clearWait(v, err) {
-    var head;
-    while(head = fetchHead(v, 'wait')) {
-      head.future.throw(err);
-    }
-  }
-
-  function fetchHead(v, name) {
-    const nameHead = name+'Head';
-
-    const head = v[nameHead];
-    if (! head) return;
-
-    if (! (v[nameHead] = head.next))
-      v[name+'Tail'] = null;
-    else
-      head.next.prev = null;
-
-    return head;
-  }
-
-  function addTail(v, name, node) {
-    const nameHead = name+'Head';
-    const nameTail = name+'Tail';
-    node.prev = v[nameTail];
-    v[nameTail] = node;
-    if (v[nameTail].prev) {
-      v[nameTail].prev.next = v[nameTail];
-    } else if (! v[nameHead]) {
-      v[nameHead] = v[nameTail];
-      return true;
-    }
-  }
 
   return Pool;
 });

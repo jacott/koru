@@ -2,14 +2,14 @@ const fs = require('fs');
 const Path = require('path');
 
 define((require, exports, module)=>{
-  const koru    = require('koru');
-  const fw      = require('koru/file-watch');
-  const fst     = require('koru/fs-tools');
-  const queue   = require('koru/queue')();
-  const session = require('koru/session');
-  const util    = require('koru/util');
-  const {Future} = util, wait = Future.wait;
+  const koru            = require('koru');
+  const fw              = require('koru/file-watch');
+  const fst             = require('koru/fs-tools');
+  const queue           = require('koru/queue')();
+  const session         = require('koru/session');
+  const util            = require('koru/util');
 
+  const {Future} = util, wait = Future.wait;
   const readdir = Future.wrap(fs.readdir);
   const stat = Future.wrap(fs.stat);
 
@@ -42,7 +42,7 @@ define((require, exports, module)=>{
         wait(stats);
 
         for(let i = 0; i < filenames.length; ++i) {
-          var fn = Path.join(dir, filenames[i]);
+          const fn = Path.join(dir, filenames[i]);
           if (fn in loads) continue;
 
           if (m = filenames[i].match(/^\w.*(less|css)$/)) {
@@ -66,7 +66,7 @@ define((require, exports, module)=>{
 
     const results = [];
 
-    for(var key in loads) {
+    for(const key in loads) {
       re.test(key) && results.push(key);
     }
 
@@ -74,10 +74,11 @@ define((require, exports, module)=>{
   };
 
   const extractInfo = (srcName, fromName)=>{
+    let fullname, src;
     if (srcName[0] !== '.') {
-      var fullname = Path.join(topDir, srcName);
+      fullname = Path.join(topDir, srcName);
       try {
-        var src = fst.readFile(fullname);
+        src = fst.readFile(fullname);
       } catch(ex) {
       }
     }
@@ -97,11 +98,11 @@ define((require, exports, module)=>{
     }
 
 
-    var provs = sources[srcName];
+    let provs = sources[srcName];
     if (! src) {
 
-      if (provs) for(let imp in provs) {
-        imp = imports[imp];
+      if (provs) for(const id in provs) {
+        const imp = imports[id];
         if (imp) delete imp[srcName];
       }
 
@@ -112,10 +113,11 @@ define((require, exports, module)=>{
       return;
     };
 
+    let st;
     if (fromName) {
-      var st = fst.stat(fullname);
+      st = fst.stat(fullname);
     } else {
-      var st = fst.stat(buildName(fullname));
+      st = fst.stat(buildName(fullname));
       loads[srcName] = true;
     }
 
@@ -123,24 +125,24 @@ define((require, exports, module)=>{
 
     src = src.toString();
 
-    var dir = Path.dirname(fullname);
+    const dir = Path.dirname(fullname);
 
-    var re = /(?:^|\n)\s*@import[\s]*"([^"]*\.lessimport)"/g;
+    const re = /(?:^|\n)\s*@import[\s]*"([^"]*\.lessimport)"/g;
 
-    var m;
+    let m;
 
     if (! provs) provs = sources[srcName] = {};
     provs.mtime = st;
 
     while (m = re.exec(src)) {
-      var imp = Path.resolve(Path.join(dir, m[1])).slice(topDirLen);
-      var deps = imports[imp];
+      const imp = Path.resolve(Path.join(dir, m[1])).slice(topDirLen);
+      let deps = imports[imp], imt;
       if (! deps)  {
         imports[imp] = deps = Object.create(null);
-        var imt = extractInfo(imp, srcName);
+        imt = extractInfo(imp, srcName);
 
       } else {
-        var imt = sources[imp] && sources[imp].mtime;
+        imt = sources[imp] && sources[imp].mtime;
       }
 
       if (st && imt && imt > st) {
@@ -181,15 +183,14 @@ define((require, exports, module)=>{
       if (type === 'less')
         session.sendAll('SL', path);
       else {
-        var list = [];
+        const list = [];
 
-        var count = 0;
+        let count = 0;
 
-        findDeps(path);
-        function findDeps(name) {
-          var deps = imports[name];
+        const findDeps = (name)=>{
+          const deps = imports[name];
 
-          if (deps) for(var key in deps) {
+          if (deps) for(const key in deps) {
             if (/\.lessimport$/.test(key))
               ++count < 20 && findDeps(key);
             else {
@@ -197,7 +198,8 @@ define((require, exports, module)=>{
               fst.rm_f(buildName(Path.join(topDir, key)));
             }
           }
-        }
+        };
+        findDeps(path);
         if (queue.isPending || list.length === 0)
           return;
         session.sendAll('SL', list.join(' '));
@@ -216,10 +218,10 @@ define((require, exports, module)=>{
     get sources() {return sources},
     get loadDirs() {return loadDirs},
     clearGraph() {
-      loads = {};
-      imports = {};
-      sources = {};
-      loadDirs = {};
+      loads = Object.create(null);
+      imports = Object.create(null);
+      sources = Object.create(null);
+      loadDirs = Object.create(null);
     },
   };
 });

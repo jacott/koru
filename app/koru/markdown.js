@@ -27,9 +27,7 @@ define({
 
       if (pLen != 0 && md.slice(m.index - pLen, m.index) !== prefix) continue;
 
-      var nest = 1;
-      var lstart = m.index;
-      var mi = 0;
+      let nest = 1, lstart = m.index, mi = 0;
       while ((m2 = re2.exec(m[1])) !== null) {
         if (m2[0] === ']') nest > 0 && --nest;
         else if (++nest === 1) {

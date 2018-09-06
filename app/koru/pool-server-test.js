@@ -28,27 +28,27 @@ isServer && define((require, exports, module)=>{
 
     test("acquire, release", ()=>{
       v.conn = [1];
-      var pool = new sut({
+      const pool = new sut({
         create: v.create,
         destroy: v.destroy,
         max: 2,
       });
 
       util.withDateNow(util.dateNow(), ()=>{
-        var conn1 = pool.acquire();
+        const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
         v.conn = [2];
 
         util.thread.date += 10000;
-        var conn2 = pool.acquire();
+        const conn2 = pool.acquire();
         assert.same(conn2, v.conn);
 
         pool.release(conn1);
 
         assert.same(pool.acquire(), conn1);
 
-        var future = new Future;
+        const future = new Future;
         util.Fiber(()=>{
           future.return(pool.acquire());
         }).run();
@@ -60,20 +60,20 @@ isServer && define((require, exports, module)=>{
 
     test("destroy", ()=>{
       v.conn = [1];
-      var pool = new sut({
+      const pool = new sut({
         create: v.create,
         destroy: v.destroy,
         max: 2,
       });
 
       util.withDateNow(util.dateNow(), ()=>{
-        var conn1 = pool.acquire();
+        const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
         v.conn = [2];
 
         util.thread.date += 10000;
-        var conn2 = pool.acquire();
+        const conn2 = pool.acquire();
         assert.same(conn2, v.conn);
 
         pool.release(conn1);
@@ -81,7 +81,7 @@ isServer && define((require, exports, module)=>{
 
         assert.calledOnceWith(global.setTimeout, TH.match.func, 30000);
 
-        var tofunc = global.setTimeout.args(0, 0);
+        const tofunc = global.setTimeout.args(0, 0);
         global.setTimeout.reset();
 
         util.thread.date += 20000;

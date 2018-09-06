@@ -79,13 +79,10 @@ define((require)=>{
     }
 
     [Symbol.iterator]() {
-      const cursor = this;
-      return {
-        next() {
-          const node = cursor.next();
-          return {done: node == null, value: node != null ? node.value : null};
-        }
-      };
+      return {next: ()=>{
+        const node = this.next();
+        return {done: node == null, value: node != null ? node.value : null};
+      }};
     }
 
     next() {

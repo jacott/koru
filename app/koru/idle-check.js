@@ -51,13 +51,17 @@ define((require)=>{
       this.fibers.delete(fiber);
       this.onDec && this.onDec(fiber, start);
       if (--this._count === 0 & this._waitIdle !== null) {
-        var funcs = this._waitIdle;
+        const funcs = this._waitIdle;
         this._waitIdle = null;
-        util.forEach(funcs, function (func) {func()});
+        util.forEach(funcs, func =>{func()});
       }
     }
 
     exitProcessWhenIdle({forceAfter=20*1000, abortTxAfter=10*1000}={}) {
+      const shutdown = ()=>{
+        console.log('=> Shutdown');
+        process.exit(0);
+      };
       setTimeout(shutdown, forceAfter);
       setTimeout(() => {
         for (const [fiber] of this.fibers) {
@@ -70,11 +74,6 @@ define((require)=>{
       }, abortTxAfter);
 
       this.waitIdle(shutdown);
-
-      function shutdown() {
-        console.log('=> Shutdown');
-        process.exit(0);
-      }
     }
   }
 

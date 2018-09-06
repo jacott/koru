@@ -91,12 +91,12 @@ const mkdir = (dir)=>{
 
 const mkdir_p = (path)=>{
   path = Path.resolve(path);
-  var idx = 0;
+  let idx = 0;
   while((idx = path.indexOf('/', idx+1)) !== -1) {
-    var tpath = path.slice(0, idx);
-    var st = stat(path);
+    const tpath = path.slice(0, idx);
+    const st = stat(path);
     if (st && ! st.isDirectory()) {
-      var error = new Error('Not a direcorty');
+      const error = new Error('Not a direcorty');
       error.code = 'ENOTDIR';
       throw error;
     }

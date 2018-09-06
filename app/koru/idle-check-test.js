@@ -14,7 +14,6 @@ isServer && define((require, exports, module)=>{
   const IdleCheck = require('./idle-check');
 
   let v = {};
-
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       v = {};

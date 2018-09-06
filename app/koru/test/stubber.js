@@ -1,17 +1,13 @@
-define((require, exports, module)=>{
+define((require)=>{
   const {stubName$}     = require('koru/symbols');
   const {merge, inspect, hasOwn} = require('koru/util');
   const {deepEqual, AssertionError}     = require('./core');
 
-  const stubber = exports;
-
-  const yields$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
-        returns$ = Symbol(), id$ = Symbol(),
+  const yields$ = Symbol(), listeners$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
+        returns$ = Symbol(),
         replacement$ = Symbol();
 
   let globalCount = 0;
-  let globalId = 0;
-  const allListeners = Object.create(null);
 
   class Stub extends Function {
     returns(arg) {
@@ -51,12 +47,11 @@ define((require, exports, module)=>{
     withArgs(...args) {
       function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, With.prototype);
-      spy[id$] = newId();
+      spy[listeners$] = [];
       spy.spyArgs = args;
       spy.onCall = this.onCall;
       spy.subject = this;
-      const al = allListeners[this[id$]];
-      (al === undefined ? (allListeners[this[id$]] = []) : al).push(spy);
+      this[listeners$].push(spy);
       return spy;
     }
 
@@ -64,11 +59,10 @@ define((require, exports, module)=>{
       function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, OnCall.prototype);
 
-      spy[id$] = newId();
+      spy[listeners$] = [];
       spy.spyCount = count;
       spy.subject = this;
-      const al = allListeners[this[id$]];
-      (al === undefined ? (allListeners[this[id$]] = []) : al).push(spy);
+      this[listeners$].push(spy);
       return spy;
     }
 
@@ -269,7 +263,7 @@ define((require, exports, module)=>{
   };
 
   const notifyListeners = (proxy, call, args) => {
-    const listeners = allListeners[proxy[id$]];
+    const listeners = proxy[listeners$];
     if (listeners !== undefined) for(let i = 0; i < listeners.length; ++i) {
       const listener = listeners[i];
       const spyCount = listener.spyCount;
@@ -291,7 +285,26 @@ define((require, exports, module)=>{
     }
   };
 
-  stubber.stub = (object, property, repFunc) => {
+  const restore = (object, property, desc, orig, func) => {
+    if (object != null) {
+      if (desc !== undefined)
+        Object.defineProperty(object, property, desc);
+      else
+        delete object[property];
+    }
+    func[listeners$] = undefined;
+  };
+
+  const stubFunction = (orig, proto) => {
+    function stub(...args) {return stub.invoke(this, args)};
+    Object.setPrototypeOf(stub, proto);
+    orig && merge(stub, orig);
+    stub[listeners$] = [];
+    return stub;
+  };
+
+  return {
+    stub: (object, property, repFunc) => {
     let func, desc, orig;
     if (repFunc !== undefined && typeof repFunc !== 'function')
       throw new AssertionError("Third argument to stub must be a function if supplied");
@@ -334,9 +347,9 @@ define((require, exports, module)=>{
     func.restore = () => {restore(object, property, desc, orig, func)};
 
     return func;
-  };
+  },
 
-  stubber.spy = (object, property) => {
+    spy: (object, property) => {
     if (object != null && typeof property === 'string') {
       const desc = Object.getOwnPropertyDescriptor(object, property);
       const orig = desc === undefined ? object[property] : desc.value;
@@ -351,9 +364,9 @@ define((require, exports, module)=>{
     }
 
     throw new AssertionError("Attempt to spy on non function");
-  };
+  },
 
-  stubber.intercept = (object, prop, replacement, restore) => {
+    intercept: (object, prop, replacement, restore) => {
     const orig = Object.getOwnPropertyDescriptor(object, prop);
     if (orig !== undefined && orig.value !== undefined && typeof orig.value.restore === 'function')
       throw new Error(`Already stubbed ${prop}`);
@@ -379,27 +392,8 @@ define((require, exports, module)=>{
       restore === undefined || restore();
     };
     return func;
+    },
+
+    isStubbed: func => func != null && func[listeners$] !== undefined,
   };
-
-  stubber.isStubbed = func => func != null && func[id$] !== undefined;
-
-  const restore = (object, property, desc, orig, func) => {
-    if (object != null) {
-      if (desc !== undefined)
-        Object.defineProperty(object, property, desc);
-      else
-        delete object[property];
-    }
-    delete allListeners[func[id$]];
-  };
-
-  const stubFunction = (orig, proto) => {
-    function stub(...args) {return stub.invoke(this, args)};
-    Object.setPrototypeOf(stub, proto);
-    orig && merge(stub, orig);
-    stub[id$] = newId();
-    return stub;
-  };
-
-  const newId = () => (++globalId).toString(36);
 });

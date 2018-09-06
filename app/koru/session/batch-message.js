@@ -77,7 +77,7 @@ define((require)=>{
         }
         // one message to many conns
         const msg = message.encodeMessage(curr.type, args, gDict);
-        for (var cc = cconn; cc; cc = cc.next) {
+        for (let cc = cconn; cc; cc = cc.next) {
           send(cc.conn, msg);
         }
       }

@@ -5,16 +5,15 @@ isServer && define((require, exports, module)=>{
   const session         = require('koru/session/main');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
-  const sut             = require('./less-watcher');
-
-  const {stub, spy, onEnd} = TH;
-
   const Future          = requirejs.nodeRequire('fibers/future');
   const fs              = requirejs.nodeRequire('fs');
   const Path            = requirejs.nodeRequire('path');
 
-  let v = {};
+  const {stub, spy, onEnd} = TH;
 
+  const sut             = require('./less-watcher');
+
+  let v = {};
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.conn = {send: stub()};

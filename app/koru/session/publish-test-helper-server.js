@@ -45,8 +45,7 @@ define((require, exports, module)=>{
         v.conn = this.mockConnection(null, v.session);
         v.send = v.conn.ws.send;
       }
-      var pub = v.session._commands.P;
-      pub.call(v.conn, [id, name, args]);
+      v.session._commands.P.call(v.conn, [id, name, args]);
 
       return v.conn._subs[id];
     },

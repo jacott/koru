@@ -38,8 +38,8 @@ define((require)=>{
 
   const changed = modelUpdate('Upd', (model, id, attrs) => {
     attrs._id = id;
-    var query = model.serverQuery.onId(id);
-    var doc = model.findById(id);
+    const query = model.serverQuery.onId(id);
+    const doc = model.findById(id);
     if (doc && publish.match.has(doc)) {
       doc.$clearCache();
       query.update(attrs);
@@ -57,7 +57,7 @@ define((require)=>{
     session.provide('R', removed);
 
     return {
-      unload() {
+      unload: ()=>{
         session.unprovide('A');
         session.unprovide('C');
         session.unprovide('R');
