@@ -4,9 +4,9 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy} = TH;
+  const {stub, spy, match: m} = TH;
 
-  const {ctx$, private$, globalId$, endMarker$} = require('koru/symbols');
+  const {ctx$, private$, endMarker$} = require('koru/symbols');
 
   const Dom = require('koru/dom');
 
@@ -293,7 +293,7 @@ define((require, exports, module)=>{
           assert.className(this, 'remElm');
         });
 
-        assert.calledWith(v.onAnimationEnd, TH.match.func);
+        assert.calledWith(v.onAnimationEnd, m.func);
 
         v.onAnimationEnd.yield(v.ctx, v.elm);
 
@@ -311,7 +311,7 @@ define((require, exports, module)=>{
 
         assert.dom('#Foo.remElm');
 
-        assert.calledWith(v.onAnimationEnd, TH.match.func);
+        assert.calledWith(v.onAnimationEnd, m.func);
 
         v.onAnimationEnd.yield(v.ctx, v.elm);
 
@@ -543,13 +543,11 @@ define((require, exports, module)=>{
       test("detaches if removed", ()=>{
         const {destoryObservers$} = Ctx[private$];
         Dom.remove(v.dep);
-        const obs = {};
-        assert(v.dep2Ctx[globalId$]);
-        obs[v.dep2Ctx[globalId$]] = v.dep2;
-        assert.equals(v.elm[ctx$][destoryObservers$], obs);
+        const obs = [m.is(v.dep2)];
+        assert.equals(Array.from(v.elm[ctx$][destoryObservers$]), obs);
 
         Dom.remove(v.dep2);
-        assert.same(v.elm[ctx$][destoryObservers$], undefined);
+        assert.same(Array.from(v.elm[ctx$][destoryObservers$]).length, 0);
       });
     });
 
@@ -564,47 +562,6 @@ define((require, exports, module)=>{
       assert.same(v.st1.firstCall.thisValue, v.elmCtx);
       assert.calledWith(v.st2.stop, v.elmCtx, v.elm);
       assert.same(v.st2.stop.firstCall.thisValue, v.st2);
-    });
-
-    group("destroyMeWith", ()=>{
-      beforeEach( ()=>{
-        v.elm = Dom.h({div: "subject"});
-        v.elmCtx = Dom.setCtx(v.elm);
-
-        v.dep = Dom.h({div: "dep"});
-        v.depCtx = Dom.setCtx(v.dep);
-
-        document.body.appendChild(v.elm);
-        document.body.appendChild(v.dep);
-        Dom.destroyMeWith(v.dep, v.elm);
-
-        v.dep2 = Dom.h({div: "dep2"});
-        v.dep2Ctx = Dom.setCtx(v.dep2);
-
-        document.body.appendChild(v.dep2);
-        Dom.destroyMeWith(v.dep2, v.elm);
-      });
-
-      test("removes with", ()=>{
-        Dom.remove(v.elm);
-        assert.same(v.elm[ctx$], null);
-        assert.same(v.dep[ctx$], null);
-        assert.same(v.dep.parentNode, null);
-        assert.same(v.dep2[ctx$], null);
-        assert.same(v.dep2.parentNode, null);
-      });
-
-      test("detaches if removed", ()=>{
-        const {destoryObservers$} = Ctx[private$];
-        Dom.remove(v.dep);
-        const obs = {};
-        assert(v.dep2Ctx[globalId$]);
-        obs[v.dep2Ctx[globalId$]] = v.dep2;
-        assert.equals(v.elm[ctx$][destoryObservers$], obs);
-
-        Dom.remove(v.dep2);
-        assert.same(v.elm[ctx$][destoryObservers$], undefined);
-      });
     });
   });
 });

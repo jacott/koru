@@ -14,7 +14,6 @@ define((require, exports, module)=>{
         info: `Used to name stubbed functions in API documentation`});
       api.property('withId$', {
         info: `Used to associate and id with an object. See {#koru/util.withId}`});
-      api.property('globalId$', {info: `Used to assign a global id to an object`});
       api.property('ctx$', {info: `The {#koru/dom/ctx} of a HTML element`});
       api.property('endMarker$', {info: `Associate a start with an end; used with HTML elements`});
       api.property('stopGap$', {info: `A interim value for an object; used with model`});
@@ -29,7 +28,6 @@ define((require, exports, module)=>{
         util.inspect(sut), '{'+
           'stubName$: Symbol(stubName$), '+
           'withId$: Symbol(withId$), '+
-          'globalId$: Symbol(globalId$), '+
           'ctx$: Symbol(ctx$), '+
           'endMarker$: Symbol(endMarker$), '+
           'stopGap$: Symbol(stopGap$), '+

@@ -4,9 +4,10 @@ define((require)=>{
   const DomTemplate     = require('koru/dom/template');
   const util            = require('koru/util');
   const Dom             = require('./base');
+  const DLinkedList     = require('koru/dlinked-list');
 
   const {hasOwn, isObjEmpty} = util;
-  const {globalId$, ctx$, endMarker$, private$, original$} = require('koru/symbols');
+  const {ctx$, endMarker$, private$, original$} = require('koru/symbols');
   const destoryObservers$ = Ctx[private$].destoryObservers$ = Symbol();
   const destoryWith$ = Symbol();
   const {onDestroy$} = Ctx[private$];
@@ -50,12 +51,6 @@ define((require)=>{
   const convertToData = elm => {
     const ctx = elm == null ? null : Dom.ctx(elm);
     return ctx === null ? null : ctx.data;
-  };
-
-  let globalIds = 0;
-  const getId = ctx => {
-    const id = ctx[globalId$];
-    return id === undefined ? (ctx[globalId$] = (++globalIds).toString(36)) : id;
   };
 
   const DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
@@ -339,31 +334,21 @@ define((require)=>{
     destroyMeWith(elm, ctxOrElm) {
       const ctx = ctxOrElm[ctx$] ? ctxOrElm[ctx$] : ctxOrElm;
       const elmCtx = elm[ctx$];
-      const id = getId(elmCtx);
       const observers = ctx[destoryObservers$];
-      ((observers === undefined) ? (ctx[destoryObservers$] = Object.create(null)) : observers
-      )[id] = elm;
-      elmCtx[destoryWith$] = ctx;
+      elmCtx[destoryWith$] = (
+        (observers === undefined) ? (ctx[destoryObservers$] = new DLinkedList()) : observers
+      ).add(elm);
     },
 
     destroyData(elm) {
       const ctx = elm == null ? null : elm[ctx$];
       if (ctx != null) {
         const dw = ctx[destoryWith$];
-        if (dw !== undefined) {
-          ctx[destoryWith$] = undefined;
-          const observers = dw[destoryObservers$];
-          if (observers !== undefined) {
-            delete observers[ctx[globalId$]];
-            if (isObjEmpty(observers))
-              dw[destoryObservers$] = undefined;
-          }
-        }
+        dw === undefined || dw.delete();
         const observers = ctx[destoryObservers$];
         if (observers !== undefined) {
           ctx[destoryObservers$] = undefined;
-          for (const id in observers) {
-            const withElm = observers[id];
+          for (const withElm of observers) {
             const withCtx = withElm[ctx$];
             if (withCtx != null)  {
               withCtx[destoryWith$] = undefined;

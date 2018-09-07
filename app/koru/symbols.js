@@ -1,7 +1,6 @@
 define({
   stubName$: Symbol('stubName$'),
   withId$: Symbol('withId$'),
-  globalId$: Symbol('globalId$'),
   ctx$: Symbol('ctx$'),
   endMarker$: Symbol('endMarker$'),
   stopGap$: Symbol('stopGap$'),
