@@ -35,8 +35,9 @@ define((require)=>{
 
   const killMatches = (matches, models)=>{
     matches.forEach(m => {
-      if (models) models[m.modelName] = true;
-      m.stop();
+      if (models !== undefined)
+        models[m.modelName] = true;
+      m.delete();
     });
   };
 

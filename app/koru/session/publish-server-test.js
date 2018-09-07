@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const publishTH = require('./publish-test-helper-server');
   const scFactory = require('./server-connection-factory');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const publish   = require('./publish');
 
@@ -215,7 +215,7 @@ define((require, exports, module)=>{
         assert.equals(Object.keys(v.conn.match._models).sort(), ['Bar', 'Foo']);
 
         v.sub.stop();
-        assert.equals(v.conn.match._models, {Foo: {}, Bar: {}});
+        assert.equals(v.conn.match._models, {Foo: m.any, Bar: m.any});
         assert.equals(v.sub._matches, []);
       });
 

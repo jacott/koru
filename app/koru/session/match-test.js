@@ -29,7 +29,7 @@ define((require, exports, module)=>{
     });
 
     afterEach( ()=>{
-      v.handles.forEach(h =>{h.stop()});
+      v.handles.forEach(h =>{h.delete()});
       dbBroker.clearDbId();
       v = {};
     });
@@ -78,7 +78,7 @@ define((require, exports, module)=>{
 
       assert.isFalse(myMatch.has(myBook));
 
-      m1.stop(); m2.stop();
+      m1.delete(); m2.delete();
       //]
     });
 
@@ -106,9 +106,6 @@ define((require, exports, module)=>{
       assert.isTrue(myMatch.has(myBook));
       //]
 
-      assert(mtrue.id);
-      refute.same(mtrue.id, mfalse.id);
-
       if (isClient) {
         dbBroker.pushDbId('foo');
         refute.isTrue(myMatch.has(myBook));
@@ -125,11 +122,11 @@ define((require, exports, module)=>{
       assert.isTrue(myMatch.has(myBook));
 
       //[
-      mtrue.stop();
+      mtrue.delete();
       assert.isNull(mtrue.id);
       assert.isFalse(myMatch.has(myBook));
 
-      mfalse.stop();
+      mfalse.delete();
       //]
     });
   });

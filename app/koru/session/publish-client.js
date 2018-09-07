@@ -21,8 +21,8 @@ define((require)=>{
           for (const id in docs) {
             const doc = docs[id];
             let remove = true;
-            for(const key in mm) {
-              if (mm[key](doc, reason)) {
+            for(const compare of mm) {
+              if (compare(doc, reason)) {
                 remove = false;
                 break;
               }

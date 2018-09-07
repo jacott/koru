@@ -1,36 +1,22 @@
 define((require)=>{
-  const dbBroker = require('koru/model/db-broker');
+  const DLinkedList     = require('koru/dlinked-list');
+  const dbBroker        = require('koru/model/db-broker');
 
-  const dbs$ = Symbol(), key$ = Symbol();
-
-  class StopFunc {
-    constructor(dbs, dbId, modelName, id) {
-      this.dbs = dbs;
-      this.dbId = dbId;
-      this.modelName = modelName;
-      this.id = id;
-    }
-
-    stop() {
-      if (this.id === null) return;
-      const matchFuncs = this.dbs[this.dbId][this.modelName];
-      delete matchFuncs[this.id];
-      this.id = null;
-    }
-  }
+  const dbs$ = Symbol();
 
   class Match {
-    constructor() {
-      this[dbs$] = {};
-      this[key$] = 0;
-    }
+    constructor() {this[dbs$] = Object.create(null)}
 
     get _models() {return this[dbs$][dbBroker.dbId]}
 
     has(doc) {
-      const models = this[dbs$][dbBroker.dbId];
-      const mm = models === undefined ? undefined : models[doc.constructor.modelName];
-      for (const key in mm) if (mm[key](doc)) return true;
+      const models = this._models;
+      if (models === undefined) return false;
+      const mm = models[doc.constructor.modelName];
+      if (mm === undefined) return false;
+      for (const comparator of mm) {
+        if (comparator(doc)) return true;
+      }
       return false;
     }
 
@@ -38,13 +24,12 @@ define((require)=>{
       const dbs = this[dbs$];
       const {dbId} = dbBroker;
       modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
-      const id = (++this[key$]).toString(36);
 
-      const models = dbs[dbId] || (dbs[dbId] = {});
-      const matchFuncs = models[modelName] || (models[modelName] = Object.create(null));
-      matchFuncs[id] = comparator;
-
-      return new StopFunc(dbs, dbId, modelName, id);
+      const models = dbs[dbId] || (dbs[dbId] = Object.create(null));
+      const matchFuncs = models[modelName] || (models[modelName] = new DLinkedList());
+      const handle = matchFuncs.add(comparator);
+      handle.modelName = modelName;
+      return handle;
     }
   }
 

@@ -10,7 +10,6 @@ define((require, exports, module)=>{
   const stopped = sub =>{
     if (sub.conn._subs) delete sub.conn._subs[sub.id];
     sub._stop && sub._stop();
-    util.forEach(sub._matches, m => m.stop());
     sub._matches = [];
     sub.stopped = true;
   };

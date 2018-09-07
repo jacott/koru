@@ -28,7 +28,7 @@ define((require, exports, module)=>{
     });
 
     afterEach(()=>{
-      v.handles.forEach(h => {h.stop()});
+      v.handles.forEach(h => {h.stop ? h.stop() : h.delete()});
       v = {};
     });
 
@@ -100,7 +100,6 @@ define((require, exports, module)=>{
         return doc.name === 'A';
       }));
 
-
       v.handles.push(publish.match.register('F2', doc => doc.name === 'A2'));
 
       v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = stub()));
@@ -168,7 +167,7 @@ define((require, exports, module)=>{
 
 
         assert.isTrue(publish.match.has(v.doc));
-        v.t.stop();
+        v.t.delete();
 
         assert.isFalse(publish.match.has(v.doc));
       });
