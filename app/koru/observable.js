@@ -66,6 +66,16 @@ define(()=>{
       }
     }
 
+    [Symbol.iterator]() {
+      let node = null;
+      return {next: ()=>{
+        if (node !== this)
+          node = node === null ? this[head$] : node[next$];
+
+        return {done: node === this, value: node === this ? undefined : node};
+      }};
+    }
+
     stopAll() {
       let node = this[head$];
       if (node === this) return;

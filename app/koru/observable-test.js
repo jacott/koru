@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   /**
    * An observeable object. Observable keeps track of subjects and notifies all of them if asked.
+   * An Observable instance is iteratable.
    *
    * See also {#koru/make-subject}
    **/
@@ -126,6 +127,26 @@ define((require, exports, module)=>{
 
       assert.equals(ans, exp);
       //]
+    });
+
+    test("Symbol.iterator", ()=>{
+      const subject = new Observable();
+
+      const f2 = ()=>{};
+      const exp = [
+        m.is(subject.add(()=>{})),
+        m.is(subject.add(f2)),
+      ];
+      subject.add(()=>{});
+
+      const ans = [];
+
+      for (const h of subject) {
+        ans.push(h);
+        if (h.callback === f2) break;
+      }
+
+      assert.equals(ans, exp);
     });
 
     test("stopAll", ()=>{
