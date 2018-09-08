@@ -32,6 +32,7 @@ define((require, exports, module)=>{
     Element: 'Web/API',
     Error: true,
     EvalError: true,
+    Generator: true,
     Float32Array: true,
     Float64Array: true,
     Function: true,
@@ -440,10 +441,13 @@ define((require, exports, module)=>{
 
   const defToHtml = (sig)=>{
     try {
-      const elm = jsParser.highlight(`function _${sig} {}`, 'span');
+      const isGenerator = sig[0] === '*';
+      const elm = jsParser.highlight(
+        `function _${isGenerator ? sig.slice(1) : sig} {}`,
+        'span');
       elm.removeChild(elm.firstChild);
       elm.removeChild(elm.firstChild);
-      elm.firstChild.textContent = elm.firstChild.textContent.slice(1);
+      elm.firstChild.textContent = (isGenerator ? '*' : '')+elm.firstChild.textContent.slice(1);
       elm.lastChild.textContent = elm.lastChild.textContent.slice(0, -3);
       return elm;
     } catch (ex) {

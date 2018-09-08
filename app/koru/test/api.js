@@ -153,7 +153,7 @@ define((require, exports, module)=>{
         return resolveFunc(relType(orig, value), orig);
 
       if (this._coreTypes.has(value))
-        return [relType(orig, value), displayName, value.name];
+        return [relType(orig, value), displayName, this._specialNames.get(value) || value.name];
 
       let api = this.valueToApi(value);
       if (api) {
@@ -544,6 +544,8 @@ define((require, exports, module)=>{
     }
   }
 
+  const Generator = (function *() {})().constructor;
+
   API._coreTypes = new Set([
     Array,
     ArrayBuffer,
@@ -552,6 +554,7 @@ define((require, exports, module)=>{
     Element,
     Error,
     EvalError,
+    Generator,
     Float32Array,
     Float64Array,
     Function,
@@ -581,7 +584,11 @@ define((require, exports, module)=>{
   ]);
 
   API._coreDisplay = new Map([
-    [Promise, '{a promise}'],
+    [Promise, '{a promise}']
+  ]);
+
+  API._specialNames = new Map([
+    [Generator, 'Generator'],
   ]);
 
   const resolveModule = (type, value)=>{
@@ -825,6 +832,9 @@ define((require, exports, module)=>{
     const calls = details ? details.calls : [];
     if (! details) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
+      const isGenerator = sig[0] === '*';
+      if (isGenerator)
+        sig = sig.replace(/^\*\s*/, '');
       if (! sig.startsWith(methodName)) {
         if (sig.startsWith('('))
           sig = methodName+sig.slice(0, jsParser.findMatch(sig, '('));
@@ -834,6 +844,8 @@ define((require, exports, module)=>{
           sig = `${methodName}(${sig})`;
         }
       }
+      if (isGenerator)
+        sig = '*'+sig;
 
       details = methods[methodName] = {
         test,
