@@ -1,6 +1,6 @@
 define((require, exports, module)=>{
   /**
-   * A single linked list.
+   * A single linked list. The list is iterable.
    **/
   const TH              = require('koru/test');
   const api             = require('koru/test/api');
@@ -38,6 +38,7 @@ define((require, exports, module)=>{
 
       assert.equals(listToString(ll), "3 2 1");
       //]
+      assert.same(ll.size, 3);
     });
 
     test("pop", ()=>{
@@ -59,6 +60,7 @@ define((require, exports, module)=>{
 
       assert.equals(listToString(ll), "1");
       //]
+      assert.same(ll.size, 1);
     });
 
     test("popNode", ()=>{
@@ -79,6 +81,7 @@ define((require, exports, module)=>{
 
       assert.equals(listToString(ll), "2 1");
       //]
+      assert.same(ll.size, 2);
     });
 
     test("addBack", ()=>{
@@ -95,6 +98,7 @@ define((require, exports, module)=>{
 
       assert.equals(listToString(ll), "1 2 3");
       //]
+      assert.same(ll.size, 3);
     });
 
     test("removeNode", ()=>{
@@ -125,6 +129,127 @@ define((require, exports, module)=>{
 
       assert.equals(listToString(ll), "2");
       //]
+      assert.same(ll.size, 1);
+    });
+
+    test("forEach", ()=>{
+      /**
+       * visit each entry from front to back
+       *
+       * @param {function} visitor called for each observer with the `value` from {##add}.
+       *
+       **/
+       api.protoMethod();
+      //[
+      const subject = new LinkedList();
+
+      subject.push('b');
+      subject.push('a');
+
+      const ans = [];
+
+      subject.forEach(v => {ans.push(v)});
+
+      assert.equals(ans, ['a', 'b']);
+      //]
+    });
+
+    test("nodes", ()=>{
+      /**
+       * Return an iterator over the nodes from font to back. ({##add} returns the `node`)
+       **/
+      api.protoMethod();
+      //[
+      const subject = new LinkedList();
+
+      const f = ()=>{};
+      const exp = [
+        m.is(subject.addBack(1)),
+        m.is(subject.addBack(f))
+      ];
+      subject.addBack('a');
+
+      const ans = [];
+
+      for (const h of subject.nodes()) {
+        ans.push(h);
+        if (h.value === f) break;
+      }
+
+      assert.equals(ans, exp);
+      //]
+    });
+
+    test("values", ()=>{
+      /**
+       * Return an iterator over the values from front to back.
+       **/
+      api.protoMethod();
+      //[
+      const subject = new LinkedList();
+
+      const f = ()=>{};
+      subject.push('a');
+      subject.push(f);
+      subject.push(1);
+
+      const ans = [];
+
+      for (const v of subject.values()) {
+        ans.push(v);
+        if (v === f) break;
+      }
+
+      assert.equals(ans, [1, m.is(f)]);
+      //]
+
+      api.done();
+
+      // check alias
+      assert.same(subject[Symbol.iterator], subject.values);
+    });
+
+    test("clear", ()=>{
+      /**
+       * clear all entries. (calls `listEmpty` if present)
+       **/
+      api.protoMethod();
+      //[
+      const subject = new LinkedList();
+
+      subject.push(1);
+      subject.push(2);
+
+      assert.equals(subject.size, 2);
+
+      subject.clear();
+
+      assert.equals(subject.size, 0);
+      assert.equals(Array.from(subject), []);
+      //]
+    });
+
+    test("size", ()=>{
+      api.protoProperty('size', {info: `The number of nodes in the list`});
+
+      const subject = new LinkedList();
+
+      assert.same(subject.size, 0);
+
+      subject.push(1);
+      assert.same(subject.size, 1);
+
+      subject.push(2);
+      assert.same(subject.size, 2);
+
+      subject.pop();
+      assert.same(subject.size, 1);
+
+      subject.pop();
+      assert.same(subject.size, 0);
+
+      subject.pop();
+      assert.same(subject.size, 0);
     });
   });
 });

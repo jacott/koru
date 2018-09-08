@@ -1,10 +1,19 @@
 define(()=>{
+  const size$ = Symbol();
+
   class LinkedList {
-    constructor() {
+    constructor() {this.clear()}
+
+
+    clear() {
       this.front = this.back = undefined;
+      this[size$] = 0;
     }
 
+    get size() {return this[size$]}
+
     push(value) {
+      ++this[size$];
       if (this.front === undefined)
         return this.front = this.back = {value, next: undefined};
       else
@@ -14,6 +23,7 @@ define(()=>{
     popNode() {
       const node = this.front;
       if (node !== undefined) {
+        --this[size$];
         if (this.back === this.front)
           this.back = this.front.next;
         this.front = this.front.next;
@@ -27,6 +37,7 @@ define(()=>{
     }
 
     addAfter(prev, value) {
+      ++this[size$];
       if (prev === undefined)
         return this.addFront(value);
       else
@@ -34,6 +45,7 @@ define(()=>{
     }
 
     addBack(value) {
+      ++this[size$];
       if (this.front === undefined)
         return this.front = this.back = {value, next: undefined};
       else
@@ -44,6 +56,7 @@ define(()=>{
       for (let curr = prev === undefined ? this.front : prev.next;
            curr !== undefined; prev = curr, curr = curr.next ) {
         if (curr === node) {
+          --this[size$];
           if (prev === undefined)
             this.front = curr.next;
           else
@@ -55,9 +68,27 @@ define(()=>{
         }
       }
     }
+
+    forEach(callback) {
+      for(let node = this.front; node !== undefined; node = node.next) {
+        if (node.value !== undefined)
+          callback(node.value);
+      }
+    }
+
+    *values() {
+      for(let node = this.front; node !== undefined; node = node.next)
+        if (node.value !== undefined) yield(node.value);
+    }
+
+    *nodes() {
+      for(let node = this.front; node !== undefined; node = node.next)
+        yield(node);
+    }
   }
 
   LinkedList.prototype.addFront = LinkedList.prototype.push;
+  LinkedList.prototype[Symbol.iterator] = LinkedList.prototype.values;
 
   return LinkedList;
 });
