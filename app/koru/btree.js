@@ -81,7 +81,7 @@ define((require)=>{
     [Symbol.iterator]() {
       return {next: ()=>{
         const node = this.next();
-        return {done: node == null, value: node != null ? node.value : null};
+        return {value: node != null ? node.value : null, done: node == null};
       }};
     }
 

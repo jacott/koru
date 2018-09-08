@@ -154,8 +154,8 @@ define((require)=>{
         options = Modal.init(options);
       }
 
-      const destroyMeWith = options.destroyMeWith;
-      if (destroyMeWith) {
+      const {destroyMeWith} = options;
+      if (destroyMeWith != null) {
         const me = options.container;
         const meCtx = Dom.myCtx(me);
         meCtx && Dom.destroyMeWith(

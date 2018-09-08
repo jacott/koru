@@ -15,8 +15,6 @@ define(()=>{
         this[next$][prev$] = this[prev$];
       };
     }
-
-    delete() {this.stop()}
   }
 
   class Observable {
@@ -72,7 +70,7 @@ define(()=>{
         if (node !== this)
           node = node === null ? this[head$] : node[next$];
 
-        return {done: node === this, value: node === this ? undefined : node};
+        return {value: node === this ? undefined : node, done: node === this};
       }};
     }
 
