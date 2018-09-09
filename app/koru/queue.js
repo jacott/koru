@@ -35,13 +35,14 @@ define(()=> type =>{
       this.isPending = false;
       this.running = true;
 
+      let result, error;
       try {
-        var result = func(this);
+        result = func(this);
       } catch(ex) {
-        var error = ex;
+        error = ex;
       }
       if (this.queued) {
-        var future = this.futures[this.runNext];
+        const future = this.futures[this.runNext];
         if (future) {
           delete this.futures[this.runNext];
           ++this.runNext;

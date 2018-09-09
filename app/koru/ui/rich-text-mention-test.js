@@ -223,7 +223,7 @@ isClient && define((require, exports, module)=>{
 
         assert.dom('input', input =>{
           const updspy = spy(Dom.ctx(input), 'updateAllTags');
-          const mdlspy = spy(Modal, 'reposition');
+          const mdlspy = spy(Dom, 'reposition');
 
           TH.input(input, 'jjg');
           assert(updspy.calledBefore(mdlspy));
@@ -409,7 +409,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("input box uses modal", ()=>{
-      spy(Modal, 'reposition');
+      spy(Dom, 'reposition');
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -419,13 +419,13 @@ isClient && define((require, exports, module)=>{
       const unbb = ln.getBoundingClientRect();
 
       assert.dom('.glassPane>.rtMention', function () {
-        assert.calledWith(Modal.reposition, 'on', {
+        assert.calledWith(Dom.reposition, 'on', {
           popup: this,
           origin: TH.match.field('tagName', 'SPAN'),
         });
         const minp = this.querySelector('input');
         assert.dom('.empty', function () {
-          assert.calledWith(Modal.reposition, 'below', {popup: this, origin: minp});
+          assert.calledWith(Dom.reposition, 'below', {popup: this, origin: minp});
         });
       });
     });

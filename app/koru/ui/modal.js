@@ -45,7 +45,7 @@ define((require)=>{
   };
 
   const Modal = {
-    init(options) {
+    init: options =>{
       options = Object.assign({container: options.container || options.popup}, options);
       options.ctx = Dom.myCtx(options.container) || Dom.myCtx(options.popup);
       if (options.ctx == null)
@@ -88,65 +88,11 @@ define((require)=>{
       return options;
     },
 
-    appendAbove(options) {
-      return this.append('above', options);
-    },
+    appendAbove: options => Modal.append('above', options),
 
-    appendBelow(options) {
-      return this.append('below', options);
-    },
+    appendBelow: options => Modal.append('below', options),
 
-    reposition(pos='below', options) {
-      const height = window.innerHeight;
-      const ps = options.popup.style;
-      const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
-      ps.setProperty('left', bbox.left + 'px');
-      switch (pos) {
-      case 'above':
-        ps.removeProperty('top');
-        ps.setProperty('bottom', (height - bbox.top) + 'px');
-        break;
-      case 'below':
-        ps.removeProperty('bottom');
-        ps.setProperty('top', (bbox.top + bbox.height) + 'px');
-        break;
-      case 'on':
-        ps.removeProperty('bottom');
-        ps.setProperty('top', bbox.top + 'px');
-      }
-      const ppos = options.popup.getBoundingClientRect();
-      switch (pos) {
-      case 'above':
-        if (ppos.top < 0) {
-          ps.removeProperty('bottom');
-          if (ppos.height + bbox.top + bbox.height > height) {
-            ps.setProperty('top', '0');
-          } else {
-            ps.setProperty('top', (bbox.top + bbox.height) + 'px');
-          }
-        }
-        break;
-      case 'below':
-        if (ppos.bottom > height) {
-          if (ppos.height >= bbox.top) {
-            ps.setProperty('top', '0');
-          } else {
-            ps.setProperty('bottom', (height - bbox.top) + 'px');
-            ps.removeProperty('top');
-          }
-        }
-      }
-      if (pos !== 'on') {
-        const width = window.innerWidth;
-        if (ppos.right > width) {
-          ps.setProperty('right', '0');
-          ps.removeProperty('left');
-        }
-      }
-      return options;
-    },
-
-    append(pos, options) {
+    append: (pos, options)=>{
       options.noAppend || document.body.appendChild(options.container || options.popup);
 
       options = Modal.init(options);
@@ -158,7 +104,7 @@ define((require)=>{
         meCtx && Dom.destroyMeWith(
           me, destroyMeWith.nodeType !== undefined ? Dom.ctx(destroyMeWith) : destroyMeWith);
       }
-      return this.reposition(pos, options);
+      return Dom.reposition(pos, options);
     },
 
     get topModal() {return topModal},

@@ -1,7 +1,6 @@
 define((require, exports, module)=>{
   const Dom             = require('../dom');
   const util            = require('../util');
-  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./calendar'));
   const $ = Dom.current;
@@ -169,7 +168,7 @@ define((require, exports, module)=>{
         options && options.customize && options.customize(popup, this);
 
         document.body.appendChild(popup);
-        Modal.reposition('below', {origin: this, popup});
+        Dom.reposition('below', {origin: this, popup});
       }
     },
   });

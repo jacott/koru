@@ -325,13 +325,14 @@ define((require)=>{
     }
 
     onAnimationEnd(func, repeat) {
-      if (! this.animationEnd) {
+      let old = null;
+      if (this.animationEnd == null) {
         if(++animationEndCount === 1)
           document.body.addEventListener('animationend', animationEnd, true);
         this.onDestroy(removeOnAnmiationEnd);
       } else {
         if (func !== 'cancel')
-          var old = this.animationEnd;
+          old = this.animationEnd;
 
         if (func == null || func === 'cancel') {
           removeOnAnmiationEnd.call(this);
@@ -341,7 +342,7 @@ define((require)=>{
       this.animationEnd = func;
       if (func != null && repeat === 'repeat')
         this.animationEndRepeat = true;
-      old != null && old(this, this.element());
+      old !== null && old(this, this.element());
     }
 
     autoUpdate({subject=this.data, removed}={}) {

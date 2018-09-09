@@ -182,45 +182,42 @@ define((require)=>{
 
     updateInput: Dom.updateInput,
 
-    submitFunc(elmId, options) {
-      return function (event) {
-        Dom.stopEvent();
+    submitFunc: (elmId, options)=> event =>{
+      Dom.stopEvent();
 
-        const elm = document.getElementById(elmId);
-        const ctx = Dom.ctx(elm);
-        const doc = ctx.data;
-        const form = elm.getElementsByClassName('fields')[0];
+      const elm = document.getElementById(elmId);
+      const ctx = Dom.ctx(elm);
+      const doc = ctx.data;
+      const form = elm.getElementsByClassName('fields')[0];
 
-        if (! form) throw new Error('no "fields" class within ' + elmId);
-        Tpl.fillDoc(doc, form);
+      if (! form) throw new Error('no "fields" class within ' + elmId);
+      Tpl.fillDoc(doc, form);
 
-        if (options.success === undefined && options.save === undefined)
-          options = {success: options};
+      if (options.success === undefined && options.save === undefined)
+        options = {success: options};
 
-        if (options.save)
-          var result = options.save(doc, form, elm);
-        else
-          var result = doc.$save();
+      const result = options.save
+            ? options.save(doc, form, elm)
+            : doc.$save();
 
-        const successPage = options.success;
+      const successPage = options.success;
 
-        if (result) {
-          switch(typeof successPage) {
-          case 'object':
-            Route.replacePath(successPage);
-            break;
-          case 'function':
-            successPage(doc);
-            break;
-          case 'string':
-            if (successPage === 'back')
-              Route.history.back();
-            break;
-          }
-        } else {
-          Tpl.renderErrors(doc, form);
+      if (result) {
+        switch(typeof successPage) {
+        case 'object':
+          Route.replacePath(successPage);
+          break;
+        case 'function':
+          successPage(doc);
+          break;
+        case 'string':
+          if (successPage === 'back')
+            Route.history.back();
+          break;
         }
-      };
+      } else {
+        Tpl.renderErrors(doc, form);
+      }
     },
 
     disableFields(form) {
@@ -246,9 +243,10 @@ define((require)=>{
 
     saveChanges(doc, form, onChange) {
       Tpl.clearErrors(form);
+      let changes, was;
       if (onChange) {
-        var changes = doc.changes;
-        var was = doc.$asChanges(changes);
+        changes = doc.changes;
+        was = doc.$asChanges(changes);
       }
       if (doc.$save()) {
         onChange && onChange(doc, changes, was);
@@ -323,11 +321,12 @@ define((require)=>{
     },
 
     renderError(form, field, msg) {
+      let fieldElm;
       if (arguments.length === 2) {
-        var fieldElm = form;
+        fieldElm = form;
         msg = field;
       } else {
-        var fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
+        fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
       }
 
       if (Array.isArray(msg))
@@ -335,30 +334,30 @@ define((require)=>{
 
       if (! fieldElm) return;
 
-      let msgElm = fieldElm.nextElementSibling;
+      let msgElm = fieldElm.nextElementSibling, ms;
       if (! (msgElm && Dom.hasClass(msgElm, 'errorMsg'))) {
         msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
         msgElm.appendChild(document.createElement('div'));
         fieldElm.parentNode.insertBefore(msgElm, fieldElm.nextElementSibling);
-        var ms = msgElm.style;
+        ms = msgElm.style;
       } else {
-        var ms = msgElm.style;
-        ms.marginTop = ms.marginLeft = ms.height = ms.width = '';
+        ms = msgElm.style;
+        ms.removeProperty('margin-top'); ms.removeProperty('margin-left');
+        ms.removeProperty('height'); ms.removeProperty('width');
       }
       Dom.setClass('error', msg, fieldElm);
       Dom.removeClass(msgElm, 'animate');
       msgElm.firstChild.textContent = msg || '';
       if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
         const fpos = fieldElm.getBoundingClientRect();
-        ms.position = 'absolute';
+        ms.setProperty('position', 'absolute');
         const mpos = msgElm.getBoundingClientRect();
-        ms.marginTop = (fpos.top-mpos.top-mpos.height)+'px';
+        ms.setProperty('margin-top', (fpos.top-mpos.top-mpos.height)+'px');
 
-        if (Dom.hasClass(fieldElm, 'errorRight') )
-          ms.marginLeft = (fpos.right-mpos.right)+'px';
-        else
-          ms.marginLeft = (fpos.left-mpos.left)+'px';
+        ms.setProperty('margin-left', (
+          Dom.hasClass(fieldElm, 'errorRight')
+            ? fpos.right-mpos.right : fpos.left-mpos.left)+'px');
         }
       Dom.setClass('animate', msg, msgElm);
 
@@ -496,15 +495,16 @@ define((require)=>{
     if ('fetch' in sl)
       sl = sl.fetch();
     if (sl.length === 0) return;
+    let getValue, getContent;
     if (typeof sl[0] === 'string') {
-      var getValue = row => row;
-      var getContent = getValue;
+      getValue = row => row;
+      getContent = getValue;
     } else if ('_id' in sl[0]) {
-      var getValue = row => row._id;
-      var getContent = row => row.name;
+      getValue = row => row._id;
+      getContent = row => row.name;
     } else {
-      var getValue = row => row[0];
-      var getContent = row => row[1];
+      getValue = row => row[0];
+      getContent = row => row[1];
     }
     let includeBlank = options.includeBlank;
     if (('includeBlank' in options) && includeBlank !== 'false') {
@@ -581,8 +581,9 @@ define((require)=>{
     },
 
     labelField(name, options, arg3) {
+      let extend;
       if (arg3) {
-        var extend = options;
+        extend = options;
         options = arg3;
       }
 
@@ -592,7 +593,7 @@ define((require)=>{
         name,
         options,
         value: field(data, name, options, extend),
-        label: options.label ||  util.capitalize(util.humanize(name)),
+        label: options.label || util.capitalize(util.humanize(name)),
       });
     },
 

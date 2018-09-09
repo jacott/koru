@@ -269,7 +269,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("onAnimationEnd", ()=>{
-      var Tpl = Dom.newTemplate({
+      const Tpl = Dom.newTemplate({
         name: "Foo",
         nodes:[{
           name: "div",
@@ -300,7 +300,7 @@ isClient && define((require, exports, module)=>{
       // Set twice
       document.body.appendChild(v.elm3 = Dom.Foo.$render({name: 'bar'}));
 
-      var ctx = Dom.myCtx(v.elm3);
+      const ctx = Dom.myCtx(v.elm3);
       ctx.onAnimationEnd(v.stub3old = stub());
       ctx.onAnimationEnd(v.stub3 = stub());
 

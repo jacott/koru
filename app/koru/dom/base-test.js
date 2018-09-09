@@ -47,7 +47,7 @@ define((require, exports, module)=>{
     });
 
     test("walkNode", ()=>{
-      var node = Dom.h({
+      const node = Dom.h({
         div: [
           'one', {span: ['two', '2.5']},
           'three', {B: [{I: 'i'}, {U: 'not me'}, {div: 'not here'}]}, 'nor me']});
@@ -199,7 +199,7 @@ define((require, exports, module)=>{
     });
 
     test("classList", ()=>{
-      var elm = document.createElement('div');
+      const elm = document.createElement('div');
 
       refute(Dom.hasClass(null, 'foo'));
       refute(Dom.hasClass(elm, 'foo'));

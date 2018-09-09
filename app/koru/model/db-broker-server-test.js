@@ -59,7 +59,7 @@ define((require, exports, module)=>{
 
       sut.db = altDb;
 
-      var obAlt = TestModel.onChange(v.altChanged = stub());
+      const obAlt = TestModel.onChange(v.altChanged = stub());
 
       assert.equals(TestModel.docs._client.query('show search_path'), [{search_path: "alt"}]);
 

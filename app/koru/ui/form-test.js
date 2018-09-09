@@ -1,9 +1,9 @@
 isClient && define((require, exports, module)=>{
-  const Dom     = require('../dom');
-  const formTpl = require('../html!./form-test');
-  const util    = require('../util');
-  const Route   = require('./route');
-  const TH      = require('./test-helper');
+  const Dom             = require('../dom');
+  const formTpl         = require('../html!./form-test');
+  const util            = require('../util');
+  const Route           = require('./route');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, match: m} = TH;
 

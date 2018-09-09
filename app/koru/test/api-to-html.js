@@ -1,12 +1,211 @@
-define((require, exports, module)=>{
+define((require)=>{
   const marked = requirejs.nodeRequire('marked');
-  const koru     = require('koru');
-  const Dom      = require('koru/dom');
-  const htmlDoc  = require('koru/dom/html-doc');
-  const jsParser = require('koru/parse/js-parser');
-  const util     = require('koru/util');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const htmlDoc         = require('koru/dom/html-doc');
+  const jsParser        = require('koru/parse/js-parser');
+  const util            = require('koru/util');
 
   const return$ = Symbol();
+
+  const noContent = (tag)=> opts =>{
+    const attrs = {[tag]: ''};
+    for (let attr in opts)
+      attrs['$'+attr] = opts[attr];
+    return Dom.h(attrs);
+  };
+
+  const apiToHtml = (title, json, sourceHtml)=>{
+    const index = document.createElement('div');
+
+    index.innerHTML = sourceHtml;
+
+    const tags = {};
+
+    Dom.walkNode(index, node => {
+      switch(node.nodeType) {
+      case document.TEXT_NODE: case document.COMMENT_NODE:
+        return false;
+      default:
+        const tag = node.getAttribute('data-api');
+        if (tag) tags[tag] = node;
+      }
+    });
+
+    const {header, links, pages} = tags;
+    const linkModules = [];
+
+    Object.keys(json).sort((a,b)=>{
+      a = a.replace(/\/main$/, '');
+      b = b.replace(/\/main$/, '');
+      return a === b ? 0 : a < b ? -1 : 1;
+    }).forEach(id => {
+      const api = json[id]; api.id = id; api.parent = json;
+      const {subject, newInstance, methods, customMethods, protoMethods, innerSubjects} = api;
+
+      const aside = [];
+
+      const addModuleList = (heading, list)=>{
+        if (list) {
+          aside.push({div: [
+            {h1: heading},
+
+            {class: 'jsdoc-list', div: list.map(id => {
+              const m = id.split('!');
+              if (m.length === 2) {
+                if (m[0] === 'koru/env') {
+                  const idc = m[1]+'-client';
+                  const ids = m[1]+'-server';
+                  return {span: [
+                    {class: 'jsdoc-link', a: idc, $href: '#'+idc},
+                    {br: ''},
+                    {class: 'jsdoc-link', a: ids, $href: '#'+ids},
+                  ]};
+                }
+                return id;
+              }
+              return {class: 'jsdoc-link', a: id, $href: '#'+id};
+            })},
+          ]});
+        }
+      };
+      //      addModuleList('Modules required', api.requires);
+      addModuleList('Modifies modules', api.modifies);
+      addModuleList('Modified by modules', api.modifiedBy);
+
+      const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
+      const reqParts = [
+        hl('const', 'kd'), ' ', hl(subject.name, 'no'), ' ', hl('=', 'o'), ' ',
+        hl('require', 'k'), '(', hl(`"${idParts[1]}"`, 's'), ')'
+      ];
+      switch (idParts[2]) {
+      case '.':
+        reqParts.push('.', hl(idParts[3], 'na'));
+        break;
+      case '::':
+        const ref = json[idParts[1]];
+        if (ref)
+          reqParts[2].textContent = ref.subject.name;
+      }
+      reqParts.push(';');
+      const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
+
+      const functions = newInstance ? [buildConstructor(
+        api, subject, newInstance, requireLine
+      )] : [];
+
+      util.isObjEmpty(customMethods) ||
+        util.append(functions, buildMethods(api, subject, customMethods, requireLine, 'custom'));
+      util.isObjEmpty(methods) ||
+        util.append(functions, buildMethods(api, subject, methods, requireLine));
+      util.isObjEmpty(protoMethods) ||
+        util.append(functions, buildMethods(api, subject, protoMethods, requireLine, 'proto'));
+
+      const linkNav = {nav: functions.map(
+        func => func && Dom.h({a: func.$name, $href: '#'+func.id})
+      )};
+
+      linkModules.push([id, linkNav]);
+      const abstractMap = {};
+      const abstract = jsdocToHtml(api, subject.abstract, abstractMap);
+      const configMap = abstractMap[':config:'];
+      let config;
+      if (configMap) {
+        config = {class: 'jsdoc-config', table: [
+          {tr: {$colspan: 2, td: {h1: 'Config'}}},
+          ...Object.keys(configMap).sort().map(key => Dom.h({
+            class: 'jsdoc-config-item',
+            tr: [{td: key}, {td: configMap[key]}]
+          }))
+        ]};
+      }
+
+      let properties = util.isObjEmpty(api.properties) ? [] :
+            buildProperties(api, subject, api.properties);
+
+      util.isObjEmpty(api.protoProperties) ||
+        (properties = properties.concat(buildProperties(api, subject, api.protoProperties, 'proto')));
+
+      pages.appendChild(Dom.h({
+        id,
+        '$data-env': env(api),
+        class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
+        section: [
+          {class: 'jsdoc-module-path', a: id, $href: '#'+id},
+          {class: 'jsdoc-module-title searchable', h1: subject.name},
+          {abstract},
+          {class: 'jsdoc-module-sidebar', aside},
+          {div: [
+            config,
+            properties.length && {class: 'jsdoc-properties', div: [
+              {h1: 'Properties'},
+              {table: {tbody: properties}}
+            ]},
+            functions.length && {class: 'jsdoc-methods', div: [
+              {h1: "Methods"},
+              {div: functions},
+            ]},
+            innerSubjects && buildInnerSubjects(api, innerSubjects, linkNav),
+          ]},
+          // {pre: JSON.stringify(json, null, 2)}
+        ],
+      }));
+    });
+
+    buildLinks(links, linkModules);
+
+    return index.innerHTML;
+  };
+
+  const buildInnerSubjects = (parent, innerSubjects, linkNav)=> ({
+    class: 'jsdoc-inner-subjects',
+    div: Object.keys(innerSubjects).sort().map(name => {
+      const api = innerSubjects[name];
+    }),
+  });
+
+  const buildProperties = (api, subject, properties, proto)=>{
+    const rows = [];
+
+    const addRows = (properties)=>{
+      const argMap = {};
+      Object.keys(properties).sort().forEach(name => {
+        const property = properties[name];
+        const value = Dom.h({class: 'jsdoc-value', code: valueToText(property.value)});
+        const info = property.info ? jsdocToHtml(
+          api,
+          property.info
+            .replace(/\$\{value\}/, '[](#jsdoc-value)'),
+          argMap
+        ) : value;
+        if (property.info) {
+          const vref = findHref(info, '#jsdoc-value', true);
+          if (vref)
+            vref.parentNode.replaceChild(value, vref);
+        }
+        const ap = extractTypes(
+          property.calls ?
+            argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
+          : argProfile([[property.value]], value => value[0])
+        );
+
+        rows.push({tr: [
+          {class: "searchable", td: proto ? '#'+name : name},
+          {td: ap},
+          {class: 'jsdoc-info', '$data-env': env(property),
+           td: info
+           }
+        ]});
+
+        property.properties && addRows(property.properties);
+      });
+    };
+    addRows(properties);
+
+    return rows;
+  };
+
+  const env = (obj)=> obj.env || 'server';
 
   const meta = noContent('meta');
   const link = noContent('link');
@@ -16,7 +215,7 @@ define((require, exports, module)=>{
   const mdRenderer = new marked.Renderer();
   const mdOptions = {
     renderer: mdRenderer,
-    highlight(code, lang) {
+    highlight: (code, lang)=>{
       switch(lang) {
       case 'js': case 'javascript':
         return jsParser.highlight(jsParser.indent(code)).outerHTML;
@@ -65,7 +264,7 @@ define((require, exports, module)=>{
   };
 
   const BLOCK_TAGS = {
-    param(api, row, argMap) {
+    param: (api, row, argMap)=>{
       const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid param for api: ${api.id} line @${row}`);
@@ -84,14 +283,14 @@ define((require, exports, module)=>{
       if (m[2]) profile.optional = true;
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
     },
-    config(api, row, argMap) {
+    config: (api, row, argMap)=>{
        const m = /^\w+\s*(\S+)(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid config for api: ${api.id} line @${row}`);
       const profile = argMap[':config:'] || (argMap[':config:'] = {});
       profile[m[1]] = jsdocToHtml(api, m[2], argMap);
     },
-    returns(api, row, argMap) {
+    returns: (api, row, argMap)=>{
       const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid returns for api: ${api.id} line @${row}`);
@@ -117,7 +316,7 @@ define((require, exports, module)=>{
     });
   };
 
-  function execInlineTag(api, text) {
+  const execInlineTag = (api, text)=>{
     let [mod, type, method] = text.split(/([.#:]+)/);
     let href = text;
     if (mod) {
@@ -131,211 +330,9 @@ define((require, exports, module)=>{
     }
 
     return Dom.h({class: 'jsdoc-link', a: idToText(text), $href: '#'+href});
-  }
-
-  function noContent(tag) {
-    return function (opts) {
-      const attrs = {[tag]: ''};
-      for (let attr in opts)
-        attrs['$'+attr] = opts[attr];
-      return Dom.h(attrs);
-    };
-  }
-
-  const apiToHtml = (title, json, sourceHtml)=>{
-    const index = document.createElement('div');
-
-    index.innerHTML = sourceHtml;
-
-    const tags = {};
-
-    Dom.walkNode(index, node => {
-      switch(node.nodeType) {
-      case document.TEXT_NODE: case document.COMMENT_NODE:
-        return false;
-      default:
-        const tag = node.getAttribute('data-api');
-        if (tag) tags[tag] = node;
-      }
-    });
-
-    const {header, links, pages} = tags;
-    const linkModules = [];
-
-    Object.keys(json).sort((a,b)=>{
-      a = a.replace(/\/main$/, '');
-      b = b.replace(/\/main$/, '');
-      return a === b ? 0 : a < b ? -1 : 1;
-    }).forEach(id => {
-      const api = json[id]; api.id = id; api.parent = json;
-      const {subject, newInstance, methods, customMethods, protoMethods, innerSubjects} = api;
-
-      const aside = [];
-//      addModuleList('Modules required', api.requires);
-      addModuleList('Modifies modules', api.modifies);
-      addModuleList('Modified by modules', api.modifiedBy);
-
-      function addModuleList(heading, list) {
-        if (list) {
-          aside.push({div: [
-            {h1: heading},
-
-            {class: 'jsdoc-list', div: list.map(id => {
-              const m = id.split('!');
-              if (m.length === 2) {
-                if (m[0] === 'koru/env') {
-                  const idc = m[1]+'-client';
-                  const ids = m[1]+'-server';
-                  return {span: [
-                    {class: 'jsdoc-link', a: idc, $href: '#'+idc},
-                    {br: ''},
-                    {class: 'jsdoc-link', a: ids, $href: '#'+ids},
-                  ]};
-                }
-                return id;
-              }
-              return {class: 'jsdoc-link', a: id, $href: '#'+id};
-            })},
-          ]});
-        }
-      }
-
-      const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
-      const reqParts = [
-        hl('const', 'kd'), ' ', hl(subject.name, 'no'), ' ', hl('=', 'o'), ' ',
-        hl('require', 'k'), '(', hl(`"${idParts[1]}"`, 's'), ')'
-      ];
-      switch (idParts[2]) {
-      case '.':
-        reqParts.push('.', hl(idParts[3], 'na'));
-        break;
-      case '::':
-        const ref = json[idParts[1]];
-        if (ref)
-          reqParts[2].textContent = ref.subject.name;
-      }
-      reqParts.push(';');
-      const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
-
-      const functions = newInstance ? [buildConstructor(
-        api, subject, newInstance, requireLine
-      )] : [];
-
-      util.isObjEmpty(customMethods) ||
-        util.append(functions, buildMethods(api, subject, customMethods, requireLine, 'custom'));
-      util.isObjEmpty(methods) ||
-        util.append(functions, buildMethods(api, subject, methods, requireLine));
-      util.isObjEmpty(protoMethods) ||
-        util.append(functions, buildMethods(api, subject, protoMethods, requireLine, 'proto'));
-
-      const linkNav = {nav: functions.map(
-        func => func && Dom.h({a: func.$name, $href: '#'+func.id})
-      )};
-
-      linkModules.push([id, linkNav]);
-      const abstractMap = {};
-      const abstract = jsdocToHtml(api, subject.abstract, abstractMap);
-      const configMap = abstractMap[':config:'];
-      if (configMap) {
-        var config = {class: 'jsdoc-config', table: [
-          {tr: {$colspan: 2, td: {h1: 'Config'}}},
-          ...Object.keys(configMap).sort().map(key => Dom.h({
-            class: 'jsdoc-config-item',
-            tr: [{td: key}, {td: configMap[key]}]
-          }))
-        ]};
-      }
-
-      let properties = util.isObjEmpty(api.properties) ? [] :
-            buildProperties(api, subject, api.properties);
-
-      util.isObjEmpty(api.protoProperties) ||
-        (properties = properties.concat(buildProperties(api, subject, api.protoProperties, 'proto')));
-
-      pages.appendChild(Dom.h({
-        id,
-        '$data-env': env(api),
-        class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
-        section: [
-          {class: 'jsdoc-module-path', a: id, $href: '#'+id},
-          {class: 'jsdoc-module-title searchable', h1: subject.name},
-          {abstract},
-          {class: 'jsdoc-module-sidebar', aside},
-          {div: [
-            config,
-            properties.length && {class: 'jsdoc-properties', div: [
-              {h1: 'Properties'},
-              {table: {tbody: properties}}
-            ]},
-            functions.length && {class: 'jsdoc-methods', div: [
-              {h1: "Methods"},
-              {div: functions},
-            ]},
-            innerSubjects && buildInnerSubjects(api, innerSubjects, linkNav),
-          ]},
-          // {pre: JSON.stringify(json, null, 2)}
-        ],
-      }));
-    });
-
-    buildLinks(links, linkModules);
-
-    return index.innerHTML;
   };
 
-  function buildInnerSubjects(parent, innerSubjects, linkNav) {
-    return {
-      class: 'jsdoc-inner-subjects',
-      div: Object.keys(innerSubjects).sort().map(name => {
-        const api = innerSubjects[name];
-      }),
-    };
-  }
-
-  function buildProperties(api, subject, properties, proto) {
-    const rows = [];
-    addRows(properties);
-
-    function addRows(properties) {
-      const argMap = {};
-      Object.keys(properties).sort().forEach(name => {
-        const property = properties[name];
-        const value = Dom.h({class: 'jsdoc-value', code: valueToText(property.value)});
-        const info = property.info ? jsdocToHtml(
-          api,
-          property.info
-            .replace(/\$\{value\}/, '[](#jsdoc-value)'),
-          argMap
-        ) : value;
-        if (property.info) {
-          const vref = findHref(info, '#jsdoc-value', true);
-          if (vref)
-            vref.parentNode.replaceChild(value, vref);
-        }
-        const ap = extractTypes(
-          property.calls ?
-            argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
-          : argProfile([[property.value]], value => value[0])
-        );
-
-        rows.push({tr: [
-          {class: "searchable", td: proto ? '#'+name : name},
-          {td: ap},
-          {class: 'jsdoc-info', '$data-env': env(property),
-           td: info
-           }
-        ]});
-
-        property.properties && addRows(property.properties);
-      });
-    }
-
-    return rows;
-  }
-
-  function env(obj) {return obj.env || 'server';}
-
-  function buildConstructor(api, subject, {sig, intro, calls}, requireLine) {
+  const buildConstructor = (api, subject, {sig, intro, calls}, requireLine)=>{
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
       {h1: "Example"},
@@ -354,13 +351,11 @@ define((require, exports, module)=>{
       buildParams(api, args, argMap),
       examples,
     ]});
-  }
+  };
 
-  function newSig(name, args) {
-    return `new ${name}(${args.map(arg => valueToText(arg)).join(", ")});`;
-  }
+  const newSig = (name, args)=> `new ${name}(${args.map(arg => valueToText(arg)).join(", ")});`;
 
-  function buildMethods(api, subject, methods, requireLine, type) {
+  const buildMethods = (api, subject, methods, requireLine, type)=>{
     return Object.keys(methods).sort().map(name => {
       const method = methods[name];
       const {sigPrefix, sig, intro, calls} = method;
@@ -431,13 +426,13 @@ define((require, exports, module)=>{
         ]
       });
     });
-  }
+  };
 
-  function section(api, div) {
+  const section = (api, div)=>{
     div.id = `${api.id}${div.$name[0]==='#' ? '' : '.'}${div.$name}`;
     div.class = `${div.class||''} jsdoc-module-section`;
     return div;
-  }
+  };
 
   const defToHtml = (sig)=>{
     try {
@@ -458,7 +453,7 @@ define((require, exports, module)=>{
 
   const codeToHtml = codeIn => jsParser.highlight(codeIn);
 
-  function mapArgs(sig, calls) {
+  const mapArgs = (sig, calls)=>{
     let args;
     try {
       args = jsParser.extractParams(sig);
@@ -488,9 +483,9 @@ define((require, exports, module)=>{
 
     });
     return {args, argMap};
-  }
+  };
 
-  function buildParams(api, args, argMap) {
+  const buildParams = (api, args, argMap)=>{
     const ret = argMap[return$];
 
     if (args.length === 0 && ret === undefined)
@@ -529,9 +524,9 @@ define((require, exports, module)=>{
         ],
       }},
     ]};
-  }
+  };
 
-  function extractTypes({types, href}) {
+  const extractTypes = ({types, href})=>{
     const ans = [];
     const typeMap = {};
     for (let type in types) {
@@ -542,13 +537,11 @@ define((require, exports, module)=>{
       ans.push(targetExternal({a: idToText(types[type]), $href: (href || typeHRef)(type)}));
     }
     return ans;
-  }
+  };
 
-  function idToText(id) {
-    return id.replace(/\/main(?=$|\.)/, '').replace(/^.*\//, '');
-  }
+  const idToText = (id)=> id.replace(/\/main(?=$|\.)/, '').replace(/^.*\//, '');
 
-  function argProfile(calls, extract) {
+  const argProfile = (calls, extract)=>{
     let optional = false, ignoreP = false;
     let types = {};
     let subArgs;
@@ -603,9 +596,9 @@ define((require, exports, module)=>{
     if (subArgs !== undefined)
       ans.subArgs = subArgs;
     return ans;
-  }
+  };
 
-  function typeHRef(type) {
+  const typeHRef = (type)=>{
     if (type[0] === '<') {
       type = type.replace(/^[^>]*>(?:\.{3})?/, '');
       let ans = hrefMap[type];
@@ -629,14 +622,14 @@ define((require, exports, module)=>{
       (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
       (type === 'any-type' ? '' : cType);
     return '#'+type;
-  }
+  };
 
-  function valueToHtml(arg) {
+  const valueToHtml = (arg)=>{
     const text = valueToText(arg);
     return hl(text, arg == null ? 'kc' : jsParser.HL_MAP[typeof arg] || 'ge nx');
-  }
+  };
 
-  function hlArgList(list) {
+  const hlArgList = (list)=>{
     const ans = [];
     list.forEach(arg => {
       if (ans.length !== 0)
@@ -644,7 +637,7 @@ define((require, exports, module)=>{
       ans.push(valueToHtml(arg));
     });
     return ans;
-  }
+  };
 
   const valueToText = arg =>{
     if (Array.isArray(arg)) {
@@ -663,13 +656,11 @@ define((require, exports, module)=>{
     else return JSON.stringify(arg);
   };
 
-  function valueToLink(arg) {
-    return valueToText(arg);
-  }
+  const valueToLink = (arg)=> valueToText(arg);
 
   const targetExternal = (a)=> a.$href.indexOf("http") == 0 ? (a.$target="_blank", a) : a;
 
-  function jsdocToHtml(api, text, argMap) {
+  const jsdocToHtml = (api, text, argMap)=>{
     const div = document.createElement('div');
     const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
@@ -683,7 +674,7 @@ define((require, exports, module)=>{
       });
     }
 
-    mdRenderer.link = function (href, title, text) {
+    mdRenderer.link = (href, title, text)=>{
       switch (href) {
       case '#jsdoc-tag':
         return execInlineTag(api, text).outerHTML;
@@ -694,7 +685,6 @@ define((require, exports, module)=>{
       }
     };
 
-
     const md = marked.parse(
       info.replace(/\{#([^}{]*)\}/g, '[$1](#jsdoc-tag)'),
 
@@ -703,32 +693,24 @@ define((require, exports, module)=>{
 
     div.innerHTML = md;
     return div;
-  }
+  };
 
-  function hl(text, hl) {
+  const hl = (text, hl)=>{
     const span = document.createElement('span');
     span.className = hl;
     span.textContent = text;
     return span;
-  }
+  };
 
-  function buildLinks(parent, list) {
+  const buildLinks = (parent, list)=>{
     let prevId = '', nodeModule;
-    list.forEach(([id, linkNav]) => {
-      const link = idToLink(id);
-      (link.nodeType ? parent : nodeModule)
-        .appendChild(nodeModule = Dom.h({class: 'jsdoc-nav-module', div: [
-          link,
-          linkNav,
-        ]}));
-      prevId = id;
-    });
 
-    function idToLink(id) {
+    const idToLink = (id)=>{
       let text = id.replace(/\/main(?=\.|::|$)/, '').split(/([\/\.]|::)/);
       prevId = prevId.replace(/\/main(?=\.|::|$)/, '').split(/([\/\.]|::)/);
       const len = Math.min(text.length, prevId.length);
-      for(var i = 0; i < len; ++i) {
+      let i = 0;
+      for(; i < len; ++i) {
         if (text[i] !== prevId[i]) break;
       }
       if (i === 0) {
@@ -747,10 +729,20 @@ define((require, exports, module)=>{
       }
 
       return Dom.h({a: text, class: "jsdoc-idLink", $href: '#'+id});
-    }
-  }
+    };
 
-  function findHref(node, href, returnOnFirst) {
+    list.forEach(([id, linkNav]) => {
+      const link = idToLink(id);
+      (link.nodeType ? parent : nodeModule)
+        .appendChild(nodeModule = Dom.h({class: 'jsdoc-nav-module', div: [
+          link,
+          linkNav,
+        ]}));
+      prevId = id;
+    });
+  };
+
+  const findHref = (node, href, returnOnFirst)=>{
     let ans = returnOnFirst ? undefined : [];
     Dom.walkNode(node, node => {
       switch(node.nodeType) {
@@ -768,7 +760,7 @@ define((require, exports, module)=>{
     });
 
     return ans;
-  }
+  };
 
   apiToHtml.jsdocToHtml = jsdocToHtml;
 

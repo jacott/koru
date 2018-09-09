@@ -150,33 +150,34 @@ define((require)=>{
 
     getRangeClientRect: range =>{
       if (range.collapsed) {
-        var sc = range.startContainer;
-        var so = range.startOffset;
-        var tr = document.createRange();
-        var result = {width: 0};
+        const sc = range.startContainer;
+        const so = range.startOffset;
+        const tr = document.createRange();
+        const result = {width: 0};
+        let dims;
         if (sc.nodeType === document.TEXT_NODE) {
-          var text = sc.textContent;
+          const text = sc.textContent;
           if (text) {
             if (so < text.length) {
               tr.setStart(sc, so);
               tr.setEnd(sc, so + 1);
-              var dims = tr.getBoundingClientRect();
+              dims = tr.getBoundingClientRect();
             } else {
               tr.setStart(sc, so - 1);
               tr.setEnd(sc, so);
-              var dims = tr.getBoundingClientRect();
+              dims = tr.getBoundingClientRect();
               result.left = dims.right;
             }
           } else {
-            var dims = sc.parentNode.getBoundingClientRect();
+            dims = sc.parentNode.getBoundingClientRect();
           }
         } else {
-          var node = sc.childNodes[so] || sc;
+          const node = sc.childNodes[so] || sc;
           if (node.nodeType === document.TEXT_NODE) {
             tr.setStart(node, 0);
             return Dom.getRangeClientRect(tr);
           } else {
-            var dims = node.getBoundingClientRect();
+            dims = node.getBoundingClientRect();
           }
         }
         result.height = dims.height;
@@ -436,7 +437,7 @@ define((require)=>{
     },
 
     replaceElement(newElm, oldElm, noRemove) {
-      var ast = oldElm[endMarker$];
+      const ast = oldElm[endMarker$];
       if (ast !== undefined) {
         Dom.removeInserts(oldElm);
         Dom.remove(ast);
@@ -445,8 +446,8 @@ define((require)=>{
       const parentCtx = (oldElm[ctx$] != null && oldElm[ctx$].parentCtx) ||
               Dom.ctx(oldElm.parentNode);
       if (parentCtx !== null) {
-        var ctx = newElm[ctx$];
-        if (ctx) ctx.parentCtx = parentCtx;
+        const ctx = newElm[ctx$];
+        if (ctx != null) ctx.parentCtx = parentCtx;
       }
 
       noRemove === 'noRemove' || Dom.destroyData(oldElm);
@@ -499,14 +500,63 @@ define((require)=>{
      * @return {Function} A function that inserts the element into its original position
      **/
     removeToInsertLater(element) {
-      var parentNode = element.parentNode;
-      var nextSibling = element.nextSibling;
+      const parentNode = element.parentNode;
+      const nextSibling = element.nextSibling;
       element.remove();
-      if (nextSibling) {
+      if (nextSibling !== null) {
         return ()=> parentNode.insertBefore(element, nextSibling);
       } else {
         return ()=> parentNode.appendChild(element);
       };
+    },
+
+    reposition: (pos='below', options)=>{
+      const height = window.innerHeight;
+      const ps = options.popup.style;
+      const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
+      ps.setProperty('left', bbox.left + 'px');
+      switch (pos) {
+      case 'above':
+        ps.removeProperty('top');
+        ps.setProperty('bottom', (height - bbox.top) + 'px');
+        break;
+      case 'below':
+        ps.removeProperty('bottom');
+        ps.setProperty('top', (bbox.top + bbox.height) + 'px');
+        break;
+      case 'on':
+        ps.removeProperty('bottom');
+        ps.setProperty('top', bbox.top + 'px');
+      }
+      const ppos = options.popup.getBoundingClientRect();
+      switch (pos) {
+      case 'above':
+        if (ppos.top < 0) {
+          ps.removeProperty('bottom');
+          if (ppos.height + bbox.top + bbox.height > height) {
+            ps.setProperty('top', '0');
+          } else {
+            ps.setProperty('top', (bbox.top + bbox.height) + 'px');
+          }
+        }
+        break;
+      case 'below':
+        if (ppos.bottom > height) {
+          if (ppos.height >= bbox.top) {
+            ps.setProperty('top', '0');
+          } else {
+            ps.setProperty('bottom', (height - bbox.top) + 'px');
+            ps.removeProperty('top');
+          }
+        }
+      }
+      if (pos !== 'on') {
+        const width = window.innerWidth;
+        if (ppos.right > width) {
+          ps.setProperty('right', '0');
+          ps.removeProperty('left');
+        }
+      }
     },
   });
 

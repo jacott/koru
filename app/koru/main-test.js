@@ -71,7 +71,7 @@ define((require, exports, module)=>{
       stub(isServer ? global : window, 'setTimeout').returns(123);
 
       const func = stub(null, null, ()=>{throw "CATCH ME"});
-      var token = koru.setTimeout(func , 123000);
+      const token = koru.setTimeout(func , 123000);
 
       assert.calledWith(setTimeout, TH.match.func, 123000);
 

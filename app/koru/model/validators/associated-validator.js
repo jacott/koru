@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const util            = require('koru/util');
   const Model           = require('../main');
   const Query           = require('../query');
@@ -34,14 +34,15 @@ define((require, exports, module)=>{
 
     if (value.length === 0) return;
 
+    let modelName, finder, filter, scopeName;
     switch (typeof options) {
     case 'object':
-      var modelName = options.model ? options.model.modelName : options.modelName;
-      var finder = options.finder;
-      var filter = options.filter;
+      modelName = options.model ? options.model.modelName : options.modelName;
+      finder = options.finder;
+      filter = options.filter;
       break;
     case 'string':
-      var modelName = options;
+      modelName = options;
       break;
     }
     if (belongs_to && ! modelName) {
@@ -49,10 +50,10 @@ define((require, exports, module)=>{
     }
 
     if (! modelName) {
-      var scopeName = util.sansId(field);
+      scopeName = util.sansId(field);
       modelName = util.capitalize(scopeName);
     } else {
-      var scopeName = util.uncapitalize(modelName);
+      scopeName = util.uncapitalize(modelName);
     }
 
     finder = finder ||

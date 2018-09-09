@@ -12,7 +12,7 @@ define((require, exports, module)=>{
 
     options = options || {};
     if ('in' in options) {
-      var list = options.in;
+      const list = options.in;
       if (Array.isArray(list) ? list.indexOf(value) === -1 :
           typeof value !== 'string' || ! hasOwn(list, value))
         return this.addError(doc,field,'not_in_list');

@@ -182,8 +182,8 @@ define((require)=>{
       elm.parentNode.replaceChild(widget.element, elm);
       widget.swap = elm;
 
-      var focus = widget.element.querySelector(Dom.INPUT_SELECTOR);
-      focus && focus.focus();
+      const focus = widget.element.querySelector(Dom.INPUT_SELECTOR);
+      focus === null || focus.focus();
 
       return widget;
     },
@@ -196,11 +196,11 @@ define((require)=>{
           if (range !== null && ! range.collapsed) return;
           const target = this;
           if (Dom.matches(target, '.readOnly *')) return;
-          var ctx = Dom.ctx(target);
+          const ctx = Dom.ctx(target);
           ctx.options.value = (ctx.options.doc = ctx.data.doc)[ctx.options.name];
-          var widget = Tpl.swapFor(target, ctx.options);
+          const widget = Tpl.swapFor(target, ctx.options);
           widget.onSubmit(function (value, form) {
-            var doc = ctx.data.doc;
+            const doc = ctx.data.doc;
             doc.$reload();
             doc[ctx.options.name] = value;
             if (func) {

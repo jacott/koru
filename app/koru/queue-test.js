@@ -15,7 +15,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("single", ()=>{
-      var single = Queue('single');
+      const single = Queue('single');
       single.add(v.func = stub());
       assert.called(v.func);
       single.add(v.func = stub());
@@ -31,7 +31,7 @@ isServer && define((require, exports, module)=>{
 
       const letRun = func =>{
         koru.Fiber(func).run();
-        var f = new Future();
+        const f = new Future();
         setTimeout(()=>{f.return(v.q1)}, 1);
         f.wait();
       };

@@ -103,24 +103,6 @@ isClient && define((require, exports, module)=>{
       refute.dom('#dep');
     });
 
-    test("repositioning", ()=>{
-      const container = Dom.h({class: 'glassPane', div: {
-        class: 'popup', $style: 'position:absolute', div: {input: ''}}});
-      const ctx = Dom.setCtx(container);
-      spy(ctx, 'onDestroy');
-
-      onEnd(()=>{TH.pointerDownUp(container)});
-
-      const options = sut.appendBelow({
-        container: container,
-        origin: document.body,
-      });
-
-      assert.same(sut.reposition('above', options), options);
-
-      assert.calledOnce(ctx.onDestroy);
-    });
-
     test("handleTab", ()=>{
       const container =  Dom.h({
         class: 'glassPane', div: {

@@ -9,7 +9,7 @@ define(()=>{
         const mask = (1 << 8) - 1;
         const len8 = ab.length * 8;
 
-        for(var i = 0; i < len8; i += 8)
+        for(let i = 0; i < len8; i += 8)
 	  bin[i>>5] |= (ab[i / 8] & mask) << (24 - i%32);
 
         return bin;
@@ -21,7 +21,7 @@ define(()=>{
       const bin = new Array(str.length>>5);
       const mask = (1 << 8) - 1;
       const len8 = str.length * 8;
-      for(var i = 0; i < len8; i += 8) {
+      for(let i = 0; i < len8; i += 8) {
 	bin[i>>5] |= (str.charCodeAt(i / 8) & mask) << (24 - i%32);
       }
       return bin;

@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, match: m} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const {ctx$, private$, endMarker$} = require('koru/symbols');
 
@@ -562,6 +562,22 @@ define((require, exports, module)=>{
       assert.same(v.st1.firstCall.thisValue, v.elmCtx);
       assert.calledWith(v.st2.stop, v.elmCtx, v.elm);
       assert.same(v.st2.stop.firstCall.thisValue, v.st2);
+    });
+
+    test("reposition", ()=>{
+      /**
+       * Align element with an origin
+       **/
+      // See SelectMenu for more testing
+      api.method();
+      const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
+      document.body.appendChild(popup);
+
+      Dom.reposition('above', {popup, boundingClientRect: {left: 50, top: 100}});
+
+      const rect = popup.getBoundingClientRect();
+
+      assert.specificAttributes(rect, {left: 50, top: 90});
     });
   });
 });

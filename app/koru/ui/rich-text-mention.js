@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const Modal           = require('koru/ui/modal');
   const util            = require('koru/util');
-  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-mention'));
   const $ = Dom.current;
@@ -110,9 +110,9 @@ define((require, exports, module)=>{
   const transformList = (data, al)=>{
     // noAppend needed to stop firefox loosing focus
     const rtMention = al.firstElementChild;
-    Modal.reposition('on', {popup: rtMention, origin: data.span});
+    Dom.reposition('on', {popup: rtMention, origin: data.span});
     const list = rtMention.lastElementChild;
-    Modal.reposition('below', {popup: list, origin: rtMention.firstElementChild});
+    Dom.reposition('below', {popup: list, origin: rtMention.firstElementChild});
   };
 
   Tpl.$extend({

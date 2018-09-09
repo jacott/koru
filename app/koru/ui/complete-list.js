@@ -2,7 +2,6 @@ define((require)=>{
   const Dom             = require('../dom');
   const util            = require('../util');
   const Form            = require('./form');
-  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(require('../html!./complete-list'));
   const $ = Dom.current;
@@ -74,7 +73,7 @@ define((require)=>{
       };
       const elm = v.input;
       document.body.appendChild(v.completeList);
-      Modal.reposition('below', {origin: elm, popup: v.completeList});
+      Dom.reposition('below', {origin: elm, popup: v.completeList});
       options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
     },
