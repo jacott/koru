@@ -46,15 +46,17 @@ define((require)=>{
 
   const Modal = {
     init(options) {
+      options = Object.assign({container: options.container || options.popup}, options);
+      options.ctx = Dom.myCtx(options.container) || Dom.myCtx(options.popup);
+      if (options.ctx == null)
+        throw new Error("Can't initialize modal without Ctx");
       if (topModal == null) {
         document.addEventListener('keydown', keydownCallback, true);
         document.addEventListener('keydown', retKeydownCallback);
       }
-      options = Object.assign({}, options);
       options.prev = topModal; topModal = options;
 
       if (! options.focus) options.focus = document.activeElement;
-      if (! options.ctx) options.ctx = Dom.myCtx(options.container);
       if (! options.popup) {
         options.popup = options.container.firstElementChild;
         if (options.popup.tagName === 'SPAN')
@@ -94,52 +96,51 @@ define((require)=>{
       return this.append('below', options);
     },
 
-    reposition(pos, options) {
-      pos = pos || 'below';
+    reposition(pos='below', options) {
       const height = window.innerHeight;
       const ps = options.popup.style;
       const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
-      ps.left = bbox.left + 'px';
+      ps.setProperty('left', bbox.left + 'px');
       switch (pos) {
       case 'above':
-        ps.top = '';
-        ps.bottom = (height - bbox.top) + 'px';
+        ps.removeProperty('top');
+        ps.setProperty('bottom', (height - bbox.top) + 'px');
         break;
       case 'below':
-        ps.bottom = '';
-        ps.top = (bbox.top + bbox.height) + 'px';
+        ps.removeProperty('bottom');
+        ps.setProperty('top', (bbox.top + bbox.height) + 'px');
         break;
       case 'on':
-        ps.bottom = '';
-        ps.top = bbox.top + 'px';
+        ps.removeProperty('bottom');
+        ps.setProperty('top', bbox.top + 'px');
       }
       const ppos = options.popup.getBoundingClientRect();
       switch (pos) {
       case 'above':
         if (ppos.top < 0) {
-          ps.bottom = '';
+          ps.removeProperty('bottom');
           if (ppos.height + bbox.top + bbox.height > height) {
-            ps.top = '0';
+            ps.setProperty('top', '0');
           } else {
-            ps.top = (bbox.top + bbox.height) + 'px';
+            ps.setProperty('top', (bbox.top + bbox.height) + 'px');
           }
         }
         break;
       case 'below':
         if (ppos.bottom > height) {
           if (ppos.height >= bbox.top) {
-            ps.top = '0';
+            ps.setProperty('top', '0');
           } else {
-            ps.bottom = (height - bbox.top) + 'px';
-            ps.top = '';
+            ps.setProperty('bottom', (height - bbox.top) + 'px');
+            ps.removeProperty('top');
           }
         }
       }
       if (pos !== 'on') {
         const width = window.innerWidth;
         if (ppos.right > width) {
-          ps.right = '0';
-          ps.left = '';
+          ps.setProperty('right', '0');
+          ps.removeProperty('left');
         }
       }
       return options;
@@ -148,11 +149,7 @@ define((require)=>{
     append(pos, options) {
       options.noAppend || document.body.appendChild(options.container || options.popup);
 
-      if (options.popup) {
-        options = Object.assign({container: options.popup}, options);
-      } else {
-        options = Modal.init(options);
-      }
+      options = Modal.init(options);
 
       const {destroyMeWith} = options;
       if (destroyMeWith != null) {

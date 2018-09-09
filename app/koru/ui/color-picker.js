@@ -11,6 +11,18 @@ define((require, exports, module)=>{
   const $ = Dom.current;
   const {ColorPart} = Tpl;
 
+  const close = (elm, button)=>{
+    const ctx = Dom.myCtx(elm);
+    if (ctx) {
+      const data = ctx.data;
+
+      data.callback === undefined || data.callback(
+        button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
+      data.callback = null;
+      Dom.remove(elm);
+    }
+  };
+
   Tpl.$events({
     'input [name=hex]'(event) {
       Tpl.setColor($.ctx, this.value);
@@ -125,43 +137,29 @@ define((require, exports, module)=>{
       ctx.updateAllTags();
     },
 
-    choose(color, options, callback) {
-      if (arguments.length === 2) {
-        callback = options;
-        options = false;
-      }
-      if (! options || typeof options !== 'object')
-        options = {alpha: options};
-
-      const alpha = options.alpha;
-
+    choose({modalPos, anchor, color, callback, alpha=false, custom, customFieldset}) {
       const hsla = hex2hsl(color) || {h: 0, s: 0, l: 1, a: 1};
       if (! alpha) hsla.a = 1;
-      const data = util.reverseMerge({orig: color, color: hsla, callback: callback}, options);
-      const elm = Tpl.$autoRender(data);
-      document.body.appendChild(elm);
-      Modal.init({
-        container: elm,
-        handleTab: true,
-      });
-      Dom.dontFocus || elm.querySelector('[name=hex]').focus();
+      const data = {orig: color, color: hsla, callback, alpha, custom, customFieldset};
+      const container = Tpl.$autoRender(data);
+      const popup = container.querySelector('.ui-dialog');
+      if (anchor === undefined) {
+        container.classList.add('Dialog', 'Confirm');
+        document.body.appendChild(container);
+        Modal.init({container, popup, handleTab: true});
+      } else {
+        Modal.append(modalPos, {
+          container, popup, handleTab: true,
+          boundingClientRect: anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor,
+        });
+      }
+      Dom.dontFocus || popup.querySelector('[name=hex]').focus();
     },
 
     $destroyed(ctx, elm) {
       ctx.data.callback && ctx.data.callback(null);
     },
   });
-
-  function close(elm, button) {
-    const ctx = Dom.myCtx(elm);
-    if (ctx) {
-      const data = ctx.data;
-
-      data.callback && data.callback(button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
-      data.callback = null;
-      Dom.remove(elm);
-    }
-  }
 
   const BG_STYLES = {
     s(color) {

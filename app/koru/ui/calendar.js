@@ -168,7 +168,8 @@ define((require, exports, module)=>{
 
         options && options.customize && options.customize(popup, this);
 
-        Modal.appendBelow({container: popup, origin: this, popup: popup});
+        document.body.appendChild(popup);
+        Modal.reposition('below', {origin: this, popup});
       }
     },
   });

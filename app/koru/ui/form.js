@@ -100,18 +100,18 @@ define((require)=>{
 
   };
 
-  const changeColorEvent = (field, options)=> event =>{
+  const changeColorEvent = (field, options)=> function (event) {
     Dom.stopEvent();
     const doc = $.data();
 
     const fieldSpec = doc.classMethods.$fields[field];
-    const alpha = (fieldSpec && fieldSpec.color === 'alpha');
+    const alpha = fieldSpec ? fieldSpec.color === 'alpha' : false;
 
-    Dom.ColorPicker.choose(doc[field], alpha, result => {
+    Dom.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: result => {
       if (result) {
         saveChange(doc, field, result, options);
       }
-    });
+    }});
   };
 
   const changeFieldEvent = (field, options)=>  function (event) {

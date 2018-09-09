@@ -16,12 +16,12 @@ isClient && define((require, exports, module)=>{
     });
 
     test("standard palette", ()=>{
-      sut.choose('#fffa1387', 'alpha', v.cb = stub());
+      sut.choose({color: '#fffa1387', alpha: true, callback: v.cb = stub()});
 
-      assert.dom('[data-color="ffff00"]', function () {
-        assert.same(this.style.backgroundColor, 'rgb(255, 255, 0)');
-        this.focus();
-        TH.click(this);
+      assert.dom('[data-color="ffff00"]', elm =>{
+        assert.same(elm.style.backgroundColor, 'rgb(255, 255, 0)');
+        elm.focus();
+        TH.click(elm);
       });
       assert.dom('[name=hex]', {value: 'ffff0087'});
 
@@ -31,7 +31,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("callback on destroy", ()=>{
-      sut.choose('#fffa1387', {}, v.cb = stub());
+      sut.choose({color: '#fffa1387', callback: v.cb = stub()});
 
       Dom.removeId('ColorPicker');
 
@@ -39,7 +39,9 @@ isClient && define((require, exports, module)=>{
     });
 
     test("custom button", ()=>{
-      sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = stub());
+      sut.choose({color: '#fffa1387', alpha: true,
+                  custom: ['My prompt', 'ret_val'],
+                  callback: v.cb = stub()});
 
       TH.click('[name=custom]', 'My prompt');
 
@@ -47,35 +49,36 @@ isClient && define((require, exports, module)=>{
     });
 
     test("customFieldset", ()=>{
-      sut.choose('#fffa1387', {alpha: true, customFieldset: Dom.h({div: 'hello', class: 'myCustom'})},
-                 v.cb = stub());
+      sut.choose({color: '#fffa1387', alpha: true,
+                  customFieldset: Dom.h({div: 'hello', class: 'myCustom'}),
+                  callback: v.cb = stub()});
 
       assert.dom('.ui-dialog>.myCustom', 'hello');
     });
 
     test("hue slider", ()=>{
-      sut.choose('#ffff0087', 'alpha', v.cb = stub());
+      sut.choose({color: '#ffff0087', alpha: true, callback: v.cb = stub()});
 
-      assert.dom('.colorPart.h', function () {
-        assert.dom('.handle', function () {
-          assert.cssNear(this, 'left', 16.7, 0.1,'%');
+      assert.dom('.colorPart.h', ()=>{
+        assert.dom('.handle', handle =>{
+          assert.cssNear(handle, 'left', 16.7, 0.1,'%');
         });
-        assert.dom('.slider', function () {
-          var ctx = Dom.myCtx(this);
-          ctx.data.callback(0.5, ctx, this);
+        assert.dom('.slider', slider =>{
+          const ctx = Dom.myCtx(slider);
+          ctx.data.callback(0.5, ctx, slider);
         });
         assert.dom('input', {value: '180'});
       });
-      assert.dom('.startTab', function () {
-        assert.same(document.activeElement, this);
+      assert.dom('.startTab', tab =>{
+        assert.same(document.activeElement, tab);
 
       });
-      assert.dom('.colorPart.s .slider', function () {
-        assert.same(this.style.backgroundImage,
+      assert.dom('.colorPart.s .slider', slider =>{
+        assert.same(slider.style.backgroundImage,
                     'linear-gradient(90deg, rgb(128, 128, 128) 0%, rgb(0, 255, 255) 100%)');
       });
-      assert.dom('.colorPart.l .slider', function () {
-        assert.same(this.style.backgroundImage,
+      assert.dom('.colorPart.l .slider', slider =>{
+        assert.same(slider.style.backgroundImage,
                     "linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(0, 255, 255) 50%, "+
                     "rgb(255, 255, 255) 100%)");
       });
@@ -85,22 +88,22 @@ isClient && define((require, exports, module)=>{
     });
 
     test("saturation input", ()=>{
-      sut.choose('#ffff0087', 'alpha', v.cb = stub());
+      sut.choose({color: '#ffff0087', alpha: true, callback: v.cb = stub()});
 
-      assert.dom('.colorPart.s', function () {
-        this.focus();
+      assert.dom('.colorPart.s', part =>{
+        part.focus();
         assert.dom('input', {value: '100'});
         TH.input('input', '-50');
-        assert.dom('.handle', function () {
-          assert.cssNear(this, 'left', 0, 0.1,'%');
+        assert.dom('.handle', handle =>{
+          assert.cssNear(handle, 'left', 0, 0.1,'%');
         });
         TH.input('input', '150');
-        assert.dom('.handle', function () {
-          assert.cssNear(this, 'left', 100, 0.1,'%');
+        assert.dom('.handle', handle =>{
+          assert.cssNear(handle, 'left', 100, 0.1,'%');
         });
         TH.input('input', '50');
-        assert.dom('.handle', function () {
-          assert.cssNear(this, 'left', 50, 0.1,'%');
+        assert.dom('.handle', handle =>{
+          assert.cssNear(handle, 'left', 50, 0.1,'%');
         });
       });
       assert.dom('[name=hex]', {value: 'bfbf4087'}, input =>{
@@ -112,7 +115,7 @@ isClient && define((require, exports, module)=>{
 
     test("eyedropper", ()=>{
       stub(Eyedropper, 'pick');
-      sut.choose('#ff113387', v.cb = stub());
+      sut.choose({color: '#ff113387', callback: v.cb = stub()});
 
       assert.dom('#ColorPicker .ui-dialog', dialog =>{
         assert.dom('[name=hex-eyedropper]', ed =>{
@@ -135,7 +138,7 @@ isClient && define((require, exports, module)=>{
 
     group("hex input", ()=>{
       test("no alpha", ()=>{
-        sut.choose('#ff113387', v.cb = stub());
+        sut.choose({color: '#ff113387', callback: v.cb = stub()});
 
         assert.dom('#ColorPicker:not(.alpha).Dialog.Confirm>.dialogContainer>.ui-dialog', ()=>{
           assert.dom('input', {value: 'ff1133'});
@@ -147,9 +150,9 @@ isClient && define((require, exports, module)=>{
       });
 
       test("alpha", ()=>{
-        sut.choose('#ff113387', 'alpha', v.cb = stub());
+        sut.choose({color: '#ff113387', alpha: true, callback: v.cb = stub()});
 
-        assert.dom('#ColorPicker.alpha', function () {
+        assert.dom('#ColorPicker.alpha', ()=>{
           assert.dom('[name=hex]', {value: 'ff113387'});
           TH.input('[name=hex]', '11223344');
           assert.dom('.sample>div', sample =>{
@@ -162,9 +165,9 @@ isClient && define((require, exports, module)=>{
       });
 
       test("invalid color", ()=>{
-        sut.choose(null, v.cb = stub());
+        sut.choose({callback: v.cb = stub()});
 
-        assert.dom('#ColorPicker', function () {
+        assert.dom('#ColorPicker', ()=>{
           assert.dom('[name=apply]:not([disabled])');
           assert.dom('[name=hex]', {value: 'ffffff'});
           TH.input('[name=hex]', 'junk');

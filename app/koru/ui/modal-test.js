@@ -31,7 +31,8 @@ isClient && define((require, exports, module)=>{
 
     test("supply position", ()=>{
       const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
-      sut.append('below', {container: popup, popup: popup, boundingClientRect: {
+      Dom.setCtx(popup);
+      sut.append('below', {container: popup, popup, boundingClientRect: {
         top: 10, left: 15, height: 20, width: 30}});
       assert.dom('.popup', function () {
         assert.cssNear(this, 'left', 15);
@@ -44,6 +45,7 @@ isClient && define((require, exports, module)=>{
       const page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
       const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
+      Dom.setCtx(popup);
       let ibox;
       assert.dom('input', function () {
         sut.appendBelow({container: popup, origin: this, popup: popup});
@@ -55,8 +57,9 @@ isClient && define((require, exports, module)=>{
           assert.cssNear(this, 'top', ibox.top + ibox.height);
         });
       });
-      refute.called(sut.init);
+      assert.called(sut.init);
     });
+
 
     test("cancel", ()=>{
       const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});

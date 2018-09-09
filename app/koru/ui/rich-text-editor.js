@@ -202,17 +202,19 @@ define((require, exports, module)=>{
       const typeElm = Tpl.FontColor.$autoRender(options);
 
       ctx.openDialog = true;
-      ColorPicker.choose(fgColor, {customFieldset: typeElm}, color =>{
-        ctx.openDialog = false;
-        focus.focus();
-        Dom.setRange(range);
-        if (color === 'removeHilite') {
-          execCommand('hiliteColor', 'initial');
-          return;
-        }
-        const cmd = typeElm.getAttribute('data-mode');
-        color && execCommand(cmd, color);
-      });
+      ColorPicker.choose({
+        color: fgColor, anchor: range,
+        customFieldset: typeElm, callback: color =>{
+          ctx.openDialog = false;
+          focus.focus();
+          Dom.setRange(range);
+          if (color === 'removeHilite') {
+            execCommand('hiliteColor', 'initial');
+            return;
+          }
+          const cmd = typeElm.getAttribute('data-mode');
+          color && execCommand(cmd, color);
+        }});
     },
     fontSize: (event)=>{
       chooseFromMenu(event, {list: FONT_SIZE_LIST}, (ctx, id)=>{

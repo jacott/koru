@@ -73,7 +73,8 @@ define((require)=>{
         callback: options.callback,
       };
       const elm = v.input;
-      Modal.appendBelow({origin: elm, popup: v.completeList});
+      document.body.appendChild(v.completeList);
+      Modal.reposition('below', {origin: elm, popup: v.completeList});
       options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
     },
