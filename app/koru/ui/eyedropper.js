@@ -27,13 +27,7 @@ define((require, exports, module)=>{
         glassPane.remove();
 
         try {
-          Eyedropper.getPointColors(event.clientX, event.clientY, (err, colors)=>{
-            if (err != null) {
-              koru.unhandledException(err);
-              callback(err);
-              return;
-            }
-
+          Eyedropper.getPointColors(event.clientX, event.clientY, options).then(colors =>{
             const list = [];
 
             const addColor = name=>{
@@ -50,11 +44,9 @@ define((require, exports, module)=>{
             };
 
             addColor('imageColor');
-            if (list.length == 0) {
-              addColor('backgroundColor');
-              addColor('borderColor');
-              addColor('textColor');
-            }
+            addColor('backgroundColor');
+            addColor('borderColor');
+            addColor('textColor');
 
             if (list.length < 2) {
               cancel();
@@ -74,7 +66,11 @@ define((require, exports, module)=>{
               }
             }, 'on');
 
-          }, options);
+          }).catch(err =>{
+            cancel();
+            koru.unhandledException(err);
+            callback(err);
+          });
         } catch(ex) {
           cancel();
           koru.unhandledException(ex);
@@ -87,99 +83,76 @@ define((require, exports, module)=>{
       document.body.appendChild(glassPane);
     },
 
-    getPointColors(x, y, callback, {intercept}={}) {
+    async getPointColors(x, y, {intercept}={}) {
       const stack = [];
-      let color = null, textColor = null, borderColor = null, image = null;
+      let elm, style;
+      let color = null, textColor = null, borderColor = null, image = null, imageColor = null;
       const {body} = document;
 
-      while (true) {
-        let elm = document.elementFromPoint(x, y);
-        if (elm == null) break;
-        const {style} = elm;
-
-        const cs = window.getComputedStyle(elm);
+      for (;(elm = document.elementFromPoint(x, y)) != null && elm !== body;
+           (
+             style = elm.style,
+             stack.push([style, style.getPropertyValue('visibility')]),
+             style.setProperty('visibility', 'hidden')
+           )) {
 
         if (elm.namespaceURI === Dom.SVGNS) {
-          if (elm.tagName === 'svg') {
-            if (color === null)
-              color = uColor.toRGB(cs.getPropertyValue('background-color'));
-            if (image === null) image = elm;
-          } else {
-            if (color === null) {
-              const fv = cs.getPropertyValue('fill');
-              if (fv !== 'none') color = uColor.toRGB(fv);
-            }
-            if (textColor === null) {
-              const sv = cs.getPropertyValue('stroke');
-              if (sv !== 'none') textColor = uColor.toRGB(sv);
-            }
-            if (image === null) image = elm.closest('svg');
-          }
-        } else {
-          if (color === null)
-            color = uColor.toRGB(cs.getPropertyValue('background-color'));
+          elm = elm.closest('svg');
+          if (elm === null) break;
+          const ic = await Eyedropper.getColorFromImage(elm , x, y);
+          if (ic !== null && ic.a >= .1)
+            imageColor = ic;
+          else
+            continue;
+        }
 
-          if (borderColor === null && style.getPropertyValue('border-width') !== '') {
-            borderColor =  uColor.toRGB(style.getPropertyValue('border-color'));
-          }
-          if (textColor === null) {
-            const pos = document.caretPositionFromPoint(x, y);
-            if (pos !== null && pos.offsetNode !== undefined &&
-                pos.offsetNode.nodeType === document.TEXT_NODE) {
-              textColor = uColor.toRGB(cs.getPropertyValue('color'));
-            }
-          }
+        style = elm.style;
+        const  cs = window.getComputedStyle(elm);
+        color = uColor.toRGB(cs.getPropertyValue('background-color'));
+        if (imageColor === null) {
           const bi = cs.getPropertyValue('background-image');
-          if (bi !== 'none' && image === null) {
-            image = elm;
+          if (bi !== 'none') {
+            const ic = await Eyedropper.getColorFromImage(elm , x, y);
+            if (ic !== null && ic.a >= .1)
+              imageColor = ic;
           }
         }
-
-        if (intercept !== undefined) {
-          const colors = intercept(elm, cs);
-          if (colors !== undefined) {
-            if (colors.color !== undefined)
-              color = color === null ? null : uColor.toRGB(colors.color);
-            if (colors.textColor) textColor = uColor.toRGB(colors.textColor);
-            if (colors.borderColor) borderColor = uColor.toRGB(colors.borderColor);
-            if (color !== null)
-              break;
-          }
+        if (style.getPropertyValue('border-width') !== '') {
+          borderColor =  uColor.toRGB(style.getPropertyValue('border-color'));
+        }
+        const pos = document.caretPositionFromPoint(x, y);
+        if (pos !== null && pos.offsetNode !== undefined &&
+            pos.offsetNode.nodeType === document.TEXT_NODE) {
+          const c = style.getPropertyValue('color');
+          if (c !== '') textColor = uColor.toRGB(c);
         }
 
-        if ((color !== null && color.a >= .1) || elm === body)
+        if (imageColor !== null || (color !== null && color.a >= .1)) {
           break;
-
-        color = null;
-
-        stack.push([style, style.getPropertyValue('visibility')]);
-        style.setProperty('visibility', 'hidden');
+        }
       }
+
       for(let i = stack.length-1; i >= 0; --i) {
         const row = stack[i];
         row[0].setProperty('visibility', row[1]);
       }
 
-      const colors = {textColor, backgroundColor: color, imageColor: undefined};
-      if (borderColor !== null)
-        colors.borderColor = borderColor;
-
-      if (callback !== undefined) {
-        if (image !== null)
-          Eyedropper.getColorFromImage(image, x, y, (err, imageColor)=>{
-            colors.imageColor = imageColor;
-            callback(err, colors);
-          });
-        else
-          callback(null, colors);
-
-        return;
+      if (intercept !== undefined) {
+        const colors = intercept(elm);
+        if (colors !== undefined) {
+          if (colors.color !== undefined) color = colors.color === null
+            ? null : uColor.toRGB(colors.color);
+          if (colors.textColor !== undefined) textColor = uColor.toRGB(colors.textColor);
+          if (colors.borderColor !== undefined) borderColor = uColor.toRGB(colors.borderColor);
+        }
       }
+
+      const colors = {imageColor, backgroundColor: color, textColor, borderColor};
 
       return colors;
     },
 
-    getColorFromImage(image, x, y, callback) {
+    getColorFromImage(image, x, y) {
       const ics = window.getComputedStyle(image);
       const {left, top} = image.getBoundingClientRect();
       const owidth = +ics.getPropertyValue('width').slice(0,-2);
@@ -195,7 +168,7 @@ define((require, exports, module)=>{
 
       let url;
 
-      if(image.tagName === 'svg') {
+      if (image.tagName === 'svg') {
         const imageClone = image.cloneNode(true);
         const {style} = imageClone;
         style.removeProperty('transform');
@@ -216,42 +189,43 @@ define((require, exports, module)=>{
         url = image.style.getPropertyValue('background-image').replace(/^url\(['"]?|['"]?\)$/g, '');
       }
 
-      const img = new window.Image(owidth, oheight);
-      img.crossOrigin = "anonymous";
+      return new Promise((resolve, reject) => {
+        const img = new window.Image(owidth, oheight);
+        img.crossOrigin = "anonymous";
 
-      img.onerror = err =>{
-        window.URL.revokeObjectURL(url);
-        callback(null, null);
-      };
-
-      img.onload = ()=>{
-        try {
-          Dom.remove(Dom('canvas'));
-          const canvas = Dom.h({canvas: [], width: 1, height: 1});
-
-          const ctx = canvas.getContext('2d');
-
-          if (matrix !== null) {
-            let {left: ox, top: oy} = Geometry.topLeftTransformOffset(
-              {width: owidth, height: oheight}, matrix);
-            ctx.translate(ox-x, oy-y);
-            ctx.transform(...matrix);
-          } else {
-            ctx.translate(-x, -y);
-          }
-
-          ctx.drawImage(img, 0, 0, owidth, oheight);
+        img.onerror = err =>{
           window.URL.revokeObjectURL(url);
-          const c = ctx.getImageData(0, 0, 1, 1).data;
+          reject(err);
+        };
 
-          callback(null, c[3] == 0 ? null : {r: c[0], g: c[1], b: c[2], a: c[3]/255});
-        } catch(ex) {
-          koru.unhandledException(ex);
-          callback(ex);
-        }
-      };
+        img.onload = ()=>{
+          try {
+            Dom.remove(Dom('canvas'));
+            const canvas = Dom.h({canvas: [], width: 1, height: 1});
 
-      img.src = url;
+            const ctx = canvas.getContext('2d');
+
+            if (matrix !== null) {
+              let {left: ox, top: oy} = Geometry.topLeftTransformOffset(
+                {width: owidth, height: oheight}, matrix);
+              ctx.translate(ox-x, oy-y);
+              ctx.transform(...matrix);
+            } else {
+              ctx.translate(-x, -y);
+            }
+
+            ctx.drawImage(img, 0, 0, owidth, oheight);
+            window.URL.revokeObjectURL(url);
+            const c = ctx.getImageData(0, 0, 1, 1).data;
+
+            resolve(c[3] == 0 ? null : {r: c[0], g: c[1], b: c[2], a: c[3]/255});
+          } catch(ex) {
+            reject(ex);
+          }
+        };
+
+        img.src = url;
+      });
     },
   };
 
