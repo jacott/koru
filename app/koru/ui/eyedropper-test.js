@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const Geometry        = require('koru/geometry');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, util, match: m} = TH;
 
   const sut  = require('./eyedropper');
 
@@ -27,11 +27,11 @@ isClient && define((require, exports, module)=>{
 
       refute.dom('#SelectMenu');
 
-      assert.calledWith(callback, null, 'rgba(255, 0, 255, 0.5)');
+      assert.calledWith(callback, null, m.near('rgba(255, 0, 255, 0.5)'));
     });
 
     test("pick with intercept", ()=>{
-       const div = Dom.h({style: "background-color:rgba(255, 0, 255);width:300px;height:200px"});
+       const div = Dom.h({style: "background-color:rgb(255, 0, 255);width:300px;height:200px"});
 
       document.body.appendChild(div);
       const callback = stub();
@@ -183,7 +183,7 @@ isClient && define((require, exports, module)=>{
 
       assert.calledWith(callback, null, {
         textColor: null,
-        backgroundColor: {r: 1, g: 2, b: 1, a: 0.9}, imageColor: 'imageColor'});
+        backgroundColor: {r: 1, g: 2, b: 1, a: m.near(0.9, 0.01)}, imageColor: 'imageColor'});
     });
 
     test("getPointColors svg", ()=>{
@@ -197,11 +197,11 @@ isClient && define((require, exports, module)=>{
 
       assert.equals(sut.getPointColors(bbox.left + 50, bbox.top + 50), {
         textColor: {r: 244, g: 163, b: 194, a: 1},
-        backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: undefined});
+        backgroundColor: {r: 51, g: 102, b: 153, a: m.near(0.5, .01)}, imageColor: undefined});
 
       assert.equals(sut.getPointColors(bbox.left + 1, bbox.top + 1), {
         textColor: {r: 244, g: 163, b: 194, a: 1},
-        backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: undefined});
+        backgroundColor: {r: 51, g: 102, b: 153, a: m.near(0.5, .01)}, imageColor: undefined});
     });
 
     test("getPointColors async svg", ()=>{
@@ -227,7 +227,7 @@ isClient && define((require, exports, module)=>{
 
       assert.calledWith(callback, null, {
         textColor: {r: 244, g: 163, b: 194, a: 1},
-        backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: 'imageColor'});
+        backgroundColor: {r: 51, g: 102, b: 153, a: m.near(0.5, .01)}, imageColor: 'imageColor'});
     });
 
     test("svg getColorFromImage", async ()=>{
@@ -252,7 +252,8 @@ isClient && define((require, exports, module)=>{
       assert.near(
         color, util.engine.startsWith('Firefox')
           ? {r: 122, g: 17, b: 206, a: 0.980}
-        : {r: 126, g: 27, b: 220, a: 0.988},
+        : util.engine.startsWith('Safari')
+          ? {r: 127, g: 27, b: 220, a: 0.988} : {r: 126, g: 27, b: 220, a: 0.988},
         0.001);
     });
 

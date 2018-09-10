@@ -514,10 +514,10 @@ isClient && define((require, exports, module)=>{
 
     test("errorTop renderError", ()=>{
       const form = Dom.h({
-        $style: 'width: 300px;height:100px',
+        style: 'width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
-              {input: '', $name: 'bar',
-               $style: 'margin-left:200;width:50px;height:20px',
+              {input: [], name: 'bar',
+               style: 'margin-left:200;width:50px;height:20px',
                class: 'errorTop'}],
       });
       document.body.appendChild(form);
@@ -525,11 +525,11 @@ isClient && define((require, exports, module)=>{
       Form.renderError(form, 'foo', 'foo msg');
       Form.renderError(form, 'bar', v.barMsg = 'big long message bar msg');
 
-      assert.dom(form, function () {
-        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, function () {
-          assert.cssNear(this, 'marginLeft', -50, 2);
-          assert.cssNear(this, 'marginTop', -15, 2);
-          assert.same(this.style.position, 'absolute');
+      assert.dom(form, ()=>{
+        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, elm =>{
+          assert.cssNear(elm, 'marginLeft', -50, 2);
+          assert.cssNear(elm, 'marginTop', -15, 2);
+          assert.same(elm.style.position, 'absolute');
         });
         assert.dom('[name=foo].error+.errorMsg', 'foo msg');
 

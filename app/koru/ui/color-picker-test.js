@@ -1,9 +1,10 @@
 isClient && define((require, exports, module)=>{
   const Eyedropper      = require('koru/ui/eyedropper');
+  const util            = require('koru/util');
   const Dom             = require('../dom');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const sut = require('./color-picker');
 
@@ -123,7 +124,7 @@ isClient && define((require, exports, module)=>{
           ed.focus();
         });
 
-        assert.calledWith(Eyedropper.pick, TH.match.func);
+        assert.calledWith(Eyedropper.pick, m.func);
 
         Eyedropper.pick.yield(null, {r: 123, g: 21, b: 255, a: .3});
 
@@ -156,7 +157,10 @@ isClient && define((require, exports, module)=>{
           assert.dom('[name=hex]', {value: 'ff113387'});
           TH.input('[name=hex]', '11223344');
           assert.dom('.sample>div', sample =>{
-            assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.267]);
+            if (util.engine.startsWith('Safari'))
+              assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.2627]);
+            else
+              assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.267]);
           });
           TH.click('[name=apply]');
         });

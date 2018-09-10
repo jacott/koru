@@ -83,9 +83,9 @@ define((require)=>{
     return result;
   };
 
-  const withinDelta = (actual, expected, delta)=>{
-    return actual > expected-delta && actual < expected+delta;
-  };
+  const withinDelta = (
+    actual, expected, delta
+  )=> actual > expected-delta && actual < expected+delta;
 
   const checkSpy = spy =>{
     Stubber.isStubbed(spy) ||
