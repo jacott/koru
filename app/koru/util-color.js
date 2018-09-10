@@ -10,6 +10,7 @@ define((require, exports, module)=>{
   const RGBA_RE =
     /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
   const HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
+  const SMALL_HEX_RE = /^#?([\da-f])([\da-f])([\da-f])([\da-f])?$/i;
 
   const DARK = 60, VERY_DARK = 40, VERY_LIGHT = 85;
 
@@ -28,7 +29,8 @@ define((require, exports, module)=>{
     if (! color) return '';
     if (color.length === 7) return color;
 
-    const match = HEX_RE.exec(color) || ['', '00', '00', '00', '00'];
+    const match = (color.length > 5 ? HEX_RE.exec(color) : SMALL_HEX_RE.exec(color)) ||
+          ['', '00', '00', '00', '00'];
     let result = 'rgba(';
 
     for(let i = 1; i<4; ++i) {
@@ -56,12 +58,26 @@ define((require, exports, module)=>{
   };
 
   const hex2rgb = (color, validate)=>{
-    const match = HEX_RE.exec(color) || (! validate && ['', '00', '00', '00']);
+    let match = null;
+    if (color != null) {
+      if (color.length > 5)
+        match = HEX_RE.exec(color);
+      else {
+        const m = SMALL_HEX_RE.exec(color);
+        if (m !== null) {
+          match = ['', m[1]+m[1], m[2]+m[2], m[3]+m[3], m[4] ? m[4]+m[4] : undefined];
+        }
+      }
+    }
 
-    return match ?
-      {r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16),
-       a: match[4] ? alphaHexToFrac(match[4]) : 1}
-    : null;
+    if (match === null) {
+      if (validate) return null;
+      match =  ['', '0', '0', '0'];
+    }
+
+    return {
+      r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16),
+      a: match[4] ? alphaHexToFrac(match[4]) : 1};
   };
 
   const rgb2hex = rgb =>{

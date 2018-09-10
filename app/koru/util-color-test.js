@@ -19,10 +19,14 @@ define((require, exports, module)=>{
       assert.equals(uColor.toRGB('#FF001180'), {r: 255, g: 0, b: 17, a: 0.5});
       assert.equals(uColor.toRGB('#FF0011'), {r: 255, g: 0, b: 17, a: 1});
       assert.equals(uColor.toRGB('#FF0011FF'), {r: 255, g: 0, b: 17, a: 1});
+      assert.equals(uColor.toRGB('#123'), {r: 17, g: 34, b: 51, a: 1});
+      assert.equals(uColor.toRGB('#abc8'), {r: 170, g: 187, b: 204, a: 0.5315});
       const rgb = {r: 255, g: 0, b: 17, a: 1};
       assert.same(uColor.toRGB(rgb), rgb);
       assert.equals(uColor.toRGB(rgb), {r: 255, g: 0, b: 17, a: 1});
       assert.same(uColor.toRGB('12'), null);
+      assert.equals(uColor.hex2rgb(), {r: 0, g: 0, b: 0, a: 1});
+      assert.equals(uColor.hex2rgb(null), {r: 0, g: 0, b: 0, a: 1});
       assert.same(uColor.hex2rgb('1234567890', 'validate'), null);
       assert.equals(uColor.hex2rgb('123456', 'validate'), {r: 18, g: 52, b: 86, a: 1});
     });
