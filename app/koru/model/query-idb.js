@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const Changes         = require('koru/changes');
+  const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
-  const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const {stopGap$}      = require('koru/symbols');
@@ -121,7 +121,7 @@ define((require, exports, module)=>{
     }
 
     loadDoc(modelName, rec) {
-      const model = ModelMap[modelName];
+      const model = Model[modelName];
       const curr = model.docs[rec._id];
       if (curr !== undefined && curr[stopGap$] !== true) return;
       const orig = notMe;
@@ -291,7 +291,7 @@ define((require, exports, module)=>{
       dbBroker.withDB(db.dbId, () => {
         for(const modelName of models) {
           const docs = pu[modelName];
-          const simDocs = ModelMap._getProp(db.dbId, modelName, 'simDocs');
+          const simDocs = Model._getProp(db.dbId, modelName, 'simDocs');
           const os = tran.objectStore(modelName);
           for (const _id in docs) {
             const doc = docs[_id];

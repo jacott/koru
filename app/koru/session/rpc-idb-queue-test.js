@@ -23,9 +23,9 @@ isClient && define((require, exports, module)=>{
 
   const poll = ()=>{v.mdb.yield(); Promise._poll();};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      MockPromise.stubPromise();
     });
 
     afterEach(()=>{

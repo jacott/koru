@@ -1,7 +1,11 @@
 define((require)=>{
   const util            = require('koru/util');
+  const TH              = require('koru/test');
 
   let execute = new Set();
+
+  const OrigPromise = Promise;
+  const top = (isServer ? global : window);
 
   class MockPromise {
     constructor(body) {
@@ -15,6 +19,24 @@ define((require)=>{
         _action(this, arg, 'rejected');
       };
       body(resolve, reject);
+    }
+
+    static stubPromise() {
+      top.Promise = MockPromise;
+      TH.test.onEnd(()=>{
+        MockPromise.restore();
+        MockPromise._stop();
+      });
+    }
+
+    static restore() {
+      top.Promise = OrigPromise;
+    }
+
+    static restoreForTest() {
+      const current = top.Promise;
+      MockPromise.restore();
+      TH.test.onEnd(()=>{top.Promise = current});
     }
 
     static resolve(value) {

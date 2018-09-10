@@ -10,10 +10,12 @@ isClient && define((require, exports, module)=>{
   const poll = ()=>{MockPromise._poll()};
 
   let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      MockPromise.stubPromise();
+    });
     beforeEach(()=>{
       v.caches = new sut();
-      TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
     });
 
     afterEach(()=>{

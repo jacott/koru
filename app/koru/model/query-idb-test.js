@@ -32,7 +32,10 @@ isClient && define((require, exports, module)=>{
     return;
   }
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      MockPromise.stubPromise();
+    });
     beforeEach(()=>{
       v = {};
       v.idb = new mockIndexedDB(1);
@@ -59,6 +62,7 @@ isClient && define((require, exports, module)=>{
        * where `db` is the `QueryIDB` instance and `oldVersion` is the
        * current version of the database
        **/
+      MockPromise.restoreForTest();
       v.error = ex => done(ex);
 
       const new_QueryIDB = api.new();
@@ -87,7 +91,6 @@ isClient && define((require, exports, module)=>{
        **/
 
       api.protoMethod('promisify');
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
@@ -115,7 +118,6 @@ isClient && define((require, exports, module)=>{
          * @param was the original values of the changes to the record.
          **/
         api.protoMethod('queueChange');
-        TH.stubProperty(window, 'Promise', {value: MockPromise});
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
         }});
@@ -232,7 +234,6 @@ isClient && define((require, exports, module)=>{
          *
          * If record is simulated make from change from client point-of-view else server POV.
          **/
-        TH.stubProperty(window, 'Promise', {value: MockPromise});
         api.protoMethod('loadDoc');
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
@@ -390,7 +391,6 @@ isClient && define((require, exports, module)=>{
       /**
        * Catch all errors from database actions
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       const catchAll = stub();
       const open = spy(v.idb, 'open');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
@@ -404,7 +404,6 @@ isClient && define((require, exports, module)=>{
     });
 
     test("catchAll on put", ()=>{
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       const catchAll = stub();
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
@@ -440,7 +439,6 @@ isClient && define((require, exports, module)=>{
       /**
        * Insert a list of records into a model. See {##loadDoc}
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('loadDocs');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
@@ -464,7 +462,6 @@ isClient && define((require, exports, module)=>{
       /**
        * Close a database. Once closed it may not be used anymore.
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('close');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
@@ -485,8 +482,7 @@ isClient && define((require, exports, module)=>{
       /**
        * Insert or update a record in indexedDB
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
-      api.protoMethod('put');
+      api.protoMethod();
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
@@ -505,10 +501,9 @@ isClient && define((require, exports, module)=>{
 
     test("delete", ()=>{
       /**
-       * Insert or update a record in indexedDB
+       * Delete a record from indexedDB
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
-      api.protoMethod('put');
+      api.protoMethod();
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
@@ -532,6 +527,7 @@ isClient && define((require, exports, module)=>{
        * Find a record in a {#koru/model/main} by its `_id`
        *
        **/
+      MockPromise.restoreForTest();
       v.error = ex => done(ex);
       api.protoMethod('get');
 
@@ -561,6 +557,7 @@ isClient && define((require, exports, module)=>{
        * Find all records in a {#koru/model/main}
        *
        **/
+      MockPromise.restoreForTest();
       v.error = ex => done(ex);
       api.protoMethod('getAll');
 
@@ -590,8 +587,6 @@ isClient && define((require, exports, module)=>{
 
     group("with data", ()=>{
       beforeEach(()=>{
-        TH.stubProperty(window, 'Promise', {value: MockPromise});
-
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel")
             .createIndex('name', 'name', {unique: false});
@@ -736,7 +731,6 @@ isClient && define((require, exports, module)=>{
       /**
        * Drop an objectStore and its indexes
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('deleteObjectStore');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel")
@@ -753,7 +747,6 @@ isClient && define((require, exports, module)=>{
        /**
        * delete an entire database
        **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.method('deleteDatabase');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel")
