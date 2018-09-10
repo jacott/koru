@@ -211,7 +211,7 @@ isClient && define((require, exports, module)=>{
         backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: 'imageColor'});
     });
 
-    test("svg getColorFromImage", (done)=>{
+    test("svg getColorFromImage", async ()=>{
       const div = Dom.h({
         viewBox: "0 0 300 150", width: 300, height: 150,
         style: "margin:20px;background-color:rgba(1, 2, 1, 0.9);",
@@ -224,20 +224,42 @@ isClient && define((require, exports, module)=>{
       const rect = Dom('rect');
       const bbox = rect.getBoundingClientRect();
 
-      sut.getColorFromImage(Dom('svg'), bbox.left+1, bbox.top+1, (err, color) => {
-        try {
-          assert.same(err, null);
-          assert.near(
-            color,
-            Dom.vendorPrefix === 'moz'
-              ? {r: 122, g: 17, b: 206, a: 0.980}
-            : {r: 126, g: 27, b: 220, a: 0.988},
-            0.001);
-          done();
-        } catch(ex) {
-          done(ex);
-        }
+      const color = await new Promise((resolve, reject) => {
+        sut.getColorFromImage(Dom('svg'), bbox.left+1, bbox.top+1, (err, color) => {
+          if (err) reject(err);
+          else resolve(color);
+        });
       });
+      assert.near(color,
+                  Dom.vendorPrefix === 'moz'
+                  ? {r: 122, g: 17, b: 206, a: 0.980}
+                  : {r: 126, g: 27, b: 220, a: 0.988},
+                  0.001);
+    });
+
+    test("layered images", async ()=>{
+      const createSvg = mod => ({
+        viewBox: "0 0 300 150", width: 300, height: 150,
+        style: "position:absolute;left:50px;top:400px;",
+        svg: Object.assign({
+          rect: [], x: 0, width: 100, y: 0, height: 100,
+          style: 'overflow:visible;',
+        }, mod)
+      });
+
+      document.body.appendChild(Dom.h([
+        createSvg({fill: 'rgba(0, 102, 0, 1)'}),
+        createSvg({stroke: 'rgba(0, 0, 153, 1)', fill: 'none', 'stroke-width': '200'})
+      ]));
+
+      const colors = await new Promise((resolve, reject)=>{
+        sut.getPointColors(60, 410, (err, colors) =>{
+          if (err) reject(err);
+          else resolve(colors);
+        });
+      });
+
+      assert.near(colors.imageColor, {r: 0, g: 0, b: 153, a: 1}, 0.001);
     });
 
     test("transformed svg getColorFromImage", (done)=>{
@@ -261,14 +283,6 @@ isClient && define((require, exports, module)=>{
 
       const x = dr.left + ox, y = dr.top + oy;
 
-      // { // put this in img.onload
-      //   document.body.appendChild(Dom.h({
-      //     style: `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
-      //   }));
-      //   canvas.style.border = '1px solid pink';
-      //   document.body.appendChild(canvas);
-      // }
-
       sut.options = {setupSvg(svgc, ox, oy, orig) {
         assert.equals(ox, x-dr.left);
         assert.equals(oy, y-dr.top);
@@ -279,20 +293,6 @@ isClient && define((require, exports, module)=>{
 
       sut.getColorFromImage(Dom('svg'), x, y, (err, color) => {
         try {
-          // document.body.appendChild(Dom.h({
-          //   style: "border-radius:50%;width:10px;height:10px;position:absolute;background-color:red;"+
-          //     "transform:translate(-50%, -50%);"+
-          //     `left:${x}px;top:${y}px`
-          // }));
-
-          // const cr = Dom('canvas').getBoundingClientRect();
-
-          // document.body.appendChild(Dom.h({
-          //   style: "border-radius:50%;width:10px;height:10px;position:absolute;background-color:cyan;"+
-          //     "transform:translate(-50%, -50%);"+
-          //     `left:${cr.left+ox}px;top:${cr.top+oy}px`
-          // }));
-
           assert.same(err, null);
 
           assert.equals(color, {r: 155, g: 50, b: 253, a: 1});
@@ -303,31 +303,27 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("png getColorFromImage", (done)=>{
+    test("png getColorFromImage", async ()=>{
       const div = Dom.h({
-        style: `border: 1px solid black;margin:150px;background: url(/koru/ui/test-box.png) no-repeat 0 0/100%;width:200px;height:200px;`
-          + 'transform-origin: 50%  100%;'
-          + 'transform: rotate(-30deg) translate(0px, 0px);'
-        ,
+        style: 'border: 1px solid black;margin:150px;'+
+          'background: url(/koru/ui/test-box.png) no-repeat 0 0/100%;width:200px;height:200px;'+
+          'transform-origin: 50%  100%;'+
+          'transform: rotate(-30deg) translate(0px, 0px);',
         div: {}});
       document.body.appendChild(div);
 
       const dr = div.getBoundingClientRect();
-
       const ox = 70, oy = 185;
-
       const x = dr.left + ox, y = dr.top + oy;
 
-      sut.getColorFromImage(div, x, y, (err, color) => {
-        try {
-          assert.same(err, null);
-
-          assert.near(color, {r: 0, g: 255, b: 0, a: 1}, 0.001);
-          done();
-        } catch(ex) {
-          done(ex);
-        }
+      const color = await new Promise((resolve, reject)=>{
+        sut.getColorFromImage(div, x, y, (err, color) => {
+          if (err) reject(err);
+          else resolve(color);
+        });
       });
+
+      assert.near(color, {r: 0, g: 255, b: 0, a: 1}, 0.001);
     });
   });
 });

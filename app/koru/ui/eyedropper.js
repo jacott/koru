@@ -110,7 +110,7 @@ define((require, exports, module)=>{
             if (sv !== 'none' && textColor === null) textColor = uColor.toRGB(sv);
 
             if (fv !== 'none' && color.a >= .1 && callback !== undefined) {
-              image = elm.closest('svg');
+              if (image === undefined) image = elm.closest('svg');
               break;
             }
           }
