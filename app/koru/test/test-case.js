@@ -337,25 +337,42 @@ define((require, exports, module)=>{
     const done = ex =>{
       done[isDone$] = true;
 
+      const to = done[timeout$];
+      to === undefined || clearTimeout(to);
+
+      if (ex === 'abortTests') {
+        Core.abort(ex);
+        return;
+      }
+
       if (ex)
         failed(test, ex);
       else
         checkAssertionCount(test, assertCount);
 
-      if (done[timeout$] !== undefined) {
-        clearTimeout(done[timeout$]);
-
-        asyncNext(runNext);
-      }
+      to === undefined || asyncNext(runNext);
     };
     done.maxTime = MAX_TIME;
 
     return done;
   };
 
+  class TimeoutError extends Error {
+    constructor() {
+      super('Timed out!');
+      this.test = Core.test;
+    }
+
+    toString() {
+      const {name, line} = this.test.location;
+      return this.message+"\n    at - "+
+        `test (${name}.js:${line}:1)`;
+    }
+  }
+
   const setDoneTimeout = (done)=>{
     done[timeout$] = setTimeout(
-      ()=>{done(new Error("Timed out!"))}, done.maxTime);
+      ()=>{done(new TimeoutError())}, done.maxTime);
   };
 
 
