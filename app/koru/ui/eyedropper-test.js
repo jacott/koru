@@ -30,6 +30,25 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(callback, null, 'rgba(255, 0, 255, 0.5)');
     });
 
+    test("pick with intercept", ()=>{
+       const div = Dom.h({style: "background-color:rgba(255, 0, 255);width:300px;height:200px"});
+
+      document.body.appendChild(div);
+      const callback = stub();
+      const bbox = div.getBoundingClientRect();
+
+      const intercept = (elm, cs)=>{
+        return {color: cs.getPropertyValue('background-color').replace(/\)/, ', 0.4)')};
+      };
+
+      sut.pick(callback, {intercept});
+
+      TH.trigger(document.body, 'pointerdown', {
+        clientX: bbox.left + .5*bbox.width, clientY: bbox.top + .5*bbox.height});
+
+      assert.calledWith(callback, null, 'rgba(255, 0, 255, 0.4)');
+    });
+
     test("pick no duplicates", ()=>{
       const div = Dom.h({style: "background-color:rgba(255, 0, 255, 0.5);width:300px;height:200px"});
 
@@ -164,7 +183,7 @@ isClient && define((require, exports, module)=>{
 
       assert.calledWith(callback, null, {
         textColor: null,
-        backgroundColor: null, imageColor: 'imageColor'});
+        backgroundColor: {r: 1, g: 2, b: 1, a: 0.9}, imageColor: 'imageColor'});
     });
 
     test("getPointColors svg", ()=>{
@@ -230,11 +249,11 @@ isClient && define((require, exports, module)=>{
           else resolve(color);
         });
       });
-      assert.near(color,
-                  Dom.vendorPrefix === 'moz'
-                  ? {r: 122, g: 17, b: 206, a: 0.980}
-                  : {r: 126, g: 27, b: 220, a: 0.988},
-                  0.001);
+      assert.near(
+        color, util.engine.startsWith('Firefox')
+          ? {r: 122, g: 17, b: 206, a: 0.980}
+        : {r: 126, g: 27, b: 220, a: 0.988},
+        0.001);
     });
 
     test("layered images", async ()=>{
@@ -262,7 +281,30 @@ isClient && define((require, exports, module)=>{
       assert.near(colors.imageColor, {r: 0, g: 0, b: 153, a: 1}, 0.001);
     });
 
-    test("transformed svg getColorFromImage", (done)=>{
+    test("intercept", ()=>{
+      document.body.appendChild(Dom.h([{
+        id: 'div1',
+        style: 'background-color:#fff;position:absolute;top:0;left:0;width:100px;height:100px'
+      }, {
+        id: 'div2',
+        style: 'background-color:#fff;position:absolute;top:0;left:0;width:100px;height:100px'
+      },
+      ]));
+
+      const colors = sut.getPointColors(10, 10, undefined, {intercept: (elm, cs) =>{
+        return elm.id === 'div1'
+          ? {color: '#0ff', textColor: '#f00'} : {color: null, borderColor: '#00fa'};
+      }});
+
+      assert.equals(colors, {
+        textColor: {r: 255, g: 0, b: 0, a: 1},
+        backgroundColor: {r: 0, g: 255, b: 255, a: 1},
+        imageColor: undefined,
+        borderColor: {r: 0, g: 0, b: 255, a: 0.6654}
+      });
+    });
+
+    test("transformed svg getColorFromImage", async ()=>{
       const div = Dom.h({
         viewBox: "0 0 300 150", width: 300, height: 150,
         style: "position:absolute;left:50px;top:400px;background-color:rgb(160, 160, 160);"
@@ -291,16 +333,14 @@ isClient && define((require, exports, module)=>{
         svgc.lastChild.style.setProperty('stroke', 'rgb(155, 50, 253)');
       }};
 
-      sut.getColorFromImage(Dom('svg'), x, y, (err, color) => {
-        try {
-          assert.same(err, null);
-
-          assert.equals(color, {r: 155, g: 50, b: 253, a: 1});
-          done();
-        } catch(ex) {
-          done(ex);
-        }
+      const color = await new Promise((resolve, reject) => {
+        sut.getColorFromImage(Dom('svg'), x, y, (err, color) => {
+          if (err) reject(err);
+          else resolve(color);
+        });
       });
+
+      assert.equals(color, {r: 155, g: 50, b: 253, a: 1});
     });
 
     test("png getColorFromImage", async ()=>{

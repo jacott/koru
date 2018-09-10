@@ -10,7 +10,7 @@ define((require, exports, module)=>{
 
   const Eyedropper = {
     options: null,
-    pick(callback) {
+    pick(callback, options) {
       const cancelEventListener = ()=>{
         document.removeEventListener('pointerdown', pointerdown, true);
       };
@@ -74,7 +74,7 @@ define((require, exports, module)=>{
               }
             }, 'on');
 
-          });
+          }, options);
         } catch(ex) {
           cancel();
           koru.unhandledException(ex);
@@ -87,12 +87,11 @@ define((require, exports, module)=>{
       document.body.appendChild(glassPane);
     },
 
-    getPointColors(x, y, callback) {
+    getPointColors(x, y, callback, {intercept}={}) {
       const stack = [];
-      let color = null, textColor = null, borderColor = null;
+      let color = null, textColor = null, borderColor = null, image = null;
       const {body} = document;
 
-      let image;
       while (true) {
         let elm = document.elementFromPoint(x, y);
         if (elm == null) break;
@@ -102,20 +101,23 @@ define((require, exports, module)=>{
 
         if (elm.namespaceURI === Dom.SVGNS) {
           if (elm.tagName === 'svg') {
-            color = uColor.toRGB(cs.getPropertyValue('background-color'));
-            if (image === undefined) image = elm;
+            if (color === null)
+              color = uColor.toRGB(cs.getPropertyValue('background-color'));
+            if (image === null) image = elm;
           } else {
-            const fv = cs.getPropertyValue('fill'), sv = cs.getPropertyValue('stroke');
-            if (fv !== 'none') color = uColor.toRGB(fv);
-            if (sv !== 'none' && textColor === null) textColor = uColor.toRGB(sv);
-
-            if (fv !== 'none' && color.a >= .1 && callback !== undefined) {
-              if (image === undefined) image = elm.closest('svg');
-              break;
+            if (color === null) {
+              const fv = cs.getPropertyValue('fill');
+              if (fv !== 'none') color = uColor.toRGB(fv);
             }
+            if (textColor === null) {
+              const sv = cs.getPropertyValue('stroke');
+              if (sv !== 'none') textColor = uColor.toRGB(sv);
+            }
+            if (image === null) image = elm.closest('svg');
           }
         } else {
-          color = uColor.toRGB(cs.getPropertyValue('background-color'));
+          if (color === null)
+            color = uColor.toRGB(cs.getPropertyValue('background-color'));
 
           if (borderColor === null && style.getPropertyValue('border-width') !== '') {
             borderColor =  uColor.toRGB(style.getPropertyValue('border-color'));
@@ -128,13 +130,24 @@ define((require, exports, module)=>{
             }
           }
           const bi = cs.getPropertyValue('background-image');
-          if (bi !== 'none') {
-            if (color != null && color.a < .1) color = null;
+          if (bi !== 'none' && image === null) {
             image = elm;
-            break;
           }
         }
-        if ((color != null && color.a >= .1) || elm === body)
+
+        if (intercept !== undefined) {
+          const colors = intercept(elm, cs);
+          if (colors !== undefined) {
+            if (colors.color !== undefined)
+              color = color === null ? null : uColor.toRGB(colors.color);
+            if (colors.textColor) textColor = uColor.toRGB(colors.textColor);
+            if (colors.borderColor) borderColor = uColor.toRGB(colors.borderColor);
+            if (color !== null)
+              break;
+          }
+        }
+
+        if ((color !== null && color.a >= .1) || elm === body)
           break;
 
         color = null;
@@ -152,13 +165,15 @@ define((require, exports, module)=>{
         colors.borderColor = borderColor;
 
       if (callback !== undefined) {
-        if (image !== undefined)
+        if (image !== null)
           Eyedropper.getColorFromImage(image, x, y, (err, imageColor)=>{
             colors.imageColor = imageColor;
             callback(err, colors);
           });
         else
           callback(null, colors);
+
+        return;
       }
 
       return colors;
