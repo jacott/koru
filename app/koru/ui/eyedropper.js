@@ -13,6 +13,7 @@ define((require, exports, module)=>{
     pick(callback, options) {
       const cancelEventListener = ()=>{
         document.removeEventListener('pointerdown', pointerdown, true);
+        document.removeEventListener('keydown', cancel, true);
       };
 
       const cancel = ()=>{
@@ -79,6 +80,7 @@ define((require, exports, module)=>{
       };
 
       document.addEventListener('pointerdown', pointerdown, true);
+      document.addEventListener('keydown', cancel, true);
       document.body.classList.add('eyedropper-active');
       document.body.appendChild(glassPane);
     },

@@ -14,6 +14,15 @@ isClient && define((require, exports, module)=>{
       TH.domTearDown();
     });
 
+    test("keydown cancels pick", ()=>{
+      const callback = stub();
+      sut.pick(callback);
+
+      TH.keydown(document.body, 27);
+
+      refute.dom('.glassPane');
+    });
+
     test("pick one option", async ()=>{
       const div = Dom.h({style: "background-color:rgba(255, 0, 255, 0.5);width:300px;height:200px"});
 
