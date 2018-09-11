@@ -207,11 +207,6 @@ define((require)=>{
 
   const env = (obj)=> obj.env || 'server';
 
-  const meta = noContent('meta');
-  const link = noContent('link');
-  const script = noContent('script');
-  const async = 'async';
-
   const mdRenderer = new marked.Renderer();
   const mdOptions = {
     renderer: mdRenderer,
