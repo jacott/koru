@@ -150,7 +150,7 @@ define((require, exports, module)=>{
       } else {
         Modal.append(modalPos, {
           container, popup, handleTab: true,
-          boundingClientRect: anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor,
+          boundingClientRect: Dom.getBoundingClientRect(anchor),
         });
       }
       Dom.dontFocus || popup.querySelector('[name=hex]').focus();

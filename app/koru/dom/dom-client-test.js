@@ -3,6 +3,7 @@ define((require, exports, module)=>{
   const Ctx             = require('koru/dom/ctx');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
+  const util            = require('koru/util');
 
   const {stub, spy, onEnd, match: m} = TH;
 
@@ -24,6 +25,61 @@ define((require, exports, module)=>{
       delete Dom.Foo;
       v = {};
       Ctx[private$].currentElement = null;
+    });
+
+    test("getBoundingClientRect", ()=>{
+      /**
+       * Get the
+       * [boundingClientRect](https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect)
+       * for different types of objects namely: `Range` and `Element`. For a collapsed range the result
+       * is calculated around caret position otherwise the object's `getBoundingClientRect` is
+       * used. Also if an existing client rect can be passed it will be returned.
+       *
+       * @param object The object to calculate for.
+       *
+       * @return {Object} the rect parameters contains `left, top, width, height` and aliases.
+       **/
+      api.method();
+      //[
+      const div = Dom.h({
+        style: 'position:absolute;left:25px;top:50px;width:150px;height:80px;'+
+          'font-size:16px;font-family:monospace',
+        contenteditable: true,
+        div: ['Hello ', 'world', {br: ''}, {br: ''}, '']});
+      document.body.appendChild(div);
+
+      const keys = 'left top width height'.split(' '),
+            rect = util.extractKeys(div.getBoundingClientRect(), keys);
+
+      // an Element
+      assert.equals(util.extractKeys(Dom.getBoundingClientRect(div), keys), rect);
+
+      // a selection
+      let range = document.createRange();
+      range.selectNode(div);
+      assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), rect);
+
+      // a position
+      range.setStart(div.firstChild, 4); range.collapse(true);
+      assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
+        left: 64, top: 50, width: 0, height: 19}, 2);
+
+      // a client rect
+      assert.same(Dom.getBoundingClientRect(rect), rect);
+      //]
+
+      // a line break
+      range.setStart(div.lastChild.previousSibling, 0); range.collapse(true);
+      assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
+        left: 25, top: 69, width: 0, height: 19}, 2);
+
+      range.setStart(div.firstChild.nextSibling, 4); range.setEnd(range.startContainer, 5);
+      const r2 = Dom.getBoundingClientRect(range);
+
+      // end of line
+      range.setStart(div.firstChild.nextSibling, 5); range.collapse(true);
+      assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
+        left: r2.right, top: 50, width: 0, height: 19}, 2);
     });
 
     test("supports passive", ()=>{
@@ -577,7 +633,7 @@ define((require, exports, module)=>{
 
       const rect = popup.getBoundingClientRect();
 
-      assert.specificAttributes(rect, {left: 50, top: 90});
+      assert.near(util.extractKeys(rect, ['left', 'top']), {left: 50, top: 90});
     });
   });
 });

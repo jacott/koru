@@ -69,6 +69,52 @@ define((require)=>{
     };
   }
 
+  const getRangeClientRect = range =>{
+    if (range.collapsed) {
+      const sc = range.startContainer;
+      const so = range.startOffset;
+      const tr = document.createRange();
+      const result = {width: 0, height: 0, left: undefined, top: 0, right: 0, bottom: 0};
+      let dims;
+      if (sc.nodeType === document.TEXT_NODE) {
+        const text = sc.textContent;
+        if (text) {
+          if (so < text.length) {
+            tr.setStart(sc, so);
+            tr.setEnd(sc, so + 1);
+            dims = tr.getBoundingClientRect();
+          } else {
+            tr.setStart(sc, so - 1);
+            tr.setEnd(sc, so);
+            dims = tr.getBoundingClientRect();
+            result.left = dims.right;
+          }
+        } else {
+          dims = sc.parentNode.getBoundingClientRect();
+        }
+      } else {
+        const node = sc.childNodes[so] || sc;
+        if (node.nodeType === document.TEXT_NODE) {
+          tr.setStart(node, 0);
+          return getRangeClientRect(tr);
+        } else {
+          dims = node.getBoundingClientRect();
+        }
+      }
+      result.height = dims.height;
+      result.top = dims.top;
+      result.bottom = dims.bottom;
+
+      if (result.left === undefined)
+        result.left = dims.left;
+      result.right = result.left;
+      return result;
+    } else {
+      return range.getBoundingClientRect();
+    }
+  };
+
+
   util.merge(Dom, {
     Ctx,
     current: Ctx.current,
@@ -148,49 +194,13 @@ define((require)=>{
       return sel.getRangeAt(0);
     },
 
-    getRangeClientRect: range =>{
-      if (range.collapsed) {
-        const sc = range.startContainer;
-        const so = range.startOffset;
-        const tr = document.createRange();
-        const result = {width: 0};
-        let dims;
-        if (sc.nodeType === document.TEXT_NODE) {
-          const text = sc.textContent;
-          if (text) {
-            if (so < text.length) {
-              tr.setStart(sc, so);
-              tr.setEnd(sc, so + 1);
-              dims = tr.getBoundingClientRect();
-            } else {
-              tr.setStart(sc, so - 1);
-              tr.setEnd(sc, so);
-              dims = tr.getBoundingClientRect();
-              result.left = dims.right;
-            }
-          } else {
-            dims = sc.parentNode.getBoundingClientRect();
-          }
-        } else {
-          const node = sc.childNodes[so] || sc;
-          if (node.nodeType === document.TEXT_NODE) {
-            tr.setStart(node, 0);
-            return Dom.getRangeClientRect(tr);
-          } else {
-            dims = node.getBoundingClientRect();
-          }
-        }
-        result.height = dims.height;
-        result.top = dims.top;
-        result.bottom = dims.bottom;
-
-        if (result.left === undefined)
-          result.left = dims.left;
-        result.right = result.left;
-        return result;
-      } else {
-        return range.getBoundingClientRect();
-      }
+    getBoundingClientRect: object =>{
+      if (object instanceof Range)
+        return getRangeClientRect(object);
+      else if (object.getBoundingClientRect)
+        return object.getBoundingClientRect();
+      else if (object.left !== undefined)
+        return object;
     },
 
     forEach: (elm, querySelector, func)=>{

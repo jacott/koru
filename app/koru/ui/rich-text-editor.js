@@ -285,7 +285,7 @@ define((require, exports, module)=>{
       Modal.appendBelow({
         container: dialog,
         handleTab: true,
-        boundingClientRect: Dom.getRangeClientRect(range),
+        boundingClientRect: Dom.getBoundingClientRect(range),
       });
       dialog.querySelector('[name=link]').focus();
     },
@@ -306,7 +306,7 @@ define((require, exports, module)=>{
       Modal.append('on', {
         container: dialog,
         handleTab: true,
-        boundingClientRect: Dom.getRangeClientRect(range),
+        boundingClientRect: Dom.getBoundingClientRect(range),
       });
       dialog.getElementsByTagName('input')[0].focus();
     },
@@ -382,7 +382,7 @@ define((require, exports, module)=>{
     }, options);
 
     options.boundingClientRect = ctx.inputElm.contains(event.target) ?
-      Dom.getRangeClientRect(Dom.getRange()) :
+      Dom.getBoundingClientRect(Dom.getRange()) :
       event.target.getBoundingClientRect();
 
     ctx.openDialog = true;
