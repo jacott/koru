@@ -7,29 +7,25 @@ define((require, exports, module)=>{
   const session         = require('./session');
   const buildCmd        = require('./test/build-cmd');
 
-  koru.onunload(module, 'reload');
-
   session.remoteControl = remoteControl;
 
   remoteControl.engine = 'Server';
 
-
   function remoteControl(ws) {
     const session = this;
+    const clients = {};
 
-    let testMode = 'none', testExec = {};
+    let testMode = 'none', testExec = {client: null, server: null};
     let testClientCount = 0, pendingClientTests = [];
     let future, interceptObj;
     let clientCount = 0;
 
     function logHandle(msg) {
-      const key = channelKey(this);
+      const key = this.engine;
       key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
       try {
-        ws.send('L' + channelKey(this) + '\x00' + msg);
-      } catch(ex) {
-        // ignore since it will just come back to us
-      }
+        ws.send('L' + key + '\x00' + msg);
+      } catch(ex) {} // ignore
     }
 
     const intercept = (obj)=>{
@@ -54,54 +50,68 @@ define((require, exports, module)=>{
     remoteControl.testHandle = testHandle;
     remoteControl.logHandle = logHandle;
 
-    const channelKey = (conn)=>{
-      const {engine} = conn;
-      if (engine === 'Server')
-        return engine;
-      else
-        return engine+'-'+conn.sessId;
-    };
-
     const newConn = (conn)=>{
-      const key = channelKey(conn);
-      ws.send('A'+key);
-      ++clientCount;
-      return {conn, key};
+      const {engine} = conn;
+      let cs = clients[engine];
+      if (cs === undefined) {
+        ws.send('A'+engine);
+        ++clientCount;
+        cs = clients[engine] = {
+          conns: new Map, engine,
+          runCount: 0,
+          results: undefined,
+          pendingTests: [pendingClientTests],
+        };
+      }
+
+      cs.conns.set(conn, {tests: null, results: null});
+      testWhenReady(conn);
     };
 
-    const clients = {};
     for (let key in session.conns) {
       const conn = session.conns[key];
-      let cs = clients[conn.engine];
-      if (! cs) cs = clients[conn.engine] = {};
-      cs[key] = newConn(conn);
+      newConn(conn);
     }
 
     ws.send('AServer');
 
     session.countNotify.onChange((conn, isOpen)=>{
-      if (! conn.engine) return;
-      const cs = clients[conn.engine];
-      let channel;
-      if (! isOpen && cs && (channel = cs[conn.sessId])) {
+      const {engine} = conn;
+      if (! engine || isOpen) return;
+      const cs = clients[engine];
+      if (cs === undefined) return;
+      cs.conns.delete(conn);
+      if (cs.conns.size === 0) {
+        delete clients[engine];
         --clientCount;
-        ws.send('D'+channel.key);
-        delete cs[conn.sessId];
-        if (util.isObjEmpty(cs))
-          delete clients[conn.engine];
+        ws.send('D'+engine);
       }
     });
 
     const testWhenReady = ()=>{
       if (testMode !== 'none') {
-        if (testMode !== 'server' &&
-            testExec.client && clientCount) {
-          top: for (const key in clients) {
-            const cs = clients[key];
-            for (const sessId in cs) {
-              const channel = cs[sessId];
-              if (! readyForTests(channel))
-                break top;
+        if (testMode !== 'server' && testExec.client !== null && clientCount) {
+          const apt = pendingClientTests;
+          pendingClientTests = [];
+          for (const key in clients) {
+            const cs = clients[key], {conns} = cs;
+            const len = conns.size;
+            if (len < 2)
+              cs.pendingTests = [apt];
+            else {
+              const pt = cs.pendingTests = [];
+              for (let i = 0; i < len; ++i)
+                pt.push([]);
+
+              const ctLen = apt.length;
+              for (let i = 0; i < ctLen; ++i) {
+                pt[i % len].push(apt[i]);
+              }
+            }
+
+            for (const conn of conns.keys()) {
+              if (! readyForTests(conn))
+                break;
             }
           }
         }
@@ -131,23 +141,9 @@ define((require, exports, module)=>{
               testExec = exec;
               if (mode === 'client')
                 testExec.server = null;
-              const ct = testExec.clientTests;
 
-              if (ct) {
-                if (testClientCount === 1)
-                  pendingClientTests = [ct];
-                else {
-                  const ctLen = ct.length;
-                  testClientCount = Math.max(1, Math.min(testClientCount, ctLen));
-                  pendingClientTests = new Array(testClientCount);
-                  for(let i = 0; i < testClientCount; ++i) {
-                    pendingClientTests[i] = [];
-                  }
-
-                  for(let i = 0; i < ctLen; ++i) {
-                    pendingClientTests[i % testClientCount].push(ct[i]);
-                  }
-                }
+              if (testExec.clientTests) {
+                pendingClientTests = testExec.clientTests;
               }
               testWhenReady();
             });
@@ -176,11 +172,14 @@ define((require, exports, module)=>{
       }
     });
 
-    const readyForTests = (channel)=>{
-      if (pendingClientTests.length === 0) return false;
-      channel.tests = pendingClientTests.pop();
-      testExec.client(channel.conn, channel.tests);
-      ws.send('X'+channel.key);
+    const readyForTests = (conn)=>{
+      const cs = clients[conn.engine];
+      const {pendingTests} = cs;
+      if (pendingTests.length === 0) return false;
+      const data = cs.conns.get(conn);
+      testExec.client(conn, data.tests = pendingTests.pop());
+      if (++cs.runCount == 1)
+        ws.send('X'+conn.engine);
       return true;
     };
 
@@ -194,37 +193,63 @@ define((require, exports, module)=>{
 
     const _testHandle = (conn, msg)=>{
       if (msg[0] === 'A') {
-        const cs = clients[conn.engine] = {};
-        let channel = cs[conn.sessId];
-        if (! channel) {
-          channel = cs[conn.sessId] = newConn(conn);
-        }
-        if (testExec.client && testMode !== 'server') {
-          readyForTests(channel);
+        newConn(conn);
+        if (testExec.client !== null && testMode !== 'server') {
+          readyForTests(conn);
         }
         return;
       }
 
-      ws.send(msg[0] + channelKey(conn) + '\x00' + msg.slice(1));
-      if (msg[0] === 'F') {
-        const cs = clients[conn.engine];
-        const channel = cs && cs[conn.sessId];
-        if (channel && channel.tests) {
-          channel.tests = null;
-          if (--testClientCount === 0) {
-            if (testExec.server) {
-              testExec.client = null;
-              testWhenReady();
-              return;
+      const {engine} = conn;
+      const type = msg[0];
+      msg = msg.slice(1);
+
+      const cs = clients[engine];
+      const sent = (type !== 'R' && type !== 'F') || cs === undefined || cs.conns.size === 1;
+      if (sent) {
+        ws.send(type + engine + '\x00' + msg);
+      } else if (type === 'R') {
+        const parts = msg.split('\x00');
+        const {conns} = cs;
+        conns.get(conn).results = parts[1].split(' ').map(d => +d);
+        let ans;
+        for (const {results} of conns.values()) {
+          if (results != null) {
+            if (ans === undefined)
+              cs.results = ans = results.slice();
+            else for(let i = 0; i < ans.length; ++i) {
+              ans[i] += results[i];
             }
-          } else if (pendingClientTests.length) {
-            readyForTests(channel);
-            return;
           }
         }
-        if (testClientCount || testExec.server) return;
+        ws.send(type + engine + '\x00' + parts[0]+ '\x00'+ ans.join(' '));
+      }
+
+      if (type === 'F') {
+        if (cs !== undefined) {
+          const data = cs.conns.get(conn);
+          data.tests = null;
+          readyForTests(conn);
+          if (--cs.runCount == 0) {
+            sent || ws.send(
+              type + engine + '\x00' +
+                (cs.results === undefined || cs.results[2] !== 0 ||
+                 cs.results[1] !== cs.results[2] ? '1' : '0'));
+
+            if (--testClientCount === 0) {
+              if (testExec.server) {
+                testExec.client = null;
+                testWhenReady();
+                return;
+              }
+            }
+          }
+        }
+        if (testClientCount != 0 || testExec.server) return;
         ws.send('Z');
       }
     };
   }
+
+  koru.onunload(module, 'reload');
 });
