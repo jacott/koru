@@ -234,7 +234,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(colors, {
           textColor: null,
           borderColor: null,
-          backgroundColor: {r: 1, g: 2, b: 1, a: 0.9},
+          backgroundColor: {r: 1, g: 2, b: 1, a: m.near(0.9, 0.01)},
           imageColor: {r: 244, g: 163, b: 194, a: .11}});
       });
     });
@@ -255,10 +255,11 @@ isClient && define((require, exports, module)=>{
       const color = await sut.getColorFromImage(Dom('svg'), bbox.left+1, bbox.top+1);
 
       assert.near(
-        color, util.engine.startsWith('Firefox')
+        color, util.isFirefox
           ? {r: 122, g: 17, b: 206, a: 0.980}
-        : util.engine.startsWith('Safari')
-          ? {r: 127, g: 27, b: 220, a: 0.988} : {r: 126, g: 27, b: 220, a: 0.988},
+        : util.isSafari
+          ? {r: 127, g: 27, b: 220, a: 0.988}
+        : {r: 126, g: 27, b: 220, a: 0.988},
         0.001);
     });
 

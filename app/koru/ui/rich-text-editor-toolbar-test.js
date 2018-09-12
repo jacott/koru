@@ -286,7 +286,7 @@ isClient && define((require, exports, module)=>{
         assert.same(this.innerHTML, 'H<span style=\"font-family: monospace;\">el</span>lo');
       });
 
-      if (! util.engine.startsWith('Firefox'))
+      if (! util.isFirefox)
         assert.dom('[name=code].on'); // broken in firefox :/
       TH.pointerDownUp('[name=code]');
       assert.dom('[name=code]:not(.on)');

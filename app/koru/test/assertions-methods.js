@@ -452,7 +452,7 @@ define((require)=>{
         return ! this.expected;
       }
       const alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
-              withinDelta(this.actual[3], this.expected[3], delta);
+            withinDelta(this.actual[3], this.expected[3], delta);
       return deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
         alphaGood;
     },

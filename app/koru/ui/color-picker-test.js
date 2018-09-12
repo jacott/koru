@@ -157,10 +157,7 @@ isClient && define((require, exports, module)=>{
           assert.dom('[name=hex]', {value: 'ff113387'});
           TH.input('[name=hex]', '11223344');
           assert.dom('.sample>div', sample =>{
-            if (util.engine.startsWith('Safari'))
-              assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.2627]);
-            else
-              assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.267]);
+            assert.colorEqual(sample.style.backgroundColor, [17, 34, 51, 0.26], 0.01);
           });
           TH.click('[name=apply]');
         });

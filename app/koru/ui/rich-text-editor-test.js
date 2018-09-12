@@ -730,7 +730,7 @@ isClient && define((require, exports, module)=>{
         {style: 'font-family: monospace;', span: 'o'}, ' bar']}]);
 
       const range = Dom.getRange();
-      if (util.engine.startsWith('Firefox') && range.startContainer.nodeValue === 'f') {
+      if (util.isFirefox && range.startContainer.nodeValue === 'f') {
         range.setStart(Dom('span').nextSibling, 0);
         Dom.setRange(range);
       }
