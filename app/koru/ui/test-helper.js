@@ -47,13 +47,38 @@ define((require, exports, module)=>{
 
   ga.add('rangeEquals', {
     assert(
-      range=Dom.getRange(),
+      range,
       startContainer, startOffset=0,
       endContainer=startContainer, endOffset=startOffset
     ) {
       if (typeof endContainer === 'number') {
         endOffset = endContainer;
         endContainer = startContainer;
+      }
+
+      if (util.isSafari) {
+        const orig = Dom.getRange();
+        if (range == null)
+          range = orig;
+        else {
+          Dom.setRange(range);
+          range = Dom.getRange();
+        }
+        let exp = document.createRange();
+        exp.setStart(startContainer, startOffset);
+        exp.setEnd(endContainer, endOffset);
+
+        Dom.setRange(exp);
+        exp = Dom.getRange();
+
+        startContainer = exp.startContainer;
+        startOffset = exp.startOffset;
+        endContainer = exp.endContainer;
+        endOffset = exp.endOffset;
+
+        Dom.setRange(orig);
+      } else if (range == null) {
+        range = Dom.getRange();
       }
 
       this.actual = {
@@ -64,9 +89,9 @@ define((require, exports, module)=>{
       };
       const expected = {
         startContainer: m.is(startContainer),
-        startOffset: startOffset,
+        startOffset,
         endContainer: m.is(endContainer),
-        endOffset: endOffset,
+        endOffset,
       };
 
       return Core.deepEqual(this.actual, expected, this, 'diff');
@@ -284,6 +309,11 @@ define((require, exports, module)=>{
         });
       });
       return this;
+    },
+
+    getSimpleBoundingRect: object =>{
+      const rect = Dom.getBoundingClientRect(object);
+      return rect && {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
     },
   };
 

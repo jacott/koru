@@ -33,7 +33,7 @@ define((require)=>{
   };
 
   const forwardOneChar = (top, obj)=>{
-    let other, {node, offset} = obj;
+    let {node, offset} = obj;
 
     if (node.nodeType === TEXT_NODE) {
       ++offset;
@@ -50,14 +50,15 @@ define((require)=>{
     offset = 1;
 
     while (node !== top) {
-      other = node.nextSibling;
-      if (other) {
+      const other = node.nextSibling;
+      if (other !== null) {
         node = firstInnerMostNode(other);
         obj.node = node;
         obj.offset = offset;
         return true;
       } else {
         node = node.parentNode;
+        if (node === top) return;
         if (! INLINE_TAGS[node.tagName])
           offset = 0;
       }
@@ -499,6 +500,11 @@ define((require)=>{
       const nn = nextNode(br, containingBlock(br, top));
       if (nn == null || nn === br)
         br.parentNode.appendChild(document.createElement('BR'));
+
+      const range = document.createRange();
+      range.setStart(br.nextSibling, 0);
+      normRange(range);
+      Dom.setRange(range);
     },
 
     clearEmptyText,

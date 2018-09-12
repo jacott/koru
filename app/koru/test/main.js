@@ -10,6 +10,8 @@ define((require, exports, module)=>{
 
   const Module = module.constructor;
 
+  const origAfTimeout = Core._origAfTimeout = koru.afTimeout;
+
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
   const onEnd = callback => Core.test.onEnd(callback);
   const stub = (...args)=>Core.test.stub(...args);
@@ -161,7 +163,8 @@ define((require, exports, module)=>{
 
   const endRun = ()=>{
     recordTCTime();
-    koru.afTimeout = Core._origAfTimeout;
+    if (koru.afTimeout !== origAfTimeout)
+      koru.afTimeout = origAfTimeout;
     timer = lastTest = undefined;
     if (Core.testCount === 0) {
       errorCount = 1;
@@ -252,7 +255,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
   Core.onTestStart(test=>{
     if (timer === undefined) {
       timer = Date.now();
-      if (isClient) Core._origAfTimeout = koru.afTimeout;
+      koru.afTimeout = origAfTimeout;
     }
 
     if (lastTest === undefined || test.topTC !== lastTest.topTC) {

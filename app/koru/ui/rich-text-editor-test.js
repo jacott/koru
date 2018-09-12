@@ -19,6 +19,9 @@ isClient && define((require, exports, module)=>{
 
   let v ={};
 
+  const noBlanks = d => d !== '';
+
+
   const focusin = (inputElm)=>{
     inputElm.focus();
     TH.trigger(inputElm, 'focusin');
@@ -535,15 +538,15 @@ isClient && define((require, exports, module)=>{
 
       test("create empty", ()=>{
         const input = Dom('.input');
-        input.appendChild(Dom.h(["1", {br: ''}, "2"]));
+        input.appendChild(Dom.h(["1", {br: ''}, {br: ''}, "2"]));
 
         input.focus();
-        TH.setRange(input, 1);
+        TH.setRange(input, 2);
 
         TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
         assert.equals(htj(input).div, [
-          '1',
+          '1', {br: ''},
           {"data-lang": 'text', pre: {br: ''}},
           '2']);
 
@@ -591,6 +594,20 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    test("fontColor no range", ()=>{
+      document.body.appendChild(tpl.$autoRender({
+        content: Dom.h({})}));
+
+      assert.dom('.input', input =>{
+        document.activeElement.blur();
+        TH.trigger(input, 'focusout');
+        refute.className(Dom('.richTextEditor'), 'focus');
+        sut.$ctx(input).mode.actions.fontColor({target: input});
+      });
+
+      assert.dom('#ColorPicker');
+    });
+
     test("fontColor", ()=>{
       document.body.appendChild(tpl.$autoRender({
         content: Dom.h({font: {
@@ -628,12 +645,7 @@ isClient && define((require, exports, module)=>{
 
       refute.dom('#ColorPicker');
 
-
       assert.dom('.input', input =>{
-        document.activeElement.blur();
-        TH.trigger(input, 'focusout');
-        refute.className(Dom('.richTextEditor'), 'focus');
-
         assert.dom('*', 'b', elm =>{
           assert.colorEqual(elm.style.backgroundColor, '#ff0000');
         });
@@ -726,18 +738,14 @@ isClient && define((require, exports, module)=>{
       TH.keydown(inputElm, 'À', {ctrlKey: true});
 
       assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
-        {style: 'font-family: monospace;', span: 'f'}, 'baz', 'o',
-        {style: 'font-family: monospace;', span: 'o'}, ' bar']}]);
+        {style: 'font-family: monospace;', span: ['f', 'baz', 'o', 'o']}, ' bar']}]);
 
       const range = Dom.getRange();
-      if (util.isFirefox && range.startContainer.nodeValue === 'f') {
-        range.setStart(Dom('span').nextSibling, 0);
-        Dom.setRange(range);
-      }
       TH.keydown(inputElm, 'À', {ctrlKey: true});
 
       assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
-        {style: 'font-family: monospace;', span: ['f', 'baz', 'o', 'o']},
+        {style: 'font-family: monospace;', span: 'f'},
+        'baz', 'o', {style: 'font-family: monospace;', span: 'o'},
         ' bar']}]);
     });
 
@@ -956,8 +964,8 @@ isClient && define((require, exports, module)=>{
             v.paste(v.event);
             assert.equals(htj(pre).pre, ['paste ', 'bold world', 'before']);
             sut.$ctx(input).mode.paste('<b>bold</b>\nplain<br>newline');
-            assert.equals(htj(pre).pre, [
-              'paste ', 'bold world', '',
+            assert.equals(htj(pre).pre.filter(noBlanks), [
+              'paste ', 'bold world',
               'bold', {br: ''}, 'plain', {br: ''}, 'newline',
               'before']);
           });

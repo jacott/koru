@@ -514,7 +514,7 @@ isClient && define((require, exports, module)=>{
 
     test("errorTop renderError", ()=>{
       const form = Dom.h({
-        style: 'width: 300px;height:100px',
+        style: 'margin-left:20px;width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
               {input: [], name: 'bar',
                style: 'margin-left:200;width:50px;height:20px',
@@ -527,8 +527,10 @@ isClient && define((require, exports, module)=>{
 
       assert.dom(form, ()=>{
         assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, elm =>{
-          assert.cssNear(elm, 'marginLeft', -50, 2);
-          assert.cssNear(elm, 'marginTop', -15, 2);
+          const rect = elm.getBoundingClientRect();
+
+          assert.near(rect.top, 16);
+          assert.near(rect.left, 20);
           assert.same(elm.style.position, 'absolute');
         });
         assert.dom('[name=foo].error+.errorMsg', 'foo msg');
@@ -569,9 +571,12 @@ isClient && define((require, exports, module)=>{
       Form.renderError(form, 'bar', 'big long message bar msg');
 
       assert.dom(form, function () {
-        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, function () {
-          assert.cssNear(this, 'marginLeft', -162, 15); // firefox is 172; chrome is 152 both display correctly?
-          assert.cssNear(this, 'marginTop', -15, 2);
+        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, elm =>{
+          const eRect = elm.getBoundingClientRect();
+          const iRect = Dom('input').getBoundingClientRect();
+
+          assert.near(iRect.right, eRect.right);
+          assert.near(iRect.top, eRect.bottom);
         });
         assert.dom('[name=foo].error+.errorMsg', 'foo msg');
 

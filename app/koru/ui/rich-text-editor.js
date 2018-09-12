@@ -180,14 +180,16 @@ define((require, exports, module)=>{
       });
     },
     fontColor: (event)=>{
-      const range = Dom.getRange();
-      let node = range.endContainer;
-      if (node && node.nodeType === TEXT_NODE)
-        node = node.parentNode;
-      if (! node) return;
-
       const ctx = Tpl.$ctx(event.target);
       const focus = ctx.inputElm;
+
+      let range = Dom.getRange();
+      let node = range === null ? DomNav.firstInnerMostNode(focus) : range.endContainer;
+      if (node && node.nodeType === TEXT_NODE)
+        node = node.parentNode;
+
+      if (node === null)
+        return;
 
       const style = window.getComputedStyle(node);
 
@@ -195,19 +197,20 @@ define((require, exports, module)=>{
       let bgColor = style.backgroundColor;
       bgColor = uColor.toRGB(bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor);
 
-      fgColor = fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor);
-      bgColor = bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor);
 
-      const options = {foreColor: fgColor, hiliteColor: bgColor};
+      const options = {
+        foreColor: fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor),
+        hiliteColor: bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor),
+      };
       const typeElm = Tpl.FontColor.$autoRender(options);
 
       ctx.openDialog = true;
       ColorPicker.choose({
-        color: fgColor, anchor: range,
+        color: fgColor, anchor: range || node,
         customFieldset: typeElm, callback: color =>{
           ctx.openDialog = false;
           focus.focus();
-          Dom.setRange(range);
+          range && Dom.setRange(range);
           if (color === 'removeHilite') {
             execCommand('hiliteColor', 'initial');
             return;
@@ -233,10 +236,18 @@ define((require, exports, module)=>{
       let {startContainer: sc, endContainer: ec, collapsed} = range;
 
       if (sc.nodeType === TEXT_NODE && DomNav.rangeIsInline(range)) {
-        const fn = fontNode(editor, sc);
+        if (! collapsed) {
+          if (range.startOffset == sc.nodeValue.length)
+            sc = DomNav.nextNode(sc);
+          if (ec.nodeType === TEXT_NODE && range.endOffset == 0)
+            ec = DomNav.previousNode(ec);
+        }
+        const fn = fontNode(editor, sc),
+              fnFont = (ctx.override && ctx.override.font) || fn.style.getPropertyValue('font-family');
+        const efnFont = collapsed || ctx.override
+              ? fnFont : fontNode(editor, ec).style.getPropertyValue('font-family');
         let font = 'monospace';
-        if (((ctx.override && ctx.override.font) ||
-             fn.style.getPropertyValue('font-family')) === 'monospace') {
+        if (fnFont ===  efnFont && fnFont === 'monospace') {
           let pn = fn;
           while (pn !== editor) {
             pn = fontNode(editor, fn.previousSibling || fn.parentNode);

@@ -68,6 +68,8 @@ isClient && define((require, exports, module)=>{
       sut.newline();
       assert.equals(htj(inputElm).div, ['text', {br: ''}, {br: ''}]);
 
+      assert.rangeEquals(undefined, inputElm, 2);
+
       const boldText = h('bold');
       inputElm.insertBefore(h({blockquote: {span: {b: boldText}}}), inputElm.firstChild);
       TH.setRange(boldText, boldText.length);
@@ -257,10 +259,10 @@ isClient && define((require, exports, module)=>{
         assert.equals(htj(inputElm).div, ['one ', '', {b: '2 '}, '', 'three']);
 
         const range = Dom.getRange();
-        assert.same(range.startContainer, inputElm.childNodes[3]);
-        assert.same(range.startOffset, 0);
-
-        assert.isTrue(range.collapsed);
+        if (range.startContainer === inputElm.childNodes[2].firstChild)
+          assert.rangeEquals(range, inputElm.childNodes[2].firstChild, 2); // Safari
+        else
+          assert.rangeEquals(range, inputElm.childNodes[3], 0);
       });
 
     });
@@ -310,16 +312,20 @@ isClient && define((require, exports, module)=>{
 
         test("completely within", ()=>{
           TH.setRange(divWithB, 1, divWithB.lastChild, 3);
-          assert.rangeEquals(
-            sut.restrictRange(Dom.getRange(), inputElm),
-            divWithB, 1, divWithB.lastChild, 3);
+          const range = sut.restrictRange(Dom.getRange(), inputElm);
+          if (range.startContainer === divWithB)
+            assert.rangeEquals(range, divWithB, 1, divWithB.lastChild, 3);
+          else
+            assert.rangeEquals(range, divWithB.childNodes[1].firstChild, 0, divWithB.lastChild, 3);
         });
 
         test("within", ()=>{
           TH.setRange(divWithB, 1, divWithB.lastChild, 3);
-          assert.rangeEquals(
-            sut.restrictRange(Dom.getRange(), divWithB),
-            divWithB, 1, divWithB.lastChild, 3);
+          const range = sut.restrictRange(Dom.getRange(), inputElm);
+          if (range.startContainer === divWithB)
+            assert.rangeEquals(range, divWithB, 1, divWithB.lastChild, 3);
+          else
+            assert.rangeEquals(range, divWithB.childNodes[1].firstChild, 0, divWithB.lastChild, 3);
         });
 
         test("both outside", ()=>{
@@ -568,7 +574,13 @@ isClient && define((require, exports, module)=>{
 
           test("on br of spanWithBr", ()=>{
             TH.setRange(spanWithBr.querySelector('br'), 0);
-            assert.rangeEquals(sut.endOfLine(), spanWithBr, 1);
+            const range = sut.endOfLine();
+            if (range.startContainer === spanWithBr)
+              assert.rangeEquals(range, spanWithBr, 1);
+            else
+              assert.rangeEquals(
+                range, spanWithBr.firstChild, spanWithBr.firstChild.length);
+
           });
 
           test("last line", ()=>{
@@ -650,7 +662,7 @@ isClient && define((require, exports, module)=>{
     group("selectRange", ()=>{
       test("within text node ", ()=>{
         inputElm.appendChild(h({div: "hello world"}));
-        TH.setRange(sut.firstInnerMostNode(inputElm),5);
+        TH.setRange(sut.firstInnerMostNode(inputElm), 5);
 
         Dom.setRange(sut.selectRange(inputElm, 'char', 1));
         assert.rangeEquals(undefined, sut.firstInnerMostNode(inputElm), 5, 6);
@@ -662,60 +674,65 @@ isClient && define((require, exports, module)=>{
 
       test("next line", ()=>{
         inputElm.innerHTML = '<div><div>hello</div><div>world</div></div>';
+        const world = inputElm.firstChild.lastChild;
         TH.setRange(sut.firstInnerMostNode(inputElm),5);
 
-        Dom.setRange(sut.selectRange(inputElm, 'char', 1));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(inputElm), 5,
-                           sut.firstInnerMostNode(inputElm.firstChild.lastChild), 0);
+        let range = sut.selectRange(inputElm, 'char', 1);
+        Dom.setRange(range);
+        assert.rangeEquals(
+          undefined, sut.firstInnerMostNode(inputElm), 5,
+          sut.firstInnerMostNode(world), 0);
 
         collapse();
+        assert.rangeEquals(undefined,
+                           sut.firstInnerMostNode(world), 0);
         Dom.setRange(sut.selectRange(inputElm, 'char', -1));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(inputElm), 5,
-                           sut.firstInnerMostNode(inputElm.firstChild.lastChild), 0);
+        assert.rangeEquals(
+          undefined, sut.firstInnerMostNode(inputElm), 5,
+          sut.firstInnerMostNode(world), 0);
       });
 
       test("block nested", ()=>{
         inputElm.innerHTML =
           "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
         const iElm = inputElm.querySelector('i').firstChild;
+        const line2 = inputElm.childNodes[1].firstChild;
         TH.setRange(iElm, 4);
 
         Dom.setRange(sut.selectRange(inputElm, 'char', 1));
-        assert.rangeEquals(undefined, iElm, 4, inputElm.childNodes[1].firstChild, 0);
+        assert.rangeEquals(undefined, iElm, 4, line2, 0);
 
         collapse();
         Dom.setRange(sut.selectRange(inputElm, 'char', -1));
-        assert.rangeEquals(undefined, iElm, 4, inputElm.childNodes[1].firstChild, 0);
+        assert.rangeEquals(undefined, iElm, 4, line2, 0);
       });
 
       test("span nested", ()=>{
         inputElm.innerHTML =
           "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
-        TH.setRange(sut.firstInnerMostNode(inputElm), 6);
+        const hello = sut.firstInnerMostNode(inputElm);
+        const bIn = sut.firstInnerMostNode(inputElm.querySelector('b'));
+        const bOut = sut.lastInnerMostNode(inputElm.querySelector('b'));
+        TH.setRange(hello, 6);
 
         Dom.setRange(sut.selectRange(inputElm, 'char', 1));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(inputElm), 6,
-                           sut.firstInnerMostNode(inputElm.querySelector('b')), 1);
+        assert.rangeEquals(undefined, hello, 6, bIn, 1);
 
         collapse();
         Dom.setRange(sut.selectRange(inputElm, 'char', 7));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(
-          inputElm.querySelector('b')), 1, sut.lastInnerMostNode(inputElm.querySelector('b')), 1);
+        assert.rangeEquals(undefined, bIn, 1, bOut, 1);
 
         collapse();
         Dom.setRange(sut.selectRange(inputElm, 'char', -7));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(
-          inputElm.querySelector('b')), 1, sut.lastInnerMostNode(inputElm.querySelector('b')), 1);
+        assert.rangeEquals(undefined, bIn, 1, bOut, 1);
 
         collapse(true);
         Dom.setRange(sut.selectRange(inputElm, 'char', -1));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(
-          inputElm.querySelector('b')), 0, sut.firstInnerMostNode(inputElm.querySelector('b')), 1);
+        assert.rangeEquals(undefined, bIn, 0, bIn, 1);
 
         collapse(true);
         Dom.setRange(sut.selectRange(inputElm, 'char', -1));
-        assert.rangeEquals(undefined, sut.firstInnerMostNode(inputElm), 5,
-                           sut.firstInnerMostNode(inputElm.querySelector('b')), 0);
+        assert.rangeEquals(undefined, hello, 5, bIn, 0);
       });
     });
   });
