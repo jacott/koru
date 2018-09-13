@@ -50,7 +50,7 @@ define((require, exports, module)=>{
 
     group("toHtml", ()=>{
       const convert = (text, editable)=>{
-        var elm = document.createElement('div');
+        const elm = document.createElement('div');
         elm.appendChild(Markdown.toHtml(text, null, editable));
         return elm.innerHTML;
       };

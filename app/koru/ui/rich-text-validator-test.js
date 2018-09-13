@@ -28,7 +28,7 @@ define((require, exports, module)=>{
     group("richText", ()=>{
       test("valid markup", ()=>{
         v.rt = RichText.fromHtml(Dom.h([{b: "one"}, "\ntwo"]));
-        var doc = {changes: {foo: v.rt}, foo: v.rt};
+        const doc = {changes: {foo: v.rt}, foo: v.rt};
 
         sut.validators('richText')(doc, 'foo');
         assert.same(doc[error$], undefined);
@@ -37,7 +37,7 @@ define((require, exports, module)=>{
       });
 
       test("valid text", ()=>{
-        var doc = {changes: {foo: "just\ntext"}, foo: "just\ntext"};
+        const doc = {changes: {foo: "just\ntext"}, foo: "just\ntext"};
 
         sut.validators('richText')(doc, 'foo');
         assert.same(doc[error$], undefined);
@@ -46,7 +46,7 @@ define((require, exports, module)=>{
       });
 
       test("no Markup", ()=>{
-        var doc = {foo: v.rt = [['one', 'two'], null]};
+        const doc = {foo: v.rt = [['one', 'two'], null]};
 
         sut.validators('richText')(doc, 'foo');
         assert.same(doc[error$], undefined);
@@ -54,7 +54,7 @@ define((require, exports, module)=>{
       });
 
       test("bad but no changes", ()=>{
-        var doc = {foo: [123, [3]], changes: {other: true}};
+        const doc = {foo: [123, [3]], changes: {other: true}};
 
         sut.validators('richText')(doc, 'foo');
         refute(doc[error$]);
@@ -62,7 +62,7 @@ define((require, exports, module)=>{
       });
 
       test("bad change", ()=>{
-        var doc = {foo: 123, changes: {foo:  [[3]]}};
+        const doc = {foo: 123, changes: {foo:  [[3]]}};
 
         v.rt = [11, 2];
 
@@ -72,8 +72,8 @@ define((require, exports, module)=>{
 
 
       test("filtering with markup", ()=>{
-        var foo = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}));
-        var doc = {foo: foo, changes: {foo:  foo}};
+        const foo = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}));
+        const doc = {foo: foo, changes: {foo:  foo}};
 
         sut.validators('richText')(doc, 'foo', 'filter');
         refute(doc[error$]);
@@ -82,8 +82,8 @@ define((require, exports, module)=>{
       });
 
       test("filtering without markup", ()=>{
-        var foo = ['bold', null];
-        var doc = {foo: foo, changes: {foo:  foo}};
+        const foo = ['bold', null];
+        const doc = {foo: foo, changes: {foo:  foo}};
 
         sut.validators('richText')(doc, 'foo', 'filter');
         refute(doc[error$]);
@@ -94,7 +94,7 @@ define((require, exports, module)=>{
     group("richTextMarkup", ()=>{
       test("valid", ()=>{
         v.rt = [];
-        var doc = {changes: {foo: v.rt[0] = "one\ntwo"}, foo: v.rt[0], fooMarkup:  v.rt[1] = [3, 0, 0, 3]};
+        const doc = {changes: {foo: v.rt[0] = "one\ntwo"}, foo: v.rt[0], fooMarkup:  v.rt[1] = [3, 0, 0, 3]};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
         assert.same(doc[error$], undefined);
@@ -102,8 +102,8 @@ define((require, exports, module)=>{
       });
 
       test("filtering", ()=>{
-        var markup = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}))[1];
-        var doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
+        const markup = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}))[1];
+        const doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup', 'filter');
         refute(doc[error$]);
@@ -113,7 +113,7 @@ define((require, exports, module)=>{
 
 
       test("bad but no changes", ()=>{
-        var doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};
+        const doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
         refute(doc[error$]);
@@ -121,7 +121,7 @@ define((require, exports, module)=>{
       });
 
       test("bad change", ()=>{
-        var doc = {foo: 123, changes: {fooMarkup:  [[3]]}, fooMarkup: 1122};
+        const doc = {foo: 123, changes: {fooMarkup:  [[3]]}, fooMarkup: 1122};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
         assert.equals(doc[error$]['fooHTML'],[['invalid_html']]);
@@ -129,7 +129,7 @@ define((require, exports, module)=>{
       });
 
       test("invalid code", ()=>{
-        var doc = {changes: {foo: "one\ntwo"}, foo: 1234, fooMarkup:  [-1, 0, 0, 3]};
+        const doc = {changes: {foo: "one\ntwo"}, foo: 1234, fooMarkup:  [-1, 0, 0, 3]};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
         assert(doc[error$]);

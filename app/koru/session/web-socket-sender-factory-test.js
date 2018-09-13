@@ -147,7 +147,7 @@ define((require, exports, module)=>{
         return typeof arg === 'function';
       }));
 
-      var data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
+      const data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
       v.func.call(v.sess, data);
 
       assert.calledWith(v.f, ['foo', 1, 2, 3]);
@@ -158,11 +158,11 @@ define((require, exports, module)=>{
 
     test("using separate base", ()=>{
       const webSocketSenderFactory = api.new();
-      var sess1 = new SessionBase('foo1');
-      var sess2 = new SessionBase('foo2');
-      var base = new SessionBase('foo3');
+      const sess1 = new SessionBase('foo1');
+      const sess2 = new SessionBase('foo2');
+      const base = new SessionBase('foo3');
       webSocketSenderFactory(sess1, v.state = stateFactory(), v.wrapper1 = stub(), base);
-      var bfunc = base._commands.B;
+      const bfunc = base._commands.B;
       webSocketSenderFactory(sess2, v.state = stateFactory(), v.wrapper2 = stub(), base);
 
       assert.equals(sess1._rpcs, {});
@@ -208,7 +208,7 @@ define((require, exports, module)=>{
         return typeof arg === 'function';
       }));
 
-      var data = ['foo', 1, 2, 3];
+      let data = ['foo', 1, 2, 3];
 
       v.func(data);
 

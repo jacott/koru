@@ -111,7 +111,7 @@ define((require, exports, module)=>{
         refute.isTrue(myMatch.has(myBook));
         dbBroker.popDbId();
       } else {
-        var orig = dbBroker.dbId;
+        const orig = dbBroker.dbId;
         try {
           util.thread.db.name = 'foo';
           refute.isTrue(myMatch.has(myBook));

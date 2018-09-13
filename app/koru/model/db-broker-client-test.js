@@ -36,24 +36,24 @@ define((require, exports, module)=>{
     });
 
     test("changing dbId", ()=>{
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
-      var docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
 
       sut.dbId = 'foo1';
 
       const anyChanged = stub(), foo1Changed = stub();
 
-      var obAny = TestModel.onAnyChange(anyChanged);
-      var obFoo1 = TestModel.onChange(foo1Changed);
+      const obAny = TestModel.onAnyChange(anyChanged);
+      const obFoo1 = TestModel.onChange(foo1Changed);
 
-      var doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
+      const doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
 
       sut.dbId = 'foo2';
 
       const foo2Changed = stub();
 
-      var obFoo2 = TestModel.onChange(foo2Changed);
-      var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
+      const obFoo2 = TestModel.onChange(foo2Changed);
+      const doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
 
       assert.calledOnce(foo1Changed);
       assert.calledOnce(foo2Changed);

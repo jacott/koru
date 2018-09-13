@@ -47,9 +47,9 @@ define((require, exports, module)=>{
     });
 
     test("just text",  ()=>{
-      var doc = "Hello world";
+      const doc = "Hello world";
 
-      var html = sut.toHtml(doc, null, para);
+      const html = sut.toHtml(doc, null, para);
 
       assert.same(html.outerHTML, "<p><div>Hello world</div></p>");
 
@@ -57,36 +57,36 @@ define((require, exports, module)=>{
     });
 
     test("fragment",  ()=>{
-      var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
+      const rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
       assert.equals(rt, ['foo bar', [11, 0, 0, 3]]);
     });
 
     test("div with multi-line text",  ()=>{
-      var doc = "Hello world\n\nline 2\n";
+      const doc = "Hello world\n\nline 2\n";
 
-      var html = sut.toHtml(doc);
+      const html = sut.toHtml(doc);
 
       assert.equals(inspectFrag(html), [
         "<div>Hello world</div>", "<div><br></div>", "<div>line 2</div>", "<div><br></div>"]);
 
-      var arround = document.createElement('div');
+      const arround = document.createElement('div');
       arround.appendChild(html);
 
       assert.equals(sut.fromHtml(arround), [doc, null]);
     });
 
     test("empty li",  ()=>{
-      var doc = "\n\n", markup = [OL, 0, 1, LI, 0, 0, LI, 1, 0];
+      const doc = "\n\n", markup = [OL, 0, 1, LI, 0, 0, LI, 1, 0];
 
-      var html = sut.toHtml(doc, markup, para);
+      const html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML, "<p><ol><li><br></li><li><br></li></ol><div><br></div></p>");
 
       assert.equals(sut.fromHtml(para), [doc, markup]);
     });
 
     test("simple",  ()=>{
-      var doc = "a\nb";
-      var html = document.createElement('p');
+      const doc = "a\nb";
+      const html = document.createElement('p');
       html.appendChild(sut.toHtml(doc));
 
       assert.same(html.outerHTML, "<p><div>a</div><div>b</div></p>");
@@ -95,8 +95,8 @@ define((require, exports, module)=>{
     });
 
     test("nested",  ()=>{
-      var doc = "brave\nnew\nworld\nnow", markup = [NEST, 0, 2, NEST, 0, 0, NEST, 2, 0, NEST, 1, 0];
-      var html = sut.toHtml(doc, markup, para);
+      const doc = "brave\nnew\nworld\nnow", markup = [NEST, 0, 2, NEST, 0, 0, NEST, 2, 0, NEST, 1, 0];
+      const html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML,
                   '<p><blockquote>' +
                     '<blockquote><div>brave</div></blockquote>' +
@@ -141,17 +141,17 @@ define((require, exports, module)=>{
     });
 
     test("inline styles",  ()=>{
-      var doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, UNDERLINE, 1, 3, 4];
-      var html = sut.toHtml(doc, markup, para);
+      const doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, UNDERLINE, 1, 3, 4];
+      const html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML, '<p><div><span style="font-weight: bold;">brave</span></div><div>'+
                   '<span style="font-style: italic;">ne</span><span style="font-weight: bold;">w</span></div>'+
                   '<div>wor<span style="text-decoration: underline;">l</span>d</div></p>');
     });
 
     test("list and nesting",  ()=>{
-      var doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 1, BOLD, 0, 0, 5, ITALIC, 1, 5, 10];
+      const doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 1, BOLD, 0, 0, 5, ITALIC, 1, 5, 10];
 
-      var html = sut.toHtml(doc, markup, para);
+      const html = sut.toHtml(doc, markup, para);
 
       assert.same(html.outerHTML, '<p><div>It´s a</div><blockquote><div><span style="font-weight: bold;">brave</span></div><div> new <span style="font-style: italic;">world</span> now</div></blockquote></p>');
 
@@ -159,11 +159,11 @@ define((require, exports, module)=>{
     });
 
     test("complex",  ()=>{
-      var complex = '<div>he</div><div>-llo world<span style="font-weight: bold;">in <span style="font-style: italic;">here</span>'+
+      const complex = '<div>he</div><div>-llo world<span style="font-weight: bold;">in <span style="font-style: italic;">here</span>'+
             ' out</span></div><div><br></div><div>line 2</div>';
-      var doc = "he\n-llo worldin here out\n\nline 2";
-      var markup = [BOLD, 1, 10, 21, ITALIC, 0, 13, 17];
-      var html = document.createElement('div');
+      const doc = "he\n-llo worldin here out\n\nline 2";
+      const markup = [BOLD, 1, 10, 21, ITALIC, 0, 13, 17];
+      const html = document.createElement('div');
       html.innerHTML = complex;
       assert.equals(sut.toHtml(doc, markup, document.createElement('div')).innerHTML, complex);
       assert.equals(sut.fromHtml(html), [doc, markup]);
@@ -195,8 +195,8 @@ define((require, exports, module)=>{
     });
 
     test("skips empty text",  ()=>{
-      var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
-      var rt = sut.fromHtml(html);
+      const html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
+      const rt = sut.fromHtml(html);
       assert.equals(rt, ['one\ntwo', [OL, 0, 1, LI, 0, 0, LI, 1, 0]]);
     });
 
@@ -246,7 +246,7 @@ define((require, exports, module)=>{
     });
 
     test("includeTop",  ()=>{
-      var rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
+      const rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
       assert.equals(rt, ['line', [OL, 0, 0, LI, 0, 0]]);
     });
 
@@ -255,9 +255,9 @@ define((require, exports, module)=>{
                         '<ol><li>one<pre data-lang=\"text\">foo</pre></li></ol>');
       assertConvert('<pre data-lang="text"><br></pre>');
 
-      var p = document.createElement('p');
+      const p = document.createElement('p');
       p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
-      var rt = sut.fromHtml(p);
+      const rt = sut.fromHtml(p);
       assert.equals(rt, ['code:text\nOne\ncode:text\nTwo\ncode:text', [CODE, 0, 1, CODE, 2, 1, CODE, 2, 0]]);
 
       assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span><br>' +
@@ -291,9 +291,9 @@ define((require, exports, module)=>{
     });
 
     test("nested links",  ()=>{
-      var html = Dom.h({div: {a: {a: 'text', $href: "/2"}, $href: "/1"}});
+      const html = Dom.h({div: {a: {a: 'text', $href: "/2"}, $href: "/1"}});
 
-      var rt = sut.fromHtml(html);
+      const rt = sut.fromHtml(html);
       assert.equals(rt, ['text (/1)', [5, 0, 0, 9, 0, 4]]);
     });
 

@@ -211,14 +211,6 @@ define((require, exports, module)=>{
         /** line **/
         const ps = [300, 30], curve = [100, 70];
 
-        // addPath({d: ['M', ps, 'L', curve].join('')});
-
-        // const cx = 230, cy = 150;
-
-        // var [ax, ay] = sut.tPoint(sut.closestT([cx, cy], ps, curve), ps, curve);
-        // addCircle({r: 10, cx, cy, color: 'pink'});
-        // addCircle({r: 10, cx: ax, cy: ay});
-
         assert.equals(sut.closestT(ps, ps, curve), 0);
         assert.equals(sut.closestT(curve, ps, curve), 1);
         assert.equals(sut.closestT([-15, 50], ps, curve), 1);
@@ -365,8 +357,8 @@ define((require, exports, module)=>{
     //   const pink = addCircle({cx: point[0], cy: point[1], color: 'pink'});
 
     //   const drawt = (t)=>{
-    //     var [cx, cy] = sut.tPoint(t, ps, curve);
-    //     var [tx, ty] = sut.tTangent(t, ps, curve);
+    //     const [cx, cy] = sut.tPoint(t, ps, curve);
+    //     const [tx, ty] = sut.tTangent(t, ps, curve);
     //     let d = ['M', [cx+tx*50, cy+ty*50], 'L', [cx-tx*50, cy-ty*50]].join('');
 
     //     pink.setAttribute('cx', point[0]);

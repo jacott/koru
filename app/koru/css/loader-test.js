@@ -84,7 +84,7 @@ isClient && define((require, exports, module)=>{
         });
 
         assert.dom('body', function () {
-          var cstyle = window.getComputedStyle(this);
+          const cstyle = window.getComputedStyle(this);
           assert.colorEqual(cstyle.backgroundColor, [230, 150, 90, 0.49], 0.02);
           assert.colorEqual(cstyle.color, [204, 0, 0, 1]);
         });
@@ -100,14 +100,14 @@ isClient && define((require, exports, module)=>{
 
       refute.dom('head>link[rel=stylesheet]');
 
-      var provide = stub(v.session, "provide");
-      var loader = new CssLoader(v.session);
+      const provide = stub(v.session, "provide");
+      const loader = new CssLoader(v.session);
 
       assert.calledWith(provide, "S");
 
       v.links = [];
 
-      var origCallback = loader.callback;
+      const origCallback = loader.callback;
       onEnd(()=>{loader.callback = origCallback});
       loader.callback = onload;
 

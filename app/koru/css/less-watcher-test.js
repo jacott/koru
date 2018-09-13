@@ -70,13 +70,13 @@ isServer && define((require, exports, module)=>{
         v.topDirLen = koru.appDir.length + 1;
 
         v.addTimestamps(v.expectedSources);
-        var orig = fst.stat;
+        const orig = fst.stat;
         stub(fst, 'stat', fn =>{
           fn = fn.slice(v.topDirLen);
           if (fn === 'koru/css/.build/less-compiler-test.less.css')
             fn = 'koru/css/less-compiler-test.less';
 
-          var exp = v.expectedSources[fn];
+          const exp = v.expectedSources[fn];
           if (exp)
             return {mtime: new Date(exp.mtime)};
           else

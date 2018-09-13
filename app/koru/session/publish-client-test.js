@@ -85,9 +85,9 @@ define((require, exports, module)=>{
       v.F1 = Model.define('F1').defineFields({name: 'text'});
       v.F2 = Model.define('F2').defineFields({name: 'text'});
 
-      var fdoc = v.F1.create({name: 'A'});
+      const fdoc = v.F1.create({name: 'A'});
       v.F1.create({name: 'A'});
-      var fdel = v.F1.create({name: 'X'});
+      const fdel = v.F1.create({name: 'X'});
 
       v.F2.create({name: 'A2'});
       v.F2.create({name: 'X2'});

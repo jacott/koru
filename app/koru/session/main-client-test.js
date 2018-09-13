@@ -59,12 +59,12 @@ define((require, exports, module)=>{
 
       v.sess.addToDict('foo'); // does nothing
 
-      var dict = message.newGlobalDict();
+      const dict = message.newGlobalDict();
       message.addToDict(dict, 't1');
       message.addToDict(dict, 't2');
 
 
-      var endict = new Uint8Array(message.encodeDict(dict, []));
+      const endict = new Uint8Array(message.encodeDict(dict, []));
 
       v.X.call(v.sess, ['', 'h123', endict, 'dhash']);
 
@@ -113,7 +113,7 @@ define((require, exports, module)=>{
 
         v.readyHeatbeat = () => {
           util.withDateNow(util.dateNow(), () => {
-            var event = {data: v.data = "foo"};
+            const event = {data: v.data = "foo"};
             v.ws.onmessage(event);
             util.thread.date += 21000;
             v.actualConn[private$].queueHeatBeat();
@@ -132,7 +132,7 @@ define((require, exports, module)=>{
 
         assert(v.ws.onmessage);
 
-        var event = {data: v.data = "foo"};
+        const event = {data: v.data = "foo"};
         v.ws.onmessage(event);
 
         assert(v.actualConn);
@@ -143,7 +143,7 @@ define((require, exports, module)=>{
         let now = Date.now();
         intercept(util, 'dateNow', ()=>now);
 
-        var event = {data: v.data = "foo"};
+        const event = {data: v.data = "foo"};
         v.ws.onmessage(event);
 
         assert.same(v.sess.heartbeatInterval, 20000);

@@ -8,7 +8,7 @@ define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("allow null", ()=>{
-      var doc = {state: null};
+      let doc = {state: null};
       sut(doc,'state', {allowBlank: true, matches: /foo/});
       refute(doc[error$]);
 
@@ -17,7 +17,7 @@ define((require, exports, module)=>{
       assert.equals(doc[error$]['state'],[['invalid_format']]);
 
 
-      var doc = {state: ''};
+      doc = {state: ''};
       sut(doc,'state', {allowBlank: true, matches: /foo/});
       refute(doc[error$]);
 
@@ -27,7 +27,7 @@ define((require, exports, module)=>{
     });
 
     test("matches", ()=>{
-      var doc = {state: 'open'};
+      const doc = {state: 'open'};
       sut(doc,'state', {matches: /^ope/});
       refute(doc[error$]);
 
@@ -37,7 +37,7 @@ define((require, exports, module)=>{
     });
 
     test("in list", ()=>{
-      var doc = {state: 'open'};
+      const doc = {state: 'open'};
       sut(doc,'state', {in: ['open', 'closed']});
       refute(doc[error$]);
 
@@ -47,7 +47,7 @@ define((require, exports, module)=>{
     });
 
     test("in set", ()=>{
-      var doc = {state: 'open'};
+      let doc = {state: 'open'};
       sut(doc,'state', {in: {open: '', closed: 'anything'}});
       refute(doc[error$]);
 

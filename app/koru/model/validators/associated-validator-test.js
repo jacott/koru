@@ -204,7 +204,7 @@ define((require, exports, module)=>{
     });
 
     test("using scoped default", ()=>{
-      var doc = {
+      const doc = {
         foo_ids: v.foo_ids = ['x', 'y'],
         fooFind(values) {
           v.values = values;

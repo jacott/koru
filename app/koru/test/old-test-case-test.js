@@ -1,9 +1,8 @@
-define(function (require, exports, module) {
-  const TH   = require('./main');
+define((require, exports, module)=>{
+  const TH              = require('./main');
+  const TestCase        = require('./test-case');
 
-  const TestCase = require('./test-case');
-  var v;
-
+  let v;
   TH.testCase(module, {
     setUp() {
       v = {};

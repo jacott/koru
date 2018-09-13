@@ -21,7 +21,7 @@ isServer && define((require, exports, module)=>{
       }, {}, 123, v.sessClose = stub());
       stub(v.conn, 'sendBinary');
       intercept(session, 'execWrapper', function (func, conn) {
-        var thread = util.thread;
+        const thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
         func(conn);
@@ -135,7 +135,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("send batched", ()=>{
-      var bm = util.thread.batchMessage = {batch: stub()};
+      const bm = util.thread.batchMessage = {batch: stub()};
       onEnd(() => util.thread.batchMessage = null);
 
       v.conn.sendBinary.restore();
@@ -272,8 +272,8 @@ isServer && define((require, exports, module)=>{
     test("set userId", ()=>{
       stub(crypto, 'randomBytes').yields(null, {
         toString: stub().withArgs('base64').returns('crypto64Id==')});
-      var sendUid = v.ws.send.withArgs('VSu456:123|crypto64Id');
-      var sendUidCompleted = v.ws.send.withArgs('VC');
+      const sendUid = v.ws.send.withArgs('VSu456:123|crypto64Id');
+      const sendUidCompleted = v.ws.send.withArgs('VC');
       v.conn._subs = {s1: {resubscribe: v.s1 = stub()}, s2: {resubscribe: v.s2 = stub()}};
 
       v.conn.userId = 'u456';

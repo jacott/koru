@@ -44,7 +44,7 @@ define((require, exports, module)=>{
     });
 
     test("sleep", ()=>{
-      var date = Date.now();
+      const date = Date.now();
       sUtil.sleep(10);
       assert(Date.now()-date >= 9);
     });

@@ -165,11 +165,11 @@ isClient && define((require, exports, module)=>{
       document.body.appendChild(Dom.h({input: '', $type: 'text'}));
       assert.dom('input', function () {
         this.focus();
-        var event = TH.buildEvent('keydown', {which: 88});
+        let event = TH.buildEvent('keydown', {which: 88});
         v.km.exec(event);
         refute.called(v.foo);
         assert.calledWith(Dom.matches, this, Dom.INPUT_SELECTOR);
-        var event = TH.buildEvent('keydown', {which: 88});
+        event = TH.buildEvent('keydown', {which: 88});
         v.km.exec(event, 'ignoreFocus');
         assert.called(v.foo);
       });

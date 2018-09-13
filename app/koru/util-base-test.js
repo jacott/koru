@@ -79,8 +79,8 @@ define((require, exports, module)=>{
        * @alias extend deprecated
        **/
       api.method('merge');
-      var orig = {a: 1, b: 2};
-      var result = {};
+      const orig = {a: 1, b: 2};
+      const result = {};
       assert.same(util.merge(result, orig), result);
 
       refute.same(result, orig);

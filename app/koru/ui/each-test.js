@@ -158,7 +158,7 @@ isClient && define((require, exports, module)=>{
           assert(v.list); v.list = null;
 
           assert.dom('li', {count: 1, text: 'Caprice'});
-          var m12 = v.TestModel.create({id1: '1', id2: '2', name: 'm12'});
+          const m12 = v.TestModel.create({id1: '1', id2: '2', name: 'm12'});
 
           refute.dom('li', 'm12');
           refute(v.list);

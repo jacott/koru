@@ -4,18 +4,7 @@ define((require, exports, module)=>{
   const {stub, spy, onEnd} = TH;
 
   const jsParser = require('./js-parser');
-  var test, v;
-
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      test = this;
-      v = {};
-    });
-
-    afterEach(()=>{
-      v = null;
-    });
-
     group("findMatch", ()=>{
       test("simple string", ()=>{
         const ex = ((b)=>{return '`a"${`${b}`+c}d`e\'f'+'3'+b}).toString();
@@ -30,6 +19,7 @@ define((require, exports, module)=>{
     });
 
     test("lineNestLevel", ()=>{
+      let v = {};
       const ex = ((b)=>{
         while(v.a == v.b) {v.c({foo: {
           bar(a, b) {

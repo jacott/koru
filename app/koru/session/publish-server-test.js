@@ -334,9 +334,9 @@ define((require, exports, module)=>{
   });
 
   function $asChanges(changes) {
-    var attrs = this.attributes;
-    var result = {};
-    for(var key in changes) {
+    const attrs = this.attributes;
+    const result = {};
+    for(const key in changes) {
       result[key] = attrs[key];
     }
     return result;

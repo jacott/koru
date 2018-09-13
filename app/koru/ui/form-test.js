@@ -529,7 +529,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, elm =>{
           const rect = elm.getBoundingClientRect();
 
-          assert.near(rect.top, 16);
+          assert.near(rect.top, 15.5);
           assert.near(rect.left, 20);
           assert.same(elm.style.position, 'absolute');
         });

@@ -191,7 +191,7 @@ define((require, exports, module)=>{
     test("changing dbId", ()=>{
       dbBroker.dbId = 'bar';
 
-      var bar1 = v.TestModel.create({id1: '3', id2: '4'});
+      const bar1 = v.TestModel.create({id1: '3', id2: '4'});
 
       assert.same(v.idx.lookup({id1: '3', id2: '4'}), bar1._id);
 
@@ -262,7 +262,7 @@ define((require, exports, module)=>{
     });
 
     test("reload", ()=>{
-      var docs = v.idx.lookup({});
+      const docs = v.idx.lookup({});
       docs['x'] = 'junk';
 
       v.idx.reload();
@@ -273,7 +273,7 @@ define((require, exports, module)=>{
     });
 
     test("addIndex", ()=>{
-      var id1Idx = v.TestModel.addIndex('id1');
+      const id1Idx = v.TestModel.addIndex('id1');
 
       v.TestModel.create({_id: 'tm1', id1: '2', id2: '5'});
 
@@ -307,7 +307,7 @@ define((require, exports, module)=>{
     });
 
     test("reloadAll", ()=>{
-      var id1Idx = v.TestModel.addIndex('id1');
+      const id1Idx = v.TestModel.addIndex('id1');
 
       assert.same(v.TestModel._indexUpdate.indexes.size, 2);
 

@@ -24,7 +24,7 @@ isClient && define((require, exports, module)=>{
 
       assert.dom(slider, function () {
         assert.equals(this.getAttribute('touch-action'), 'none');
-        var bbox = this.getBoundingClientRect();
+        const bbox = this.getBoundingClientRect();
         assert.dom('.handle', function () {
           assert.cssNear(this, 'left', 25, .01, '%');
           TH.trigger(this.parentNode, 'pointerdown', {clientX: bbox.left + 128});

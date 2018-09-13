@@ -53,7 +53,7 @@ isServer && define((require, exports, module)=>{
         return arg[0] === 88;
       }), {binary: true});
 
-      var dict = message.newGlobalDict();
+      const dict = message.newGlobalDict();
 
       assert.same(v.msg[2].length, 11);
 

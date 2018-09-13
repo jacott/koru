@@ -354,7 +354,7 @@ define((require)=>{
     return Object.keys(methods).sort().map(name => {
       const method = methods[name];
       const {sigPrefix, sig, intro, calls} = method;
-      let initInst, needInit = false;
+      let initInst, needInit = false, sigJoin, inst;
       if (type === 'proto') {
         needInit = calls.reduce((s, i)=> s || i.body === undefined, false);
         initInst = ()=>{
@@ -366,8 +366,8 @@ define((require)=>{
           mu.classList.add('jsdoc-inst-init');
           return [mu];
         };
-        var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
-        var sigJoin = '#';
+        inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
+        sigJoin = '#';
       } else {
 
         if (api.initExample) {
@@ -381,8 +381,8 @@ define((require)=>{
           };
         } else
           initInst = () => [];
-        var inst = subject.name;
-        var sigJoin = type !== 'custom' && '.';
+        inst = subject.name;
+        sigJoin = type !== 'custom' && '.';
       }
       const {args, argMap} = mapArgs(sig, calls);
       const ret = argProfile(calls, call => call[1]);

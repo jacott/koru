@@ -79,7 +79,7 @@ isClient && define((require, exports, module)=>{
         TH.trigger(v.inp, 'keydown', {which: 65});
         assert.dom('.complete');
 
-        var inpCallback = stub();
+        const inpCallback = stub();
         v.inp.addEventListener('keydown', inpCallback);
         onEnd(()=>{v.inp.removeEventListener('keydown', inpCallback)});
 
