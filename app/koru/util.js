@@ -176,6 +176,10 @@ define((require)=>{
       return ans === undefined ? 0 : Math.max(ans[1], ans[2]);
     },
 
+    defineAlias: (object, newAlias, existing)=>{
+      Object.defineProperty(object, newAlias, Object.getOwnPropertyDescriptor(object, existing));
+    },
+
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
         if (exclude[prop]) continue;

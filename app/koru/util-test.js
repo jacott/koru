@@ -21,6 +21,35 @@ define((require, exports, module)=>{
       v = null;
     });
 
+    test("defineAlias", ()=>{
+      /**
+       * Alias a property descriptor of an object
+       *
+       * @param object The object to define the alias on
+
+       * @param newAlias the name of the new alias
+       * @param existing the name of the existing descriptor
+       **/
+
+      //[
+      const book = {
+        name: 'Juggling mandarins',
+        get pages() {return this.pageCount},
+        set pages(v) {this.pageCount = v},
+      };
+
+      util.defineAlias(book, 'title', 'name');
+      assert.same(book.title, 'Juggling mandarins');
+
+      util.defineAlias(book, 'size', 'pages');
+      book.pages = 300;
+      assert.same(book.size, 300);
+      book.size = 400;
+      assert.same(book.pages, 400);
+      assert.same(book.size, 400);
+      //]
+    });
+
     test("mergeOwnDescriptors", ()=>{
       /**
        * @param dest
