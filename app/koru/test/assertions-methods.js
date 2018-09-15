@@ -562,11 +562,9 @@ define((require)=>{
             if (options.constructor === RegExp) {
               options = {text: options};
             }
-            if (options.count != null && options.count !== elm.length) {
-              setClue(self, "count: " +  elm.length + " to be " + options.count);
-              return false;
+            if (elm.length == 0) {
+              return options.count === 0;
             }
-            if (elm.length === 0) return false;
             if (options.value != null) {
               const ef = filter(elm, i => deepEqual(i.value, options.value));
               if (ef.length === 0) {
@@ -612,6 +610,11 @@ define((require)=>{
                 selectNode = elm = ef;
               }
             }
+            if (options.count !== undefined && options.count !== elm.length) {
+              setClue(self, "count: " +  elm.length + " to be " + options.count);
+              return false;
+            }
+
             if (options.parent) {
               if (typeof options.parent === 'number') {
                 elm = elm[0];
