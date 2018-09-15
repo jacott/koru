@@ -62,17 +62,6 @@ define((require, exports, module)=>{
       throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
     },
 
-    replaceProperty: (object, name, descriptor)=>{
-      const oldDesc = Object.getOwnPropertyDescriptor(object, name);
-      if (oldDesc === undefined) {
-        descriptor.writeable === undefined && (descriptor.writeable = true);
-        descriptor.enumerable === undefined && (descriptor.enumerable = true);
-        descriptor.configurable === undefined && (descriptor.configurable = true);
-      }
-      Object.defineProperty(object, name, descriptor);
-      return oldDesc;
-    },
-
     Error: KoruError,
     util,
 

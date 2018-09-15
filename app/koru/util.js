@@ -5,6 +5,7 @@ define((require)=>{
   const util            = require('./util-base');
 
   const {withId$} = require('koru/symbols');
+  const {hasOwn} = util;
 
   const {is} = Object;
 
@@ -191,6 +192,18 @@ define((require)=>{
 
     defineAlias: (object, newAlias, existing)=>{
       Object.defineProperty(object, newAlias, Object.getOwnPropertyDescriptor(object, existing));
+    },
+
+    setProperty: (object, name, descriptor)=>{
+      const oldDesc = Object.getOwnPropertyDescriptor(object, name);
+      if (oldDesc === undefined) {
+        if (descriptor.writable === undefined && hasOwn(descriptor, 'value'))
+          descriptor.writable = true;
+        if (descriptor.enumerable === undefined) descriptor.enumerable = true;
+        if (descriptor.configurable === undefined) descriptor.configurable = true;
+      }
+      Object.defineProperty(object, name, descriptor);
+      return oldDesc;
     },
 
     mergeExclude(obj, properties, exclude) {

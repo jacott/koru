@@ -166,14 +166,14 @@ define((require, exports, module)=>{
 
     test("stubProperty", ()=>{
       /**
-       * A wrapper around {#koru/main.replaceProperty} that automatically restores after the
+       * A wrapper around {#koru/util.setProperty} that automatically restores after the
        * test/test-case has completed.
        *
-       * @param { } args same as for {#koru/main.replaceProperty}
+       * @param { } args same as for {#koru/util.setProperty}
        *
        * @return a function to restore property to original setting.
        **/
-      spy(koru, 'replaceProperty');
+      spy(util, 'setProperty');
       api.method();
       //[
       const foo = {get bar() {return 'orig'}};
@@ -184,7 +184,7 @@ define((require, exports, module)=>{
       assert.equals(foo.bar, 'orig');
       //]
 
-      assert.calledWith(koru.replaceProperty, foo, 'bar');
+      assert.calledWith(util.setProperty, foo, 'bar');
     });
 
     test("onEnd", ()=>{

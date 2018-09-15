@@ -106,40 +106,5 @@ define((require, exports, module)=>{
       assert.equals(koru.buildPath('models/library/book'), 'models/library/.build/book');
       assert.equals(koru.buildPath('helper'), '.build/helper');
     });
-
-    test("replaceProperty", ()=>{
-      /**
-       * Replace the property descriptor for the `name` property in `object`.
-       *
-       * @param object the object to replace `name` on.
-       *
-       * @param name the name of the property to replace (need not exist).
-       *
-       * @param descriptor the new descriptor to replace the old one. If the property does not
-       * currently exist then the descriptor will be by default: writeable, enumerable and
-       * configurable.
-       *
-       * @return the old descriptor or undefined if none.
-       **/
-      api.method();
-      //[
-      const foo = {get bar() {return 'orig'}};
-      const orig = koru.replaceProperty(foo, 'bar', {value: 'new'});
-
-      assert.equals(foo.bar, 'new');
-      assert.equals(orig.get(), 'orig');
-
-      let baz;
-
-      assert.same(
-        koru.replaceProperty(foo, 'baz', {set(v) {baz = v}}),
-        undefined);
-
-      foo.baz = 123;
-      assert.same(baz, 123);
-
-      assert.equals(Object.keys(foo).sort(), ['bar', 'baz']);
-      //]
-    });
   });
 });

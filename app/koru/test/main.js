@@ -26,7 +26,7 @@ define((require, exports, module)=>{
   const stubProperty = (object, prop, newValue)=>{
     if (typeof newValue !== 'object')
       newValue = {value: newValue};
-    const oldValue = koru.replaceProperty(object, prop, newValue);
+    const oldValue = util.setProperty(object, prop, newValue);
 
     const restore = ()=>{
       if (oldValue)

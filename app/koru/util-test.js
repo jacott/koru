@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const match  = require('./match');
   const TH     = require('koru/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const util  = require('./util');
   let v = null;
@@ -19,6 +19,45 @@ define((require, exports, module)=>{
 
     afterEach( ()=>{
       v = null;
+    });
+
+    test("setProperty", ()=>{
+      /**
+       * Set a property descriptor for an object. By default the descriptor options will be:
+       * `writable`, `enumerable` and `configurable`.
+       *
+       * @param object The object to define the property on
+
+       * @param name the name of the new alias
+       * @param descriptor the descriptor to define on `object`
+
+       * @returns the old descriptor if the property already existed
+       **/
+
+      //[
+      const book = {
+        get pages() {return this.pageCount},
+        set pages(v) {this.pageCount = v},
+      };
+
+      let old;
+      old = util.setProperty(book, 'name', {value: 'Juggling mandarins'});
+      assert.same(old, undefined);
+
+      assert.equals(Object.getOwnPropertyDescriptor(book, 'name'), {
+        value: 'Juggling mandarins', writable: true, enumerable: true, configurable: true,
+      });
+
+      old = util.setProperty(book, 'pages', {get: ()=> 123});
+      assert.equals(old, {get: m.func, set: m.func, enumerable: true, configurable: true});
+      assert.same(old.get.call({pageCount: 2}), 2);
+
+      assert.equals(Object.getOwnPropertyDescriptor(book, 'pages'), {
+        get: m.func, set: m.func, enumerable: true, configurable: true,
+      });
+      book.pages = 4;
+      assert.same(book.pages, 123);
+      //]
     });
 
     test("defineAlias", ()=>{

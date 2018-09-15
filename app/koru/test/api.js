@@ -753,7 +753,7 @@ define((require, exports, module)=>{
         property.value = api.valueTag(options.value);
       } else if (desc == null || desc.get || desc.set) {
         const calls = property.calls || (property.calls = []);
-        koru.replaceProperty(subject, name, {
+        util.setProperty(subject, name, {
           get() {
             const entry = [[], null];
             addComment(api, entry);
@@ -858,7 +858,7 @@ define((require, exports, module)=>{
     }
     api.target = details;
 
-    const desc = koru.replaceProperty(obj, methodKey, {
+    const desc = util.setProperty(obj, methodKey, {
       value(...args) {
         const entry = [
           args.map(obj => api.valueTag(obj)),
