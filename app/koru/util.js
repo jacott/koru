@@ -165,6 +165,17 @@ define((require)=>{
     return [s, 1+lo-(e+s), ns.length-s-e];
   };
 
+  const LOCAL_COMPARE_OPTS = {numeric: true};
+  const localeCompare = (a, b)=>{
+    if (a === b) return 0;
+    if (typeof a === 'string' && typeof b === 'string') {
+      const ans = a.localeCompare(b, undefined, LOCAL_COMPARE_OPTS);
+      if (ans != 0) return ans;
+    }
+    return a < b ? -1 : 1;
+  };
+
+
   util.merge(util, {
     DAY: 1000*60*60*24,
     MAXLEVEL: 50,
@@ -175,6 +186,8 @@ define((require)=>{
       const ans = diffString(os, ns);
       return ans === undefined ? 0 : Math.max(ans[1], ans[2]);
     },
+
+    localeCompare,
 
     defineAlias: (object, newAlias, existing)=>{
       Object.defineProperty(object, newAlias, Object.getOwnPropertyDescriptor(object, existing));

@@ -50,6 +50,25 @@ define((require, exports, module)=>{
       //]
     });
 
+    test("localeCompare", ()=>{
+      /**
+       * Order strings according to the client's locale (case insensitive, numeric aware) then by a
+       * simple comparison. Zero is only returned for exact matches.
+       *
+       * @return 0 if exact match otherwise -1 if `a` compomes before `b`; else 1
+       **/
+
+      assert.same(util.localeCompare("a", "a"), 0);
+      assert.same(util.localeCompare("ab", "àc"), -1);
+      assert.same(util.localeCompare("ac", "àb"), 1);
+
+      assert.same(util.localeCompare("AB", "ac"), -1);
+      assert.same(util.localeCompare("ab", "AC"), -1);
+
+      assert.same(util.localeCompare("2. abc", "10 abc"), -1);
+      assert.same(util.localeCompare("10. abc", "2 abc"), 1);
+    });
+
     test("mergeOwnDescriptors", ()=>{
       /**
        * @param dest
