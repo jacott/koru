@@ -183,7 +183,6 @@ define((require, exports, module)=>{
         const {filterTest} = idx;
         if (filterTest !== null) this.where(doc => filterTest.matches(doc));
         this._index = {idx: idx.lookup(params, options) || {}, options};
-
         dbBroker.dbId = orig;
         return this;
       },
@@ -381,7 +380,11 @@ define((require, exports, module)=>{
     }
 
     function *g_findByIndex(query, idx, options, v) {
-      if (idx[Symbol.iterator]) {
+      if (typeof idx === 'string') {
+        const doc = query.findOne(idx);
+        return doc !== undefined && ((yield doc) === true || --v._limit == 0);
+
+      } else if (idx[Symbol.iterator]) {
         if (idx.cursor) idx = idx.cursor(options);
         for (const {_id} of idx) {
           const doc = query.findOne(_id);
@@ -425,12 +428,19 @@ define((require, exports, module)=>{
       }
     }
 
+    const findOneByIndex = (query, id, func, v)=>{
+      const doc = query.findOne(id);
+      return doc !== undefined && (func(doc) === true || --v._limit == 0);
+    };
+
     function findByIndex(query, idx, options, func, v) {
-      if (idx[Symbol.iterator]) {
+      if (typeof idx === 'string') {
+        return findOneByIndex(query, idx, func, v);
+
+      } else if (idx[Symbol.iterator]) {
         if (idx.cursor) idx = idx.cursor(options);
         for (const {_id} of idx) {
-          const doc = query.findOne(_id);
-          if (doc !== undefined && (func(doc) === true || --v._limit == 0))
+          if (findOneByIndex(query, _id, func, v))
             return true;
         }
 

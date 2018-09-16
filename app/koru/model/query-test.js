@@ -85,6 +85,16 @@ define((require, exports, module)=>{
       assert.equals(TestModel.where('age', [5, 6]).map(d => d.age).sort(), [5]);
     });
 
+    test("simple addUniqueIndex", ()=>{
+      const idx = TestModel.addUniqueIndex('name');
+
+      TestModel.create({_id: '1', name: 'n1', age: 1, gender: 'm'});
+
+      assert.equals(Array.from(TestModel.query.withIndex(idx, {name: 'n1'})), [TH.match.field('name', 'n1')]);
+
+      assert.isTrue(TestModel.query.withIndex(idx, {name: 'n1'}).exists());
+    });
+
     group("query unsorted withIndex", ()=>{
       before(()=>{
         v.idx = TestModel.addUniqueIndex('gender', 'age', 'name', q => {
