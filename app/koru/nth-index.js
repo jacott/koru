@@ -52,6 +52,7 @@ define((require)=>{
       del(0, this.ids);
 
       function del(idx, res) {
+        if (res === undefined) return true;
         if (idx >= len || del(idx+1, res[args[idx]]))
           delete res[args[idx]];
 

@@ -44,5 +44,11 @@ define((require, exports, module)=>{
       sut.remove(1, 2);
 
       assert.isFalse(sut.has(1));
-    });  });
+
+      sut.remove(2);
+      sut.remove(1, 2);
+
+      assert.isFalse(sut.has(2));
+    });
+  });
 });
