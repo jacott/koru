@@ -20,103 +20,271 @@ define((require, exports, module)=>{
       assert.isFalse(sut.has({$partial: {foo: undefined}}, 'bar'));
     });
 
-    test("simple changes", ()=>{
-      const attrs = {bar: 1, foo: 2, fuz: 3, fiz: 4};
-      const changes = {foo: null, fuz: undefined, fiz: 5, nit: 6};
-      sut.applyOne(attrs, 'foo', changes);
-      sut.applyOne(attrs, 'fuz', changes);
-      sut.applyOne(attrs, 'fiz', changes);
-      sut.applyOne(attrs, 'nit', changes);
-      assert.equals(attrs, {bar: 1, fiz: 5, nit: 6});
-      assert.equals(changes, {foo: 2, fuz: 3, fiz: 4, nit: TH.match.null});
+    group("applyOne", ()=>{
+      test("simple changes", ()=>{
+        const attrs = {bar: 1, foo: 2, fuz: 3, fiz: 4};
+        const changes = {foo: null, fuz: undefined, fiz: 5, nit: 6};
+        sut.applyOne(attrs, 'foo', changes);
+        sut.applyOne(attrs, 'fuz', changes);
+        sut.applyOne(attrs, 'fiz', changes);
+        sut.applyOne(attrs, 'nit', changes);
+        assert.equals(attrs, {bar: 1, fiz: 5, nit: 6});
+        assert.equals(changes, {foo: 2, fuz: 3, fiz: 4, nit: TH.match.null});
+      });
+
+      test("with non numeric array index", ()=>{
+        // say "foo.bar.baz" instead of "foo.0.baz"
+        assert.exception(() => {
+          sut.applyOne({a: [{b: [1]}]}, "a.0.b.x", {value: 2});
+        }, 'Error', "Non numeric index for array: 'x'");
+
+        assert.exception(() => {
+          sut.applyOne({a: [{b: [1]}]}, "a.x.b.0", {value: 2});
+        }, 'Error', "Non numeric index for array: 'x'");
+      });
     });
 
-    test("with non numeric array index", ()=>{
-      // say "foo.bar.baz" instead of "foo.0.baz"
-      assert.exception(() => {
-        sut.applyOne({a: [{b: [1]}]}, "a.0.b.x", {value: 2});
-      }, 'Error', "Non numeric index for array: 'x'");
+    group("applyAll", ()=>{
+      /**
+       * Apply all commands to an attributes object. Commands can have:
 
-      assert.exception(() => {
-        sut.applyOne({a: [{b: [1]}]}, "a.x.b.0", {value: 2});
-      }, 'Error', "Non numeric index for array: 'x'");
-    });
+       * 1. a $match object which assert the supplied fields match the attribute
 
-    test("with objects", ()=>{
-      const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      let changes = {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}};
+       * 2. a $partial object which calls applyPartial for each field
 
-      const undo = sut.applyAll(orig, changes);
-      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
-      assert.equals(undo, {a: 1, b: 2, d: null, $partial: {nest: ["bar", null]}});
-      assert.same(undo.d, null);
+       * @returns undo command which when applied to the updated attributes reverts it to its
+       * original content. Calling `Changes.original` on undo will return the original commands
+       * object
+       **/
 
-      assert.equals(changes, {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}});
-      assert.same(changes.b, null);
+      test("top level match", ()=>{
+        const attrs = {foo: 1, bar: "two"};
+        const changes = {$match: {foo: 1, bar: {md5: "b8a9"}}};
+        refute.exception(_=>{sut.applyAll(attrs, changes)});
+        assert.equals(attrs, {foo: 1, bar: "two"});
+        assert.equals(changes, {$match: {foo: 1, bar: {md5: "b8a9"}}});
+      });
 
-      {
-        const changes = {$partial: {nest: ["bar", 'new'], new: ["deep.list", 'deeplist']}};
+      test("top level not match", ()=>{
+        const attrs = {foo: 1, bar: {md5: "bad"}};
+        const changes = {$match: {foo: 1, bar: "two"}};
+        assert.exception(
+          _=>{sut.applyAll(attrs, changes)},
+          {error: 409, reason: {bar: 'not_match'}}
+        );
+      });
+
+      test("undo", ()=>{
+        const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}, simple: [123]};
+        const changes = {
+          foo: 2,
+          $partial: {
+            bar: ['$replace', 4],
+            simple: 456,
+            baz: [
+              'bif.2.$partial', [
+                'bip', 'new',
+                'bob.$partial', [
+                  '$append', ' appended'
+                ]
+              ],
+            ],
+          },
+        };
+        const undo = sut.applyAll(attrs, changes);
+        assert.equals(changes, {
+          foo: 2,
+          simple: 456,
+          $partial: {
+            bar: ['$replace', 4],
+            baz: [
+              'bif.2.$partial', [
+                'bip', 'new',
+                'bob.$partial', [
+                  '$append', ' appended'
+                ]
+              ],
+            ],
+          },
+        });
+        assert.same(sut.original(undo), changes);
+
+        assert.equals(attrs, {
+          foo: 2, bar: 4,  baz: {
+            bif: [1, 2, {bob: 'text appended', bip: 'new'}]
+          },
+          simple: 456,
+        });
+        assert.equals(undo, {
+          foo: 1,
+          simple: [123],
+          $partial: {
+            bar: ['$replace', 2],
+            baz: [
+              'bif.2.$partial', [
+                'bob.$partial', [
+                  '$patch', [-9, 9, null]
+                ],
+                'bip', null,
+              ],
+            ],
+          }
+        });
+
+        sut.applyAll(attrs, undo);
+        assert.equals(attrs, {
+          foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]},
+          simple: [123],
+        });
+      });
+
+      test("no changes in applyAll", ()=>{
+        const attrs = {foo: 1, bar: [1,2]};
+        const changes = {
+          foo: 1,
+          $partial: {
+            bar: ['$add', [1]],
+          },
+        };
+        ;
+        assert.equals(sut.applyAll(attrs, changes), {});
+        assert.equals(attrs, {foo: 1, bar: [1, 2]});
+      });
+
+      test("with objects", ()=>{
+        const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+        let changes = {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}};
+
+        const undo = sut.applyAll(orig, changes);
+        assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
+        assert.equals(undo, {a: 1, b: 2, d: null, $partial: {nest: ["bar", null]}});
+        assert.same(undo.d, null);
+
+        assert.equals(changes, {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}});
+        assert.same(changes.b, null);
+
+        {
+          const changes = {$partial: {nest: ["bar", 'new'], new: ["deep.list", 'deeplist']}};
+          const undo = sut.applyAll(orig, changes);
+
+          assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
+                               d: 4, new: {deep: {list: 'deeplist'}}});
+          assert.equals(undo, {$partial: {nest: ["bar", 'bar'], "new": ['$replace', null]}});
+        }
+      });
+
+      test("deleting array entry by string", ()=>{
+        const orig = {a: [1,2,3]};
+        const changes = {$partial: {a: ['1', undefined]}};
+
+        assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
+        assert.equals(orig.a, [1, 3]);
+      });
+
+      test("deleting array entry by number", ()=>{
+        const orig = {a: [1,2,3]};
+        const changes = {$partial: {a: [1, undefined]}};
+
+        assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
+        assert.equals(orig.a, [1, 3]);
+      });
+
+      test("already applied", ()=>{
+        const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+        const changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
+
+        assert.equals(sut.applyAll(orig, changes), {c: 3});
+      });
+
+      test("with empty array", ()=>{
+        const orig = {top: {ar: []}};
+        const changes = {$partial: {top: ["ar.1.foo", 3]}};
+
         const undo = sut.applyAll(orig, changes);
 
-        assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
-                             d: 4, new: {deep: {list: 'deeplist'}}});
-        assert.equals(undo, {$partial: {nest: ["bar", 'bar'], "new": ['$replace', null]}});
+        assert.equals(orig, {top: {ar: [, {foo: 3}]}});
+        assert.equals(undo, {$partial: {top: ['ar.1', null]}});
+        sut.applyAll(orig, undo);
+
+        assert.equals(orig, {top: {ar: [,]}});
+      });
+
+      test("change array", ()=>{
+        const orig = {top: {ar: []}};
+        const changes = {$partial: {top: ["ar.0", 'new']}};
+
+        assert.equals(sut.applyAll(orig, changes), {$partial: {top: ['ar.0', undefined]}});
+        assert.equals(orig, {top: {ar: ["new"]}});
+      });
+
+      test("with array", ()=>{
+        const orig = {ar: [{foo: 1}, {foo: 2}]};
+        const changes = {$partial: {ar: ["1.foo", 3]}};
+
+        assert.equals(sut.applyAll(orig, changes), {$partial: {ar: ['1.foo', 2]}});
+        assert.equals(orig, {ar: [{foo: 1}, {foo: 3}]});
+      });
+    });
+
+    test("nestedDiff", ()=>{
+      /**
+       * Create diff in partial format to the specified depth.
+       *
+       * @param was the previous value of the object
+
+       * @param now the current value of the object
+
+       * @param depth How deep to recurse subfields defaults to 0
+
+       * @return diff in partial format
+       **/
+
+      const was = {level1: {level2: {iLike: 'I like three', numbers: [2, 9, 11]}}};
+      const now = deepCopy(was);
+      now.level1.level2.iLike = 'I like the rimu tree';
+      now.level1.level2.iAlsoLike = 'Tuis';
+      let changes = sut.nestedDiff(was, now, 5);
+
+      /** depth 5 **/
+      assert.equals(changes, [
+        'level1.$partial', [
+          'level2.$partial', [
+            'iLike.$partial', ['$patch', [9, 0, 'e rimu t']],
+            'iAlsoLike', 'Tuis'
+          ]]]);
+
+      const wasCopy = deepCopy(was);
+      sut.applyAll({likes: wasCopy},  {$partial: {likes: changes}});
+      assert.equals(wasCopy, now);
+
+      /** depth 2 **/
+      assert.equals(sut.nestedDiff(was, now, 2), [
+        'level1.$partial', ['level2.$partial', [
+          'iLike', 'I like the rimu tree', 'iAlsoLike', 'Tuis',
+        ]]]);
+
+      /** depth 0 **/
+      assert.equals(sut.nestedDiff(was, now), [
+        'level1', {level2: {
+          iLike: 'I like the rimu tree', iAlsoLike: 'Tuis', numbers: [2, 9, 11]}}]);
+
+      { /** arrays and multiple entries **/
+        const now = deepCopy(was);
+        now.level1.level2.numbers = [2, 3, 5, 7, 11];
+        now.level1.level2a = 'Another branch';
+
+        assert.equals(sut.nestedDiff(was, now, 5), [
+          'level1.$partial', [
+            'level2.$partial', [
+              'numbers.$partial', ['$patch', [1, 1, [3, 5, 7]]],
+            ],
+            'level2a', 'Another branch',
+          ]]);
       }
     });
 
-    test("deleting array entry by string", ()=>{
-      const orig = {a: [1,2,3]};
-      const changes = {$partial: {a: ['1', undefined]}};
 
-      assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
-      assert.equals(orig.a, [1, 3]);
-    });
-
-    test("deleting array entry by number", ()=>{
-      const orig = {a: [1,2,3]};
-      const changes = {$partial: {a: [1, undefined]}};
-
-      assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
-      assert.equals(orig.a, [1, 3]);
-    });
-
-    test("already applied", ()=>{
-      const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      const changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
-
-      assert.equals(sut.applyAll(orig, changes), {c: 3});
-    });
-
-    test("with empty array", ()=>{
-      const orig = {top: {ar: []}};
-      const changes = {$partial: {top: ["ar.1.foo", 3]}};
-
-      const undo = sut.applyAll(orig, changes);
-
-      assert.equals(orig, {top: {ar: [, {foo: 3}]}});
-      assert.equals(undo, {$partial: {top: ['ar.1', null]}});
-      sut.applyAll(orig, undo);
-
-      assert.equals(orig, {top: {ar: [,]}});
-    });
-
-    test("change array", ()=>{
-      const orig = {top: {ar: []}};
-      const changes = {$partial: {top: ["ar.0", 'new']}};
-
-      assert.equals(sut.applyAll(orig, changes), {$partial: {top: ['ar.0', undefined]}});
-      assert.equals(orig, {top: {ar: ["new"]}});
-    });
-
-    test("with array", ()=>{
-      const orig = {ar: [{foo: 1}, {foo: 2}]};
-      const changes = {$partial: {ar: ["1.foo", 3]}};
-
-      assert.equals(sut.applyAll(orig, changes), {$partial: {ar: ['1.foo', 2]}});
-      assert.equals(orig, {ar: [{foo: 1}, {foo: 3}]});
-    });
-
-    group("$partial", ()=>{
+    group("applyPartial", ()=>{
       group("$match", ()=>{
         before(()=>{
           /**
@@ -498,63 +666,6 @@ define((require, exports, module)=>{
         });
       });
 
-      test("nestedDiff", ()=>{
-        /**
-         * Create diff in partial format to the specified depth.
-         *
-         * @param was the previous value of the object
-
-         * @param now the current value of the object
-
-         * @param depth How deep to recurse subfields defaults to 0
-
-         * @return diff in partial format
-         **/
-
-        const was = {level1: {level2: {iLike: 'I like three', numbers: [2, 9, 11]}}};
-        const now = deepCopy(was);
-        now.level1.level2.iLike = 'I like the rimu tree';
-        now.level1.level2.iAlsoLike = 'Tuis';
-        let changes = sut.nestedDiff(was, now, 5);
-
-        /** depth 5 **/
-        assert.equals(changes, [
-          'level1.$partial', [
-            'level2.$partial', [
-              'iLike.$partial', ['$patch', [9, 0, 'e rimu t']],
-              'iAlsoLike', 'Tuis'
-            ]]]);
-
-        const wasCopy = deepCopy(was);
-        sut.applyAll({likes: wasCopy},  {$partial: {likes: changes}});
-        assert.equals(wasCopy, now);
-
-        /** depth 2 **/
-        assert.equals(sut.nestedDiff(was, now, 2), [
-          'level1.$partial', ['level2.$partial', [
-            'iLike', 'I like the rimu tree', 'iAlsoLike', 'Tuis',
-          ]]]);
-
-        /** depth 0 **/
-        assert.equals(sut.nestedDiff(was, now), [
-          'level1', {level2: {
-            iLike: 'I like the rimu tree', iAlsoLike: 'Tuis', numbers: [2, 9, 11]}}]);
-
-        { /** arrays and multiple entries **/
-          const now = deepCopy(was);
-          now.level1.level2.numbers = [2, 3, 5, 7, 11];
-          now.level1.level2a = 'Another branch';
-
-          assert.equals(sut.nestedDiff(was, now, 5), [
-            'level1.$partial', [
-              'level2.$partial', [
-                'numbers.$partial', ['$patch', [1, 1, [3, 5, 7]]],
-              ],
-              'level2a', 'Another branch',
-            ]]);
-        }
-      });
-
       group("subfields", ()=>{
         let v = {};
         beforeEach(()=>{
@@ -637,111 +748,6 @@ define((require, exports, module)=>{
             ],
           ]);
         });
-      });
-
-      test("top level match", ()=>{
-        const attrs = {foo: 1, bar: "two"};
-        const changes = {$match: {foo: 1, bar: {md5: "b8a9"}}};
-        refute.exception(_=>{sut.applyAll(attrs, changes)});
-        assert.equals(attrs, {foo: 1, bar: "two"});
-        assert.equals(changes, {$match: {foo: 1, bar: {md5: "b8a9"}}});
-      });
-
-      test("top level not match", ()=>{
-        const attrs = {foo: 1, bar: {md5: "bad"}};
-        const changes = {$match: {foo: 1, bar: "two"}};
-        assert.exception(
-          _=>{sut.applyAll(attrs, changes)},
-          {error: 409, reason: {bar: 'not_match'}}
-        );
-      });
-
-      test("applyAll", ()=>{
-        /**
-         * Apply all commands to an attributes object. Commands can have:
-
-         * 1. a $match object which assert the supplied fields match the attribute
-
-         * 2. a $partial object which calls applyPartial for each field
-
-         * @returns undo command which when applied to the updated attributes reverts it to its
-         * original content. Calling `Changes.original` on undo will return the original commands
-         * object
-         **/
-        const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}, simple: [123]};
-        const changes = {
-          foo: 2,
-          $partial: {
-            bar: ['$replace', 4],
-            simple: 456,
-            baz: [
-              'bif.2.$partial', [
-                'bip', 'new',
-                'bob.$partial', [
-                  '$append', ' appended'
-                ]
-              ],
-            ],
-          },
-        };
-        const undo = sut.applyAll(attrs, changes);
-        assert.equals(changes, {
-          foo: 2,
-          simple: 456,
-          $partial: {
-            bar: ['$replace', 4],
-            baz: [
-              'bif.2.$partial', [
-                'bip', 'new',
-                'bob.$partial', [
-                  '$append', ' appended'
-                ]
-              ],
-            ],
-          },
-        });
-        assert.same(sut.original(undo), changes);
-
-        assert.equals(attrs, {
-          foo: 2, bar: 4,  baz: {
-            bif: [1, 2, {bob: 'text appended', bip: 'new'}]
-          },
-          simple: 456,
-        });
-        assert.equals(undo, {
-          foo: 1,
-          simple: [123],
-          $partial: {
-            bar: ['$replace', 2],
-            baz: [
-              'bif.2.$partial', [
-                'bob.$partial', [
-                  '$patch', [-9, 9, null]
-                ],
-                'bip', null,
-              ],
-            ],
-          }
-        });
-
-        sut.applyAll(attrs, undo);
-        assert.equals(attrs, {
-          foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]},
-          simple: [123],
-        });
-      });
-
-      test("no changes in applyAll", ()=>{
-        const attrs = {foo: 1, bar: [1,2]};
-        const changes = {
-          foo: 1,
-          $partial: {
-            bar: ['$add', [1]],
-          },
-        };
-        ;
-        assert.equals(sut.applyAll(attrs, changes), {});
-        assert.equals(attrs, {foo: 1, bar: [1, 2]});
       });
     });
 
