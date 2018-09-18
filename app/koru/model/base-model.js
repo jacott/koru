@@ -1,24 +1,20 @@
 define((require, exports, module)=>{
-  const koru            = require('koru');
   const Changes         = require('koru/changes');
   const ModelEnv        = require('koru/env!./main');
   const dbBroker        = require('koru/model/db-broker');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const Val             = require('koru/model/validation');
+  const Observable      = require('koru/observable');
   const session         = require('koru/session');
   const util            = require('koru/util');
   const registerObserveField = require('./register-observe-field');
   const registerObserveId = require('./register-observe-id');
 
-  const {private$, inspect$, error$} = require('koru/symbols');
-  const allObservers$ = Symbol(), cache$ = Symbol(), allObserverHandles$ = Symbol();
-
   const {hasOwn, deepCopy} = util;
+  const {private$, inspect$, error$} = require('koru/symbols');
 
-  const changes$ = Symbol();
-
-  const nullToUndef= val=>val === null ? undefined : val;
+  const cache$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
 
   function Lock() {
     this.temp = '';
@@ -41,38 +37,29 @@ define((require, exports, module)=>{
     set(value) {this.attributes._version = value}
   };
 
-  const registerObserver = (model, subject, name, callback)=>{
-    const modelObservers = subject[allObservers$] || (subject[allObservers$] = Object.create(null));
-    (modelObservers[name] || (modelObservers[name] = [])).push([callback, model]);
-    const oh = model[allObserverHandles$]  || (model[allObserverHandles$] = new Set);
-    oh.add(modelObservers);
+  const registerObserver = (model, name, callback)=>{
+    const subj = model[observers$][name] || (model[observers$][name] = new Observable);
+    return subj.onChange(callback).stop;
   };
 
   const callBeforeObserver = (type, doc) => {
     const model = doc.constructor;
-    const modelObservers = model[allObservers$];
-    const observers = modelObservers === undefined ? undefined : modelObservers[type];
-    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
-      observers[i][0].call(model, doc, type);
-    }
+    const subj = model[observers$][type];
+    subj === undefined || subj.notify(doc, type);
   };
 
-  const callAfterObserver = (doc, was) => {
-    const model = (doc || was).constructor;
-    const modelObservers = model[allObservers$];
-    const observers = modelObservers === undefined ? undefined : modelObservers.afterLocalChange;
-    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
-      observers[i][0].call(model, doc, was);
-    }
+  const callAfterLocalChange = (doc, undo) => {
+    const model = (doc || undo).constructor;
+    const subj = model[observers$].afterLocalChange;
+    subj === undefined || subj.notify(doc, undo);
   };
 
   const callWhenFinally = (doc, ex) => {
     const model = doc.constructor;
-    const modelObservers = model[allObservers$];
-    const observers = modelObservers === undefined ? undefined : modelObservers.whenFinally;
-    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
+    const subj = model[observers$].whenFinally;
+    if (subj !== undefined) for (const {callback} of subj) {
       try {
-        observers[i][0].call(model, doc, ex);
+        callback(doc, ex);
       } catch(ex1) {
         if (ex === undefined) ex = ex1;
       }
@@ -196,7 +183,8 @@ define((require, exports, module)=>{
       if (ModelMap[name])
         throw new Error(`Model '${name}' already defined`);
       if (module) {
-        koru.onunload(module, () => ModelMap._destroyModel(name));
+        this._module = module;
+        module.onUnload(()=> ModelMap._destroyModel(name));
       }
 
       ModelMap[name] = this;
@@ -204,6 +192,7 @@ define((require, exports, module)=>{
       this.modelName = name;
       this._fieldValidators = {};
       this._defaults = {};
+      this[observers$] = {};
       ModelEnv.setupModel(this);
 
       this.fieldTypeMap = {};
@@ -527,11 +516,13 @@ define((require, exports, module)=>{
     },
 
     callBeforeObserver,
-    callAfterObserver,
+    callAfterLocalChange,
   };
 
-  const getField = (doc, field) => nullToUndef(
-    hasOwn(doc.changes, field) ? doc.changes[field] : doc.attributes[field]);
+  const getField = (doc, field) =>{
+    const val = hasOwn(doc.changes, field) ? doc.changes[field] : doc.attributes[field];
+    return val === null ? undefined : val;
+  };
 
   const setField = (doc, field, value) => {
     const {changes} = doc;
@@ -555,11 +546,10 @@ define((require, exports, module)=>{
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
-   'afterLocalChange','whenFinally'].forEach(type => {
-     BaseModel[type] = function (subject, callback) {
-       registerObserver(this, subject, type, callback);
-       return this;
+  ("beforeCreate beforeUpdate beforeSave beforeRemove beforeQueryUpdate "+
+   "afterLocalChange whenFinally ").split(" ").forEach(type => {
+     BaseModel[type] = function (callback) {
+       return registerObserver(this, type, callback);
      };
    });
 
@@ -668,7 +658,6 @@ define((require, exports, module)=>{
   };
 
   BaseModel[private$] = {
-    allObserverHandles$,
     _support,
   };
 

@@ -408,7 +408,7 @@ define((require, exports, module)=>{
     const notify = (model, doc, changes, flag)=>{
       model._indexUpdate.notify(doc, changes, flag); // first: update indexes
       flag === undefined &&
-        Model._support.callAfterObserver(doc, changes); // next:  changes originated here
+        Model._support.callAfterLocalChange(doc, changes); // next:  changes originated here
         Query[notifyAC$](doc, changes, flag); // notify anyChange
         model.notify(doc, changes, flag); // last:  Notify everything else
     };

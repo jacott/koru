@@ -804,33 +804,32 @@ define((require, exports, module)=>{
        **/
       api.method("define");
 
-      stub(koru, 'onunload');
-
       const module = new TH.MockModule("book-server");
 
-      api.example(() => {
-        class Book extends BaseModel {
-          foo() {return this.name;}
-        }
+      stub(module, 'onUnload');
 
-        Book.define({
-          module,
-          fields: {name: 'text'},
-        });
+      //[
+      class Book extends BaseModel {
+        foo() {return this.name;}
+      }
 
-        assert.same(Model.Book, Book);
-        assert.same(Book.modelName, 'Book');
-
-        let tm = Book.create({name: 'my name'});
-
-        assert.same(tm.foo(), 'my name');
+      Book.define({
+        module,
+        fields: {name: 'text'},
       });
 
-      const Book = Model.Book;
+      assert.same(Model.Book, Book);
+      assert.same(Book.modelName, 'Book');
+      assert.same(Book._module, module);
 
-      assert.calledWith(koru.onunload, module, TH.match.func);
+      let tm = Book.create({name: 'my name'});
 
-      koru.onunload.yield();
+      assert.same(tm.foo(), 'my name');
+      //]
+
+      assert.calledWith(module.onUnload, TH.match.func);
+
+      module.onUnload.yield();
 
       refute(Model.Book);
     });

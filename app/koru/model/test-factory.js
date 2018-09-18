@@ -132,7 +132,7 @@ define((require)=>{
         throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
 
       isClient && this.model._indexUpdate.notify(doc);
-      Model._support.callAfterObserver(doc);
+      Model._support.callAfterLocalChange(doc);
       this.model.notify(doc);
       return doc;
     }

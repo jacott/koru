@@ -84,7 +84,7 @@ define((require, exports, module)=>{
       let afterLocalChange, onChange;
       beforeEach(()=>{
         onEnd(v.TestModel.onChange(onChange = stub()));
-        v.TestModel.afterLocalChange(v.TestModel, afterLocalChange = stub());
+        onEnd(v.TestModel.afterLocalChange(afterLocalChange = stub()));
       });
 
       test("insertFromServer", ()=>{
@@ -640,7 +640,7 @@ define((require, exports, module)=>{
          **/
 
         api.method('notify');
-        stub(Model._support, 'callAfterObserver');
+        stub(Model._support, 'callAfterLocalChange');
         onEnd([
           Query.onAnyChange(v.onAnyChange = stub()),
           v.TestModel._indexUpdate.onChange(v.indexUpdate = stub()),
@@ -651,7 +651,7 @@ define((require, exports, module)=>{
         assert.calledWith(v.onAnyChange, v.foo, {age: 1}, "noMatch");
         assert.calledWith(v.oc, v.foo, {age: 1}, "noMatch");
 
-        refute.called(Model._support.callAfterObserver);
+        refute.called(Model._support.callAfterLocalChange);
         assert(v.indexUpdate.calledBefore(v.onAnyChange));
         assert(v.indexUpdate.calledBefore(v.oc));
         assert(v.onAnyChange.calledBefore(v.oc));
@@ -662,7 +662,7 @@ define((require, exports, module)=>{
         assert.calledWithExactly(v.indexUpdate, null, v.foo, undefined);
         assert.calledWithExactly(v.onAnyChange, null, v.foo, undefined);
         assert.calledWithExactly(v.oc, null, v.foo, undefined);
-        assert.calledWithExactly(Model._support.callAfterObserver, null, v.foo);
+        assert.calledWithExactly(Model._support.callAfterLocalChange, null, v.foo);
       });
     });
   });

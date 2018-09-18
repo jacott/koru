@@ -25,7 +25,7 @@ define((require, exports, module)=>{
 
         model._$docCacheSet(doc);
         TransQueue.onAbort(() => model._$docCacheDelete(doc));
-        Model._support.callAfterObserver(doc, null);
+        Model._support.callAfterLocalChange(doc, null);
         TransQueue.onSuccess(() => notify(model, doc, null));
       },
 
@@ -196,7 +196,7 @@ define((require, exports, module)=>{
             Model._support.callBeforeObserver('beforeRemove', doc);
             docs.remove({_id: doc._id});
             model._$docCacheDelete(doc);
-            Model._support.callAfterObserver(null, doc);
+            Model._support.callAfterLocalChange(null, doc);
             onSuccess.push(doc);
           });
         });
@@ -249,7 +249,7 @@ define((require, exports, module)=>{
             if (! util.isObjEmpty(undo)) {
               onAbort.push(doc);
               model._$docCacheSet(doc);
-              Model._support.callAfterObserver(doc, undo);
+              Model._support.callAfterLocalChange(doc, undo);
               onSuccess.push([doc, undo]);
             }
           });

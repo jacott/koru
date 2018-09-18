@@ -66,7 +66,7 @@ define((require, exports, module)=>{
       subject.notify(123, 'abc'),
 
       assert.calledWith(observer1, 123, 'abc');
-      assert.calledWith(observer1, 123, 'abc');
+      assert.calledWith(observer2, 123, 'abc');
 
       handle1.stop();
 
@@ -79,7 +79,8 @@ define((require, exports, module)=>{
 
     test("notify", ()=>{
       /**
-       * Notify all observers
+       * Notify all observers. Observers are notified in order they were added; first added, first
+       * notified.
        *
        * @param {...any-type} args arguments to send to observers (see {##add})
        *
@@ -100,6 +101,8 @@ define((require, exports, module)=>{
 
       assert.calledWith(observer1, 123, 'abc');
       assert.calledWith(observer2, 123, 'abc');
+
+      assert(observer1.calledBefore(observer2));
       //]
     });
 

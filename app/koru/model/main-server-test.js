@@ -135,14 +135,14 @@ define((require, exports, module)=>{
 
       v.doc = TestModel.create({name: 'foo'});
       onEnd(TestModel.onChange(v.onChange = stub()));
-      TestModel.beforeSave(TestModel, v.beforeSave = stub());
+      onEnd(TestModel.beforeSave(v.beforeSave = stub()));
 
       v.doc.$save();
       TestModel.query.onId(v.doc._id).update({});
 
       assert.same(v.doc.$reload().name, 'foo');
-      refute.called (v.onChange);
-      refute.called (v.beforeSave);
+      refute.called(v.onChange);
+      refute.called(v.beforeSave);
     });
 
     test("reload and caching", ()=>{
