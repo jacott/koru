@@ -134,7 +134,7 @@ define((require, exports, module)=>{
         if (typeof sim === 'object' && typeof sim._id === 'string') {
           if (curr) delete model.docs[rec._id];
           simDocsFor(model)[rec._id] = sim;
-          if (curr !== undefined) Query.notify(null, notMe = curr, false);
+          if (curr !== undefined) Query.notify(null, notMe = curr, undefined);
           return;
         }
 
@@ -149,7 +149,7 @@ define((require, exports, module)=>{
           curr
         ) : new model(rec);
         if (undo === null || ! util.isObjEmpty(undo))
-          Query.notify(notMe, undo, sim === undefined);
+          Query.notify(notMe, undo, sim === undefined ? 'idbLoad' : undefined);
       } finally {
         notMe = orig;
       }

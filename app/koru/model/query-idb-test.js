@@ -277,7 +277,7 @@ isClient && define((require, exports, module)=>{
 
         assert.equals(v.simDocs(), undefined);
 
-        assert.calledWith(v.oc, foo123, null, true);
+        assert.calledWith(v.oc, foo123, null, 'idbLoad');
       });
 
       test("simulated update", ()=>{
@@ -312,6 +312,8 @@ isClient && define((require, exports, module)=>{
         });
 
         test("simulated update", ()=>{
+          v.TestModel.onChange(v.oc = stub());
+
           v.db.loadDoc('TestModel', {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
           flush();
@@ -321,6 +323,8 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.simDocs(), {
             foo123: {name: 'foo'}});
           assert.equals(v.foo123[stopGap$], undefined);
+
+          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, undefined);
         });
 
         test("non simulated update", ()=>{
@@ -334,11 +338,12 @@ isClient && define((require, exports, module)=>{
 
           assert.equals(v.simDocs(), undefined);
 
-          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, true);
+          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, 'idbLoad');
           assert.equals(v.foo123[stopGap$], undefined);
         });
 
         test("simulated remove", ()=>{
+          v.TestModel.onChange(v.oc = stub());
           v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
           flush();
@@ -348,6 +353,8 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.simDocs(), {
             foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
           assert.equals(v.foo123[stopGap$], undefined);
+
+          assert.calledWith(v.oc, null, v.foo123, undefined);
         });
       });
 
