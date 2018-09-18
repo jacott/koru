@@ -306,17 +306,19 @@ define((require, exports, module)=>{
       update(changesOrField={}, value) {
         const origChanges = (typeof changesOrField === 'string')
               ? {[changesOrField]: value} : changesOrField;
+
+        const {model, docs, singleId} = this;
+        Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
+
         return TransQueue.transaction(() => {
           let count = 0;
-          const {model, docs} = this;
-
-          Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             if (session.state.pendingCount() && this.isFromServer) {
               const [changes, flag] = fromServer(model, this.singleId, origChanges);
-              const doc = docs[this.singleId];
+              const doc = docs[singleId];
               if (doc === undefined) return 0;
+              Model._support.callBeforeQueryUpdate(doc, changes);
               const undo = Changes.applyAll(doc.attributes, changes);
               for(const _ in undo) {
                 notify(model, doc, undo, flag);
@@ -325,6 +327,7 @@ define((require, exports, module)=>{
               Query[notifyAC$](doc, undo, flag);
               return 1;
             }
+
             this.forEach(doc => {
               ++count;
               const attrs = doc.attributes;
@@ -332,6 +335,9 @@ define((require, exports, module)=>{
               if (this._incs !== undefined) for(const field in this._incs) {
                 origChanges[field] = attrs[field] + this._incs[field];
               }
+
+              singleId === undefined ||
+                Model._support.callBeforeQueryUpdate(doc, origChanges);
 
               session.state.pendingCount() == 0 ||
                 recordChange(model, attrs, origChanges);

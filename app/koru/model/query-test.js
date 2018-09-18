@@ -47,6 +47,20 @@ define((require, exports, module)=>{
       assert.equals(TestModel.query.limit(1).fetchField('name'), [TH.match.string]);
     });
 
+    test("beforeQueryUpdate", ()=>{
+      onEnd(TestModel.beforeQueryUpdate((before, changes)=>{
+        changes.name = 'intercept';
+        assert.same(before, doc);
+
+      }));
+      const doc = TestModel.create({name: 'foo2'});
+
+      const query = TestModel.onId(doc._id);
+      query.update('name', 'changed');
+
+      assert.equals(doc.name, 'intercept');
+    });
+
     test("un/match array element", ()=>{
       TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);

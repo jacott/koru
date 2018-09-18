@@ -309,7 +309,6 @@ define((require, exports, module)=>{
       tsc.name = undefined;
 
       assert.same(tsc.name, undefined);
-
     });
 
     test("remove", ()=>{
@@ -330,7 +329,6 @@ define((require, exports, module)=>{
       const TestModel = Model.define(module, {t1: 123});
       assert.same(Model.TestModel, TestModel);
       assert.same(Model.TestModel._module, module);
-
 
       assert.calledWith(onUnload, TH.match.func);
 

@@ -42,21 +42,23 @@ define((require, exports, module)=>{
     return subj.onChange(callback).stop;
   };
 
+  const callBeforeQueryUpdate = (doc, changes)=>{
+    const subj = doc.constructor[observers$].beforeQueryUpdate;
+    subj === undefined || subj.notify(doc, changes);
+  };
+
   const callBeforeObserver = (type, doc) => {
-    const model = doc.constructor;
-    const subj = model[observers$][type];
+    const subj = doc.constructor[observers$][type];
     subj === undefined || subj.notify(doc, type);
   };
 
   const callAfterLocalChange = (doc, undo) => {
-    const model = (doc || undo).constructor;
-    const subj = model[observers$].afterLocalChange;
+    const subj = (doc || undo).constructor[observers$].afterLocalChange;
     subj === undefined || subj.notify(doc, undo);
   };
 
   const callWhenFinally = (doc, ex) => {
-    const model = doc.constructor;
-    const subj = model[observers$].whenFinally;
+    const subj = doc.constructor[observers$].whenFinally;
     if (subj !== undefined) for (const {callback} of subj) {
       try {
         callback(doc, ex);
@@ -515,6 +517,7 @@ define((require, exports, module)=>{
       }
     },
 
+    callBeforeQueryUpdate,
     callBeforeObserver,
     callAfterLocalChange,
   };

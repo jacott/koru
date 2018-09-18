@@ -220,14 +220,14 @@ define((require, exports, module)=>{
       update(changesOrField={}, value) {
         const origChanges = (typeof changesOrField === 'string')
                 ? {[changesOrField]: value} : changesOrField;
-        const model = this.model;
-        const docs = model.docs;
-
+        const {model, singleId} = this;
         Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
         let count = 0;
         let onSuccess = [], onAbort = [];
+
         TransQueue.transaction(model.db, tran => {
+          const {docs} = model;
           TransQueue.onAbort(() => {
             onAbort.forEach(doc => model._$docCacheDelete(doc));
           });
@@ -240,6 +240,9 @@ define((require, exports, module)=>{
             if (this._incs !== undefined) for (let field in this._incs) {
               origChanges[field] = attrs[field] + this._incs[field];
             }
+
+            if (singleId !== undefined)
+              Model._support.callBeforeQueryUpdate(doc, origChanges);
 
             const params = Changes.topLevelChanges(attrs, origChanges);
             if (util.isObjEmpty(params)) return 0;
