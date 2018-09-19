@@ -187,7 +187,13 @@ define((require, exports, module)=>{
         sut.validators('number')(doc,'order', 'integer');
         refute(doc[error$]);
 
-        doc.order = 123.45;
+        doc.order = 123.65;
+
+        sut.validators('number')(doc,'order', {integer: 'convert'});
+        refute(doc[error$]);
+        assert.same(doc.order, 124);
+
+        doc.order = 123.65;
 
         sut.validators('number')(doc,'order', {integer: true});
         assert(doc[error$]);

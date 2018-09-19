@@ -71,8 +71,15 @@ define((require)=>{
       }
 
       if (options != null) {
-        if ((options === 'integer' || options.integer) && val !== Math.floor(val))
-          return void this.addError(doc, field, 'not_an_integer');
+        if (options === 'integer' || options.integer) {
+          const rnd = Math.round(val);
+          if (val !== rnd) {
+            if (options.integer === 'convert')
+              val = rnd;
+            else
+              return void this.addError(doc, field, 'not_an_integer');
+          }
+        }
         if (typeof options === 'object') {
           if (options[compiled$] === undefined) {
             const tests = options[compiled$] = [];
