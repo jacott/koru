@@ -318,7 +318,6 @@ define((require, exports, module)=>{
               const [changes, flag] = fromServer(model, this.singleId, origChanges);
               const doc = docs[singleId];
               if (doc === undefined) return 0;
-              Model._support.callBeforeQueryUpdate(doc, changes);
               const undo = Changes.applyAll(doc.attributes, changes);
               for(const _ in undo) {
                 notify(model, doc, undo, flag);
@@ -335,9 +334,6 @@ define((require, exports, module)=>{
               if (this._incs !== undefined) for(const field in this._incs) {
                 origChanges[field] = attrs[field] + this._incs[field];
               }
-
-              singleId === undefined ||
-                Model._support.callBeforeQueryUpdate(doc, origChanges);
 
               session.state.pendingCount() == 0 ||
                 recordChange(model, attrs, origChanges);

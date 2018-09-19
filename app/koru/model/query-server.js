@@ -241,9 +241,6 @@ define((require, exports, module)=>{
               origChanges[field] = attrs[field] + this._incs[field];
             }
 
-            if (singleId !== undefined)
-              Model._support.callBeforeQueryUpdate(doc, origChanges);
-
             const params = Changes.topLevelChanges(attrs, origChanges);
             if (util.isObjEmpty(params)) return 0;
             docs.update({_id: doc._id}, params);

@@ -42,11 +42,6 @@ define((require, exports, module)=>{
     return subj.onChange(callback).stop;
   };
 
-  const callBeforeQueryUpdate = (doc, changes)=>{
-    const subj = doc.constructor[observers$].beforeQueryUpdate;
-    subj === undefined || subj.notify(doc, changes);
-  };
-
   const callBeforeObserver = (type, doc) => {
     const subj = doc.constructor[observers$][type];
     subj === undefined || subj.notify(doc, type);
@@ -517,7 +512,6 @@ define((require, exports, module)=>{
       }
     },
 
-    callBeforeQueryUpdate,
     callBeforeObserver,
     callAfterLocalChange,
   };
@@ -549,12 +543,12 @@ define((require, exports, module)=>{
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  ("beforeCreate beforeUpdate beforeSave beforeRemove beforeQueryUpdate "+
-   "afterLocalChange whenFinally ").split(" ").forEach(type => {
-     BaseModel[type] = function (callback) {
-       return registerObserver(this, type, callback);
-     };
-   });
+  ("beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally "
+  ).split(" ").forEach(type => {
+    BaseModel[type] = function (callback) {
+      return registerObserver(this, type, callback);
+    };
+  });
 
   const mapFieldType = (model, field, bt, name)=>{
     if (! bt) throw Error(name + ' is not defined for field: ' + field);
