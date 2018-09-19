@@ -161,7 +161,7 @@ define((require)=>{
         return this.toString();
       case '%C':
         return this.calls !== undefined ?
-          this.calls.map(call => "\n    " + inspect(call.args, 2)).join("")
+          this.calls.map(call => "\n    " + inspect(call.args, 10)).join("")
           : "";
       default:
         return inspect(this.calls, 2);

@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const TransQueue = require('./trans-queue');
   const Val        = require('./validation');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m, matchModel: mm} = TH;
   const {Future}   = util;
 
   const Model = require('./main');
@@ -295,7 +295,7 @@ define((require, exports, module)=>{
 
       stub(TestModel, '_$docCacheDelete');
       TransQueue.onAbort.yield();
-      assert.calledWith(TestModel._$docCacheDelete, TH.match.field('_id', 'fooid'));
+      assert.calledWith(TestModel._$docCacheDelete, m.field('_id', 'fooid'));
 
       v.auth.reset();
       session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar2'});
@@ -356,7 +356,7 @@ define((require, exports, module)=>{
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
 
-      assert.calledOnceWith(v.onChangeSpy, TH.matchModel(v.doc), {$partial: {
+      assert.calledOnceWith(v.onChangeSpy, mm(v.doc), {$partial: {
         html: [
           'div.2', null,
         ]
@@ -395,10 +395,8 @@ define((require, exports, module)=>{
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'three']});
 
-      assert.calledOnceWith(v.onChangeSpy, TH.matchModel(v.doc), {
-        name: 'foo',
-        html: {div: ['foo', 'bar']},
-      });
+      assert.calledOnceWith(v.onChangeSpy, mm(v.doc), m(undo => assert.equals(undo, {
+        name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}})));
       TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");

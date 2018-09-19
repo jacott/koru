@@ -387,7 +387,9 @@ define((require, exports, module)=>{
       if (from === to) return [];
       if (from == null) from = [];
       else if (to == null) to = [];
-      ans.push(field+'.$partial', ['$patch', diffSeq(from, to, deepEqual)]); return ans;
+      const ds = diffSeq(from, to, deepEqual);
+      ds === undefined || ans.push(field+'.$partial', ['$patch', ds]);
+      return ans;
     } break;
     }
     ans.push(field, to);
@@ -466,6 +468,26 @@ define((require, exports, module)=>{
     return map;
   };
 
+  const applyAsDiff = (attrs, key, value, undo)=>{
+    const oldValue = attrs[key];
+    if (value != null && oldValue != null) {
+      if ((value.constructor === Object && oldValue.constructor === Object) ||
+          (Array.isArray(value) && Array.isArray(oldValue))) {
+        const dif = nestedDiff(oldValue, value, 20);
+        if (dif === undefined) return;
+        const u = [];
+        applyPartial(attrs, key, dif, u);
+        const partial = undo.$partial || (undo.$partial = {});
+        partial[key] = u;
+        return;
+      }
+    }
+
+    undo[key] = value;
+    applySimple(attrs, key, undo);
+
+  };
+
 
   return {
     KEYWORDS: [
@@ -503,8 +525,7 @@ define((require, exports, module)=>{
       for(const key in changes) {
         if (key[0] === '$') continue;
         if (key.indexOf(".") === -1) {
-          topUndo[key] = changes[key];
-          applySimple(attrs, key, topUndo);
+          applyAsDiff(attrs, key, changes[key], topUndo);
         } else {
           throw new Error("update format not recognized");
         }

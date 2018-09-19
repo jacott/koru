@@ -220,10 +220,26 @@ define((require, exports, module)=>{
       });
 
       test("already applied", ()=>{
-        const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-        const changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
+        //[
+        const ary = [1, 2, 3], aa = {aa: 1, ary};
+        const b = [1, 2];
+        const orig = {a: aa, b, c: 3, nest: {foo: 'foo'}};
+        const changes = {
+          a: {aa: 1, ab: 2, ary: [1, 4, 5, 6, 3]},
+          b: [1, 2], c: 4, nest: {foo: 'foo'}};
 
-        assert.equals(Changes.applyAll(orig, changes), {c: 3});
+        assert.equals(Changes.applyAll(orig, changes), {$partial: {
+          a: ['ary.$partial', ['$patch', [1, 3, [2]]], 'ab', null]}, c: 3});
+        assert.equals(aa, {aa: 1, ab: 2, ary});
+        assert.equals(ary, [1, 4, 5, 6, 3]);
+        assert.same(orig.a, aa);
+        //]
+
+        assert.equals(
+          Changes.applyAll(orig.a, {aa: 1, ab: 2, ary: [1, 5, 4, 6, 3]}),
+          {$partial: {ary: ['$patch', [1, 2, [4, 5]]]}}
+        );
+        assert.equals(ary, [1, 5, 4, 6, 3]);
       });
 
       test("with empty array", ()=>{

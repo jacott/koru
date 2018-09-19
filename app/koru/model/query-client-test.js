@@ -207,7 +207,8 @@ define((require, exports, module)=>{
       assert.equals(v.onChange.args(0, 0).attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
       assert.equals(v.onChange.args(0, 1), {
-        name: "foo", nested: [{ary: ["m"]}], iShouldGo: 123});
+        name: 'foo',
+        $partial: {nested: ['$patch', [0, 1, [{ary: ['m']}]]]}, iShouldGo: 123});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     });
@@ -222,7 +223,8 @@ define((require, exports, module)=>{
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledWith(onChange, mm(v.foo), {
-        name: "foo", nested: [{ary: ["m"]}], iShouldGo: 123}, 'serverUpdate');
+        name: 'foo',
+        $partial: {nested: ['$patch', [0, 1, [{ary: ['m']}]]]}, iShouldGo: 123}, 'serverUpdate');
 
       assert.equals(onChange.args(0, 0).attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});

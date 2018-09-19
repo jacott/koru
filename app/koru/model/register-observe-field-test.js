@@ -88,7 +88,8 @@ define((require, exports, module)=>{
         v.doc.toys = v.attrs = ['woody', 'slinky'];
         v.doc.$$save();
 
-        assert.calledWith(v.callback, mm(v.doc.$reload()), {toys: ['robot']});
+        assert.calledWith(v.callback, mm(v.doc.$reload()), {
+          $partial: {toys: ['$patch', [0, 2, ['robot']]]}});
       });
 
       test("add/remove to observered field", ()=>{
