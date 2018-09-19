@@ -25,7 +25,7 @@ define((require, exports, module)=>{
       this._mockMatches.set(model, func);
     }
 
-    [inspect$]() {return `{MockSub:"${this.name}"}`;}
+    [inspect$]() {return `MockSub("${this.name}")`;}
   }
 
   const publishTH = {

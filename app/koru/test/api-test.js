@@ -763,7 +763,7 @@ assert.same(Color.colors.red, '#f00');`,
 
       assert(api);
       assert.same(api.subject, v.subject.exports);
-      assert.same(api.subjectName, 'fooBar');
+      assert.same(api.subjectName, 'FooBar');
     });
 
     test("serializeValue", ()=>{

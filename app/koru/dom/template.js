@@ -494,7 +494,7 @@ ${ex.message}`});
     }
 
     [inspect$]() {
-      return "DomTemplate:" + this.$fullname;
+      return "DomTemplate(" + this.$fullname +")";
     }
 
     $contains(subTemplate) {

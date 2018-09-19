@@ -16,7 +16,7 @@ define((require)=> JsPaser => {
     try {
       return terser.parse(codeIn, opts);
     } catch(ex) {
-      throw new ex.constructor(ex.message+"\n"+codeIn);
+      throw new SyntaxError(ex.message+"\n"+codeIn);
     }
   };
 
@@ -414,7 +414,7 @@ define((require)=> JsPaser => {
       } catch(ex) {
         const msg = `Error parsing ${sig}`;
         if (ex.name === 'SyntaxError')
-          throw new Error(`${msg}:\n${ex}`);
+          throw new SyntaxError(`${msg}:\n${ex}`);
         koru.error(msg);
         throw ex;
       }

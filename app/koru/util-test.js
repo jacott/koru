@@ -10,15 +10,15 @@ define((require, exports, module)=>{
   const {stub, spy, onEnd, match: m} = TH;
 
   const util  = require('./util');
-  let v = null;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach( ()=>{
-      v = {};
+  let v = {};
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.module({subjectName: 'util'});
     });
 
     afterEach( ()=>{
-      v = null;
+      v = {};
     });
 
     test("setProperty", ()=>{

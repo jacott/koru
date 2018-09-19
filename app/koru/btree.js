@@ -321,7 +321,7 @@ define((require)=>{
     _display(formatter=n => n) {return display(formatter, this.root)}
 
     [inspect$]() {
-      return `<BTree: ${this.size}>`;
+      return `BTree(${this.size})`;
     }
 
     _assertValid() {

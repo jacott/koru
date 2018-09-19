@@ -764,7 +764,7 @@ define((require, exports, module)=>{
       test("inspect$", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 'id123', name: 'bar'});
-        assert.equals(doc[inspect$](), '{Model: Book_id123 bar}');
+        assert.equals(doc[inspect$](), 'Model.Book("id123", "bar")');
       });
 
       test("toId", ()=>{

@@ -163,7 +163,7 @@ define((require, exports, module)=>{
     }
 
     [inspect$]() {
-      return "Pg:" + this.name;
+      return `Pg.Driver("${this.name}")`;
     }
 
     jsFieldToPg(col, type) {
@@ -394,7 +394,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       });
     }
 
-    [inspect$]() {return "PgTable:"+this._name}
+    [inspect$]() {return `PgTable("${this._name}")`}
 
     _resetTable() {
       this._ready = undefined;

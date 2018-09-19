@@ -598,7 +598,6 @@ isClient && define((require, exports, module)=>{
       const {Book, row} = v;
 
       //[
-
       /** Using comment delimeters */
 
       const container = Dom.h({div: [

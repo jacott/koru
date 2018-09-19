@@ -329,15 +329,20 @@ define((require)=>{
 
   const buildConstructor = (api, subject, {sig, intro, calls}, requireLine)=>{
     const {args, argMap} = mapArgs(sig, calls);
+    let bodyExample = false;
     const examples = calls.length && {div: [
       {h1: "Example"},
       {class: 'jsdoc-example highlight', pre: [
         requireLine.cloneNode(true),
-        ...calls.map(call => Dom.h({
-          div: (codeToHtml(Array.isArray(call) ?
-                          newSig(subject.name, call[0]) :
-                          call.body))
-        }))
+        ...calls.map(call =>{
+          if (Array.isArray(call)) {
+            if (! bodyExample)
+              return Dom.h({div: codeToHtml(newSig(subject.name, call[0]))});;
+          } else {
+            bodyExample = true;
+            return Dom.h({div: codeToHtml(call.body)});
+          }
+        })
       ]},
     ]};
     return section(api, {$name: 'constructor', section: [
@@ -389,20 +394,29 @@ define((require)=>{
       if (! util.isObjEmpty(ret.types))
         argMap[return$] = ret;
 
+      let bodyExample = false;
+
       const examples = calls.length && {div: [
         {h1: "Example"},
         {class: 'jsdoc-example', pre: [
           requireLine.cloneNode(true),
           ...initInst(),
-          ...calls.map(call => Array.isArray(call) ? [
-            {class: 'jsdoc-example-call highlight', div: [
-              {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
-                     '(', ...hlArgList(call[0]), ');']},
-              (call[2] || call[1]) === undefined || {
-                class: 'jsdoc-returns c1',
-                span: call[2] ? ` // ${call[2]}` : [' // returns ', valueToHtml(call[1])]}
-            ]}
-          ] : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
+          ...calls.map(call => {
+            if (Array.isArray(call)) {
+              if (! bodyExample) return [
+                {class: 'jsdoc-example-call highlight', div: [
+                  {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
+                         '(', ...hlArgList(call[0]), ');']},
+                  (call[2] || call[1]) === undefined || {
+                    class: 'jsdoc-returns c1',
+                    span: call[2] ? ` // ${call[2]}` : [' // returns ', valueToHtml(call[1])]}
+                  ]}
+              ];
+            } else {
+              bodyExample = true;
+              return {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)};
+            }
+          }),
         ]}
       ]};
 
@@ -446,7 +460,14 @@ define((require)=>{
   };
 
 
-  const codeToHtml = codeIn => jsParser.highlight(codeIn);
+  const codeToHtml = codeIn => {
+    try {
+      return jsParser.highlight(codeIn);
+    } catch(ex) {
+      throw ex;
+      return document.createTextNode(codeIn);
+    }
+  };
 
   const mapArgs = (sig, calls)=>{
     let args;
@@ -579,7 +600,7 @@ define((require)=>{
               types[typeof entry] = typeof entry;
           }
         } else
-          iterCalls(call.calls);
+          call == null || iterCalls(call.calls);
       });
     };
 

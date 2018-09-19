@@ -12,7 +12,7 @@ define((require, exports, module)=>{
     const deregister = func =>{
       let prev = undefined;
       const list = callbacks[name];
-      if (list === undefined) return;
+      if (list === undefined || list.remove === undefined) return;
       list.remove(sameValue, func);
     };
     Core['on'+capped] = (module, func)=>{

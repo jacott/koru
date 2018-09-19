@@ -31,7 +31,7 @@ define((require)=>{
     }
 
     [inspect$]() {
-      return `<request url=${this.url}>`;
+      return `request.url("${this.url}")`;
     }
   };
 

@@ -110,7 +110,7 @@ define((require, exports, module)=>{
 
     onUnload() {}
 
-    [inspect$]() {return `{Module: ${this.id}}`;}
+    [inspect$]() {return `Module("${this.id}")`}
   }
 
   module.ctx.onError = (err, mod)=>{

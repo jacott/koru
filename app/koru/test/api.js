@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./main');
 
-  const onEnd$ = Symbol(), tcInfo$ = Symbol();
+  const onEnd$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
   const {ctx} = module;
@@ -14,6 +14,327 @@ define((require, exports, module)=>{
   const {inspect$} = require('koru/symbols');
 
   const Element = (isClient ? window : global).Element || {};
+
+  const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
+
+  let count = 0;
+
+  const onTestEnd = (api, func)=>{
+    if (api.target !== undefined) api.target.test = getTestLevel();
+    if (api[onEnd$] === undefined) {
+      const foo = count++;
+      const onEnd = api[onEnd$] = ()=>{
+        api[onEnd$] = undefined;
+        api.target === undefined || extractBodyExample(api.target, api.target[currentTest$]);
+        const {callbacks} = onEnd;
+        onEnd.callbacks = [];
+        callbacks.forEach(cb => cb());
+      };
+      onEnd.callbacks = [];
+      TH.onEnd(onEnd);
+    }
+
+    func === undefined || api[onEnd$].callbacks.push(func);
+  };
+
+  const createSubjectName = (subject, tc)=>{
+    switch (typeof subject) {
+    case 'function': return subject.name;
+    case 'string': return subject;
+    }
+    const mods = ctx.exportsModule(subject);
+    if (mods) {
+      const id = tc && toId(tc);
+      const mod = mods.find(mod => id === mod.id) || mods[0];
+      return fileToCamel(mod.id);
+    }
+  };
+
+  const toId = tc => tc.moduleId.replace(/-test$/, '');
+
+  const extractFnBody = body =>{
+    if (typeof body === 'string')
+      return jsParser.indent(body);
+
+    body = body.toString();
+
+    const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
+
+    if (m) return  jsParser.indent(body.slice(m[0].length));
+
+    return jsParser.indent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
+  };
+
+  const funcToSig = (func, name)=>{
+    const sig = jsParser.extractCallSignature(func);
+    return (name === undefined || name === func.name)
+      ? sig : name+sig.slice(func.name.length);
+  };
+
+  const fileToCamel = fn => fn
+        .replace(/-(\w)/g, (m, l)=> l.toUpperCase()).replace(/^.*\//, '')
+        .replace(/^[a-z]/, m => m.toUpperCase());
+
+  const cache = (API, value, orig, result)=>{
+    if (value !== orig)
+      API._objCache.set(value, ['C', result[1], result[2]]);
+    API._objCache.set(orig, result);
+    return result;
+  };
+
+  const serializeCalls = (api, calls)=> calls.map(row => {
+    if (Array.isArray(row))
+      return serializeCall(api, row);
+
+    row.calls = serializeCalls(api, row.calls);
+    return row;
+  });
+
+  const serializeCall = (api, [args, ans, comment])=>{
+    args = args.map(arg => api.serializeValue(arg));
+    if (comment)
+      return [args, ans === undefined ? [''] : api.serializeValue(ans), comment];
+
+    if (ans === undefined)
+      return [args];
+    else
+      return [args, api.serializeValue(ans)];
+  };
+
+  const serializeProperties = (api, properties)=>{
+    for (let name in properties) {
+      const property = properties[name];
+      if (property.value !== undefined)
+        property.value = api.serializeValue(property.value);
+      if (property.calls)
+        property.calls = serializeCalls(api, property.calls);
+      property.properties &&
+        serializeProperties(api, property.properties);
+    }
+  };
+
+  const property = (api, field, subject, name, options)=>{
+    if (name == null) name = extractTestName();
+
+    const inner = (subject, name, options, properties)=>{
+      const property = properties[name] || (properties[name] = {});
+
+      const hasValueOpt =
+            typeof options === 'object' && options !== null && hasOwn(options, 'value');
+
+      const desc = subject && ! hasValueOpt
+            ? Object.getOwnPropertyDescriptor(subject, name) : undefined;
+
+      let savedValue = desc == null || desc.get == null ? subject[name] : undefined;
+
+      if (hasValueOpt) {
+        property.value = api.valueTag(options.value);
+      } else if (desc == null || desc.get || desc.set) {
+        const calls = property.calls || (property.calls = []);
+        util.setProperty(subject, name, {
+          get() {
+            const entry = [[], null];
+            addComment(api, entry);
+            calls.push(entry);
+            const ans = desc ? desc.get.call(this) : savedValue;
+            entry[1] = api.valueTag(ans);
+            return ans;
+          },
+          set(value) {
+            const entry = [[api.valueTag(value)], undefined];
+            addComment(api, entry);
+            calls.push(entry);
+            savedValue = value;
+            desc && desc.set.call(this, value);
+          }
+        });
+
+        onTestEnd(api, () => {
+          if (desc)
+            Object.defineProperty(subject, name, desc);
+          else
+            delete subject[name];
+        });
+
+      } else {
+        property.value = api.valueTag(savedValue);
+      }
+      switch (typeof options) {
+      case 'string':
+        property.info = options;
+        break;
+      case 'function':
+        property.info = options(savedValue);
+        break;
+      case 'object':
+        if (options != null) {
+          if (options.info) property.info = options.info;
+          if (options.intro) property.info = options.intro;
+          if (options.properties) {
+            const properties = property.properties ||
+                    (property.properties = {});
+            for (let name in options.properties) {
+              inner(savedValue, name, options.properties[name], properties);
+            }
+          }
+          break;
+        }
+      case 'undefined':
+        break;
+      default:
+        throw new Error("invalid options supplied for property "+name);
+      }
+      if (property.info === undefined) {
+        property.info = docComment(TH.test.func);
+      }
+    };
+
+    inner(subject, name, options, api[field] || (api[field] = {}));
+  };
+
+  const getTestLevel = ()=>{
+    const {test} = TH;
+    if (test === undefined) return;
+    const {mode} = test;
+    if (mode === 'running') {
+      return  test;
+    } else {
+      return TH.Core.currentTestCase;
+    }
+  };
+
+  const extractTestName = ()=>{
+    const {test} = TH;
+    const {mode} = test;
+    if (mode === 'running') {
+      return  test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
+    } else {
+      return TH.Core.currentTestCase.name;
+    }
+  };
+
+  const extractBodyExample = (details, fromTest)=>{
+    if (details === undefined) return;
+    const currentTest = fromTest || details[currentTest$];
+    if (fromTest === undefined) {
+      const {test} = TH;
+      if (test === currentTest) return;
+
+      details[currentTest$] = test;
+      if (currentTest === undefined) return;
+    }
+
+    const raw = currentTest.func.toString();
+    const re = /\/\/\[([\s\S]+?)\/\/\]/g;
+    let m = re.exec(raw);
+    if (m == null) return;
+
+    let body = '';
+    while (m !== null) {
+      body += m[1].replace(/\bnew_/g, 'new ');
+      m = re.exec(raw);
+    }
+    if (body === '') return;
+
+    const calls = details.calls.slice(details[callLength$]);
+    details.calls.length = details[callLength$] || 0;
+    body = jsParser.indent(body.replace(/^\s*\n/, ''));
+    details.calls.push({body, calls});
+    details[callLength$] = details.calls.length;
+  };
+
+  const method = (api, methodKey, obj, intro, methods)=>{
+    if (methodKey == null) methodKey = extractTestName();
+
+    const func = obj[methodKey];
+    if (func == undefined)
+      throw new Error(`method "${methodKey}" not found`);
+
+    const methodName = methodKey.toString();
+    let details = methods[methodName];
+    const calls = details ? details.calls : [];
+    if (details === undefined) {
+      let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
+      const isGenerator = sig[0] === '*';
+      if (isGenerator)
+        sig = sig.replace(/^\*\s*/, '');
+      if (! sig.startsWith(methodName)) {
+        if (sig.startsWith('('))
+          sig = methodName+sig.slice(0, jsParser.findMatch(sig, '('));
+        else {
+          if (sig.endsWith(' => {/*...*/}'))
+            sig = sig.slice(0, -13);
+          sig = `${methodName}(${sig})`;
+        }
+      }
+      if (isGenerator)
+        sig = '*'+sig;
+
+      details = methods[methodName] = {
+        sig,
+        intro: typeof intro === 'string' ? intro : docComment(intro),
+        subject: api.valueTag(api.subject),
+        calls,
+        [currentTest$]: undefined,
+        [callLength$]: 0,
+      };
+    }
+    api.target = details;
+
+    const desc = util.setProperty(obj, methodKey, {
+      value(...args) {
+        const {calls} = details;
+        if (calls === undefined) return func.apply(this, args);
+        const entry = [
+          args.map(obj => api.valueTag(obj)),
+          undefined,
+        ];
+        addComment(api, entry);
+        extractBodyExample(details);
+        calls.push(entry);
+
+        const ans = func.apply(this, args);
+        entry[1] = api.valueTag(ans);
+        return ans;
+      }
+    });
+
+    onTestEnd(api, () => {
+      if (desc) {
+        Object.defineProperty(obj, methodKey, desc);
+      } else {
+        delete obj[methodKey];
+      }
+    });
+  };
+
+  const example = (api, body, cont)=>{
+    if (! api.target)
+      throw new Error("API target not set!");
+    const callLength = api.target.calls.length;
+    try {
+      return typeof body === 'function' && body();
+    } finally {
+      const calls = api.target.calls.slice(callLength);
+      api.target.calls.length = callLength;
+      if (cont) {
+        const last = api.target.calls[callLength-1];
+        last.body += extractFnBody(body);
+        util.append(last.calls, calls);
+      } else api.target.calls.push({
+        body: extractFnBody(body),
+        calls,
+      });
+    }
+  };
+
+  const addComment = (api, entry)=>{
+    const {currentComment} = api;
+    if (currentComment) {
+      entry.push(currentComment);
+      api.currentComment = null;
+    }
+  };
 
   const inspect = (obj)=>{
     if (typeof obj !== 'object' || obj === null ||
@@ -42,7 +363,12 @@ define((require, exports, module)=>{
   };
 
   const docComment = func =>{
-    if (func == null) return;
+    if (func == null) {
+      const tl = getTestLevel();
+      if (tl === undefined) return;
+      func = tl.body || tl.func;
+      if (func === undefined) return;
+    }
     const code = func.toString();
     let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
     if (m == null) return;
@@ -80,7 +406,6 @@ define((require, exports, module)=>{
 
     static reset() {
       this._instance = null;
-      this.__afterTestCase = new WeakSet;
       this._moduleMap = new Map;
       this._subjectMap = new Map;
       this._objCache = new Map;
@@ -99,9 +424,7 @@ define((require, exports, module)=>{
 
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
-        const afterTestCase = this.__afterTestCase;
-        afterTestCase.has(tc) || tc.topTestCase().after(()=>{this._instance = null});
-        afterTestCase.add(tc);
+        TH.onEnd(()=>{this._instance = null});
 
         this._mapSubject(subject, subjectModule);
         this._moduleMap.set(
@@ -141,6 +464,7 @@ define((require, exports, module)=>{
     static method(methodName, options) {this.instance.method(methodName, options)}
     static protoMethod(methodName, options) {this.instance.protoMethod(methodName, options)}
     static done() {this.instance.done()}
+    static skip() {this.instance.skip()}
 
     static get instance() {return this._instance || this.module()}
 
@@ -260,7 +584,6 @@ define((require, exports, module)=>{
     }
 
     new({sig, intro}={}) {
-      const {test} = TH;
       const calls = [];
 
       switch(typeof sig) {
@@ -277,9 +600,8 @@ define((require, exports, module)=>{
 
       if (! this.newInstance) {
         this.newInstance = {
-          test,
           sig,
-          intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
+          intro: typeof intro === 'string' ? intro : docComment(intro),
           calls
         };
       }
@@ -289,6 +611,9 @@ define((require, exports, module)=>{
       onTestEnd(this);
 
       return (...args)=>{
+        const {calls} = this.target;
+        if (calls === undefined) return new this.subject(...args);
+        extractBodyExample(this.target);
         const entry = [
           args.map(obj => this.valueTag(obj)),
           undefined,
@@ -321,15 +646,13 @@ define((require, exports, module)=>{
       if (! name)
         throw new Error("Can't derive name of function");
 
-      const {test} = TH;
       const calls = [];
 
       let details = api.customMethods[name];
       if (! details) details = api.customMethods[name] = {
-        test,
         sigPrefix,
         sig,
-        intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
+        intro: typeof intro === 'string' ? intro : docComment(intro),
         calls
       };
       api.target = details;
@@ -339,6 +662,9 @@ define((require, exports, module)=>{
       return proxy;
 
       function proxy(...args) {
+        const {calls} = details;
+        if (calls === undefined) return func.apply(this, args);
+        extractBodyExample(details);
         const entry = [
           args.map(obj => api.valueTag(obj)),
           undefined,
@@ -385,11 +711,20 @@ define((require, exports, module)=>{
     }
 
     done() {
-      TH.test[onEnd$] && TH.test[onEnd$]();
+      this[onEnd$] && this[onEnd$]();
+    }
+
+    skip() {
+      const {target} = this;
+      if (target === undefined) return;
+      const {calls} = target;
+
+      target.calls = undefined;
+      TH.onEnd(()=>{target.calls = calls});
     }
 
     [inspect$]() {
-      return `{API(${this.subjectName})}`;
+      return `API(${this.subjectName})`;
     }
 
     serialize() {
@@ -398,6 +733,7 @@ define((require, exports, module)=>{
       const procMethods = list => {
         for (let methodName in list) {
           const row = list[methodName];
+
           list[methodName] = {
             test: row.test.name,
             sigPrefix: row.sigPrefix,
@@ -657,289 +993,6 @@ define((require, exports, module)=>{
 
     TH.Core.onTestEnd(test=>{API._instance = null});
   }
-
-  const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
-
-  const createSubjectName = (subject, tc)=>{
-    switch (typeof subject) {
-    case 'function': return subject.name;
-    case 'string': return subject;
-    }
-    const mods = ctx.exportsModule(subject);
-    if (mods) {
-      const id = tc && toId(tc);
-      const mod = mods.find(mod => id === mod.id) || mods[0];
-      return fileToCamel(mod.id);
-    }
-  };
-
-  const toId = tc => tc.moduleId.replace(/-test$/, '');
-
-  const extractFnBody = body =>{
-    if (typeof body === 'string')
-      return jsParser.indent(body);
-
-    body = body.toString();
-
-    const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
-
-    if (m) return  jsParser.indent(body.slice(m[0].length));
-
-    return jsParser.indent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
-  };
-
-  const funcToSig = (func, name)=>{
-    const sig = jsParser.extractCallSignature(func);
-    return (name === undefined || name === func.name)
-      ? sig : name+sig.slice(func.name.length);
-  };
-
-  const fileToCamel = fn => fn.replace(/-(\w)/g, (m, l)=> l.toUpperCase()).replace(/^.*\//, '');
-
-  const cache = (API, value, orig, result)=>{
-    if (value !== orig)
-      API._objCache.set(value, ['C', result[1], result[2]]);
-    API._objCache.set(orig, result);
-    return result;
-  };
-
-  const serializeCalls = (api, calls)=> calls.map(row => {
-    if (Array.isArray(row))
-      return serializeCall(api, row);
-
-    row.calls = serializeCalls(api, row.calls);
-    return row;
-  });
-
-  const serializeCall = (api, [args, ans, comment])=>{
-    args = args.map(arg => api.serializeValue(arg));
-    if (comment)
-      return [args, ans === undefined ? [''] : api.serializeValue(ans), comment];
-
-    if (ans === undefined)
-      return [args];
-    else
-      return [args, api.serializeValue(ans)];
-  };
-
-  const serializeProperties = (api, properties)=>{
-    for (let name in properties) {
-      const property = properties[name];
-      if (property.value !== undefined)
-        property.value = api.serializeValue(property.value);
-      if (property.calls)
-        property.calls = serializeCalls(api, property.calls);
-      property.properties &&
-        serializeProperties(api, property.properties);
-    }
-  };
-
-  const property = (api, field, subject, name, options)=>{
-    const {test} = TH;
-    if (name == null) name = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
-
-    const inner = (subject, name, options, properties)=>{
-      const property = properties[name] || (properties[name] = {});
-
-      const hasValueOpt =
-            typeof options === 'object' && options !== null && hasOwn(options, 'value');
-
-      const desc = subject && ! hasValueOpt
-            ? Object.getOwnPropertyDescriptor(subject, name) : undefined;
-
-      let savedValue = desc == null || desc.get == null ? subject[name] : undefined;
-
-      if (hasValueOpt) {
-        property.value = api.valueTag(options.value);
-      } else if (desc == null || desc.get || desc.set) {
-        const calls = property.calls || (property.calls = []);
-        util.setProperty(subject, name, {
-          get() {
-            const entry = [[], null];
-            addComment(api, entry);
-            calls.push(entry);
-            const ans = desc ? desc.get.call(this) : savedValue;
-            entry[1] = api.valueTag(ans);
-            return ans;
-          },
-          set(value) {
-            const entry = [[api.valueTag(value)], undefined];
-            addComment(api, entry);
-            calls.push(entry);
-            savedValue = value;
-            desc && desc.set.call(this, value);
-          }
-        });
-
-        onTestEnd(api, () => {
-          if (desc)
-            Object.defineProperty(subject, name, desc);
-          else
-            delete subject[name];
-        });
-
-      } else {
-        property.value = api.valueTag(savedValue);
-      }
-      switch (typeof options) {
-      case 'string':
-        property.info = options;
-        break;
-      case 'function':
-        property.info = options(savedValue);
-        break;
-      case 'object':
-        if (options != null) {
-          if (options.info) property.info = options.info;
-          if (options.intro) property.info = options.intro;
-          if (options.properties) {
-            const properties = property.properties ||
-                    (property.properties = {});
-            for (let name in options.properties) {
-              inner(savedValue, name, options.properties[name], properties);
-            }
-          }
-          break;
-        }
-      case 'undefined':
-        break;
-      default:
-        throw new Error("invalid options supplied for property "+name);
-      }
-      if (property.info === undefined) {
-        property.info = docComment(TH.test.func);
-      }
-    };
-
-    inner(subject, name, options, api[field] || (api[field] = {}));
-  };
-
-  const method = (api, methodKey, obj, intro, methods)=>{
-    const {test} = TH;
-    const {mode} = test;
-    if (methodKey == null) {
-      if (mode === 'running')
-        methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
-      else
-        methodKey = TH.Core.currentTestCase.name;
-    }
-    const func = obj[methodKey];
-    if (func == undefined)
-      throw new Error(`method "${methodKey}" not found`);
-
-    const methodName = methodKey.toString();
-    let details = methods[methodName];
-    const calls = details ? details.calls : [];
-    if (! details) {
-      let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
-      const isGenerator = sig[0] === '*';
-      if (isGenerator)
-        sig = sig.replace(/^\*\s*/, '');
-      if (! sig.startsWith(methodName)) {
-        if (sig.startsWith('('))
-          sig = methodName+sig.slice(0, jsParser.findMatch(sig, '('));
-        else {
-          if (sig.endsWith(' => {/*...*/}'))
-            sig = sig.slice(0, -13);
-          sig = `${methodName}(${sig})`;
-        }
-      }
-      if (isGenerator)
-        sig = '*'+sig;
-
-      details = methods[methodName] = {
-        test,
-        sig,
-        intro: typeof intro === 'string'
-          ? intro : docComment(intro || mode === 'running' ? test.func : TH.Core.currentTestCase.body),
-        subject: api.valueTag(api.subject),
-        calls
-      };
-    }
-    api.target = details;
-
-    const desc = util.setProperty(obj, methodKey, {
-      value(...args) {
-        const entry = [
-          args.map(obj => api.valueTag(obj)),
-          undefined,
-        ];
-        addComment(api, entry);
-        calls.push(entry);
-        const ans = func.apply(this, args);
-        entry[1] = api.valueTag(ans);
-        return ans;
-      }
-    });
-
-    onTestEnd(api, () => {
-      if (desc) {
-        Object.defineProperty(obj, methodKey, desc);
-      } else {
-        delete obj[methodKey];
-      }
-    });
-  };
-
-  const example = (api, body, cont)=>{
-    if (! api.target)
-      throw new Error("API target not set!");
-    const callLength = api.target.calls.length;
-    try {
-      return typeof body === 'function' && body();
-    } finally {
-      const calls = api.target.calls.slice(callLength);
-      api.target.calls.length = callLength;
-      if (cont) {
-        const last = api.target.calls[callLength-1];
-        last.body += extractFnBody(body);
-        util.append(last.calls, calls);
-      } else api.target.calls.push({
-        body: extractFnBody(body),
-        calls,
-      });
-    }
-  };
-
-  const addComment = (api, entry)=>{
-    const {currentComment} = api;
-    if (currentComment) {
-      entry.push(currentComment);
-      api.currentComment = null;
-    }
-  };
-
-  const onTestEnd = (api, func)=>{
-    const {test} = TH;
-    if (test[onEnd$] === undefined) {
-      const callLength = api.target === undefined ? 0 : api.target.calls.length;
-      const onEnd = test[onEnd$] = ()=>{
-        test[onEnd$] = undefined;
-        const {callbacks} = onEnd;
-        onEnd.callbacks = [];
-        callbacks.forEach(cb => cb());
-        const raw = test.func.toString();
-        const re = /\/\/\[([\s\S]+?)\/\/\]/g;
-        let m = re.exec(raw);
-        if (m == null) return;
-        let body = '';
-        while (m !== null) {
-          body += m[1].replace(/\bnew_/g, 'new ');
-          m = re.exec(raw);
-        }
-        if (body !== '') {
-          const calls = api.target.calls.slice(callLength);
-          api.target.calls.length = callLength;
-          body = jsParser.indent(body.replace(/^\s*\n/, ''));
-          api.target.calls.push({body, calls});
-        }
-      };
-      onEnd.callbacks = [];
-      test.onEnd(onEnd);
-    }
-
-    func === undefined || test[onEnd$].callbacks.push(func);
-  };
 
   API._docComment = docComment;
   require('koru/env!./api')(API);

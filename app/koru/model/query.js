@@ -169,7 +169,7 @@ define((require, exports, module)=>{
         this.model = model;
       }
 
-      [inspect$]() {return `{Query ${this.model.modelName}}`}
+      [inspect$]() {return `Query(${this.model.modelName})`}
 
       onModel(model) {
         this.model = model;
