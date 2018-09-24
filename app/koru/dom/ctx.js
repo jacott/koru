@@ -355,19 +355,19 @@ define((require)=>{
         return;
       }
       const model = subject.constructor;
-      const handle = model.observeId ? model.observeId(subject._id, (doc, undo)=>{
-        if (doc == null) {
+      const handle = model.observeId ? model.observeId(subject._id, ({doc, isDelete})=>{
+        if (isDelete) {
           handle.stop();
-          removed !== undefined && removed(undo);
+          removed !== undefined && removed(doc);
         } else {
           if (subject !== doc) this[data$] = subject = doc;
           this.updateAllTags();
         }
-      }) : model.onChange((doc, undo)=>{
-        if (doc == null) {
-          if (undo === subject) {
+      }) : model.onChange(({doc, isDelete})=>{
+        if (isDelete) {
+          if (doc === subject) {
             handle.stop();
-            removed !== undefined && removed(undo);
+            removed !== undefined && removed(doc);
           }
         } else if (doc === subject) {
           this.updateAllTags();

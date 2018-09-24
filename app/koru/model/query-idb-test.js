@@ -4,18 +4,19 @@ isClient && define((require, exports, module)=>{
    *
    * For testing one can use {#koru/model/mockIndexedDB} in replacement of `indexedDB`
    **/
-  const koru          = require('koru');
-  const Model         = require('koru/model');
-  const mockIndexedDB = require('koru/model/mock-indexed-db');
-  const Query         = require('koru/model/query');
-  const TransQueue    = require('koru/model/trans-queue');
-  const session       = require('koru/session');
-  const {stopGap$}    = require('koru/symbols');
-  const api           = require('koru/test/api');
-  const MockPromise   = require('koru/test/mock-promise');
-  const TH            = require('./test-helper');
+  const koru            = require('koru');
+  const Model           = require('koru/model');
+  const mockIndexedDB   = require('koru/model/mock-indexed-db');
+  const DocChange       = require('koru/model/doc-change');
+  const Query           = require('koru/model/query');
+  const TransQueue      = require('koru/model/trans-queue');
+  const session         = require('koru/session');
+  const {stopGap$}      = require('koru/symbols');
+  const api             = require('koru/test/api');
+  const MockPromise     = require('koru/test/mock-promise');
+  const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const QueryIDB = require('./query-idb');
   const {IDBKeyRange} = window;
@@ -113,9 +114,6 @@ isClient && define((require, exports, module)=>{
          * {#trans-queue} successfully completes. Changes to model
          * instances with stopGap$ symbol true are ignored.
          *
-         * @param now the record in its current form
-
-         * @param was the original values of the changes to the record.
          **/
         api.protoMethod('queueChange');
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
@@ -239,7 +237,9 @@ isClient && define((require, exports, module)=>{
           db.createObjectStore("TestModel");
         }});
         flush();
-        v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
+        v.TestModel.onChange(dc => {
+          v.db.queueChange(dc); v.called = true;
+        });
         v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
@@ -277,7 +277,7 @@ isClient && define((require, exports, module)=>{
 
         assert.equals(v.simDocs(), undefined);
 
-        assert.calledWith(v.oc, foo123, null, 'idbLoad');
+        assert.calledWith(v.oc, DocChange.add(foo123, 'idbLoad'));
       });
 
       test("simulated update", ()=>{
@@ -324,7 +324,8 @@ isClient && define((require, exports, module)=>{
             foo123: {name: 'foo'}});
           assert.equals(v.foo123[stopGap$], undefined);
 
-          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, undefined);
+          assert.calledWith(v.oc, DocChange.change(
+            m.is(v.foo123), {name: 'stopGap', gender: 'm'}, undefined));
         });
 
         test("non simulated update", ()=>{
@@ -333,12 +334,12 @@ isClient && define((require, exports, module)=>{
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
           flush();
 
-
           assert.equals(v.foo123.name, 'foo2');
 
           assert.equals(v.simDocs(), undefined);
 
-          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, 'idbLoad');
+          assert.calledWith(v.oc, DocChange.change(
+            m.is(v.foo123), {name: 'stopGap', gender: 'm'}, 'idbLoad'));
           assert.equals(v.foo123[stopGap$], undefined);
         });
 
@@ -354,7 +355,7 @@ isClient && define((require, exports, module)=>{
             foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
           assert.equals(v.foo123[stopGap$], undefined);
 
-          assert.calledWith(v.oc, null, v.foo123, undefined);
+          assert.calledWith(v.oc, DocChange.delete(v.foo123, undefined));
         });
       });
 
@@ -451,7 +452,7 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel");
       }});
       flush();
-      v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
+      v.TestModel.onChange(dc =>{v.db.queueChange(dc); v.called = true;});
       v.db.loadDocs('TestModel', v.recs = [
         {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         {_id: 'foo456', name: 'bar', age: 10, gender: 'f'},

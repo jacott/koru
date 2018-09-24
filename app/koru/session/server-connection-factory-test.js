@@ -1,11 +1,13 @@
 isServer && define((require, exports, module)=>{
-  const koru        = require('koru');
-  const IdleCheck   = require('koru/idle-check').singleton;
-  const baseSession = require('koru/session');
-  const TH          = require('koru/test-helper');
-  const util        = require('koru/util');
-  const match       = require('./match');
-  const message     = require('./message');
+  const koru            = require('koru');
+  const IdleCheck       = require('koru/idle-check').singleton;
+  const DocChange       = require('koru/model/doc-change');
+  const baseSession     = require('koru/session');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
+  const match           = require('./match');
+  const message         = require('./message');
+
   const crypto      = requirejs.nodeRequire('crypto');
 
   const {stub, spy, onEnd, intercept} = TH;
@@ -299,26 +301,32 @@ isServer && define((require, exports, module)=>{
         attributes: {name: 'x'},
         $withChanges: stub().withArgs('changes')
           .returns(v.before = {constructor: {modelName: 'Foo'}, _id: 'f123', attributes: {name: 'y'}}),
-        $asChanges: stub().withArgs('changes')
+        $invertChanges: stub().withArgs('changes')
           .returns(v.changes= {changes: true}),
       };
-      refute(v.conn.sendMatchUpdate(v.doc));
+      refute(v.conn.sendMatchUpdate(DocChange.add(v.doc)));
       refute.called(v.conn.sendBinary);
-      v.conn.match.register('Foo', function (doc) {
-        return v.func(doc);
-      });
+      v.conn.match.register('Foo', doc => v.func(doc));
 
       // added
-      v.func = function (doc) {return v.doc === doc};
-      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'added');
+      v.func = doc => v.doc === doc;
+      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'added');
       assert.calledWith(v.doc.$withChanges, 'changes');
       assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
+      // simple add
+      v.conn.sendBinary.reset();
+      v.doc.$withChanges.reset();
+      assert.same(v.conn.sendMatchUpdate(DocChange.add(v.before)), undefined);
+      refute.called(v.conn.sendBinary);
+      assert.same(v.conn.sendMatchUpdate(DocChange.add(v.doc)), 'added');
+      assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
+      refute.called(v.doc.$withChanges);
 
       // changed
       v.conn.sendBinary.reset();
       v.doc.$withChanges.reset();
-      v.func = function (doc) {return v.doc === doc || doc === v.before};
-      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'changed');
+      v.func = doc => v.doc === doc || doc === v.before;
+      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'changed');
       assert.calledWith(v.doc.$withChanges, 'changes');
       assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
 
@@ -326,8 +334,14 @@ isServer && define((require, exports, module)=>{
       v.doc.$withChanges.reset();
       v.conn.sendBinary.reset();
       v.func = function (doc) {return doc === v.before};
-      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'changed');
+      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'changed');
       assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
+      // simple remove
+      v.conn.sendBinary.reset();
+      assert.same(v.conn.sendMatchUpdate(DocChange.delete(v.doc)), undefined);
+      refute.called(v.conn.sendBinary);
+      assert.same(v.conn.sendMatchUpdate(DocChange.delete(v.before)), 'removed');
+      assert.calledOnceWith(v.conn.sendBinary, 'R', ['Foo', 'f123']);
     });
 
     test("added", ()=>{

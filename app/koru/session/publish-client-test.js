@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  const DocChange       = require('koru/model/doc-change');
   const ClientSub       = require('koru/session/client-sub');
   const api             = require('koru/test/api');
   const Model           = require('../model/main');
@@ -7,7 +8,7 @@ define((require, exports, module)=>{
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const publish = require('./publish');
 
@@ -28,7 +29,7 @@ define((require, exports, module)=>{
     });
 
     afterEach(()=>{
-      v.handles.forEach(h => {h.stop ? h.stop() : h.delete()});
+      v.handles.forEach(h => {h.stop ? h.stop() : h.delete ? h.delete() : h()});
       v = {};
     });
 
@@ -82,47 +83,52 @@ define((require, exports, module)=>{
 
     test("filter Models", ()=>{
       stub(session, '_sendM');
-      v.F1 = Model.define('F1').defineFields({name: 'text'});
-      v.F2 = Model.define('F2').defineFields({name: 'text'});
+      const F1 = Model.define('F1').defineFields({name: 'text'});
+      const F2 = Model.define('F2').defineFields({name: 'text'});
 
-      const fdoc = v.F1.create({name: 'A'});
-      v.F1.create({name: 'A'});
-      const fdel = v.F1.create({name: 'X'});
+      const fdoc = F1.create({name: 'A'});
+      F1.create({name: 'A'});
+      const fdel = F1.create({name: 'X'});
+      const f1del = stub(), f1idxOC = stub();
 
-      v.F2.create({name: 'A2'});
-      v.F2.create({name: 'X2'});
-      v.F2.create({name: 'X2'});
+      F2.create({name: 'A2'});
+      const x21 = F2.create({name: 'X2'});
+      F2.create({name: 'X2'});
 
-      v.handles.push(v.F1.onChange(v.f1del = stub()));
-
+      v.handles.push(F1.onChange(f1del));
       v.handles.push(publish.match.register('F1', (doc, reason) => {
         v.reason = reason;
         return doc.name === 'A';
       }));
-
       v.handles.push(publish.match.register('F2', doc => doc.name === 'A2'));
-
-      v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = stub()));
+      v.handles.push(F1._indexUpdate.onChange(f1idxOC));
 
       try {
         publish._filterModels({F1: true});
 
-        assert.same(v.F1.query.count(), 2);
-        assert.same(v.F2.query.count(), 3);
+        assert.same(F1.query.count(), 2);
+        assert.same(F2.query.count(), 3);
 
-        assert.calledWith(v.f1del, null, TH.match.field('_id', fdel._id), 'noMatch');
-        assert.calledWith(v.f1idxOC, null, TH.match.field('_id', fdel._id));
+        const dc = DocChange.delete(fdel, 'noMatch');
+
+        assert.calledWith(f1del, dc);
+        assert.calledWith(f1idxOC, dc);
 
         assert.same(v.reason, 'noMatch');
 
-        assert(v.f1idxOC.calledBefore(v.f1del));
+        assert(f1idxOC.calledBefore(f1del));
 
         fdoc.attributes.name = 'X';
 
-        publish._filterModels({F1: true, F2: true});
+        const f2oc = stub();
+        v.handles.push(F2.onChange(f2oc));
 
-        assert.same(v.F1.query.count(), 1);
-        assert.same(v.F2.query.count(), 1);
+        publish._filterModels({F1: true, F2: true}, 'stopped');
+
+        assert.same(F1.query.count(), 1);
+        assert.same(F2.query.count(), 1);
+
+        assert.calledWith(f2oc, DocChange.delete(x21, 'stopped'));
 
       } finally {
         Model._destroyModel('F1', 'drop');

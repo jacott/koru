@@ -1,8 +1,9 @@
 define((require, exports, module)=>{
-  const util     = require('koru/util');
-  const dbBroker = require('./db-broker');
-  const Model    = require('./main');
-  const TH       = require('./test-helper');
+  const DocChange       = require('koru/model/doc-change');
+  const util            = require('koru/util');
+  const dbBroker        = require('./db-broker');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, intercept, matchModel: mm, match: m} = TH;
 
@@ -43,19 +44,19 @@ define((require, exports, module)=>{
       oc.reset();
       v.obs.push(v.altHandle = v.TestModel.observeToys(['robot'], v.altOb = stub()));
       assert.calledWith(oc, m(func => v.altFunc = func));
-      v.oFunc(v.doc, {name: 'old'});
-      assert.calledWith(v.origOb, v.doc);
+      v.oFunc(DocChange.change(v.doc, {name: 'old'}));
+      assert.calledWith(v.origOb, DocChange.change(v.doc, {name: 'old'}));
       refute.called(v.altOb);
 
       v.origOb.reset();
-      v.altFunc(v.doc, {name: 'old'});
-      assert.calledWith(v.altOb, v.doc);
+      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
+      assert.calledWith(v.altOb, DocChange.change(v.doc, {name: 'old'}));
       refute.called(v.origOb);
 
       v.altHandle.stop();
 
       v.altOb.reset();
-      v.altFunc(v.doc, {name: 'old'});
+      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
       refute.called(v.altOb);
 
 
@@ -75,34 +76,34 @@ define((require, exports, module)=>{
       test("adding observed field", ()=>{
         const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
 
-        assert.calledOnceWith(v.callback, mm(doc), null);
+        assert.calledOnceWith(v.callback, DocChange.add(doc));
       });
 
       test("adding two observed fields", ()=>{
         const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
 
-        assert.calledOnceWith(v.callback, mm(doc), null);
+        assert.calledOnceWith(v.callback, DocChange.add(doc));
       });
 
       test("updating observered field", ()=>{
         v.doc.toys = v.attrs = ['woody', 'slinky'];
         v.doc.$$save();
 
-        assert.calledWith(v.callback, mm(v.doc.$reload()), {
-          $partial: {toys: ['$patch', [0, 2, ['robot']]]}});
+        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {
+          $partial: {toys: ['$patch', [0, 2, ['robot']]]}}));
       });
 
       test("add/remove to observered field", ()=>{
         v.doc.$onThis.addItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, mm(v.doc.$reload()), {$partial: {
-          toys: ['$remove', ['woody']]}});
+        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {$partial: {
+          toys: ['$remove', ['woody']]}}));
 
         v.callback.reset();
         v.doc.$onThis.removeItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, mm(v.doc.$reload()), {$partial: {
-          toys: ['$add', ['woody']]}});
+        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {$partial: {
+          toys: ['$add', ['woody']]}}));
       });
 
       test("updating other field", ()=>{
@@ -113,7 +114,7 @@ define((require, exports, module)=>{
         v.doc.$reload().age = 8;
         v.doc.$$save();
 
-        assert.calledWith(v.callback, mm(v.doc.$reload()), {age: 5});
+        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {age: 5}));
       });
     });
 
@@ -133,7 +134,7 @@ define((require, exports, module)=>{
 
         v.doc3.name = "changed";
         v.doc3.$$save();
-        assert.calledWith(v.callback, mm(v.doc3.$reload()), {name: 'Helen'});
+        assert.calledWith(v.callback, DocChange.change(v.doc3.$reload(), {name: 'Helen'}));
         v.callback.reset();
 
         v.ids.stop();
@@ -148,7 +149,7 @@ define((require, exports, module)=>{
 
         const doc = v.TestModel.create({_id: '123', name: 'Mamma', age: 25});
 
-        assert.calledWith(v.callback, mm(doc));
+        assert.calledWith(v.callback, DocChange.add(doc));
       });
 
       test("removeValue", ()=>{
@@ -157,7 +158,7 @@ define((require, exports, module)=>{
         v.doc2.age = 5;
         v.doc2.$$save();
 
-        assert.calledWith(v.callback, mm(v.doc2.$reload()));
+        assert.calledWith(v.callback, DocChange.change(v.doc2.$reload(), {age: 35}));
 
         v.callback.reset();
 

@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const BTree           = require('koru/btree');
+  const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
@@ -139,20 +140,28 @@ define((require, exports, module)=>{
         return true;
       };
 
-      const onChange = (doc, undo)=>{
+      const onChange = ({type, doc, undo, flag, was})=>{
         const idx = getIdx();
-        let old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
         if (filterTest !== null) {
-          if (doc != null && ! filterTest.matches(doc)) doc = null;
-          if (old != null && ! filterTest.matches(old)) old = null;
+          let nt = type;
+          if (type !== 'del' && ! filterTest.matches(doc)) nt = 'del';
+          if (type !== 'add' && ! filterTest.matches(was)) nt = 'add';
+          if (nt === 'del' && type === 'del') return;
+          type = nt;
         }
 
-        if (doc != null) {
-          if (old != null) {
+        if (type === 'del') {
+          if (leadLen === -1) {
+            idx.delete(doc);
+          } else {
+            deleteEntry(idx, doc, 0);
+          }
+        } else {
+          if (type !== 'add') {
             if (leadLen === -1) {
-              const n = idx.nodeFrom(old);
+              const n = idx.nodeFrom(was);
 
-              if (n === null || btCompare(old, n.value) !== 0) {
+              if (n === null || btCompare(was, n.value) !== 0) {
                 idx.add(BTValue(doc));
               } else {
                 idx.deleteNode(n);
@@ -164,14 +173,14 @@ define((require, exports, module)=>{
               let i = 0;
               for(; i < len; ++i) {
                 const field = fields[i];
-                if (doc[field] !== old[field]) {
-                  deleteEntry(idx, old, 0);
+                if (doc[field] !== was[field]) {
+                  deleteEntry(idx, was, 0);
                   break;
                 }
               }
               if (i === len) {
-                if (btCompare !== null && btCompare(doc, old) !== 0) {
-                  deleteEntry(idx, old, 0);
+                if (btCompare !== null && btCompare(doc, was) !== 0) {
+                  deleteEntry(idx, was, 0);
                 } else {
                   return;
                 }
@@ -194,12 +203,6 @@ define((require, exports, module)=>{
             } else {
               tidx[value] = doc._id;
             }
-          }
-        } else if (old != null) {
-          if (leadLen === -1) {
-            idx.delete(old);
-          } else {
-            deleteEntry(idx, old, 0);
           }
         }
       };
@@ -232,7 +235,7 @@ define((require, exports, module)=>{
           idx = indexes[dbId] = leadLen === -1 ? new BTree(btCompare) : emptyIdx();
           const docs = model.docs;
           for(const id in docs) {
-            onChange(docs[id]);
+            onChange(DocChange.add(docs[id]));
           }
         },
 

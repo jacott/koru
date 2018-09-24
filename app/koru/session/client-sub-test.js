@@ -143,7 +143,7 @@ isClient && define((require, exports, module)=>{
       /**
        * Remove model documents that do not match this subscription
        **/
-      api.protoMethod('filterModels');
+      api.protoMethod();
 
       stub(publish, '_filterModels');
       const sub1 = new ClientSub(v.sess, "1", "Library", []);
@@ -151,6 +151,16 @@ isClient && define((require, exports, module)=>{
       sub1.filterModels('Book', 'Catalog');
 
       assert.calledWithExactly(publish._filterModels, {Book: true, Catalog: true});
+
+      publish._filterModels.reset();
+      v.sess.sendP = stub();
+
+      const bookMatch = ()=>{};
+      sub1.match('Book', bookMatch);
+
+      sub1.stop();
+
+      assert.calledWith(publish._filterModels, {Book: true}, 'stopped');
     });
   });
 });

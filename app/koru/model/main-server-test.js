@@ -1,12 +1,13 @@
 define((require, exports, module)=>{
-  const koru       = require('koru/main');
-  const dbBroker   = require('koru/model/db-broker');
-  const Driver     = require('koru/pg/driver');
-  const session    = require('koru/session');
-  const util       = require('koru/util');
-  const TH         = require('./test-helper');
-  const TransQueue = require('./trans-queue');
-  const Val        = require('./validation');
+  const koru            = require('koru/main');
+  const dbBroker        = require('koru/model/db-broker');
+  const DocChange       = require('koru/model/doc-change');
+  const Driver          = require('koru/pg/driver');
+  const session         = require('koru/session');
+  const util            = require('koru/util');
+  const TH              = require('./test-helper');
+  const TransQueue      = require('./trans-queue');
+  const Val             = require('./validation');
 
   const {stub, spy, onEnd, match: m, matchModel: mm} = TH;
   const {Future}   = util;
@@ -356,11 +357,11 @@ define((require, exports, module)=>{
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
 
-      assert.calledOnceWith(v.onChangeSpy, mm(v.doc), {$partial: {
+      assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {$partial: {
         html: [
           'div.2', null,
         ]
-      }});
+      }}));
       TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
@@ -395,8 +396,8 @@ define((require, exports, module)=>{
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'three']});
 
-      assert.calledOnceWith(v.onChangeSpy, mm(v.doc), m(undo => assert.equals(undo, {
-        name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}})));
+      assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {
+        name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}}));
       TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");

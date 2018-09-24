@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const koru            = require('koru/main');
+  const DocChange       = require('koru/model/doc-change');
   const Driver          = require('koru/pg/driver');
   const session         = require('koru/session');
   const util            = require('koru/util');
@@ -67,8 +68,8 @@ define((require, exports, module)=>{
       assert.same(TestModel.query.count(), 1);
 
       refute.called(v.defChanged);
-      assert.calledWith(v.altChanged, v.doc);
-      assert.calledWith(v.anyChanged, v.doc);
+      assert.calledWith(v.altChanged, DocChange.add(v.doc));
+      assert.calledWith(v.anyChanged, DocChange.add(v.doc));
 
       sut.db = defDb;
       assert.same(TestModel.query.count(), 2);

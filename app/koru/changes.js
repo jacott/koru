@@ -276,17 +276,15 @@ define((require, exports, module)=>{
   };
 
   const applyPartial = (attrs, key, actions, undo)=>{
-    for(let i = 0; i < actions.length; ++i) {
-      const field = actions[i];
+    for(let i = 0; i < actions.length; i+=2) {
+      const field = actions[i], nv = actions[i+1];
       const cmd = COMMANDS[field];
       if (cmd === undefined) {
-        const changes = {[field]: actions[++i]};
         const ov = attrs[key];
+        const changes = {[field]: nv};
         applyOne(
-          ov == null ?
-            (attrs[key] = typeof field === 'string' ? {} : []) : ov,
-          field,
-          changes);
+          ov == null ? (attrs[key] = typeof field === 'string' ? {} : []) : ov,
+          field, changes);
 
         if (ov == null)
           undo.push('$replace', null);
@@ -296,7 +294,7 @@ define((require, exports, module)=>{
           }
         }
       } else
-        cmd(attrs, key, actions[++i], undo);
+        cmd(attrs, key, nv, undo);
     }
     if (undo !== undefined && undo.length > 2) {
       const ei = undo.length - 1, len = undo.length >> 1;
@@ -329,7 +327,7 @@ define((require, exports, module)=>{
       else if (to == null) to = {};
       const diff = {};
       for (const key in from) {
-        if (! (key in to)) diff[key] = null;
+        if (! hasOwn(to,key)) diff[key] = null;
       }
       for (const key in to) {
         const value = to[key];
@@ -365,11 +363,17 @@ define((require, exports, module)=>{
     switch((from == null ? to : from).constructor) {
     case Object: {
       if (from === to) return ans;
-      if (from == null) from = {};
-      else if (to == null) to = {};
+      if (from == null) {
+        ans.push(field, to);
+        return ans;
+      };
+      if (to == null) {
+        ans.push(field, null);
+        return ans;
+      };
       const partial = [];
       for (const key in from) {
-        if (! (key in to)) partial.push(key, null);
+        if (! hasOwn(to, key)) partial.push(key, null);
       }
       for (const key in to) {
         const old = from[key], value = to[key];
@@ -384,9 +388,15 @@ define((require, exports, module)=>{
       return ans;
     } break;
     case Array: {
-      if (from === to) return [];
-      if (from == null) from = [];
-      else if (to == null) to = [];
+      if (from === to) return ans;
+      if (from == null) {
+        ans.push(field, to);
+        return ans;
+      }
+      if (to == null) {
+        ans.push(field, null);
+        return ans;
+      }
       const ds = diffSeq(from, to, deepEqual);
       ds === undefined || ans.push(field+'.$partial', ['$patch', ds]);
       return ans;
@@ -485,7 +495,6 @@ define((require, exports, module)=>{
 
     undo[key] = value;
     applySimple(attrs, key, undo);
-
   };
 
 
@@ -605,8 +614,8 @@ define((require, exports, module)=>{
 
       const added = [], removed = [];
 
-      for (const key in am) (key in bm) || added.push(am[key]);
-      for (const key in bm) (key in am) || removed.push(bm[key]);
+      for (const key in am) hasOwn(bm, key) || added.push(am[key]);
+      for (const key in bm) hasOwn(am, key) || removed.push(bm[key]);
 
       return {added, removed};
     },

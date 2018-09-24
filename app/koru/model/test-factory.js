@@ -1,5 +1,6 @@
 define((require)=>{
   const dbBroker        = require('koru/model/db-broker');
+  const DocChange       = require('koru/model/doc-change');
   const TH              = require('koru/test-helper');
   const util            = require('../util');
   const Model           = require('./main');
@@ -131,9 +132,10 @@ define((require)=>{
       if (doc == null)
         throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
 
-      isClient && this.model._indexUpdate.notify(doc);
-      Model._support.callAfterLocalChange(doc);
-      this.model.notify(doc);
+      const dc = DocChange.add(doc);
+      isClient && this.model._indexUpdate.notify(dc);
+      Model._support.callAfterLocalChange(dc);
+      this.model.notify(dc);
       return doc;
     }
 

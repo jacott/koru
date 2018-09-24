@@ -3,6 +3,7 @@ isClient && define((require, exports, module)=>{
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
+  const DocChange       = require('koru/model/doc-change');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -82,7 +83,7 @@ isClient && define((require, exports, module)=>{
         const handle = ctx.autoUpdate({subject: doc, removed});
 
         doc.name = "new name";
-        Custom._onChange(doc, {name: 'old name'}); // change
+        Custom._onChange(DocChange.change(doc, {name: 'old name'})); // change
 
         assert.equals(foo.textContent, "new name");
         //]
@@ -91,7 +92,7 @@ isClient && define((require, exports, module)=>{
         refute.called(handle.stop);
         spy(ctx, 'updateAllTags');
 
-        Custom._onChange(null, doc); // remove subject
+        Custom._onChange(DocChange.delete(doc)); // remove subject
         assert.calledWith(removed, doc);
         assert.called(handle.stop);
         refute.called(ctx.updateAllTags);
@@ -124,7 +125,7 @@ isClient && define((require, exports, module)=>{
           const removed = stub();
           ctx.autoUpdate({removed});
 
-          MyModel._onChange(null, ctx.data);
+          MyModel._onChange(DocChange.delete(ctx.data));
           assert.called(MyModel._handle.stop);
           refute.called(ctx.updateAllTags);
           assert.calledWith(removed, ctx.data);
@@ -135,7 +136,7 @@ isClient && define((require, exports, module)=>{
           refute.called(ctx.updateAllTags);
 
           ctx.data.child.name = 'name 2';
-          MyModel._onChange(ctx.data, {});
+          MyModel._onChange(DocChange.change(ctx.data, {}));
           assert.same(foo.textContent, 'name 2id2');
 
           Dom.remove(foo);
@@ -153,12 +154,12 @@ isClient && define((require, exports, module)=>{
           assert.same(MyModel._id, "id1");
 
           const doc1 = new MyModel("id1");
-          MyModel._onChange(doc1, {});
+          MyModel._onChange(DocChange.change(doc1, {}));
           assert.called(ctx.updateAllTags);
           assert.same(ctx.data, doc1);
           ctx.updateAllTags.reset();
 
-          MyModel._onChange(doc, {});
+          MyModel._onChange(DocChange.add(doc));
           assert.called(ctx.updateAllTags);
           ctx.updateAllTags.reset();
 

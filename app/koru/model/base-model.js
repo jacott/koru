@@ -47,9 +47,9 @@ define((require, exports, module)=>{
     subj === undefined || subj.notify(doc, type);
   };
 
-  const callAfterLocalChange = (doc, undo) => {
-    const subj = (doc || undo).constructor[observers$].afterLocalChange;
-    subj === undefined || subj.notify(doc, undo);
+  const callAfterLocalChange = (docChange) => {
+    const subj = docChange.model[observers$].afterLocalChange;
+    subj === undefined || subj.notify(docChange);
   };
 
   const callWhenFinally = (doc, ex) => {

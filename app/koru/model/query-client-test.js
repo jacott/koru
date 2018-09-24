@@ -1,16 +1,17 @@
 define((require, exports, module)=>{
-  const api                  = require('koru/test/api');
-  const session              = require('../session');
-  const clientRpcBase        = require('../session/client-rpc-base');
+  const DocChange       = require('koru/model/doc-change');
+  const api             = require('koru/test/api');
+  const session         = require('../session');
+  const clientRpcBase   = require('../session/client-rpc-base');
   const sessionClientFactory = require('../session/main-client');
-  const sessState            = require('../session/state');
-  const util                 = require('../util');
-  const dbBroker             = require('./db-broker');
-  const Model                = require('./main');
-  const Query                = require('./query');
-  const TH                   = require('./test-helper');
+  const sessState       = require('../session/state');
+  const util            = require('../util');
+  const dbBroker        = require('./db-broker');
+  const Model           = require('./main');
+  const Query           = require('./query');
+  const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, matchModel: mm} = TH;
+  const {stub, spy, onEnd, matchModel: mm, match: m} = TH;
 
   const {private$, stopGap$} = require('koru/symbols');
 
@@ -51,8 +52,8 @@ define((require, exports, module)=>{
       dbBroker.withDB('foo2', () => v.TestModel.create({age: 3}));
 
       const ocDB = [];
-      onEnd(v.TestModel.onAnyChange((doc, was) => {
-        ocDB.push(dbBroker.dbId, was);
+      onEnd(v.TestModel.onAnyChange(({undo}) => {
+        ocDB.push(dbBroker.dbId, undo);
       }).stop);
 
       v.TestModel.query.update('age', 2);
@@ -92,14 +93,14 @@ define((require, exports, module)=>{
         const foo2 = v.TestModel.findById('foo2');
 
         refute.called(afterLocalChange);
-        assert.calledOnceWith(onChange, mm(foo2), null, 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.add(foo2, 'serverUpdate'));
       });
 
       test("update", ()=>{
         v.TestModel.serverQuery.onId(v.foo._id).update({age: 7});
 
         refute.called(afterLocalChange);
-        assert.calledOnceWith(onChange, mm(v.foo), {age: 5}, 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.change(v.foo, {age: 5}, 'serverUpdate'));
       });
 
 
@@ -107,7 +108,7 @@ define((require, exports, module)=>{
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
         refute.called(afterLocalChange);
-        assert.calledOnceWith(onChange, null, mm(v.foo), 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.delete(v.foo, 'serverUpdate'));
       });
     });
 
@@ -123,18 +124,18 @@ define((require, exports, module)=>{
       Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
       const doc = v.TestModel.findById('foo2');
       assert(doc);
-      assert.calledOnceWith(onChange, mm(doc), null, 'serverUpdate');
+      assert.calledOnceWith(onChange, DocChange.add(doc, 'serverUpdate'));
       onChange.reset();
 
       Query.insert(new v.TestModel({_id: 'foo1', name: 'foo1'}));
       const foo1 = v.TestModel.findById('foo1');
-      assert.calledOnceWith(onChange, mm(foo1), null, undefined);
+      assert.calledOnceWith(onChange, DocChange.add(foo1, undefined));
       onChange.reset();
 
       Query.insertFromServer(v.TestModel, 'foo4', {name: 'foo4'});
       const foo4 = v.TestModel.findById('foo4');
       assert(foo4);
-      assert.calledOnceWith(onChange, mm(foo4), null, 'serverUpdate');
+      assert.calledOnceWith(onChange, DocChange.add(foo4, 'serverUpdate'));
 
       assert.equals(Object.keys(Model._databases.foo.TestModel.simDocs), ['foo1']);
     });
@@ -204,13 +205,14 @@ define((require, exports, module)=>{
 
       assert.calledOnceWith(v.onChange);
 
-      assert.equals(v.onChange.args(0, 0).attributes, {
+      const dc = v.onChange.firstCall.args[0];
+
+      assert.equals(v.foo.attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
-      assert.equals(v.onChange.args(0, 1), {
+      assert.same(v.foo.attributes, dc.doc.attributes);
+      assert.equals(dc.undo, {
         name: 'foo',
         $partial: {nested: ['$patch', [0, 1, [{ary: ['m']}]]]}, iShouldGo: 123});
-
-      assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     });
 
     test("insertFromServer doc already exists and pending", ()=>{
@@ -222,14 +224,15 @@ define((require, exports, module)=>{
       Query.insertFromServer(v.TestModel, v.foo._id, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
-      assert.calledWith(onChange, mm(v.foo), {
+      assert.calledWith(onChange, DocChange.change(v.foo, {
         name: 'foo',
-        $partial: {nested: ['$patch', [0, 1, [{ary: ['m']}]]]}, iShouldGo: 123}, 'serverUpdate');
+        $partial: {nested: ['$patch', [0, 1, [{ary: ['m']}]]]}, iShouldGo: 123}, 'serverUpdate'));
 
-      assert.equals(onChange.args(0, 0).attributes, {
+      const dc = onChange.firstCall.args[0];
+      assert.equals(dc.doc.attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
-      assert.same(v.foo.attributes, onChange.args(0, 0).attributes);
+      assert.same(v.foo, dc.doc);
       refute.msg("Should update fromServer; not client")(Model._databases.foo.TestModel.simDocs);
     });
 
@@ -323,12 +326,12 @@ define((require, exports, module)=>{
 
         v.TestModel.serverQuery.onId(foo._id).update('name', 'foo1-new');
 
-        assert.calledOnceWith(onChange, mm(foo), {name: 'foo'}, 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.change(foo, {name: 'foo'}, 'serverUpdate'));
 
         onChange.reset();
         sessState.decPending();
 
-        assert.calledOnceWith(onChange, null, mm(foo2), 'simComplete');
+        assert.calledOnceWith(onChange, DocChange.delete(foo2, 'simComplete'));
       });
 
       test("multiple partial simulations", ()=>{
@@ -343,8 +346,10 @@ define((require, exports, module)=>{
 
         v.TestModel.serverQuery.onId(v.foo._id).updatePartial('name', ['$append', '.one']);
 
-        assert.calledOnceWith(onChange, v.foo, {name: 'foo.one.two'}, 'serverUpdate');
-        assert.calledOnceWith(onAnyChange, v.foo, {name: 'foo.one.two'}, 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.change(
+          v.foo, {name: 'foo.one.two'}, 'serverUpdate'));
+        assert.calledOnceWith(onAnyChange, DocChange.change(
+          v.foo, {name: 'foo.one.two'}, 'serverUpdate'));
         onChange.reset(); onAnyChange.reset();
 
         assert.same(v.foo.name, 'foo.one');
@@ -353,7 +358,7 @@ define((require, exports, module)=>{
 
         assert.same(v.foo.name, 'foo.one');
         refute.called(onChange);
-        assert.calledOnceWith(onAnyChange, v.foo, {}, 'simComplete');
+        assert.calledOnceWith(onAnyChange, DocChange.change( v.foo, {}, 'simComplete'));
       });
 
       test("client only updates", ()=>{
@@ -383,8 +388,9 @@ define((require, exports, module)=>{
 
         assert.equals(Model._databases.foo.TestModel.simDocs, {});
 
-        assert.calledOnceWith(onChange, mm(v.foo), {name: 'baz', age: 9}, 'simComplete');
-        assert.calledOnceWith(onAnyChange, mm(v.foo), {name: 'baz', age: 9}, 'simComplete');
+        assert.calledOnceWith(onChange, DocChange.change(v.foo, {name: 'baz', age: 9}, 'simComplete'));
+        assert.calledOnceWith(onAnyChange, DocChange.change(
+          v.foo, {name: 'baz', age: 9}, 'simComplete'));
       });
 
       test("partial update match from server", ()=>{
@@ -404,13 +410,13 @@ define((require, exports, module)=>{
         onEnd(Query.onAnyChange(onAnyChange));
 
         v.TestModel.query.update({age: 7, name: 'baz'});
-        assert.calledOnceWith(onChange, mm(v.foo), {age: 5, name: 'foo'}, undefined);
-        assert.calledOnceWith(onAnyChange, mm(v.foo), {age: 5, name: 'foo'}, undefined);
+        assert.calledOnceWith(onChange, DocChange.change(v.foo, {age: 5, name: 'foo'}));
+        assert.calledOnceWith(onAnyChange, DocChange.change(v.foo, {age: 5, name: 'foo'}));
         onChange.reset(); onAnyChange.reset();
 
         v.TestModel.serverQuery.onId(v.foo._id).update({age: 7, name: 'baz'});
         refute.called(onChange);
-        assert.calledOnceWith(onAnyChange, mm(v.foo), {}, 'serverUpdate');
+        assert.calledOnceWith(onAnyChange, DocChange.change(v.foo, {}, 'serverUpdate'));
         onChange.reset(); onAnyChange.reset();
 
         sessState.decPending();
@@ -419,7 +425,7 @@ define((require, exports, module)=>{
         assert.same(v.foo.age, 7);
 
         refute.called(onChange);
-        assert.calledOnceWith(onAnyChange, mm(v.foo), {}, 'simComplete');
+        assert.calledOnceWith(onAnyChange, DocChange.change(v.foo, {}, 'simComplete'));
       });
 
       test("nested structures", ()=>{
@@ -451,7 +457,7 @@ define((require, exports, module)=>{
         onEnd(v.TestModel.onChange(v.changed = stub()));
         sessState.decPending();
 
-        assert.calledWith(v.changed, null, mm(bar), 'simComplete');
+        assert.calledWith(v.changed, DocChange.delete(bar, 'simComplete'));
       });
 
       test("matching add ", ()=>{
@@ -477,7 +483,7 @@ define((require, exports, module)=>{
 
         assert.equals(bar.attributes, {_id: bar._id, name: 'bar', age: 5});
 
-        assert.calledOnceWith(onAnyChange, mm(bar), {}, 'simComplete');
+        assert.calledOnceWith(onAnyChange, DocChange.change(bar, {}, 'simComplete'));
 
         onAnyChange.reset();
         sessState.decPending();
@@ -502,8 +508,8 @@ define((require, exports, module)=>{
 
         assert.equals(bar.attributes, {_id: bar._id, name: 'sam', age: 5});
 
-        assert.calledOnceWith(onChange, mm(bar), {name: 'bar'}, 'serverUpdate');
-        assert.calledOnceWith(onAnyChange, mm(bar), {name: 'bar'}, 'serverUpdate');
+        assert.calledOnceWith(onChange, DocChange.change(bar, {name: 'bar'}, 'serverUpdate'));
+        assert.calledOnceWith(onAnyChange, DocChange.change(bar, {name: 'bar'}, 'serverUpdate'));
 
         onChange.reset(); onAnyChange.reset();
         sessState.decPending();
@@ -512,8 +518,8 @@ define((require, exports, module)=>{
         assert.same(bar.name, 'sam');
         assert.same(bar.attributes.iShouldGo, undefined);
 
-        assert.calledOnceWith(onChange, mm(bar), {age: 5}, 'simComplete');
-        assert.calledOnceWith(onAnyChange, mm(bar), {age: 5}, 'simComplete');
+        assert.calledOnceWith(onChange, DocChange.change(bar, {age: 5}, 'simComplete'));
+        assert.calledOnceWith(onAnyChange, DocChange.change(bar, {age: 5}, 'simComplete'));
       });
 
       test("matching remove ", ()=>{
@@ -522,11 +528,11 @@ define((require, exports, module)=>{
         onEnd(Query.onAnyChange(onAnyChange));
 
         v.TestModel.query.onId(v.foo._id).remove();
-        assert.calledOnceWith(onChange, null, mm(v.foo), undefined);
-        assert.calledOnceWith(onAnyChange, null, mm(v.foo), undefined);
+        assert.calledOnceWith(onChange, DocChange.delete(v.foo, undefined));
+        assert.calledOnceWith(onAnyChange, DocChange.delete(v.foo, undefined));
         onChange.reset(); onAnyChange.reset();
         v.TestModel.serverQuery.onId(v.foo._id).remove();
-        assert.calledOnceWith(onAnyChange, null, mm(v.foo), 'simComplete');
+        assert.calledOnceWith(onAnyChange, DocChange.delete(v.foo, 'simComplete'));
         onAnyChange.reset();
 
         sessState.decPending();
@@ -543,18 +549,18 @@ define((require, exports, module)=>{
 
         const simAdd = new v.TestModel({_id: 'sa123', name: 'simAdd', age: 3});
         Query.insert(simAdd);
-        assert.calledOnceWith(onChange, mm(simAdd), null, undefined);
-        assert.calledOnceWith(onAnyChange, mm(simAdd), null, undefined);
+        assert.calledOnceWith(onChange, DocChange.add(simAdd, undefined));
+        assert.calledOnceWith(onAnyChange, DocChange.add(simAdd, undefined));
         onChange.reset(); onAnyChange.reset();
 
         v.TestModel.query.onId(simAdd._id).remove();
-        assert.calledOnceWith(onChange, null, mm(simAdd), undefined);
-        assert.calledOnceWith(onAnyChange, null, mm(simAdd), undefined);
+        assert.calledOnceWith(onChange, DocChange.delete(simAdd, undefined));
+        assert.calledOnceWith(onAnyChange, DocChange.delete(simAdd, undefined));
         onChange.reset(); onAnyChange.reset();
 
         v.TestModel.serverQuery.onId(simAdd._id).remove();
-        assert.calledOnceWith(onAnyChange, null, mm(new v.TestModel({_id: 'sa123'})),
-                              'simComplete');
+        assert.calledOnceWith(onAnyChange, DocChange.delete(
+          new v.TestModel({_id: 'sa123'}), 'simComplete'));
         onAnyChange.reset();
 
         sessState.decPending();
@@ -579,7 +585,7 @@ define((require, exports, module)=>{
         v.foo.$reload();
 
         assert.same(v.foo.name, 'sam');
-        assert.calledWith(v.changed, mm(v.foo), null);
+        assert.calledWith(v.changed, DocChange.add(v.foo, 'simComplete'));
       });
 
       test("server removed changed doc", ()=>{
@@ -589,7 +595,7 @@ define((require, exports, module)=>{
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
         refute(v.TestModel.exists(v.foo._id));
-        assert.calledOnceWith(onChange, null, mm(v.foo), 'simComplete');
+        assert.calledOnceWith(onChange, DocChange.delete(v.foo, 'simComplete'));
         onChange.reset();
 
         sessState.decPending();
@@ -609,7 +615,7 @@ define((require, exports, module)=>{
         onEnd(v.TestModel.onChange(v.changed = stub()));
         v.TestModel.onId(v.foo._id).fromServer().remove();
 
-        assert.calledWith(v.changed, null, v.foo, 'serverUpdate');
+        assert.calledWith(v.changed, DocChange.delete(v.foo, 'serverUpdate'));
       });
 
       test("notification of different fields", ()=>{
@@ -624,14 +630,14 @@ define((require, exports, module)=>{
         v.TestModel.serverQuery.onId(v.foo._id).update({name: 'sam'});
 
         // Should notify immediately if major key not in client changes
-        assert.calledWith(v.changed, mm(v.foo), {name: 'foo'}, 'serverUpdate');
+        assert.calledWith(v.changed, DocChange.change(v.foo, {name: 'foo'}, 'serverUpdate'));
 
         v.changed.reset();
 
         sessState.decPending();
 
         // Should notify at revert for other changes
-        assert.calledWith(v.changed, mm(v.foo), {age: 7}, 'simComplete');
+        assert.calledWith(v.changed, DocChange.change(v.foo, {age: 7}, 'simComplete'));
       });
 
       test("notify", ()=>{
@@ -648,23 +654,29 @@ define((require, exports, module)=>{
           v.TestModel._indexUpdate.onChange(v.indexUpdate = stub()),
           v.TestModel.onChange(v.oc = stub()),
         ]);
-        Query.notify(v.foo, {age: 1}, "noMatch");
-        assert.calledWith(v.indexUpdate, v.foo, {age: 1}, "noMatch");
-        assert.calledWith(v.onAnyChange, v.foo, {age: 1}, "noMatch");
-        assert.calledWith(v.oc, v.foo, {age: 1}, "noMatch");
+        {
+          const dc = DocChange.change(v.foo, {age: 1}, "noMatch");
+          Query.notify(dc);
+          assert.calledWith(v.indexUpdate, dc);
+          assert.calledWith(v.onAnyChange, dc);
+          assert.calledWith(v.oc, dc);
 
-        refute.called(Model._support.callAfterLocalChange);
-        assert(v.indexUpdate.calledBefore(v.onAnyChange));
-        assert(v.indexUpdate.calledBefore(v.oc));
-        assert(v.onAnyChange.calledBefore(v.oc));
+          refute.called(Model._support.callAfterLocalChange);
+          assert(v.indexUpdate.calledBefore(v.onAnyChange));
+          assert(v.indexUpdate.calledBefore(v.oc));
+          assert(v.onAnyChange.calledBefore(v.oc));
+        }
 
 
-        Query.notify(null, v.foo);
+        {
+          const dc = DocChange.delete(v.foo);
+          Query.notify(dc);
 
-        assert.calledWithExactly(v.indexUpdate, null, v.foo, undefined);
-        assert.calledWithExactly(v.onAnyChange, null, v.foo, undefined);
-        assert.calledWithExactly(v.oc, null, v.foo, undefined);
-        assert.calledWithExactly(Model._support.callAfterLocalChange, null, v.foo);
+          assert.calledWithExactly(v.indexUpdate, dc);
+          assert.calledWithExactly(v.onAnyChange, dc);
+          assert.calledWithExactly(v.oc, dc);
+          assert.calledWithExactly(Model._support.callAfterLocalChange, dc);
+        }
       });
     });
   });

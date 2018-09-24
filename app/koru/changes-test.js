@@ -5,6 +5,7 @@ define((require, exports, module)=>{
 
   const Changes = require('./changes');
 
+  const {match: m} = TH;
   const {deepCopy} = util;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
@@ -38,7 +39,7 @@ define((require, exports, module)=>{
         Changes.applyOne(attrs, 'fiz', changes);
         Changes.applyOne(attrs, 'nit', changes);
         assert.equals(attrs, {bar: 1, fiz: 5, nit: 6});
-        assert.equals(changes, {foo: 2, fuz: 3, fiz: 4, nit: TH.match.null});
+        assert.equals(changes, {foo: 2, fuz: 3, fiz: 4, nit: m.null});
         //]
       });
 
@@ -168,7 +169,44 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("no changes in applyAll", ()=>{
+      test("applyAsDiff", ()=>{
+        const doc = {index: {
+          d: {dog: [123,234], donkey: [56,456]},
+          p: {pig: [3, 34]}
+        }};
+        const patch = {index: {
+          d: {dog: [123,234], deer: [34]},
+          h: {horse: [23,344]},
+          p: {pig: [3, 34]},
+        }};
+        const undo = Changes.applyAll(doc, patch);
+
+        assert.equals(undo, {$partial: {index: [
+          'h', null,
+          'd.$partial', [
+            'deer', null,
+            'donkey', [56, 456]]
+        ]}});
+
+        const redo = Changes.applyAll(doc, {$partial: {index: [
+          'h', null,
+          'd.$partial', [
+            'deer', null,
+            'donkey', [56, 456]],
+        ]}});
+
+        assert.equals(redo, {$partial: {index: [
+          'd.$partial', ['donkey', null, 'deer', [34]],
+          'h', {horse: [23, 344]}
+        ]}});
+
+        assert.equals(doc, {index: {
+          d: {dog: [123,234], donkey: [56,456]},
+          p: {pig: [3, 34]}
+        }});
+      });
+
+      test("no changes", ()=>{
         const attrs = {foo: 1, bar: [1,2]};
         const changes = {
           foo: 1,
@@ -179,6 +217,21 @@ define((require, exports, module)=>{
         ;
         assert.equals(Changes.applyAll(attrs, changes), {});
         assert.equals(attrs, {foo: 1, bar: [1, 2]});
+      });
+
+      test("null to object partial", ()=>{
+        const attrs ={_id: 'idhw'};
+        const changes = {$partial: {
+          html: ['div.0.b', 'hello', 'input.$partial', ['id', 'world']],
+        }};
+
+        const undo = Changes.applyAll(attrs, changes);
+
+        assert.equals(attrs, {
+          _id: 'idhw',
+          html: {div: [{b: 'hello'}], input: {id: 'world'}}});
+
+        assert.equals(undo, {$partial: {html: ['$replace', null]}});
       });
 
       test("with objects", ()=>{
@@ -284,7 +337,8 @@ define((require, exports, module)=>{
 
        * @return diff in partial format
        **/
-
+      api.method();
+      //[
       const was = {level1: {level2: {iLike: 'I like three', numbers: [2, 9, 11]}}};
       const now = deepCopy(was);
       now.level1.level2.iLike = 'I like the rimu tree';
@@ -327,6 +381,21 @@ define((require, exports, module)=>{
             'level2a', 'Another branch',
           ]]);
       }
+      //]
+    });
+
+    test("nestedDiff continued", ()=>{
+      assert.equals(Changes.nestedDiff({
+        d: {dog: [123, 234], donkey: [56, 456]},
+        p: {pig: [3, 34]}
+      }, {
+        d: {dog: [123, 234], deer: [34]},
+        h: {horse: [23, 344]},
+        p: {pig: [3, 34]}
+      }, 5), [
+        'd.$partial', ['donkey', null, 'deer', [34]],
+        'h', {horse: [23, 344]},
+      ]);
     });
 
 
@@ -729,6 +798,21 @@ define((require, exports, module)=>{
           v = {};
         });
 
+        test("null to value", ()=>{
+          const attrs = {index: {d: {dog: [123, 234], donkey: [56, 456]}, p: {pig: [3, 34]}}};
+          const actions = [
+            'd.$partial', ['donkey', null, 'deer', [34]],
+            'h.$partial', ['horse', [23, 344]]];
+          const key = 'index';
+          const undo = [];
+
+          Changes.applyPartial(attrs, key, actions, undo);
+
+          assert.equals(undo, [
+            'h.$partial', ['$replace', null],
+            'd.$partial', ['deer', null, 'donkey', [56, 456]]]);
+        });
+
         test("simple replacement", ()=>{
           const changes = [
             'ol.1.li.b', '2',
@@ -763,19 +847,19 @@ define((require, exports, module)=>{
             '$replace', null,
           ]);
           Changes.applyPartial(v.attrs, 'foo', undo, []);
-          assert.equals(v.attrs, {html: TH.match.object});
+          assert.equals(v.attrs, {html: m.object});
         });
 
         test("missing sub", ()=>{
           const changes = ['div.1.i', 'hello'];
           const undo = [];
           Changes.applyPartial(v.attrs, 'html', changes, undo);
-          assert.equals(v.attrs.html, {ol: TH.match.object, div: [, {i: 'hello'}]});
+          assert.equals(v.attrs.html, {ol: m.object, div: [, {i: 'hello'}]});
           assert.equals(undo, [
             'div', null,
           ]);
           Changes.applyPartial(v.attrs, 'html', undo, []);
-          assert.equals(v.attrs, {html: TH.match.object});
+          assert.equals(v.attrs, {html: m.object});
         });
 
         test("partial", ()=>{
@@ -793,6 +877,37 @@ define((require, exports, module)=>{
               '$remove', ['4', '5']
             ],
           ]);
+        });
+
+        test("composite", ()=>{
+          const attrs = {checklists: {
+            cl1: {name: 'cl 1', items: {
+              it1: {name: 'it 1'},
+              it2: {name: 'it 2'},
+            }},
+            cl2: {name: 'cl 2'}
+          }};
+          const changes = [
+            'cl1.items.it1.name.$partial', ['$append', 'chg'],
+            'cl1.items.it2.name', 'new it 2',
+          ];
+
+          const orig = util.deepCopy(attrs);
+
+          const undo = [];
+          Changes.applyPartial(attrs, 'checklists', changes, undo);
+          assert.equals(attrs.checklists.cl1, {
+            name: 'cl 1', items: {it1: {name: 'it 1chg'}, it2: {name: 'new it 2'}}});
+
+          const diff = Changes.nestedDiff(attrs, orig, 10);
+
+          Changes.applyPartial(attrs, 'checklists', undo, []);
+
+          assert.equals(attrs.checklists, orig.checklists);
+
+          assert.equals(undo, [
+            'cl1.items.it2.name', 'it 2',
+            'cl1.items.it1.name.$partial', ['$patch', [-3, 3, null]]]);
         });
       });
     });
@@ -894,8 +1009,6 @@ define((require, exports, module)=>{
 
       const params = Changes.topLevelChanges(attrs, changes);
       assert.equals(params, {foo: 2, baz: {bif: [1, 2, {bob: 'changed'}]}, fuz: 5});
-
-
     });
 
     group("diffSeq", ()=>{

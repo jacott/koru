@@ -1,9 +1,10 @@
 define((require, exports, module)=>{
-  const BTree    = require('koru/btree');
-  const util     = require('koru/util');
-  const dbBroker = require('./db-broker');
-  const Model    = require('./main');
-  const TH       = require('./test-helper');
+  const BTree           = require('koru/btree');
+  const DocChange       = require('koru/model/doc-change');
+  const util            = require('koru/util');
+  const dbBroker        = require('./db-broker');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
 
@@ -256,7 +257,11 @@ define((require, exports, module)=>{
     test("removing wrong object", ()=>{
       assert.calledOnce(v.obSpy);
 
-      v.obSpy.yield(null, {_id: 'diff', id2: '4', id1: '3'});
+      const doc = {_id: 'diff', id2: '4', id1: '3', $withChanges(undo) {
+        return undo === 'add' ? this : null;
+      }};
+
+      v.obSpy.yield(DocChange.delete(doc));
 
       assert.equals(v.idx.lookup({id2: '4', id1: '3'}), v.doc1._id);
     });

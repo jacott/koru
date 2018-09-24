@@ -179,8 +179,8 @@ define((require)=>{
   }
 
 
-  const makeOnChange = list => (doc, undo) =>{
-    list.updateEntry(doc || undo, doc == null ? 'remove' : undefined);
+  const makeOnChange = list => ({doc, isDelete}) =>{
+    list.updateEntry(doc, isDelete ? 'remove' : undefined);
   };
 
   const setLimit = (pv, value)=>{

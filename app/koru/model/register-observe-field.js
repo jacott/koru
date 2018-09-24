@@ -10,14 +10,14 @@ define((require)=>{
   return model => {
     const {modelName} = model;
 
-    const callObservers = (observers, called, doc, undo, value)=>{
+    const callObservers = (observers, called, docChange, value)=>{
       const cbs = observers[value];
       if (cbs === undefined) return;
       cbs.forEach(handle =>{
         const token = handle[token$];
         if (! called.has(token)) {
           called.add(token);
-          handle.callback(doc, undo);
+          handle.callback(docChange);
         }
       });
     };
@@ -26,26 +26,26 @@ define((require)=>{
       const t = modelObMap[dbBroker.dbId];
       if (t) return t;
 
-      const ob = model.onChange((doc, undo) => {
-        const asBefore = doc == null ? undo : undo == null ? undefined : doc.$withChanges(undo);
-        const nowValue = doc == null ? undefined : doc[field];
-        const oldValue = asBefore === undefined ? undefined : asBefore[field];
+      const ob = model.onChange(dc =>{
+        const asBefore = dc.was;
+        const nowValue = dc.isDelete ? undefined : dc.doc[field];
+        const oldValue = asBefore === null ? undefined : asBefore[field];
 
         const called = new Set; // ensure only called once;
 
         if (oldValue != undefined) {
           if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
-            callObservers(observers, called, doc, undo, oldValue[i]);
+            callObservers(observers, called, dc, oldValue[i]);
           } else {
-            callObservers(observers, called, doc, undo, oldValue);
+            callObservers(observers, called, dc, oldValue);
           }
         }
 
         if (nowValue != undefined && nowValue !== oldValue) {
           if (Array.isArray(nowValue)) for(let i = 0; i < nowValue.length; ++i) {
-            callObservers(observers, called, doc, undo, nowValue[i]);
+            callObservers(observers, called, dc, nowValue[i]);
           } else {
-            callObservers(observers, called, doc, undo, nowValue);
+            callObservers(observers, called, dc, nowValue);
           }
         }
       });

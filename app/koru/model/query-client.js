@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const Changes         = require('koru/changes');
   const Model           = require('koru/model/map');
+  const DocChange       = require('koru/model/doc-change');
   const TransQueue      = require('koru/model/trans-queue');
   const Random          = require('koru/random');
   const session         = require('koru/session/client-rpc');
@@ -69,14 +70,16 @@ define((require, exports, module)=>{
             const docs = dbs[modelName].simDocs;
             if (docs === undefined) continue;
             dbs[modelName].simDocs = createDictionary();
+            const delDc = DocChange.delete(null, 'simComplete'),
+                  addDc = DocChange.add(null, 'simComplete'),
+                  changeDc = DocChange.change(null, null, 'simComplete');
             for(const id in docs) {
               let doc = modelDocs[id];
               const fields = docs[id];
               if (fields === 'new') {
                 if (modelDocs[id] !== undefined) {
                   delete modelDocs[id];
-
-                  notify(model, null, doc, 'simComplete');
+                  notify(delDc._set(doc));
                 }
               } else {
                 const newDoc = doc === undefined;
@@ -85,10 +88,12 @@ define((require, exports, module)=>{
                 const undo = Changes.applyAll(doc.attributes, fields);
                 let hasKeys;
                 for(hasKeys in undo) break;
+                const dc = newDoc ? addDc : changeDc;
+                dc._set(doc, undo);
                 if (hasKeys === undefined) {
-                  Query[notifyAC$](doc, undo, 'simComplete');
+                  Query[notifyAC$](dc);
                 } else {
-                  notify(model, doc, newDoc ? null : undo, 'simComplete');
+                  notify(dc);
                 }
               }
             }
@@ -103,7 +108,7 @@ define((require, exports, module)=>{
             simDocsFor(model)[doc._id] = 'new';
           }
           model.docs[doc._id] = doc;
-          notify(model, doc, null);
+          notify(DocChange.add(doc));
           return doc._id;
         });
       },
@@ -121,11 +126,12 @@ define((require, exports, module)=>{
             if (doc !== undefined && changes !== attrs) { // found existing
               doc[stopGap$] = undefined;
               const undo = Changes.applyAll(doc.attributes, changes);
+              const dc = DocChange.change(doc, undo, flag);
               for(const noop in undo) {
-                notify(model, doc, undo, flag);
+                notify(dc);
                 return doc._id;
               }
-              Query[notifyAC$](doc, undo, flag);
+              Query[notifyAC$](dc);
               return doc._id;
             }
           }
@@ -152,14 +158,13 @@ define((require, exports, module)=>{
           } else {
             // insert doc
             attrs._id = id;
-            notify(model, model.docs[id] = new model(attrs), null, 'serverUpdate');
+            notify(DocChange.add(model.docs[id] = new model(attrs), 'serverUpdate'));
           }
         });
       },
 
-      notify(now, was, flag) {
-        const doc = (now != null ? now : was);
-        notify(doc.constructor, now, was, flag);
+      notify(docChange) {
+        notify(docChange);
       },
 
       // for testing
@@ -281,14 +286,16 @@ define((require, exports, module)=>{
                 const doc = docs[this.singleId];
                 if (doc !== undefined) {
                   delete docs[this.singleId];
-                  notify(model, null, doc, flag);
+                  notify(DocChange.delete(doc, flag));
                 } else if (simDoc !== undefined) {
-                  Query[notifyAC$](null, new model(
-                    simDoc === 'new' ? {_id: this.singleId} : simDoc), flag);
+                  Query[notifyAC$](DocChange.delete(
+                    new model(simDoc === 'new' ? {_id: this.singleId} : simDoc), flag));
                 }
                 return 1;
               }
             }
+            const dc = DocChange.delete();
+            if (this.isFromServer) dc.flag = 'serverUpdate';
             this.forEach(doc => {
               ++count;
               Model._support.callBeforeObserver('beforeRemove', doc);
@@ -296,7 +303,7 @@ define((require, exports, module)=>{
                 recordChange(model, doc.attributes);
               }
               delete docs[doc._id];
-              notify(model, null, doc, this.isFromServer ? 'serverUpdate' : undefined);
+              notify(dc._set(doc));
             });
           });
           return count;
@@ -319,14 +326,16 @@ define((require, exports, module)=>{
               const doc = docs[singleId];
               if (doc === undefined) return 0;
               const undo = Changes.applyAll(doc.attributes, changes);
+              const dc = DocChange.change(doc, undo, flag);
               for(const _ in undo) {
-                notify(model, doc, undo, flag);
+                notify(dc);
                 return 1;
               }
-              Query[notifyAC$](doc, undo, flag);
+              Query[notifyAC$](dc);
               return 1;
             }
 
+            const dc = DocChange.change();
             this.forEach(doc => {
               ++count;
               const attrs = doc.attributes;
@@ -339,8 +348,9 @@ define((require, exports, module)=>{
                 recordChange(model, attrs, origChanges);
 
               const undo = Changes.applyAll(attrs, origChanges);
+              if (this.isFromServer) dc.flag = 'serverUpdate';
               for(const key in undo) {
-                notify(model, doc, undo, this.isFromServer ? 'serverUpdate' : undefined);
+                notify(dc._set(doc, undo));
                 break;
               }
             });
@@ -407,12 +417,13 @@ define((require, exports, module)=>{
       return false;
     }
 
-    const notify = (model, doc, changes, flag)=>{
-      model._indexUpdate.notify(doc, changes, flag); // first: update indexes
-      flag === undefined &&
-        Model._support.callAfterLocalChange(doc, changes); // next:  changes originated here
-        Query[notifyAC$](doc, changes, flag); // notify anyChange
-        model.notify(doc, changes, flag); // last:  Notify everything else
+    const notify = (docChange)=>{
+      docChange.model._indexUpdate.notify(docChange); // first: update indexes
+      docChange.flag === undefined &&
+        Model._support.callAfterLocalChange(docChange); // next:  changes originated here
+
+      Query[notifyAC$](docChange); // notify anyChange
+      docChange.model.notify(docChange); // last:  Notify everything else
     };
 
     function findMatching(func) {

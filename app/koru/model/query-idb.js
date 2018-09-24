@@ -3,6 +3,7 @@ define((require, exports, module)=>{
   const Changes         = require('koru/changes');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
+  const DocChange       = require('koru/model/doc-change');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const {stopGap$}      = require('koru/symbols');
@@ -134,7 +135,7 @@ define((require, exports, module)=>{
         if (typeof sim === 'object' && typeof sim._id === 'string') {
           if (curr) delete model.docs[rec._id];
           simDocsFor(model)[rec._id] = sim;
-          if (curr !== undefined) Query.notify(null, notMe = curr, undefined);
+          if (curr !== undefined) Query.notify(DocChange.delete(notMe = curr));
           return;
         }
 
@@ -149,7 +150,10 @@ define((require, exports, module)=>{
           curr
         ) : new model(rec);
         if (undo === null || ! util.isObjEmpty(undo))
-          Query.notify(notMe, undo, sim === undefined ? 'idbLoad' : undefined);
+          Query.notify(new DocChange(
+            undo === null ? 'add' : 'chg',
+            notMe, undo,
+            sim === undefined ? 'idbLoad' : undefined));
       } finally {
         notMe = orig;
       }
@@ -241,15 +245,13 @@ define((require, exports, module)=>{
 
     promisify(body) {return runBody(this, body)}
 
-    queueChange(now, was) {
-      const doc = (now != null ? now : was);
+    queueChange(docChange) {
+      const {doc, _id, model: {modelName}, isDelete} = docChange;
       if (doc === notMe || doc[stopGap$] === true) return;
       TransQueue.transaction(() => {
-        const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);
-        const pm = pu[name] === undefined ? (pu[name] = {}) : pu[name];
-        const attrs = doc.attributes;
-        pm[attrs._id] = now == null ? null : attrs;
+        const pm = pu[modelName] === undefined ? (pu[modelName] = {}) : pu[modelName];
+        pm[_id] = isDelete ? null : doc.attributes;
       });
     }
   }

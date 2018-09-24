@@ -1,5 +1,6 @@
 define((require)=>{
   const ModelMap        = require('koru/model/map');
+  const DocChange       = require('koru/model/doc-change');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const util            = require('koru/util');
@@ -29,7 +30,7 @@ define((require)=>{
             }
             if (remove) {
               delete docs[id];
-              Query.notify(null, doc, reason);
+              Query.notify(DocChange.delete(doc, reason));
             }
           }
         }

@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const makeSubject     = require('koru/make-subject');
+  const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');
   const koru            = require('../main');
   const util            = require('../util');
@@ -344,13 +345,20 @@ define((require, exports, module)=>{
       onChange(callback) {
         if (this[onChange$] === undefined) {
           const subject = this[onChange$] = new Observable(()=>subject.stop());
-          subject.stop = this.model.onChange((doc, undo) =>{
-            let old = doc != null ? doc.$withChanges(undo) : undo;
-            if (doc != null && ! this.matches(doc)) doc = null;
-            if (old != null && ! this.matches(old)) old = null;
-            if (doc == null && old == null) return;
+          subject.stop = this.model.onChange(({type, doc, undo, flag, was}) =>{
+            let nt = type;
+            if (type !== 'del' && ! this.matches(doc)) {
+              nt = 'del';
+              undo = 'add';
+            }
+            if (was !== null && ! this.matches(was)) {
+              if (nt === 'del') return;
+              nt = 'add';
+              undo = 'del';
+            } else if (was === null && nt === 'del')
+              return;
 
-            subject.notify(doc, doc == null ? old : old && undo);
+            subject.notify(new DocChange(nt, doc, undo, flag));
 
           }).stop;
         }

@@ -24,17 +24,11 @@ define((require, exports, module)=>{
       this._matches = [];
     }
 
-    onStop(func) {
-      this._stop = func;
-    }
+    onStop(func) {this._stop = func}
 
-    sendUpdate(doc, changes, filter) {
-      this.conn.sendUpdate(doc, changes, filter);
-    }
+    sendUpdate(dc, filter) {this.conn.sendUpdate(dc, filter)}
 
-    sendMatchUpdate(doc, changes, filter) {
-      this.conn.sendMatchUpdate(doc, changes, filter);
-    }
+    sendMatchUpdate(dc, filter) {this.conn.sendMatchUpdate(dc, filter)}
 
     match(modelName, func) {
       this._matches.push(this.conn.match.register(modelName, func));
@@ -58,9 +52,7 @@ define((require, exports, module)=>{
       stopped(this);
     }
 
-    setUserId(userId) {
-      this.conn.userId = userId;
-    }
+    setUserId(userId) {this.conn.userId = userId}
 
     resubscribe() {
       try {

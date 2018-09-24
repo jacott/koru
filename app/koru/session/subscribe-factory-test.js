@@ -255,7 +255,7 @@ isClient && define((require, exports, module)=>{
 
         assert.isTrue(v.sub2isResub);
 
-        assert.calledWith(publish._filterModels, {F1: true, F2: true}, 'userIdChanged');
+        assert.calledWith(publish._filterModels, {F1: true, F2: true});
       });
     });
 

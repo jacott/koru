@@ -1,11 +1,12 @@
 define((require, exports, module)=>{
-  const koru      = require('koru/main');
-  const session   = require('koru/session');
-  const TH        = require('koru/test-helper');
-  const util      = require('koru/util');
-  const message   = require('./message');
-  const publishTH = require('./publish-test-helper-server');
-  const scFactory = require('./server-connection-factory');
+  const koru            = require('koru/main');
+  const DocChange       = require('koru/model/doc-change');
+  const session         = require('koru/session');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
+  const message         = require('./message');
+  const publishTH       = require('./publish-test-helper-server');
+  const scFactory       = require('./server-connection-factory');
 
   const {stub, spy, onEnd, intercept, match: m} = TH;
 
@@ -204,7 +205,7 @@ define((require, exports, module)=>{
             Object.assign(old.attributes, changes);
             return old;
           },
-          $asChanges: $asChanges,
+          $invertChanges,
           constructor: {modelName: 'Foo'}, _id: 'id123',
           attributes: v.attrs = {name: 'John', age: 5}};
       });
@@ -224,7 +225,7 @@ define((require, exports, module)=>{
 
         const doc = util.deepCopy(v.docProto);
 
-        v.sub.sendMatchUpdate(doc, null, 'filter');
+        v.sub.sendMatchUpdate(DocChange.add(doc), 'filter');
 
         assert.calledWith(added, 'Foo', 'id123', v.attrs, 'filter');
       });
@@ -235,7 +236,7 @@ define((require, exports, module)=>{
         const doc = util.deepCopy(v.docProto);
         const undo = {name: 'Sam'};
 
-        v.sub.sendMatchUpdate(doc, undo);
+        v.sub.sendMatchUpdate(DocChange.change(doc, undo));
 
         assert.calledWith(added, 'Foo', 'id123', v.attrs);
       });
@@ -246,7 +247,7 @@ define((require, exports, module)=>{
         const doc = util.deepCopy(v.docProto);
         const undo = {age: 7};
 
-        v.sub.sendMatchUpdate(doc, undo, 'filter');
+        v.sub.sendMatchUpdate(DocChange.change(doc, undo), 'filter');
 
         assert.calledWith(changed, 'Foo', 'id123', {age: 5}, 'filter');
       });
@@ -258,7 +259,7 @@ define((require, exports, module)=>{
         const undo = {name: 'John'};
         util.merge(doc.attributes, {name: 'Sam'});
 
-        v.sub.sendMatchUpdate(doc, undo);
+        v.sub.sendMatchUpdate(DocChange.change(doc, undo));
 
         assert.calledWith(changed, 'Foo', 'id123', {name: 'Sam'});
       });
@@ -268,7 +269,7 @@ define((require, exports, module)=>{
 
         const old = util.deepCopy(v.docProto);
 
-        v.sub.sendMatchUpdate(null, old, old);
+        v.sub.sendMatchUpdate(DocChange.delete(old), old);
 
         assert.calledWith(removed, 'Foo', 'id123');
       });
@@ -279,7 +280,7 @@ define((require, exports, module)=>{
         const old = util.deepCopy(v.docProto);
         util.merge(old.attributes, {name: 'Sam'});
 
-        v.sub.sendMatchUpdate(null, old);
+        v.sub.sendMatchUpdate(DocChange.delete(old));
 
         refute.called(removed);
       });
@@ -291,7 +292,7 @@ define((require, exports, module)=>{
         doc.attributes.name = 'Sam';
         const undo = {age: 7};
 
-        v.sub.sendMatchUpdate(doc, undo);
+        v.sub.sendMatchUpdate(DocChange.change(doc, undo));
 
         refute.called(changed);
       });
@@ -302,38 +303,41 @@ define((require, exports, module)=>{
         const doc = util.deepCopy(v.docProto);
         doc.attributes.name = 'Sam';
 
-        v.sub.sendMatchUpdate(doc);
+        v.sub.sendMatchUpdate(DocChange.add(doc));
         refute.called(added);
       });
     });
 
     test("sendUpdate added",  ()=>{
       const added = v.conn.added = stub();
-      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123',
-                        attributes: v.attrs = {name: 'John'}}, null, 'filter');
+      v.sub.sendUpdate(DocChange.add({
+        constructor: {modelName: 'Foo'}, _id: 'id123',
+        attributes: v.attrs = {name: 'John'}}), 'filter');
 
       assert.calledWith(added, 'Foo', 'id123', v.attrs, 'filter');
     });
 
     test("sendUpdate changed",  ()=>{
       const changed = v.conn.changed = stub();
-      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', $asChanges: $asChanges,
-                        attributes: v.attrs = {name: 'John', age: 7}},
-                       {age: 5}, 'filter');
+      v.sub.sendUpdate(DocChange.change(
+        {constructor: {modelName: 'Foo'}, _id: 'id123', $invertChanges,
+         attributes: v.attrs = {name: 'John', age: 7}},
+        {age: 5}), 'filter');
 
       assert.calledWith(changed, 'Foo', 'id123', {age: 7}, 'filter');
     });
 
     test("sendUpdate removed",  ()=>{
       const removed = v.conn.removed = stub();
-      v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123',
-                              attributes: v.attrs = {name: 'John', age: 7}});
+      v.sub.sendUpdate(DocChange.delete({
+        constructor: {modelName: 'Foo'}, _id: 'id123',
+        attributes: v.attrs = {name: 'John', age: 7}}));
 
       assert.calledWith(removed, 'Foo', 'id123');
     });
   });
 
-  function $asChanges(changes) {
+  function $invertChanges(changes) {
     const attrs = this.attributes;
     const result = {};
     for(const key in changes) {

@@ -5,10 +5,11 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const ModelEnv        = require('koru/env!./main');
   const BaseModel       = require('koru/model/base-model');
+  const DocChange       = require('koru/model/doc-change');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, util, match: m, matchModel: mModel} = TH;
   const Module = module.constructor;
 
   const Model    = require('./main');
@@ -44,7 +45,7 @@ define((require, exports, module)=>{
         },
       });
 
-      assert.calledWith(onUnload, TH.match.func);
+      assert.calledWith(onUnload, m.func);
 
       assert.same(Model.TestModel, TestModel);
       assert.same(TestModel.modelName, 'TestModel');
@@ -129,10 +130,9 @@ define((require, exports, module)=>{
         onEnd(v.Book.beforeCreate(obCalled));
         onEnd(v.Book.beforeUpdate(obCalled));
         onEnd(v.Book.beforeSave(obCalled));
-        onEnd(v.Book.afterLocalChange((doc, was)=>{
+        onEnd(v.Book.afterLocalChange(({type, doc, undo})=>{
           (v.obs.afterLocalChange = v.obs.afterLocalChange || [])
-            .push([doc && util.merge({}, doc.attributes), was &&
-                   util.merge({}, doc ? was : was.attributes)]);
+            .push([type, Object.assign({}, doc.attributes), undo]);
         }));
         onEnd(v.Book.whenFinally((doc, ex)=>{
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
@@ -145,18 +145,18 @@ define((require, exports, module)=>{
 
         v.tc.$onThis.remove();
 
-        assert.calledOnceWith(v.afterLocalChange, null, TH.matchModel(v.tc));
-        assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
+        assert.calledOnceWith(v.afterLocalChange, DocChange.delete(v.tc));
+        assert.calledOnceWith(v.onChange, DocChange.delete(v.tc));
         assert(v.afterLocalChange.calledBefore(v.onChange));
 
-        assert.equals(v.obs.afterLocalChange, [[null, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.afterLocalChange, [['del', {name: 'foo', _id: v.tc._id}, 'add']]);
       });
 
       test("update calls", ()=>{
-        onEnd(v.Book.onChange((doc, was)=>{
+        onEnd(v.Book.onChange(({type, doc, undo})=>{
           refute(v.docAttrs);
-          v.docAttrs = util.merge({}, doc.attributes);
-          v.docChanges = util.merge({}, was);
+          v.docAttrs = Object.assign({}, doc.attributes);
+          v.docChanges = Object.assign({}, undo);
         }).stop);
 
         v.tc.name = 'bar';
@@ -167,8 +167,8 @@ define((require, exports, module)=>{
 
         assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
-        assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
-        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
+        assert.equals(v.obs.afterLocalChange, [['chg', {name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
+        assert.equals(v.obs.whenFinally, [[mModel(v.tc), undefined]]);
 
 
         refute(v.obs.beforeCreate);
@@ -178,12 +178,12 @@ define((require, exports, module)=>{
         onEnd(v.Book.onChange(v.onChange = stub()).stop);
 
         v.tc = v.Book.create({name: 'foo'});
-        assert.calledOnceWith(v.onChange, TH.match(doc => doc.attributes === v.tc.attributes), null);
+        assert.calledOnceWith(v.onChange, DocChange.add(m(doc => doc.attributes === v.tc.attributes)));
 
         assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
-        assert.equals(v.obs.afterLocalChange, [[{name: 'foo', _id: v.tc._id}, null]]);
-        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
+        assert.equals(v.obs.afterLocalChange, [['add', {name: 'foo', _id: v.tc._id}, 'del']]);
+        assert.equals(v.obs.whenFinally, [[mModel(v.tc), undefined]]);
 
         refute(v.obs.beforeUpdate);
       });
@@ -195,7 +195,7 @@ define((require, exports, module)=>{
           v.tc = v.Book.create({name: 'foo'});
         }, 'Error', 'tex');
 
-        assert.equals(v.obs.whenFinally, [[TH.match(x => x.name === 'foo'), v.ex]]);
+        assert.equals(v.obs.whenFinally, [[m(x => x.name === 'foo'), v.ex]]);
       });
 
       test("update exception", ()=>{
@@ -206,7 +206,7 @@ define((require, exports, module)=>{
           v.tc.$save();
         }, 'Error', 'tex');
 
-        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), v.ex]]);
+        assert.equals(v.obs.whenFinally, [[mModel(v.tc), v.ex]]);
       });
     });
 
@@ -330,7 +330,7 @@ define((require, exports, module)=>{
       assert.same(Model.TestModel, TestModel);
       assert.same(Model.TestModel._module, module);
 
-      assert.calledWith(onUnload, TH.match.func);
+      assert.calledWith(onUnload, m.func);
 
       onUnload.yield();
 

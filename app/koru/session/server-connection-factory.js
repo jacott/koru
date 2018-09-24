@@ -12,7 +12,7 @@ define((require)=>{
   const sideQueue$ = Symbol();
 
   class Base {
-    constructor (ws, request, sessId, close) {
+    constructor(ws, request, sessId, close) {
       this.ws = ws;
       this.request = request;
       this.sessId = sessId;
@@ -43,12 +43,12 @@ define((require)=>{
       ws.on('close', () => koru.fiberConnWrapper(()=>this.close(), this));
     }
 
-    onClose (func) {
+    onClose(func) {
       const subj = this._onClose || (this._onClose = new Observable());
       return subj.onChange(func);
     }
 
-    send (type, data) {
+    send(type, data) {
       try {
         this.ws === null || this.ws.send(type + (data === undefined ? '' : data));
       } catch(ex) {
@@ -57,32 +57,34 @@ define((require)=>{
       }
     }
 
-    sendUpdate (doc, changes, filter) {
-      if (changes == null)
-        this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
-      else if (doc == null)
-        this.removed(changes.constructor.modelName, changes._id);
-      else {
-        this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
+    sendUpdate(dc, filter) {
+      const {doc, model: {modelName}} = dc;
+      if (dc.isAdd)
+        this.added(modelName, doc._id, doc.attributes, filter);
+      else if (dc.isDelete)
+        this.removed(modelName, doc._id);
+      else  {
+        this.changed(modelName, doc._id, dc.changes, filter);
       }
     }
 
-    sendMatchUpdate (doc, undo, filter) {
-      if (doc == null) {
-        if (this.match.has(undo)) {
-          this.removed(undo.constructor.modelName, undo._id);
+    sendMatchUpdate(dc, filter) {
+      const {doc, model: {modelName}} = dc;
+      if (dc.isDelete) {
+        if (this.match.has(doc)) {
+          this.removed(modelName, doc._id);
           return 'removed';
         }
-      } else if (undo != null && this.match.has(doc.$withChanges(undo))) {
-        this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(undo), filter);
+      } else if (dc.isChange && this.match.has(dc.was)) {
+        this.changed(modelName, doc._id, dc.changes, filter);
         return 'changed';
       } else if (this.match.has(doc)) {
-        this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
+        this.added(modelName, doc._id, doc.attributes, filter);
         return 'added';
       }
     }
 
-    onMessage (data, flags) {
+    onMessage(data, flags) {
       if (data[0] === 'H')
         return void this.send(`K${Date.now()}`);
 

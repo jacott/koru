@@ -2,12 +2,13 @@ define((require, exports, module)=>{
   /**
    * Database CRUD API.
    **/
-  const api   = require('koru/test/api');
-  const util  = require('../util');
-  const Model = require('./main');
-  const TH    = require('./test-db-helper');
+  const DocChange       = require('koru/model/doc-change');
+  const api             = require('koru/test/api');
+  const util            = require('../util');
+  const Model           = require('./main');
+  const TH              = require('./test-db-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m, matchModel: mModel} = TH;
 
   const Query = require('./query');
 
@@ -44,7 +45,7 @@ define((require, exports, module)=>{
 
       assert.equals(TestModel.query.sort('name').limit(2).fetchField('name'), ['bar', 'foo']);
 
-      assert.equals(TestModel.query.limit(1).fetchField('name'), [TH.match.string]);
+      assert.equals(TestModel.query.limit(1).fetchField('name'), [m.string]);
     });
 
     test("un/match array element", ()=>{
@@ -90,7 +91,7 @@ define((require, exports, module)=>{
 
       TestModel.create({_id: '1', name: 'n1', age: 1, gender: 'm'});
 
-      assert.equals(Array.from(TestModel.query.withIndex(idx, {name: 'n1'})), [TH.match.field('name', 'n1')]);
+      assert.equals(Array.from(TestModel.query.withIndex(idx, {name: 'n1'})), [m.field('name', 'n1')]);
 
       assert.isTrue(TestModel.query.withIndex(idx, {name: 'n1'}).exists());
     });
@@ -206,9 +207,9 @@ define((require, exports, module)=>{
         assert.equals(query.fetchIds(), ['2', '5', '3']);
         assert.equals(Array.from(query).map(d => d._id), ['2', '5', '3']);
 
-        const minorSorted = TH.match.or(
-          TH.match.equal(['3', '5', '2']),
-          TH.match.equal(['2', '3', '5']), '3,5,2 or 2,3,5');
+        const minorSorted = m.or(
+          m.equal(['3', '5', '2']),
+          m.equal(['2', '3', '5']), '3,5,2 or 2,3,5');
         assert.equals(query2.fetchIds(), minorSorted);
         assert.equals(Array.from(query2).map(d => d._id), minorSorted);
       });
@@ -362,19 +363,19 @@ define((require, exports, module)=>{
 
         const fred = TestModel.create({name: 'Fred'});
 
-        assert.calledWith(oc, TH.matchModel(fred), null);
+        assert.calledWith(oc, DocChange.add(fred));
         oc.reset();
 
         const emma = TestModel.create({name: 'Emma'});
         refute.called(oc);
 
         emma.$update('name', 'Fiona');
-        assert.calledWith(oc, TH.matchModel(emma.$reload()), null);
+        assert.calledWith(oc, DocChange.add(emma.$reload()));
         emma.$update('name', 'Fi');
-        assert.calledWith(oc, TH.matchModel(emma.$reload()), {name: 'Fiona'});
+        assert.calledWith(oc, DocChange.change(emma.$reload(), {name: 'Fiona'}));
 
         fred.$update('name', 'Eric');
-        assert.calledWith(oc, null, TH.matchModel(fred.$reload()));
+        assert.calledWith(oc, DocChange.delete(fred.$reload()));
 
 
         /** stop cancels observer **/
@@ -633,7 +634,7 @@ define((require, exports, module)=>{
         ]});
 
         v.foo.$reload();
-        assert.calledWith(v.ob, TH.matchModel(v.foo), {$partial: {foo: ['$replace', null]}});
+        assert.calledWith(v.ob, DocChange.change(v.foo, {$partial: {foo: ['$replace', null]}}));
         assert.same(v.foo.attributes.foo.bar.baz, 'fnord');
         v.ob.reset();
 
@@ -644,7 +645,7 @@ define((require, exports, module)=>{
           ]]}});
         v.foo.$reload();
         assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'rabbit and cat'});
-        assert.equals(v.ob.lastCall.args[1], {
+        assert.equals(v.ob.lastCall.args[0].undo, {
           $partial: {foo: [
             "bar.$partial", [
               "delme", 'please',
@@ -738,12 +739,12 @@ define((require, exports, module)=>{
 
         TestModel.query.onId(v.foo._id).addItems('cogs', ['a']);
         assert.equals(v.foo.$reload().cogs, ['a']);
-        assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$remove', ['a']]}});
+        assert.calledWith(v.onChange, DocChange.change(v.foo, {$partial: {cogs: ['$remove', ['a']]}}));
 
         v.onChange.reset();
         TestModel.query.onId(v.foo._id).addItems('cogs', ['b']);
         assert.equals(v.foo.$reload().cogs, ['a', 'b']);
-        assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$remove', ['b']]}});
+        assert.calledWith(v.onChange, DocChange.change(v.foo, {$partial: {cogs: ['$remove', ['b']]}}));
 
         v.onChange.reset();
 
@@ -753,12 +754,12 @@ define((require, exports, module)=>{
 
         TestModel.query.onId(v.foo._id).removeItems('cogs', ['a']);
         assert.equals(v.foo.$reload().cogs, ['b']);
-        assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$add', ['a']]}});
+        assert.calledWith(v.onChange, DocChange.change(v.foo, {$partial: {cogs: ['$add', ['a']]}}));
 
         v.onChange.reset();
         TestModel.query.onId(v.foo._id).removeItems('cogs', ['b']);
         assert.equals(v.foo.$reload().cogs, []);
-        assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$add', ['b']]}});
+        assert.calledWith(v.onChange, DocChange.change(v.foo, {$partial: {cogs: ['$add', ['b']]}}));
       });
 
       test("whereNot", ()=>{
@@ -842,7 +843,7 @@ define((require, exports, module)=>{
 
         st.forEach(v.stub = stub());
         assert.calledOnce(v.stub);
-        assert.calledWith(v.stub, TH.match(doc => {
+        assert.calledWith(v.stub, m(doc => {
           if (doc._id === v.foo._id) {
             assert.equals(doc.attributes, v.foo.attributes);
             return true;
@@ -856,8 +857,7 @@ define((require, exports, module)=>{
         /**
          * Observe any change to any model.
          *
-         * @param callback is called the arguments `(now, was, [flag])`
-         * see {#koru/model/main.BaseModel#onChange} for details
+         * @param callback is called a {#koru/model/doc-change} instance.
          *
          * @return contains a stop method to stop observering
          **/
@@ -865,15 +865,15 @@ define((require, exports, module)=>{
         onEnd(Query.onAnyChange(v.onAnyChange = stub()));
 
         const ondra = TestModel.create({_id: 'm123', name: 'Ondra', age: 21, gender: 'm'});
-        const matchOndra = TH.match.field('_id', ondra._id);
-        assert.calledWith(v.onAnyChange, ondra, null);
+        const matchOndra = m.field('_id', ondra._id);
+        assert.calledWith(v.onAnyChange, DocChange.add(ondra));
 
 
         ondra.$update('age', 22);
-        assert.calledWith(v.onAnyChange, matchOndra, {age: 21});
+        assert.calledWith(v.onAnyChange, DocChange.change(matchOndra, {age: 21}));
 
         ondra.$remove();
-        assert.calledWith(v.onAnyChange, null, matchOndra);
+        assert.calledWith(v.onAnyChange, DocChange.delete(matchOndra));
       });
     });
 

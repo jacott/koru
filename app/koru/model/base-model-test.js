@@ -6,6 +6,7 @@ define((require, exports, module)=>{
   const Changes         = require('koru/changes');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
+  const DocChange       = require('koru/model/doc-change');
   const session         = require('koru/session');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
@@ -64,20 +65,7 @@ define((require, exports, module)=>{
         /**
          * Observe changes to model records.
          *
-         * @param callback is called with the arguments `(now, undo, [flag])`
-         *
-         * * if record was added: `now` will be a model instance and was
-         * will be `null`.
-
-         * * if record was changed: `now` will be a model instance with the changes and `undo`
-         * will be a change object that will undo the change.
-
-         * * if record was removed: `now` will be null and `undo` will be a model instance before
-         * the remove.
-
-         * * `flag` is only present on client and a truthy value indicates change was not a
-         * simulation.
-
+         * @param callback is called with a {#koru/model/doc-change} instance.
          * @return contains a stop method to stop observering
          **/
         const {Book} = v;
@@ -87,13 +75,13 @@ define((require, exports, module)=>{
           onEnd(Book.onChange(v.oc = stub()));
           const ondra = Book.create({_id: 'm123', name: 'Ondra', age: 21});
           const matchOndra = TH.match.field('_id', ondra._id);
-          assert.calledWith(v.oc, ondra, null);
+          assert.calledWith(v.oc, DocChange.add(ondra));
 
           ondra.$update('age', 22);
-          assert.calledWith(v.oc, matchOndra, {age: 21});
+          assert.calledWith(v.oc, DocChange.change(matchOndra, {age: 21}));
 
           ondra.$remove();
-          assert.calledWith(v.oc, null, matchOndra);
+          assert.calledWith(v.oc, DocChange.delete(matchOndra));
         });
       });
 

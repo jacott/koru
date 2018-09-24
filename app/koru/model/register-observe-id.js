@@ -55,9 +55,9 @@ define((require)=>{
 
     const observeModel = (observers)=>{
       if (modelObMap[dbBroker.dbId] === undefined)
-        modelObMap[dbBroker.dbId] = model.onChange((doc, undo) => {
-          const cbs = observers[(doc == null ? undo : doc)._id];
-          cbs === undefined || cbs.notify(doc, undo);
+        modelObMap[dbBroker.dbId] = model.onChange(dc =>{
+          const cbs = observers[dc.doc._id];
+          cbs === undefined || cbs.notify(dc);
         });
     };
   };

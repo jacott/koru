@@ -64,7 +64,7 @@ define((require, exports, module)=>{
           for(const key in subs) {
             subs[key].resubscribe(models);
           }
-          publish._filterModels(models, "userIdChanged");
+          publish._filterModels(models);
         }
       });
     };

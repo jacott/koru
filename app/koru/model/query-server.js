@@ -1,19 +1,20 @@
 define((require, exports, module)=>{
-  const Changes    = require('koru/changes');
-  const Model      = require('koru/model/map');
-  const Random     = require('koru/random');
-  const koru       = require('../main');
-  const util       = require('../util');
-  const TransQueue = require('./trans-queue');
+  const Changes         = require('koru/changes');
+  const Model           = require('koru/model/map');
+  const DocChange       = require('koru/model/doc-change');
+  const Random          = require('koru/random');
+  const koru            = require('../main');
+  const util            = require('../util');
+  const TransQueue      = require('./trans-queue');
 
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
   return (Query, condition, notifyAC$)=>{
 
-    const notify = (model, now, was)=>{
-      Query[notifyAC$](now, was);
-      model.notify(now, was);
+    const notify = (docChange)=>{
+      Query[notifyAC$](docChange);
+      docChange.model.notify(docChange);
     };
 
     util.merge(Query, {
@@ -25,8 +26,9 @@ define((require, exports, module)=>{
 
         model._$docCacheSet(doc);
         TransQueue.onAbort(() => model._$docCacheDelete(doc));
-        Model._support.callAfterLocalChange(doc, null);
-        TransQueue.onSuccess(() => notify(model, doc, null));
+        const dc = DocChange.add(doc);
+        Model._support.callAfterLocalChange(dc);
+        TransQueue.onSuccess(() => notify(dc));
       },
 
       _insertAttrs(model, attrs) {
@@ -196,13 +198,11 @@ define((require, exports, module)=>{
             Model._support.callBeforeObserver('beforeRemove', doc);
             docs.remove({_id: doc._id});
             model._$docCacheDelete(doc);
-            Model._support.callAfterLocalChange(null, doc);
+            Model._support.callAfterLocalChange(DocChange.delete(doc));
             onSuccess.push(doc);
           });
         });
-        TransQueue.onSuccess(() => {
-          onSuccess.forEach(doc => notify(model, null, doc));
-        });
+        TransQueue.onSuccess(()=>{onSuccess.forEach(doc =>{notify(DocChange.delete(doc))})});
         return count;
       },
 
@@ -249,13 +249,14 @@ define((require, exports, module)=>{
             if (! util.isObjEmpty(undo)) {
               onAbort.push(doc);
               model._$docCacheSet(doc);
-              Model._support.callAfterLocalChange(doc, undo);
-              onSuccess.push([doc, undo]);
+              const dc = DocChange.change(doc, undo);
+              Model._support.callAfterLocalChange(dc);
+              onSuccess.push(dc);
             }
           });
         });
         TransQueue.onSuccess(() => {
-          onSuccess.forEach(([doc, undo]) => notify(model, doc, undo));
+          onSuccess.forEach(dc => notify(dc));
         });
         return count;
       },

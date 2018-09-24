@@ -9,6 +9,22 @@ define((require, exports, module)=>{
   const {testCase, util} = TH;
   let _sendM;
 
+  const matchModel = TH.match.model = expect => TH.match(actual =>{
+      if (expect === actual) return true;
+      if (expect && actual && expect.constructor === actual.constructor &&
+          expect._id === actual._id) {
+        return deepEqual(actual.attributes, expect.attributes);
+      }
+  }, {toString: ()=> util.inspect(expect)});
+
+  TH.match.modelId = expect => TH.match(actual =>{
+    if (expect === actual) return true;
+    if (expect && actual && expect.constructor === actual.constructor &&
+        expect._id === actual._id) {
+      return true;
+    }
+  }, {toString: ()=> util.inspect(expect)});
+
   const stubSendM = ()=>{
     _sendM = session._sendM;
     if (_sendM) {
@@ -37,12 +53,6 @@ define((require, exports, module)=>{
       return tc;
     },
 
-    matchModel: expect => TH.match(actual =>{
-      if (expect === actual) return true;
-      if (expect && actual && expect.constructor === actual.constructor &&
-          expect._id === actual._id) {
-        return deepEqual(actual.attributes, expect.attributes);
-      }
-    }, {toString() {return util.inspect(expect)}}),
+    matchModel,
   };
 });
