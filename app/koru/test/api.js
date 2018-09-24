@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./main');
 
-  const onEnd$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
+  const onEnd$ = Symbol(), level$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
   const {ctx} = module;
@@ -114,7 +114,8 @@ define((require, exports, module)=>{
   };
 
   const property = (api, field, subject, name, options)=>{
-    if (name == null) name = extractTestName();
+    api[level$] = getTestLevel();
+    if (name == null) name = extractTestName(api, subject);
 
     const inner = (subject, name, options, properties)=>{
       const property = properties[name] || (properties[name] = {});
@@ -185,7 +186,7 @@ define((require, exports, module)=>{
         throw new Error("invalid options supplied for property "+name);
       }
       if (property.info === undefined) {
-        property.info = docComment(TH.test.func);
+        property.info = docComment(api);
       }
     };
 
@@ -203,14 +204,20 @@ define((require, exports, module)=>{
     }
   };
 
-  const extractTestName = ()=>{
+  const extractTestName = (api, subject)=>{
     const {test} = TH;
     const {mode} = test;
-    if (mode === 'running') {
-      return  test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
-    } else {
-      return TH.Core.currentTestCase.name;
+    const start = mode === 'running' ? test : TH.Core.currentTestCase;
+    for (let level = start; level != null; level = level.tc) {
+      const name = level === test
+            ? test.name.replace(/^.*test ([^\s.]+).*$/, '$1')
+            : level.name;
+      if (hasOwn(subject, name)) {
+        api[level$] = level;
+        return name;
+      }
     }
+    return start.name.replace(/^.*test ([^\s.]+).*$/, '$1');
   };
 
   const extractBodyExample = (details, fromTest)=>{
@@ -244,7 +251,8 @@ define((require, exports, module)=>{
   };
 
   const method = (api, methodKey, obj, intro, methods)=>{
-    if (methodKey == null) methodKey = extractTestName();
+    api[level$] = getTestLevel();
+    if (methodKey == null) methodKey = extractTestName(api, obj);
 
     const func = obj[methodKey];
     if (func == undefined)
@@ -272,7 +280,7 @@ define((require, exports, module)=>{
 
       details = methods[methodName] = {
         sig,
-        intro: typeof intro === 'string' ? intro : docComment(intro),
+        intro: typeof intro === 'string' ? intro : docComment(intro || api),
         subject: api.valueTag(api.subject),
         calls,
         [currentTest$]: undefined,
@@ -363,6 +371,13 @@ define((require, exports, module)=>{
   };
 
   const docComment = func =>{
+    if (func instanceof API) {
+      const tl  = func[level$];
+      if (tl != null) {
+        func = tl.body || tl.func;
+      } else
+        func = null;
+    }
     if (func == null) {
       const tl = getTestLevel();
       if (tl === undefined) return;
