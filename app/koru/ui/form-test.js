@@ -313,7 +313,7 @@ isClient && define((require, exports, module)=>{
               foo: 'x', fooField: 'ff1',
             },
             changes: {changes: 1},
-            $asChanges(changes) {
+            $invertChanges(changes) {
               return {asChanges: changes};
             },
 

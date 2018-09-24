@@ -373,20 +373,20 @@ define((require, exports, module)=>{
       return this.changes[field] = deepCopy(this[field]);
     }
 
-    $hasChanged(field, changes=this.changes) {return Changes.has(changes, field)}
+    $hasChanged(field, changes=this.changes) {
+      if (typeof changes === 'string') return hasOwn(this.attributes, field);
+      return Changes.has(changes, field);
+    }
 
-    $fieldDiffs(field) {
+    $fieldDiff(field) {
       return Changes.has(this.changes, field)
         ? Changes.fieldDiff(field, this.attributes, this.changes)
         : undefined;
     }
 
-    $fieldDiffsFrom(field, undo) {
-      return Changes.fieldDiff(field, undo, this.attributes);
-    }
-
     $withChanges(changes) {
-      if (changes == null) return null;
+      if (changes === 'del') return null;
+      if (changes === 'add') return this;
       const cached = changes[changes$];
       if (cached !== undefined) return cached;
 
@@ -394,7 +394,7 @@ define((require, exports, module)=>{
         this.attributes, Changes.topLevelChanges(this.attributes, changes));
     }
 
-    $asChanges(beforeChange) {
+    $invertChanges(beforeChange) {
       return Changes.extractChangeKeys(this.attributes, beforeChange);
     }
 

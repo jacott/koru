@@ -254,7 +254,7 @@ define((require, exports, module)=>{
         refute(doc.$isValid());
       });
 
-      test("withChanges on objects", ()=>{
+      test("$withChanges", ()=>{
         /**
          * Return a doc representing this doc with the supplied changes
          * staged against it such that calling doc.$save will apply the changes.
@@ -262,54 +262,55 @@ define((require, exports, module)=>{
          * If this method is called again with the same changes object
          * then a cached version of the before doc is returned.
          */
+        api.protoMethod();
 
         const {Book} = v;
-        Book.defineFields({queen: 'text'});
+        Book.defineFields({author: 'text'});
+        //[
 
         const doc = new Book({
           _id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
-        assert.same(doc.$withChanges(), null);
+        assert.same(doc.$withChanges('add'), doc);
+        assert.same(doc.$withChanges('del'), null);
 
-
-        let was = {$partial: {
+        let undo = {$partial: {
           foo: [
             "bar.baz.$partial", ['$match', 'new val', '$patch', [0,3,"orig"]],
             "bar.buzz", 2,
             'fnord.a', 2],
-          queen: ['$replace', 'Mary'],
+          author: ['$replace', 'H. G. Wells'],
         }};
-        let old = doc.$withChanges(was);
+        let old = doc.$withChanges(undo);
 
         assert.same(old.foo.bar.baz, "orig val");
         assert.same(old.foo.bar.buzz, 2);
-        assert.same(old.queen, "Mary");
+        assert.same(old.author, "H. G. Wells");
 
         assert.same(doc.foo.bar.baz, 'new val');
         assert.same(doc.foo.bar.buzz, 5);
         assert.same(doc.foo.fnord.a, 1);
 
-        assert.same(doc.$withChanges(was), old);
+        assert.same(doc.$withChanges(undo), old);
 
-        was = {$partial: {
+        old = doc.$withChanges({$partial: {
           foo: [
             "bar.baz", null,
             "bar.buzz", 2,
             'fnord.a', 2],
-          queen: ['$replace', null],
-        }};
-
-        old = doc.$withChanges(was);
+          author: ['$replace', null],
+        }});
 
         assert.same(old.foo.bar.baz, undefined);
         assert.same(old.foo.bar.buzz, 2);
-        assert.same(old.queen, undefined);
+        assert.same(old.author, undefined);
+        //]
       });
 
 
-      test("$asChanges", ()=>{
+      test("$invertChanges", ()=>{
         /**
-         * Use the {beforeChange} keys to extract the new values.
+         * Use the {beforeChange} keys to extract the new values. See {#koru/changes.extractChangeKeys}
          *
          * @returns new hash of extracted values.
          */
@@ -317,7 +318,7 @@ define((require, exports, module)=>{
         const beforeChange = {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}};
         const doc = new Book({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
 
-        const changes = doc.$asChanges(beforeChange);
+        const changes = doc.$invertChanges(beforeChange);
 
         assert.equals(changes, {a: 2, b: null, c: null, e: [1, {f: 69}]});
 
@@ -642,7 +643,7 @@ define((require, exports, module)=>{
         assert.calledWith(doc.$save, 'assert');
       });
 
-      test("$fieldDiffs", ()=>{
+      test("$hasChanged", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 't123', foo: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {foo: [
@@ -651,10 +652,26 @@ define((require, exports, module)=>{
         assert.isTrue(doc.$hasChanged('foo'));
         assert.isFalse(doc.$hasChanged('bar'));
 
+        assert.isTrue(doc.$hasChanged('foo', 'del'));
+        assert.isFalse(doc.$hasChanged('bar', 'del'));
+
+        assert.isTrue(doc.$hasChanged('foo', 'add'));
+        assert.isFalse(doc.$hasChanged('bar', 'add'));
+
+        assert.isTrue(doc.$hasChanged('bar', {bar: 123}));
+        assert.isFalse(doc.$hasChanged('bar', {foo: 123}));
+      });
+
+      test("$fieldDiff", ()=>{
+        const {Book} = v;
+        const doc = new Book({_id: 't123', foo: {one: 123, two: 'a string', three: true}});
+        doc.changes = {$partial: {foo: [
+          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1,2,3]]}};
+
         doc.validate = function () {
           assert.equals(doc.changes.foo, {
             two: 'a string.sfx', three: true, four: [1, 2, 3]});
-          assert.equals(doc.$fieldDiffs('foo'), {
+          assert.equals(doc.$fieldDiff('foo'), {
             one: null,
             two: 'a string.sfx',
             four: [1,2,3],
@@ -662,14 +679,6 @@ define((require, exports, module)=>{
 
         };
         doc.$isValid();
-      });
-
-      test("$fieldDiffsFrom", ()=>{
-        const {Book} = v;
-        stub(Changes, 'fieldDiff').returns('success');
-        const doc = new Book({_id: 't123', foo: 456});
-        assert.equals(doc.$fieldDiffsFrom('foo', {undo: 123}), 'success');
-        assert.calledWith(Changes.fieldDiff, 'foo', {undo: 123}, {_id: 't123', foo: 456});
       });
 
       test("duplicate id", ()=>{

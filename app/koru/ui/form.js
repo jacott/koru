@@ -243,13 +243,13 @@ define((require)=>{
 
     saveChanges(doc, form, onChange) {
       Tpl.clearErrors(form);
-      let changes, was;
+      let changes, undo;
       if (onChange) {
         changes = doc.changes;
-        was = doc.$asChanges(changes);
+        undo = doc.$invertChanges(changes);
       }
       if (doc.$save()) {
-        onChange && onChange(doc, changes, was);
+        onChange && onChange(doc, changes, undo);
         return true;
       }
 
