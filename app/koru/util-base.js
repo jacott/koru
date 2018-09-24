@@ -28,15 +28,15 @@ define((require, exports, module)=>{
 
         const {constructor} = o;
 
-        if (constructor === Date) return "<"+o.toISOString()+">";
+        if (constructor === Date) return 'Date("'+o.toISOString()+'")';
         if (constructor === RegExp) return o.toString();
-        if ('outerHTML' in o) return o.outerHTML;
-        if (o.nodeType === 3) return "$TextNode:"+o.textContent;
-        if (o.nodeType === 11) return "$docFrag:"+inspect1(o.firstChild, i-1);
+        if ('outerHTML' in o) return 'Node`'+o.outerHTML+'`';
+        if (o.nodeType === 3) return 'TextNode("'+o.textContent+'")';
+        if (o.nodeType === 11) return 'DocumentFragment(`'+inspect1(o.firstChild, i-1)+'`)';
         if (Array.isArray(o)) {
           if (i)
             return "[" + o.map(o2 => inspect1(o2, i-1)).join(", ") + "]";
-          return "[...]";
+          return "[...more]";
         }
         if (typeof o.test === 'function' && typeof o.or === 'function')
           return ''+o;
@@ -44,11 +44,11 @@ define((require, exports, module)=>{
         if (i != 0) {
           const r=[];
           if (o instanceof Error) {
-            r.push(o.toString());
+            r.push('Error(`'+o.toString()+"`)");
           }
           for (const p in o) {
             if (r.length > 10) {
-              r.push('...');
+              r.push('...more');
               break;
             }
             const v = o[p];
@@ -59,12 +59,12 @@ define((require, exports, module)=>{
               r.push(qlabel(p) + ": " + inspect1(v, i-1));
             }
           }
-          return (constructor !== undefined &&
-                  constructor !== Object ? '<'+constructor.name+'>{' : '{'
-                 ) +  r.join(", ") +"}";
+          const isSimple = constructor === undefined || constructor === Object;
+          return (isSimple ? '{' : constructor.name+'({') +  r.join(", ") +
+            (isSimple ? "}" : "})");
         }
         for(let key in o) {
-          return (`{${key}=${o[key]},...}`);
+          return (`{${key}: ${o[key]}, ...more}`);
         }
         return '{}';
       } case 'string':
@@ -73,7 +73,7 @@ define((require, exports, module)=>{
         return o.toString();
       }
     } catch(ex) {
-      return '??';
+      return '(unknown)';
     }
   };
 
