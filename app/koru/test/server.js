@@ -1,15 +1,15 @@
 define((require)=>{
   const session         = require('../session/base');
-  const test            = require('./main');
+  const Test            = require('./main');
 
-  test.testHandle = (cmd, msg)=>{session.remoteControl.testHandle(cmd+msg)};
+  Test.testHandle = (cmd, msg)=>{session.remoteControl.testHandle(cmd+msg)};
 
-  test.logHandle = (type, msg)=>{
+  Test.logHandle = (type, msg)=>{
     if (session.remoteControl.logHandle)
       session.remoteControl.logHandle(msg);
     else
       console.log(msg);
   };
 
-  return test;
+  return Test;
 });

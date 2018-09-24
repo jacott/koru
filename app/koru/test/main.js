@@ -241,6 +241,18 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     }
   };
 
+  Core.abort = ex => {
+    const {name, location: {name: fn, line}} = Core.test;
+    Main.logHandle(
+      'E', koru.util.extractError(ex) +
+        "\n\n**** Tests aborted! *****\n" +
+        name +
+        `\n     at - ${fn}.js:${line}`);
+    Main.testHandle('F', Core.testCount + 1);
+    Main.Core.reload = true;
+    throw ex;
+  };
+
   Core.worstTCS = ()=> Core.testCases
     .sort((a,b) => b.duration - a.duration)
     .map(a => a && a.name+': '+a.duration);

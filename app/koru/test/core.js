@@ -195,7 +195,7 @@ define((require)=>{
       this.testCount = this.skipCount = this.assertCount = 0;
     },
     fail(message) {assert(false, message);},
-    abort(ex) {throw ex},
+    abort: undefined,
     get __elidePoint() {return elidePoint},
     set __elidePoint(v) {elidePoint = v},
 

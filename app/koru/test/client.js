@@ -4,17 +4,16 @@ define((require, exports, module)=>{
   const localStorage    = require('koru/local-storage');
   const sessState       = require('koru/session/state').constructor();
   const util            = require('koru/util');
-  const test            = require('./main');
-
+  const Test            = require('./main');
 
   const Module = module.constructor;
   const session = require('koru/session/main-client')(SessionBase, sessState);
 
-  test.session = session;
+  Test.session = session;
 
-  test.testHandle = (cmd, msg)=>{session.send('T', cmd+msg)};
+  Test.testHandle = (cmd, msg)=>{session.send('T', cmd+msg)};
 
-  test.logHandle = (type, msg)=>{
+  Test.logHandle = (type, msg)=>{
     if (type === 'ERROR')
       session.send('E', msg);
     else
@@ -33,7 +32,7 @@ define((require, exports, module)=>{
 
   let ls;
 
-  session.provide('T', data => {test.run(data[0], data[1])});
+  session.provide('T', data => {Test.run(data[0], data[1])});
 
   const setItem = localStorage.setItem;
   const getItem = localStorage.getItem;
@@ -42,19 +41,8 @@ define((require, exports, module)=>{
 
   module.onUnload(() => {requirejs.onError = null});
 
-  test.Core.abort = ex => {
-    const {name, location: {name: fn, line}} = test.Core.test;
-    test.logHandle('E', koru.util.extractError(ex) +
-                   "\n\n**** Tests aborted! *****\n" +
-                   name +
-                   `\n     at - ${fn}.js:${line}`);
-    test.testHandle('F', test.Core.testCount + 1);
-    test.Core.reload = true;
-    throw ex;
-  };
-
   localStorage._resetValue = ()=>Object.create(null);
-  test.Core.onStart(() => {
+  Test.Core.onStart(() => {
     localStorage.setItem = (key, value) => {
       const oldValue = ls[key];
       ls[key] = value;
@@ -72,9 +60,9 @@ define((require, exports, module)=>{
     };
   });
 
-  test.Core.onTestStart(()=>{ls = localStorage._resetValue()});
+  Test.Core.onTestStart(()=>{ls = localStorage._resetValue()});
 
-  test.Core.onEnd(()=>{
+  Test.Core.onEnd(()=>{
     ls = null;
     localStorage.setItem = setItem;
     localStorage.getItem = getItem;
@@ -82,9 +70,9 @@ define((require, exports, module)=>{
     localStorage.clear = clear;
   });
 
-  test.testHandle('A');
+  Test.testHandle('A');
 
   session.connect();
 
-  return test;
+  return Test;
 });

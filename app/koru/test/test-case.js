@@ -340,11 +340,6 @@ define((require, exports, module)=>{
       const to = done[timeout$];
       to === undefined || clearTimeout(to);
 
-      if (ex === 'abortTests') {
-        Core.abort(ex);
-        return;
-      }
-
       if (ex)
         failed(test, ex);
       else
