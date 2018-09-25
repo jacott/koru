@@ -248,6 +248,14 @@ define((require, exports, module)=>{
 
         change._set(book, {foo: {a: 1, b: 2}});
         assert.equals(Array.from(change.subDocKeys('foo')).sort(), ['a', 'b']);
+
+        assert.equals(Array.from(
+          DocChange.change(book, {}).subDocKeys('index')
+        ).sort(), ['d', 'h', 'p']);
+
+        assert.equals(Array.from(
+          DocChange.change(book, {$partial: {title: null}}).subDocKeys('index')
+        ).sort(), []);
       });
 
       group("subDocs", ()=>{
@@ -348,6 +356,32 @@ define((require, exports, module)=>{
           assert.equals(dc.doc, 123);
         });
 
+        test("multipart partial", ()=>{
+          const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
+            p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}}
+          }});
+
+          const undo = {$partial: {
+            index: ['p.words.puppy.$partial', [
+              'occurs', 4,
+            ]]}};
+
+          const change = DocChange.change(book, undo);
+
+          let ans, dc;
+          ans = map(change.subDocs('index')); dc = ans[0];
+          assert.equals(ans.map(dc => dc._id), ['p']);
+          assert.equals(dc.type, 'chg');
+          assert.equals(dc.doc, {words: {pig: {occurs: 158}, puppy: {occurs: 2}}});
+          assert.equals(dc.undo, {$partial: {words: ['puppy.$partial', ['occurs', 4]]}});
+
+          ans = map(dc.subDocs('words')); dc = ans[0];
+          assert.equals(ans.map(dc => dc._id), ['puppy']);
+          assert.equals(dc.type, 'chg');
+          assert.equals(dc.doc, {occurs: 2});
+          assert.equals(dc.undo, {$partial: {occurs: 4}});
+        });
+
         test("nested", ()=>{
           const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
             p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}}
@@ -407,7 +441,7 @@ define((require, exports, module)=>{
           assert.equals(ans.map(dc => dc.doc), [
             {syn: 'hog'}, {syn: 'dog'}]);
           assert.equals(ans.map(dc => dc.undo), [
-            {$partial: {syn: 'pork'}}, {$partial: {'syn.$partial': ['$append', 'gy']}}]);
+            {$partial: {syn: 'pork'}}, {$partial: {syn: ['$append', 'gy']}}]);
         });
       });
 

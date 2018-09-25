@@ -99,7 +99,7 @@ define((require)=>{
 
     *subDocKeys(field) {
       const undo = this[undo$];
-      if (undo.hasOwnProperty(field)) {
+      if (hasOwn(undo, field) || undo.$partial === undefined) {
         // top level
         const was = undo[field], now = this[doc$][field];
 
@@ -113,6 +113,7 @@ define((require)=>{
       }
 
       const u = undo.$partial[field];
+      if (! Array.isArray(u)) return;
 
       for(let i = 0; i < u.length; i+=2) {
         const k = u[i];
@@ -134,7 +135,7 @@ define((require)=>{
       const undo = this[undo$];
       const dc = new DocChange('chg');
       if (flag !== undefined) dc.flag = flag;
-      if (undo.hasOwnProperty(field) || undo.$partial === undefined) {
+      if (hasOwn(undo, field) || undo.$partial === undefined) {
         // top level
         const was = undo[field], now = this[doc$][field];
 
@@ -225,7 +226,7 @@ define((require)=>{
               } else {
                 const sr = rem.slice(ridx+1);
                 if (sr === '$partial') {
-                  ov[rem] = u[i+1];
+                  ov[rem.slice(0, ridx)] = u[i+1];
                 } else {
                   const sw = rem.slice(0, ridx);
                   const su = ov[sw] || (ov[sw] = []);
