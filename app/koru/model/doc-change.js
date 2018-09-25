@@ -1,5 +1,7 @@
 define((require)=>{
-  const {inspect}       = require('koru/util');
+  const Changes         = require('koru/changes');
+
+  const {inspect, hasOwn} = require('koru/util');
 
   const {inspect$}      = require('koru/symbols');
 
@@ -74,11 +76,18 @@ define((require)=>{
     get model() {return this[doc$].constructor}
     get was() {return this[doc$].$withChanges(this[undo$])}
 
-    hasField(field) {return this[doc$].$hasChanged(field, this[undo$])}
+    hasField(field) {
+      const undo = this[undo$];
+      if (typeof undo !== 'string')
+        return Changes.has(undo, field);
+
+      const doc = this[doc$];
+      return doc[field] !== undefined;
+    }
+
     hasSomeFields(...fields) {
-      const doc = this[doc$], undo = this[undo$];
       for(let i = 0; i < fields.length; ++i) {
-        if (doc.$hasChanged(fields[i], undo)) return true;
+        if (this.hasField(fields[i])) return true;
       }
 
       return false;

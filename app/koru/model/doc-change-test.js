@@ -179,6 +179,17 @@ define((require, exports, module)=>{
           new Book({_id: 'book1', title: 'Animal Farm', pages: 112}), {title: 'Fanimal Arm'});
         assert.isTrue(dc.hasField('title'));
         assert.isFalse(dc.hasField('pages'));
+
+        // does not need to be a Model document
+        const add = DocChange.add({name: 'Simon'});
+        assert.isTrue(add.hasField('name'));
+        assert.isFalse(add.hasField('location'));
+
+        assert.isTrue(DocChange.delete({name: 'Simon'}).hasField('name'));
+
+        const change = DocChange.change({name: 'Simon', location: 'home'}, {location: 'work'});
+        assert.isFalse(change.hasField('name'));
+        assert.isTrue(change.hasField('location'));
         //]
       });
 
