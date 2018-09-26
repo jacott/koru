@@ -21,6 +21,88 @@ define((require, exports, module)=>{
       assert.isFalse(Changes.has({$partial: {foo: undefined}}, 'bar'));
     });
 
+    group("merge", ()=>{
+      /**
+       * Merge one set of changes into another.
+       *
+       * @param to the destination for the merges
+       * @param from the source of the merges. Values may be assignment (not copied) to `to` so use
+       * {#koru/util/deepCopy} if that is not intended.
+       *
+       * @returns `to`
+       **/
+
+      test("toplevel, partial", ()=>{
+        api.method();
+        // [
+        const current = {title: 'The Bone', author: 'Kery Hulme', genre: ['Romance', 'Mystery']};
+        assert.same(Changes.merge(current, {$partial: {
+          title: ['$append', ' People'],
+          author: ['$patch', [3, 1, 'i']],
+          genre: ['$remove', ['Romance'], '$add', ['Drama']]
+        }}), current);
+
+        assert.equals(current, {
+          title: 'The Bone People',
+          author: 'Keri Hulme',
+          genre: ['Mystery', 'Drama'],
+        });
+        //]
+
+        Changes.merge(current, {$partial: {
+          title: ['$replace', 'E nga iwi o nga iwi'],
+          author: ['$prepend', 'Kai Tahu '],
+          genre: ['$add', ['Drama']]
+        }});
+
+        assert.equals(current, {
+          title: 'E nga iwi o nga iwi',
+          author: 'Kai Tahu Keri Hulme',
+          genre: ['Mystery', 'Drama'],
+        });
+      });
+
+      test("partial, partial", ()=>{
+        api.method();
+        // [
+        const current = {$partial: {
+          title: ['$append', 'The Bone'],
+          author: ['$prepend', 'Kery'],
+        }};
+        Changes.merge(current, {$partial: {
+          title: ['$append', ' People'],
+          author: ['$patch', [3, 1, 'i']],
+          genre: ['$add', ['Mystery']]
+        }});
+
+        assert.equals(current, {$partial: {
+          title: ['$append', 'The Bone', '$append', ' People'],
+          author: ['$prepend', 'Kery', '$patch', [3, 1, 'i']],
+          genre: ['$add', ['Mystery']],
+        }});
+        //]
+      });
+
+      test("partial, toplevel", ()=>{
+        api.method();
+        // [
+        const current = {$partial: {
+          title: ['$append', 'The Bone'],
+          author: ['$prepend', 'Kery'],
+        }};
+        Changes.merge(current, {
+          title: 'The Bone People',
+          genre: ['Mystery'],
+        });
+
+        assert.equals(current, {
+          title: 'The Bone People',
+          genre: ['Mystery'],
+          $partial: {author: ['$prepend', 'Kery'],}});
+        //]
+      });
+    });
+
     group("applyOne", ()=>{
       /**
        * Apply only one attribute from changes

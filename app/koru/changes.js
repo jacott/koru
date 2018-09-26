@@ -14,6 +14,41 @@ define((require, exports, module)=>{
 
   const same = (a,b)=>a==b;
 
+  const merge = (to, from)=>{
+    let tp = to.$partial;
+    const fp = from.$partial;
+    for (const key in to) {
+      if (key === '$partial') continue;
+      if (hasOwn(from, key)) {
+        to[key] = from[key];
+        if (hasOwn(tp, key))
+          delete tp[key];
+
+      } else if (hasOwn(fp, key))
+        applyPartial(to, key, fp[key]);
+    }
+
+    for (const key in fp) {
+      if (hasOwn(to, key)) continue;
+      if (tp === undefined) tp = to.$partial = {};
+      if (hasOwn(tp, key))
+        tp[key].push(...fp[key]);
+      else
+        tp[key] = fp[key];
+    }
+
+    for (const key in from) {
+      if (key === '$partial') continue;
+      if (tp !== undefined && hasOwn(tp, key)) {
+        delete tp[key];
+      }
+      to[key] = from[key];
+    }
+
+    return to;
+  };
+
+
   const diffArray = (oldSeq, newSeq, equal=same)=>{
     const lo = oldSeq.length-1, ln = newSeq.length-1;
     const minLast = Math.min(lo, ln);
@@ -185,7 +220,7 @@ define((require, exports, module)=>{
       if (nv === ov || deepEqual(nv, ov))
         return;
 
-      undo.push('$replace', ov === undefined ? null : ov);
+      undo !== undefined && undo.push('$replace', ov === undefined ? null : ov);
 
       if (nv == null)
         delete attrs[key];
@@ -201,7 +236,7 @@ define((require, exports, module)=>{
         attrs[key] = nv.concat(ov);
       } else
         throw new koru.Error(400, {[key]: 'wrong_type'});
-      undo.push('$patch', [0, nv.length, null]);
+      undo !== undefined && undo.push('$patch', [0, nv.length, null]);
     },
 
     $append(attrs, key, nv, undo) {
@@ -212,19 +247,21 @@ define((require, exports, module)=>{
         attrs[key] = attrs[key].concat(nv);
       } else
         throw new koru.Error(400, {[key]: 'wrong_type'});
-      if (undo.length > 0 && undo[undo.length-2] === '$patch')
-        undo[undo.length-1].push(-nv.length, nv.length, null);
-      else
-        undo.push('$patch', [-nv.length, nv.length, null]);
+      if (undo !== undefined) {
+        if (undo.length > 0 && undo[undo.length-2] === '$patch')
+          undo[undo.length-1].push(-nv.length, nv.length, null);
+        else
+          undo.push('$patch', [-nv.length, nv.length, null]);
+      }
     },
     $patch(attrs, key, patch, undo) {
-      if (undo.$patch !== undefined)
+      if (undo !== undefined && undo.$patch !== undefined)
         throw new koru.Error(400, {[key]: 'invalid_update'});
 
       let ov = attrs[key];
       const undoPatch = [];
       attrs[key] = applyPatch(ov, patch, key, undoPatch);
-      undo.push('$patch', undoPatch);
+      undo === undefined || undo.push('$patch', undoPatch);
     },
 
     $add(attrs, key, items, undo) {
@@ -232,7 +269,7 @@ define((require, exports, module)=>{
 
       if (ov == null) {
         attrs[key] = items.slice();
-        undo.push('$remove', items.slice());
+        undo !== undefined && undo.push('$remove', items.slice());
         return;
       }
       const ovLen = ov.length;
@@ -247,7 +284,7 @@ define((require, exports, module)=>{
         undoItems.push(item);
       }
       if (undoItems.length != 0) {
-        undo.push('$remove', undoItems);
+        undo !== undefined && undo.push('$remove', undoItems);
       }
     },
 
@@ -270,7 +307,7 @@ define((require, exports, module)=>{
       });
       if (undoItems.length != 0) {
         attrs[key] = filtered;
-        undo.push('$add', undoItems);
+        undo !== undefined && undo.push('$add', undoItems);
       }
     },
   };
@@ -286,11 +323,13 @@ define((require, exports, module)=>{
           ov == null ? (attrs[key] = typeof field === 'string' ? {} : []) : ov,
           field, changes);
 
-        if (ov == null)
-          undo.push('$replace', null);
-        else if (undo[0] !== '$replace') {
-          for (const field in changes) {
-            undo.push(field, changes[field]);
+        if (undo !== undefined) {
+          if (ov == null)
+            undo.push('$replace', null);
+          else if (undo[0] !== '$replace') {
+            for (const field in changes) {
+              undo.push(field, changes[field]);
+            }
           }
         }
       } else
@@ -447,8 +486,7 @@ define((require, exports, module)=>{
       const cvalue = to[field];
 
       from = {[field]: deepCopy(cvalue)};
-      const undo = [];
-      applyPartial(from, field, partial, undo);
+      applyPartial(from, field, partial);
       return diff(from[field], cvalue);
     }
     if (to.$partial !== undefined) {
@@ -456,8 +494,7 @@ define((require, exports, module)=>{
       if (partial === undefined) return;
       const ovalue = from[field];
       to = {[field]: deepCopy(ovalue)};
-      const undo = [];
-      applyPartial(to, field, partial, undo);
+      applyPartial(to, field, partial);
       return diff(ovalue, to[field]);
     }
 
@@ -619,6 +656,8 @@ define((require, exports, module)=>{
 
       return {added, removed};
     },
+
+    merge,
 
     has,
     diff,
