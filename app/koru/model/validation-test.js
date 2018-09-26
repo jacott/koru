@@ -383,17 +383,17 @@ define((require, exports, module)=>{
 
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
       let doc = {foo: 4};
-      assert.isTrue(matcher.$test(doc));
+      assert.isTrue(matcher.test(doc));
       assert.same(doc[error$], undefined);
       doc.foo = 1;
-      assert.isFalse(matcher.$test(doc));
+      assert.isFalse(matcher.test(doc));
       assert.modelErrors(doc, {foo: 'is_invalid'});
 
       doc = {bar: 3};
-      assert.isFalse(matcher.$test(doc));
+      assert.isFalse(matcher.test(doc));
       assert.modelErrors(doc, {bar: 'unexpected_field'});
 
-      assert.msg("null doc should be false").isFalse(matcher.$test(null));
+      assert.msg("null doc should be false").isFalse(matcher.test(null));
     });
   });
 });

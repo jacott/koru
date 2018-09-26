@@ -1010,7 +1010,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         const type = value.length ? toBaseType(value[0]) : 'text';
         return type+'[]';
       }
-      if (match.date.$test(value))
+      if (match.date.test(value))
         return 'timestamp with time zone';
       for (let key in value) {
         let type;

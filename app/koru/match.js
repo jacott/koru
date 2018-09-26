@@ -1,5 +1,7 @@
-define((require, exports, module)=>{
+define((require)=>{
   const util = require('./util-base');
+
+  const match$ = Symbol();
 
   const {inspect$} = require('koru/symbols');
 
@@ -12,15 +14,24 @@ define((require, exports, module)=>{
     class Match {
       constructor(test, message=`match(${test.name||test})`) {
         if (typeof test === 'function')
-          this.$test = test;
+          this[match$] = test;
         else switch(test.constructor) {
         case RegExp:
-          this.$test = value => typeof value === 'string' && test.test(value);
+          this[match$] = value => typeof value === 'string' && test.test(value);
           break;
         default:
-          this.$test = value => util.deepEqual(value, test);
+          this[match$] = value => util.deepEqual(value, test);
         }
         this.message = message;
+      }
+
+      test(actual, $throwTest) {return this[match$](actual, $throwTest)}
+
+      $throwTest(value) {
+        if (! this.test(value, '$throwTest')) {
+          throw this.toString();
+        }
+        return true;
       }
 
       toString() {
@@ -28,18 +39,16 @@ define((require, exports, module)=>{
         return typeof message === 'function'
           ? message() : ''+message;
       }
-
-      $throwTest(value) {
-        if (! this.$test(value, '$throwTest')) {
-          throw this.toString();
-        }
-        return true;
-      }
-
     };
 
+    match.make = (obj, test)=>{obj[match$] = test};
+
+    match.isMatch = matchable => matchable != null && matchable[match$] !== undefined;
+    match.test = (matchable, actual)=> matchable == null || matchable[match$] === undefined
+      ? util.deepEqual(actual, matchable) : matchable[match$](actual);
+
     match.optional = m => match(
-      (value, mthd='$test') => value == null ||
+      (value, mthd=match$) => value == null ||
         m[mthd](value), m.message+'[opt]');
 
     'string number boolean undefined function'.split(' ').forEach(t => {
@@ -55,8 +64,8 @@ define((require, exports, module)=>{
       integer: match(value => typeof value === 'number' && Math.floor(value) === value, 'match.integer'),
       baseObject: match(value => value != null && value.constructor === Object, 'match.baseObject'),
       object: match(value => typeof value === 'object' && value !== null, 'match.object'),
-      func: match(match.function.$test, 'match.func'),
-      match: match(value => value != null && value.constructor === Match, 'match.match'),
+      func: match(match.function[match$], 'match.func'),
+      match: match(match.isMatch, 'match.match'),
       symbol: match(value => value != null && value.constructor === Symbol, 'match.Symbol'),
       id: match(value => value !== 'undefined' && /^[a-z0-9]{3,24}$/i.test(value), 'match.id'),
     };
@@ -85,17 +94,17 @@ define((require, exports, module)=>{
         return match(value => hasOwn(set, value), name);
       },
       or(...args) {
-        return match(value => args.some(match => match.$test(value)),
+        return match(value => args.some(match => match[match$](value)),
                      typeof args[args.length-1] === 'string' ? args.pop() : 'match.or');
       },
       and(...args) {
-        return match((value, mthd='$test') => {
+        return match((value, mthd=match$) => {
           return args.every(match => match[mthd](value));
         }, typeof args[args.length-1] === 'string' ? args.pop() : 'match.and');
       },
       tuple(array, name='match.tuple') {
         const len = array.length;
-        return match((value, mthd='$test') => {
+        return match((value, mthd=match$) => {
           if (! Array.isArray(value) || value.length !== len)
             return false;
 
@@ -119,7 +128,7 @@ define((require, exports, module)=>{
     return match;
   }
 
-  exports = Constructor();
-  exports.__initBase__ = Constructor;
-  return exports;
+  const Match = Constructor();
+  Match.__initBase__ = Constructor;
+  return Match;
 });

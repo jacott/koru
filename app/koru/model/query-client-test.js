@@ -318,6 +318,28 @@ define((require, exports, module)=>{
         sessState.incPending();
       });
 
+      test("queuing server updates on simDoc", ()=>{
+        v.foo.$updatePartial('name', ['$append', '.one']);
+        v.foo.$updatePartial('name', ['$append', '.two']);
+
+        const onChange = stub();
+
+        v.TestModel.serverQuery.onId(v.foo._id).updatePartial('name', ['$append', '.one']);
+        v.TestModel.serverQuery.onId(v.foo._id).updatePartial('name', ['$append', '.three']);
+
+        assert.same(v.foo.name, 'foo.one.two');
+
+        refute.called(onChange);
+
+        sessState.decPending();
+
+        assert.same(v.foo.name, 'foo.one.three');
+
+        assert.calledWith(onChange, DocChange.change(v.foo, {$partial: {
+          foo: ['FIXME']
+        }}));
+      });
+
       test("update from server no matching simDoc", ()=>{
         const {foo, TestModel} = v;
         const foo2 = TestModel.create({name: 'foo2'});

@@ -1,5 +1,6 @@
 define((require)=>{
   const Changes         = require('koru/changes');
+  const match           = require('koru/match');
 
   const {inspect, hasOwn} = require('koru/util');
 
@@ -243,6 +244,14 @@ define((require)=>{
       }
     }
   }
+
+  match.make(DocChange.prototype, function (value) {
+    return (value instanceof DocChange) &&
+      match.test(this[type$], value[type$]) &&
+      match.test(this[doc$], value[doc$]) &&
+      match.test(this[undo$], value[undo$]) &&
+      match.test(this.flag, value.flag);
+  });
 
   return DocChange;
 });

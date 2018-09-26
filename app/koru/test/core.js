@@ -107,8 +107,8 @@ define((require)=>{
       return false;
     };
 
-    if (match.match.$test(expected))
-      return expected.$test(actual) || setHint();
+    if (match.isMatch(expected))
+      return match.test(expected, actual) || setHint();
 
     const badKey = key =>{
       if (hint) {

@@ -94,9 +94,8 @@ define((require)=>{
       return true;
     }
 
-    if (match.match.$test(expected))
-      return expected.$test(actual);
-
+    if (match.isMatch(expected))
+      return match.test(expected, actual);
 
     if (typeof actual !== 'object' || typeof expected !== 'object')
       return actual === undefined || expected === undefined ? actual == expected : false;

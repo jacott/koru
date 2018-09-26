@@ -47,7 +47,7 @@ define((require)=>{
       const check1 = (obj, subSpec, name)=>{
         if (typeof subSpec === 'string') {
           if (obj == null) return;
-          if (match[subSpec] && match[subSpec].$test(obj))
+          if (match[subSpec] && match[subSpec].test(obj))
             return;
           bad(name, obj, subSpec);
 
@@ -58,7 +58,7 @@ define((require)=>{
           util.forEach(obj, (item, index)=>{
             check1(item, subSpec, name ? name + '.' + index : index);
           });
-        } else if (match.baseObject.$test(subSpec)) {
+        } else if (match.baseObject.test(subSpec)) {
           for(const key in obj) {
             try {
               if (hasOwn(subSpec, key)) {
@@ -75,7 +75,7 @@ define((require)=>{
                 throw ex;
             }
           }
-        } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
+        } else if (! (match.isMatch(subSpec) && subSpec.test(obj))) {
           bad(name, obj, subSpec);
         }
       };
@@ -383,7 +383,7 @@ define((require)=>{
     if (typeof type === 'string')
       type = match[type];
     for(let i = 0; i < args.length; ++i) {
-      type.$test(args[i])  || accessDenied(`expected ${type}`);
+      type.test(args[i])  || accessDenied(`expected ${type}`);
     }
   };
 
