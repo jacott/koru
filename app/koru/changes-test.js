@@ -101,6 +101,23 @@ define((require, exports, module)=>{
           $partial: {author: ['$prepend', 'Kery'],}});
         //]
       });
+
+      test("toplevel, toplevel", ()=>{
+        const current = {
+          title: 'The Bone',
+          author: 'Keri Hulme',
+        };
+        Changes.merge(current, {
+          title: 'The Bone People',
+          genre: ['Mystery'],
+        });
+
+        assert.equals(current, {
+          title: 'The Bone People',
+          genre: ['Mystery'],
+          author: 'Keri Hulme',
+        });
+      });
     });
 
     group("applyOne", ()=>{

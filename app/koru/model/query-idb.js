@@ -122,30 +122,30 @@ define((require, exports, module)=>{
     }
 
     loadDoc(modelName, rec) {
-      const model = Model[modelName];
-      const curr = model.docs[rec._id];
+      const model = Model[modelName], id = rec._id;
+      const curr = model.docs[id];
       if (curr !== undefined && curr[stopGap$] !== true) return;
       const orig = notMe;
       try {
         if (curr !== undefined) curr[stopGap$] = undefined;
 
-        const sim = rec.$sim;
-        if (sim !== undefined) rec.$sim = undefined;
-
-        if (typeof sim === 'object' && typeof sim._id === 'string') {
-          if (curr) delete model.docs[rec._id];
-          simDocsFor(model)[rec._id] = sim;
-          if (curr !== undefined) Query.notify(DocChange.delete(notMe = curr));
-          return;
-        }
-
-        if (sim === 'new') {
-          simDocsFor(model)[rec._id] = 'new';
-        } else if (sim !== undefined) {
-          simDocsFor(model)[rec._id] = sim;
+        let sim = rec.$sim;
+        if (sim !== undefined) {
+          rec.$sim = undefined;
+          if (! Array.isArray(sim)) // port old style records
+            sim = [sim === 'new' ? 'del' : sim, undefined];
+          simDocsFor(model)[id] = sim;
+          const undo = sim[0];
+          if (typeof undo === 'object' && undo._id === id) {
+            if (curr !== undefined) {
+              delete model.docs[id];
+              Query.notify(DocChange.delete(notMe = curr));
+            }
+            return;
+          }
         }
         let undo = null;
-        notMe = model.docs[rec._id] = curr !== undefined ? (
+        notMe = model.docs[id] = curr !== undefined ? (
           undo = Changes.applyAll(curr.attributes, rec),
           curr
         ) : new model(rec);
@@ -245,12 +245,13 @@ define((require, exports, module)=>{
 
     promisify(body) {return runBody(this, body)}
 
-    queueChange(docChange) {
-      const {doc, _id, model: {modelName}, isDelete} = docChange;
+    queueChange(dc) {
+      const {doc} = dc;
       if (doc === notMe || doc[stopGap$] === true) return;
       TransQueue.transaction(() => {
+        const {_id, model: {modelName}, isDelete} = dc;
         const pu = getPendingUpdates(this);
-        const pm = pu[modelName] === undefined ? (pu[modelName] = {}) : pu[modelName];
+        const pm = pu[modelName] || (pu[modelName] = {});
         pm[_id] = isDelete ? null : doc.attributes;
       });
     }
@@ -302,7 +303,7 @@ define((require, exports, module)=>{
               doc !== null ? os.put(doc) : os.delete(_id);
             else {
               if (doc === null) {
-                if (sdoc === 'new')
+                if (sdoc[0] === 'del')
                   os.delete(_id);
                 else
                   os.put({_id: _id, $sim: sdoc});

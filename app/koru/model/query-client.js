@@ -32,7 +32,7 @@ define((require, exports, module)=>{
       unload();
 
       syncOb = session.state.pending.onChange(
-        pending => pending || Query.revertSimChanges());
+        pending => pending == 0 && Query.revertSimChanges());
 
       stateOb = session.state.onChange(ready => {
         if (ready) return;
@@ -45,7 +45,7 @@ define((require, exports, module)=>{
           const docs = model.docs;
           const sd = dbs[name].simDocs = createDictionary();
           for(const id in docs) {
-            sd[id] = 'new';
+            sd[id] = ['del', undefined];
           }
         }
       });
@@ -74,27 +74,41 @@ define((require, exports, module)=>{
                   addDc = DocChange.add(null, 'simComplete'),
                   changeDc = DocChange.change(null, null, 'simComplete');
             for(const id in docs) {
-              let doc = modelDocs[id];
-              const fields = docs[id];
-              if (fields === 'new') {
-                if (modelDocs[id] !== undefined) {
+              const doc = modelDocs[id];
+              let [revert, apply] = docs[id];
+              if (apply !== undefined) {
+                if (revert === 'del')
+                  revert = apply;
+                else if (typeof apply === 'object' && apply._id === undefined) {
+                  Changes.merge(revert, apply);
+                } else
+                  revert = apply;
+              }
+              if (revert === 'del') {
+                if (doc === undefined) {
+                  Query[notifyAC$](delDc._set(new model({_id: id})));
+                } else {
                   delete modelDocs[id];
                   notify(delDc._set(doc));
                 }
+              } else if (doc === undefined) {
+                if (revert._id === undefined) revert._id = id;
+                notify(addDc._set(modelDocs[id] = new model(revert)));
               } else {
-                const newDoc = doc === undefined;
-                if (newDoc)
-                  doc = modelDocs[id] = new model({_id: id});
-                const undo = Changes.applyAll(doc.attributes, fields);
-                let hasKeys;
-                for(hasKeys in undo) break;
-                const dc = newDoc ? addDc : changeDc;
-                dc._set(doc, undo);
-                if (hasKeys === undefined) {
-                  Query[notifyAC$](dc);
-                } else {
-                  notify(dc);
+                if (revert._id !== undefined) {
+                  const attrs = doc.attributes;
+                  for (const key in attrs) {
+                    if (! hasOwn(revert, key))
+                      revert[key] = null;
+                  }
                 }
+                const undo = Changes.applyAll(doc.attributes, revert);
+                let hasKeys; for(hasKeys in undo) break;
+                changeDc._set(doc, undo);
+                if (hasKeys === undefined)
+                  Query[notifyAC$](changeDc);
+                else
+                  notify(changeDc);
               }
             }
           }
@@ -104,8 +118,8 @@ define((require, exports, module)=>{
       insert(doc) {
         return TransQueue.transaction(() => {
           const model = doc.constructor;
-          if (session.state.pendingCount() !== 0) {
-            simDocsFor(model)[doc._id] = 'new';
+          if (session.state.pendingCount() != 0) {
+            recordChange(model, doc._id, 'del');
           }
           model.docs[doc._id] = doc;
           notify(DocChange.add(doc));
@@ -121,22 +135,13 @@ define((require, exports, module)=>{
       insertFromServer(model, id, attrs) {
         return TransQueue.transaction(() => {
           const doc = model.docs[id];
-          if (session.state.pendingCount()) {
-            const [changes, flag] = fromServer(model, id, attrs);
-            if (doc !== undefined && changes !== attrs) { // found existing
-              doc[stopGap$] = undefined;
-              const undo = Changes.applyAll(doc.attributes, changes);
-              const dc = DocChange.change(doc, undo, flag);
-              for(const noop in undo) {
-                notify(dc);
-                return doc._id;
-              }
-              Query[notifyAC$](dc);
-              return doc._id;
+          if (session.state.pendingCount() != 0) {
+            if (fromServer(model, id, attrs)) {
+              if (doc !== undefined) doc[stopGap$] = undefined;
+              return;
             }
           }
 
-          // otherwise new doc
           if (doc !== undefined) {
             // already exists; convert to update
             doc[stopGap$] = undefined;
@@ -278,29 +283,18 @@ define((require, exports, module)=>{
 
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const {model, docs} = this;
-            if (session.state.pendingCount() && this.isFromServer) {
-              const sims = Model._getProp(model.dbId, model.modelName, 'simDocs');
-              const simDoc = sims && sims[this.singleId];
-              const [changes, flag] = fromServer(model, this.singleId);
-              if (changes === null) {
-                const doc = docs[this.singleId];
-                if (doc !== undefined) {
-                  delete docs[this.singleId];
-                  notify(DocChange.delete(doc, flag));
-                } else if (simDoc !== undefined) {
-                  Query[notifyAC$](DocChange.delete(
-                    new model(simDoc === 'new' ? {_id: this.singleId} : simDoc), flag));
-                }
-                return 1;
-              }
+            const isPending = session.state.pendingCount() != 0;
+            if (isPending && this.isFromServer) {
+              if (fromServer(model, this.singleId))
+                return 0;
             }
             const dc = DocChange.delete();
             if (this.isFromServer) dc.flag = 'serverUpdate';
             this.forEach(doc => {
               ++count;
               Model._support.callBeforeObserver('beforeRemove', doc);
-              if (session.state.pendingCount() && ! this.isFromServer) {
-                recordChange(model, doc.attributes);
+              if (isPending && ! this.isFromServer) {
+                recordChange(model, doc._id, doc.attributes);
               }
               delete docs[doc._id];
               notify(dc._set(doc));
@@ -314,26 +308,23 @@ define((require, exports, module)=>{
         const origChanges = (typeof changesOrField === 'string')
               ? {[changesOrField]: value} : changesOrField;
 
+        if (origChanges._id !== undefined)
+          delete origChanges._id;
+
         const {model, docs, singleId} = this;
-        Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
+        this.isFromServer || Model._support._updateTimestamps(
+          origChanges, model.updateTimestamps, util.newDate());
+
+
 
         return TransQueue.transaction(() => {
           let count = 0;
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-            if (session.state.pendingCount() && this.isFromServer) {
-              const [changes, flag] = fromServer(model, this.singleId, origChanges);
-              const doc = docs[singleId];
-              if (doc === undefined) return 0;
-              const undo = Changes.applyAll(doc.attributes, changes);
-              const dc = DocChange.change(doc, undo, flag);
-              for(const _ in undo) {
-                notify(dc);
-                return 1;
-              }
-              Query[notifyAC$](dc);
-              return 1;
-            }
+            const isPending = session.state.pendingCount() != 0;
+            if (isPending && this.isFromServer &&
+                fromServer(model, this.singleId, origChanges))
+              return 0;
 
             const dc = DocChange.change();
             this.forEach(doc => {
@@ -344,11 +335,12 @@ define((require, exports, module)=>{
                 origChanges[field] = attrs[field] + this._incs[field];
               }
 
-              session.state.pendingCount() == 0 ||
-                recordChange(model, attrs, origChanges);
-
               const undo = Changes.applyAll(attrs, origChanges);
-              if (this.isFromServer) dc.flag = 'serverUpdate';
+              if (this.isFromServer) {
+                dc.flag = 'serverUpdate';
+              } else if (isPending) {
+                recordChange(model, attrs._id, undo);
+              }
               for(const key in undo) {
                 notify(dc._set(doc, undo));
                 break;
@@ -473,86 +465,32 @@ define((require, exports, module)=>{
     const fromServer = (model, id, changes)=>{
       const modelName = model.modelName;
       const docs = Model._getProp(model.dbId, modelName, 'simDocs');
-      if (docs === undefined) return [changes, 'serverUpdate'];
+      if (docs === undefined) return false;
+      const keys = docs[id];
+      if (keys === undefined) return false;
 
       if (changes === undefined) {
-        delete docs[id];
-        return [null, 'simComplete'];
-      }
-      const keys = docs[id];
-      if (keys === undefined) {
-        return [changes, 'serverUpdate'];
-      }
-      const doc = model.docs[id];
-      if (keys === 'new') {
-        changes = util.deepCopy(changes);
-        delete changes._id;
-        const nc = {};
-        if (doc !== undefined) for(const key in doc.attributes) {
-          if (key === '_id') continue;
-          if (! hasOwn(changes, key))
-            nc[key] = undefined;
-        }
-        if (util.isObjEmpty(nc)) {
-          delete docs[id];
-          return [changes, 'simComplete'];
-        } else {
-          docs[id] = nc;
-          return [changes, 'serverUpdate'];
-        }
-      }
+        keys[1] = 'del';
+      } else if (keys[1] === undefined || keys[1] === 'del')
+        keys[1] = changes;
+      else
+        Changes.merge(keys[1], changes);
 
-      const nc = {};
-      for(const key in changes) {
-        if (key === '_id') continue;
-        if (key === '$partial') {
-          const ncp = nc.$partial = {};
-          const partial = changes.$partial;
-          for(const key in partial) {
-            const alreadyChanged = hasOwn(keys, key);
-            const undo = [];
-            Changes.applyPartial(keys, key, partial[key], undo);
-            if (alreadyChanged) {
-              // This will override any other simulated partial change otherwise the partial
-              // change may not apply correctly
-              nc[key] = keys[key];
-            } else {
-              ncp[key] = partial[key];
-            }
-          }
-        } else {
-          if (! hasOwn(keys, key)) nc[key] = changes[key];
-
-          Changes.applyOne(keys, key, changes);
-        }
-      }
-
-      if (util.isObjEmpty(nc.$partial))
-        delete nc.$partial;
-
-      return [nc, 'serverUpdate'];
+      return true;
     };
 
-    const recordChange = (model, attrs, changes)=>{
+    const recordChange = (model, id, undo)=>{
       const docs = simDocsFor(model);
-      const keys = docs[attrs._id] || (docs[attrs._id] = {});
-      if (changes !== undefined) {
-        if (keys !== 'new') for (const key in changes) {
-          if (key === '$partial') {
-            for (const key in changes.$partial) {
-              if (! (key in keys))
-                keys[key] = util.deepCopy(attrs[key]);
-            }
-          } else {
-            if (! (key in keys))
-              keys[key] = util.deepCopy(attrs[key]);
-          }
-        }
-      } else {
-        // remove
-        for(const key in attrs) {
-          if (keys[key] === undefined)
-            keys[key] = util.deepCopy(attrs[key]);
+      const keys = docs[id];
+      undo = util.deepCopy(undo);
+      if (keys === undefined)
+        docs[id] = [undo, undefined];
+      else {
+        const curr = keys[0];
+        if (typeof curr !== 'string') {
+          if (curr !== undefined && typeof undo !== 'string')
+            Changes.merge(undo, curr);
+          keys[0] = undo;
         }
       }
     };

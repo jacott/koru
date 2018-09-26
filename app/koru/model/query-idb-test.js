@@ -108,14 +108,14 @@ isClient && define((require, exports, module)=>{
     });
 
     group("queueChange", ()=>{
+      /**
+       * Queue a model change to update indexedDB when the current
+       * {#trans-queue} successfully completes. Changes to model
+       * instances with stopGap$ symbol true are ignored.
+       *
+       **/
       beforeEach(()=>{
-        /**
-         * Queue a model change to update indexedDB when the current
-         * {#trans-queue} successfully completes. Changes to model
-         * instances with stopGap$ symbol true are ignored.
-         *
-         **/
-        api.protoMethod('queueChange');
+        api.protoMethod();
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
         }});
@@ -123,38 +123,39 @@ isClient && define((require, exports, module)=>{
 
       test("simulated add, update", ()=>{
         session.state.incPending();
-        onEnd(_=> {session.state.decPending()});
+        onEnd(_=> {session.state.pendingCount() == 1 && session.state.decPending()});
 
-        api.example(() => {
-          flush(); {
-            v.foo = v.idb._dbs.foo;
-            assert.same(v.foo._version, 2);
-            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-            v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-            v.fIgnore = v.TestModel.createStopGap({
-              _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
-          }
-          flush(); {
-            refute(v.foo._store.TestModel.docs.fooIgnore);
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
+        //[
+        flush(); {
+          v.foo = v.idb._dbs.foo;
+          assert.same(v.foo._version, 2);
+          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)));
+          v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+          v.fIgnore = v.TestModel.createStopGap({
+            _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
+        }
+        flush(); {
+          refute(v.foo._store.TestModel.docs.fooIgnore);
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {
+            _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: ['del', undefined]});
 
-            v.f1.$update('age', 10);
-            flush();
-          }
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm', $sim: 'new'});
+          v.f1.$update('age', 10);
+          flush();
+        }
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {
+            _id: 'foo123', name: 'foo', age: 10, gender: 'm', $sim: ['del', undefined]});
 
-            v.f1.$remove();
-            flush();
-          }
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, undefined);
-          }
-          // this results in the calls to queueChange below
-        });
+          v.f1.$remove();
+          flush();
+        }
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, undefined);
+        }
+        //]
 
         flush();
       });
@@ -163,62 +164,60 @@ isClient && define((require, exports, module)=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
-        api.example(() => {
-          flush(); {
-            v.foo = v.idb._dbs.foo;
-            assert.same(v.foo._version, 2);
-            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-            Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
-            v.f1 = v.TestModel.findById('foo123');
-          }
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-            v.f1.$remove();
-            flush();
-          }
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', $sim: {
-              _id: 'foo123', name: 'foo', age: 5, gender: 'm'}});
-          }
-          // this results in the calls to queueChange below
-        });
+        //[
+        flush(); {
+          v.foo = v.idb._dbs.foo;
+          assert.same(v.foo._version, 2);
+          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+          Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
+          v.f1 = v.TestModel.findById('foo123');
+        }
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+          v.f1.$remove();
+          flush();
+        }
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {_id: 'foo123', $sim: [{
+            _id: 'foo123', name: 'foo', age: 5, gender: 'm'}, undefined]});
+        }
+        //]
 
         flush();
       });
 
       test("non simulated", ()=>{
-        api.example(() => {
-          flush(); {
-            v.foo = v.idb._dbs.foo;
-            assert.same(v.foo._version, 2);
-            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-            v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-            v.fIgnore = v.TestModel.createStopGap({
-              _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
-          }
-          flush(); {
-            refute(v.foo._store.TestModel.docs.fooIgnore);
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+        //[
+        flush(); {
+          v.foo = v.idb._dbs.foo;
+          assert.same(v.foo._version, 2);
+          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+          v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+          v.fIgnore = v.TestModel.createStopGap({
+            _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
+        }
+        flush(); {
+          refute(v.foo._store.TestModel.docs.fooIgnore);
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-            v.f1.$update('age', 10);
-          }
+          v.f1.$update('age', 10);
+        }
 
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
 
-            v.f1.$remove();
-            flush();
-          }
-          flush(); {
-            const iDoc = v.foo._store.TestModel.docs.foo123;
-            assert.equals(iDoc, undefined);
-          }
-          // this results in the calls to queueChange below
-        });
+          v.f1.$remove();
+          flush();
+        }
+        flush(); {
+          const iDoc = v.foo._store.TestModel.docs.foo123;
+          assert.equals(iDoc, undefined);
+        }
+        //]
 
         flush();
       });
@@ -247,7 +246,7 @@ isClient && define((require, exports, module)=>{
 
       test("simulated insert", ()=>{
         v.db.loadDoc('TestModel', v.rec = {
-          _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
+          _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: ['del', undefined]});
 
         flush();
         v.foo = v.idb._dbs.foo;
@@ -258,7 +257,7 @@ isClient && define((require, exports, module)=>{
         assert.same(v.rec.$sim, undefined);
         assert(v.called);
 
-        assert.equals(v.simDocs(), {foo123: 'new'});
+        assert.equals(v.simDocs(), {foo123: ['del', undefined]});
       });
 
       test("non simulated insert", ()=>{
@@ -282,25 +281,25 @@ isClient && define((require, exports, module)=>{
 
       test("simulated update", ()=>{
         v.db.loadDoc('TestModel', {
-          _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
+          _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: [{name: 'foo'}, undefined]});
         flush();
 
         const {foo123} = v.TestModel.docs;
         assert.equals(foo123.name, 'foo2');
 
         assert.equals(v.simDocs(), {
-          foo123: {name: 'foo'}});
+          foo123: [{name: 'foo'}, undefined]});
       });
 
       test("simulated remove", ()=>{
-        v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
-          _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+        v.db.loadDoc('TestModel', {_id: 'foo123', $sim: [{
+          _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
         flush();
 
         assert.same(v.TestModel.docs.foo123, undefined);
 
         assert.equals(v.simDocs(), {
-          foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+          foo123: [{_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
       });
 
       group("with stopGap$", ()=>{
@@ -315,13 +314,13 @@ isClient && define((require, exports, module)=>{
           v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {
-            _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
+            _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: [{name: 'foo'}, undefined]});
           flush();
 
           assert.equals(v.foo123.name, 'foo2');
 
           assert.equals(v.simDocs(), {
-            foo123: {name: 'foo'}});
+            foo123: [{name: 'foo'}, undefined]});
           assert.equals(v.foo123[stopGap$], undefined);
 
           assert.calledWith(v.oc, DocChange.change(
@@ -345,14 +344,14 @@ isClient && define((require, exports, module)=>{
 
         test("simulated remove", ()=>{
           v.TestModel.onChange(v.oc = stub());
-          v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
-            _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+          v.db.loadDoc('TestModel', {_id: 'foo123', $sim: [{
+            _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
           flush();
 
           assert.same(v.TestModel.docs.foo123, undefined);
 
           assert.equals(v.simDocs(), {
-            foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+            foo123: [{_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
           assert.equals(v.foo123[stopGap$], undefined);
 
           assert.calledWith(v.oc, DocChange.delete(v.foo123, undefined));

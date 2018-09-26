@@ -21,10 +21,10 @@ define((require, exports, module)=>{
       if (key === '$partial') continue;
       if (hasOwn(from, key)) {
         to[key] = from[key];
-        if (hasOwn(tp, key))
+        if (tp !== undefined && hasOwn(tp, key))
           delete tp[key];
 
-      } else if (hasOwn(fp, key))
+      } else if (fp !== undefined && hasOwn(fp, key))
         applyPartial(to, key, fp[key]);
     }
 
@@ -91,6 +91,8 @@ define((require, exports, module)=>{
       const dl = patch[i+1], content = patch[i+2];
       const clen = content == null ? 0 : content.length;
       if (ds < 0) {
+        if (patch.length - 3 !== i) throw new koru.Error(
+          400, {[key]: 'negative delta may only be in the last patch block'});
         const nsi = ov.length + ds;
         ds = nsi - si;
         si = nsi;
