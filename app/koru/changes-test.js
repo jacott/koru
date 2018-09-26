@@ -625,10 +625,10 @@ define((require, exports, module)=>{
           const undo = [];
           Changes.applyPartial(attrs, 'name', changes, undo);
           assert.equals(attrs, {name: 'put me at frontorig nameput me at end'});
-          assert.equals(undo, ['$patch', [
-            0, prepend.length, null,
-            -append.length, append.length, null
-          ]]);
+          assert.equals(undo, [
+            '$patch', [-append.length, append.length, null],
+            '$patch', [0, prepend.length, null],
+          ]);
         });
 
         test("array", ()=>{
@@ -639,10 +639,10 @@ define((require, exports, module)=>{
           const undo = [];
           Changes.applyPartial(attrs, 'numbers', changes, undo);
           assert.equals(attrs, {numbers: [45, 12, 2, 4, 3, 16, 18]});
-          assert.equals(undo, ['$patch', [
-            0, 2, null,
-            -2, 2, null,
-          ]]);
+          assert.equals(undo, [
+            '$patch', [-2, 2, null],
+            '$patch', [0, 2, null],
+          ]);
         });
 
         test("$append only", ()=>{
@@ -666,9 +666,30 @@ define((require, exports, module)=>{
 
            *   move-delta, delete-delta and add-content
 
-           * Fields can be of type string or
-           * array. Not allowed with $append, $prepend or $replace.
+           * Fields can be of type string or array.
            **/
+        });
+
+        test("mix with $append", ()=>{
+          const name = "foo.one.two";
+          const attrs = {name};
+          const changes = [
+            '$patch', [-4, 4, null], '$patch', [-4, 4, null], '$append', '.one', '$append', '.three'];
+          const undo = [];
+          Changes.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'foo.one.three'});
+          assert.equals(undo, [
+            '$patch', [-6, 6, null], '$patch', [-4, 4, null],
+            '$patch', [3, 0, '.one'], '$patch', [7, 0, '.two']]);
+
+          const redo = [];
+          Changes.applyPartial(attrs, 'name', undo, redo);
+          assert.equals(attrs, {name: 'foo.one.two'});
+          assert.equals(redo, [
+            '$patch', [7, 4, null], '$patch', [3, 4, null],
+            '$patch', [3, 0, '.one'], '$patch', [7, 0, '.three']]);
+          Changes.applyPartial(attrs, 'name', redo, []);
+          assert.equals(attrs, {name: 'foo.one.three'});
         });
 
         test("string", ()=>{
@@ -714,14 +735,14 @@ define((require, exports, module)=>{
           assert.equals(attrs, {name: 'ori_g con-ve delta. nt'});
           assert.equals(undo, ['$patch', [
             3, 1, null,
-            -13, 11, 'te',
+            5, 11, 'te',
           ]]);
           const undo2 = [];
           Changes.applyPartial(attrs, 'name', undo, undo2);
           assert.equals(attrs, {name: 'orig content'});
           assert.equals(undo2, ['$patch', [
             3, 0, "_",
-            -4, 2, "-ve delta. ",
+            5, 2, "-ve delta. ",
           ]]);
         });
 
@@ -737,14 +758,14 @@ define((require, exports, module)=>{
           assert.equals(attrs, {numbers: [1, 2, 3, 12, 18, 16, 15, 11, 6]});
           assert.equals(undo, ['$patch', [
             3, 3, null,
-            -3, 2, [4, 5],
+            0, 2, [4, 5],
           ]]);
           const undo2 = [];
           Changes.applyPartial(attrs, 'numbers', undo, undo2);
           assert.equals(attrs, {numbers: [1,2,3,4,5,6]});
           assert.equals(undo2, ['$patch', [
             3, 0, [12, 18, 16],
-            -3, 2, [15, 11],
+            0, 2, [15, 11],
           ]]);
         });
 
@@ -1059,7 +1080,6 @@ define((require, exports, module)=>{
        * Extract top level parameters that have changed given a set of attributes and a undo
        * command
        **/
-
       const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
       const changes = {
         foo: 2,
@@ -1073,24 +1093,26 @@ define((require, exports, module)=>{
       assert.equals(params, {foo: 1, bar: 2, fuz: null});
     });
 
-    test("topLevelChanges", ()=>{
+    group("topLevelChanges", ()=>{
       /**
        * Extract top level fields that have changed given a set of attributes and a change command
        **/
-      assert.equals(Changes.topLevelChanges({foo: {a: 1}}, {$partial: {foo: ['$replace', null]}}),
-                    {foo: null});
+      test("exmaple", ()=>{
+        assert.equals(Changes.topLevelChanges({foo: {a: 1}}, {$partial: {foo: ['$replace', null]}}),
+                      {foo: null});
 
-      const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
-      const changes = {
-        foo: 2,
-        $partial: {
-          baz: ['bif.2.bob', 'changed'],
-        },
-        fuz: 5,
-      };
+        const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
+        const changes = {
+          foo: 2,
+          $partial: {
+            baz: ['bif.2.bob', 'changed'],
+          },
+          fuz: 5,
+        };
 
-      const params = Changes.topLevelChanges(attrs, changes);
-      assert.equals(params, {foo: 2, baz: {bif: [1, 2, {bob: 'changed'}]}, fuz: 5});
+        const params = Changes.topLevelChanges(attrs, changes);
+        assert.equals(params, {foo: 2, baz: {bif: [1, 2, {bob: 'changed'}]}, fuz: 5});
+      });
     });
 
     group("diffSeq", ()=>{

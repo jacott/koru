@@ -76,22 +76,25 @@ define((require, exports, module)=>{
 
 
   const applyPatch = (ov, patch, key, undoPatch)=>{
+    let si = 0, i = 0;
     if (ov == null) {
-      if (patch.length !== 3 || patch[0] != 0 || patch[1] != 0)
+      if (patch.length < 3 || patch[0] != 0 || patch[1] != 0)
         throw new koru.Error(400, 'invalid patch');
 
-      const ov = patch[2];
-      undoPatch !== undefined && undoPatch.push(0, ov.length, null);
-      return ov;
+      ov = patch[2];
+      i = 3;
+      si = ov.length;
+      undoPatch !== undefined && undoPatch.push(0, si, null);
     }
-    let si = 0;
-    for(let i = 0; i < patch.length; i += 3) {
-      const ds = patch[i], dl = patch[i+1], content = patch[i+2];
+    for(;i < patch.length; i += 3) {
+      let ds = patch[i];
+      const dl = patch[i+1], content = patch[i+2];
       const clen = content == null ? 0 : content.length;
       if (ds < 0) {
-        if (patch.length - 3 !== i) throw new koru.Error(
-          400, {[key]: 'negative delta may only be in the last patch block'});
-        si = ov.length + ds;
+        const nsi = ov.length + ds;
+        ds = nsi - si;
+        si = nsi;
+
       } else {
         si += ds;
       }
@@ -104,7 +107,7 @@ define((require, exports, module)=>{
       si += clen;
 
       undoPatch !== undefined && undoPatch.push(
-        ds < 0 ? ds - clen + urep.length : ds,
+        ds,
         clen, urep.length == 0 ? null : urep
       );
     }
@@ -196,7 +199,7 @@ define((require, exports, module)=>{
       if (nv == null)
         delete curr[part];
       else {
-          curr[part] = nv;
+        curr[part] = nv;
       }
     }
   };
@@ -248,10 +251,7 @@ define((require, exports, module)=>{
       } else
         throw new koru.Error(400, {[key]: 'wrong_type'});
       if (undo !== undefined) {
-        if (undo.length > 0 && undo[undo.length-2] === '$patch')
-          undo[undo.length-1].push(-nv.length, nv.length, null);
-        else
-          undo.push('$patch', [-nv.length, nv.length, null]);
+        undo.push('$patch', [-nv.length, nv.length, null]);
       }
     },
     $patch(attrs, key, patch, undo) {
@@ -261,7 +261,9 @@ define((require, exports, module)=>{
       let ov = attrs[key];
       const undoPatch = [];
       attrs[key] = applyPatch(ov, patch, key, undoPatch);
-      undo === undefined || undo.push('$patch', undoPatch);
+      if (undo !== undefined) {
+        undo.push('$patch', undoPatch);
+      }
     },
 
     $add(attrs, key, items, undo) {
@@ -354,8 +356,8 @@ define((require, exports, module)=>{
     if (ft === 'string' && tt === 'string')
       return diffSeq(from, to);
     if ((from != null && to != null &&
-        (ft !== 'object' || tt !== 'object' ||
-         to.constructor !== from.constructor)) ||
+         (ft !== 'object' || tt !== 'object' ||
+          to.constructor !== from.constructor)) ||
         from == null && to == null)
       return to;
 
@@ -393,8 +395,8 @@ define((require, exports, module)=>{
       ans.push(field+'.$partial', ['$patch', diffSeq(from, to)]); return ans;
     }
     if ((from != null && to != null &&
-        (ft !== 'object' || tt !== 'object' ||
-         to.constructor !== from.constructor)) ||
+         (ft !== 'object' || tt !== 'object' ||
+          to.constructor !== from.constructor)) ||
         from == null && to == null) {
       ans.push(field, to); return ans;
     }
