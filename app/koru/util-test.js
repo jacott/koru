@@ -121,10 +121,10 @@ define((require, exports, module)=>{
        * has been added to `dest`, or where a property of that name already existed in `dest`, the
        * property in `dest` has been replaced with the property from `source`
        **/
-      api.method('mergeOwnDescriptors');
+      api.method();
+      //[
       const a = {a: 1, b: 2};
       const b = util.mergeNoEnum({__proto__:a, b: 3, c: 4}, {e: 6});
-
       const c = {d: 5};
 
       const ans = util.mergeOwnDescriptors(c, b);
@@ -132,6 +132,7 @@ define((require, exports, module)=>{
       assert.same(ans, c);
       assert.equals(ans, {d: 5, b: 3, c: 4});
       assert.same(ans.e, 6);
+      //]
     });
 
     test("toDp", ()=>{
@@ -430,10 +431,9 @@ define((require, exports, module)=>{
 
     test("values", ()=>{
       /**
-       * Create a list of the names of the enumerable properties that `obj` contains.
-       * @param map the object whose property names to create a list of
+       * Create a list of the values of the enumerable properties that `map` contains.
+       * @param map the object whose property values are used to create a list
        *
-       * @returns a list of the names of the enumerable properties of `obj`
        **/
       api.method('values');
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
@@ -558,18 +558,22 @@ define((require, exports, module)=>{
        * Merge the properties from `properties` that are named in `include` into `obj`. That is, add each
        * property in `properties` that is named in `include` to `obj`, or where a property of that name
        * already exists in `obj`, replace the property in `obj` with the property from `properties`.
+
        * @param obj an object to modify
        * @param properties properties to be added to or modified in `obj` if they are named in `include`
-       * @param include properties, or a list of property names, whose names identify which properties
-       * from `properties` are to be added to or modified in `obj`
-       *
+       * @param {object|array} include properties, or a list of property names, whose names identify
+       * which properties from `properties` are to be added to or modified in `obj`
+
        * @returns `obj` modified: each property in `properties` that is named in `include` has been added
        * to `obj`, or where a property of that name already existed in `obj`, the property in `obj`
        * has been replaced with the property from `properties`
        **/
       api.method('mergeInclude');
-      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true}),
-                    {a: 1, c: 3, d: 4});
+      const obj = {a: 1, c: 2};
+      const ans = util.mergeInclude(obj, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true});
+      assert.equals(ans, {a: 1, c: 3, d: 4});
+      assert.same(obj, ans);
+
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
                     {a: 1, c: 3, d: 4});
     });
