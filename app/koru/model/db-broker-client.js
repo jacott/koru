@@ -1,21 +1,9 @@
 define(() =>{
   let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';
-  const dbIdStack = [];
 
   const dbBroker = {
     get dbId() {return threadDbId},
     set dbId(value) {threadDbId = value || defaultDbId},
-
-    pushDbId(value) {
-      dbIdStack.push(threadDbId);
-      threadDbId = value || defaultDbId;
-    },
-
-    popDbId() {
-      threadDbId = dbIdStack.pop();
-      if (dbIdStack.length === 0)
-        threadDbId = mainDbId;
-    },
 
     setMainDbId(value) {return threadDbId = mainDbId = value || defaultDbId},
 
@@ -23,18 +11,18 @@ define(() =>{
 
     clearDbId() {
       threadDbId = mainDbId = defaultDbId;
-      dbIdStack.length = 0;
     },
 
     withDB(dbId, func) {
       if (dbId === dbBroker.dbId)
         return func();
 
+      const prev = threadDbId;
       try {
-        dbBroker.pushDbId(dbId);
+        dbBroker.dbId = dbId;
         return func();
       } finally {
-        dbBroker.popDbId();
+        dbBroker.dbId = prev;
       }
     },
   };

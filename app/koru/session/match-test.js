@@ -107,9 +107,9 @@ define((require, exports, module)=>{
       //]
 
       if (isClient) {
-        dbBroker.pushDbId('foo');
-        refute.isTrue(myMatch.has(myBook));
-        dbBroker.popDbId();
+        dbBroker.withDB('foo', ()=>{
+          refute.isTrue(myMatch.has(myBook));
+        });
       } else {
         const orig = dbBroker.dbId;
         try {

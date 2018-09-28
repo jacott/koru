@@ -20,12 +20,13 @@ define((require)=>{
           koru.logger("D", type, '< ' + util.inspect(data));
       }
       session.isUpdateFromServer = true;
+      const prevDbId = dbBroker.dbId;
       try {
-        dbBroker.pushDbId(session._id);
+        dbBroker.dbId = session._id;
         func(Model[data[0]], data[1], data[2]);
       } finally {
         session.isUpdateFromServer = false;
-        dbBroker.popDbId();
+        dbBroker.dbId = prevDbId;
       }
     };
   };

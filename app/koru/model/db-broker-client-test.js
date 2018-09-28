@@ -23,14 +23,7 @@ define((require, exports, module)=>{
       sut.setDefaultDbId('foo');
       sut.dbId = null;
       assert.same(sut.dbId, 'foo');
-      sut.pushDbId('fuzz');
-      sut.popDbId();
-      assert.same(sut.dbId, 'foo');
       sut.setMainDbId('bar');
-      sut.pushDbId('fuzz');
-      assert.same(sut.dbId, 'fuzz');
-      sut.popDbId();
-      assert.same(sut.dbId, 'bar');
       sut.clearDbId();
       assert.same(sut.dbId, 'foo');
     });
