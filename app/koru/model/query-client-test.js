@@ -97,12 +97,15 @@ define((require, exports, module)=>{
       });
 
       test("update", ()=>{
-        v.TestModel.serverQuery.onId(v.foo._id).update({age: 7});
+        const {foo, TestModel} = v;
+        assert.equals(foo.$cache, {});
+
+        TestModel.serverQuery.onId(foo._id).update({age: 7});
 
         refute.called(afterLocalChange);
-        assert.calledOnceWith(onChange, DocChange.change(v.foo, {age: 5}, 'serverUpdate'));
+        assert.calledOnceWith(onChange, DocChange.change(foo, {age: 5}, 'serverUpdate'));
+        assert.equals(foo.$cache, {});
       });
-
 
       test("remove", ()=>{
         v.TestModel.serverQuery.onId(v.foo._id).remove();

@@ -7,12 +7,10 @@ isClient && define((require, exports, module)=>{
   const clientUpdate    = require('./client-update');
   const session         = require('./main');
   const message         = require('./message');
-  const publish         = require('./publish');
 
   const {stub, spy, onEnd} = TH;
 
   let v = {};
-
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.gDict = message.newGlobalDict();
@@ -31,9 +29,6 @@ isClient && define((require, exports, module)=>{
       });
 
       v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
-      v.matchFunc = stub(publish.match, 'has', doc => doc.constructor === v.Foo &&
-                         v.match(doc.attributes));
-      v.match = doc => doc.name === 'bob';
     });
 
     afterEach(()=>{
@@ -43,27 +38,7 @@ isClient && define((require, exports, module)=>{
       v = {};
     });
 
-    test("isFromServer", ()=>{
-      stub(Query.prototype, 'remove', function () {
-        assert.isTrue(v.sess.isUpdateFromServer);
-        assert.isTrue(this.isFromServer);
-      });
-
-      v.recvC('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
-
-      assert.isFalse(v.sess.isUpdateFromServer);
-      assert.calledOnce(Query.prototype.remove);
-
-      v.recvR('Foo', 'f123');
-
-      assert.calledTwice(Query.prototype.remove);
-    });
-
     test("added", ()=>{
-      v.recvA('Foo', 'f123', v.attrs = {name: 'sam', age: 5});
-
-      refute(v.Foo.findById('f123')); // only interested in bob
-
       const insertSpy = spy(Query, 'insertFromServer');
       v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
@@ -91,25 +66,11 @@ isClient && define((require, exports, module)=>{
 
       const bob = v.Foo.docs.f222;
 
-      bob.$cache.foo = 1;
-
       v.recvC('Foo', 'f222', v.attrs = {age: 7});
-      v.recvC('Foo', 'f333', v.attrs = {age: 7});
-
-      assert.equals(bob.$cache, {});
+      v.recvC('Foo', 'f333', v.attrs = {age: 9});
 
       assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
-      assert.same(v.Foo.query.onId('f333').count(1), 0);
-    });
-
-    test("changing non existant doc", ()=>{
-      const remove = spy(Query.prototype, 'remove');
-
-      v.recvC('Foo', 'f222', v.attrs = {age: 7});
-      assert.called(remove);
-
-      assert.same(remove.firstCall.thisValue.singleId, 'f222');
-
+      assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
     });
 
     test("remove", ()=>{
@@ -117,10 +78,9 @@ isClient && define((require, exports, module)=>{
       const sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
 
       v.recvR('Foo', 'f222');
-      v.recvR('Foo', 'f333');
 
       refute(v.Foo.findById('f222'));
-      refute(v.Foo.findById('f333')); // doesn't matter if it doesn't match; it's gone
+      assert(v.Foo.findById('f333'));
     });
   });
 });

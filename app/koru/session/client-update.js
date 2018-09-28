@@ -1,13 +1,10 @@
 define((require)=>{
+  const koru            = require('koru');
+  const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
-  const koru            = require('../main');
-  const Model           = require('../model/main');
-  const ModelEnv        = require('../model/main-client');
-  const Query           = require('../model/query');
-  const Trace           = require('../trace');
-  const util            = require('../util');
-  const message         = require('./message');
-  const publish         = require('./publish');
+  const Query           = require('koru/model/query');
+  const Trace           = require('koru/trace');
+  const util            = require('koru/util');
 
   let debug_clientUpdate = false;
   Trace.debug_clientUpdate = value => {debug_clientUpdate = value};
@@ -32,20 +29,11 @@ define((require)=>{
   };
 
   const added = modelUpdate('Add', (model, id, attrs) => {
-    attrs._id = id;
-    const doc = new model(attrs);
-    publish.match.has(doc) && Query.insertFromServer(model, id, attrs);
+    Query.insertFromServer(model, id, attrs);
   });
 
   const changed = modelUpdate('Upd', (model, id, attrs) => {
-    attrs._id = id;
-    const query = model.serverQuery.onId(id);
-    const doc = model.findById(id);
-    if (doc && publish.match.has(doc)) {
-      doc.$clearCache();
-      query.update(attrs);
-    } else
-      query.remove();
+    model.serverQuery.onId(id).update(attrs);
   });
 
   const removed = modelUpdate('Rem', (model, id) => {

@@ -410,16 +410,6 @@ isClient && define((require, exports, module)=>{
         assert.calledOnce(v.onstop);
       });
 
-      test("called on message", ()=>{
-        v.sub = subscribe('foo');
-
-        v.sub.match(v.Foo, v.match = stub());
-
-        v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
-
-        assert.calledWith(v.match, TH.match(doc => doc._id === 'f123'));
-      });
-
       test("resubscribe", ()=>{
         stub(v.sessState, 'isReady').returns(true);
         v.pubFunc = function () {

@@ -134,6 +134,7 @@ define((require, exports, module)=>{
 
       insertFromServer(model, id, attrs) {
         return TransQueue.transaction(() => {
+          attrs._id = id;
           const doc = model.docs[id];
           if (session.state.pendingCount() != 0) {
             if (fromServer(model, id, attrs)) {
@@ -162,7 +163,6 @@ define((require, exports, module)=>{
             }
           } else {
             // insert doc
-            attrs._id = id;
             notify(DocChange.add(model.docs[id] = new model(attrs), 'serverUpdate'));
           }
         });
@@ -410,6 +410,7 @@ define((require, exports, module)=>{
     }
 
     const notify = (docChange)=>{
+      docChange.doc.$clearCache();
       docChange.model._indexUpdate.notify(docChange); // first: update indexes
       docChange.flag === undefined &&
         Model._support.callAfterLocalChange(docChange); // next:  changes originated here
