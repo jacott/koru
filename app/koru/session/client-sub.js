@@ -1,54 +1,68 @@
 define((require)=>{
   const koru            = require('koru');
+  const DocChange       = require('koru/model/doc-change');
+  const Query           = require('koru/model/query');
   const util            = require('koru/util');
   const Trace           = require('../trace');
   const publish         = require('./publish');
 
+  const {private$} = require('koru/symbols');
+
   let debug_subscribe = false;
   Trace.debug_subscribe = value =>{debug_subscribe = value};
 
-  function stopSub() {
-    const {_id} = this;
+  const stopSub = sub=>{
+    const {_id} = sub;
     if (_id === null) return;
-    debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >',
-                                   _id, this.name, 'STOP');
-    const session = this.session;
+    debug_subscribe && koru.logger('D', (sub.waiting ? '' : '*')+'DebugSub >',
+                                   _id, sub.name, 'STOP');
+    const {session} = sub;
     session.sendP(_id);
-    stopped(this);
-    if (! this.waiting) return;
+    stopped(sub);
+    if (! sub.waiting) return;
 
-    this.waiting = false;
+    sub.waiting = false;
     session.state.decPending();
-  }
+  };
+
+  const filterStopped = doc =>{
+    if (! publish.match.has(doc, 'stopped')) {
+      const model = doc.constructor;
+      const simDocs = Query.simDocsFor(model);
+      const sim = simDocs[doc._id];
+      if (sim !== undefined)
+        delete simDocs[doc._id];
+      delete model.docs[doc._id];
+      Query.notify(DocChange.delete(doc, 'stopped'));
+    }
+  };
 
   const stopped = (sub)=>{
     if (sub._id === null) return;
 
     delete sub.session.subs[sub._id];
-    const models = {};
-    sub._stop && sub._stop();
-    sub._id = null;
-    killMatches(sub._matches, models);
-    sub._stop = sub._matches = sub.callback = null;
-    publish._filterModels(models, 'stopped');
+    const {_stop} = sub;
+    killMatches(sub._matches);
+    sub._id = sub._stop = sub._matches = sub.callback = null;
+    _stop != null && _stop(sub, filterStopped);
   };
 
   const killMatches = (matches, models)=>{
-    matches.forEach(m => {
+    for (const name in matches) {
       if (models !== undefined)
-        models[m.modelName] = true;
-      m.delete();
-    });
+        models[name] = true;
+      matches[name].delete();
+    };
   };
 
   class ClientSub {
     constructor(session, subId, name, args) {
       this.session = session;
       this._id = subId;
-      this._matches = [];
+      this._matches = {};
       this.name = name;
       this._subscribe = publish._pubs[name];
-      this.stop = stopSub.bind(this);
+      this.stop = ()=>{stopSub(this)};
       this.waiting = false;
       this.repeatResponse = false;
       const cb = args[args.length - 1];
@@ -72,24 +86,6 @@ define((require)=>{
 
     isStopped() {
       return ! this._id;
-    }
-
-    resubscribe(models) {
-      const oldMatches = this._matches;
-      this._stop && this._stop();
-      this._stop = null;
-      this._matches = [];
-      try {
-        this.isResubscribe = this._called;
-        this._subscribe.apply(this, this.args);
-      } catch(ex) {
-        koru.unhandledException(ex);
-      } finally {
-        this._called = true;
-        this.isResubscribe = false;
-
-        killMatches(oldMatches, models);
-      }
     }
 
     _wait() {
@@ -136,9 +132,34 @@ define((require)=>{
     }
 
     match(modelName, func) {
-      this._matches.push(publish.match.register(modelName, func));
+      if (typeof modelName !== 'string')
+        modelName = modelName.modelName;
+      const {_matches} = this;
+      if (_matches[modelName] !== undefined)
+        _matches[modelName].delete();
+      this._matches[modelName] = publish.match.register(modelName, func);
     }
   }
+
+  ClientSub[private$] = {
+    resubscribe: (sub, models)=>{
+      const {resubscribe} = sub._subscribe;
+      const matches = sub._matches;
+      if (resubscribe !== undefined) {
+        try {
+          resubscribe.call(sub, sub);
+        } catch(ex) {
+          koru.unhandledException(ex);
+        }
+      }
+      if (matches !== undefined) for (const modelName in matches)
+        models[modelName] = true;
+    },
+
+    subscribe: sub =>{
+      sub._subscribe.init.apply(sub, sub.args);
+    },
+  };
 
   return ClientSub;
 });

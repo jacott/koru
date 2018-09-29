@@ -1,6 +1,6 @@
 define((require)=>{
-  const ModelMap        = require('koru/model/map');
   const DocChange       = require('koru/model/doc-change');
+  const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const util            = require('koru/util');
@@ -29,6 +29,10 @@ define((require)=>{
               }
             }
             if (remove) {
+              const simDocs = Query.simDocsFor(model);
+              const sim = simDocs[doc._id];
+              if (sim !== undefined)
+                delete simDocs[doc._id];
               delete docs[id];
               Query.notify(DocChange.delete(doc, reason));
             }

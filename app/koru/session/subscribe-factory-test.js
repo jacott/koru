@@ -16,7 +16,9 @@ isClient && define((require, exports, module)=>{
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
 
-  const {stub, spy, onEnd, stubProperty} = TH;
+  const {private$} = require('koru/symbols');
+
+  const {stub, spy, onEnd, stubProperty, match: m} = TH;
 
   const subscribeFactory = require('./subscribe-factory');
 
@@ -52,7 +54,6 @@ isClient && define((require, exports, module)=>{
       publish({name: "foo", init(...args) {
         v.pubFunc.apply(this, args);
       }});
-      api.module();
     });
 
     afterEach(()=>{
@@ -75,7 +76,8 @@ isClient && define((require, exports, module)=>{
     });
 
     test("_wait called before preload", ()=>{
-      const preload = stub(publish, 'preload');
+      const preload = stub();
+      stubProperty(publish._pubs.foo, 'preload', preload);
       const _wait = spy(ClientSub.prototype, '_wait');
 
       const sub1 = subscribe("foo", 1 ,2);
@@ -84,25 +86,29 @@ isClient && define((require, exports, module)=>{
     });
 
     test("preload error", ()=>{
-      const preload = stub(publish, 'preload');
+      const then = stub();
+      const preload = stub().invokes(()=>({then}));
+      stubProperty(publish._pubs.foo, 'preload', preload);
 
       const sub1 = subscribe("foo", 1 ,2);
 
-      assert.calledWith(publish.preload, sub1, TH.match(cb => v.cb = cb));
+      assert.calledWith(preload, sub1);
 
       spy(sub1, '_received');
-      spy(sub1, 'resubscribe');
+      spy(sub1._subscribe, 'init');
 
-      v.cb(v.err = {error: 'error'});
+      then.firstCall.args[1](v.err = {error: 'error'});
       assert.calledWith(sub1._received, v.err);
-      refute.called(sub1.resubscribe);
+      refute.called(sub1._subscribe.init);
     });
 
     test("preload calls after sub closed", ()=>{
-      const preload = stub(publish, 'preload');
+      const then = stub();
+      const preload = stub().invokes(()=>({then}));
+      stubProperty(publish._pubs.foo, 'preload', preload);
       const sub1 = subscribe("foo", 1 ,2);
       sub1.stop();
-      preload.yield();
+      then.yield();
       refute(sub1._id);
       assert.equals(v.sess.subs, {});
 
@@ -136,7 +142,7 @@ isClient && define((require, exports, module)=>{
         const subscribeFactory = api.custom(sut);
         stub(v.sessState, 'onConnect');
         const mySession = v.sess;
-        stubProperty(publish._pubs, 'Library', v.Library = stub());
+        stubProperty(publish._pubs, 'Library', {value: {init: v.Library = stub()}});
         //[
         const subscribe = subscribeFactory(mySession);
         const sub = subscribe("Library");
@@ -209,37 +215,30 @@ isClient && define((require, exports, module)=>{
     group("filtering", ()=>{
       beforeEach(()=>{
         stub(publish, '_filterModels');
-        publish({name: "foo2", init() {
-          this.match('F1', stub());
-          this.match('F2', stub());
-          v.sub2isResub = this.isResubscribe;
-        }});
+        publish({
+          name: "foo2",
+          init() {
+            this.match('F1', stub());
+            this.match('F2', stub());
+          },
+          resubscribe(sub) {
+            v.sub2isResub = true;
+          }
+        });
       });
 
-      /**
-       * Ensure when we stop that all docs in models (matching matches)
-       * are removed if not matched
-       */
-      test("remove unwanted docs", ()=>{
-        v.sub = subscribe('foo2');
-
-        refute.called(publish._filterModels);
-
-        v.sub.stop.call({}); // ensure binding
-
-        assert.calledWith(publish._filterModels, {F1: true, F2: true}, "stopped");
-      });
-
-      /**
+      /*
        * All subscriptions should be resubscribed
        */
       test("change userId", ()=>{
         v.sub = subscribe('foo', 123, 456);
         const sub2 = subscribe('foo2', 2);
 
+        assert.same(v.pubFunc.firstCall.thisValue, v.sub);
+        assert.calledWith(v.pubFunc, 123, 456);
         v.pubFunc.reset();
 
-        refute(v.sub.isResubscribe);
+        refute(v.sub2isResub);
 
         login.setUserId(v.sess, util.thread.userId); // no userId change
         refute.called(v.pubFunc);
@@ -248,10 +247,7 @@ isClient && define((require, exports, module)=>{
 
         login.setUserId(v.sess, util.thread.userId);
 
-        refute(v.sub.isResubscribe);
-
-        assert.calledWith(v.pubFunc, 123, 456);
-        assert.same(v.pubFunc.firstCall.thisValue, v.sub);
+        refute.called(v.pubFunc);
 
         assert.isTrue(v.sub2isResub);
 
@@ -259,25 +255,12 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("resubscribe", ()=>{
-      v.sub = subscribe('foo', 'x');
-      v.pubFunc = function (...args) {
-        assert.same(this, v.sub);
-        assert.equals(args.slice(), ['x']);
-        assert.isTrue(this.isResubscribe);
-      };
-
-      v.sub.resubscribe();
-
-      refute(v.sub.isResubscribe);
-    });
-
     test("error on resubscribe", ()=>{
       v.sub = subscribe('foo', 'x');
       stub(koru, 'error');
-      v.pubFunc = () => {throw new Error('foo error')};
+      v.sub._subscribe.resubscribe = () => {throw new Error('foo error')};
 
-      v.sub.resubscribe();
+      ClientSub[private$].resubscribe(v.sub, {});
 
       refute(v.sub.isResubscribe);
       assert.calledWith(koru.error, TH.match(/foo error/));
@@ -411,6 +394,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("resubscribe", ()=>{
+
         stub(v.sessState, 'isReady').returns(true);
         v.pubFunc = function () {
           this.lastSubscribed = 12345678;
@@ -423,28 +407,16 @@ isClient && define((require, exports, module)=>{
         /** pubFunc is called before sent to server **/
         assert.calledWith(v.sendBinary, 'P', ['1', 'foo', [], 12345678]);
 
-        v.sub.onStop(v.onstop = stub());
-
-        v.pubFunc = function () {
-          this.match("Baz", v.match = stub());
-          this.match("Bar", stub());
+        v.sub._subscribe.resubscribe = function (sub) {
+          sub.match("Baz", v.match = stub());
+          sub.match("Biz", stub());
         };
 
-        {
-          const models = {};
-          v.sub.resubscribe(models);
+        const models = {};
+        ClientSub[private$].resubscribe(v.sub, models);
 
-          assert.called(v.onstop);
+        assert.equals(Object.keys(models).sort(), ['Bar', 'Baz', 'Biz', 'Foo']);
 
-          assert.equals(Object.keys(models).sort(), ["Bar", "Foo"]);
-        } {
-          const models = {};
-          v.sub.resubscribe(models);
-
-          assert.calledOnce(v.onstop);
-
-          assert.equals(Object.keys(models).sort(), ["Bar", "Baz"]);
-        }
       });
     });
   });

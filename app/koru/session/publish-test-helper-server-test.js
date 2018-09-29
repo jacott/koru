@@ -93,14 +93,14 @@ define((require, exports, module)=>{
       v.session._commands.P = session._commands.P;
       onEnd(() => delete publish._pubs.Book);
 
-      const bookPub = publish._pubs.Book = stub();
+      const bookPub = publish._pubs.Book = {init: stub()};
 
       let sub = publishTH.mockSubscribe(v, 's123', 'Book', v.args = {author: 'Jane Austen'});
       assert(sub);
       assert.same(sub.id, 's123');
 
-      assert.calledWith(bookPub, v.args);
-      assert.same(bookPub.firstCall.thisValue, sub);
+      assert.calledWith(bookPub.init, v.args);
+      assert.same(bookPub.init.firstCall.thisValue, sub);
     });
   });
 });

@@ -33,7 +33,7 @@ define((require, exports, module)=>{
       const sub = new MockClientSub(name, args);
       spy(sub, 'onStop');
       const pub = publish._pubs[name];
-      pub.apply(sub, args);
+      pub.init.apply(sub, args);
       return sub;
     },
   };

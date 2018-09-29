@@ -9,13 +9,13 @@ define((require)=>{
 
     get _models() {return this[dbs$][dbBroker.dbId]}
 
-    has(doc) {
+    has(doc, reason) {
       const models = this._models;
       if (models === undefined) return false;
       const mm = models[doc.constructor.modelName];
       if (mm === undefined) return false;
       for (const comparator of mm) {
-        if (comparator(doc)) return true;
+        if (comparator(doc, reason)) return true;
       }
       return false;
     }

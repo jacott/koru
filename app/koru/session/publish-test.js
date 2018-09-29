@@ -42,7 +42,7 @@ define((require, exports, module)=>{
        * {#koru/session/client-sub} for client
        *
        * @param {function} [preload] A preload function to call on
-       * client; see {#.preload}
+       * client;
        **/
       const publish = api.custom(sut, {sig: 'publish'});
 
@@ -52,7 +52,7 @@ define((require, exports, module)=>{
       });
 
       function subscribe(name, ...args) {
-        sut._pubs[name].apply(v.exp = {
+        sut._pubs[name].init.apply(v.exp = {
           match: {register: TH.test.stub()}
         }, args);
       }

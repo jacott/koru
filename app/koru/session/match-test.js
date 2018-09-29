@@ -46,87 +46,85 @@ define((require, exports, module)=>{
       assert(myMatch.register);
     });
 
-    test("false matches", ()=>{
+    test("register", ()=>{
       /**
-       * Register a matcher agains a model
-       *
+       * Register a matcher agains a model. See also {##has}
+
        * @param modelName or model
 
-       * @param comparator returns true if supplied document matches
+       * @param comparator The `comparator(doc, reason){}` should take one or two arguments. The
+       * first is the `doc` to test if matches and the second [client side only] is a `reason` for
+       * testing. Return `true` to match the document otherwise `false`.
+       *
+       * The `reason` is usally `undefined` but will be set to `"stopped"` when a subscription is
+       * stopped. Use the `reason` to determine if the `doc` should be fully deleted from the client
+       * or just unloaded from memory. For instance when the `reason` is `"stopped"` the matcher can
+       * return false if the subscription has finished with the document but should not be deleted
+       * from offline storage.
        **/
-      api.protoMethod('register');
-
+      api.protoMethod();
       //[
       const myMatch = new Match();
-      const myBook = Book.fetch();
+      const book1 = Book.fetch();
+      const book2 = Book.fetch();
 
-      // no matchers match the document
-      const m1 = myMatch.register('Book', doc => {
-        assert.same(doc, myBook);
-        return doc !== myBook;
+      // no matchers match the document if stopped
+      const m1 = myMatch.register('Book', (doc, reason)=>{
+        return reason === 'stopped' ? doc === book1 : true;
       });
 
+      //]
+      v.handles.push(m1);
+      //[
+      assert.isTrue(myMatch.has(book2));
+      assert.isFalse(myMatch.has(book2, "stopped"));
+      assert.isTrue(myMatch.has(book1, "stopped"));
+      //]
+    });
+
+    test("has", ()=>{
+      /**
+       * Test if a document matches a matcher. See {##register}. (This is not usally called
+       * directly).
+
+       * @param doc the document to test if matches a matcher
+
+       * @param reason [client side only] `"stopped"` when a subscription is stopped; noMatch if
+       * `userId` changes.
+       **/
+
+      api.protoMethod();
+      //[
+      const myMatch = new Match();
+      const book1 = Book.fetch();
+      const book2 = Book.fetch();
+      const book3 = Book.fetch();
+
+      const m1 = myMatch.register('Book', (doc, reason)=>{
+        return reason === 'stopped' ? doc !== book1 : true;
+      });
 
       const m2 = myMatch.register('Book', doc => {
-        assert.same(doc, myBook);
-        return doc !== myBook;
+        return doc === book2;
       });
 
       //]
       v.handles.push(m1, m2);
       //[
 
-      assert.isFalse(myMatch.has(myBook));
+      assert.isTrue(myMatch.has(book1));
+      assert.isFalse(myMatch.has(book1, "stopped"));
+      assert.isTrue(myMatch.has(book2, "stopped"));
+      assert.isTrue(myMatch.has(book3, "stopped"));
 
-      m1.delete(); m2.delete();
-      //]
-    });
+      m1.delete();
 
+      assert.isFalse(myMatch.has(book1));
+      assert.isTrue(myMatch.has(book2));
+      assert.isFalse(myMatch.has(book3));
+      m2.delete();
 
-    test("true matches", ()=>{
-      api.protoMethod('register');
-      //[
-      const myMatch = new Match();
-      const myBook = Book.fetch();
-
-      // at least one matcher matches the document
-      const mfalse = myMatch.register('Book', doc => {
-        assert.same(doc, myBook);
-        return false;
-      });
-
-      const mtrue = myMatch.register('Book', doc => {
-        assert.same(doc, myBook);
-        return doc === myBook;
-      });
-      //]
-      v.handles.push(mfalse, mtrue);
-
-      //[
-      assert.isTrue(myMatch.has(myBook));
-      //]
-
-      if (isClient) {
-        dbBroker.withDB('foo', ()=>{
-          refute.isTrue(myMatch.has(myBook));
-        });
-      } else {
-        const orig = dbBroker.dbId;
-        try {
-          util.thread.db.name = 'foo';
-          refute.isTrue(myMatch.has(myBook));
-        } finally {
-          util.thread.db.name = orig;
-        }
-      }
-      assert.isTrue(myMatch.has(myBook));
-
-      //[
-      mtrue.delete();
-      assert.isNull(mtrue.id);
-      assert.isFalse(myMatch.has(myBook));
-
-      mfalse.delete();
+      assert.isFalse(myMatch.has(book2));
       //]
     });
   });

@@ -2,7 +2,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const koru            = require('../main');
   const session         = require('../session/base');
-  const BaseTH          = require('../test-helper');
+  const BaseTH          = require('koru/model/test-helper');
 
   const {test$} = require('koru/symbols');
 

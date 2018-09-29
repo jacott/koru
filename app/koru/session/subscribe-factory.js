@@ -6,6 +6,8 @@ define((require, exports, module)=>{
   const message         = require('./message');
   const publish         = require('./publish');
 
+  const {private$} = require('koru/symbols');
+
   koru.onunload(module, 'reload');
 
   return function subscribeFactory(session) {
@@ -33,16 +35,23 @@ define((require, exports, module)=>{
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub))
         return sub;
       sub._wait();
-      publish.preload(sub, err => {
+      const ready = err => {
         if (! sub._id) return; // too late
         if (err) {
           sub._received(err);
           return;
         }
         subs[sub._id] = sub;
-        sub.resubscribe();
+        ClientSub[private$].subscribe(sub);
         session.sendP(sub._id, name, sub.args, sub.lastSubscribed);
-      });
+      };
+      const preload = sub._subscribe && sub._subscribe.preload;
+      const promise = preload && preload(sub);
+      if (promise && promise.then)
+        promise.then(() => {ready()}, err => {ready(err)});
+      else
+        ready();
+
       return sub;
     };
 
@@ -62,7 +71,7 @@ define((require, exports, module)=>{
           userId = koru.userId();
           const models = {};
           for(const key in subs) {
-            subs[key].resubscribe(models);
+            ClientSub[private$].resubscribe(subs[key], models);
           }
           publish._filterModels(models);
         }

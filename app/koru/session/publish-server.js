@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const message         = require('./message');
   const publish         = require('./publish-base');
 
-  const subscribe$ = Symbol();
+  const subscribe$ = Symbol(), called$ = Symbol();
 
   const stopped = sub =>{
     if (sub.conn._subs) delete sub.conn._subs[sub.id];
@@ -19,12 +19,12 @@ define((require, exports, module)=>{
       this.conn = conn;
       this.lastSubscribed = typeof lastSubscribed === 'number' ? lastSubscribed : 0;
       this.id = subId;
-      this[subscribe$] = subscribe;
+      this[subscribe$] = subscribe.init;
       this.args = args;
       this._matches = [];
     }
 
-    onStop(func) {this._stop = func}
+    onStop(callback) {this._stop = callback}
 
     sendUpdate(dc, filter) {this.conn.sendUpdate(dc, filter)}
 
@@ -56,7 +56,7 @@ define((require, exports, module)=>{
 
     resubscribe() {
       try {
-        this.isResubscribe = this._called;
+        this.isResubscribe = !! this[called$];
         this._stop && this._stop();
         this[subscribe$].apply(this, this.args);
       } catch(ex) {
@@ -67,7 +67,7 @@ define((require, exports, module)=>{
           this.error(new koru.Error(500, 'Internal server error'));
         }
       }
-      this._called = true;
+      this[called$] = true;
       this.isResubscribe = false;
     }
 

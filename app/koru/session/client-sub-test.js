@@ -7,6 +7,7 @@ isClient && define((require, exports, module)=>{
    * See {#koru/session/subscribe}
    **/
   const Model           = require('koru/model');
+  const Query           = require('koru/model/query');
   const publish         = require('koru/session/publish');
   const api             = require('koru/test/api');
   const stateFactory    = require('./state').constructor;
@@ -17,7 +18,6 @@ isClient && define((require, exports, module)=>{
   const ClientSub    = require('./client-sub');
 
   let v = {};
-
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.sess = {
@@ -28,7 +28,6 @@ isClient && define((require, exports, module)=>{
         sendBinary: v.sendBinary = stub(),
         subs: {},
       };
-      const subscribe = function () {};
       api.module({
         initInstExample: `
           const subscribe = ${'require'}('koru/session/subscribe');
@@ -126,17 +125,65 @@ isClient && define((require, exports, module)=>{
       api.protoMethod('match');
 
       class Book extends Model.BaseModel {
+        static get modelName() {return 'Book'}
       }
 
-      const regBook = stub(publish.match, "register").withArgs(Book, TH.match.func)
+      const regBook = stub(publish.match, "register").withArgs('Book', TH.match.func)
               .returns("registered Book");
       const sub1 = new ClientSub(v.sess, "1", "Library", []);
 
 
       sub1.match(Book, doc => /lord/i.test(doc.name));
 
-      assert.equals(sub1._matches, ['registered Book']);
+      assert.equals(sub1._matches, {Book: 'registered Book'});
       assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
+    });
+
+    /**
+     * Ensure when we stop that all docs the subscription doesn't want are removed if matched
+     * elsewhere
+     */
+    test("remove unwanted docs", ()=>{
+      class Book extends Model.BaseModel {}
+      Book.define({
+        name: 'Book',
+        fields: {title: 'text', pageCount: 'number'}
+      });
+      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      const simDocs = {
+        doc1: ['del'],
+        doc2: ['del'],
+      };
+      intercept(Query, 'simDocsFor', model => model === Book && simDocs);
+      const doc1 = Book.create({_id: 'doc1'});
+      const doc2 = Book.create({_id: 'doc2'});
+      const doc3 = Book.create({_id: 'doc3'});
+
+      const mr = publish.match.register('Book', (doc, reason) =>{
+        assert.same(reason, 'stopped');
+
+        return doc === doc2;
+      });
+      onEnd(()=>{mr.delete()});
+
+      const sub = new ClientSub(v.sess, "1", "Library", []);
+      sub.onStop((sub, unmatch)=>{
+        unmatch(doc1);
+        unmatch(doc2);
+      });
+
+      sub.session = {
+        subs: {[sub._id]: sub},
+        sendP: stub(),
+      };
+
+      sub.stop.call({}); // ensure binding
+
+      assert.equals(simDocs, {doc2: ['del']});
+
+      refute(Book.findById('doc1'));
+      assert(Book.findById('doc2'));
+      assert(Book.findById('doc3'));
     });
 
     test("filterModels", ()=>{
@@ -160,7 +207,7 @@ isClient && define((require, exports, module)=>{
 
       sub1.stop();
 
-      assert.calledWith(publish._filterModels, {Book: true}, 'stopped');
+      refute.called(publish._filterModels);
     });
   });
 });

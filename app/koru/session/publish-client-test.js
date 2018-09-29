@@ -8,6 +8,8 @@ define((require, exports, module)=>{
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
+  const {private$} = require('koru/symbols');
+
   const {stub, spy, onEnd, match: m} = TH;
 
   const publish = require('./publish');
@@ -48,15 +50,12 @@ define((require, exports, module)=>{
 
        * 1. call the subscription callback and clear it so not called
        * by server fulfillment
+       *
        **/
-
-      const preload = api.method("preload");
-
       const subscribe = (name, ...args) => {
         v.sub = new ClientSub(v.sess, "1", name, args);
-        publish.preload(v.sub, err => {
-          assert.same(err, undefined);
-          v.sub.resubscribe();
+        publish._pubs.Books.preload(v.sub).then(()=>{
+          ClientSub[private$].subscribe(v.sub);
         });
       };
 
@@ -76,6 +75,10 @@ define((require, exports, module)=>{
           });
         },
       });
+      //]
+      api.customIntercept(publish._pubs.Books, {
+        name: 'preload', sig: 'publish({preload})'});
+      //[
       subscribe('Books', 5);
       assert.equals(v.args, [6, 7]);
       //]
