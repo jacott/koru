@@ -52,7 +52,7 @@ define(['require', 'koru/util-base'], (require, util)=>{
         if (/(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) &&
             ! /-test.js$/.test(url)) {
           if (/koru\/test\/(?:client|test-case).js$/.test(url))
-            break;
+            continue;
           if (notUs) continue;
         } else if (url === 'index.js') {
           if (stack.length)
