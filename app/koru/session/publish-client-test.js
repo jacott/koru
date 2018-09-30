@@ -50,6 +50,8 @@ define((require, exports, module)=>{
 
        * 1. call the subscription callback and clear it so not called
        * by server fulfillment
+
+       * @param sub The active subscription
        *
        **/
       const subscribe = (name, ...args) => {
@@ -77,7 +79,7 @@ define((require, exports, module)=>{
       });
       //]
       api.customIntercept(publish._pubs.Books, {
-        name: 'preload', sig: 'publish({preload})'});
+        name: 'preload', sig: 'preload(sub)'});
       //[
       subscribe('Books', 5);
       assert.equals(v.args, [6, 7]);

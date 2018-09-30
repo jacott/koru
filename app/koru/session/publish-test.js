@@ -42,9 +42,9 @@ define((require, exports, module)=>{
        * {#koru/session/client-sub} for client
        *
        * @param {function} [preload] A preload function to call on
-       * client;
+       * client (see {#.preload});
        **/
-      const publish = api.custom(sut, {sig: 'publish'});
+      const publish = api.custom(sut, {sig: 'publish({module, name, init, preload})'});
 
       onEnd(() => {
         sut._destroy("TestPublish");
