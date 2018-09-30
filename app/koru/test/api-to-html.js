@@ -494,6 +494,7 @@ define((require)=>{
         return true;
       } else {
         argMap[arg] = argProfile(calls, call => call[0][i]);
+        ++i;
         return true;
       }
 

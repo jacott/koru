@@ -350,7 +350,9 @@ define((require, exports, module)=>{
       return util.inspect(obj, 4, 150);
 
     const coreDisplay = obj && API._coreDisplay.get(obj.constructor);
-    if (coreDisplay) return coreDisplay;
+    if (coreDisplay !== undefined) {
+      return typeof coreDisplay === 'function' ? coreDisplay(obj) : coreDisplay;
+    }
 
     let keys = Object.keys(obj).sort();
     if (keys.length > 20)
@@ -847,7 +849,6 @@ define((require, exports, module)=>{
         }
         let resolveFunc = this.constructor._resolveFuncs.get(obj) ||
               this.constructor._resolveFuncs.get(obj.constructor);
-
         return ['O', obj, resolveFunc ? resolveFunc('O', obj)[1] : inspect(obj)];
       default:
         return obj;
@@ -935,7 +936,8 @@ define((require, exports, module)=>{
   ]);
 
   API._coreDisplay = new Map([
-    [Promise, '{a promise}']
+    [Promise, 'Promise()'],
+    [RegExp, obj => ''+obj],
   ]);
 
   API._specialNames = new Map([
