@@ -471,7 +471,7 @@ define((require)=>{
         if (m = regex.exec(key))
           return m;
       }
-      return false;
+      return null;
     },
 
     addItem(list, item) {

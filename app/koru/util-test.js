@@ -329,19 +329,17 @@ define((require, exports, module)=>{
 
     test("keyMatches", ()=>{
       /**
-       * Search for a property in `obj` whose name contains a match for `regex`.
-       * @param obj the object whose property names to search for a match with `regex`
+       * Search for a property name in `obj` which matches the supplied `regex`.
+       * @param obj the object to search in
        * @param regex the regular expression to match
        *
-       * @returns If the match succeeds, returns an array whose element at index 0 is the full string
-       * of characters matched, and whose subsequent elements are the parenthesized substring matches
-       * if any, and whose `index` property is the index of the match in the `obj` property name, and whose
-       * `input` property is the string that is the `obj` property name. If the match fails, returns `false`.
+       * @returns the match result from `regex.exec()` if found or `null` if not. Each enumerable
+       * property name is tested against the `regex` util one matches.
        **/
-      api.method('keyMatches');
+      api.method();
       //[
-      assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(c)/)[1], 'c');
-      assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
+      assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(.)/)[1], 'c');
+      assert.isNull(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
       //]
     });
 
@@ -617,14 +615,14 @@ define((require, exports, module)=>{
 
     test("splitKeys", ()=>{
       /**
-       * Create and return an object containing two objects: the first made up of the properties in `obj`
-       * whose keys are named in `includeKeys`, and the second made up of the other properties in `obj`.
+       * Create and return an object containing two properties `include` and `exclude`. The former
+       * is made up of the properties in `obj` whose keys are named in `includeKeys`, and the later
+       * is made up of the other properties in `obj`.
        * @param obj the object from which to collect properties
        * @param includeKeys a collection of properties whose names identify which objects to
        * include in the first object returned
        *
-       * @returns an object containing two objects: the first is made up of the properties in `obj`
-       * whose keys are named in `includeKeys`; the second is made up of the other properties in `obj`
+       * @returns the `include` and `exclude` objects.
        **/
       api.method('splitKeys');
       //[
