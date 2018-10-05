@@ -72,9 +72,22 @@ define((require)=>{
       const {entries, sym$} = pv;
       const node = doc[sym$] || entries.findNode(doc);
       if (node == null) return null;
+
       const elm = node[elm$];
 
       if (elm !== null || force !== 'render') return elm;
+
+      return this.nodeElm(node, force);
+    }
+
+    nodeElm(node, force) {
+      if (node == null) return null;
+      const elm = node[elm$];
+
+      if (elm !== null || force !== 'render') return elm;
+
+      const pv = this[private$];
+      const {entries} = pv;
 
       for(let count = -1, curr = node; curr !== null; curr = entries.previousNode(curr)) {
         ++count;

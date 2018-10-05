@@ -265,14 +265,39 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
+    test("nodeElm", ()=>{
+      /**
+       * Return the elm for a node.
+
+       * @param [force] if set to `"render"` then raise the limit in order for node to be visible
+       **/
+      api.protoMethod();
+
+      const {Book, row} = v;
+      const container = Dom.h({});
+      const parentCtx = Dom.setCtx(container, new Dom.Ctx());
+      const list = new AutoList({
+        query: Book.where(n=>n.title !== 'b2').sort('title'),
+        template: row, container, limit: 1, parentCtx});
+
+      createBook(1);
+      createBook(2);
+      createBook(3);
+
+      const {entries} = list;
+
+      assert.same(list.nodeElm(entries.firstNode), container.firstChild);
+      assert.same(list.nodeElm(entries.lastNode), null);
+      assert.same(list.nodeElm(entries.lastNode, 'render'), container.lastChild);
+    });
+
     test("elm", ()=>{
       /**
        * Return the elm for a document.
 
-       * @param [force] if set to render then raise the limit in order for node to be visible
+       * @param [force] if set to `"render"` then raise the limit in order for node to be visible
        **/
-
-      api.protoMethod('elm');
+      api.protoMethod();
 
       const {Book, row} = v;
       const container = Dom.h({});
