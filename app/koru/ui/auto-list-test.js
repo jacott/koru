@@ -4,11 +4,12 @@ isClient && define((require, exports, module)=>{
 
    * The list observers changes in the query model and updates the list accordingly.
    **/
-  const Dom         = require('koru/dom');
-  const DomTemplate = require('koru/dom/template');
-  const Model       = require('koru/model');
-  const TH          = require('koru/model/test-helper');
-  const api         = require('koru/test/api');
+  const Dom             = require('koru/dom');
+  const Ctx             = require('koru/dom/ctx');
+  const DomTemplate     = require('koru/dom/template');
+  const Model           = require('koru/model');
+  const TH              = require('koru/model/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, onEnd, util} = TH;
   const {endMarker$, private$} = require('koru/symbols');
@@ -102,9 +103,13 @@ isClient && define((require, exports, module)=>{
     });
 
     test("no query and addOrder", ()=>{
-      const container = Dom.h({});
+      const container = document.body;
       const list = new AutoList({
-        template: {$autoRender(data) {return Dom.h({div: ''+data.n})}},
+        template: {$autoRender(data) {
+          const elm = Dom.h({div: [''+data.n, {input: []}]});
+          Dom.setCtx(elm);
+          return elm;
+        }},
         container,
       });
 
@@ -117,14 +122,26 @@ isClient && define((require, exports, module)=>{
         list.updateEntry(doc1);
         assert.same(list.thisNode(doc1).value, 2);
         assert.same(list.thisNode(doc2).value, 1);
-        assert.dom(':first-child', 'doc2', elm =>{
-          assert.same(elm, list.elm(doc2));
-        });
         assert.dom(':last-child', 'doc1');
+
+        const doc2Elm = list.elm(doc2);
+        assert.dom(':first-child', 'doc2', elm =>{
+          assert.same(elm, doc2Elm);
+          elm.lastChild.focus();
+          assert.same(document.activeElement, elm.lastChild);
+        });
+        doc2.n = 'doc2.change';
+        list.updateEntry(doc2);
+        assert.dom(':first-child', 'doc2', elm =>{
+          assert.same(elm, doc2Elm);
+          assert.same(document.activeElement, elm.lastChild);
+        });
+
         list.updateEntry(doc2, 'remove');
         assert.dom('div', {count: 1});
+
         list.updateEntry(doc2);
-        assert.dom(':last-child', 'doc2');
+        assert.dom(':last-child', 'doc2.change');
         assert.same(list.thisNode(doc2).value, 3);
       });
     });

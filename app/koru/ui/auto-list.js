@@ -170,8 +170,9 @@ define((require)=>{
           addRow(pv, doc);
         } else {
           action = 'changed';
-          if (pv.compare(doc, node.value) != 0) {
-            node.value = pv.compareKeys === addOrderKeys ?
+          const isAddOrder = pv.compareKeys === addOrderKeys;
+          if (pv.compare(isAddOrder ? doc[addOrder$] : doc, node.value) != 0) {
+            node.value = isAddOrder ?
               addOrder(pv, doc) : extractKeys(doc, pv.compareKeys);
             moveNode(pv, node);
           }
