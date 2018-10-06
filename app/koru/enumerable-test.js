@@ -18,7 +18,14 @@ define((require, exports, module)=>{
       //[
       const iter = new_Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
       assert.same(iter.count(), 2);
+      assert.equals(Array.from(iter), [1, 3]);
       assert.same(iter.count(), 2);
+
+      const iter2 = new_Enumerable(function *() {yield 1; yield 3});
+
+      assert.same(iter2.count(), 2);
+      assert.equals(Array.from(iter2), [1, 3]);
+
       //]
     });
     test("map", ()=>{
@@ -53,6 +60,16 @@ define((require, exports, module)=>{
       //[
       assert.equals(Array.from(Enumerable.count(3)), [1, 2, 3]);
       assert.equals(Array.from(Enumerable.count(20, 13, 3)), [13, 16, 19]);
+      //]
+    });
+
+    test("propertyValues", ()=>{
+      /**
+       * Create an iterator over an object's proptery values
+       **/
+      api.method();
+      //[
+      assert.equals(Array.from(Enumerable.propertyValues({a: 1, b: 2})), [1, 2]);
       //]
     });
   });

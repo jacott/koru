@@ -1,9 +1,14 @@
 define(()=>{
   const iter$ = Symbol();
 
+  const Generator = (function *() {}).constructor;
+
   class Enumerable {
     constructor(iter) {
-      this[iter$] = iter;
+      if (iter.constructor === Generator)
+        this[iter$] = {[Symbol.iterator]: iter};
+      else
+        this[iter$] = iter;
     }
 
     count() {
@@ -27,6 +32,14 @@ define(()=>{
 
     static *count(to, from=1, step=1) {
       for(let i = from; i <= to; i+=step) yield i;
+    }
+
+    get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
+
+    static propertyValues(object) {
+      return new Enumerable({*[Symbol.iterator]() {
+        for (const key in object) yield object[key];
+      }});
     }
   }
 
