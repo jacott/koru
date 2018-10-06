@@ -1296,6 +1296,7 @@ define((require, exports, module)=>{
     });
 
     test("adjustTime", ()=>{
+      util.adjustTime(-util.timeAdjust);
       stub(Date, 'now').returns(12345);
       onEnd(_=>{util.adjustTime(-util.timeAdjust)});
       assert.same(util.timeAdjust, 0);

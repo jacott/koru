@@ -258,12 +258,14 @@ define((require)=>{
     },
 
     extractKeys(obj, keys) {
-      const len = keys.length;
       const result = {};
-      if (Array.isArray(keys)) for(let i = 0; i < len; ++i) {
-        const key = keys[i];
-        if (key in obj)
-          result[key] = obj[key];
+      if (Array.isArray(keys)) {
+        const len = keys.length;
+        for(let i = 0; i < len; ++i) {
+          const key = keys[i];
+          if (key in obj)
+            result[key] = obj[key];
+        }
       } else {
         for (const key in keys) {
           if (key in obj)
