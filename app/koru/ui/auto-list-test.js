@@ -746,6 +746,29 @@ isClient && define((require, exports, module)=>{
       assert.called(list.stop);
       list.stop(); // should be harmless to call again
     });
+
+    test("copyKeys", ()=>{
+      /**
+       * should copy key values; not assign
+       **/
+      const a = {key: [1,2,3]};
+      const compare = (a,b)=> -1;
+      const compareKeys = ['key'];
+      const list = new AutoList({
+        container: Dom.h({}),
+        template: v.row,
+        query: {
+          forEach: body =>{body(a)},
+          compare,
+          compareKeys,
+        }
+      });
+
+      const {value} = list.entries.firstNode;
+
+      assert.equals(value.key, a.key);
+      refute.same(value.key, a.key);
+    });
   });
 
   const assertVisible = (list, shown, hidden=[]) => {

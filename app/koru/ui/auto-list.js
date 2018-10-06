@@ -5,7 +5,21 @@ define((require)=>{
   const $ = Dom.current;
   const {myCtx} = Dom;
 
-  const {extractKeys} = require('koru/util');
+  const {deepCopy} = require('koru/util');
+
+  const copyKeys = (obj, keys)=>{
+    const ans = {};
+    const len = keys.length;
+    for(let i = 0; i < len; ++i) {
+      const key = keys[i];
+      if (key in obj) {
+        const v = obj[key];
+        ans[key] = typeof v === 'object' && v !== null
+          ? deepCopy(v) : v;
+      }
+    }
+    return ans;
+  };
 
   const {private$, endMarker$} = require('koru/symbols');
   const elm$ = Symbol(), addOrder$ = Symbol(), doc$ = Symbol();
@@ -141,7 +155,7 @@ define((require)=>{
           doc[doc$] = undefined;
           oldTree.deleteNode(node);
           node.value = pv.compareKeys === addOrderKeys ?
-            addOrder(pv, doc) : extractKeys(doc, pv.compareKeys);
+            addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
           newTree.addNode(node);
           updateAllTags && myCtx(node[elm$]).updateAllTags();
           insertElm(pv, node);
@@ -173,7 +187,7 @@ define((require)=>{
           const isAddOrder = pv.compareKeys === addOrderKeys;
           if (pv.compare(isAddOrder ? doc[addOrder$] : doc, node.value) != 0) {
             node.value = isAddOrder ?
-              addOrder(pv, doc) : extractKeys(doc, pv.compareKeys);
+              addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
             moveNode(pv, node);
           }
           node[elm$] == null || myCtx(node[elm$]).updateAllTags(doc);
@@ -252,7 +266,7 @@ define((require)=>{
 
   const addRow = (pv, doc)=>{
     const node = pv.entries.add(pv.compareKeys === addOrderKeys ?
-                                addOrder(pv, doc) : extractKeys(doc, pv.compareKeys));
+                                addOrder(pv, doc) : copyKeys(doc, pv.compareKeys));
     node[doc$] = doc;
     doc[pv.sym$] = node;
     const elm = checkToRender(pv, node);
