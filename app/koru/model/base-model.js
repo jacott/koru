@@ -282,7 +282,8 @@ define((require, exports, module)=>{
     get _errors() {return this[error$]}
 
     [inspect$]() {
-      return `Model.${this.constructor.modelName}("${this._id}", "${this.name||''}")`;
+      const arg2 = ('name' in this) ? `, "${this.name}"` : '';
+      return `Model.${this.constructor.modelName}("${this._id}"${arg2})`;
     }
 
     $save(force) {

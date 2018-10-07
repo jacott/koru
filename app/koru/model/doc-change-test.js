@@ -451,7 +451,7 @@ define((require, exports, module)=>{
 
         assert.equals(
           change[inspect$](),
-          `DocChange.change(Model.Book("book1", ""), {title: 'Fanimal Arm'}, undefined)`);
+          `DocChange.change(Model.Book("book1"), {title: 'Fanimal Arm'}, undefined)`);
       });
 
       test("read only type, doc, undo", ()=>{
