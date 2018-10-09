@@ -39,12 +39,22 @@ define((require, exports, module)=>{
     });
 
     test("withIndex, withDB", ()=>{
-      v.idx = v.TestModel.addUniqueIndex('name', 'age');
+      const {TestModel} = v;
+      const idxNameAge = TestModel.addUniqueIndex('name', 'age');
+      const idxAgeName = TestModel.addUniqueIndex('name', 'age');
 
-      dbBroker.withDB('foo2', () => v.TestModel.create({name: 'foo', age: 3}));
+      dbBroker.withDB('foo2', ()=>{
+        const ageQuery = TestModel.query.withIndex(idxAgeName, {age: 3, name: 'foo'});
 
-      assert.equals(v.TestModel.query.withIndex(v.idx, {name: 'foo'}).fetchField('age'), [5]);
-      assert.equals(v.TestModel.query.withDB('foo2').withIndex(v.idx, {name: 'foo'})
+        assert.same(ageQuery.count(), 0);
+
+        TestModel.create({name: 'foo', age: 3});
+
+        assert.same(ageQuery.count(), 1);
+      });
+
+      assert.equals(TestModel.query.withIndex(idxNameAge, {name: 'foo'}).fetchField('age'), [5]);
+      assert.equals(TestModel.query.withDB('foo2').withIndex(idxNameAge, {name: 'foo'})
                     .fetchField('age'), [3]);
     });
 

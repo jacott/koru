@@ -187,13 +187,10 @@ define((require, exports, module)=>{
 
       withIndex(idx, params, options={}) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
-        const orig = dbBroker.dbId;
-        dbBroker.dbId = this._dbId || orig;
         this.where(params);
         const {filterTest} = idx;
         if (filterTest !== null) this.where(doc => filterTest.matches(doc));
-        this._index = {idx: idx.lookup(params, options) || {}, options};
-        dbBroker.dbId = orig;
+        this._index = {idx, params, options};
         return this;
       },
 
@@ -374,7 +371,17 @@ define((require, exports, module)=>{
       if (q.model === undefined) return;
 
       if (q._index !== undefined) {
-        yield *g_findByIndex(q, q._index.idx, q._index.options, {_limit});
+        const {idx, params, options} = q._index;
+        const orig = dbBroker.dbId, thisDb = q._dbId || orig;
+        let lu;
+        if (orig === thisDb) {
+          lu = idx.lookup(params, options) || EMPTY_OBJ;
+        } else {
+          dbBroker.dbId = thisDb;
+          lu = idx.lookup(params, options) || EMPTY_OBJ;
+          dbBroker.dbId = orig;
+        }
+        yield *g_findByIndex(q, lu, options, {_limit});
 
       } else for(const id in q.docs) {
         const doc = q.findOne(id);
@@ -425,7 +432,18 @@ define((require, exports, module)=>{
       let _limit = this._sort !== undefined || this._limit == null ? 0 : this._limit;
 
       if (this._index !== undefined) {
-        findByIndex(this, this._index.idx, this._index.options, func, {_limit});
+        const {idx, params, options} = this._index;
+        const orig = dbBroker.dbId, thisDb = this._dbId || orig;
+        let lu;
+        if (orig === thisDb) {
+          lu = idx.lookup(params, options) || EMPTY_OBJ;
+        } else {
+          dbBroker.dbId = thisDb;
+          lu = idx.lookup(params, options) || EMPTY_OBJ;
+          dbBroker.dbId = orig;
+        }
+
+        findByIndex(this, lu, options, func, {_limit});
 
       } else for(const id in this.docs) {
         const doc = this.findOne(id);
