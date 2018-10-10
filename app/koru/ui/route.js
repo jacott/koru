@@ -218,7 +218,7 @@ define((require, exports, module)=>{
 
     static abortPage(location, ...args) {
       if (inGotoPage) {
-        throw {location, abortPage: true};
+        throw {location, args, abortPage: true};
       }
 
       return this.replacePath(location, ...args);
@@ -265,7 +265,7 @@ define((require, exports, module)=>{
         }
         catch(ex) {
           if (ex.abortPage) {
-            ex.location && this.replacePath(ex.location);
+            ex.location && this.replacePath(ex.location, ...ex.args);
             return;
           }
           koru.unhandledException(ex);
@@ -303,7 +303,7 @@ define((require, exports, module)=>{
       }
       catch(ex) {
         if (ex.abortPage) {
-          ex.location && this.replacePath(ex.location);
+          ex.location && this.replacePath(ex.location, ...ex.args);
           return;
         }
         throw ex;

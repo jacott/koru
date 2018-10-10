@@ -404,7 +404,7 @@ isClient && define((require, exports, module)=>{
       const Baz = {
         name: 'Baz',
         onBaseEntry() {
-          Route.abortPage(RootBar);
+          Route.abortPage(RootBar, {foo: 123});
         },
         onBaseExit: stub(),
       };
@@ -424,7 +424,7 @@ isClient && define((require, exports, module)=>{
       Route.gotoPage(v.FooBar);
 
       refute.called(v.FooBar.onEntry);
-      assert.called(RootBar.onEntry);
+      assert.calledWith(RootBar.onEntry, RootBar, {foo: 123, pathname: '/root-bar'});
     });
 
     test("abortPage outside of gotoPage", ()=>{
