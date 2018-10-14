@@ -30,16 +30,18 @@ define(()=>{
       return seed;
     }
 
-    static *count(to, from=1, step=1) {
-      for(let i = from; i <= to; i+=step) yield i;
+    static count(to, from=1, step=1) {
+      return new Enumerable(function *() {
+        for(let i = from; i <= to; i+=step) yield i;
+      });
     }
 
     get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
 
     static propertyValues(object) {
-      return new Enumerable({*[Symbol.iterator]() {
+      return new Enumerable(function *() {
         for (const key in object) yield object[key];
-      }});
+      });
     }
   }
 
