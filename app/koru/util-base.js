@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
   const {hasOwnProperty} = Object.prototype;
   const qstr = s => JSON.stringify(s).slice(1, -1);
-  const LABEL_RE = /^[a-z_$0-9]+$/i;
+  const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
   const qlabel = id => {
     if (LABEL_RE.test(id)) return id;
     if (id === '') return '""';
@@ -47,7 +47,7 @@ define((require, exports, module)=>{
             r.push('Error(`'+o.toString()+"`)");
           }
           for (const p in o) {
-            if (r.length > 10) {
+            if (r.length > Math.max(i, 10)) {
               r.push('...more');
               break;
             }

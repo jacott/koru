@@ -45,7 +45,8 @@ define((require, exports, module)=>{
     test("qlabel", ()=>{
       assert.equals(util.qlabel("1234"), '1234');
       assert.equals(util.qlabel("1'234"), `"1'234"`);
-
+      assert.equals(util.qlabel("123a"), `"123a"`);
+      assert.equals(util.qlabel('123a"'), `'123a"'`);
     });
 
     test("mergeNoEnum", ()=>{
