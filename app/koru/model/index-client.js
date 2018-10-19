@@ -140,21 +140,21 @@ define((require, exports, module)=>{
         return true;
       };
 
-      const onChange = ({type, doc, undo, flag, was})=>{
+      const onChange = ({type, doc, was})=>{
         const idx = getIdx();
         if (filterTest !== null) {
           let nt = type;
           if (type !== 'del' && ! filterTest.matches(doc)) nt = 'del';
           if (type !== 'add' && ! filterTest.matches(was)) nt = 'add';
-          if (nt === 'del' && type === 'del') return;
+          if (type === 'add' && nt === 'del') return;
           type = nt;
         }
 
         if (type === 'del') {
           if (leadLen === -1) {
-            idx.delete(doc);
+            idx.delete(was);
           } else {
-            deleteEntry(idx, doc, 0);
+            deleteEntry(idx, was, 0);
           }
         } else {
           if (type !== 'add') {
