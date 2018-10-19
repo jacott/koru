@@ -19,7 +19,12 @@ define(()=>{
       return len;
     }
 
-    *map(mapper) {for (const v of this[iter$]) yield mapper(v)}
+    map(mapper) {
+      const self = this;
+      return new Enumerable(function *() {
+        for (const v of self) yield mapper(v);
+      });
+    }
 
     reduce(reducer, seed) {
       for (const v of this[iter$]) {

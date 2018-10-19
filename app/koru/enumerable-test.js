@@ -36,7 +36,7 @@ define((require, exports, module)=>{
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
       assert.equals(Array.from(iter.map(i => 2*i)), [2, 6]);
-      assert.equals(iter.map(i => 2*i).next(), {done: false, value: 2});
+      assert.equals(iter.map(i => 2*i)[Symbol.iterator]().next(), {done: false, value: 2});
       //]
     });
 
