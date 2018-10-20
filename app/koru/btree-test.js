@@ -13,18 +13,22 @@ define((require, exports, module)=>{
   const BTree = require('koru/btree');
   const {left$, right$, up$, red$} = BTree[test$];
 
-  let v = {};
-
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
-      v = {};
+    test("cursor handles deletes", ()=>{
+      const tree = new BTree();
+      insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
+      for (const v of tree) {
+        tree.delete(v);
+      }
+      assertTree(tree, '');
     });
 
     group("traverse by nodes", ()=>{
+      let tree;
       beforeEach(()=>{
-        v.tree = new BTree();
-        insertNodes(v.tree, [100, 50, 20, 110, 120, 130, 95]);
-        assertTree(v.tree, `
+        tree = new BTree();
+        insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
+        assertTree(tree, `
 50
 l  20
 r  110 *
@@ -36,7 +40,6 @@ r      130 *
       });
 
       test("nodeFrom", ()=>{
-        const {tree} = v;
         const n50 = tree.nodeFrom(35);
         assert.same(n50.value, 50);
 
@@ -57,7 +60,6 @@ l  0 *
       });
 
       test("nodeTo", ()=>{
-        const {tree} = v;
         const n130 = tree.lastNode;
         assert.same(n130.value, 130);
 
@@ -85,7 +87,6 @@ r  20 *
 
 
       test("firstNode, nextNode", ()=>{
-        const {tree} = v;
         const ans = [];
         for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
           ans.push(n.value);
@@ -380,10 +381,9 @@ r  170 *
       tree.add(53); ans.length = 0;
       tree.forEach(v => ans.push(v));
       assert.equals(ans, [53, 123, 456]);
-
     });
 
-    test("cursor from to", ()=>{
+    test("values from to", ()=>{
       const tree = new BTree();
       insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
       assertTree(tree, `
@@ -397,15 +397,15 @@ r      42 *
 r    63
 `);
 
-      assert.same(tree.cursor().container, tree);
-      assert.equals(Array.from(tree.cursor({from: 2, to: 43})), [3, 6, 7, 8, 42]);
+      assert.equals(Array.from(tree.values({from: 2, to: 43})), [3, 6, 7, 8, 42]);
+      assert.equals(Array.from(tree.nodes({from: 2, to: 43})).map(n => n.value), [3, 6, 7, 8, 42]);
 
-      assert.equals(Array.from(tree.cursor({from: 7})), [7, 8, 42, 45, 63]);
+      assert.equals(Array.from(tree.values({from: 7})), [7, 8, 42, 45, 63]);
 
-      assert.equals(Array.from(tree.cursor({from: 4, to: 43})), [6, 7, 8, 42]);
-      assert.equals(Array.from(tree.cursor({from: 0, to: 45})), [1, 3, 6, 7, 8, 42, 45]);
-      assert.equals(Array.from(tree.cursor({from: 4, to: 5})), []);
-      assert.equals(Array.from(tree.cursor({
+      assert.equals(Array.from(tree.values({from: 4, to: 43})), [6, 7, 8, 42]);
+      assert.equals(Array.from(tree.values({from: 0, to: 45})), [1, 3, 6, 7, 8, 42, 45]);
+      assert.equals(Array.from(tree.values({from: 4, to: 5})), []);
+      assert.equals(Array.from(tree.values({
         from: 7, to: 45, excludeFrom: true, excludeTo: true,
       })), [8, 42]);
     });
@@ -414,11 +414,10 @@ r    63
       const tree = new BTree();
       insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
 
-      assert.same(tree.cursor().container, tree);
-      assert.equals(Array.from(tree.cursor({from: 46, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
-      assert.equals(Array.from(tree.cursor({from: 45, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
-      assert.equals(Array.from(tree.cursor({to: 6, direction: -1})), [63, 45, 42, 8, 7, 6]);
-      assert.equals(Array.from(tree.cursor({
+      assert.equals(Array.from(tree.values({from: 46, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
+      assert.equals(Array.from(tree.values({from: 45, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
+      assert.equals(Array.from(tree.values({to: 6, direction: -1})), [63, 45, 42, 8, 7, 6]);
+      assert.equals(Array.from(tree.values({
         from: 45, to: 7, direction: -1, excludeFrom: true, excludeTo: true,
       })), [42, 8]);
     });

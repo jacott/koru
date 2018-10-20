@@ -207,11 +207,8 @@ define((require, exports, module)=>{
         assert.equals(query.fetchIds(), ['2', '5', '3']);
         assert.equals(Array.from(query).map(d => d._id), ['2', '5', '3']);
 
-        const minorSorted = m.or(
-          m.equal(['3', '5', '2']),
-          m.equal(['2', '3', '5']), '3,5,2 or 2,3,5');
-        assert.equals(query2.fetchIds(), minorSorted);
-        assert.equals(Array.from(query2).map(d => d._id), minorSorted);
+        assert.equals(query2.fetchIds().sort(), ['2', '3', '5']);
+        assert.equals(Array.from(query2).map(d => d._id).sort(), ['2', '3', '5']);
       });
 
       test("partial", ()=>{

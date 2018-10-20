@@ -47,115 +47,6 @@ define((require)=>{
     return node;
   };
 
-  class BTreeCursor {
-    constructor(tree, {from, to, direction=1, excludeFrom=false, excludeTo=false}) {
-      this.container = tree;
-      const {compare} = tree;
-      const dir = direction;
-      this[memo$] = {
-        from: from ? (
-          excludeFrom ?
-            node => {
-              const cmp = compare(from, node.value);
-              return cmp === 0 ? dir : cmp;
-            }
-            : node => compare(from, node.value)
-        ) : (dir == 1 ? lowest : highest),
-        to: to ? (
-          excludeTo ? (
-            dir === 1 ?
-              (node =>  compare(to, node.value) <= 0 ? null : node)
-            : (node =>  compare(to, node.value) >= 0 ? null : node)
-          ) : (
-            dir === 1 ?
-              (node =>  compare(to, node.value) < 0 ? null : node)
-            : (node =>  compare(to, node.value) > 0 ? null : node)
-          )
-        ) : ident,
-        dir,
-        pos: undefined,
-        state: 0,
-      };
-    }
-
-    [Symbol.iterator]() {
-      return {next: ()=>{
-        const node = this.next();
-        return {value: node != null ? node.value : null, done: node == null};
-      }};
-    }
-
-    next() {
-      const memo = this[memo$];
-      const {from, to, dir, state, chkTo} = memo;
-
-      let node = memo.pos;
-      if (node === null) return null;
-
-      switch (state) {
-      case 0:
-        node = this.container.root;
-        if (node === null) return null;
-        while (node !== null) {
-          const cmp = from(node);
-          if (cmp === 0) break;
-          const t = cmp < 0 ? node[left$] : node[right$];
-          if (t !== null)
-            node = t;
-          else
-            break;
-        }
-        const cmp = from(node);
-        if (cmp*dir > 0) {
-          node = node[up$];
-        }
-        memo.state = 3;
-        return memo.pos = to(node);
-      case 3:
-        if (state == 3) {
-          if (dir == 1) {
-            if (node[right$] === null) {
-              let up = null;
-              while ((up = node[up$]) !== null) {
-                if (up[left$] === node) {
-                  node = up;
-                  return memo.pos = to(node);
-                }
-                node = up;
-              }
-              return node = null;
-            }
-            node = node[right$];
-          } else {
-            if (node[left$] === null) {
-              let up = null;
-              while ((up = node[up$]) !== null) {
-                if (up[right$] === node) {
-                  node = up;
-                  return memo.pos = to(node);
-                }
-                node = up;
-              }
-              return node = null;
-            }
-            node = node[left$];
-          }
-        }
-        // fall through
-      case 1:
-        if (dir == 1) {
-          while (node[left$] !== null)
-            node = node[left$];
-        } else {
-          while (node[right$] !== null)
-            node = node[right$];
-        }
-        memo.state = 3;
-        return memo.pos = to(node);
-      }
-    }
-  }
-
   class BTree {
     constructor(compare=simpleCompare) {
       this.root = null;
@@ -164,11 +55,7 @@ define((require)=>{
       this[size$] = 0;
     }
 
-    get size() {return this[size$]};
-
-    cursor(opts={}) {
-      return new BTreeCursor(this, opts);
-    }
+    get size() {return this[size$]}
 
     find(value) {
       const node = this.findNode(value);
@@ -327,14 +214,13 @@ define((require)=>{
     _assertValid() {
       const {root, compare} = this;
       let prev = null;
-      const cursor= this.cursor();
-      let node, max = 0;
+      let max = 0;
       let blackExp = -1;
       let nodeCount = 0;
-      while (node = cursor.next()) {
+      for (const node of this.nodes()) {
         let text = '';
         const displayError = dv => `${text} at ${dsp(node, dv, 3)}\n`+
-                `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
+              `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
         ++nodeCount;
         text = 'links invalid';
         assertTrue(node[up$] || node === this.root, displayError);
@@ -366,14 +252,70 @@ define((require)=>{
       return max;
     }
 
-    [Symbol.iterator]() {
-      return new BTreeCursor(this, {})[Symbol.iterator]();
+    *nodes({from, to, direction=1, excludeFrom=false, excludeTo=false}={}) {
+      const {compare} = this;
+      if (direction == 1) {
+        let node, nn;
+        if (from === undefined)
+          node = this.firstNode;
+        else {
+          node = this.nodeFrom(from);
+          if (node == null) return;
+          if (excludeFrom && compare(from, node.value) == 0)
+            node = nextNode(node);
+        }
+        for (; node != null; node = nn) {
+          nn = nextNode(node);
+          if (to !== undefined) {
+            const res = compare(to, node.value);
+            if (excludeTo ? res <= 0 : res < 0) return;
+          }
+          yield node;
+        }
+
+      } else if (direction == -1) {
+        let node, nn;
+        if (from === undefined)
+          node = this.lastNode;
+        else {
+          node =this.nodeTo(from);
+          if (node == null) return;
+          if (excludeFrom && compare(from, node.value) == 0)
+            node = previousNode(node);
+        }
+        for (; node != null; node = nn) {
+          nn = previousNode(node);
+          if (to !== undefined) {
+            const res = compare(to, node.value);
+            if (excludeTo ? res >= 0 : res > 0) return;
+          }
+          yield node;
+        }
+      }
     }
 
-    forEach(body) {
-      const cursor = new BTreeCursor(this, {});
-      for (let node = cursor.next(); node !== null; node = cursor.next()) {
-        body(node.value);
+    *values(opts) {
+      if (opts === undefined)
+        yield *this[Symbol.iterator]();
+      else
+        for (const node of this.nodes(opts)) yield node.value;
+    }
+
+    *[Symbol.iterator]() {
+      let node = this.firstNode;
+      while(node != null) {
+        const {value} = node;
+        node = nextNode(node);
+        yield value;
+      }
+    }
+
+    forEach(visitor) {
+      let node = this.firstNode;
+      while(node != null) {
+        const {value} = node;
+        node = nextNode(node);
+        visitor(value);
       }
     }
   }

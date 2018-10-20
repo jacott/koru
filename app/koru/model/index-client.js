@@ -225,7 +225,7 @@ define((require, exports, module)=>{
             const {
               from=BTValue(keys), to, direction=1,
               excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
-            return ret.cursor({from, to, direction, excludeFrom, excludeTo});
+            return ret.values({from, to, direction, excludeFrom, excludeTo});
           }
 
           return ret;

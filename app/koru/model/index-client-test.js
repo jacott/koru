@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   let v = {};
 
@@ -110,7 +110,7 @@ define((require, exports, module)=>{
           const a4 = v.TestModel.create({
             _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
           assert.equals(
-            Array.from(tree.cursor({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
+            Array.from(tree.values({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
             [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
              {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
@@ -118,7 +118,7 @@ define((require, exports, module)=>{
           a4.$update({$partial: {points: ['$replace', 7]}});
 
           assert.equals(
-            Array.from(tree.cursor({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [
+            Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [
               {points: 7, updatedAt: a4.updatedAt, _id: 'a4'},
               {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
               {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
@@ -127,28 +127,27 @@ define((require, exports, module)=>{
           a4.$remove();
 
           assert.equals(
-            Array.from(tree.cursor({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})),
+            Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})),
             [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}]);
         });
 
         test("add", ()=>{
-          const tree = v.sortedIndex.lookup({id2: '4'}).container;
-          assert(tree instanceof BTree);
+          const iter = v.sortedIndex.lookup({id2: '4'});
+          assert.isFunction(iter.next);
 
           const a4 = v.TestModel.create({
             _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
 
 
           assert.equals(
-            Array.from(tree.cursor({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
+            Array.from(v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 5)})),
             [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
              {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
 
-          const cursor = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
-          assert(cursor.next);
-          assert.equals(Array.from(cursor), [
+          const iter2 = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
+          assert.equals(Array.from(iter2), [
             {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}
           ]);
 
@@ -166,8 +165,7 @@ define((require, exports, module)=>{
             Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map(d=>d._id),
             ['a4', 'doc1', 'doc3']);
 
-          assert.equals(v.sortedIndex.entries, {
-            4: tree, 2: v.sortedIndex.lookup({id2: '2'}).container});
+          assert(v.sortedIndex.entries[4] instanceof BTree);
         });
 
         test("remove", ()=>{
@@ -176,7 +174,7 @@ define((require, exports, module)=>{
 
           v.doc1.$remove();
 
-          const tree = v.sortedIndex.lookup({id2: '4'}).container;
+          const tree = v.sortedIndex.entries[4];
           assert.equals(tree.size, 1);
 
           v.doc3.$remove();
@@ -186,7 +184,7 @@ define((require, exports, module)=>{
         });
 
         test("change same tree", ()=>{
-          const tree = v.sortedIndex.lookup({id2: '4'}).container;
+          const tree = v.sortedIndex.entries[4];
           assert.equals(tree.size, 2);
           v.doc3.$update('points', 3);
           assert.equals(tree.size, 2);
@@ -207,11 +205,11 @@ define((require, exports, module)=>{
         test("change different tree", ()=>{
           v.doc3.$update('id2', '2');
 
-          const tree2 = v.sortedIndex.lookup({id2: '2'}).container;
+          const tree2 = v.sortedIndex.entries[2];
           assert.equals(tree2.size, 2);
 
 
-          const tree4 = v.sortedIndex.lookup({id2: '4'}).container;
+          const tree4 = v.sortedIndex.entries[4];
           assert.equals(tree4.size, 1);
 
           assert.equals(Array.from(tree2).map(d => d._id), ['doc2', 'doc3']);

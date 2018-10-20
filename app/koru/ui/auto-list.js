@@ -162,8 +162,8 @@ define((require)=>{
         }
       });
 
-      const cursor = oldTree.cursor();
-      for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next()) {
+      for (const node of oldTree.nodes()) {
+        if (node[elm$] == null) break;
         delete node[doc$][sym$];
         removeElm(pv, node, true);
       }
@@ -252,9 +252,10 @@ define((require)=>{
     stopObserver(pv);
     const {endMarker, entries} = pv;
     if (entries == null) return;
-    let cursor = entries.cursor();
-    for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next())
+    for (const node of entries.nodes()) {
+      if (node[elm$] == null) break;
       cleanupDoc(pv, node[doc$]);
+    }
     let n = endMarker == null ? pv.container.lastChild : endMarker.previousSibling;
     while (n != null && n.nodeType !== COMMENT_NODE &&
            (endMarker == null || n[endMarker$] != endMarker)) {

@@ -462,7 +462,7 @@ define((require, exports, module)=>{
         return findOneByIndex(query, idx, func, v);
 
       } else if (idx[Symbol.iterator]) {
-        if (idx.cursor) idx = idx.cursor(options);
+        if (idx.values !== undefined) idx = idx.values(options);
         for (const {_id} of idx) {
           if (findOneByIndex(query, _id, func, v))
             return true;
