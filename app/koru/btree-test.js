@@ -23,6 +23,34 @@ define((require, exports, module)=>{
       assertTree(tree, '');
     });
 
+    test("duplicates", ()=>{
+      const tree = new BTree();
+      tree.add(5);
+      tree.add(5);
+      assertTree(tree, `
+5
+r  5 *
+`);
+      tree.delete(5);
+      tree.delete(5);
+      assertTree(tree, ``);
+    });
+
+    test("unique tree", ()=>{
+      const tree = new BTree(undefined, true);
+      tree.add(5);
+      tree.add(5);
+      tree.add(4);
+      assertTree(tree, `
+5
+l  4 *
+`);
+      tree.delete(5);
+      assertTree(tree, `4`);
+      tree.delete(5);
+      assertTree(tree, `4`);
+    });
+
     group("traverse by nodes", ()=>{
       let tree;
       beforeEach(()=>{

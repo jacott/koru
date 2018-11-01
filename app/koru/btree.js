@@ -32,13 +32,18 @@ define((require)=>{
   const previousNode = iterNode(right$, left$);
 
   const addNode = (tree, node) => {
-    ++tree[size$];
     if (tree.root === null) {
+      ++tree[size$];
       tree.root = node;
       node[red$] = false;
       return node;
     }
-    insert(tree.root, tree.compare, node.value, node);
+    if (tree.unique) {
+      const cn = insertUnique(tree.root, tree.compare, node.value, node);
+      if (cn !== undefined) return cn;
+    } else
+      insert(tree.root, tree.compare, node.value, node);
+    ++tree[size$];
     ic1(node);
     const g = tree.root[up$];
     if (g !== null) {
@@ -48,9 +53,10 @@ define((require)=>{
   };
 
   class BTree {
-    constructor(compare=simpleCompare) {
+    constructor(compare=simpleCompare, unique=false) {
       this.root = null;
       this.compare = compare;
+      this.unique = !! unique;
       BTree.tree = this;
       this[size$] = 0;
     }
@@ -226,7 +232,7 @@ define((require)=>{
         assertTrue(node[up$] || node === this.root, displayError);
         assertTrue(node[up$] == null || node[up$][right$] === node || node[up$][left$] === node, displayError);
         text = 'out of order';
-        assertTrue(! prev || compare(prev.value, node.value) < 0 , displayError);
+        assertTrue(! prev || compare(prev.value, node.value) <= 0 , displayError);
         let count = 1;
         let bc = node[left$] || node[right$] ? -1 : 0;
         for (let p = node; p !== root; p = p[up$]) {
@@ -387,6 +393,21 @@ define((require)=>{
   const insert = (parent, compare, value, node)=>{
     while (parent !== null) {
       const field = compare(value, parent.value) < 0 ? left$ : right$;
+      const fv = parent[field];
+      if (fv === null) {
+        parent[field] = node;
+        node[up$] = parent;
+        break;
+      }
+      parent = fv;
+    }
+  };
+
+  const insertUnique = (parent, compare, value, node)=>{
+    while (parent !== null) {
+      const cmp = compare(value, parent.value);
+      if (cmp == 0) return parent;
+      const field = cmp < 0 ? left$ : right$;
       const fv = parent[field];
       if (fv === null) {
         parent[field] = node;
