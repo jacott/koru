@@ -139,12 +139,16 @@ define((require, exports, module)=>{
           const a4 = v.TestModel.create({
             _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
 
-
           assert.equals(
             Array.from(v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 5)})),
             [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
              {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
+
+          // ensure no duplicate adds
+          v.TestModel._indexUpdate.notify(DocChange.add(a4));
+
+          assert.equals(v.sortedIndex.entries[4].size, 3);
 
           const iter2 = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
           assert.equals(Array.from(iter2), [

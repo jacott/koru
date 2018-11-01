@@ -59,7 +59,7 @@ define((require, exports, module)=>{
         idx = indexes[dbId];
 
         if (idx === undefined) idx = indexes[dbId] =
-          leadLen === -1 ? new BTree(btCompare) : emptyIdx();
+          leadLen === -1 ? newBTree() : emptyIdx();
 
         return idx;
       };
@@ -102,6 +102,7 @@ define((require, exports, module)=>{
       }
       const len = i;
       const btCompare = comp;
+      const newBTree = ()=> new BTree(btCompare, true);
       const compKeysLen = compKeys.length;
       const BTValue = doc => {
         const ans = {};
@@ -141,15 +142,17 @@ define((require, exports, module)=>{
       };
 
       const onChange = ({type, doc, was})=>{
-        const idx = getIdx();
+        if (type === 'chg' && util.isObjEmpty(was.changes))
+          return;
         if (filterTest !== null) {
-          let nt = type;
-          if (type !== 'del' && ! filterTest.matches(doc)) nt = 'del';
-          if (type !== 'add' && ! filterTest.matches(was)) nt = 'add';
-          if (type === 'add' && nt === 'del') return;
-          type = nt;
+          if (type !== 'del' && ! filterTest.matches(doc)) {
+            if (type === 'add') return;
+            type = 'del';
+          } else if (type === 'chg' && ! filterTest.matches(was))
+            type = 'add';
         }
 
+        const idx = getIdx();
         if (type === 'del') {
           if (leadLen === -1) {
             idx.delete(was);
@@ -157,7 +160,7 @@ define((require, exports, module)=>{
             deleteEntry(idx, was, 0);
           }
         } else {
-          if (type !== 'add') {
+          if (type === 'chg') {
             if (leadLen === -1) {
               const n = idx.nodeFrom(was);
 
@@ -198,7 +201,7 @@ define((require, exports, module)=>{
             const value = doc[fields[leadLen]];
             if (btCompare !== null) {
               const tree = tidx[value] === undefined ?
-                      (tidx[value] = new BTree(btCompare)) : tidx[value];
+                      (tidx[value] = newBTree()) : tidx[value];
               tree.add(BTValue(doc));
             } else {
               tidx[value] = doc._id;
@@ -206,7 +209,6 @@ define((require, exports, module)=>{
           }
         }
       };
-
 
       const handle = model._indexUpdate.onChange(onChange);
 
@@ -232,7 +234,7 @@ define((require, exports, module)=>{
         },
         reload() {
           getIdx();
-          idx = indexes[dbId] = leadLen === -1 ? new BTree(btCompare) : emptyIdx();
+          idx = indexes[dbId] = leadLen === -1 ? newBTree() : emptyIdx();
           const docs = model.docs;
           for(const id in docs) {
             onChange(DocChange.add(docs[id]));
