@@ -11,15 +11,10 @@ define((require, exports, module)=>{
   const registerObserveField = require('./register-observe-field');
   const registerObserveId = require('./register-observe-id');
 
-  const {hasOwn, deepCopy} = util;
+  const {hasOwn, deepCopy, createDictionary} = util;
   const {private$, inspect$, error$} = require('koru/symbols');
 
   const cache$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
-
-  function Lock() {
-    this.temp = '';
-    delete this.temp;
-  }
 
   const savePartial = (doc, args, force)=>{
     const $partial = {};
@@ -100,10 +95,7 @@ define((require, exports, module)=>{
       return attrs._id;
     }
 
-    /**
-     * Build a new model. Does not copy _id from attributes.
-     */
-    static build(attributes, allow_id) {
+    static build(attributes, allow_id=false) {
       const doc = new this({});
       attributes = attributes == null ? {} : deepCopy(attributes);
 
@@ -154,7 +146,7 @@ define((require, exports, module)=>{
     }
 
     static isLocked(id) {
-      return (this._locks || (this._locks = new Lock))[id] || false;
+      return (this._locks || (this._locks = createDictionary()))[id] || false;
     }
 
     static lock(id, func) {
@@ -320,9 +312,9 @@ define((require, exports, module)=>{
       if (this[error$] !== undefined) this[error$] = undefined;
 
       const origChanges = this.changes;
-      const topLevel = origChanges.$partial &&
-              Changes.topLevelChanges(this.attributes, origChanges);
-      if (topLevel) {
+      const topLevel = ('$partial' in origChanges)
+            ? Changes.topLevelChanges(this.attributes, origChanges) : null;
+      if (topLevel !== null) {
         this.changes = deepCopy(topLevel);
         Changes.setOriginal(this.changes, origChanges);
       }
@@ -344,7 +336,7 @@ define((require, exports, module)=>{
       this.validate && this.validate();
 
       const isOkay = this[error$] === undefined;
-      if (topLevel !== undefined) {
+      if (topLevel !== null) {
         if (isOkay) {
           Changes.updateCommands(origChanges, this.changes, topLevel);
         }

@@ -16,12 +16,6 @@ define((require, exports, module)=>{
   util.mergeNoEnum(ModelMap, {
     BaseModel,
 
-    /**
-     * Define a new model.
-     * define(options) or
-     * define(module, [name, [proto]])
-     * @see BaseModel.define
-     */
     define(module, name, proto) {
       let model, fields;
       if (typeof module === 'object' && ! module.id) {

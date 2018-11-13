@@ -34,7 +34,6 @@ define((require, exports, module)=>{
       v = {};
     });
 
-
     group("with Model", ()=>{
       beforeEach(()=>{
         class Book extends BaseModel {
@@ -42,13 +41,62 @@ define((require, exports, module)=>{
         }
         Book.define({
           name: 'Book',
-          fields: {name: 'text', foo: 'jsonb', age: 'number'}
+          fields: {name: 'text', foo: 'jsonb', pages: 'number'}
         });
         v.Book = Book;
         v.exampleWithBook = func => {
           api.example("class Book extends BaseModel {}\n\n");
           api.exampleCont(func);
         };
+      });
+
+      group("model lock", ()=>{
+        test("nesting", ()=>{
+          try {
+            v.Book.lock("a", ()=>{
+              try {
+                v.Book.lock("a", ()=>{
+                  assert.isTrue(v.Book.isLocked("a"));
+                  throw new Error("catch me");
+                });
+              } catch(ex) {
+                assert.isTrue(v.Book.isLocked("a"));
+                throw ex;
+              }
+              TH.fail("should not reach here");
+            });
+          } catch (ex) {
+            if (ex.message !== "catch me")
+              throw ex;
+          }
+
+          assert.isFalse(v.Book.isLocked("a"));
+        });
+
+        test("Exception unlocks", ()=>{
+          try {
+            v.Book.lock("a", ()=>{
+              assert.isTrue(v.Book.isLocked("a"));
+              throw new Error("catch me");
+            });
+          } catch (ex) {
+            if (ex.message !== "catch me")
+              throw ex;
+          }
+
+          assert.isFalse(v.Book.isLocked("a"));
+        });
+
+        test("isLocked", ()=>{
+          v.Book.lock("a", ()=>{
+            v.isLocked_a = v.Book.isLocked("a");
+            v.isLocked_b = v.Book.isLocked("b");
+          });
+
+          assert.isTrue(v.isLocked_a);
+          assert.isFalse(v.isLocked_b);
+          assert.isFalse(v.Book.isLocked("a"));
+        });
       });
 
       test("nullToUndef", ()=>{
@@ -71,38 +119,40 @@ define((require, exports, module)=>{
         const {Book} = v;
         intercept(Book, 'onChange', api.custom(Book.onChange));
 
-        v.exampleWithBook(_=>{
-          onEnd(Book.onChange(v.oc = stub()));
-          const ondra = Book.create({_id: 'm123', name: 'Ondra', age: 21});
-          const matchOndra = TH.match.field('_id', ondra._id);
-          assert.calledWith(v.oc, DocChange.add(ondra));
+        //[
+        const observer = stub();
+        onEnd(Book.onChange(observer));
 
-          ondra.$update('age', 22);
-          assert.calledWith(v.oc, DocChange.change(matchOndra, {age: 21}));
+        const Oasis = Book.create({_id: 'm123', name: 'Oasis', pages: 425});
+        const matchOasis = TH.match.field('_id', Oasis._id);
+        assert.calledWith(observer, DocChange.add(Oasis));
 
-          ondra.$remove();
-          assert.calledWith(v.oc, DocChange.delete(matchOndra));
-        });
+        Oasis.$update('pages', 420);
+        assert.calledWith(observer, DocChange.change(matchOasis, {pages: 425}));
+
+        Oasis.$remove();
+        assert.calledWith(observer, DocChange.delete(matchOasis));
+        //]
       });
 
-      test("remote.", ()=>{
+      test("remote", ()=>{
         /**
          * Define multiple Remote updating Procedure calls prefixed by model's
          * name.
          **/
         const {Book} = v;
-        api.method('remote');
-        v.exampleWithBook(_=>{
-          Book.remote({
-            move() {},
-            expire() {},
-          });
+        api.method();
+        //[
+        Book.remote({
+          read() {},
+          catalog() {},
         });
 
-        assert(session.isRpc('Book.move'));
-        refute(session.isRpcGet('Book.move'));
+        assert(session.isRpc('Book.read'));
+        refute(session.isRpcGet('Book.read'));
 
-        assert(session.isRpc('Book.expire'));
+        assert(session.isRpc('Book.catalog'));
+        //]
       });
 
       test("remoteGet", ()=>{
@@ -111,18 +161,18 @@ define((require, exports, module)=>{
          * model's name.
          **/
         const {Book} = v;
-        api.method('remoteGet');
-        v.exampleWithBook(_=>{
-          Book.remoteGet({
-            list() {},
-            show() {},
-          });
+        api.method();
+        //[
+        Book.remoteGet({
+          list() {},
+          about() {},
         });
 
         assert(session.isRpc('Book.list'));
         assert(session.isRpcGet('Book.list'));
 
-        assert(session.isRpcGet('Book.show'));
+        assert(session.isRpcGet('Book.about'));
+        //]
       });
 
       test("accessor", ()=>{
@@ -210,18 +260,24 @@ define((require, exports, module)=>{
       });
 
       test("findById", ()=>{
+        /**
+         * Find a document by its `_id`. Returns the same document each time if called from same
+         * thread.
+         **/
         const {Book} = v;
-        const doc = Book.create({foo: {bar: {baz: 'orig'}}});
+        api.method();
+        //[
+        const doc = Book.create({name: 'Emma', pages: 342});
 
-        assert[isClient ? 'same' : 'equals'](Book.findById(doc._id).attributes, doc.attributes);
+        assert.same(Book.findById(doc._id), doc);
+        //]
       });
 
       test("findBy.", ()=>{
         const {Book} = v;
         const doc = Book.create({name: 'Sam', foo: 'bar'});
 
-        assert[isClient ? 'same' : 'equals'](Book.findBy('foo', 'bar')
-                                             .attributes, doc.attributes);
+        assert.same(Book.findBy('foo', 'bar').attributes, doc.attributes);
       });
 
       test("validator passing function", ()=>{
@@ -564,7 +620,7 @@ define((require, exports, module)=>{
 
         attrs._id = doc._id;
 
-        assert[isClient ? 'same' : 'equals'](doc.attributes,
+        assert.same(doc.attributes,
                                              Book.findById(doc._id).attributes);
 
         if(isClient)
@@ -721,7 +777,7 @@ define((require, exports, module)=>{
         assert.same(doc.name, 'new');
         assert.equals(doc.changes,{});
 
-        assert[isClient ? 'same' : 'equals'](doc.attributes, Book
+        assert.same(doc.attributes, Book
                                              .findById(doc._id).attributes);
 
         if(isClient)
@@ -729,7 +785,12 @@ define((require, exports, module)=>{
       });
 
       test("build", ()=>{
+        /**
+         * Build a new model. Does not copy _id from attributes.
+         */
+        api.method();
         const {Book} = v;
+        //[
         const doc = Book.create();
         const copy = Book.build(doc.attributes);
 
@@ -738,6 +799,7 @@ define((require, exports, module)=>{
 
         assert.equals(copy._id, null);
         assert.equals(copy.changes._id, null);
+        //]
       });
 
       test("setFields", ()=>{

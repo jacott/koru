@@ -62,59 +62,6 @@ define((require, exports, module)=>{
 
     });
 
-    group("model lock", ()=>{
-      before(()=>{
-        v.Book = Model.define('Book').defineFields({name: 'text'});
-      });
-
-      test("nesting", ()=>{
-        try {
-          v.Book.lock("a", function () {
-            try {
-              v.Book.lock("a", function () {
-                assert.isTrue(v.Book.isLocked("a"));
-                throw new Error("catch me");
-              });
-            } catch(ex) {
-              assert.isTrue(v.Book.isLocked("a"));
-              throw ex;
-            }
-            TH.fail("should not reach here");
-          });
-        } catch (ex) {
-          if (ex.message !== "catch me")
-            throw ex;
-        }
-
-        assert.isFalse(v.Book.isLocked("a"));
-      });
-
-      test("Exception unlocks", ()=>{
-        try {
-          v.Book.lock("a", function () {
-            assert.isTrue(v.Book.isLocked("a"));
-            throw new Error("catch me");
-          });
-        } catch (ex) {
-          if (ex.message !== "catch me")
-            throw ex;
-        }
-
-        assert.isFalse(v.Book.isLocked("a"));
-      });
-
-      test("isLocked", ()=>{
-        v.Book.lock("a", function () {
-          v.isLocked_a = v.Book.isLocked("a");
-          v.isLocked_b = v.Book.isLocked("b");
-        });
-
-        assert.isTrue(v.isLocked_a);
-        assert.isFalse(v.isLocked_b);
-        assert.isFalse(v.Book.isLocked("a"));
-      });
-    });
-
     group("observering", ()=>{
       beforeEach(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
@@ -324,6 +271,12 @@ define((require, exports, module)=>{
     });
 
     test("define via module", ()=>{
+      /**
+       * Define a new model.
+       * define(options) or
+       * define(module, [name, [proto]])
+       * @see BaseModel.define
+       */
       const onUnload = stub();
       const module = {id: '/foo/test-model', onUnload};
       const TestModel = Model.define(module, {t1: 123});
