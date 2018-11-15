@@ -305,8 +305,7 @@ define((require)=>{
 
     reverseForEach(list, visitor) {
       if (! list) return;
-      const len = list.length;
-      for(let i = len-1; i >= 0 ; --i) {
+      for(let i = list.length-1; i >= 0 ; --i) {
         visitor(list[i], i);
       }
     },

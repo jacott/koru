@@ -67,13 +67,14 @@ define((require)=>{
     });
 
     base.provide('W', function batchedMessages(data) {
-      util.forEach(data, msg => {
+      for(let i = 0; i < data.length; ++i) {
         try {
+          const msg = data[i];
           this._commands[msg[0]].call(this, msg[1]);
         } catch(ex) {
           koru.unhandledException(ex);
         }
-      });
+      }
     });
 
     base._broadcastFuncs = {};
