@@ -153,7 +153,7 @@ isClient && define((require, exports, module)=>{
       assert.className(document.body, 'eyedropper-active');
       assert.isNull(glassPane.parentNode);
 
-      assert.dom('#SelectMenu.eyedropper-chooser', menu =>{
+      assert.dom('.glassPane.eyedropperPane>#SelectMenu.eyedropper-chooser', menu =>{
         assert.dom('li', {count: 3});
         assert.dom('li:last-child>div>div', elm =>{
           assert.colorEqual(elm.style.backgroundColor, [255, 0, 0, 0.8]);

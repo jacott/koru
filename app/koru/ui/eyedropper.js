@@ -66,6 +66,7 @@ define((require, exports, module)=>{
                 return true;
               }
             }, 'on');
+            document.body.lastChild.classList.add('eyedropperPane');
 
           }).catch(err =>{
             cancel();

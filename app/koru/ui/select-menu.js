@@ -81,7 +81,7 @@ define((require, exports, module)=>{
 
     close(ctx, elm) {
       const menu = document.getElementsByClassName('glassPane');
-      if (! menu.length) return;
+      if (menu.length == 0) return;
       menu = menu[menu.length - 1];
       menu && Dom.remove(menu);
       return menu;
