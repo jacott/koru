@@ -116,7 +116,7 @@ isClient && define((require, exports, module)=>{
       });
       sut.pick(callback);
 
-      glassPane = Dom('body>.glassPane:last-child');
+      glassPane = Dom('body>.glassPane.eyedropperPane');
       assert(glassPane);
       assert.className(document.body, 'eyedropper-active');
 

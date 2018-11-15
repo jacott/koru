@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
 
-  const glassPane = Dom.h({class: 'glassPane'});
+  const glassPane = Dom.h({class: 'glassPane eyedropperPane'});
 
   const Eyedropper = {
     options: null,
