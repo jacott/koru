@@ -193,18 +193,18 @@ define((require, exports, module)=>{
 
     static waitForPage(expectPage, duration) {
       duration = duration || 2000;
-      return new Promise(function (resolve, reject) {
+      return new Promise((resolve, reject)=>{
         if (currentPage === expectPage) {
           resolve(currentPage, currentHref);
           return;
         }
         let handle;
-        const timeout = koru.setTimeout(function () {
+        const timeout = koru.setTimeout(()=>{
           handle.stop();
           reject(new Error('Timed out waiting for: ' + (expectPage && expectPage.name) +
                            ' after ' + duration + 'ms'));
         }, duration);
-        handle = Route.onChange(function (actualPage, pageRoute, href) {
+        handle = Route.onChange((actualPage, pageRoute, href)=>{
           handle.stop();
           koru.clearTimeout(timeout);
           if (actualPage === expectPage)
@@ -274,15 +274,7 @@ define((require, exports, module)=>{
 
       } else try {
         ++inGotoPage;
-        if (currentPage) {
-          currentPage.onExit && currentPage.onExit(page, pageRoute);
-
-          exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
-        } else {
-          exitEntry([], {}, toPath(page), pageRoute, page, then);
-        }
-
-        function then() {
+        const then = ()=>{
           let href, title;
           if (! page) {
             href = null;
@@ -299,7 +291,17 @@ define((require, exports, module)=>{
           currentPage = page;
           Route.setTitle(title);
           Route.notify(page, pageRoute, href);
+        };
+
+        if (currentPage) {
+          currentPage.onExit && currentPage.onExit(page, pageRoute);
+
+          exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
+        } else {
+          exitEntry([], {}, toPath(page), pageRoute, page, then);
         }
+
+
       }
       catch(ex) {
         if (ex.abortPage) {
@@ -524,9 +526,9 @@ define((require, exports, module)=>{
     addBase(module, template, options) {
       if (module) {
         if ('exports' in module) {
-          koru.onunload(module, function () {
+          module.onUnload(()=>{
             this.removeBase(template);
-          }.bind(this));
+          });
         } else {
           options = template;
           template = module;
