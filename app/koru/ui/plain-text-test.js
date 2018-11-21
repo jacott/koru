@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const koru            = require('../main');
   const TH              = require('../ui/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const sut = require('./plain-text');
 
@@ -23,7 +23,7 @@ isClient && define((require, exports, module)=>{
       stub(Dom, 'stopEvent');
 
       keydown.call(elm, {which: 27});
-      assert.calledWith(cb.cancel, elm);
+      assert.calledWith(cb.cancel, elm, {which: 27});
       refute.called(Dom.stopEvent);
       cb.cancel.reset();
 
@@ -42,7 +42,7 @@ isClient && define((require, exports, module)=>{
       refute.called(cb.okay);
 
       keydown.call(elm, {which: 13});
-      assert.calledWith(cb.okay, elm);
+      assert.calledWith(cb.okay, elm, {which: 13});
       assert.calledOnce(Dom.stopEvent);
     });
 

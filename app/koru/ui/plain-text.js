@@ -106,11 +106,11 @@ define((require, exports, module)=>{
           if (Dom.ctrlOrMeta(event)) Dom.stopEvent();
           break;
         case 27:
-          cancel(this);
+          cancel(this, event);
           return;
         case 13:
           Dom.stopEvent();
-          okay(this);
+          okay(this, event);
           return;
         }
       };
