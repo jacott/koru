@@ -49,39 +49,37 @@ define((require, exports, module)=>{
   )=> actual > expected-delta && actual < expected+delta;
 
   match.near = (expected, delta=1)=> match(
-    actual => {
-        switch(typeof expected) {
-        case 'string':
-          if (typeof actual !== 'string')
+    actual => {switch(typeof expected) {
+      case 'string':
+      if (typeof actual !== 'string')
+        return false;
+      const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
+      const actParts = actual.split(/([\d.]+(?:e[+-]\d+)?)/);
+      for(let i = 0; i < expParts.length; ++i) {
+        const e = expParts[i], a = actParts[i];
+        if (i%2) {
+          const f = e.split('.')[1]||'';
+          const delta = 1/Math.pow(10, f.length);
+
+          if (! withinDelta(+a, +e, delta)) {
             return false;
-          const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
-          const actParts = actual.split(/([\d.]+(?:e[+-]\d+)?)/);
-          for(let i = 0; i < expParts.length; ++i) {
-            const e = expParts[i], a = actParts[i];
-            if (i%2) {
-              const f = e.split('.')[1]||'';
-              const delta = 1/Math.pow(10, f.length);
-
-              if (! withinDelta(+a, +e, delta)) {
-                return false;
-              }
-            } else if (e !== a) {
-              return false;
-            }
           }
-          return true;
-
-        case 'object':
-          for (let key in expected) {
-            if (! withinDelta(actual[key], expected[key], delta)) {
-              return false;
-            }
-          }
-          return true;
-        default:
-          return withinDelta(actual, expected, delta);
+        } else if (e !== a) {
+          return false;
         }
-    }, "match.near(" + expected + ", delta=" + delta + ")");
+      }
+      return true;
+
+      case 'object':
+      for (let key in expected) {
+        if (! withinDelta(actual[key], expected[key], delta)) {
+          return false;
+        }
+      }
+      return true;
+      default:
+      return withinDelta(actual, expected, delta);
+    }}, "match.near(" + expected + ", delta=" + delta + ")");
 
   match.field= (name, value)=> match(
     actual => actual && Core.deepEqual(actual[name], value),
@@ -275,7 +273,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       recordTCTime();
     }
     lastTest = test;
-    if (isClient) koru.afTimeout = koru.nullFunc;
+    if (isClient) koru.afTimeout = ()=> koru.nullFunc;
   });
 
   Core.onTestEnd(test=>{

@@ -168,9 +168,9 @@ define((require, exports, module)=>{
     test("getClosest", ()=>{
       document.body.appendChild(Dom.h({class: 'foo', div: {span: 'hello'}}));
 
-      assert.dom('span', function () {
-        assert.same(Dom.getClosest(this.firstChild, '.foo>span'), this);
-        assert.same(Dom.getClosest(this.firstChild, '.foo'), this.parentNode);
+      assert.dom('span', span =>{
+        assert.same(Dom.getClosest(span.firstChild, '.foo>span'), span);
+        assert.same(Dom.getClosest(span.firstChild, '.foo'), span.parentNode);
       });
     });
 
@@ -180,10 +180,10 @@ define((require, exports, module)=>{
 
       document.body.appendChild(elm);
 
-      assert.dom('#top', function () {
-        assert.same(elm, this);
+      assert.dom('#top', top =>{
+        assert.same(elm, top);
 
-        assert.dom('>.foo', function () { // doubles as a test for assert.dom directChild
+        assert.dom('>.foo', ()=>{ // doubles as a test for assert.dom directChild
           assert.dom('>.bar>button#sp', 'Hello');
         });
       });
@@ -213,7 +213,7 @@ define((require, exports, module)=>{
     test("mapToData", ()=>{
       const elm = Dom.h({});
 
-      'one two three'.split(' ').forEach(function (data) {
+      'one two three'.split(' ').forEach(data=>{
         const child = Dom.h({});
         Dom.setCtx(child, {data: data});
         assert.same(Dom.myCtx(child).firstElement, child);
@@ -283,9 +283,9 @@ define((require, exports, module)=>{
                            '<button type="button" id="sp">Hello</button></div>'+
                            '<div class="dest"></div></div></div>');
 
-      assert.dom(elm, function () {
-        assert.dom('#sp', function () {
-          assert.className(Dom.getUpDownByClass(this, 'foo', 'dest'), 'dest');
+      assert.dom(elm, ()=>{
+        assert.dom('#sp', sp =>{
+          assert.className(Dom.getUpDownByClass(sp, 'foo', 'dest'), 'dest');
         });
       });
     });
@@ -294,16 +294,15 @@ define((require, exports, module)=>{
       const top = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
-      assert.isNull(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return elm === top;
-      }, 'bar'));
-      assert.same(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return Dom.hasClass(elm, 'bar');
-      }, 'bar'), top.firstChild.firstChild);
+      assert.isNull(Dom.searchUpFor(
+        top.querySelector('button').firstChild, elm => elm === top, 'bar'));
+      assert.same(Dom.searchUpFor(
+        top.querySelector('button').firstChild, elm => Dom.hasClass(elm, 'bar'), 'bar'
+      ), top.firstChild.firstChild);
 
-      assert.same(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return Dom.hasClass(elm, 'bar');
-      }), top.firstChild.firstChild);
+      assert.same(Dom.searchUpFor(
+        top.querySelector('button').firstChild, elm => Dom.hasClass(elm, 'bar')
+      ), top.firstChild.firstChild);
     });
 
 
@@ -383,16 +382,12 @@ define((require, exports, module)=>{
       }
 
       let results = [];
-      Dom.forEach(elm, '.foo', function (e) {
-        results.push(e.textContent);
-      });
+      Dom.forEach(elm, '.foo', e =>{results.push(e.textContent)});
 
       assert.same(results.join(','), '0,1,2,3,4');
 
       results = 0;
-      Dom.forEach(document, 'div', function (e) {
-        ++results;
-      });
+      Dom.forEach(document, 'div', ()=>{++results;});
 
       assert.same(results, 6);
     });
@@ -445,9 +440,7 @@ define((require, exports, module)=>{
       assert.same(Dom.fragEnd(elm), elm[endMarker$]);
 
       parent.appendChild(elm);
-      [1,2,3].forEach(function (i) {
-        parent.appendChild(document.createElement('p'));
-      });
+      for (const i of [1,2,3]) parent.appendChild(document.createElement('p'));
       parent.appendChild(elm[endMarker$]);
       parent.appendChild(document.createElement('i'));
 
@@ -473,7 +466,7 @@ define((require, exports, module)=>{
       }]});
       Dom.Foo.$events({
         'pointerdown span'(event) {
-          Dom.onPointerUp(function (e2) {
+          Dom.onPointerUp(e2 =>{
             v.ctx = Dom.current.ctx;
             v.target = e2.target;
           });
@@ -482,16 +475,16 @@ define((require, exports, module)=>{
 
       document.body.appendChild(Dom.Foo.$autoRender({}));
 
-      assert.dom('div>span', function () {
-        Dom.triggerEvent(this, 'pointerdown');
-        Dom.triggerEvent(this, 'pointerup');
+      assert.dom('div>span', span =>{
+        Dom.triggerEvent(span, 'pointerdown');
+        Dom.triggerEvent(span, 'pointerup');
 
-        assert.same(v.ctx, Dom.Foo.$ctx(this));
-        assert.same(v.target, this);
+        assert.same(v.ctx, Dom.Foo.$ctx(span));
+        assert.same(v.target, span);
 
         v.ctx = null;
 
-        Dom.triggerEvent(this, 'pointerup');
+        Dom.triggerEvent(span, 'pointerup');
 
         assert.same(v.ctx, null);
       });
