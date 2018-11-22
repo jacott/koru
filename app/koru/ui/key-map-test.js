@@ -68,17 +68,21 @@ isClient && define((require, exports, module)=>{
         pgdn: [sut.pgDown, f],
         pgup: [sut.pgUp, f],
         esc: [sut.esc, f],
+        space: [' ', f],
         lbkt: ['Û', f],
         rbkt: ['Ý', f],
         bslash: ['Ü', f],
         grave: ['À', f],
       });
 
+      assert.same(sut.space, ' ');
+
       assert.same(v.km.getTitle('home', 'home'), "home [<home>]");
       assert.same(v.km.getTitle('end', 'end'), "end [<end>]");
       assert.same(v.km.getTitle('pgdn', 'pgdn'), "pgdn [<pgDown>]");
       assert.same(v.km.getTitle('pgup', 'pgup'), "pgup [<pgUp>]");
       assert.same(v.km.getTitle('esc', 'esc'), "esc [<esc>]");
+      assert.same(v.km.getTitle('space', 'space'), "space [<space>]");
       assert.same(v.km.getTitle('lbkt', 'lbkt'), "lbkt [[]");
       assert.same(v.km.getTitle('rbkt', 'rbkt'), "rbkt []]");
       assert.same(v.km.getTitle('bslash', 'bslash'), "bslash [\\]");

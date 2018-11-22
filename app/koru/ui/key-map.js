@@ -150,49 +150,40 @@ define((require)=>{
     return keyMap;
   };
 
-  {
-    const addModifiers = (...args)=>{
-      args.forEach((code, i) => {
-        const name = code.slice(1);
-        KMFactory[name] = code = code[0];
-        MODIFIERS[code] = 1 << i;
-        SYM_NAMES[code] = name;
-        MOD_NAMES[code] = name;
-      });
-    };
 
-    addModifiers(
-      '\u0010shift',
-      '\u0011ctrl',
-      '\u0012alt',
-      '\u005Bmeta',
-    );
-  }
+  [
+    '\u0010shift',
+    '\u0011ctrl',
+    '\u0012alt',
+    '\u005Bmeta',
+  ].forEach((code, i) => {
+    const name = code.slice(1);
+    KMFactory[name] = code = code[0];
+    MODIFIERS[code] = 1 << i;
+    SYM_NAMES[code] = name;
+    MOD_NAMES[code] = name;
+  });
 
-  {
-    const addCodes = (...args)=>{
-      util.forEach(args, (code, i) => {
-        const name = code.slice(1);
-        KMFactory[name] = code = code[0];
-        SYM_NAMES[code] = name;
-      });
-    };
-    addCodes(
-      '\u0025left',
-      '\u0026up',
-      '\u0027right',
-      '\u0028down',
-      '\u0021pgUp',
-      '\u0022pgDown',
-      '\u0023end',
-      '\u0024home',
-      '\u001Besc',
-      '\u002Edel',
-      'Û[',
-      'Ý]',
-      'Ü\\',
-      '\u00c0`',
-    );
+  for (let code of [
+    '\u0025left',
+    '\u0026up',
+    '\u0027right',
+    '\u0028down',
+    '\u0021pgUp',
+    '\u0022pgDown',
+    '\u0023end',
+    '\u0024home',
+    '\u001Besc',
+    '\u002Edel',
+    ' space',
+    'Û[',
+    'Ý]',
+    'Ü\\',
+    '\u00c0`',
+  ]) {
+    const name = code.slice(1);
+    KMFactory[name] = code = code[0];
+    SYM_NAMES[code] = name;
   }
 
   KMFactory.modCodeToName = code => MOD_NAMES[code];
