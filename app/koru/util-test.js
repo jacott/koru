@@ -868,20 +868,26 @@ define((require, exports, module)=>{
     });
 
     test("binarySearch", ()=>{
-
+      /**
+       * Perform a binary search over a sorted `list` returning the closest index with a <= 0
+       * `compare` result.
+       **/
+      api.method();
       assert.same(util.binarySearch([], row => assert(false)), -1);
 
       const list = [1,3,6,8,10,13,15];
-      assert.same(util.binarySearch([1,2,3], row => -1, 0), -1);
-      assert.same(util.binarySearch(list, row => 0 - row), -1);
-      assert.same(util.binarySearch(list, row => 16 - row), -1);
-      assert.same(util.binarySearch(list, row => 5 - row), 1);
-      assert.same(util.binarySearch(list, row => 6 - row, 0), 2);
-      assert.same(util.binarySearch(list, row => 10 - row), 4);
-      assert.same(util.binarySearch(list, row => 14 - row), 5);
+      assert.same(util.binarySearch([1,2,3], row => 1, 0), -1);
+      assert.same(util.binarySearch([1,2,3], row => -1, 0), 2);
+      assert.same(util.binarySearch(list, row => row - 0), -1);
+      assert.same(util.binarySearch(list, row => row - 1), 0);
+      assert.same(util.binarySearch(list, row => row - 16), 6);
+      assert.same(util.binarySearch(list, row => row - 5), 1);
+      assert.same(util.binarySearch(list, row => row - 6, 0), 2);
+      assert.same(util.binarySearch(list, row => row - 10), 4);
+      assert.same(util.binarySearch(list, row => row - 14), 5);
 
-      assert.same(util.binarySearch(list, row => 8 - row, -1), 3);
-      assert.same(util.binarySearch(list, row => 8 - row, 7), 3);
+      assert.same(util.binarySearch(list, row => row - 8, -1), 3);
+      assert.same(util.binarySearch(list, row => row - 8, 7), 3);
     });
 
     test("flatten", ()=>{

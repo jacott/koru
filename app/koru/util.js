@@ -635,8 +635,9 @@ define((require)=>{
       else if (start >= upper) start = upper-1;
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
         if (upper-1 <= lower)
-          return (ans < 0 && lower == 0) || (ans > 0 && upper == list.length) ? -1 : lower;
-        if (ans < 0) upper = start;
+          return ans > 0 && lower == 0
+          ? -1 : ans < 0 && upper == list.length ? list.length-1 : lower;
+        if (ans > 0) upper = start;
         else lower = start;
         start = ((upper-lower)>>1) + lower;
       }
