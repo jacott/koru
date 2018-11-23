@@ -631,6 +631,20 @@ isClient && define((require, exports, module)=>{
         assert.same(Dom.lookupTemplate('Foo.Fizz.Bar'), undefined);
       });
 
+      test("lookupTemplate", ()=>{
+        const foo = Dom.newTemplate({name: "Foo"});
+        const baz = Dom.newTemplate({name: "Foo.Bar.Baz"});
+        const bob = Dom.newTemplate({name: "Foo.Bar.Bob"});
+        assert.same(DomTemplate.lookupTemplate(baz, "."), baz);
+        assert.same(DomTemplate.lookupTemplate(baz, ".."), baz.parent);
+        assert.same(DomTemplate.lookupTemplate(baz, "../.."), baz.parent.parent);
+        assert.same(DomTemplate.lookupTemplate(baz, "../../."), baz.parent.parent);
+        assert.same(DomTemplate.lookupTemplate(baz, "../Bob"), bob);
+        assert.same(DomTemplate.lookupTemplate(baz.parent, "Bob"), bob);
+        assert.same(DomTemplate.lookupTemplate(foo, "Bar.Bob"), bob);
+        assert.same(DomTemplate.lookupTemplate(foo, "/Foo.Bar.Bob"), bob);
+      });
+
       test("nest by name", ()=>{
         const fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
         const fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});

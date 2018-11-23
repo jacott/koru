@@ -187,10 +187,14 @@ define((require)=>{
     if (name[0] === '/') {
       result = Dom[name.slice(1)];
     } else {
+      if (name === ".") return template;
+      if (name === "..") return template.parent;
       result = template[name];
-      while (! result && name.slice(0,3) === '../' && template) {
+      while (! result && name.slice(0,3) === '../' && template !== undefined) {
         name = name.slice(3);
         template = template.parent;
+        if (name === '.') return template;
+        if (name === '..') return template.parent;
         result = (template || Dom)[name];
       }
     }
