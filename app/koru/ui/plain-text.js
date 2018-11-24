@@ -99,21 +99,21 @@ define((require, exports, module)=>{
 
     pasteFilter,
 
-    buildKeydownEvent({cancel, okay}) {
-      return function (event) {
-        switch (event.which) {
-        case 66: case 85: case 73:
-          if (Dom.ctrlOrMeta(event)) Dom.stopEvent();
-          break;
-        case 27:
-          cancel(this, event);
-          return;
-        case 13:
-          Dom.stopEvent();
-          okay(this, event);
-          return;
-        }
-      };
+    buildKeydownEvent: ({cancel, okay, default: df})=> function (event) {
+      switch (event.which) {
+      case 66: case 85: case 73:
+        if (Dom.ctrlOrMeta(event)) Dom.stopEvent();
+        break;
+      case 27:
+        cancel(this, event);
+        break;
+      case 13:
+        Dom.stopEvent();
+        okay(this, event);
+        break;
+      default:
+        df !== undefined && df(this, event);
+      }
     },
 
     setTextAsHTML(elm, content) {

@@ -46,6 +46,15 @@ isClient && define((require, exports, module)=>{
       assert.calledOnce(Dom.stopEvent);
     });
 
+    test("buildKeydownEvent default", ()=>{
+       const elm = document.createElement('div');
+      const cb = {cancel: stub(), okay: stub(), default: stub()};
+      const keydown = sut.buildKeydownEvent(cb);
+      keydown.call(elm, {which: 64});
+
+      assert.calledWith(cb.default, elm, {which: 64});
+    });
+
     test("editor", ()=>{
       document.body.appendChild(sut.Editor.$autoRender({content: "foo", options: {
         placeholder: "hello"}}));
