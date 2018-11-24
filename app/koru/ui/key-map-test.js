@@ -4,7 +4,7 @@ isClient && define((require, exports, module)=>{
   const sut             = require('./key-map');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, stubProperty} = TH;
 
   let v = {};
 
@@ -30,6 +30,18 @@ isClient && define((require, exports, module)=>{
       assert.same(sut.down, '(');
       assert.same(sut.right, '\'');
       assert.same(sut.del, '.');
+    });
+
+    test("modDisplay", ()=>{
+      assert.same(sut.usesCommandKey, /Macintosh/.test(navigator.userAgent));
+      stubProperty(sut, 'usesCommandKey', {value: true});
+      assert.same(sut.modDisplay('Ctrl'), "⌘");
+      assert.same(sut.modDisplay('ctrl'), "⌘");
+      assert.same(sut.modDisplay('CTRL'), "⌘");
+
+      sut.usesCommandKey = false;
+
+      assert.same(sut.modDisplay('Ctrl'), "Ctrl");
     });
 
     test("config",  ()=>{

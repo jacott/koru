@@ -150,6 +150,15 @@ define((require)=>{
     return keyMap;
   };
 
+  KMFactory.usesCommandKey = /Macintosh/.test(navigator.userAgent);
+
+  const isCtrlKey = {
+    Ctrl: true,
+    CTRL: true,
+    ctrl: true,
+  };
+
+  KMFactory.modDisplay = mod => isCtrlKey[mod] === true && KMFactory.usesCommandKey ? "⌘" : mod;
 
   [
     '\u0010shift',
