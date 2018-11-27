@@ -11,6 +11,8 @@ define((require)=>{
       koru.logger('INFO', this.engine, data);
     });
     session.provide('E', function (data) {
+      if (koru.clientErrorConvert !== undefined)
+        data = koru.clientErrorConvert(data);
       session.remoteControl && session.remoteControl.logHandle ?
         session.remoteControl.logHandle.call(this, data) :
         koru.logger('INFO', this.sessId, this.engine, data);

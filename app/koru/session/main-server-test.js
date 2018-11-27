@@ -8,7 +8,7 @@ isServer && define((require, exports, module)=>{
 
   const {test$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, onEnd, match: m, stubProperty} = TH;
 
   const serverSession = require('./main-server');
   let v = {};
@@ -76,14 +76,30 @@ isServer && define((require, exports, module)=>{
     test("client errors", ()=>{
        v.sess = serverSession(v.mockSess);
 
-      assert.calledWith(v.sess.provide, 'E', TH.match(function (func) {
-        return v.func = func;
-      }));
+      let func;
+      assert.calledWith(v.sess.provide, 'E', TH.match(f => func = f));
 
       stub(koru, 'logger');
       v.sess.sessId = 's123';
-      v.func.call({send: v.send = stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
+      func.call({send: v.send = stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
       assert.calledWith(koru.logger, 'INFO', 's123', 'test engine', 'hello world');
+    });
+
+    test("clientErrorConvert", ()=>{
+      v.sess = serverSession(v.mockSess);
+
+      let func;
+      assert.calledWith(v.sess.provide, 'E', TH.match(f => func = f));
+
+      const clientErrorConvert = stub().returns("converted");
+
+      stub(koru, 'logger');
+      v.sess.sessId = 's123';
+      stubProperty(koru, 'clientErrorConvert', {value: clientErrorConvert});
+      func.call({send: v.send = stub(), sessId: 's123', engine: 'test engine'}, 'my message');
+
+      assert.calledWith(
+        koru.logger, 'INFO', 's123', 'test engine', 'converted');
     });
 
     test("onerror", ()=>{
