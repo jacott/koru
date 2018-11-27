@@ -31,11 +31,7 @@ define((require, exports, module)=>{
   };
 
   const logDebug = (...args)=>{
-    const nargs = new Array(args.length + 1);
-    nargs[0] = '\x44EBUG';
-    for(let i = 0; i < args.length; ++i) nargs[i+1] = args[i];
-
-    koru.logger.apply(koru, nargs);
+    koru.logger('\x44EBUG', ...args);
   };
 
   logDebug.inspect = (...args)=>{

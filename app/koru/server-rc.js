@@ -20,13 +20,14 @@ define((require, exports, module)=>{
     let future, interceptObj;
     let clientCount = 0;
 
-    function logHandle(msg) {
-      const key = this.engine;
+    const logHandle = msg =>{
+      const {connection} = util.thread;
+      const key = connection === undefined ? 'Server' : connection.engine;
       key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
       } catch(ex) {} // ignore
-    }
+    };
 
     const intercept = (obj)=>{
       interceptObj = obj;
@@ -41,6 +42,7 @@ define((require, exports, module)=>{
 
     const continueIntercept = (arg)=>{if (future) future.return(arg)};
 
+    koru.logger = (type, data)=>{logHandle(data)};
     const oldLogHandle = session.provide('L', logHandle);
     const oldTestHandle = session.provide('T', testHandle);
 

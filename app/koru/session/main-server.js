@@ -8,14 +8,12 @@ define((require)=>{
     webSocketServerFactory(session);
 
     session.provide('L', function (data) {
-      koru.logger('INFO', this.engine, data);
+      koru.logger('INFO', data);
     });
     session.provide('E', function (data) {
       if (koru.clientErrorConvert !== undefined)
         data = koru.clientErrorConvert(data);
-      session.remoteControl && session.remoteControl.logHandle ?
-        session.remoteControl.logHandle.call(this, data) :
-        koru.logger('INFO', this.sessId, this.engine, data);
+      koru.logger('ERROR', data);
     });
 
     session.connectionIntercept = function (newSession, ws, ugr, remoteAddress) {

@@ -47,7 +47,7 @@ isServer && define((require, exports, module)=>{
       });
 
       stub(fst, 'stat').invokes(c => /index/.test(c.args[0]) ? {} : undefined);
-      stub(fst, 'readFile').withArgs('test/maps/index.js.map').returns(new Buffer(map.toString()));
+      stub(fst, 'readFile').withArgs('test/maps/index.js.map').returns(Buffer.from(map.toString()));
 
       StackErrorConvert.start({
         sourceMapDir: 'test/maps',
