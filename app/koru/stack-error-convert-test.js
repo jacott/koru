@@ -51,16 +51,17 @@ isServer && define((require, exports, module)=>{
 
       StackErrorConvert.start({
         sourceMapDir: 'test/maps',
-        prefix: "myPrefix"
+        prefix: "myPrefix",
+        lineAdjust: -1,
       });
 
       assert.equals(
         koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
-    at - j.ne (index.js:1:170049)
+    at - j.ne (index.js:2:170049)
     at nasty (index.js/../index.js:4:334)
     at missing (nofound.js:4:334)
-    at j.toChildren (index.js?4d99f24827ef433ac3da163797519ed5:13:23)`),
+    at j.toChildren (index.js?4d99f24827ef433ac3da163797519ed5:14:23)`),
         `while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne christopher (myPrefix/file1.js:13:23)

@@ -22,7 +22,7 @@ define((require, exports, module)=>{
 
     const logHandle = msg =>{
       const {connection} = util.thread;
-      const key = connection === undefined ? 'Server' : connection.engine;
+      const key = connection == null ? 'Server' : connection.engine;
       key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
@@ -42,7 +42,12 @@ define((require, exports, module)=>{
 
     const continueIntercept = (arg)=>{if (future) future.return(arg)};
 
-    koru.logger = (type, data)=>{logHandle(data)};
+    koru.logger = (type, ...args)=>{
+      if (type === '\x44EBUG')
+        logHandle(type+ ': '+util.inspect(args, 7));
+      else
+        logHandle(args.join(' '));
+    };
     const oldLogHandle = session.provide('L', logHandle);
     const oldTestHandle = session.provide('T', testHandle);
 

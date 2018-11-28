@@ -12,7 +12,7 @@ define((require)=>{
   const loadMap = (source)=> util.Future.fromPromise(new SourceMapConsumer(source)).wait();
 
   const StackErrorConvert = {
-    start: ({sourceMapDir, prefix="."})=>{
+    start: ({sourceMapDir, prefix=".", lineAdjust=0})=>{
       let consumer = null;
       let lastFileName = '';
       koru.clientErrorConvert = data =>{
@@ -31,9 +31,10 @@ define((require)=>{
               const pn = path.join(sourceMapDir, m[2]+'.map');
               consumer = fst.stat(pn) === undefined ? null : loadMap(fst.readFile(pn).toString());
             }
-            if (consumer !== null) {
-              const orig = consumer.originalPositionFor({line: +m[3], column: +m[4]});
-              lines[i] = `${m[1]}${orig.name} `+
+            if (consumer !== null ) {
+              const orig = consumer.originalPositionFor({line: +m[3] + lineAdjust, column: +m[4]});
+              if (orig.source !== null)
+                lines[i] = `${m[1]}${orig.name} `+
                 `(${path.join(prefix, orig.source)}:${orig.line}:${orig.column})`;
             }
           }
