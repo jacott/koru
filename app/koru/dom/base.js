@@ -175,7 +175,7 @@ define((require)=>{
     },
     h: html,
 
-    escapeHTML(text) {
+    escapeHTML: (text)=>{
       const pre = document.createElement('pre');
       pre.appendChild(document.createTextNode(text));
       return pre.innerHTML;
@@ -183,7 +183,7 @@ define((require)=>{
 
     hasClass, addClass, removeClass,
 
-    addClasses(elm, name) {
+    addClasses: (elm, name)=>{
       if (elm != null) {
         const {classList} = elm;
         if (classList === undefined) return;

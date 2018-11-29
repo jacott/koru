@@ -1,8 +1,8 @@
 define((require)=>{
-  const Dom             = require('../dom');
-  const util            = require('../util');
-  const Dialog          = require('./dialog');
-  const Form            = require('./form');
+  const Dom             = require('koru/dom');
+  const Dialog          = require('koru/ui/dialog');
+  const Form            = require('koru/ui/form');
+  const util            = require('koru/util');
 
   const widget$ = Symbol();
 

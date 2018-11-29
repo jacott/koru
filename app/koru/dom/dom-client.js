@@ -210,7 +210,7 @@ define((require)=>{
       for(let i = 0; i < len; ++i) func(elms[i]);
     },
 
-    mapToData(list) {
+    mapToData: (list)=>{
       const len = list.length;
       const result = [];
       for(let i = 0; i < len; ++i) {
@@ -219,7 +219,7 @@ define((require)=>{
       return result;
     },
 
-    getClosest: (elm, selector)=>{
+    getClosest: (elm=null, selector)=>{
       if (elm !== null && elm.nodeType !== document.ELEMENT_NODE)
         elm = elm.parentNode;
       return elm && elm.closest(selector);
@@ -229,9 +229,9 @@ define((require)=>{
       return Dom.ctx(Dom.getClosest(elm, selector));
     },
 
-    searchUpFor(elm, func, stopClass) {
-      if (! elm) return null;
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
+    searchUpFor(elm=null, func, stopClass) {
+      if (elm === null) return null;
+      while(elm !== null && elm.nodeType !== DOCUMENT_NODE) {
         if (func(elm)) return elm;
         if (stopClass && Dom.hasClass(elm, stopClass)) return null;
         elm = elm.parentNode;
@@ -239,38 +239,32 @@ define((require)=>{
       return null;
     },
 
-    getUpDownByClass(elm, upClass, downClass) {
+    getUpDownByClass: (elm=null, upClass, downClass)=>{
       elm = elm && elm.closest(`.${upClass}`);
       return elm && elm.getElementsByClassName(downClass)[0];
     },
 
-    matches(elm, selector) {
-      return matches.call(elm, selector);
-    },
+    matches: (elm, selector)=> matches.call(elm, selector),
 
-    nextSibling(elm, selector) {
-      if (elm) for(let next = elm.nextElementSibling; next !== null;
-                   next = next.nextElementSibling) {
-        if (matches.call(next, selector)) return next;
+    nextSibling: (elm=null, selector)=>{
+      if (elm !== null) {
+        for(let next = elm.nextElementSibling; next !== null;
+            next = next.nextElementSibling) {
+          if (matches.call(next, selector)) return next;
+        }
       }
       return null;
     },
 
-    childElementIndex(child) {
+    childElementIndex: child =>{
       let i = 0;
       while( (child = child.previousElementSibling) != null ) i++;
       return i;
     },
 
-    transformTranslate(elm , x, y) {
-      elm.style.setProperty(
-        vendorTransform, elm.style.getProperty(vendorTransform)
-          .replace(/\btranslate\([^)]*\)\s*/, '')+`translate(${x},${y})`);
-    },
+    buildEvent,
 
-    buildEvent: buildEvent,
-
-    triggerEvent(node, event, args) {
+    triggerEvent: (node, event, args)=>{
       if (typeof event === 'string')
         event = buildEvent(event, args);
 
@@ -279,7 +273,7 @@ define((require)=>{
       return event;
     },
 
-    hideAndRemove(elm) {
+    hideAndRemove: (elm)=>{
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
       const ctx = Dom.myCtx(elm);
@@ -288,7 +282,7 @@ define((require)=>{
       ctx.onAnimationEnd(remElm);
     },
 
-    show(elm) {
+    show: (elm)=>{
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
 
@@ -299,7 +293,7 @@ define((require)=>{
     },
 
 
-    vendorTransform: vendorTransform,
+    vendorTransform,
     vendorTransformOrigin: vendorTransform+'Origin',
 
     vendorPrefix: vendorFuncPrefix,
@@ -309,23 +303,21 @@ define((require)=>{
     get event(){return DomTemplate._currentEvent},
 
     _helpers: {
-      inputValue(value) {
+      inputValue: (value)=>{
         Dom.setOriginalValue(Dom.current.element, value);
         Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
 
-      decimal(value, {format=2}={}) {
+      decimal: (value, {format=2}={})=>{
         return value == null ? '' : util.toDp(value, format, true);
       },
 
-      comment(value) {
-        return document.createComment(value);
-      },
+      comment: (value)=> document.createComment(value),
     },
 
-    originalValue(elm) {return elm[original$]},
-    setOriginalValue(elm, value) {elm[original$] = value},
-    restoreOriginalValue(elm) {
+    originalValue: elm => elm[original$],
+    setOriginalValue: (elm, value)=>{elm[original$] = value},
+    restoreOriginalValue: elm =>{
       if (hasOwn(elm, original$))
         elm.value = elm[original$];
     },
@@ -333,8 +325,8 @@ define((require)=>{
     stopEvent: DomTemplate.stopEvent,
     stopPropigation: DomTemplate.stopPropigation,
 
-    setCtx(elm, ctx) {
-      if (! ctx) {
+    setCtx: (elm, ctx)=>{
+      if (ctx === undefined) {
         ctx = new Ctx(null, Dom.ctx(elm));
       }
       elm[ctx$] = ctx;
@@ -342,7 +334,7 @@ define((require)=>{
       return ctx;
     },
 
-    destroyMeWith(elm, ctxOrElm) {
+    destroyMeWith: (elm, ctxOrElm)=>{
       const ctx = ctxOrElm[ctx$] ? ctxOrElm[ctx$] : ctxOrElm;
       const elmCtx = elm[ctx$];
       const observers = ctx[destoryObservers$];
@@ -351,8 +343,8 @@ define((require)=>{
       ).add(elm);
     },
 
-    destroyData(elm) {
-      const ctx = elm == null ? null : elm[ctx$];
+    destroyData: (elm=null)=>{
+      const ctx = elm === null ? null : elm[ctx$];
       if (ctx != null) {
         const dw = ctx[destoryWith$];
         dw === undefined || dw.delete();
@@ -374,18 +366,16 @@ define((require)=>{
       Dom.destroyChildren(elm);
     },
 
-    removeId(id) {
-      return this.remove(document.getElementById(id));
-    },
+    removeId: id => Dom.remove(document.getElementById(id)),
 
-    removeAll(elms) {
+    removeAll: elms =>{
       for(let i = elms.length - 1; i >= 0; --i) {
-        this.remove(elms[i]);
+        Dom.remove(elms[i]);
       }
     },
 
-    remove(elm) {
-      if (elm != null) {
+    remove: (elm=null)=>{
+      if (elm !== null) {
         Dom.destroyData(elm);
         if (elm.parentNode === null) return false;
         elm.remove();
@@ -393,7 +383,7 @@ define((require)=>{
       }
     },
 
-    removeInserts(start) {
+    removeInserts: (start)=>{
       const parent = start.parentNode;
       if (! parent) return;
       const end = start[endMarker$];
@@ -403,8 +393,8 @@ define((require)=>{
       }
     },
 
-    removeChildren(elm) {
-      if (elm == null) return;
+    removeChildren: (elm=null)=>{
+      if (elm === null) return;
 
       let row;
       while((row = elm.firstChild) !== null) {
@@ -413,8 +403,8 @@ define((require)=>{
       }
     },
 
-    destroyChildren(elm) {
-      if (elm == null) return;
+    destroyChildren: (elm=null)=>{
+      if (elm === null) return;
 
       let iter = elm.firstChild;
       while (iter !== null) {
@@ -426,27 +416,26 @@ define((require)=>{
 
     myCtx: elm => elm == null ? null : elm[ctx$],
 
-    ctx(elm) {
-      if (typeof elm === 'string')
-        elm = document.querySelector(elm);
-      if (elm == null) return;
+    ctx: (elm=null)=>{
+      if (elm === null) return;
+      if (typeof elm === 'string') elm = document.querySelector(elm);
       let ctx = elm[ctx$];
       while(ctx === undefined && elm.parentNode !== null)
         ctx = (elm = elm.parentNode)[ctx$];
       return ctx === undefined ? null : ctx;
     },
 
-    ctxById(id) {
+    ctxById: (id)=>{
       const elm = document.getElementById(id);
       return elm === null ? null : elm[ctx$];
     },
 
-    updateElement(elm) {
+    updateElement: (elm)=>{
       const ctx = Dom.ctx(elm);
       ctx !== null && ctx.updateElement(elm);
     },
 
-    replaceElement(newElm, oldElm, noRemove) {
+    replaceElement: (newElm, oldElm, noRemove)=>{
       const ast = oldElm[endMarker$];
       if (ast !== undefined) {
         Dom.removeInserts(oldElm);
@@ -463,16 +452,14 @@ define((require)=>{
       noRemove === 'noRemove' || Dom.destroyData(oldElm);
 
       oldElm.parentNode && oldElm.parentNode.replaceChild(newElm, oldElm);
-      return this;
+      return Dom;
     },
 
-    fragEnd(fragStart) {
-      return fragStart[endMarker$];
-    },
+    fragEnd: fragStart => fragStart[endMarker$],
 
     contains: (parent, elm)=> (parent != null && parent.contains(elm)) ? parent : null,
 
-    updateInput(input, value) {
+    updateInput: (input, value)=>{
       if (value !== input.value) {
         input.value = value;
       }
@@ -483,7 +470,7 @@ define((require)=>{
 
     ctrlOrMeta: event => event.ctrlKey || event.metaKey,
 
-    onPointerUp(func, elm) {
+    onPointerUp: (func, elm)=>{
       const $ = Dom.current;
       const ctx = $.ctx;
 
@@ -509,7 +496,7 @@ define((require)=>{
      * @param element {Element} The element to be temporarily removed
      * @return {Function} A function that inserts the element into its original position
      **/
-    removeToInsertLater(element) {
+    removeToInsertLater: (element)=>{
       const parentNode = element.parentNode;
       const nextSibling = element.nextSibling;
       element.remove();
