@@ -41,6 +41,23 @@ isClient && define((require, exports, module)=>{
       v = {};
     });
 
+    test("maxlength", ()=>{
+      Dom.remove(v.editor);
+      const editor = sut.$autoRender({
+        content: Dom.h('hello world!'),
+        extend: {maxlength: 20},
+      });
+
+      assert.dom(editor, ()=>{
+        const ctx = Dom.myCtx(editor);
+        assert.dom('>:last-child.ui-charCounter', counter =>{
+          assert.same(ctx.characterCounter.element, counter);
+          assert.dom('span', "12");
+          assert.dom('span+span', "20");
+        });
+      });
+    });
+
     group("with code", ()=>{
       beforeEach(()=>{
         assert.dom('.input', function () {

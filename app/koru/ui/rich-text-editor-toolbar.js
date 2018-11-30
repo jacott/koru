@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const CharacterCounter = require('koru/ui/character-counter');
   const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const Modal           = require('./modal');
@@ -18,6 +19,15 @@ define((require, exports, module)=>{
   const {getTag} = DomNav;
   const {execCommand, chooseFromMenu, runAction} = RichTextEditor;
 
+  const addCharcterCounter = (ctx, elm)=>{
+    const {extend} = ctx.data;
+    if (extend === undefined || extend.maxlength === undefined) return;
+    const cc = ctx.characterCounter = new CharacterCounter(extend);
+    cc.attach(elm.children[1]);
+    elm.insertBefore(cc.element, cc.editor.nextSibling);
+    ctx.onDestroy(()=>{cc.attach()});
+  };
+
   Tpl.$extend({
     $autoRender(data, parentCtx) {
       const elm = RichTextEditor.$autoRender(data, parentCtx);
@@ -33,6 +43,8 @@ define((require, exports, module)=>{
       };
 
       setUndoButtons(ctx.undo);
+      addCharcterCounter(ctx, elm);
+      const maxlength =
       ctx.onDestroy(ctx.undo.onChange(setUndoButtons));
       ctx.onDestroy(ctx.caretMoved.onChange((override)=>{
         toolbarCtx.override = override;
@@ -103,9 +115,9 @@ define((require, exports, module)=>{
 
     mentions: ()=>{
       if ($.element.nodeType === document.COMMENT_NODE) return;
-      let mentions = $.ctx.parentCtx.data.extend;
-      mentions = mentions && mentions.mentions;
-      if (! mentions) return;
+      const {extend} = $.ctx.parentCtx.data;
+      const mentions = extend && extend.mentions;
+      if (mentions === undefined) return;
       const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(id =>{
         frag.appendChild(Dom.h({
