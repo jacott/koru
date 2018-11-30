@@ -36,6 +36,42 @@ define((require, exports, module)=>{
       node3.delete();
     });
 
+    test("head", ()=>{
+      /**
+       * Retrieve the node that is the head of the list
+       **/
+      api.protoProperty();
+
+      //[
+      const subject = new DLinkedList();
+
+      assert.same(subject.head, null);
+
+      subject.add(1);
+      subject.add(2);
+
+      assert.same(subject.head.value, 1);
+      //]
+    });
+
+    test("tail", ()=>{
+      /**
+       * Retrieve the node that is the tail of the list
+       **/
+      api.protoProperty();
+
+      //[
+      const subject = new DLinkedList();
+
+      assert.same(subject.tail, null);
+
+      subject.add(1);
+      subject.add(2);
+
+      assert.same(subject.tail.value, 2);
+      //]
+    });
+
     test("add", ()=>{
       /**
        * add an observer a subject

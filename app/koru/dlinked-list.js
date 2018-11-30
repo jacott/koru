@@ -33,6 +33,9 @@ define(()=>{
       }
     }
 
+    get head() {return this[head$] === this ? null : this[head$]}
+    get tail() {return this[tail$] === this ? null : this[tail$]}
+
     add(value) {
       const tail = this[tail$];
       const node = new Node(value, tail, this);
