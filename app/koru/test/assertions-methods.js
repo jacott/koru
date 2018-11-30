@@ -495,7 +495,7 @@ define((require)=>{
     const findAll = (elms, query)=>{
       const directChild = query[0] === '>';
 
-      const result = [];
+      const result = new Set();
       for(let i = 0; i < elms.length; ++i) {
         const elm = elms[i];
         let se;
@@ -511,9 +511,11 @@ define((require)=>{
           se = elms[i].querySelectorAll(query);
         }
 
-        result.push.apply(result, se);
+        for(let j = 0; j < se.length; ++j) {
+          result.add(se[j]);
+        }
       }
-      return result;
+      return Array.from(result);
     };
 
     const text = elm => elm.length ? elm[0].textContent.trim() : '';
