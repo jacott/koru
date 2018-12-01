@@ -74,9 +74,9 @@ define((require, exports, module)=>{
 
     test("add", ()=>{
       /**
-       * add an observer a subject
+       * add `value` to the end of the list.
        *
-       * @param {any-type} value the object to add to the list
+       * @param {any-type} value to add to the list
        *
        * @returns a node that has the methods
        * * `value` the object passed to `add`
@@ -91,8 +91,40 @@ define((require, exports, module)=>{
       const node2 = subject.add(2);
 
       assert.same(node1.value, 1);
+      assert.same(node1, subject.head);
+      assert.same(node2, subject.tail);
 
       assert.equals(Array.from(subject), [1, 2]);
+
+      node1.delete();
+      assert.equals(Array.from(subject), [2]);
+      //]
+    });
+
+    test("addFront", ()=>{
+      /**
+       * add `value` to the front of the list.
+       *
+       * @param {any-type} value to add to the list
+       *
+       * @returns a node that has the methods
+       * * `value` the object passed to `add`
+
+       * * `delete` a function to delete the entry
+       **/
+      api.protoMethod();
+      //[
+      const subject = new DLinkedList();
+
+      const node1 = subject.add(1);
+      const node2 = subject.addFront(2);
+
+      assert.same(node1.value, 1);
+      assert.same(node1, subject.tail);
+      assert.same(node2, subject.head);
+
+
+      assert.equals(Array.from(subject), [2, 1]);
 
       node1.delete();
       assert.equals(Array.from(subject), [2]);

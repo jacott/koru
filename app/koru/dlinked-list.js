@@ -48,6 +48,18 @@ define(()=>{
       return node;
     }
 
+    addFront(value) {
+      const head = this[head$];
+      const node = new Node(value, this, head);
+      this[head$] = node;
+      if (head !== this)
+        head[prev$] = node;
+      if (this[tail$] === this)
+        this[tail$] = node;
+
+      return node;
+    }
+
     forEach(callback) {
       for(let node = this[head$]; node !== this; node = node[next$]) {
         if (node.value !== undefined)
@@ -70,6 +82,7 @@ define(()=>{
       if (node === this) return;
       while(node !== this) {
         const nn = node[next$];
+        node.value = undefined;
         node[prev$] = node[next$] = null;
         node = nn;
       }
