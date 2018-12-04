@@ -14,16 +14,6 @@ define((require)=>{
 
   let animationEndCount = 0;
 
-  const findFirstElement = ctx =>{
-    let evals = ctx.evals;
-    evals = evals && ctx.evals[0];
-    let elm = evals && evals[0];
-    while(elm && elm.nodeType !== DOCUMENT_NODE && elm[ctx$] !== ctx)
-      elm = elm.parentNode;
-
-    return elm;
-  };
-
   const getValue = (data, func, args)=>{
     if (args == null) return;
     if (args.dotted != null) {
@@ -251,7 +241,6 @@ define((require)=>{
       this.destroyed !== undefined && this.destroyed(this, elm);
       const tpl = this.template;
       tpl != null && tpl.$destroyed !== undefined && tpl.$destroyed.call(tpl, this, elm);
-
     }
 
     onDestroy(obj) {
@@ -261,9 +250,7 @@ define((require)=>{
       return this;
     }
 
-    element() {
-      return this.firstElement || findFirstElement(this);
-    }
+    element() {return this.firstElement}
 
     updateAllTags(data) {
       if (data === undefined)

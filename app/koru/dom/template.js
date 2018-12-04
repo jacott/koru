@@ -420,11 +420,11 @@ define((require)=>{
       const ctx = Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       let frag = document.createDocumentFragment();
       this.nodes && addNodes(this, frag, this.nodes, this.ns);
-      const firstChild = frag.firstChild;
-      if (firstChild) {
+      const {firstChild} = frag;
+      if (firstChild !== null) {
         if (frag.lastChild === firstChild) frag = firstChild;
-        frag[ctx$] = ctx;
       }
+      frag[ctx$] = ctx;
       ctx.firstElement = firstChild;
       try {
         this.$created && this.$created(ctx, frag);
@@ -435,7 +435,7 @@ define((require)=>{
           Object.defineProperty(ex, 'toString', {
             value: () => `while rendering: ${this.$fullname}
 ${ex.message}`});
-        // clean up what we can
+          // clean up what we can
           Dom.destroyData(frag);
         } catch(ex2) {}
         throw ex;

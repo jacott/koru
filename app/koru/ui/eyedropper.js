@@ -198,7 +198,7 @@ define((require, exports, module)=>{
 
         img.onerror = err =>{
           window.URL.revokeObjectURL(url);
-          reject(err);
+          reject(new Error("could not load "+url));
         };
 
         img.onload = ()=>{
