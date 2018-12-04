@@ -9,6 +9,16 @@ define((require, exports, module)=>{
   const Module = module.constructor;
   const session = require('koru/session/main-client')(SessionBase, sessState);
 
+  {
+    const {serviceWorker} = navigator;
+    if (serviceWorker != null && serviceWorker.controller != null) {
+      serviceWorker.register(serviceWorker.controller.scriptURL).then(reg => {
+        reg.unregister().then(koru.reload());
+      });
+      return;
+    }
+  }
+
   Test.session = session;
 
   Test.testHandle = (cmd, msg)=>{session.send('T', cmd+msg)};
