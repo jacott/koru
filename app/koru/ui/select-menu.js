@@ -45,8 +45,7 @@ define((require, exports, module)=>{
         if (Dom.hasClass(nSel, 'hide') || Dom.hasClass(nSel, 'disabled')) continue;
         Dom.removeClass(curr, 'selected');
         Dom.addClass(nSel, 'selected');
-        Dom.isInView(nSel, mElm) ||
-          nSel.scrollIntoView(event.which === 38);
+        Dom.ensureInView(nSel);
         break;
       }
       break;

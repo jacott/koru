@@ -144,6 +144,47 @@ define((require)=>{
       return elm.getBoundingClientRect().top < region.bottom;
     },
 
+    ensureInView: (elm)=>{
+      const adjustments = [];
+      let {left, right, bottom, top} = elm.getBoundingClientRect();
+      for (let sp = Dom.getScrollParent(elm); sp !== null; sp = Dom.getScrollParent(sp)) {
+        const pDim = sp.getBoundingClientRect();
+        const pBottom = pDim.top + sp.clientHeight;
+        const pRight = pDim.left + sp.clientWidth;
+        const vdiff = bottom > pBottom
+              ? Math.min(bottom - pBottom, top - pDim.top)
+              : top < pDim.top
+              ?   top - pDim.top
+              :   0;
+        const hdiff = right > pRight
+              ? Math.min(right - pRight, left - pDim.left)
+              : left < pDim.left
+              ?   left - pDim.left
+              :   0;
+
+        if (vdiff != 0 || hdiff != 0) {
+          left += hdiff; right += hdiff;
+          top += vdiff; bottom += vdiff;
+          adjustments.push([sp, sp.scrollLeft + hdiff, sp.scrollTop + vdiff]);
+        }
+      }
+      for(let i = 0; i < adjustments.length; ++i) {
+        const [elm, scrollLeft, scrollTop] = adjustments[i];
+        elm.scrollTop = scrollTop;
+        elm.scrollLeft = scrollLeft;
+      }
+    },
+
+    getScrollParent: (elm=null)=>{
+      if (elm === null) return null;
+      elm = elm.parentNode;
+      for (;elm !== null; elm = elm.parentNode) {
+        if (elm.scrollHeight > elm.clientHeight || elm.scrollWidth > elm.clientWidth)
+          return elm;
+      }
+      return null;
+    },
+
     setClassBySuffix: (name, suffix, elm=Dom.element)=>{
       if (elm === null) return;
       const classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')

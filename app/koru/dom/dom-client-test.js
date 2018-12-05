@@ -27,6 +27,108 @@ define((require, exports, module)=>{
       Ctx[private$].currentElement = null;
     });
 
+    group("ensureInView", ()=>{
+      /**
+       * Ensure that `elm` is as visible as possible with minimal scrolling.
+       **/
+
+      beforeEach(()=>{
+        api.method();
+      });
+
+      test("horizontal", ()=>{
+        //[
+        const block = (text)=>Dom.h({
+          style: 'flex:0 0 50px', div: [text]});
+
+        const divs = 'one two three four five'.split(' ').map(t => block(t));
+        const container = Dom.h({
+          style: 'margin:30px;width:75px;height:30px;overflow:scroll;',
+          div: {
+            style: 'display:flex;width:300px',
+            div: divs,
+          }
+        });
+
+        document.body.appendChild(container);
+        Dom.ensureInView(divs[1]);
+        assert.near(container.scrollLeft, 39);
+
+        Dom.ensureInView(divs[0]);
+        assert.equals(container.scrollLeft, 0);
+        //]
+
+        const outer = Dom.h({
+          style: 'margin:30px;width:30px;height:50px;overflow:visible',
+          div: {div: container},
+        });
+
+        document.body.appendChild(outer);
+        container.style.height = '50px';
+        Dom.ensureInView(divs[2]);
+        assert.near(container.scrollLeft, 89);
+
+        Dom.ensureInView(divs[1]);
+        assert.near(container.scrollLeft, 50);
+
+        container.style.height = '80px';
+        Dom.ensureInView(divs[2]);
+        assert.near(container.scrollLeft, 89);
+
+        Dom.ensureInView(divs[4]);
+        assert.near(container.scrollLeft, 189);
+
+        outer.style.overflow = 'scroll';
+        Dom.ensureInView(divs[4]);
+        assert.near(container.scrollLeft, 189);
+        assert.near(outer.scrollLeft, 83);
+      });
+
+      test("vertical", ()=>{
+        //[
+        const block = (text)=>Dom.h({style: 'width:50px;height:20px', div: [text]});
+
+        const divs = 'one two three four five'.split(' ').map(t => block(t));
+        const container = Dom.h({
+          style: 'margin:30px;width:150px;height:30px;overflow:scroll',
+          div: divs
+        });
+
+        document.body.appendChild(container);
+        Dom.ensureInView(divs[1]);
+        assert.equals(container.scrollTop, 20);
+
+        Dom.ensureInView(divs[0]);
+        assert.equals(container.scrollTop, 0);
+        //]
+
+        const outer = Dom.h({
+          style: 'margin:30px;width:150px;height:50px;overflow:visible',
+          div: {div: container},
+        });
+
+        document.body.appendChild(outer);
+        container.style.height = '50px';
+        Dom.ensureInView(divs[2]);
+        assert.near(container.scrollTop, 25);
+
+        Dom.ensureInView(divs[1]);
+        assert.near(container.scrollTop, 20);
+
+        container.style.height = '80px';
+        Dom.ensureInView(divs[2]);
+        assert.near(container.scrollTop, 20);
+
+        Dom.ensureInView(divs[4]);
+        assert.near(container.scrollTop, 35);
+
+        outer.style.overflow = 'scroll';
+        Dom.ensureInView(divs[4]);
+        assert.near(container.scrollTop, 35);
+        assert.near(outer.scrollTop, 61);
+      });
+    });
+
     test("getBoundingClientRect", ()=>{
       /**
        * Get the

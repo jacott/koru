@@ -271,10 +271,13 @@ isClient && define((require, exports, module)=>{
         TH.input(v.search, 't');
         assert.dom('li.hide', {count: 1, text: 'One'});
         TH.trigger(v.search, 'keydown', {which: 13});
+        spy(Dom, 'ensureInView');
         let ev = keydown(40);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
-        assert.dom('li.selected', 'Two');
+        assert.dom('li.selected', 'Two', elm =>{
+          assert.calledWith(Dom.ensureInView, elm);
+        });
         assert.dom('li:not(.selected)', 'One');
         TH.trigger(v.search, 'keydown', {which: 40});
         assert.dom('li.selected', 'Three');
