@@ -113,7 +113,6 @@ define((require)=> JsPaser => {
     const addplain = node => {catchup(node.end.endpos)};
 
     const definition = (node, descend)=>{
-      const spos = node.start.pos;
       addType(node, 'kd');
       descend();
     };
