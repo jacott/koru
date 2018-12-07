@@ -366,10 +366,7 @@ define((require)=>{
     stopEvent: DomTemplate.stopEvent,
     stopPropigation: DomTemplate.stopPropigation,
 
-    setCtx: (elm, ctx)=>{
-      if (ctx === undefined) {
-        ctx = new Ctx(null, Dom.ctx(elm));
-      }
+    setCtx: (elm, ctx=new Ctx(null, Dom.ctx(elm)))=>{
       elm[ctx$] = ctx;
       ctx.firstElement = elm;
       return ctx;
