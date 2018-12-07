@@ -75,26 +75,6 @@ define((require, exports, module)=>{
       testWhenReady(conn);
     };
 
-    for (let key in session.conns) {
-      const conn = session.conns[key];
-      newConn(conn);
-    }
-
-    ws.send('AServer');
-
-    session.countNotify.onChange((conn, isOpen)=>{
-      const {engine} = conn;
-      if (! engine || isOpen) return;
-      const cs = clients[engine];
-      if (cs === undefined) return;
-      cs.conns.delete(conn);
-      if (cs.conns.size === 0) {
-        delete clients[engine];
-        --clientCount;
-        ws.send('D'+engine);
-      }
-    });
-
     const testWhenReady = ()=>{
       if (testMode !== 'none') {
         if (testMode !== 'server' && testExec.client !== null && clientCount) {
@@ -256,6 +236,28 @@ define((require, exports, module)=>{
         ws.send('Z');
       }
     };
+
+    for (let key in session.conns) {
+      const conn = session.conns[key];
+      newConn(conn);
+    }
+
+    ws.send('AServer');
+
+    session.countNotify.onChange((conn, isOpen)=>{
+      const {engine} = conn;
+      if (! engine || isOpen) return;
+      const cs = clients[engine];
+      if (cs === undefined) return;
+      cs.conns.delete(conn);
+      if (cs.conns.size === 0) {
+        delete clients[engine];
+        --clientCount;
+        ws.send('D'+engine);
+      }
+    });
+
+
   }
 
   koru.onunload(module, 'reload');
