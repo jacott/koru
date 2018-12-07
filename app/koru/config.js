@@ -11,8 +11,10 @@ define((require, exports, module)=>{
      */
     load(name, req, onload, config) {
       const provider = module.config()[name];
-      if (! provider)
-        throw new Error('No config setting: ' + name + " for " + module.id);
+      if (provider === undefined) {
+        onload();
+        return;
+      }
 
       req.module.dependOn(provider);
       const pMod = req.module.dependOn(provider);

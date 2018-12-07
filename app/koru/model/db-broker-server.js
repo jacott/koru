@@ -34,10 +34,12 @@ define((require)=>{
 
   const dbBroker = {
     get db() {
+      if (driver === undefined) return;
       const {thread} = util;
       return thread.db || (thread.db = driver.defaultDb);
     },
     set db(value) {
+      if (driver === undefined) return;
       if (value == null) value = driver.defaultDb;
       const {thread} = util;
       thread.db = value;
