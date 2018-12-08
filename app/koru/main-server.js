@@ -25,8 +25,13 @@ define((require, exports, module)=>{
         console.log('=> Reloading');
 
         const argv = process.argv.slice(0,1).concat(process.execArgv.concat(process.argv.slice(1)));
-        requirejs.nodeRequire('bindings')('koru_restart.node')
-          .execv(process.execPath, argv);
+        try {
+          requirejs.nodeRequire('bindings')('koru_restart.node')
+            .execv(process.execPath, argv);
+        } catch(err) {
+          console.log(`=> Reload not supported`);
+          process.exit(1);
+        }
       },
 
       Fiber: util.Fiber,

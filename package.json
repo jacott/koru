@@ -7,6 +7,7 @@
     "url": "git://github.com/jacott/koru.git"
   },
   "scripts": {
+    "install": "scripts/npm-install",
     "test": "scripts/build-api-doc"
   },
   "bugs": {
@@ -21,7 +22,6 @@
   "author": "Geoff Jacobsen <geoffjacobsen@gmail.com>",
   "main": "lib/koru",
   "bin": "./bin/koru",
-  "gypfile": true,
   "dependencies": {
     "autoprefixer": "^9.4.2",
     "bindings": "^1.3.0",
