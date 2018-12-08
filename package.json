@@ -42,7 +42,7 @@
     "source-map": "^0.7.3",
     "terser": "^3.11.0",
     "ws": "^6.1.2",
-    "yaajs": "^3.2.0"
+    "yaajs": "^3.2.1"
   },
   "devDependencies": {
     "pg-libpq": "^2.2.3"
@@ -50,5 +50,5 @@
   "engines": {
     "node": ">=8.11.4"
   },
-  "version": "0.27.2"
+  "version": "0.27.3"
 }
