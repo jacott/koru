@@ -12,7 +12,6 @@ define((require)=>{
   const destoryWith$ = Symbol();
   const {onDestroy$} = Ctx[private$];
 
-  let vendorTransform;
   const vendorStylePrefix = (() => {
     const style = document.documentElement.style;
     const styles = ['Moz', 'ms',  'webkit', 'o', ''];
@@ -20,8 +19,6 @@ define((require)=>{
     for(; i < styles.length; ++i) {
       if (styles[i]+'Transform' in style) break;
     }
-    vendorTransform = ('transform' in style) || ! vendorStylePrefix ? 'transform'
-      : vendorStylePrefix + 'Transform';
     return styles[i];
   })();
 
@@ -333,9 +330,6 @@ define((require)=>{
       ctx.onAnimationEnd(addElm);
     },
 
-
-    vendorTransform,
-    vendorTransformOrigin: vendorTransform+'Origin',
 
     vendorPrefix: vendorFuncPrefix,
 
