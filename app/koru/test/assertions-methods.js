@@ -238,7 +238,7 @@ define((require)=>{
       switch(typeof expected) {
       case 'string':
         const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
-        const actParts = actual.split(/([\d.]+(?:e[+-]\d+)?)/);
+        const actParts = actual === null ? [] : actual.split(/([\d.]+(?:e[+-]\d+)?)/);
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {

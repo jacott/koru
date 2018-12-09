@@ -628,8 +628,7 @@ define((require)=>{
       }
     },
 
-    binarySearch(list, compare, start=list.length>>1) {
-      let lower = 0, upper = list.length;
+    binarySearch: (list, compare, start=list.length>>1, lower=0, upper = list.length)=>{
       if (upper == 0) return -1;
       if (start < lower) start = lower;
       else if (start >= upper) start = upper-1;

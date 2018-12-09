@@ -924,7 +924,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   };
 
 
-  function queryWhere(table, sql, where, suffix) {
+  const queryWhere = (table, sql, where, suffix)=>{
     table._ensureTable();
 
     let values;
@@ -941,11 +941,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     if (suffix) sql += suffix;
 
     return table._client.query(sql, values);
-  }
+  };
 
-  function toColumns(table, params, cols) {
+  const toColumns = (table, params, cols=Object.keys(params))=>{
     const needCols = autoSchema ? {} : undefined;
-    cols = cols || Object.keys(params);
     const values = new Array(cols.length);
     const colMap = table._colMap;
 
@@ -989,7 +988,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     return res;
   }
 
-  function performTransaction(table, sql, params) {
+  const performTransaction = (table, sql, params)=>{
     if (table.schema || util.isObjEmpty(params.needCols)) {
       return table._client.withConn(function (conn) {
         return this.query(sql, params.values);
@@ -1000,10 +999,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       addColumns(table, params.needCols);
       return this.query(sql, params.values);
     });
-  }
+  };
 
-  function toBaseType(value) {
-    if (value == null) return 'text';
+  const toBaseType = (value=null)=>{
+    if (value === null) return 'text';
     switch(typeof(value)) {
     case 'object':
       if (Array.isArray(value)) {
@@ -1030,15 +1029,13 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     case 'string':
       return 'text';
     }
-  }
+  };
 
-  function mapType(col, value) {
-    const type = toBaseType(value);
-    return jsFieldToPg(col, type);
-  }
+  const mapType = (col, value) => jsFieldToPg(col, toBaseType(value));
 
-  function pgFieldType(colSchema) {
-    const type = (typeof colSchema === 'string') ? colSchema : colSchema ? colSchema.type : 'text';
+  const pgFieldType = (colSchema)=>{
+    const type = (typeof colSchema === 'string') ? colSchema : colSchema === undefined
+          ? 'text' : colSchema.type;
 
     switch(type) {
     case 'string':
@@ -1061,19 +1058,19 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     default:
       return type;
     }
-  }
+  };
 
-  function jsFieldToPg(col, colSchema, client) {
+  const jsFieldToPg = (col, colSchema, client)=>{
     let defaultVal = '';
 
     const richType = (typeof colSchema === 'string')
-          ? colSchema : colSchema ? colSchema.type : 'text';
+          ? colSchema : colSchema === undefined ? 'text' : colSchema.type;
 
     const type = pgFieldType(richType);
 
     if(typeof colSchema === 'object' && colSchema.default != null) {
       let literal = colSchema.default;
-      client.withConn(function (conn) {
+      client.withConn(conn =>{
         if (type === 'jsonb')
           literal = conn.escapeLiteral(JSON.stringify(literal))+'::jsonb';
         else {
@@ -1096,9 +1093,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     const collate = (type === 'text' && richType !== 'text' || richType === 'has_many')
           ? ' collate "C"' : '';
     return `"${col}" ${type}${collate}${defaultVal}`;
-  }
+  };
 
-  function updateSchema(table, schema) {
+  const updateSchema = (table, schema)=>{
     const needCols = {};
     const colMap = table._colMap;
     for ( let col in schema) {
@@ -1107,29 +1104,27 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     }
 
     util.isObjEmpty(needCols) ||
-      table.transaction(function () {
-        addColumns(table, needCols);
-      });
-  }
+      table.transaction(()=>{addColumns(table, needCols)});
+  };
 
-  function addColumns(table, needCols) {
+  const addColumns = (table, needCols)=>{
     const prefix = `ALTER TABLE "${table._name}" ADD COLUMN `;
     const client = table._client;
 
     client.query(Object.keys(needCols).map(col => prefix + needCols[col]).join(';'));
 
     readColumns(table);
-  }
+  };
 
-  function readColumns(table) {
+  const readColumns = (table)=>{
     const colQuery = `SELECT * FROM information_schema.columns
 WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaName}'`;
     table._columns = table._client.query(colQuery);
     table._colMap = util.toMap('column_name', null, table._columns);
-  }
+  };
 
-  const wait = future => (err, result)=>{
-    if (err != null && typeof err === 'object') {
+  const wait = future => (err=null, result)=>{
+    if (err !== null && typeof err === 'object') {
       if (typeof err.message === 'string')
         err.message = err.message.replace(/^ERROR:\s*/, '');
       future.throw(err);
