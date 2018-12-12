@@ -80,6 +80,7 @@ isClient && define((require, exports, module)=>{
         pgdn: [sut.pgDown, f],
         pgup: [sut.pgUp, f],
         esc: [sut.esc, f],
+        enter: [sut.enter, f],
         space: [' ', f],
         lbkt: ['Û', f],
         rbkt: ['Ý', f],
@@ -95,6 +96,7 @@ isClient && define((require, exports, module)=>{
       assert.same(v.km.getTitle('pgup', 'pgup'), "pgup [<pgUp>]");
       assert.same(v.km.getTitle('esc', 'esc'), "esc [<esc>]");
       assert.same(v.km.getTitle('space', 'space'), "space [<space>]");
+      assert.same(v.km.getTitle('enter', 'enter'), "enter [<enter>]");
       assert.same(v.km.getTitle('lbkt', 'lbkt'), "lbkt [[]");
       assert.same(v.km.getTitle('rbkt', 'rbkt'), "rbkt []]");
       assert.same(v.km.getTitle('bslash', 'bslash'), "bslash [\\]");
@@ -179,12 +181,12 @@ isClient && define((require, exports, module)=>{
     test("input focused",  ()=>{
       spy(Dom, 'matches');
       document.body.appendChild(Dom.h({input: '', $type: 'text'}));
-      assert.dom('input', function () {
-        this.focus();
+      assert.dom('input', input =>{
+        input.focus();
         let event = TH.buildEvent('keydown', {which: 88});
         v.km.exec(event);
         refute.called(v.foo);
-        assert.calledWith(Dom.matches, this, Dom.INPUT_SELECTOR);
+        assert.calledWith(Dom.matches, input, Dom.INPUT_SELECTOR);
         event = TH.buildEvent('keydown', {which: 88});
         v.km.exec(event, 'ignoreFocus');
         assert.called(v.foo);

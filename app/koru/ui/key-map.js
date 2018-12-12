@@ -64,7 +64,7 @@ define((require)=>{
   }
 
   const makeTitle = (name, keySeq)=>{
-    keySeq = keySeq.replace(/[\u0010-\u002B,\u0080-\u00DE]/g, function (m) {
+    keySeq = keySeq.replace(/[\u0000-\u002B,\u0080-\u00DE]/g, m =>{
       const mc = MOD_NAMES[m];
       if (mc)
         return mc+'-';
@@ -184,6 +184,7 @@ define((require)=>{
     '\u0024home',
     '\u001Besc',
     '\u002Edel',
+    '\renter',
     ' space',
     'Û[',
     'Ý]',
