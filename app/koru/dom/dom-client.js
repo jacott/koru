@@ -446,7 +446,7 @@ define((require)=>{
       }
     },
 
-    myCtx: elm => elm == null ? null : elm[ctx$],
+    myCtx: elm => elm == null ? null : elm[ctx$] || null,
 
     ctx: (elm=null)=>{
       if (elm === null) return;

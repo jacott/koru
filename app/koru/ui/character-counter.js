@@ -50,7 +50,7 @@ define((require, exports, module)=>{
     }
 
     checkNow() {
-      if (this.editor === null || this.editor.parentNode === null || Dom.myCtx(this.editor) === null) {
+      if (this.editor === null || this.editor.parentNode === null) {
         this.mutationObserver.disconnect();
         this.editor = null;
         return;
