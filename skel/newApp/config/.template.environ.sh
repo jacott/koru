@@ -5,6 +5,7 @@ test "$2" = "nochdir" || cd `dirname "$0"`/..
 export KORU_APP_NAME=$$appName$$
 export TZ=UTC
 export KORU_HOME=$PWD
+export KORU_PORT=${KORU_PORT-3000}
 export KORU_MODULE=$(readlink -f .)/node_modules/koru
 tmpdir=$KORU_HOME/tmp
 branch=${branch-${1-demo}}

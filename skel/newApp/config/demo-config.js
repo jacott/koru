@@ -2,6 +2,8 @@ const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
 const {env} = process;
 
+const port = env.KORU_PORT || 3000;
+
 exports.server = cfg =>{
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
@@ -16,11 +18,11 @@ exports.server = cfg =>{
     },
 
     "koru/web-server": {
-      port: 3000,
+      port,
     },
 
     "koru/main": {
-      "urlRoot": 'http://localhost:3000/',
+      "urlRoot": `http://localhost:${port}/`,
       appDir: appDir,
     },
   });
