@@ -30,12 +30,15 @@ define((require, exports, module)=>{
     });
     test("map", ()=>{
       /**
-       * Map an iterater to another value
+       * Map (and filter) an iterator to another value. If the `mapper` return `undefined` then the
+       * value is filtered out of the results
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
-      assert.equals(Array.from(iter.map(i => 2*i)), [2, 6]);
+      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
+      const mapped = iter.map(i => i == 5 ? undefined : 2*i);
+      assert.equals(mapped.count(), 2);
+      assert.equals(Array.from(mapped), [2, 6]);
       assert.equals(iter.map(i => 2*i)[Symbol.iterator]().next(), {done: false, value: 2});
       //]
     });

@@ -22,7 +22,10 @@ define(()=>{
     map(mapper) {
       const self = this;
       return new Enumerable(function *() {
-        for (const v of self) yield mapper(v);
+        for (const v of self[iter$]) {
+          const ans = mapper(v);
+          if (ans !== undefined) yield ans;
+        }
       });
     }
 
@@ -33,6 +36,12 @@ define(()=>{
           seed = reducer(seed, v);
       }
       return seed;
+    }
+
+    forEach(callback) {
+      for (const v of this[iter$]) {
+        callback(v);
+      }
     }
 
     static count(to, from=1, step=1) {
