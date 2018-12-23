@@ -2,9 +2,6 @@ define(() =>{
   let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';
 
   const dbBroker = {
-    get dbId() {return threadDbId},
-    set dbId(value) {threadDbId = value || defaultDbId},
-
     setMainDbId(value) {return threadDbId = mainDbId = value || defaultDbId},
 
     setDefaultDbId(value) {defaultDbId = mainDbId = threadDbId = value},
@@ -26,6 +23,11 @@ define(() =>{
       }
     },
   };
+
+  Object.defineProperty(dbBroker, 'dbId', {
+    get: ()=>threadDbId, set: v =>{threadDbId = v || defaultDbId},
+    configurable: true
+  });
 
   return dbBroker;
 });

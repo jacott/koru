@@ -86,7 +86,7 @@ define((require, exports, module)=>{
       // only call if at least one change
       const changes = doc.changes;
       doc.changes = {}; // reset changes here for callbacks
-      if (doc[stopGap$])
+      if (doc[stopGap$] !== undefined)
         localUpdate(doc, changes, koru.userId());
       else
         session.rpc("save", model.modelName, _id, changes, callback);
@@ -198,7 +198,7 @@ define((require, exports, module)=>{
 
     setupModel(model) {
       const modelName = model.modelName;
-      let dbId, docs;
+      let dbId = '', docs = null;
 
       const chkdb = ()=>{
         const tdbId = dbBroker.dbId;
@@ -212,6 +212,24 @@ define((require, exports, module)=>{
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
       const anyChange = new Observable();
+
+      Object.defineProperty(model, 'docs', {
+        get: ()=>{
+          chkdb();
+          if (docs != null) return docs;
+          docs = getSetProp(dbId, modelName, 'docs', createDictionary);
+          return docs;
+        },
+        set: (value)=>{
+          chkdb();
+          if (docs == null)
+            docs = getSetProp(dbId, modelName, 'docs', ()=> value);
+          dbs[dbId][modelName].docs = value;
+          docs = value;
+          model._indexUpdate.reloadAll();
+        },
+        configurable: true,
+      });
 
       util.merge(model, {
         notify(...args) {
@@ -228,20 +246,6 @@ define((require, exports, module)=>{
           const subject = getSetProp(dbId, modelName, 'notify', () => new Observable());
 
           return subject.onChange(callback);
-        },
-
-        get docs() {
-          chkdb();
-          if (docs) return docs;
-          docs = getSetProp(dbId, modelName, 'docs', createDictionary);
-          return docs;
-        },
-        set docs(value) {
-          chkdb();
-          docs = docs || getSetProp(dbId, modelName, 'docs', () => value);
-          dbs[dbId][modelName].docs = value;
-          docs = value;
-          model._indexUpdate.reloadAll();
         },
       });
       clientIndex(model);

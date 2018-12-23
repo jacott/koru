@@ -189,7 +189,7 @@ define((require, exports, module)=>{
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params);
         const {filterTest} = idx;
-        if (filterTest !== null) this.where(doc => filterTest.matches(doc));
+        if (filterTest !== undefined) this.where(doc => filterTest.matches(doc));
         this._index = {idx, params, options};
         return this;
       },
@@ -395,7 +395,7 @@ define((require, exports, module)=>{
         const doc = query.findOne(idx);
         return doc !== undefined && ((yield doc) === true || --v._limit == 0);
 
-      } else if (idx[Symbol.iterator]) {
+      } else if (idx[Symbol.iterator] !== undefined) {
         if (idx.cursor) idx = idx.cursor(options);
         for (const {_id} of idx) {
           const doc = query.findOne(_id);
@@ -461,7 +461,7 @@ define((require, exports, module)=>{
       if (typeof idx === 'string') {
         return findOneByIndex(query, idx, func, v);
 
-      } else if (idx[Symbol.iterator]) {
+      } else if (idx[Symbol.iterator] !== undefined) {
         if (idx.values !== undefined) idx = idx.values(options);
         for (const {_id} of idx) {
           if (findOneByIndex(query, _id, func, v))

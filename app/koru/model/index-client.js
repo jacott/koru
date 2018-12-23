@@ -4,11 +4,7 @@ define((require, exports, module)=>{
   const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
-  const emptyIdx = ()=>{
-    const ans = {tmp: null};
-    delete ans.tmp; // deoptimize; try to stop class creations
-    return ans;
-  };
+  const {createDictionary} = util;
 
   const {compare, hasOwn} = util;
   const nullToUndef= val=>val === null ? undefined : val;
@@ -33,15 +29,15 @@ define((require, exports, module)=>{
 
     const extractCondition = fields=>{
       const condition = typeof fields[fields.length-1] === 'function' ?
-              fields[fields.length-1] : null;
-      if (condition !== null) --fields.length;
+            fields[fields.length-1] : undefined;
+      if (condition !== undefined) --fields.length;
       return condition;
     };
 
     const buildIndex = (_fields, _filterTest) => {
       const fields = _fields;
-      let query = null;
-      if (_filterTest !== null) {
+      let query;
+      if (_filterTest !== undefined) {
         query = model.query;
         _filterTest(query);
       }
@@ -59,7 +55,7 @@ define((require, exports, module)=>{
         idx = indexes[dbId];
 
         if (idx === undefined) idx = indexes[dbId] =
-          leadLen === -1 ? newBTree() : emptyIdx();
+          leadLen === -1 ? newBTree() : createDictionary();
 
         return idx;
       };
@@ -144,7 +140,7 @@ define((require, exports, module)=>{
       const onChange = ({type, doc, was})=>{
         if (type === 'chg' && util.isObjEmpty(was.changes))
           return;
-        if (filterTest !== null) {
+        if (filterTest !== undefined) {
           if (type !== 'del' && ! filterTest.matches(doc)) {
             if (type === 'add') return;
             type = 'del';
@@ -234,7 +230,7 @@ define((require, exports, module)=>{
         },
         reload() {
           getIdx();
-          idx = indexes[dbId] = leadLen === -1 ? newBTree() : emptyIdx();
+          idx = indexes[dbId] = leadLen === -1 ? newBTree() : createDictionary();
           const docs = model.docs;
           for(const id in docs) {
             onChange(DocChange.add(docs[id]));

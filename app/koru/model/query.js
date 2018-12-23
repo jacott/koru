@@ -149,7 +149,8 @@ define((require, exports, module)=>{
       assignCondition(query, conditions, params, value);
 
     } else for (const field in params) {
-      assignCondition(query, conditions, field, params[field]);
+      const value = params[field];
+      value !== undefined && assignCondition(query, conditions, field, value);
     }
   };
 

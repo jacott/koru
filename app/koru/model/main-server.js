@@ -72,7 +72,7 @@ define((require, exports, module)=>{
       }
 
       function prepareIndex(type, model, args) {
-        let filterTest = null;
+        let filterTest;
         if (typeof args[args.length-1] === 'function') {
           filterTest = model.query;
           args[args.length-1](filterTest);
@@ -345,7 +345,7 @@ define((require, exports, module)=>{
   }
 
   function findById(id) {
-    if (! id) return;
+    if (id == null) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
     let doc = this._$docCacheGet(id);
     if (doc === undefined) {
