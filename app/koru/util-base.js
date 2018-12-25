@@ -79,9 +79,26 @@ define((require, exports, module)=>{
 
   const regexEscape = s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
+  const idLen = 17;
+  const idBytes = ((2*idLen-1)>>2)<<2;
+  const abId = new ArrayBuffer(idBytes);
+  const u32Id = new Uint32Array(abId);
+  const u8Id = new Uint8Array(abId);
+  const CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
   const util = {
     hasOwn: (obj, prop)=>hasOwnProperty.call(obj, prop),
-    idLen: 17,
+    idLen,
+    u32Id, u8Id,
+    CHARS,
+    id: ()=>{
+      let result = '';
+      for(let i = 0; i < idLen; ++i) {
+        result += CHARS[u8Id[i] % 62];
+      }
+
+      return result.slice(0, idLen);
+    },
     browserVersion(ua) {
       const isMobile = /\bMobi(le)?\b/.test(ua);
       const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];

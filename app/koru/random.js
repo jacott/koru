@@ -4,8 +4,7 @@ define((require)=>{
 
   const nodeCrypto = isServer ? requirejs.nodeRequire('crypto') : undefined;
 
-  const {idLen} = util;
-  const idBytes = ((2*idLen-1)>>2)<<2;
+  const {idLen, u32Id, u8Id, id} = util;
 
   const toFrac = Math.pow(2, -32);
 
@@ -13,14 +12,7 @@ define((require)=>{
   const u32 = new Uint32Array(ab4);
   const u8 = new Uint8Array(ab4);
 
-  const zero = '0000';
-  const abId = new ArrayBuffer(idBytes);
-  const u32Id = new Uint32Array(abId);
-  const u8Id = new Uint8Array(abId);
-
   const shaStr = '1';
-
-  const CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   const crypto = ! nodeCrypto && typeof window !== "undefined" &&
           window.crypto.getRandomValues && window.crypto;
@@ -91,12 +83,7 @@ define((require)=>{
       else
         u8Id.set(nodeCrypto.randomBytes(idLen));
 
-      let result = '';
-      for(let i = 0; i < idLen; ++i) {
-        result += CHARS[u8Id[i] % 62];
-      }
-
-      return result.slice(0, idLen);
+      return id();
     }
   };
 

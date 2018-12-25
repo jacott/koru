@@ -36,6 +36,17 @@ define((require, exports, module)=>{
       //]
     });
 
+    test("toId", ()=>{
+      /**
+       * Convert a string into an id hash
+       **/
+      api.method();
+      //[
+      assert.same(sut.toId('hello'), '1fUIeDQxGXKCyEZbu');
+      assert.same(sut.toId('hello'+'goodbye'), 'hef112kz6HMarjX36');
+      //]
+    });
+
     test("toHex", ()=>{
       /**
        * Convert a `hash` to a hex string.
