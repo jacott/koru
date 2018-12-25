@@ -208,10 +208,12 @@ define((require)=>{
     if(constructor === Object || constructor === undefined) {
       buffer.push(tObject);
       for (let key in object) {
+        const value = object[key];
+        if (typeof value === 'symbol') continue;
         const dkey = addToDict(dict, key);
         if (dkey === null) throw new Error("Dictionary overflow");
         buffer.push(dkey >> 8, dkey & 0xff);
-        encode(buffer, object[key], dict);
+        encode(buffer, value, dict);
       }
       buffer.push(tTerm);
 

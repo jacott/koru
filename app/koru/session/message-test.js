@@ -320,7 +320,8 @@ define((require, exports, module)=>{
     });
 
     test("encode/decodeMessage", ()=>{
-      const u8 = message.encodeMessage("M", [1, 2, {foo: 'bar'}], v.gDict);
+      const u8 = message.encodeMessage("M", [
+        1, 2, {foo: 'bar', [Symbol()]: 'notme'}], v.gDict);
       const data = [];
 
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
