@@ -397,10 +397,12 @@ define((require, exports, module)=>{
 
       } else if (idx[Symbol.iterator] !== undefined) {
         if (idx.cursor) idx = idx.cursor(options);
-        for (const {_id} of idx) {
-          const doc = query.findOne(_id);
-          if (doc !== undefined && ((yield doc) === true || --v._limit == 0))
-            return true;
+        for (const rec of idx) {
+          if (rec !== undefined) {
+            const doc = query.findOne(rec._id);
+            if (doc !== undefined && ((yield doc) === true || --v._limit == 0))
+              return true;
+          }
         }
 
       } else for(const key in idx) {
@@ -463,8 +465,8 @@ define((require, exports, module)=>{
 
       } else if (idx[Symbol.iterator] !== undefined) {
         if (idx.values !== undefined) idx = idx.values(options);
-        for (const {_id} of idx) {
-          if (findOneByIndex(query, _id, func, v))
+        for (const rec of idx) {
+          if (rec !== undefined && findOneByIndex(query, rec._id, func, v))
             return true;
         }
 

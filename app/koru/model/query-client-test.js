@@ -58,6 +58,22 @@ define((require, exports, module)=>{
                     .fetchField('age'), [3]);
     });
 
+
+    test("custom index", ()=>{
+      const {TestModel} = v;
+      const docs = [TestModel.create({_id: 'one'}), undefined, TestModel.create({_id: 'two'})];
+      const index ={
+        lookup() {
+          return {*[Symbol.iterator]() {
+            for (const x of docs) yield x;
+          }};
+        }
+      };
+
+      assert.equals(TestModel.query.withIndex(index).map(d => d._id), ['one', 'two']);
+      assert.equals(Array.from(TestModel.query.withIndex(index)).map(d => d._id), ['one', 'two']);
+    });
+
     test("withDB", ()=>{
       dbBroker.withDB('foo2', () => v.TestModel.create({age: 3}));
 
