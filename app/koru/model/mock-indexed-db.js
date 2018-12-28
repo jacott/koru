@@ -8,7 +8,7 @@ define((require)=>{
     constructor(db) {
       this.db = db;
       this.onabort = this.oncomplete = null;
-      db._pending.push(() => {
+      db._addPending(() => {
         this.onabort = null;
         this.oncomplete == null || this.oncomplete();
       });
@@ -25,10 +25,15 @@ define((require)=>{
   }
 
   class Database {
-    constructor(version) {
-      this._pending = [];
+    constructor(name, version, mockdb) {
       this._store = {};
+      this._mockdb = mockdb;
     }
+
+    _addPending(func) {
+      this._mockdb._addPending(func);
+    }
+
     get objectStoreNames() {
       return Object.keys(this._store);
     }
@@ -105,7 +110,7 @@ define((require)=>{
 
     get(key) {
       const self = this;
-      const {docs, db: {_pending}} = this.os;
+      const {docs, db} = this.os;
       if (Array.isArray(self.keyPath) && ! Array.isArray(key))
         key = [key];
       return {
@@ -113,21 +118,21 @@ define((require)=>{
           const result = util.deepCopy(
             findDoc(docs, self.keyPath, key)
               .sort(self.compare)[0]);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
 
     getAll(query) {
       const self = this;
-      const {docs, db: {_pending}} = this.os;
+      const {docs, db} = this.os;
       return {
         set onsuccess(f) {
           const result = Object.keys(docs)
                   .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
                   .map(k => util.deepCopy(docs[k]))
                   .sort(self.compare);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
@@ -135,7 +140,7 @@ define((require)=>{
     getAllKeys(query) {
       const self = this;
       const idField = this[idField$];
-      const {docs, db: {_pending}} = this.os;
+      const {docs, db} = this.os;
       return {
         set onsuccess(f) {
           const result = Object.keys(docs)
@@ -143,7 +148,7 @@ define((require)=>{
                   .map(k => docs[k])
                   .sort(self.compare)
                   .map(d => d[idField]);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
@@ -168,12 +173,12 @@ define((require)=>{
 
     count(query) {
       const self = this;
-      const {docs, db: {_pending}} = this.os;
+      const {docs, db} = this.os;
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
             (s, k) => s + (! query || query.includes(values(docs[k], self.keyPath)) ? 1 : 0), 0);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
@@ -210,23 +215,23 @@ define((require)=>{
     }
 
     get(id) {
-      const {docs, db: {_pending}} = this;
+      const {docs, db} = this;
       return {
         set onsuccess(f) {
           const result = util.deepCopy(docs[id]);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
 
     getAll(query) {
-      const {docs, db: {_pending}} = this;
+      const {docs, db} = this;
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).sort()
                   .filter(k => ! query || query.includes(k))
                   .map(k => util.deepCopy(docs[k]));
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
@@ -241,12 +246,12 @@ define((require)=>{
     }
 
     count(query) {
-      const {docs, db: {_pending}} = this;
+      const {docs, db} = this;
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
             (s, k) => s + (! query || query.includes(k) ? 1 : 0), 0);
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
@@ -254,20 +259,20 @@ define((require)=>{
     put(doc) {
       const idField = this[idField$];
       this.docs[doc[idField]] = util.deepCopy(doc);
-      const {_pending} = this.db;
+      const {db} = this;
       return {
         set onsuccess(f) {
           const result = doc[idField];
-          _pending.push(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}});});
         },
       };
     }
 
     delete(id) {
       delete this.docs[id];
-      const {_pending} = this.db;
+      const {db} = this;
       return {
-        set onsuccess(f) {_pending.push(() => {f({target: {result: undefined}})})},
+        set onsuccess(f) {db._addPending(() => {f({target: {result: undefined}})})},
       };
     }
 
@@ -288,23 +293,22 @@ define((require)=>{
       this._version = version;
       this.restore = TH.stubProperty(window, 'indexedDB', {value: this});
       this._dbs = {};
-      this._pending = [];
+      this._pending = null;
     }
 
     open(name, newVersion) {
-      const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0));
-      const pending = db._pending;
+      const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0, this));
       const oldVersion = this._version;
       return {
         result: db,
         set onupgradeneeded(func) {
           if (oldVersion !== newVersion)
-            pending.push(() => {
+            db._addPending(() => {
               func({oldVersion, newVersion, target: {result: db, transaction: db.transaction()}});
             });
         },
         set onsuccess(func) {
-          pending.push(() => {
+          db._addPending(() => {
             db._version = newVersion;
             func({target: {result: db}});
           });
@@ -312,39 +316,45 @@ define((require)=>{
       };
     }
 
-    deleteDatabase(name) {
-      delete this._dbs[name];
-      const pending = this._pending;
-      return {
-        set onsuccess(func) {
-          pending.push(()=>{
-            func({target: {result: null}});
-          });
+    _addPending(func) {
+      if (this._pending === null) {
+        this._pending = [func];
+        this._scheduleRun();
+      } else {
+        this._pending.push(func);
+      }
+    }
+
+    _scheduleRun() {
+      Promise.resolve().then(() =>{
+        this._run();
+      });
+    }
+
+    _run() {
+      const {_pending} = this;
+      if (_pending !== null) {
+        this._pending = null;
+        for (const func of _pending) {
+          func();
         }
-      };
+      }
     }
 
-    yield(timer) {
-      if (timer === undefined)
-        flushPending(this);
-      else
-        setTimeout(() => {flushPending(this)}, timer);
-    }
-  }
-
-  function flushPending(idb) {
-    const {_pending, _dbs} = idb;
-    if (_pending.length != 0) {
-      idb._pending = [];
-      _pending.forEach(p => {p()});
-    }
-
-    for (let name in _dbs) {
-      const db = _dbs[name];
-      const pending = db._pending;
-      if (pending.length == 0) continue;
-      db._pending = [];
-      pending.forEach(p => {p()});
+    deleteDatabase(name) {
+      const idb = this._dbs[name];
+      if (idb === undefined) {
+        return {};
+      } else {
+        delete this._dbs[name];
+        return {
+          set onsuccess(func) {
+            idb._addPending(()=>{
+              func({target: {result: null}});
+            });
+          }
+        };
+      }
     }
   }
 

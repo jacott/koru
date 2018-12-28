@@ -1,8 +1,9 @@
 isClient && define((require, exports, module)=>{
   const koru            = require('koru');
+  const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m, stubProperty} = TH;
 
   const sut = require('./mock-indexed-db');
   const {IDBKeyRange} = window;
@@ -23,18 +24,25 @@ isClient && define((require, exports, module)=>{
   }
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      MockPromise.stubPromise();
+    });
     afterEach(()=>{
       v = {};
     });
 
     test("deleteDatabase", ()=>{
       const idb = new sut(1);
-      idb._dbs.foo = {};
+      const _addPending = stub();
+      idb._dbs.foo = {
+        _addPending
+      };
       const req = idb.deleteDatabase('foo');
-      const onsuccess = req.onsuccess = stub();
-
-      idb.yield();
-
+      const onsuccess = stub();
+      req.onsuccess = onsuccess;
+      assert.calledWith(_addPending, m.func);
+      refute.called(onsuccess);
+      _addPending.yield();
       assert.called(onsuccess);
     });
 
@@ -44,7 +52,8 @@ isClient && define((require, exports, module)=>{
         const req = v.idb.open('foo', 1);
         req.onsuccess = ({target: {result}}) => {
           v.db = result;
-        }; v.idb.yield();
+        };
+        MockPromise._poll();
 
         v.t1 = v.db.createObjectStore('t1', {keyPath: '_id'});
         v.t1.docs = {
@@ -59,20 +68,20 @@ isClient && define((require, exports, module)=>{
         v.t1.get('r1').onsuccess = ({target: {result}}) => {
           v.ans = result;
         };
-        v.idb.yield();
+        MockPromise._poll();
         assert.equals(v.ans, v.r1);
       });
 
       test("getAll", ()=>{
         v.t1.getAll()
           .onsuccess = ({target: {result}}) => {v.ans = result};
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, [v.r1, v.r2, v.r3, v.r4]);
 
         v.t1.getAll(IDBKeyRange.bound('r2', 'r4', false, true))
           .onsuccess = ({target: {result}}) => {v.ans = result};
 
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, [v.r2, v.r3]);
       });
 
@@ -86,7 +95,7 @@ isClient && define((require, exports, module)=>{
             }
           };
 
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, [v.r1, v.r2, v.r3]);
 
         v.ans = [];
@@ -98,33 +107,42 @@ isClient && define((require, exports, module)=>{
             }
           };
 
-        v.idb.yield();
+        MockPromise._poll();
         assert.equals(v.ans, [v.r3, v.r2]);
       });
 
       test("count", ()=>{
         v.t1.count()
           .onsuccess = ({target: {result}}) => {v.ans = result};
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, 4);
 
         v.t1.count(IDBKeyRange.bound('r2', 'r4', false, true))
           .onsuccess = ({target: {result}}) => {v.ans = result};
 
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, 2);
+      });
+
+      test("put", ()=>{
+        const rec = {_id: 'q1', name: 'Samantha', age: 25};
+        v.t1.put(rec)
+          .onsuccess = ({target: {result}}) => {v.ans = result};
+        v.idb._run();
+        assert.equals(v.ans, 'q1');
+        assert.equals(v.t1.docs.q1, rec);
       });
 
       test("createIndex", ()=>{
         v.t1Name = v.t1.createIndex('name', 'name');
         v.t1Name.get('Ronald')
           .onsuccess = ({target: {result}}) => {v.ans = result};
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, v.r1);
 
         v.t1Name.get('Allan')
           .onsuccess = ({target: {result}}) => {v.ans = result};
-        v.idb.yield();
+        v.idb._run();
         assert.equals(v.ans, v.r3);
       });
 
@@ -141,13 +159,13 @@ isClient && define((require, exports, module)=>{
           v.t1Name.getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, [v.r4]);
 
           v.t1Name.getAll(IDBKeyRange.bound('Allan', 'Ronald', true, false))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, [v.r4, v.r1, v.r2]);
         });
       });
@@ -160,12 +178,12 @@ isClient && define((require, exports, module)=>{
         test("get.", ()=>{
           v.t1Name.get(['Ronald', 4])
             .onsuccess = ({target: {result}}) => {v.ans = result};
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, v.r2);
 
           v.t1Name.get('Allan')
             .onsuccess = ({target: {result}}) => {v.ans = result};
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, v.r3);
         });
 
@@ -173,13 +191,13 @@ isClient && define((require, exports, module)=>{
           v.t1Name.getAll(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, [v.r4]);
 
           v.t1Name.getAll(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, [v.r4, v.r2, v.r1]);
         });
 
@@ -187,13 +205,13 @@ isClient && define((require, exports, module)=>{
           v.t1Name.count(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, 1);
 
           v.t1Name.count(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, 3);
         });
 
@@ -208,7 +226,7 @@ isClient && define((require, exports, module)=>{
               }
             };
 
-          v.idb.yield();
+          v.idb._run();
           assert.equals(v.ans, [v.r4, v.r2, v.r1]);
           assert.equals(v.t1.docs, {r3: {_id: 'r3', name: 'Allan', age: 3}});
 

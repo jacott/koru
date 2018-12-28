@@ -21,7 +21,7 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  const poll = ()=>{v.mdb.yield(); Promise._poll();};
+  const poll = ()=>{Promise._poll()};
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     before(()=>{

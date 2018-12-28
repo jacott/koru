@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const koru            = require('koru');
   const Changes         = require('koru/changes');
   const Model           = require('koru/model');
@@ -51,17 +51,22 @@ define((require, exports, module)=>{
   }
 
   if (window.IDBIndex !== undefined) {
-    if (window.IDBIndex.prototype.getAllKeys === undefined) {
-      Index.prototype.getAllKeys = function (query, count) {
-        return wrapRequest(this._queryIDB, () => this._withIndex().getAll(query, count))
-          .then(ans => ans.map(rec => rec._id));
-      };
-    } else {
-      Index.prototype.getAllKeys = function (query, count) {
-        return wrapRequest(this._queryIDB, () => this._withIndex().getAllKeys(query, count));
-      };
-    }
+    Index.prototype.getAllKeys = function (query, count) {
+      return wrapRequest(this._queryIDB, () => this._withIndex().getAllKeys(query, count));
+    };
   }
+
+  const waitOnBusyQueue = (db)=>{
+    const op = db[busyQueue$];
+    if (op == null) return Promise.resolve();
+    return op.then(()=>{
+      if (op === db[busyQueue$])
+        db[busyQueue$] = null;
+      else return waitOnBusyQueue(db);
+    });
+  };
+
+  const dbClosedError = ()=> new Error('DB closed');
 
   class QueryIDB {
     constructor({name, version, upgrade, catchAll}) {
@@ -70,28 +75,29 @@ define((require, exports, module)=>{
       this[pendingUpdates$] = null;
       this[ready$] = false;
       this.catchAll = catchAll;
-      const bq = this[busyQueue$] = new Promise((resolve, reject) => {
-        const req = window.indexedDB.open(name, version);
-
-        if (upgrade !== undefined) req.onupgradeneeded = (event) => {
-          this[iDB$] = event.target.result;
-          upgrade({
-            db: this, oldVersion: event.oldVersion,
-            event, transaction: event.target.transaction,
-          });
-        };
-        req.onerror = req.onblocked = event => {
-          this[busyQueue$] = undefined;
-          error(this, event, reject);
-        };
-        req.onsuccess = event => {
-          if (bq === this[busyQueue$])
-            this[busyQueue$] = null;
-          const idb = this[iDB$] = event.target.result;
-          this[ready$] = this[pendingUpdates$] === null;
-          resolve();
-        };
+      let resolve, reject;
+      this[busyQueue$] = new Promise((_resolve, _reject) => {
+        resolve = _resolve; reject = _reject;
       });
+      const req = window.indexedDB.open(name, version);
+
+      if (upgrade !== undefined) req.onupgradeneeded = (event) => {
+          this[iDB$] = event.target.result;
+        upgrade({
+          db: this, oldVersion: event.oldVersion,
+          event, transaction: event.target.transaction,
+        });
+      };
+      req.onerror = req.onblocked = event => {
+        this[busyQueue$] = undefined;
+        error(this, event, reject);
+        };
+      req.onsuccess = event => {
+        const idb = this[iDB$] = event.target.result;
+        this[ready$] = this[pendingUpdates$] === null;
+        if (! this.isClosed) this[busyQueue$] = null;
+          resolve();
+      };
     }
 
     static canIUse() {
@@ -208,27 +214,11 @@ define((require, exports, module)=>{
 
     get isReady() {return this[ready$]}
 
-    whenReady(onFulfilled) {
-      if (this.isClosed) return Promise.reject(new Error('DB closed'));
-      if (this[busyQueue$] === null) {
-        if (onFulfilled === undefined)
-          return Promise.resolve();
-        this[busyQueue$] = Promise.resolve();
-      }
+    whenReady(noArgs) {
+      if (noArgs !== undefined) throw new Error("Unexpected argument");
+      if (this.isClosed) return Promise.reject(dbClosedError());
 
-      const oldPromise = this[busyQueue$] = this[busyQueue$].then(onFulfilled).then(result => {
-        if (oldPromise === this[busyQueue$])
-          this[busyQueue$] = null;
-        return result;
-      }, ev => {
-        if (oldPromise === this[busyQueue$])
-          this[busyQueue$] = null;
-        const ex = ev.currentTarget ? ev.currentTarget.error : ev;
-        this.catchAll == null || this.catchAll(ex);
-        throw ex;
-      });
-
-      return oldPromise;
+      return waitOnBusyQueue(this);
     }
 
     createObjectStore(name) {
@@ -266,32 +256,34 @@ define((require, exports, module)=>{
     }
   };
 
-  const getPendingUpdates = db => {
+  const getPendingUpdates = db =>{
     const pu = db[pendingUpdates$];
     if (pu !== null) return pu;
     db[ready$] = false;
     TransQueue.onAbort(() => {db[pendingUpdates$] = null; db[ready$] = true});
-    TransQueue.onSuccess(() => {db.isClosed || db.whenReady(() => flushPending(db))});
+    TransQueue.onSuccess(() => {db.isClosed || waitOnBusyQueue(db).then(()=>{flushPending(db)})});
     return db[pendingUpdates$] = {};
   };
 
-  const flushPending = db => {
-    return new Promise((resolve, reject)=>{
-      const pu = db[pendingUpdates$];
-      if (pu === null) return;
-      db[pendingUpdates$] = null;
-      const models = Object.keys(pu);
-      const tran = db[iDB$].transaction(models, 'readwrite');
-      tran.onerror = tran.onabort = (ev)=>{
+  const flushPending = db =>{
+    const pu = db[pendingUpdates$];
+    if (pu === null) return;
+    db[pendingUpdates$] = null;
+
+    const models = Object.keys(pu);
+    const tran = db[iDB$].transaction(models, 'readwrite');
+
+    return new Promise((resolve, reject) => {
+      tran.onerror = tran.onabort = (ev=new Error("IDB flush aborted"))=>{
         db[ready$] = db[pendingUpdates$] === null;
-        reject(ev);
+        error(db, ev, reject);
       };
       tran.oncomplete = ()=>{
         db[ready$] = db[pendingUpdates$] === null;
         resolve();
       };
 
-      dbBroker.withDB(db.dbId, () => {
+      dbBroker.withDB(db.dbId, ()=>{
         for(const modelName of models) {
           const docs = pu[modelName];
           const simDocs = Model._getProp(db.dbId, modelName, 'simDocs');

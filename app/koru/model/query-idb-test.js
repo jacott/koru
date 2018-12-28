@@ -13,7 +13,6 @@ isClient && define((require, exports, module)=>{
   const session         = require('koru/session');
   const {stopGap$}      = require('koru/symbols');
   const api             = require('koru/test/api');
-  const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, match: m} = TH;
@@ -34,9 +33,6 @@ isClient && define((require, exports, module)=>{
   }
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    before(()=>{
-      MockPromise.stubPromise();
-    });
     beforeEach(()=>{
       v = {};
       v.idb = new mockIndexedDB(1);
@@ -47,11 +43,10 @@ isClient && define((require, exports, module)=>{
 
     afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
-      MockPromise._stop();
       v = null;
     });
 
-    test("new", (done)=>{
+    test("new", async ()=>{
       /**
        * Open a indexedDB database
        *
@@ -63,26 +58,26 @@ isClient && define((require, exports, module)=>{
        * where `db` is the `QueryIDB` instance and `oldVersion` is the
        * current version of the database
        **/
-      MockPromise.restoreForTest();
-      v.error = ex => done(ex);
-
       const new_QueryIDB = api.new();
+      let count = 0;
       //[
       v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
         assert.same(oldVersion, 1);
         db.createObjectStore("TestModel");
+        ++count;
       }});
 
-      v.db.whenReady(() => {
-        done();
-      });
-      //]
-      v.idb.yield(0);
+      assert.same(count, 0);
 
+      await v.db.whenReady();
       assert.same(v.db.name, 'foo');
+      assert.same(count, 1);
+      ++count;
+      assert.same(count, 2);
+      //]
     });
 
-    test("promisify", ()=>{
+    test("promisify", async ()=>{
       /**
        * perform a database action returning a promise
        *
@@ -92,19 +87,17 @@ isClient && define((require, exports, module)=>{
        **/
 
       api.protoMethod('promisify');
-      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+      const db = await new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      flush();
-      api.example(()=>{
-        let id;
-        const promise = db.promisify(
-          ()=>db.transaction(['TestModel'], 'readwrite')
-            .objectStore('TestModel').put({_id: "id1", name: "foo"})
-        ).then(v => {id = v});
-        flush();
-        assert.equals(id, "id1");
-      });
+      //[
+      const id = await db.promisify(
+        ()=>db.transaction(['TestModel'], 'readwrite')
+          .objectStore('TestModel').put({_id: "id1", name: "foo"})
+      );
+
+      assert.equals(id, "id1");
+      //]
     });
 
     group("queueChange", ()=>{
@@ -121,12 +114,13 @@ isClient && define((require, exports, module)=>{
         }});
       });
 
-      test("simulated add, update", ()=>{
+      test("simulated add, update", async ()=>{
         session.state.incPending();
-        onEnd(_=> {session.state.pendingCount() == 1 && session.state.decPending()});
+        onEnd(()=>{session.state.pendingCount() == 1 && session.state.decPending()});
 
+        await v.db.whenReady();
         //[
-        flush(); {
+        {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
           onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)));
@@ -134,63 +128,62 @@ isClient && define((require, exports, module)=>{
           v.fIgnore = v.TestModel.createStopGap({
             _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
         }
-        flush(); {
+        await v.db.whenReady();
+        {
           refute(v.foo._store.TestModel.docs.fooIgnore);
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {
             _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: ['del', undefined]});
 
           v.f1.$update('age', 10);
-          flush();
         }
-        flush(); {
+        await v.db.whenReady();
+        {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {
             _id: 'foo123', name: 'foo', age: 10, gender: 'm', $sim: ['del', undefined]});
 
           v.f1.$remove();
-          flush();
         }
-        flush(); {
+        await v.db.whenReady();
+        {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
         //]
-
-        flush();
       });
 
-      test("simulated remove", ()=>{
+      test("simulated remove", async ()=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
         //[
-        flush(); {
+        await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
           onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
           v.f1 = v.TestModel.findById('foo123');
         }
-        flush(); {
+        await v.db.whenReady(); {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.f1.$remove();
-          flush();
+          await v.db.whenReady();
         }
-        flush(); {
+        await v.db.whenReady(); {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', $sim: [{
             _id: 'foo123', name: 'foo', age: 5, gender: 'm'}, undefined]});
         }
         //]
 
-        flush();
+        await v.db.whenReady();
       });
 
-      test("non simulated", ()=>{
+      test("non simulated", async ()=>{
         //[
-        flush(); {
+        await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
           onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
@@ -198,7 +191,7 @@ isClient && define((require, exports, module)=>{
           v.fIgnore = v.TestModel.createStopGap({
             _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
         }
-        flush(); {
+        await v.db.whenReady(); {
           refute(v.foo._store.TestModel.docs.fooIgnore);
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
@@ -206,20 +199,20 @@ isClient && define((require, exports, module)=>{
           v.f1.$update('age', 10);
         }
 
-        flush(); {
+        await v.db.whenReady(); {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
 
           v.f1.$remove();
-          flush();
+          await v.db.whenReady();
         }
-        flush(); {
+        await v.db.whenReady(); {
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
         //]
 
-        flush();
+        await v.db.whenReady();
       });
     });
 
@@ -235,20 +228,22 @@ isClient && define((require, exports, module)=>{
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
         }});
-        flush();
-        v.TestModel.onChange(dc => {
-          v.db.queueChange(dc); v.called = true;
+        v.db.whenReady().then(()=>{
+          onEnd(v.TestModel.onChange(dc => {
+            v.db.queueChange(dc); v.called = true;
+          }));
+          v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
+          session.state.incPending();
+          onEnd(_=> {session.state.decPending()});
         });
-        v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
-        session.state.incPending();
-        onEnd(_=> {session.state.decPending()});
       });
 
-      test("simulated insert", ()=>{
+      test("simulated insert", async ()=>{
+        await v.db.whenReady();
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: ['del', undefined]});
 
-        flush();
+        await v.db.whenReady();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -260,13 +255,14 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.simDocs(), {foo123: ['del', undefined]});
       });
 
-      test("non simulated insert", ()=>{
+      test("non simulated insert", async ()=>{
+        await v.db.whenReady();
         v.TestModel.onChange(v.oc = stub());
         assert.equals(v.simDocs(), undefined);
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-        flush();
+        await v.db.whenReady();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -279,10 +275,11 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(v.oc, DocChange.add(foo123, 'idbLoad'));
       });
 
-      test("simulated update", ()=>{
+      test("simulated update", async ()=>{
+        await v.db.whenReady();
         v.db.loadDoc('TestModel', {
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: [{name: 'foo'}, undefined]});
-        flush();
+        await v.db.whenReady();
 
         const {foo123} = v.TestModel.docs;
         assert.equals(foo123.name, 'foo2');
@@ -291,10 +288,11 @@ isClient && define((require, exports, module)=>{
           foo123: [{name: 'foo'}, undefined]});
       });
 
-      test("simulated remove", ()=>{
+      test("simulated remove", async ()=>{
+        await v.db.whenReady();
         v.db.loadDoc('TestModel', {_id: 'foo123', $sim: [{
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
-        flush();
+        await v.db.whenReady();
 
         assert.same(v.TestModel.docs.foo123, undefined);
 
@@ -304,18 +302,21 @@ isClient && define((require, exports, module)=>{
 
       group("with stopGap$", ()=>{
         beforeEach(()=>{
-          Query.insertFromServer(v.TestModel, 'foo123', {
-            _id: 'foo123', name: 'stopGap', age: 5, gender: 'm'});
-          v.foo123 = v.TestModel.docs.foo123;
-          v.foo123[stopGap$] = true;
+          v.db.whenReady().then(()=>{
+            Query.insertFromServer(v.TestModel, 'foo123', {
+              _id: 'foo123', name: 'stopGap', age: 5, gender: 'm'});
+            v.foo123 = v.TestModel.docs.foo123;
+            v.foo123[stopGap$] = true;
+          });
         });
 
-        test("simulated update", ()=>{
+        test("simulated update", async ()=>{
+          await v.db.whenReady();
           v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: [{name: 'foo'}, undefined]});
-          flush();
+          await v.db.whenReady();
 
           assert.equals(v.foo123.name, 'foo2');
 
@@ -327,11 +328,12 @@ isClient && define((require, exports, module)=>{
             m.is(v.foo123), {name: 'stopGap', gender: 'm'}, undefined));
         });
 
-        test("non simulated update", ()=>{
+        test("non simulated update", async ()=>{
+          await v.db.whenReady();
           v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
-          flush();
+          await v.db.whenReady();
 
           assert.equals(v.foo123.name, 'foo2');
 
@@ -342,11 +344,12 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.foo123[stopGap$], undefined);
         });
 
-        test("simulated remove", ()=>{
+        test("simulated remove", async ()=>{
+          await v.db.whenReady();
           v.TestModel.onChange(v.oc = stub());
           v.db.loadDoc('TestModel', {_id: 'foo123', $sim: [{
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}, undefined]});
-          flush();
+          await v.db.whenReady();
 
           assert.same(v.TestModel.docs.foo123, undefined);
 
@@ -359,14 +362,15 @@ isClient && define((require, exports, module)=>{
       });
 
 
-      test("stopGap$", ()=>{
+      test("stopGap$", async ()=>{
+        await v.db.whenReady();
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-        flush();
+        await v.db.whenReady();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -376,14 +380,14 @@ isClient && define((require, exports, module)=>{
 
         v.called = false;
         v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-        flush();
+        await v.db.whenReady();
         assert.same(foo123.attributes, v.rec);
         assert.equals(foo123.name, 'foo');
 
         refute(v.called);
         v.TestModel.docs.foo123[stopGap$] = true;
         v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-        flush();
+        await v.db.whenReady();
         assert.equals(foo123.name, 'foo2');
 
         assert.same(v.TestModel.docs.foo123, foo123);
@@ -410,19 +414,20 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(catchAll, 'my error');
     });
 
-    test("catchAll on put", ()=>{
+    test("catchAll on put", async ()=>{
       const catchAll = stub();
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }, catchAll});
-      flush();
+      await v.db.whenReady();
 
       const transaction = spy(v.idb._dbs.foo, 'transaction');
 
       v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-      v.db.whenReady().catch(v.catch = stub());
-      poll();
+      assert.isFalse(v.db.isReady);
+
+      await v.db.whenReady();
 
       assert.calledOnceWith(transaction, ['TestModel'], 'readwrite');
 
@@ -430,19 +435,17 @@ isClient && define((require, exports, module)=>{
 
       t.oncomplete = null;
       const error = new Error('ev error');
-      assert.isFalse(v.db.isReady);
 
-      t.onabort({currentTarget: {error}});
+      t.onerror(error);
 
       assert.isTrue(v.db.isReady);
 
-      flush();
+      await v.db.whenReady();
 
       assert.calledWith(catchAll, error);
-      assert.calledWith(v.catch, error);
     });
 
-    test("loadDocs", ()=>{
+    test("loadDocs", async ()=>{
       /**
        * Insert a list of records into a model. See {##loadDoc}
        **/
@@ -450,13 +453,13 @@ isClient && define((require, exports, module)=>{
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      flush();
+      await v.db.whenReady();
       v.TestModel.onChange(dc =>{v.db.queueChange(dc); v.called = true;});
       v.db.loadDocs('TestModel', v.recs = [
         {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         {_id: 'foo456', name: 'bar', age: 10, gender: 'f'},
       ]);
-      flush();
+      await v.db.whenReady();
       v.foo = v.idb._dbs.foo;
 
       assert.equals(v.TestModel.docs.foo123.attributes, v.recs[0]);
@@ -465,7 +468,7 @@ isClient && define((require, exports, module)=>{
       assert(v.called);
     });
 
-    test("close", ()=>{
+    test("close", async ()=>{
       /**
        * Close a database. Once closed it may not be used anymore.
        **/
@@ -477,15 +480,17 @@ isClient && define((require, exports, module)=>{
       v.db.close();
       v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       const ready = stub();
-      v.db.whenReady(ready).catch(ex => v.ex = ex);
-      flush();
+      try {
+        await v.db.whenReady().then(ready);
+      } catch(ex) {v.ex = ex;}
+
       v.foo = v.idb._dbs.foo;
       assert.equals(v.foo._store.TestModel.docs, {});
       refute.called(ready);
       assert.equals(v.ex.message, 'DB closed');
     });
 
-    test("put", ()=>{
+    test("put", async ()=>{
       /**
        * Insert or update a record in indexedDB
        **/
@@ -493,20 +498,17 @@ isClient && define((require, exports, module)=>{
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-
+      await v.db.whenReady();
       v.foo = v.idb._dbs.foo;
-      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-      refute(v.foo._store.TestModel);
-      v.db.whenReady(()=>{
-        assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
-        v.success = true;
+      TransQueue.transaction(() => {
+        v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+        assert.same(v.foo._store.TestModel.docs.foo123, undefined);
       });
-      refute(v.success);
-      flush();
-      assert(v.success);
+      await v.db.whenReady();
+      assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
     });
 
-    test("delete", ()=>{
+    test("delete", async ()=>{
       /**
        * Delete a record from indexedDB
        **/
@@ -515,81 +517,63 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel");
       }});
       v.foo = v.idb._dbs.foo;
-      flush();
+      await v.db.whenReady();
       v.foo._store.TestModel.docs = {
         foo123: {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'},
       };
 
-      v.db.whenReady(() => {
+      v.db.whenReady().then(() => {
         v.db.delete('TestModel', 'foo123');
       });
-      flush();
+      await v.db.whenReady();
       assert.equals(v.foo._store.TestModel.docs, {
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     });
 
-    test("get", (done)=>{
+    test("get", async ()=>{
       /**
        * Find a record in a {#koru/model/main} by its `_id`
        *
        **/
-      MockPromise.restoreForTest();
-      v.error = ex => done(ex);
       api.protoMethod('get');
 
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      v.idb.yield(0);
-      v.db.whenReady(() => {
-        v.idb.yield(0);
+      await v.db.whenReady().then(() =>{
         onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
         v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-
-        v.db.whenReady(()=> v.db.get("TestModel", "foo123").then(doc => {
-          try {
-            assert.equals(doc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-            done();
-          } catch(ex) {
-            done(ex);
-          }
-        }).catch(v.error));
-        v.idb.yield(0);
-      }).catch(v.error);
+      });
+      const doc = await v.db.whenReady().then(()=> v.db.get("TestModel", "foo123"));
+      assert.equals(doc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
     });
 
-    test("getAll", (done)=>{
+    test("getAll", async ()=>{
       /**
        * Find all records in a {#koru/model/main}
        *
        **/
-      MockPromise.restoreForTest();
-      v.error = ex => done(ex);
       api.protoMethod('getAll');
 
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      v.idb.yield(0);
-      v.db.whenReady(() => {
-        v.idb.yield(0);
-        onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-        TransQueue.transaction(() => {
-          v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-          v.f2 = v.TestModel.create({_id: 'foo124', name: 'foo2', age: 10, gender: 'f'});
-        });
+      await v.db.whenReady();
+      onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+      TransQueue.transaction(() => {
+        v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+        v.f2 = v.TestModel.create({_id: 'foo124', name: 'foo2', age: 10, gender: 'f'});
+      });
 
-        v.db.whenReady(()=> v.db.getAll("TestModel").then(docs => {
-          assert.equals(docs, [{
-            _id: 'foo123', name: 'foo', age: 5, gender: 'm',
-          }, {
-            _id: 'foo124', name: 'foo2', age: 10, gender: 'f',
-          }]);
-          done();
-        })).catch(v.error);
-        v.idb.yield(0);
-      }).catch(v.error);
+      await v.db.whenReady();
+      const docs = await v.db.getAll("TestModel");
+
+      assert.equals(docs, [{
+        _id: 'foo123', name: 'foo', age: 5, gender: 'm',
+      }, {
+        _id: 'foo124', name: 'foo2', age: 10, gender: 'f',
+      }]);
     });
 
     group("with data", ()=>{
@@ -598,23 +582,25 @@ isClient && define((require, exports, module)=>{
           db.createObjectStore("TestModel")
             .createIndex('name', 'name', {unique: false});
         }});
-        flush();
-        v.foo = v.idb._dbs.foo;
+        v.db.whenReady().then(()=>{
+          v.foo = v.idb._dbs.foo;
 
-        v.t1 = v.foo._store.TestModel;
-        v.t1.docs = {
-          r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
-          r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
-          r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
-          r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
-        };
+          v.t1 = v.foo._store.TestModel;
+          v.t1.docs = {
+            r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
+            r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
+            r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
+            r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
+          };
+        });
       });
 
-      test("transaction", ()=>{
+      test("transaction", async ()=>{
         /**
          * Access to indexeddb transaction
          **/
         api.protoMethod('transaction');
+        await v.db.whenReady();
         const t = v.db.transaction('TestModel', 'readwrite', v.opts = {
           oncomplete: stub(),
           onabort: stub(),
@@ -626,31 +612,32 @@ isClient && define((require, exports, module)=>{
         t.objectStore('TestModel').delete('r1');
 
         refute.called(v.opts.oncomplete);
-        flush();
+        await v.db.whenReady();
         assert.called(v.opts.oncomplete);
       });
 
-      test("count", ()=>{
+      test("count", async ()=>{
         /**
          * count records in a {#koru/model/main}
          *
          **/
         api.protoMethod('count');
-
+        await v.db.whenReady();
         v.db.count('TestModel', IDBKeyRange.bound('r1', 'r4', false, true))
           .then(ans => v.ans = ans);
 
-        flush();
+        await v.db.whenReady();
 
         assert.same(v.ans, 3);
       });
 
-      test("cursor", ()=>{
+      test("cursor", async ()=>{
         /**
          * Open cursor on an ObjectStore
          **/
         api.protoMethod('cursor');
 
+        await v.db.whenReady();
         v.ans = [];
         v.db.cursor('TestModel', IDBKeyRange.bound('r1', 'r4', false, true), null, cursor => {
           if (cursor) {
@@ -658,23 +645,24 @@ isClient && define((require, exports, module)=>{
             cursor.continue();
           }
         });
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, [v.r1, v.r2, v.r3]);
       });
 
-      test("Index", ()=>{
+      test("Index", async ()=>{
         /**
          * Retreive a named index for an objectStore
          **/
         api.protoMethod('index');
 
+        await v.db.whenReady();
         v.db.index("TestModel", "name")
           .getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ans = docs);
 
         v.db.index("TestModel", "name")
           .getAllKeys(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ansKeys = docs);
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, [v.r4]);
         assert.equals(v.ansKeys, ['r4']);
 
@@ -684,27 +672,28 @@ isClient && define((require, exports, module)=>{
         v.db.index("TestModel", "name")
           .getAllKeys().then(docs => v.ansKeys = docs);
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
         assert.equals(v.ansKeys, ['r3', 'r4', 'r1', 'r2']);
 
         v.db.index("TestModel", "name")
           .count(IDBKeyRange.bound('Lucy', 'Ronald', false, false)).then(ans => v.ans = ans);
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, 3);
 
         v.db.index("TestModel", "name")
           .get('Ronald').then(docs => v.ans = docs);
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, v.r1);
       });
 
-      test("index cursor", ()=>{
+      test("index cursor", async ()=>{
         /**
          * Open a cursor on an index
          **/
+        await v.db.whenReady();
         v.ans = [];
         v.db.index("TestModel", "name")
           .cursor(null, 'prev', cursor => {
@@ -713,14 +702,15 @@ isClient && define((require, exports, module)=>{
             cursor.continue();
           });
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, [v.r2, v.r1, v.r4, v.r3]);
       });
 
-      test("index keyCursor", ()=>{
+      test("index keyCursor", async ()=>{
         /**
          * Open a keyCursor on an index
          **/
+        await v.db.whenReady();
         v.ans = [];
         v.db.index("TestModel", "name")
           .keyCursor(null, 'prev', cursor => {
@@ -729,12 +719,12 @@ isClient && define((require, exports, module)=>{
             cursor.continue();
           });
 
-        flush();
+        await v.db.whenReady();
         assert.equals(v.ans, ['r2', 'r1', 'r4', 'r3']);
       });
     });
 
-    test("deleteObjectStore", ()=>{
+    test("deleteObjectStore", async ()=>{
       /**
        * Drop an objectStore and its indexes
        **/
@@ -743,14 +733,14 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel")
           .createIndex('name', 'name', {unique: false});
       }});
-      flush();
+      await v.db.whenReady();
       v.foo = v.idb._dbs.foo;
 
       v.db.deleteObjectStore('TestModel');
       refute(v.foo._store.TestModel);
     });
 
-    test("deleteDatabase", ()=>{
+    test("deleteDatabase", async ()=>{
        /**
        * delete an entire database
        **/
@@ -759,35 +749,13 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel")
           .createIndex('name', 'name', {unique: false});
       }});
-      flush();
+      await v.db.whenReady();
       v.foo = v.idb._dbs.foo;
 
       QueryIDB.deleteDatabase('foo').then(() => v.done = true);
-      flush();
+      await v.db.whenReady();
       assert(v.done);
       refute(v.idb._dbs.foo);
     });
   });
-
-  const then = (queue, idx=0)=>{
-    v.db.whenReady(() => {
-      if (! (v && queue[idx])) return;
-      queue[idx]();
-      if (! v) return;
-      v.idb.yield(0);
-      then(queue, idx+1);
-    }).catch(v.error);
-  };
-
-  const flush = (max=10)=>{
-    v.idb.yield();
-    while (--max >= 0 && Promise._pendingCount() > 0) {
-      Promise._poll(); v.idb.yield();
-    }
-  };
-
-  const poll = ()=>{
-    v.idb.yield();
-    Promise._poll();
-  };
 });
