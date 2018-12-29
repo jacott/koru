@@ -3,7 +3,7 @@ isServer && define((require, exports, module)=>{
   const TH     = require('./test-helper');
   const util   = require('./util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, intercept} = TH;
 
   const Future = requirejs.nodeRequire('fibers/future');
 
@@ -34,7 +34,10 @@ isServer && define((require, exports, module)=>{
         max: 2,
       });
 
-      util.withDateNow(util.dateNow(), ()=>{
+      let now = Date.now();
+      try {
+        intercept(Date, 'now', ()=>now);
+
         const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
@@ -55,7 +58,9 @@ isServer && define((require, exports, module)=>{
 
         pool.release(conn2);
         assert.same(future.wait(), conn2);
-      });
+      } finally {
+        Date.now.restore();
+      }
     });
 
     test("destroy", ()=>{
@@ -66,13 +71,15 @@ isServer && define((require, exports, module)=>{
         max: 2,
       });
 
-      util.withDateNow(util.dateNow(), ()=>{
+      let now = Date.now();
+      try {
+        intercept(Date, 'now', ()=>now);
         const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
         v.conn = [2];
 
-        util.thread.date += 10000;
+        now += 10000;
         const conn2 = pool.acquire();
         assert.same(conn2, v.conn);
 
@@ -84,19 +91,21 @@ isServer && define((require, exports, module)=>{
         const tofunc = global.setTimeout.args(0, 0);
         global.setTimeout.reset();
 
-        util.thread.date += 20000;
+        now += 20000;
 
         tofunc();
 
         refute.called(v.destroy);
         assert.calledWith(global.setTimeout, tofunc, 10000);
 
-        util.thread.date += 10000;
+        now += 10000;
 
         tofunc();
 
         assert.calledWith(v.destroy, conn1);
-      });
+      } finally {
+        Date.now.restore();
+      }
     });
   });
 });

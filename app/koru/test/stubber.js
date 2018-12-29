@@ -367,31 +367,31 @@ define((require)=>{
   },
 
     intercept: (object, prop, replacement, restore) => {
-    const orig = Object.getOwnPropertyDescriptor(object, prop);
-    if (orig !== undefined && orig.value !== undefined && typeof orig.value.restore === 'function')
-      throw new Error(`Already stubbed ${prop}`);
+      const orig = Object.getOwnPropertyDescriptor(object, prop);
+      if (orig !== undefined && orig.value !== undefined && typeof orig.value.restore === 'function')
+        throw new Error(`Already stubbed ${prop}`);
 
-    let func;
-    if (replacement !== undefined) {
-      if (typeof replacement === 'function') {
-         func = function(...args) {
-          return replacement.apply(this, args);
-        };
+      let func;
+      if (replacement !== undefined) {
+        if (typeof replacement === 'function') {
+          func = function(...args) {
+            return replacement.apply(this, args);
+          };
+        } else {
+          func = replacement;
+        }
+        func._actual = orig && orig.value;
       } else {
-        func = replacement;
+        func = () => {};
       }
-      func._actual = orig && orig.value;
-    } else {
-      func = () => {};
-    }
 
-    Object.defineProperty(object, prop, {configurable: true, value: func,});
-    func.restore = () => {
-      if (orig !== undefined) Object.defineProperty(object, prop, orig);
-      else delete object[prop];
-      restore === undefined || restore();
-    };
-    return func;
+      Object.defineProperty(object, prop, {configurable: true, value: func,});
+      func.restore = () => {
+        if (orig !== undefined) Object.defineProperty(object, prop, orig);
+        else delete object[prop];
+        restore === undefined || restore();
+      };
+      return func;
     },
 
     isStubbed: func => func != null && func[listeners$] !== undefined,

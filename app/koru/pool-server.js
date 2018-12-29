@@ -85,19 +85,19 @@ define((require)=>{
 
       const wait = fetchHead(v, 'wait');
 
-      const now = util.dateNow();
+      const now = Date.now();
       addTail(v, 'idle', {conn: conn, at: now+v.idleTimeoutMillis});
 
       const clearIdle = ()=>{
         v.idleTimeout = null;
 
-        const now = util.dateNow();
+        const now = Date.now();
         while(v.idleHead) {
           if (v.idleHead.at <= now) {
             --v.count;
             v.destroy(fetchHead(v, 'idle').conn);
           } else {
-            v.idleTimeout = global.setTimeout(clearIdle, v.idleHead.at - now);
+            v.idleTimeout = setTimeout(clearIdle, v.idleHead.at - now);
             break;
           }
         }
@@ -108,12 +108,12 @@ define((require)=>{
           fetchHead(v, 'idle');
           wait.future.return(conn);
         } else {
-          v.idleTimeout = global.setTimeout(clearIdle, v.idleTimeoutMillis);
+          v.idleTimeout = setTimeout(clearIdle, v.idleTimeoutMillis);
         }
       } else if (wait) {
         global.clearTimeout(v.idleTimeout);
         const idle = fetchHead(v, 'idle');
-        v.idleTimeout = global.setTimeout(clearIdle, idle.at - now);
+        v.idleTimeout = setTimeout(clearIdle, idle.at - now);
         wait.future.return(idle.conn);
       } else {
         --v.count;
