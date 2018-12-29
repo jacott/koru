@@ -87,7 +87,7 @@ define((require, exports, module)=>{
       assert.calledWith(v.sess.provide, 'K', TH.match(f => kFunc = f));
 
       let now = Date.now();
-      intercept(util, 'dateNow', ()=>now);
+      intercept(Date, 'now', ()=>now);
 
       v.sess.connect();
       onEnd(v.ws.onclose);
@@ -108,7 +108,7 @@ define((require, exports, module)=>{
       now += 105;
       kFunc.call(v.sess, ''+(now + 800));
 
-      assert.equals(util.timeAdjust, 586);
+      assert.equals(util.timeAdjust, 853);
       assert.near(util.timeUncertainty, 53);
 
 
@@ -116,7 +116,7 @@ define((require, exports, module)=>{
       v.sess[private$].queueHeatBeat();
       now += 120;
       kFunc.call(v.sess, ''+(now));
-      assert.equals(util.timeAdjust, 586);
+      assert.equals(util.timeAdjust, 60);
       assert.near(util.timeUncertainty, 66);
     });
 

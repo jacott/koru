@@ -9,6 +9,8 @@ define((require)=>{
   const retryCount$ = Symbol(), waitSends$ = Symbol();
   const heatbeatSentAt$ = Symbol(), heatbeatTime$ = Symbol();
 
+  const adjustedNow = ()=>Date.now()+util.timeAdjust;
+
   const completeBaseSetup = base => {
     base.provide('X', function ([newVersion, hash, dict, dictHash]) {
       if (newVersion !== '') {
@@ -42,13 +44,13 @@ define((require)=>{
     });
 
     base.provide('K', function ack(data) {
-      const now = util.dateNow();
+      const now = adjustedNow();
       const serverTime = +data;
       const sentAt = this[heatbeatSentAt$];
       const uncertainty = now - sentAt;
 
 
-      this[heatbeatTime$] = util.dateNow() + this.heartbeatInterval;
+      this[heatbeatTime$] = now + this.heartbeatInterval;
 
       if (serverTime > util.DAY) {
         util.adjustTime(
@@ -207,13 +209,13 @@ define((require)=>{
 
           return;
         }
-        const now = util.dateNow();
+        const now = adjustedNow();
         if (now < session[heatbeatTime$]) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session[heatbeatTime$] - now);
         } else {
           session[heatbeatTime$] = null;
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
-          session[heatbeatSentAt$] = util.dateNow();
+          session[heatbeatSentAt$] = adjustedNow();
 
           ws.send('H');
         }
@@ -232,7 +234,7 @@ define((require)=>{
       ws._session = session;
 
       ws.onmessage = event => {
-        session[heatbeatTime$] = util.dateNow() + session.heartbeatInterval;
+        session[heatbeatTime$] = adjustedNow() + session.heartbeatInterval;
         if (heartbeatTO == null) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
         }

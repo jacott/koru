@@ -112,14 +112,18 @@ define((require, exports, module)=>{
         v.sess.connect();
 
         v.readyHeatbeat = () => {
-          util.withDateNow(util.dateNow(), () => {
+          try {
+            let now = util.dateNow(); intercept(Date, 'now', ()=>now);
+
             const event = {data: v.data = "foo"};
             v.ws.onmessage(event);
-            util.thread.date += 21000;
+            now += 21000;
             v.actualConn[private$].queueHeatBeat();
 
             return util.thread.date;
-          });
+          } finally {
+            Date.now.restore();
+          }
         };
       });
 
@@ -141,7 +145,7 @@ define((require, exports, module)=>{
 
       test("heartbeat when idle", ()=>{
         let now = Date.now();
-        intercept(util, 'dateNow', ()=>now);
+        intercept(Date, 'now', ()=>now);
 
         const event = {data: v.data = "foo"};
         v.ws.onmessage(event);
