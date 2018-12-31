@@ -139,6 +139,9 @@ define((require, exports, module)=>{
 
     inspect: (o, count=4, len=1000)=> inspect1(o, count).toString().slice(0, len),
 
+    moduleName: module => module && util.capitalize(util.camelize(
+      module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''))),
+
     qstr, qlabel,
   };
 

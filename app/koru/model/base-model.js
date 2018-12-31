@@ -11,7 +11,7 @@ define((require, exports, module)=>{
   const registerObserveField = require('./register-observe-field');
   const registerObserveId = require('./register-observe-id');
 
-  const {hasOwn, deepCopy, createDictionary} = util;
+  const {hasOwn, deepCopy, createDictionary, moduleName} = util;
   const {private$, inspect$, error$} = require('koru/symbols');
 
   const cache$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
@@ -58,9 +58,6 @@ define((require, exports, module)=>{
     }
   };
 
-  const moduleName = module => module && util.capitalize(util.camelize(
-    module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')
-  ));
 
 
   class BaseModel {
