@@ -1,11 +1,13 @@
 define((require, exports, module)=>{
   const util            = require('koru/util');
 
+  const {moduleName} = util;
+
   let pubs = Object.create(null);
 
   const publish = (pub) => {
-    const {module, name=nameFromModule(module), init} = pub;
-    if (module) {
+    const {module, name=moduleName(module), init} = pub;
+    if (module != null) {
       module.onUnload(() => {publish._destroy(name)});
     }
 
@@ -19,9 +21,6 @@ define((require, exports, module)=>{
     get _pubs() {return pubs},
     _destroy(name) {delete pubs[name]},
   });
-
-  const nameFromModule = module => util.capitalize(util.camelize(
-    module.id.replace(/^.*\/(publish-)?/, '').replace(/-(server|client)$/, '')));
 
   module.onUnload(() => {pubs = Object.create(null);});
 

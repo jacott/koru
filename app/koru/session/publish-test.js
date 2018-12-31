@@ -59,7 +59,7 @@ define((require, exports, module)=>{
 
       //[
       {
-        const module = new TH.MockModule("id/for/publish-library-books-client");
+        const module = new TH.MockModule("id/for/publish/library-books-client");
 
         publish({
           module,
