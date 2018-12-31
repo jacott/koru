@@ -18,10 +18,11 @@ define((require)=>{
       this.ws = ws;
       this.request = request;
       this.sessId = sessId;
+      // FIXME move _subs out of here to Publication
       this._subs = Object.create(null);
       this._onClose = null;
       this.close = () => {
-        if (this._onClose) {
+        if (this._onClose !== null) {
           this._onClose.notify(this);
           this._onClose = null;
         }

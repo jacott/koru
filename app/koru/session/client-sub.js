@@ -4,7 +4,7 @@ define((require)=>{
   const Query           = require('koru/model/query');
   const util            = require('koru/util');
   const Trace           = require('../trace');
-  const publish         = require('./publish');
+  const publish         = require('./publish-client');
 
   const {private$} = require('koru/symbols');
 

@@ -117,12 +117,12 @@ isClient && define((require, exports, module)=>{
       assert.calledOnce(v.cb);
     });
 
-    test("#match", ()=>{
+    test("match", ()=>{
       /**
        * Register a match function used to check if a document should
        * be in the database.
        **/
-      api.protoMethod('match');
+      api.protoMethod();
 
       class Book extends Model.BaseModel {
         static get modelName() {return 'Book'}
@@ -140,7 +140,7 @@ isClient && define((require, exports, module)=>{
     });
 
     /**
-     * Ensure when we stop that all docs the subscription doesn't want are removed if matched
+     * Ensure when we stop that all docs the subscription doesn't want are removed unless matched
      * elsewhere
      */
     test("remove unwanted docs", ()=>{

@@ -46,7 +46,7 @@ define((require)=>{
     }
 
     unprovide(cmd) {
-      this._commands[cmd] = null;
+      this._commands[cmd] = undefined;
     }
 
     onStop(func) {

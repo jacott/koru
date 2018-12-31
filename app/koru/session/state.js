@@ -27,8 +27,7 @@ define((require)=>{
     const setState = (self, value)=>{
       const was = state;
       state = value;
-      if (was === 'ready')
-        self.notify(false);
+      was === 'ready' && was !== value && self.notify(false);
     };
 
     const sessionState = {

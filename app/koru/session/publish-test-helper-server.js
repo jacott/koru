@@ -2,7 +2,6 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const session         = require('koru/session');
   const message         = require('koru/session/message');
-  const publish         = require('koru/session/publish');
   const SCFactory       = require('koru/session/server-connection-factory');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
@@ -19,9 +18,9 @@ define((require, exports, module)=>{
   }
 
   const publishTH = {
-    mockConnection (sessId, session=this.mockSession()) {
+    mockConnection(sessId='s123', session=this.mockSession()) {
       const conn = new (SCFactory(session))(
-        {send: stub(), on: stub()}, {}, sessId || 's123', ()=>{}
+        {send: stub(), on: stub()}, {}, sessId, ()=>{}
       );
       spy(conn, 'batchMessages');
       spy(conn, 'releaseMessages');
@@ -35,13 +34,13 @@ define((require, exports, module)=>{
       return conn;
     },
 
-    mockSession (id="mock") {
+    mockSession(id="mock") {
       const sess = new MockSession(id);
       sess.globalDict = message.newGlobalDict();
       return sess;
     },
 
-    mockSubscribe (v, id, name, ...args) {
+    mockSubscribe(v, id, name, ...args) {
       if (! v.conn) {
         v.conn = this.mockConnection(null, v.session);
         v.send = v.conn.ws.send;

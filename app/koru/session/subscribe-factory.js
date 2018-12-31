@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const login           = require('koru/user-account/client-login');
   const util            = require('koru/util');
   const message         = require('./message');
-  const publish         = require('./publish');
+  const publish         = require('./publish-client');
 
   const {private$} = require('koru/symbols');
 

@@ -1,6 +1,6 @@
 define((require, exports, module)=>{
   const ClientSub       = require('koru/session/client-sub');
-  const publish         = require('koru/session/publish');
+  const publish         = require('koru/session/publish-client');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
