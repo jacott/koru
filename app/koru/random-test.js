@@ -31,21 +31,21 @@ define((require, exports, module)=>{
        *
        * @alias create a deprecated alternative static method.
        **/
-      const new_Random = api.new();
+      const Random = api.class();
       //[
       // seeded
-      const r1 = new_Random(0);
+      const r1 = new Random(0);
       assert.same(r1.id(), "kFsE9G6DL26jiPd2U");
       assert.same(r1.id(), "o8kyB8YoOT2NCM03U");
 
       // same seed produces same numbers
-      assert.same(new_Random(0).id(), "kFsE9G6DL26jiPd2U");
+      assert.same(new Random(0).id(), "kFsE9G6DL26jiPd2U");
 
       // multiple tokens
-      const r2 = new_Random("hello", "world");
+      const r2 = new Random("hello", "world");
       assert.same(r2.id(), 'NTuiM1uEZR7vz2Nd5');
 
-      const csprng = new_Random();
+      const csprng = new Random();
       refute.same(csprng.id(), 'IwillNeverMatchid');
       //]
     });

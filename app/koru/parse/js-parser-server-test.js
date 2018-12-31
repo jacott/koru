@@ -78,8 +78,15 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
         let x = async (a)=> await a();
         let y = async function(a) {};
       }, `
-~kd#let# ~nv#x# = ~k#async# (~nv#a#)~o#=&gt;# await ~nx#a#();
+~kd#let# ~nv#x# = ~k#async# (~nv#a#)~o#=&gt;# ~k#await# ~nx#a#();
 ~kd#let# ~nv#y# = ~k#async# ~kd#function#(~nv#a#) {};`);
+    });
+
+    test("yield", ()=>{
+      assertMarkup(()=>{
+        function *x(a) {yield *a()};
+      }, `
+~kd#function# *~nf#x#(~nv#a#) {~k#yield# *~nx#a#()};`);
     });
 
     test("switch", ()=>{

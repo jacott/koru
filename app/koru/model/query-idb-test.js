@@ -60,21 +60,21 @@ isClient && define((require, exports, module)=>{
        **/
       const new_QueryIDB = api.new();
       let count = 0;
-      //[
-      v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
-        assert.same(oldVersion, 1);
-        db.createObjectStore("TestModel");
+      //[(async ()=>{
+        v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
+          assert.same(oldVersion, 1);
+          db.createObjectStore("TestModel");
+          ++count;
+        }});
+
+        assert.same(count, 0);
+
+        await v.db.whenReady();
+        assert.same(v.db.name, 'foo');
+        assert.same(count, 1);
         ++count;
-      }});
-
-      assert.same(count, 0);
-
-      await v.db.whenReady();
-      assert.same(v.db.name, 'foo');
-      assert.same(count, 1);
-      ++count;
-      assert.same(count, 2);
-      //]
+        assert.same(count, 2);
+      //] //[ }); //]
     });
 
     test("promisify", async ()=>{
@@ -90,14 +90,14 @@ isClient && define((require, exports, module)=>{
       const db = await new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      //[
+      //[(async ()=>{
       const id = await db.promisify(
         ()=>db.transaction(['TestModel'], 'readwrite')
           .objectStore('TestModel').put({_id: "id1", name: "foo"})
       );
 
       assert.equals(id, "id1");
-      //]
+      //] //[ }); //]
     });
 
     group("queueChange", ()=>{
@@ -119,7 +119,7 @@ isClient && define((require, exports, module)=>{
         onEnd(()=>{session.state.pendingCount() == 1 && session.state.decPending()});
 
         await v.db.whenReady();
-        //[
+        //[ (async ()=>{
         {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
@@ -150,14 +150,14 @@ isClient && define((require, exports, module)=>{
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
-        //]
+        //] //[ }); //]
       });
 
       test("simulated remove", async ()=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
-        //[
+        //[ (async ()=>{
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
@@ -176,13 +176,13 @@ isClient && define((require, exports, module)=>{
           assert.equals(iDoc, {_id: 'foo123', $sim: [{
             _id: 'foo123', name: 'foo', age: 5, gender: 'm'}, undefined]});
         }
-        //]
+        //] //[ }); //]
 
         await v.db.whenReady();
       });
 
       test("non simulated", async ()=>{
-        //[
+        //[ (async ()=>{
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
@@ -210,7 +210,7 @@ isClient && define((require, exports, module)=>{
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
-        //]
+        //] //[ }); //]
 
         await v.db.whenReady();
       });

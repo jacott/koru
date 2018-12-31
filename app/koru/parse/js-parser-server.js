@@ -277,6 +277,14 @@ define((require)=> JsPaser => {
         addText('return', node.start.pos, 'k');
         expr(node.value);
       },
+      Await(node) {
+        addText('await', srcPos, 'k');
+        expr(node.expression);
+      },
+      Yield(node) {
+        addText('yield', srcPos, 'k');
+        expr(node.expression);
+      },
       Throw(node) {
         addText('throw', node.start.pos, 'k');
         expr(node.value);

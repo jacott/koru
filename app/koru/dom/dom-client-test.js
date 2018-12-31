@@ -52,10 +52,10 @@ define((require, exports, module)=>{
 
         document.body.appendChild(container);
         Dom.ensureInView(divs[1]);
-        assert.near(container.scrollLeft, 39);
+        assert.near(container.scrollLeft, 39, 2);
 
         Dom.ensureInView(divs[0]);
-        assert.equals(container.scrollLeft, 0);
+        assert.equals(container.scrollLeft, 0, 2);
         //]
 
         const outer = Dom.h({
@@ -66,22 +66,22 @@ define((require, exports, module)=>{
         document.body.appendChild(outer);
         container.style.height = '50px';
         Dom.ensureInView(divs[2]);
-        assert.near(container.scrollLeft, 89);
+        assert.near(container.scrollLeft, 89, 2);
 
         Dom.ensureInView(divs[1]);
-        assert.near(container.scrollLeft, 50);
+        assert.near(container.scrollLeft, 50, 2);
 
         container.style.height = '80px';
         Dom.ensureInView(divs[2]);
-        assert.near(container.scrollLeft, 89);
+        assert.near(container.scrollLeft, 89, 2);
 
         Dom.ensureInView(divs[4]);
-        assert.near(container.scrollLeft, 189);
+        assert.near(container.scrollLeft, 189, 2);
 
         outer.style.overflow = 'scroll';
         Dom.ensureInView(divs[4]);
-        assert.near(container.scrollLeft, 189);
-        assert.near(outer.scrollLeft, 83);
+        assert.near(container.scrollLeft, 189, 2);
+        assert.near(outer.scrollLeft, 83, 4);
       });
 
       test("vertical", ()=>{
@@ -125,7 +125,7 @@ define((require, exports, module)=>{
         outer.style.overflow = 'scroll';
         Dom.ensureInView(divs[4]);
         assert.near(container.scrollTop, 35);
-        assert.near(outer.scrollTop, 61);
+        assert.near(outer.scrollTop, 61, 2);
       });
     });
 

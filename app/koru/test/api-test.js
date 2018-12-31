@@ -474,7 +474,7 @@ assert.same(Color.colors.red, '#f00');`,
 
     test("new", ()=>{
       /**
-       * Document `constructor` for the current subject. It
+       * Document `constructor` for the current subject. Use {#.class} instead
        *
        * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
        * is a function.
@@ -521,6 +521,49 @@ assert.same(Color.colors.red, '#f00');`,
 
       API.new();
       API.new({sig: 'function Hobbit({name}) {}', intro: 'It is a dangerous thing Frodo'});
+    });
+
+    test("class", ()=>{
+      /**
+       * Document `constructor` for the current subject.
+       *
+       * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
+       * is a function.
+       * @param {function|string} [options.intro] the abstract for the method being
+       * documented. Defaults to test comment.
+       *
+       * @returns a ProxyClass which is to be used instead of `Class`
+
+       **/
+      MainAPI.method('class');
+
+      class Book {
+        constructor(title) {
+          this.title = title;
+        }
+        [inspect$]() {return `Book("${this.title}")`;}
+      }
+
+      API.module({subjectModule: {id: 'myMod', exports: Book}});
+
+      {
+        //[
+        const Book = API.class();
+
+        const book = new Book('There and back again');
+
+        assert.same(book.title, 'There and back again');
+        //]
+
+        assert.equals(API.instance.newInstance, {
+          test,
+          sig: TH.match(/(constructor|function Book)\(title\)/),
+          intro: TH.match(/Document `constructor`/),
+          calls: [[
+            ['There and back again'], ['O', book, 'Book("There and back again")']
+          ]],
+        });
+      }
     });
 
     test("custom.", ()=>{

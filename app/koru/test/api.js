@@ -471,6 +471,7 @@ define((require, exports, module)=>{
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
     static new(options) {return this.instance.new(options)}
+    static class(options) {return this.instance.class(options)}
     static custom(func, options) {return this.instance.custom(func, options)}
     static customIntercept(object, options) {return this.instance.customIntercept(object, options)}
     static property(name, options) {this.instance.property(name, options)}
@@ -639,6 +640,56 @@ define((require, exports, module)=>{
         const ans = new this.subject(...args);
         entry[1] = this.valueTag(ans);
         return ans;
+      };
+    }
+
+    class({sig, intro}={}) {
+      const calls = [];
+
+      switch(typeof sig) {
+      case 'function':
+        this.subject = sig;
+      case 'undefined':
+        if (typeof this.subject !== 'function' || Object.getPrototypeOf(this.subject) == null)
+          throw new Error("this.new called on non function");
+
+        sig = funcToSig(this.subject).replace(/^[^(]*/, 'constructor');
+        break;
+      }
+
+
+      if (! this.newInstance) {
+        this.newInstance = {
+          sig,
+          intro: typeof intro === 'string' ? intro : docComment(intro),
+          calls
+        };
+      }
+
+      this.target = this.newInstance;
+
+      onTestEnd(this);
+
+      const api = this;
+
+
+      return class extends api.subject {
+        constructor(...args) {
+          const {calls} = api.target;
+          if (calls === undefined) {
+            super(...args);
+            return;
+          }
+          extractBodyExample(api.target);
+          const entry = [
+            args.map(obj => api.valueTag(obj)),
+            undefined,
+          ];
+          calls.push(entry);
+          const ans = new api.subject(...args);
+          entry[1] = api.valueTag(ans);
+          return ans;
+        };
       };
     }
 
@@ -985,6 +1036,16 @@ define((require, exports, module)=>{
             : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);
       return (...args) => {
         return new func(...args);
+      };
+    }
+    class(sig) {
+      const func = typeof sig === 'function'
+            ? sig
+            : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);
+      return class extends func {
+        constructor(...args) {
+          super(...args);
+        }
       };
     }
     property() {}

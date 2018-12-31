@@ -36,10 +36,10 @@ isClient && define((require, exports, module)=>{
       /**
        * Build a new queue
        **/
-      const new_RPCIDBQueue = api.new();
+      const RPCIDBQueue = api.class();
       const db = new MockIndexedDB(0).open('foo', 0);
 
-      const queue = new_RPCIDBQueue(db);
+      const queue = new RPCIDBQueue(db);
 
       assert.isFalse(queue.isRpcPending());
     });
