@@ -246,11 +246,15 @@ define((require)=>{
     allowIfValid(truthy, doc) {
       if (! truthy) {
         let reason;
-        if (doc) {
+        if (doc != null) {
           if (doc[error$] !== undefined)
             reason = doc[error$];
           else {
-            reason = {}; reason[doc] = [['is_invalid']];
+            if (typeof doc === 'object') {
+              reason = doc;
+            } else {
+              reason = {[doc]: [['is_invalid']]};
+            }
           }
         } else {
           reason = 'is_invalid';

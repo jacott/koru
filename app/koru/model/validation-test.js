@@ -230,6 +230,25 @@ define((require, exports, module)=>{
       refute.accessDenied(()=>{Val.allowIfSimple([], ['abc', 1234])});
     });
 
+    test("allowIfValid", ()=>{
+      assert.invalidRequest(()=>{Val.allowIfValid(false)});
+      assert.exception(()=>{
+        Val.allowIfValid(false, {[error$]: {x: 123}});
+      }, {error: 400, reason: {x: 123}});
+      refute.invalidRequest(()=>{Val.allowIfValid(true)});
+      assert.exception(()=>{Val.allowIfValid(false)}, {error: 400, reason: 'is_invalid'});
+      assert.exception(()=>{
+        Val.allowIfValid(null, 'book');
+      }, {error: 400, reason: {book: [['is_invalid']]}});
+      assert.exception(()=>{
+        Val.allowIfValid(false, {custom: 'message'});
+      }, {error: 400, reason: {custom: 'message'}});
+
+      assert.exception(()=>{
+        Val.allowIfValid(undefined, {[error$]: {custom: 'message'}});
+      }, {error: 400, reason: {custom: 'message'}});
+    });
+
     test("allowAccessIf", ()=>{
       assert.accessDenied(()=>{Val.allowAccessIf(false);});
       refute.accessDenied(()=>{Val.allowAccessIf(true);});
@@ -265,17 +284,6 @@ define((require, exports, module)=>{
       assert.accessDenied(()=>{
         Val.ensureDate(new Date(), 2, new Date());
       });
-    });
-
-    test("invalidRequest", ()=>{
-      assert.invalidRequest(()=>{Val.allowIfValid(false);});
-      assert.exception(()=>{
-        Val.allowIfValid(false, 'foo');
-      }, {error: 400, reason: {foo: [['is_invalid']]}});
-      assert.exception(()=>{
-        Val.allowIfValid(false, {[error$]: {x: 123}});
-      }, {error: 400, reason: {x: 123}});
-      refute.invalidRequest(()=>{Val.allowIfValid(true);});
     });
 
     test("validators", ()=>{
