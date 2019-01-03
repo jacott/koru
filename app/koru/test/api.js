@@ -675,9 +675,9 @@ define((require, exports, module)=>{
 
       return class extends api.subject {
         constructor(...args) {
+          super(...args);
           const {calls} = api.target;
           if (calls === undefined) {
-            super(...args);
             return;
           }
           extractBodyExample(api.target);
@@ -688,7 +688,6 @@ define((require, exports, module)=>{
           calls.push(entry);
           const ans = new api.subject(...args);
           entry[1] = api.valueTag(ans);
-          return ans;
         };
       };
     }
