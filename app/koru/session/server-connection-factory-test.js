@@ -138,7 +138,7 @@ isServer && define((require, exports, module)=>{
 
     test("send batched", ()=>{
       const bm = util.thread.batchMessage = {batch: stub()};
-      onEnd(() => util.thread.batchMessage = null);
+      onEnd(() => util.thread.batchMessage = undefined);
 
       v.conn.sendBinary.restore();
 

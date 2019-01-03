@@ -1,29 +1,18 @@
 define((require)=>{
   const koru            = require('koru');
-  const util            = require('koru/util');
+  const {shallowEqual}  = require('koru/util');
   const message         = require('./message');
 
   const BINARY = {binary: true};
 
   const send = (conn, msg)=>{
-    if (! conn.ws) return;
+    if (conn.ws === null) return;
     try {
       conn.ws.send(msg, BINARY);
     } catch(ex) {
       conn.close();
       koru.info('batch send exception', ex);
     }
-  };
-
-  const addConn = (msg, conn)=>{
-    msg.conns = {conn: conn, next: msg.conns.sessId ? {conn: msg.conns} : msg.conns};
-  };
-
-  const addMessage = (bm, conn, msg)=>{
-    msg.conns = conn;
-    if (bm.last) bm.last.next = msg;
-    bm.last = msg;
-    if (! bm.first) bm.first = msg;
   };
 
   class BatchMessage {
@@ -33,15 +22,23 @@ define((require)=>{
     }
 
     batch(conn, type, args, func) {
-      const last = this.last;
-      if (last) {
-        if (last.type === type && last.func === func && util.shallowEqual(last.args, args)) {
+      const {last} = this;
+      const msg = {type, args, func, conns: conn};
 
-          addConn(last, conn);
+      if (last !== null) {
+        if (last.type === type && last.func === func && shallowEqual(last.args, args)) {
+
+          last.conns = {
+            conn,
+            next: last.conns.sessId === undefined ?
+              last.conns : {conn: last.conns}};
           return;
         }
+        last.next = msg;
       }
-      addMessage(this, conn, {type, args, func});
+
+      this.last = msg;
+      if (this.first === null) this.first = msg;
     }
 
     abort() {

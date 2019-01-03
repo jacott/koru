@@ -123,28 +123,28 @@ define((require)=>{
     }
     releaseMessages() {
       const bm = util.thread.batchMessage;
-      if (! bm) return;
+      if (bm === undefined) return;
       const sq = this[sideQueue$];
-      this[sideQueue$] = null;
-      sq && sq.forEach(args => {bm.batch(this, ...args)});
-      util.thread.batchMessage = null;
+      this[sideQueue$] = undefined;
+      sq !== undefined && sq.forEach(args =>{bm.batch(this, ...args)});
+      util.thread.batchMessage = undefined;
       bm.release();
     }
     abortMessages() {
       const bm = util.thread.batchMessage;
-      if (! bm) return;
+      if (bm === undefined) return;
       bm.abort();
       this.releaseMessages();
-      util.thread.batchMessage = null;
+      util.thread.batchMessage = undefined;
     }
 
     sendBinary(type, args, func) {
       const bm = util.thread.batchMessage;
-      if (this[sideQueue$] && (! bm  || bm.conn !== this)) {
+      if (this[sideQueue$] !== undefined && (bm === undefined || bm.conn !== this)) {
         this[sideQueue$].push([type, args, func]);
         return;
       }
-      if (bm) {
+      if (bm !== undefined) {
         bm.batch(this, type, args, func);
         return;
       }

@@ -38,7 +38,7 @@ define((require)=>{
         const item = waitSends[i];
         ws.send(
           typeof item === 'string' ? item
-            : message.encodeMessage.call(message, item[0], item[1], globalDict));
+            : message.encodeMessage(item[0], item[1], globalDict));
       }
       waitSends.length = 0;
     });
