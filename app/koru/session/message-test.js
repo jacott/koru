@@ -319,6 +319,22 @@ define((require, exports, module)=>{
       assert.equals(message.decodeMessage(u8, gDict), obj);
     });
 
+    test("withEncoder", ()=>{
+      const u8 = message.withEncoder("M", v.gDict, encoder =>{
+        for (const arg of [1, 2, {foo: 'bar', [Symbol()]: 'notme'}])
+          encoder(arg);
+      });
+      const data = [];
+
+      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
+
+      data.forEach.call(u8, function (b) {data.push(b)});
+      assert.equals(data, [
+        77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
+
+      assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
+    });
+
     test("encode/decodeMessage", ()=>{
       const u8 = message.encodeMessage("M", [
         1, 2, {foo: 'bar', [Symbol()]: 'notme'}], v.gDict);

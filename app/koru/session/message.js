@@ -321,13 +321,31 @@ define((require)=>{
   };
 
   return {
+    withEncoder: (type, globalDict, callback)=>{
+      const buffer = [];
+      let dict = newLocalDict();
+
+      const dicts = [globalDict, dict];
+
+      callback(arg =>{encode(buffer, arg, dicts)});
+
+      dict = encodeDict(dict, [type.charCodeAt(0)]);
+
+      const result = new Uint8Array(dict.length + buffer.length);
+      result.set(dict, 0);
+      result.set(buffer, dict.length);
+
+      return result;
+    },
     encodeMessage: (type, args, globalDict)=>{
       const buffer = [];
       let dict = newLocalDict();
 
+      const dicts = [globalDict, dict];
+
       const len = args.length;
       for(let i = 0; i < len; ++i)
-        encode(buffer, args[i], [globalDict, dict]);
+        encode(buffer, args[i], dicts);
 
       dict = encodeDict(dict, [type.charCodeAt(0)]);
 

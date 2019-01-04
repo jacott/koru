@@ -28,6 +28,7 @@ define((require, exports, module)=>{
       spy(conn, 'abortMessages');
       conn.userId = koru.userId();
       conn.sendBinary = stub();
+      conn.sendEncoded = stub();
       conn.added = stub();
       conn.changed = stub();
       conn.removed = stub();
