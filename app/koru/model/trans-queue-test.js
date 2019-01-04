@@ -29,7 +29,10 @@ define((require, exports, module)=>{
 
       sut._clearLastTime();
 
+      assert.isFalse(sut.isInTransaction());
+
       const result = sut.transaction(v.TestModel, () => {
+        assert.isTrue(sut.isInTransaction());
         assert.same(now, util.dateNow());
         sut.onAbort(err1);
         sut.onSuccess(stub1);

@@ -60,6 +60,10 @@ define(require =>{
         list.push(func);
     },
 
+    isInTransaction() {
+      return util.thread[success$] !== undefined;
+    },
+
     _clearLastTime() {lastTime = null},
   };
 
