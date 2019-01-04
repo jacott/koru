@@ -11,6 +11,8 @@ define((require)=>{
 
   const sideQueue$ = Symbol();
 
+  const BINARY = {binary: true};
+
   class Base {
     constructor(ws, request, sessId, close) {
       this.ws = ws;
@@ -53,6 +55,16 @@ define((require)=>{
         this.ws === null || this.ws.send(type + (data === undefined ? '' : data));
       } catch(ex) {
         koru.info('send exception', ex);
+        this.close();
+      }
+    }
+
+    sendEncoded(msg) {
+      if (this.ws === null) return;
+      try {
+        this.ws.send(msg, BINARY);
+      } catch(ex) {
+        koru.info('Websocket exception for connection: '+this.sessId, ex);
         this.close();
       }
     }

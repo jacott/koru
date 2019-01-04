@@ -191,6 +191,18 @@ isServer && define((require, exports, module)=>{
       assert(wEncode.calledAfter(aEncode));
     });
 
+    test("sendEncoded", ()=>{
+      v.conn.sendEncoded("myMessage");
+      assert.calledWith(v.conn.ws.send, 'myMessage', {binary: true});
+      const error = new Error("an error");
+      v.conn.ws.send.throws(error);
+
+      stub(koru, 'info');
+      v.conn.sendEncoded("got error");
+      assert.same(v.conn.ws, null);
+      assert.calledWith(koru.info, 'Websocket exception for connection: 123', error);
+    });
+
     test("message abort", ()=>{
       v.conn.sendBinary.restore();
       v.thread = v.ct = {name: 'c'};
