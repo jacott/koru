@@ -2,14 +2,19 @@ isServer && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const apiToHtml       = require('./api-to-html');
   const TH              = require('./main');
+
+  const {private$} = require('koru/symbols');
+
+  const apiToHtml = require('./api-to-html');
 
   const {stub, spy, onEnd, match: m} = TH;
 
   const sourceHtml = Dom.h({div: [{'$data-api': 'header'},
                                   {'$data-api': 'links'},
                                   {'$data-api': 'pages'}]}).outerHTML;
+
+  const {parent$} = apiToHtml[private$];
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("P Value", ()=>{
@@ -42,6 +47,7 @@ m1 intro
       ]);
 
     });
+
     test("properties", ()=>{
       const json = {
         'my/mod': {
@@ -192,6 +198,106 @@ m1 intro
           ]});
       });
 
+      test("escape {{", ()=>{
+        const div = apiToHtml.jsdocToHtml(
+          {id: 'this/module'},
+          '{{{topic:hello}}',
+          {});
+
+        assert.equals(Dom.htmlToJson(div), {div: [{p: '{{topic:hello}}'}, '\n']});
+      });
+
+      test("{{topic:name}}", ()=>{
+        const json = {
+          "koru/pubsub/main": {
+            "id": "koru/pubsub/overview",
+            "subject": {
+              "name": "Overview",
+              "abstract": "Some text\n{{topic:../publication:publishing a model}}\n"+
+                "An external example {{example:../publication:publishing a model:2}}"
+            },
+          },
+          "koru/pubsub/publication": {
+            "id": "koru/pubsub/publication",
+            "subject": {
+              "name": "Publication",
+              "abstract": ""
+            },
+            "methods": {},
+            "protoMethods": {},
+            "customMethods": {},
+            "topics": {
+              "publishing a model": {
+                "test": "koru/pubsub/publication test publishing a model.",
+                "intro": "text begin {{example:0}} more text {{example:1}} end text",
+                "calls": [
+                  {
+                    "body": "class Book extends Publication {\n}\n",
+                    "calls": []
+                  },
+                  {
+                    "body": "Book.Union = class extends Publication.Union {}",
+                    "calls": []
+                  },
+                  {
+                    "body": "ExampleThree()",
+                    "calls": []
+                  },
+                ]
+              }
+            },
+          }
+        };
+
+        apiToHtml.makeTree(json);
+
+        const api = json["koru/pubsub/main"];
+
+        const abstractMap = {};
+        const abstract = apiToHtml.jsdocToHtml(
+          api, api.subject.abstract, abstractMap
+        );
+
+        assert.equals(Dom.htmlToJson(abstract), {
+          div: [
+            {p: 'Some text\n'},
+            {p: [
+              'text begin ', {
+                class: 'jsdoc-example highlight',
+                pre: {
+                  class: 'highlight',
+                  div: [
+                    {class: 'k', span: 'class'}, ' ',
+                    {class: 'nc', span: 'Book'}, ' ',
+                    {class: 'k', span: 'extends'}, ' ', {class: 'nx', span: 'Publication'},
+                    ' {\n}']}
+              },
+              ' more text ',
+              {class: 'jsdoc-example highlight',
+               pre: {
+                 class: 'highlight', div: [
+                   {class: 'nx', span: 'Book'}, '.',
+                   {class: 'na', span: 'Union'}, ' ',
+                   {class: 'o', span: '='}, ' ',
+                   {class: 'k', span: 'class'}, ' ',
+                   {class: 'k', span: 'extends'}, ' ',
+                   {class: 'nx', span: 'Publication'}, '.',
+                   {class: 'na', span: 'Union'}, ' {}'
+                 ]}}, ' end text'
+            ]},
+            '\n\nAn external example ',
+            {
+              class: 'jsdoc-example highlight',
+              pre: {
+                class: 'highlight', div: [
+                  {class: 'nx', span: 'ExampleThree'}, '()']
+              }
+            },
+            {p: ''}, '\n'
+          ]
+        });
+      });
+
       test("{#module/link}", ()=>{
         function abstract() {
           /**
@@ -200,13 +306,22 @@ m1 intro
            * See {#my/module} {#my/module.method}
            * {#my/mod#protoMethod} {#.thisModMethod}
            * {##thisModeProtoMethod}
+           * {#../../thing}
+           * {#./child}
            **/
         }
 
+        const json = {
+          'my/module': {subject: {name: 'Module'}},
+          'this/start/module': {subject: {name: 'Other'}},
+          'this/start/module/child': {subject: {name: 'Child'}},
+          'this/thing': {subject: {name: 'Thing'}},
+        };
+
+        const tree = apiToHtml.makeTree(json);
+
         const div = apiToHtml.jsdocToHtml(
-          {id: 'this/module', parent: {
-            'my/module': {subject: {name: 'Module'}}
-          }},
+          json['this/start/module'],
           api._docComment(abstract),
           {}
         );
@@ -223,15 +338,21 @@ m1 intro
                      href: '#my/mod#protoMethod'}
               , ' ',
               {a: ['thisModMethod'], class: 'jsdoc-link',
-               href: '#this/module.thisModMethod'},
+               href: '#this/start/module.thisModMethod'},
               '\n',
               {a: ['thisModeProtoMethod'], class: 'jsdoc-link',
-               href: '#this/module#thisModeProtoMethod'}]},
+               href: '#this/start/module#thisModeProtoMethod'},
+              '\n',
+              {a: ['Thing'], class: 'jsdoc-link',
+               href: '#this/thing'},
+              '\n',
+              {a: ['Child'], class: 'jsdoc-link',
+               href: '#this/start/module/child'}]},
             '\n'
           ]});
       });
 
-      test("config", ()=>{
+      test("@config", ()=>{
         function abstract() {
           /**
            * Abstract
@@ -266,6 +387,33 @@ m1 intro
           })}
         });
 
+      });
+
+      test("@deprecated", ()=>{
+        function abstract() {
+          /**
+           * Abstract
+           *
+           * @deprecated use {#this/module} instead
+           **/
+        }
+
+        const div = apiToHtml.jsdocToHtml(
+          {id: 'this/module'},
+          api._docComment(abstract),
+          {}
+        );
+
+        assert.equals(Dom.htmlToJson(div), {
+          div: [
+            {p: 'Abstract'}, '\n',
+            {class: 'jsdoc-deprecated', div: [
+              {h1: 'Deprecated'},
+              {p: ['use ', {class: 'jsdoc-link', href: '#this/module', a: ['module']}, ' instead']},
+              "\n",
+            ]},
+          ]
+        });
       });
 
       test("normal link", ()=>{

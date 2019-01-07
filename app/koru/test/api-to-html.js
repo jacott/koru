@@ -6,13 +6,38 @@ define((require)=>{
   const jsParser        = require('koru/parse/js-parser');
   const util            = require('koru/util');
 
-  const return$ = Symbol();
+  const {private$} = require('koru/symbols');
+
+  const return$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
   const noContent = (tag)=> opts =>{
     const attrs = {[tag]: ''};
     for (let attr in opts)
       attrs['$'+attr] = opts[attr];
     return Dom.h(attrs);
+  };
+
+  const sortKeys = (a,b)=>{
+    if (a === 'main') a = '';
+    if (b === 'main') b = '';
+    return a === b ? 0 : a < b ? -1 : 1;
+  };
+
+  const makeTree = (json)=>{
+    const tree = {[parent$]: null, [name$]: ''};
+
+    for (const id in json) {
+      let node = tree;
+      for (const part of id.split('/')) {
+        node = node[part] || (node[part] = {[parent$]: node, [name$]: part});
+      }
+      const api = json[id];
+      api.id = id; api.top = json;
+      api[node$] = node;
+      node[id$] = id;
+    }
+
+    return tree;
   };
 
   const apiToHtml = (title, json, sourceHtml)=>{
@@ -35,12 +60,10 @@ define((require)=>{
     const {header, links, pages} = tags;
     const linkModules = [];
 
-    Object.keys(json).sort((a,b)=>{
-      a = a.replace(/\/main$/, '');
-      b = b.replace(/\/main$/, '');
-      return a === b ? 0 : a < b ? -1 : 1;
-    }).forEach(id => {
-      const api = json[id]; api.id = id; api.parent = json;
+    const tree = makeTree(json);
+
+    const renderNode = (node, id) => {
+      const api = json[id];
       const {subject, newInstance, methods, customMethods, protoMethods, innerSubjects} = api;
 
       const aside = [];
@@ -150,7 +173,19 @@ define((require)=>{
           // {pre: JSON.stringify(json, null, 2)}
         ],
       }));
-    });
+    };
+
+    const walkNode = (node, level=0)=>{
+      for (const dir of Object.keys(node).sort(sortKeys)) {
+        const child = node[dir];
+        const id = child[id$];
+        if (id !== undefined)
+          renderNode(child, id);
+        walkNode(child, level+1);
+      }
+    };
+
+    walkNode(tree);
 
     buildLinks(links, linkModules);
 
@@ -259,6 +294,12 @@ define((require)=>{
   };
 
   const BLOCK_TAGS = {
+    deprecated: (api, row, argMap, div)=>{
+      const ans = jsdocToHtml(api, row.slice(11), {});
+      ans.classList.add('jsdoc-deprecated');
+      ans.insertBefore(Dom.h({h1: 'Deprecated'}), ans.firstChild);
+      div.appendChild(ans);
+    },
     param: (api, row, argMap)=>{
       const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
@@ -311,14 +352,33 @@ define((require)=>{
     });
   };
 
+  const expandLink = (node, text)=>{
+    let suffix = text;
+    while (node !== null && suffix.startsWith("../")) {
+      suffix = suffix.slice(3);
+      if (node[parent$] === null) throw new Error("invalid link: "+text+" in "+node[id$]);
+      node = node[parent$];
+    }
+    let prefix = '';
+    while (node !== null && node[name$] !== '') {
+      prefix = node[name$]+"/"+prefix;
+      node = node[parent$];
+    }
+    return {node, fullPath: prefix+suffix};
+  };
+
   const execInlineTag = (api, text)=>{
-    let [mod, type, method] = text.split(/([.#:]+)/);
-    let href = text;
+    if (/^\.\.?\//.test(text)) {
+      const {node, fullPath} = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
+      text = fullPath;
+    }
+    let [mod, type, method=''] = text.split(/([.#:]+)/);
+    let href = text.replace(/\(.*$/, '');
     if (mod) {
-      const destMod = mod && api.parent && api.parent[mod];
+      const destMod = mod && api.top && api.top[mod];
       if (destMod)
         mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
-      text = `${mod}${type||''}${method||''}`;
+      text = `${mod}${type||''}${method}`;
     } else {
       href = api.id+href;
       text = method;
@@ -462,7 +522,7 @@ define((require)=>{
 
   const codeToHtml = codeIn => {
     try {
-      return jsParser.highlight(codeIn);
+      return jsParser.highlight(codeIn.trim());
     } catch(ex) {
       throw ex;
       return document.createTextNode(codeIn);
@@ -677,19 +737,44 @@ define((require)=>{
 
   const targetExternal = (a)=> a.$href.indexOf("http") == 0 ? (a.$target="_blank", a) : a;
 
+  const findTopic = (api, args)=>{
+    const path = args.length == 1 ? "." : args[0];
+    const name = args[args.length - 1];
+    if (path !== ".") {
+      const {node, fullPath} = expandLink(api[node$], path);
+      api = api.top[fullPath];
+    }
+    const sapi = api.topics[name];
+    if (sapi === void 0) throw new Error("Can't find topic "+path+":"+name+" in "+api.id+
+                                         "\nFound:\n"+Object.keys(api.topics).join(", "));
+    sapi[node$] = api[node$];
+    sapi.top = api.top;
+    return sapi;
+  };
+
+
+  const TEMPLATE_ACTION = {
+    topic: (args, api, argMap)=>{
+      const sapi = findTopic(api, args);
+      return jsdocToHtml(sapi, sapi.intro, argMap).innerHTML;
+    },
+
+    example: (args, api, argMap)=>{
+      const idx = +(args.pop());
+      if (args.length > 0) {
+        api = findTopic(api, args);
+      }
+      const call = api.calls[+idx];
+      if (call === void 0) throw new Error("Can't find example "+idx+" in "+(api.id||api.test));
+      return Dom.h({
+        class: 'jsdoc-example highlight',
+        pre: codeToHtml(call.body)}).outerHTML;
+    },
+  };
+
   const jsdocToHtml = (api, text, argMap)=>{
     const div = document.createElement('div');
     const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
-
-    if (blockTags.length && argMap) {
-      blockTags.forEach(row => {
-        const tag = /^\w+/.exec(row);
-        if (tag) {
-          const tagFunc = BLOCK_TAGS[tag[0]];
-          tagFunc && tagFunc(api, row, argMap);
-        }
-      });
-    }
 
     mdRenderer.link = (href, title, text)=>{
       switch (href) {
@@ -708,7 +793,27 @@ define((require)=>{
       mdOptions
     );
 
-    div.innerHTML = md;
+    div.innerHTML = md.replace(/\{\{.*?\}\}/g, (m)=>{
+      if (m[2] === '{')
+        return m.slice(1);
+      const [cmd, ...args] = m.slice(2,-2).split(':');
+      const action = TEMPLATE_ACTION[cmd];
+      if (action === void 0)
+        return m;
+      else
+        return action(args, api, argMap);
+    });
+
+    if (blockTags.length && argMap) {
+      blockTags.forEach(row => {
+        const tag = /^\w+/.exec(row);
+        if (tag) {
+          const tagFunc = BLOCK_TAGS[tag[0]];
+          tagFunc && tagFunc(api, row, argMap, div);
+        }
+      });
+    }
+
     return div;
   };
 
@@ -780,6 +885,12 @@ define((require)=>{
   };
 
   apiToHtml.jsdocToHtml = jsdocToHtml;
+  apiToHtml.makeTree = makeTree;
+
+  apiToHtml[private$] = {
+    parent$,
+    node$,
+  };
 
   return apiToHtml;
 });

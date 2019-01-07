@@ -12,6 +12,7 @@ define((require, exports, module)=>{
    * `//]` comments.
    **/
   const TH              = require('koru/test-helper');
+  const Core            = require('koru/test/core');
   const util            = require('koru/util');
   const MainAPI         = require('./api');
 
@@ -190,11 +191,43 @@ define((require, exports, module)=>{
       });
     });
 
+    const commentExample = ()=>{
+      //[
+      let Iam = "example one";
+      //]
+      Iam = "outside an example";
+      //[
+      Iam = "continuing example one";
+      //]
+
+      //[#
+      Iam = "example two";
+      //]
+    };
+
+    test("example-comments", ()=>{
+      /**
+       * Alternately the special comments `//[#`, `//[` and `//]` can be used instead. `//[#` records
+       * a new example, `//[` continues an example and `//]` stops recording.
+       *
+       * {{example:0}}
+       **/
+      const topic = MainAPI.topic();
+
+      topic.addBody(MainAPI.functionBody(commentExample));
+      MainAPI.done();
+
+
+      assert(true);
+    });
+
     test("example", ()=>{
       /**
        * Run a section of as an example of a method call.
        *
        * Use `API.exampleCont(body)` to continue an example.
+       *
+       * {{topic:example-comments}}
        *
        * @returns {object|primitive} the result of running body
        **/
@@ -238,7 +271,7 @@ define((require, exports, module)=>{
           `// this body of code is executed
 Color.define('red', '#f00');
 Color.define('blue', '#00f');
-// comment
+        // comment
 assert.same(Color.colors.red, '#f00');`,
           calls: [[
             ['red', '#f00'], '#f00'
@@ -256,13 +289,98 @@ assert.same(Color.colors.red, '#f00');`,
 
       API.module({subjectModule: {id: 'myMod', exports: foo}});
       API.method('bar');
-      API.example(() => foo.bar(1, doc => {
-        return false;
-      }));
-
-      assert.equals(API.instance.methods.bar.calls[0].body, `foo.bar(1, doc => {
+      API.example(() =>{
+        foo.bar(1, doc => {
+          return false;
+        });
+      });
+      assert.equals(API.instance.methods.bar.calls[0].body.trim(), `foo.bar(1, doc => {
   return false;
-})`);
+});`);
+    });
+
+    test("topic", ()=>{
+      /**
+       * Record a test as a topic for insertion into a method document comment using the syntax
+       * `{{{topic:[<path>:]<topicName>}}`
+
+       * @param {string} [options.name] override the name of the topic. Defaults to test name.
+
+       * @param {function|string} [options.intro] the narrative for the topic being
+       * documented. Defaults to test comment.
+
+       **/
+      MainAPI.method('topic');
+
+      let mockTest;
+      const test = (name, body)=>{
+        const orig = Core.test;
+        try {
+          mockTest = Core.test = {
+            mode: 'running',
+            name: "library test "+name+".",
+            body,
+            onEnd: stub(),
+          };
+          body();
+        } finally {
+          Core.test = orig;
+          mockTest.onEnd.yield();
+        }
+      };
+
+      const returnBook = stub();
+      const book = {borrow: ()=>({book, returnBook})};
+
+      class Library {
+        static findBook(name) {
+          return book;
+        }
+      }
+
+      MainAPI.example(() => {
+        API.module({subjectModule: {id: 'myMod', exports: Library}});
+        test("borrow book", ()=>{
+          /**
+           * In order to borrow a book it needs to be found in the library; then call the borrow
+           * method on it:
+           *
+           * {{example:0}}
+           *
+           * When the book has been read it can be returned to the library:
+           *
+           * {{example:1}}
+           **/
+          API.topic();
+
+          let receipt;
+          //[
+          const book = Library.findBook("Dune");
+          if (book !== void 0)
+            receipt = book.borrow();
+          //]
+
+          //[#
+          receipt.returnBook();
+          //]
+
+          assert.equals(receipt.book, Library.findBook("Dune"));
+        });
+      });
+
+      API.done();
+
+      assert.equals(API.instance.topics['borrow book'], {
+        intro: m(/In order.*found in the library/),
+        calls: [{
+          body: m(/^const book = Library.findBook/),
+          calls: [],
+        }, {
+          body: m(b => b.trim() === 'receipt.returnBook();'),
+          calls: [],
+        }],
+        test: mockTest,
+      });
     });
 
     test("comment", ()=>{
@@ -270,8 +388,6 @@ assert.same(Color.colors.red, '#f00');`,
        * Add a comment before the next example
        **/
       MainAPI.method('comment');
-
-      onEnd(() => {});
 
       MainAPI.example(() => {
         class Excercise {
@@ -417,17 +533,20 @@ assert.same(Color.colors.red, '#f00');`,
         /**
          * The number of pages in the book
          **/
-        //[testCase({"test pageCount"() {
-        /**
-         * The number of pages in the book
-         **/
-        const book = {pageCount: 400};
-        API.module({
-          subjectModule: {id: 'myMod', exports: book},
-          subjectName: 'Book'});
-        API.property('pageCount'); // extracts the comment above
-        assert.equals(book.pageCount, 400);
-        //]//[}});//]
+        const testCase = (opts)=>{for (const i in opts) opts[i]()};
+        //[
+        testCase({"test pageCount"() {
+          /**
+           * The number of pages in the book
+           **/
+          const book = {pageCount: 400};
+          API.module({
+            subjectModule: {id: 'myMod', exports: book},
+            subjectName: 'Book'});
+          API.property('pageCount'); // extracts the comment above
+          assert.equals(book.pageCount, 400);
+        }});
+        //]
         assert.equals(API.instance.properties, {
           pageCount: {
             info: 'The number of pages in the book',
@@ -474,8 +593,10 @@ assert.same(Color.colors.red, '#f00');`,
 
     test("new", ()=>{
       /**
-       * Document `constructor` for the current subject. Use {#.class} instead
+       * Document `constructor` for the current subject.
        *
+       * @deprecated Use {#.class()} instead.
+
        * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
        * is a function.
        * @param {function|string} [options.intro] the abstract for the method being
@@ -501,7 +622,8 @@ assert.same(Color.colors.red, '#f00');`,
 
       assert.same(bilbo.name, 'Bilbo');
 
-      /*//[ // new//]//[_Book is converted to new Book when the example is rendered
+      /*//[
+        // new//]//[_Book is converted to new Book when the example is rendered
         const new//]//[_Book = api.new({intro: 'It is a dangerous thing Frodo'});
 
         ////]//[[
@@ -992,6 +1114,17 @@ assert.same(Color.colors.red, '#f00');`,
         ]]
       };
 
+      api.topics = {
+        'scene 1': {
+          test,
+          intro: 'Scene 1 intro',
+            calls: [{
+              body: 'scene 1 code here',
+              calls: [],
+            }],
+        },
+      };
+
       api.initExample = () => {
         const example = 'init';
       };
@@ -1000,9 +1133,7 @@ assert.same(Color.colors.red, '#f00');`,
         const exampleInst = 'initInst';
       };
 
-      assert.equals(api.serialize({
-        methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}
-      }), {
+      assert.equals(api.serialize(), {
         id: 'koru/test/foo-bar',
         initExample: TH.match(/const example = 'init';/),
         initInstExample: TH.match(/const exampleInst = 'initInst';/),
@@ -1082,6 +1213,18 @@ assert.same(Color.colors.red, '#f00');`,
             ]],
           }
         },
+        topics: {
+          'scene 1': {
+            sigPrefix: void 0,
+            sig: void 0,
+            test: 'koru/test/api test serialize.',
+            intro: 'Scene 1 intro',
+            calls: [{
+              body: 'scene 1 code here',
+              calls: [],
+            }],
+          }
+        }
       });
     });
 

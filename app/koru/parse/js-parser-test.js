@@ -47,6 +47,30 @@ define((require, exports, module)=>{
         [9, 136], [9, 154], [7, 172], [6, 186]]);
     });
 
+    test("shiftIndent", ()=>{
+      const ex = `
+
+    let a = 1;
+
+    if (a == 2)
+      a = 3;
+
+ else
+   a = 4;
+`;
+      assert.equals(jsParser.shiftIndent(ex), `
+
+let a = 1;
+
+if (a == 2)
+  a = 3;
+
+else
+  a = 4;
+`);
+
+    });
+
     test("indent", ()=>{
       const ex = `((b)=>{
 while(v.a == v.b) {v.c({foo: {

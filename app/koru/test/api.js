@@ -54,15 +54,15 @@ define((require, exports, module)=>{
 
   const extractFnBody = body =>{
     if (typeof body === 'string')
-      return jsParser.indent(body);
+      return jsParser.shiftIndent(body);
 
     body = body.toString();
 
     const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
 
-    if (m) return  jsParser.indent(body.slice(m[0].length));
+    if (m) return  jsParser.shiftIndent(body.slice(m[0].length));
 
-    return jsParser.indent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
+    return jsParser.shiftIndent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
   };
 
   const funcToSig = (func, name)=>{
@@ -220,6 +220,17 @@ define((require, exports, module)=>{
     return start.name.replace(/^.*test ([^\s.]+).*$/, '$1');
   };
 
+  const addBody = (details, body)=>{
+    if (body === '') return;
+
+    const calls = details.calls.slice(details[callLength$]);
+    details.calls.length = details[callLength$] || 0;
+    body = jsParser.shiftIndent(body.replace(/^\s*\n/, ''));
+    details.calls.push({body, calls});
+    details[callLength$] = details.calls.length;
+  };
+
+
   const extractBodyExample = (details, fromTest)=>{
     if (details === undefined) return;
     const currentTest = fromTest || details[currentTest$];
@@ -231,23 +242,23 @@ define((require, exports, module)=>{
       if (currentTest === undefined) return;
     }
 
-    const raw = currentTest.func.toString();
+    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*\*\//, '');
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
     if (m == null) return;
 
     let body = '';
     while (m !== null) {
-      body += m[1].replace(/\bnew_/g, 'new ');
+      let sec = m[1];
+      if (sec[0] === '#') {
+        addBody(details, body);
+        body = '';
+        sec = sec.slice(1);
+      }
+      body += sec.replace(/\bnew_/g, 'new ');
       m = re.exec(raw);
     }
-    if (body === '') return;
-
-    const calls = details.calls.slice(details[callLength$]);
-    details.calls.length = details[callLength$] || 0;
-    body = jsParser.indent(body.replace(/^\s*\n/, ''));
-    details.calls.push({body, calls});
-    details[callLength$] = details.calls.length;
+    addBody(details, body);
   };
 
   const method = (api, methodKey, obj, intro, methods)=>{
@@ -376,14 +387,14 @@ define((require, exports, module)=>{
     if (func instanceof API) {
       const tl  = func[level$];
       if (tl != null) {
-        func = tl.body || tl.func;
+        func = tl.body;
       } else
         func = null;
     }
     if (func == null) {
       const tl = getTestLevel();
       if (tl === undefined) return;
-      func = tl.body || tl.func;
+      func = tl.body;
       if (func === undefined) return;
     }
     const code = func.toString();
@@ -396,7 +407,7 @@ define((require, exports, module)=>{
   };
 
   class API {
-    constructor(parent, moduleOrSubject, subjectName, testModule) {
+    constructor(parent, moduleOrSubject, subjectName, testModule, abstract) {
       this.parent = parent;
       if (parent) {
         this.module = undefined;
@@ -407,7 +418,7 @@ define((require, exports, module)=>{
       }
       this.subjectName = subjectName;
       this.testModule = testModule || (this.parent && this.parent.testModule);
-      this.abstract = docComment(this.testModule && this.testModule.body);
+      this.abstract = abstract || docComment(this.testModule && this.testModule.body);
 
       this.newInstance =
         this.properties = this.protoProperties =
@@ -428,9 +439,13 @@ define((require, exports, module)=>{
       this._objCache = new Map;
     }
 
-    static module({subjectModule, subjectName, initExample, initInstExample}={}) {
+    static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
       const tc = TH.Core.currentTestCase;
-      subjectModule = subjectModule || ctx.modules[toId(tc)];
+      if (pseudoModule !== void 0) {
+        subjectModule = new module.constructor(ctx, toId(tc));
+        subjectModule.exports = pseudoModule;
+      } else
+        subjectModule = subjectModule || ctx.modules[toId(tc)];
       const subject = subjectModule.exports;
       if (! this.isRecord) {
         this._instance.tc = tc;
@@ -477,6 +492,7 @@ define((require, exports, module)=>{
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options, subject) {this.instance.protoProperty(name, options, subject)}
     static comment(comment) {this.instance.comment(comment)}
+    static topic(options) {return this.instance.topic(options)}
     static example(body) {return this.instance.example(body)}
     static exampleCont(body) {return this.instance.exampleCont(body)}
     static method(methodName, options) {this.instance.method(methodName, options)}
@@ -538,6 +554,8 @@ define((require, exports, module)=>{
       return this._moduleMap.get(item);
     }
 
+    static functionBody(func) {return extractFnBody(func)}
+
     static _mapSubject(subject, module) {
       const smap = this._subjectMap.get(subject);
 
@@ -558,7 +576,7 @@ define((require, exports, module)=>{
          '.'+this.propertyName : '::'+this.subjectName);
     }
 
-    innerSubject(subject, subjectName, options) {
+    innerSubject(subject, subjectName, options={}) {
       let propertyName;
       if (typeof subject === 'string') {
         propertyName = subject;
@@ -576,7 +594,7 @@ define((require, exports, module)=>{
       const ThisAPI = this.constructor;
 
       let ans = this.innerSubjects[subjectName];
-      if (! ans) {
+      if (ans === void 0) {
         this.innerSubjects[subjectName] = ans =
           new ThisAPI(this, subject, subjectName);
         ThisAPI._moduleMap.set(
@@ -585,19 +603,21 @@ define((require, exports, module)=>{
       }
 
       if (propertyName) ans.propertyName = propertyName;
-      if (options) {
-        if (options.abstract) {
-          ans.abstract = typeof options.abstract === 'string' ?
-            options.abstract :
-            docComment(options.abstract);
-        }
 
-        if (options.initExample)
-          ans.initExample = options.initExample;
-
-        if (options.initInstExample)
-          ans.initInstExample = options.initInstExample;
+      if (options.abstract !== void 0) {
+        ans.abstract = typeof options.abstract === 'string' ?
+          options.abstract :
+          docComment(options.abstract);
+      } else {
+        ans.abstract = docComment();
       }
+
+      if (options.initExample !== void 0)
+        ans.initExample = options.initExample;
+
+      if (options.initInstExample !== void 0)
+        ans.initInstExample = options.initInstExample;
+
       return ans;
     }
 
@@ -686,8 +706,7 @@ define((require, exports, module)=>{
             undefined,
           ];
           calls.push(entry);
-          const ans = new api.subject(...args);
-          entry[1] = api.valueTag(ans);
+          entry[1] = api.valueTag(this);
         };
       };
     }
@@ -757,17 +776,23 @@ define((require, exports, module)=>{
       property(this, 'properties', this.subject, name, options);
     }
 
-    comment(comment) {
-      this.currentComment = comment;
-    }
+    topic({name, intro}={}) {
+      const test = this[level$] = getTestLevel();
+      if (name === void 0) name = test.name.replace(/^.*test (.*?)\.?$/, '$1');
+      const topics = this.topics || (this.topics = {});
 
-    example(body) {
-      return example(this, body);
+      this.target = topics[name] = {
+        intro: typeof intro === 'string' ? intro : docComment(intro || this),
+        calls: [],
+        [currentTest$]: test,
+        [callLength$]: 0,
+      };
+      onTestEnd(this);
+      return {target: this.target, addBody(body) {addBody(this.target, body)}};
     }
-
-    exampleCont(body) {
-      return example(this, body, 'cont');
-    }
+    example(body) {return example(this, body)}
+    exampleCont(body) {return example(this, body, 'cont')}
+    comment(comment) {this.currentComment = comment}
 
     method(methodName, {subject, intro}={}) {
       method(this, methodName, subject || this.subject, intro, this.methods);
@@ -794,8 +819,10 @@ define((require, exports, module)=>{
       return `API(${this.subjectName})`;
     }
 
+    addBody(body) {addBody(this, body)}
+
     serialize() {
-      const {methods, protoMethods, customMethods, abstract} = this;
+      const {methods, protoMethods, customMethods, abstract, topics} = this;
 
       const procMethods = list => {
         for (let methodName in list) {
@@ -815,6 +842,9 @@ define((require, exports, module)=>{
       procMethods(protoMethods);
       procMethods(customMethods);
 
+      if (topics !== void 0) {
+        procMethods(topics);
+      }
 
       const id = this.testModule.id.replace(/-test$/, '');
 
@@ -827,6 +857,7 @@ define((require, exports, module)=>{
         methods,
         protoMethods,
         customMethods,
+        topics,
       };
 
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
@@ -1049,6 +1080,7 @@ define((require, exports, module)=>{
     }
     property() {}
     comment() {}
+    topic() {}
     example(body) {return typeof body === 'function' && body();}
     exampleCont(body) {return typeof body === 'function' && body();}
     method() {}

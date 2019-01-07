@@ -45,6 +45,33 @@ define((require)=>{
     return code[0] === '(' ? name+code : code;
   };
 
+  const shiftIndent = code =>{
+    let out = '', prev= 0;
+    let shift = -1;
+    const cb = (level, idx)=>{
+      const line = code.slice(prev, idx);
+      prev = idx;
+      if (line.trim() === '') {
+        out += line;
+        return;
+      }
+      const ws = /^ */.exec(line)[0];
+      if (shift == -1) {
+
+        shift = ws.length;
+      }
+      if (ws.length < shift) {
+        shift = ws.length;
+      }
+      out += line.slice(shift);
+
+    };
+    lineNestLevel(code, cb);
+
+    cb(0);
+    return out;
+  };
+
   const indent = (code, width=2)=>{
     const spacer = '            '.slice(0, width);
     let out = '', prev= 0;
@@ -232,6 +259,7 @@ define((require)=>{
     },
     lineNestLevel,
     indent,
+    shiftIndent,
   });
 
   return JsParser;

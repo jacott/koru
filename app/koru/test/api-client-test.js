@@ -103,6 +103,7 @@ define((require, exports, module)=>{
                 ]],
               }
             },
+            topics: void 0,
             requires: ['koru/test/main', 'koru/util'],
           },
         });

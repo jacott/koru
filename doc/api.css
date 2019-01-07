@@ -25,6 +25,11 @@ h1 {
   color: #666;
 }
 
+h2 {
+  font-size: 1.2em;
+  color: #666;
+}
+
 #Results {
   position: fixed;
   width: 100%;
@@ -170,7 +175,7 @@ body>header {
   transform: scale(1);
 }
 
-.jsdoc-info, abstract>div {
+.jsdoc-info, abstract p {
   max-width: 780px;
 }
 
@@ -332,7 +337,7 @@ body>header {
   line-height: 1.5;
 }
 
-.jsdoc-example-call {
+.jsdoc-example-call, .jsdoc-deprecated {
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
@@ -342,6 +347,16 @@ body>header {
   flex-flow: row wrap;
   margin-top: .5em;
   padding-top: .5em;
+}
+
+.jsdoc-deprecated {
+  align-items: flex-start;
+}
+.jsdoc-deprecated>* {
+  margin: 0;
+}
+.jsdoc-deprecated>p {
+  margin-left: 2em;
 }
 
 .jsdoc-config-item>td>div>p:last-child {
@@ -394,6 +409,9 @@ td {
   margin-bottom: 1em;
 }
 
+.jsdoc-deprecated {
+
+}
 
 .highlight .hll { background-color: #d6d6d6 }
 .highlight  { color: #4d4d4c }
