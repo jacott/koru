@@ -10,14 +10,14 @@ define((require, exports, module)=>{
   const DLinkedList = require('./dlinked-list');
 
   TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Make an instance of DLinkedList
        *
        * @param {function} [listEmpty] method will be called when the list becomes empty.
 
        **/
-      const new_DLinkedList = api.new();
+      const DLinkedList = api.class();
       //[
       const listEmpty = stub();
       const subject = new DLinkedList(listEmpty);

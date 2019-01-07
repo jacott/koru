@@ -156,6 +156,8 @@ a(b.foo(
 
         assert.equals(jsParser.extractCallSignature(Sig),
                       'constructor(a, b=") {}")');
+
+        assert.equals(jsParser.extractCallSignature("class()"), "class()");
       });
 
       test("no constructor", ()=>{

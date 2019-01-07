@@ -32,9 +32,9 @@ define((require, exports, module)=>{
       /**
        *
        **/
-      const new_webSocketSenderFactory = api.new();
+      const webSocketSenderFactory = api.custom();
       //[
-      const mySession = new_webSocketSenderFactory(new SessionBase('foo'), stateFactory());
+      const mySession = webSocketSenderFactory(new SessionBase('foo'), stateFactory());
       const wsConnection = {};
       mySession.newWs = stub().returns(wsConnection);
 
@@ -157,7 +157,7 @@ define((require, exports, module)=>{
     });
 
     test("using separate base", ()=>{
-      const webSocketSenderFactory = api.new();
+      const webSocketSenderFactory = api.custom();
       const sess1 = new SessionBase('foo1');
       const sess2 = new SessionBase('foo2');
       const base = new SessionBase('foo3');

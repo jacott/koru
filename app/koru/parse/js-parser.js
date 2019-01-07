@@ -29,7 +29,7 @@ define((require)=>{
     else if (m = /^(\w+)\s*?=>/.exec(code))
       return `${name}(${m[1]})`;
 
-    if (code.startsWith('class'))
+    if (/^class\s+/.test(code))
       return "constructor()";
 
     const re = /\(/g;

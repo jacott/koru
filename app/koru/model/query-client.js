@@ -21,7 +21,6 @@ define((require, exports, module)=>{
 
   const __init__ = session => (Query, condition, notifyAC$)=>{
     let syncOb, stateOb;
-    const origWhere = Query.prototype.where;
 
     const unload = ()=>{
       syncOb != null && syncOb.stop();

@@ -33,10 +33,9 @@ isClient && define((require, exports, module)=>{
        * Construct a css loader
        * @param session listen for load messages from this session
        **/
-
-
+      const CssLoader = api.class();
       stub(v.session, 'provide');
-      const loader = api.new()(v.session);
+      const loader = new CssLoader(v.session);
       assert.calledWith(v.session.provide, 'S', TH.match.func);
 
       assert.same(loader.session, v.session);

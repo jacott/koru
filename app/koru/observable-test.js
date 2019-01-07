@@ -13,14 +13,14 @@ define((require, exports, module)=>{
   const Observable = require('./observable');
 
   TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Make an instance of Observable
        *
        * @param {function} [allStopped] method will be called when all observers have stopped.
 
        **/
-      const new_Observable = api.new();
+      const Observable = api.class();
       //[
       const allStopped = stub();
       const subject = new Observable(allStopped);

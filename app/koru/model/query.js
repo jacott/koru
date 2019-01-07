@@ -365,7 +365,7 @@ define((require, exports, module)=>{
         }
         return this[onChange$].onChange(callback);
       }
-    };
+    }
 
     makeSubject(Query, 'onAnyChange', notifyAC$);
 

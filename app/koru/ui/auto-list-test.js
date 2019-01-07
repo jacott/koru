@@ -46,7 +46,7 @@ isClient && define((require, exports, module)=>{
       v = {};
     });
 
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Build a new AutoList
        *
@@ -84,7 +84,7 @@ isClient && define((require, exports, module)=>{
        * * `action` is `added`, `changed` or `removed`
 
        **/
-      const new_AutoList = api.new();
+      const AutoList = api.class();
 
       const {Book, row} = v;
 
@@ -93,7 +93,7 @@ isClient && define((require, exports, module)=>{
       const book2 = Book.create({title: "The Great Hunt"});
 
       const container = Dom.h({});
-      const list = new_AutoList({query: Book.query.sort('title'), template: row, container});
+      const list = new AutoList({query: Book.query.sort('title'), template: row, container});
 
       assert.dom(container, ()=>{
         assert.dom(':first-child', 'The Eye of the World');
@@ -635,7 +635,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("start, end comment", ()=>{
-      const new_AutoList = api.new();
+      const AutoList = api.class();
 
       const {Book, row} = v;
 
@@ -649,7 +649,7 @@ isClient && define((require, exports, module)=>{
       const startComment = container.childNodes[1];
       startComment[endMarker$] = container.childNodes[2];
 
-      const list = new_AutoList({
+      const list = new AutoList({
         query: Book.query.sort('title'), template: row, container: startComment});
 
       assert.dom(container, pn =>{

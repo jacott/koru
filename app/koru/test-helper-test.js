@@ -108,9 +108,9 @@ define((require, exports, module)=>{
         /**
          * Create a MockModule.
          **/
-        const new_MockModule = mmapi.new();
+        const MockModule = mmapi.class();
         //[
-        const myMod = new_MockModule("my-id", {my: 'content'});
+        const myMod = new MockModule("my-id", {my: 'content'});
         assert.same(myMod.id, 'my-id');
         assert.equals(myMod.exports, {my: 'content'});
         //]

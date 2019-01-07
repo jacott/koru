@@ -34,14 +34,14 @@ define((require, exports, module)=>{
       v = {};
     });
 
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Create a match registry. Do not use this directly; instead use it inside a
        * {#koru/session/publish} body
        **/
-      const new_Match = api.new();
+      const Match = api.class();
 
-      const myMatch = new_Match();
+      const myMatch = new Match();
 
       assert(myMatch.register);
     });

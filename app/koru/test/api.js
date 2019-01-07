@@ -485,7 +485,6 @@ define((require, exports, module)=>{
     }
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
-    static new(options) {return this.instance.new(options)}
     static class(options) {return this.instance.class(options)}
     static custom(func, options) {return this.instance.custom(func, options)}
     static customIntercept(object, options) {return this.instance.customIntercept(object, options)}
@@ -621,48 +620,6 @@ define((require, exports, module)=>{
       return ans;
     }
 
-    new({sig, intro}={}) {
-      const calls = [];
-
-      switch(typeof sig) {
-      case 'function':
-        this.subject = sig;
-      case 'undefined':
-        if (typeof this.subject !== 'function' || Object.getPrototypeOf(this.subject) == null)
-          throw new Error("this.new called on non function");
-
-        sig = funcToSig(this.subject).replace(/^[^(]*/, 'constructor');
-        break;
-      }
-
-
-      if (! this.newInstance) {
-        this.newInstance = {
-          sig,
-          intro: typeof intro === 'string' ? intro : docComment(intro),
-          calls
-        };
-      }
-
-      this.target = this.newInstance;
-
-      onTestEnd(this);
-
-      return (...args)=>{
-        const {calls} = this.target;
-        if (calls === undefined) return new this.subject(...args);
-        extractBodyExample(this.target);
-        const entry = [
-          args.map(obj => this.valueTag(obj)),
-          undefined,
-        ];
-        calls.push(entry);
-        const ans = new this.subject(...args);
-        entry[1] = this.valueTag(ans);
-        return ans;
-      };
-    }
-
     class({sig, intro}={}) {
       const calls = [];
 
@@ -711,7 +668,7 @@ define((require, exports, module)=>{
       };
     }
 
-    custom(func, {name=func.name, sig, intro}={}) {
+    custom(func=this.subject, {name=func.name, sig, intro}={}) {
       let sigPrefix;
       if (sig === undefined) {
         sig = funcToSig(func, name);
@@ -1060,15 +1017,7 @@ define((require, exports, module)=>{
   API.isRecord = module.config().record;
 
   class APIOff extends API {
-    new(sig) {
-      const func = typeof sig === 'function'
-            ? sig
-            : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);
-      return (...args) => {
-        return new func(...args);
-      };
-    }
-    class(sig) {
+    class({sig, intro}) {
       const func = typeof sig === 'function'
             ? sig
             : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);

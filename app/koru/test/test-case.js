@@ -31,7 +31,7 @@ define((require, exports, module)=>{
 
       test.errors = [
         "Failure: No assertions\n    at - "+
-          `test.func (${name}.js:${line}:1)`
+          `test.body (${name}.js:${line}:1)`
       ];
     }
   };
@@ -199,11 +199,11 @@ define((require, exports, module)=>{
   Object.defineProperty(Core, 'currentTestCase', {get: () => currentTC});
 
   class Test {
-    constructor(name, tc, func) {
+    constructor(name, tc, body) {
       this.name = name;
       this.tc = tc;
       this.topTC = tc.topTestCase();
-      this.func = func;
+      this.body = body;
       this.mode = 'init';
     }
 
@@ -233,6 +233,8 @@ define((require, exports, module)=>{
       return spy;
     }
 
+    get func() {return this.body}
+
     get location() {
       let line = 1;
       const name = this.moduleId;
@@ -240,7 +242,7 @@ define((require, exports, module)=>{
       if (mod != null) {
         const tcbody = mod.body.toString();
         const testName = this.name.replace(/^.*?\btest /, '').slice(0, -1);
-        const testbody = `test("${testName}", ${this.func.toString()}`;
+        const testbody = `test("${testName}", ${this.body.toString()}`;
 
         let idx = tcbody.indexOf(testbody);
 
@@ -393,9 +395,9 @@ define((require, exports, module)=>{
         runSetups(newTest.tc, common);
         newTest.mode = 'running';
         try {
-          if (newTest.func.length === 1) {
+          if (newTest.body.length === 1) {
             const done = doneFunc(newTest, _runNext);
-            const ans = newTest.func(done);
+            const ans = newTest.body(done);
             if (ans !== undefined)
               failed(newTest, ans);
             else {
@@ -405,7 +407,7 @@ define((require, exports, module)=>{
             }
           } else {
             const {assertCount} = Core;
-            const ans = newTest.func();
+            const ans = newTest.body();
             if (ans === undefined) {
               checkAssertionCount(newTest, assertCount);
             } else {

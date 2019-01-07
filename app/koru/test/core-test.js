@@ -41,8 +41,8 @@ trace of the actual error. Access can be useful to save and restore in custom as
       after(()=>{aeApi = undefined});
 
       test("new", ()=>{
-        const new_AssertionError = aeApi.new();
-        const err = new_AssertionError("I failed");
+        const AssertionError = aeApi.class();
+        const err = new AssertionError("I failed");
         assert(err instanceof Error);
         assert.same(err.message, "I failed");
       });

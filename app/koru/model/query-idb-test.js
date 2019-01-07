@@ -46,7 +46,7 @@ isClient && define((require, exports, module)=>{
       v = null;
     });
 
-    test("new", async ()=>{
+    test("constructor", async ()=>{
       /**
        * Open a indexedDB database
        *
@@ -58,10 +58,10 @@ isClient && define((require, exports, module)=>{
        * where `db` is the `QueryIDB` instance and `oldVersion` is the
        * current version of the database
        **/
-      const new_QueryIDB = api.new();
+      const QueryIDB = api.class();
       let count = 0;
-      //[(async ()=>{
-        v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
+      //[        (async ()=>{
+        v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
           assert.same(oldVersion, 1);
           db.createObjectStore("TestModel");
           ++count;
@@ -90,7 +90,7 @@ isClient && define((require, exports, module)=>{
       const db = await new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      //[(async ()=>{
+      //[      (async ()=>{
       const id = await db.promisify(
         ()=>db.transaction(['TestModel'], 'readwrite')
           .objectStore('TestModel').put({_id: "id1", name: "foo"})
@@ -119,7 +119,7 @@ isClient && define((require, exports, module)=>{
         onEnd(()=>{session.state.pendingCount() == 1 && session.state.decPending()});
 
         await v.db.whenReady();
-        //[ (async ()=>{
+        //[        (async ()=>{
         {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
@@ -157,7 +157,7 @@ isClient && define((require, exports, module)=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
-        //[ (async ()=>{
+        //[        (async ()=>{
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
@@ -182,7 +182,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("non simulated", async ()=>{
-        //[ (async ()=>{
+        //[        (async ()=>{
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);

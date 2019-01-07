@@ -31,8 +31,8 @@ isServer && define((require, exports, module)=>{
     });
 
     test("constructor", ()=>{
-      const newIdleCheck = api.new();
-      assert(newIdleCheck() instanceof IdleCheck);
+      const IdleCheck = api.class();
+      assert(new IdleCheck() instanceof IdleCheck);
     });
 
     group("fiber timeout", ()=>{

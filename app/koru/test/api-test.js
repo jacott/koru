@@ -590,74 +590,19 @@ assert.same(Color.colors.red, '#f00');`,
       API.done();
     });
 
-
-    test("new", ()=>{
-      /**
-       * Document `constructor` for the current subject.
-       *
-       * @deprecated Use {#.class()} instead.
-
-       * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
-       * is a function.
-       * @param {function|string} [options.intro] the abstract for the method being
-       * documented. Defaults to test comment.
-       *
-       * @returns a ProxyClass which is to be used instead of `new Class`
-
-       **/
-      MainAPI.method('new');
-
-      class Hobbit {
-        constructor(name) {
-          this.name = name;
-        }
-        [inspect$]() {return `{Hobbit:${this.name}}`;}
-      }
-
-      API.module({subjectModule: {id: 'myMod', exports: Hobbit}});
-
-      const newHobbit = API.new();
-
-      const bilbo = newHobbit('Bilbo');
-
-      assert.same(bilbo.name, 'Bilbo');
-
-      /*//[
-        // new//]//[_Book is converted to new Book when the example is rendered
-        const new//]//[_Book = api.new({intro: 'It is a dangerous thing Frodo'});
-
-        ////]//[[
-        const book = new//]//[_Book({name: 'There and back again'});
-
-        assert(book instanceof Book);
-        ////]//[]//]*/
-
-      assert.equals(API.instance.newInstance, {
-        test,
-        sig: TH.match(/(constructor|function Hobbit)\(name\)/),
-        intro: TH.match(/Document `constructor`/),
-        calls: [[
-          ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
-        ]],
-      });
-
-      API.new();
-      API.new({sig: 'function Hobbit({name}) {}', intro: 'It is a dangerous thing Frodo'});
-    });
-
     test("class", ()=>{
       /**
        * Document `constructor` for the current subject.
        *
-       * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
+       * @param [options.sig] override the call signature. Sig is used as the subject if it
        * is a function.
-       * @param {function|string} [options.intro] the abstract for the method being
+       * @param [options.intro] the abstract for the method being
        * documented. Defaults to test comment.
        *
        * @returns a ProxyClass which is to be used instead of `Class`
 
        **/
-      MainAPI.method('class');
+      MainAPI.method();
 
       class Book {
         constructor(title) {
@@ -677,6 +622,7 @@ assert.same(Color.colors.red, '#f00');`,
         assert.same(book.title, 'There and back again');
         //]
 
+
         assert.equals(API.instance.newInstance, {
           test,
           sig: TH.match(/(constructor|function Book)\(title\)/),
@@ -686,6 +632,9 @@ assert.same(Color.colors.red, '#f00');`,
           ]],
         });
       }
+
+      API.class({sig: 'function Hobbit({name}) {}', intro: 'It is a dangerous thing Frodo'});
+      API.class({sig: (class {}), intro: ()=>{}});
     });
 
     test("custom.", ()=>{
@@ -846,6 +795,8 @@ assert.same(Color.colors.red, '#f00');`,
           [-1], -2
         ]]
       });
+
+      API.method('foo', {subject: {foo() {}}, intro: "intro"});
     });
 
     test("protoMethod", ()=>{

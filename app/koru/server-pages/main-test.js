@@ -98,7 +98,7 @@ isServer && define((require, exports, module)=>{
       v = {};
     });
 
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Register a page server with a webServer.
        *
@@ -109,14 +109,14 @@ isServer && define((require, exports, module)=>{
 
        * @param pathRoot handle pages starting with this path root.
        **/
-      const new_ServerPages = api.new();
+      const ServerPages = api.class();
 
       //[
       const WebServer = require('koru/web-server');
       //]
       stub(WebServer, 'registerHandler');
       //[
-      const sp = new_ServerPages(WebServer);
+      const sp = new ServerPages(WebServer);
       //]
       assert.isFunction(sp._handleRequest);
 

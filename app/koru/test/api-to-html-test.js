@@ -352,6 +352,92 @@ m1 intro
           ]});
       });
 
+      test("@param", ()=>{
+        const json = {
+          "koru/test/api": {
+            "id": "koru/test/api",
+            "subject": {
+              "name": "API",
+              "abstract": "topAbstracr"
+            },
+            "methods": {
+              "class": {
+                "test": "koru/test/api test class.",
+                "sig": "class(options)",
+                "intro": "myAbs\n"+
+                  "@param {string} [options.sig] sigParam\n"+
+                  "@param {function|string} [options.intro] introParam\n"+
+                  "@returns returnParam",
+                "calls": [
+                  {
+                    "body": "theBody",
+                    "calls": [
+                      [[], ["O", "Book"]],
+                      [[["P", {
+                        "sig": "function Hobbit({name}) {}",
+                        "intro": "It is a dangerous thing Frodo"}]],
+                       ["O", "Book"]]
+                    ]
+                  }
+                ]
+              }
+            },
+          }
+        };
+
+        const html = apiToHtml('Foo', json, sourceHtml);
+        const result = Dom.textToHtml(html);
+
+        let found;
+        Dom.walkNode(result, node =>{
+          if (node.tagName === 'H1' && /Parameters/.test(node.textContent)) {
+            Dom.walkNode(node.parentNode, node =>{
+              if (node.tagName === 'TBODY') {
+                found = node;
+                return true;
+              }
+            });
+            return true;
+          }
+        });
+
+        const params = Dom.htmlToJson(found).tbody;
+
+        const mozType = (type)=>({
+          href: m(new RegExp("mozilla.*Global_Objects.*"+type)),
+          target: '_blank', a: [type.toLowerCase()]});
+
+        const aString = mozType('String');
+
+        assert.equals(params[0], {
+          class: 'jsdoc-arg',
+          tr: [
+            {td: '[options.sig]'},
+            {td: aString},
+            {class: 'jsdoc-info', td: {div: [{p: 'sigParam'}, '\n']}}
+          ]});
+
+        assert.equals(params[1], {
+          class: 'jsdoc-arg',
+          tr: [
+            {td: '[options.intro]'},
+            {td: [
+              mozType("Function"),
+              '\u200a/\u200a',
+              aString,
+            ]},
+            {class: 'jsdoc-info', td: {div: [{p: 'introParam'}, '\n']}}
+          ]});
+
+        assert.equals(params[2], {
+          class: 'jsdoc-method-returns',
+          tr: [
+            {td: {h1: 'Returns'}},
+            {td: mozType("Object")},
+            {class: 'jsdoc-info', td: {div: [{p: 'returnParam'}, '\n']}}
+          ]});
+      });
+
       test("@config", ()=>{
         function abstract() {
           /**

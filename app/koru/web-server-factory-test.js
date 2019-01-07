@@ -65,7 +65,7 @@ isServer && define((require, exports, module)=>{
        *
        * @param root Serve files relative to path.
        **/
-      const WebServerFactory = api.new();
+      const WebServerFactory = api.custom();
 
       //[
       const http = requirejs.nodeRequire('http');

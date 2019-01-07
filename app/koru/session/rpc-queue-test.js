@@ -13,13 +13,13 @@ isClient && define((require, exports, module)=>{
   const sut  = require('./rpc-queue');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Build a new queue
        **/
-      const new_RPCQueue = api.new();
+      const RPCQueue = api.class();
 
-      const queue = new_RPCQueue();
+      const queue = new RPCQueue();
 
       let data, func;
 

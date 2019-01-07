@@ -10,18 +10,18 @@ define((require, exports, module)=>{
   const Enumerable = require('./enumerable');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("new", ()=>{
+    test("constructor", ()=>{
       /**
        * Create new Enumerable instance
        **/
-      const new_Enumerable = api.new();
+      const Enumerable = api.class();
       //[
-      const iter = new_Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
+      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
       assert.same(iter.count(), 2);
       assert.equals(Array.from(iter), [1, 3]);
       assert.same(iter.count(), 2);
 
-      const iter2 = new_Enumerable(function *() {yield 1; yield 3});
+      const iter2 = new Enumerable(function *() {yield 1; yield 3});
 
       assert.same(iter2.count(), 2);
       assert.equals(Array.from(iter2), [1, 3]);

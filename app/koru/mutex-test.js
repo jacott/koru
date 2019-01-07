@@ -13,7 +13,7 @@ isServer && define((require, exports, module)=>{
       /**
        * Construct a Mutex.
        **/
-      const new_Mutex = api.new();
+      const Mutex = api.class();
       api.protoMethod("lock", {intro: ()=>{
         /**
          * Aquire a lock on the mutex. Will pause until the mutex is unlocked
@@ -26,7 +26,7 @@ isServer && define((require, exports, module)=>{
       }});
 
       //[
-      const mutex = new_Mutex();
+      const mutex = new Mutex();
 
       let counter = 0;
 
