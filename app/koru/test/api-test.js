@@ -217,7 +217,6 @@ define((require, exports, module)=>{
       topic.addBody(MainAPI.functionBody(commentExample));
       MainAPI.done();
 
-
       assert(true);
     });
 
@@ -257,6 +256,7 @@ define((require, exports, module)=>{
       });
 
       MainAPI.done();
+      assert.same(MainAPI._instance.target, void 0);
 
       assert.equals(API.instance.methods.define, {
         test: TH.test,
@@ -271,7 +271,7 @@ define((require, exports, module)=>{
           `// this body of code is executed
 Color.define('red', '#f00');
 Color.define('blue', '#00f');
-        // comment
+// comment
 assert.same(Color.colors.red, '#f00');`,
           calls: [[
             ['red', '#f00'], '#f00'
@@ -381,6 +381,12 @@ assert.same(Color.colors.red, '#f00');`,
         }],
         test: mockTest,
       });
+
+      const {target} = MainAPI._instance;
+      const {calls} = target;
+      target.calls = [];
+      MainAPI.done();
+      target.calls = calls;
     });
 
     test("comment", ()=>{

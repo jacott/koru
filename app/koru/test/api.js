@@ -20,21 +20,23 @@ define((require, exports, module)=>{
   let count = 0;
 
   const onTestEnd = (api, func)=>{
-    if (api.target !== undefined) api.target.test = getTestLevel();
-    if (api[onEnd$] === undefined) {
+    if (api.target !== void 0) api.target.test = getTestLevel();
+    if (api[onEnd$] === void 0) {
       const foo = count++;
       const onEnd = api[onEnd$] = ()=>{
-        api[onEnd$] = undefined;
-        api.target === undefined || extractBodyExample(api.target, api.target[currentTest$]);
+        if (api[onEnd$] === void 0) return;
+        api[onEnd$] = void 0;
+        api.target === void 0 || extractBodyExample(api.target, api.target[currentTest$]);
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
         callbacks.forEach(cb => cb());
+        api.target = void 0;
       };
       onEnd.callbacks = [];
       TH.onEnd(onEnd);
     }
 
-    func === undefined || api[onEnd$].callbacks.push(func);
+    func === void 0 || api[onEnd$].callbacks.push(func);
   };
 
   const createSubjectName = (subject, tc)=>{
@@ -60,7 +62,7 @@ define((require, exports, module)=>{
 
     const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
 
-    if (m) return  jsParser.shiftIndent(body.slice(m[0].length));
+    if (m) return body.slice(m[0].length);
 
     return jsParser.shiftIndent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
   };
@@ -221,15 +223,38 @@ define((require, exports, module)=>{
   };
 
   const addBody = (details, body)=>{
-    if (body === '') return;
-
-    const calls = details.calls.slice(details[callLength$]);
-    details.calls.length = details[callLength$] || 0;
-    body = jsParser.shiftIndent(body.replace(/^\s*\n/, ''));
-    details.calls.push({body, calls});
+    let calls = details.calls.slice(details[callLength$]);
+    details.calls.length = Math.min(details[callLength$] || 0, details.calls.length);
+    if (body === '') {
+      (calls.length != 0 || details.calls.length != 0) && details.calls.push({calls});
+    } else {
+      body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
+      if (details.calls.length !== 0) {
+        const last = details.calls[details.calls.length-1];
+        details.calls.length -= 1;
+        if (last.body !== void 0) {
+          body = last.body + body;
+        }
+        if (last.calls.length != 0) {
+          calls.length != 0 && last.calls.push(...calls);
+          calls = last.calls;
+        }
+      }
+      details.calls.push({body, calls});
+    }
     details[callLength$] = details.calls.length;
   };
 
+  const example = (api, body, cont)=>{
+    try {
+      return typeof body === 'function' && body();
+    } finally {
+      if (api.target !== void 0) {
+        cont || addBody(api.target, '');
+        addBody(api.target,  extractFnBody(body));
+      }
+    }
+  };
 
   const extractBodyExample = (details, fromTest)=>{
     if (details === undefined) return;
@@ -252,10 +277,10 @@ define((require, exports, module)=>{
       let sec = m[1];
       if (sec[0] === '#') {
         addBody(details, body);
-        body = '';
+        addBody(details, body = '');
         sec = sec.slice(1);
       }
-      body += sec.replace(/\bnew_/g, 'new ');
+      body += sec;
       m = re.exec(raw);
     }
     addBody(details, body);
@@ -325,26 +350,6 @@ define((require, exports, module)=>{
         delete obj[methodKey];
       }
     });
-  };
-
-  const example = (api, body, cont)=>{
-    if (! api.target)
-      throw new Error("API target not set!");
-    const callLength = api.target.calls.length;
-    try {
-      return typeof body === 'function' && body();
-    } finally {
-      const calls = api.target.calls.slice(callLength);
-      api.target.calls.length = callLength;
-      if (cont) {
-        const last = api.target.calls[callLength-1];
-        last.body += extractFnBody(body);
-        util.append(last.calls, calls);
-      } else api.target.calls.push({
-        body: extractFnBody(body),
-        calls,
-      });
-    }
   };
 
   const addComment = (api, entry)=>{
@@ -776,7 +781,7 @@ define((require, exports, module)=>{
       return `API(${this.subjectName})`;
     }
 
-    addBody(body) {addBody(this, body)}
+    addBody(body) {addBody(this.target, body)}
 
     serialize() {
       const {methods, protoMethods, customMethods, abstract, topics} = this;
