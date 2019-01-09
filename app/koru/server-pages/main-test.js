@@ -210,7 +210,7 @@ isServer && define((require, exports, module)=>{
 
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
         assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
-                          '<h2 id="test-foo-">test Markdown</h2> </body></html>');
+                          '<h2 id="test-foo">test Markdown</h2> </body></html>');
       });
 
       test("$parser", ()=>{
