@@ -527,36 +527,82 @@ define((require, exports, module)=>{
 
     test("contains", ()=>{
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
-                           '<button type="button" id="sp">Hello</button></div></div></div>');
+                                 '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
       assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
       assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
     });
 
+    test("insertStartEndMarkers", ()=>{
+      /**
+       * Insert a pair of comments into `parent` that can be used for start and end markers.
+
+       * @param parent the parent node to insert comments into
+       * @param [before] the node to insert the comments before. Comments are appended if before is
+       * missing or null.
+
+       * @returns the start comment. end comment can be found by calling {#.endMarker}
+       **/
+      api.method();
+      //[
+      const footer = Dom.h({footer: 'footer'});
+      const parent = Dom.h({div: footer});
+      const startMarker = Dom.insertStartEndMarkers(parent, footer);
+      //]
+
+      assert.same(Dom.endMarker(startMarker), startMarker[endMarker$]);
+      assert.same(startMarker.nextSibling, startMarker[endMarker$]);
+      assert.same(footer.previousSibling.previousSibling, startMarker);
+    });
+
+    test("endMarker", ()=>{
+      /**
+       * Return the end marker for a start marker.
+       *
+       * See {#.insertStartEndMarkers}
+       *
+       **/
+      api.method();
+      //[
+      const parent = Dom.h({});
+      const startMarker = Dom.insertStartEndMarkers(parent);
+
+      assert.same(Dom.endMarker(startMarker), startMarker.nextSibling);
+      assert.same(Dom.endMarker(startMarker).nodeType, document.COMMENT_NODE);
+      assert.same(Dom.endMarker(startMarker).data, 'end');
+      //]
+    });
+
     test("removeInserts", ()=>{
+      /**
+       * remove inserts between start end markers.
+       *
+       * @param start the start marker; see {#.insertStartEndMarkers}
+       **/
+      api.method();
       const parent = document.createElement('div');
-      const elm = document.createComment('start');
-      elm[endMarker$] = document.createComment('end');
+      const startMarker = document.createComment('start');
+      startMarker[endMarker$] = document.createComment('end');
 
-      assert.same(Dom.fragEnd(elm), elm[endMarker$]);
+      assert.same(Dom.endMarker(startMarker), startMarker[endMarker$]);
 
-      parent.appendChild(elm);
+      parent.appendChild(startMarker);
       for (const i of [1,2,3]) parent.appendChild(document.createElement('p'));
-      parent.appendChild(elm[endMarker$]);
+      parent.appendChild(startMarker[endMarker$]);
       parent.appendChild(document.createElement('i'));
 
       spy(Dom, 'destroyChildren');
 
-      Dom.removeInserts(elm);
+      Dom.removeInserts(startMarker);
 
       assert.calledThrice(Dom.destroyChildren);
 
       assert.same(parent.querySelectorAll('p').length, 0);
       assert.same(parent.querySelectorAll('i').length, 1);
 
-      assert.same(elm.parentNode, parent);
-      assert.same(elm[endMarker$].parentNode, parent);
+      assert.same(startMarker.parentNode, parent);
+      assert.same(startMarker[endMarker$].parentNode, parent);
     });
 
 

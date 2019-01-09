@@ -487,7 +487,17 @@ define((require)=>{
       return Dom;
     },
 
-    fragEnd: fragStart => fragStart[endMarker$],
+    insertStartEndMarkers: (parent, before=null)=>{
+      const startComment = document.createComment('start'),
+            endComment = document.createComment('end');
+      startComment[endMarker$] = endComment;
+
+      parent.insertBefore(endComment, before);
+      parent.insertBefore(startComment, endComment);
+      return startComment;
+    },
+
+    endMarker: startMarker => startMarker[endMarker$],
 
     contains: (parent, elm)=> (parent != null && parent.contains(elm)) ? parent : null,
 
