@@ -1,4 +1,12 @@
 isServer && define((require, exports, module)=>{
+  /**
+   * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)). It
+   * works by yielding the current
+
+   * [Fiber thread](https://github.com/laverdet/node-fibers#api-documentation), if the mutex is
+   * locked, and resuming the thread when the mutex is unlocked.
+   *
+   **/
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -14,16 +22,6 @@ isServer && define((require, exports, module)=>{
        * Construct a Mutex.
        **/
       const Mutex = api.class();
-      api.protoMethod("lock", {intro: ()=>{
-        /**
-         * Aquire a lock on the mutex. Will pause until the mutex is unlocked
-         **/
-      }});
-      api.protoMethod("unlock", {intro: ()=>{
-        /**
-         * Release a lock on the mutex. Will allow another fiber to aquire the lock
-         **/
-      }});
 
       //[
       const mutex = new Mutex();
@@ -53,10 +51,25 @@ isServer && define((require, exports, module)=>{
     });
 
     test("sequencing", ()=>{
-      let ex;
-      let counter = 0;
+      api.protoMethod("lock", {intro: ()=>{
+        /**
+         * Aquire a lock on the mutex. Will pause until the mutex is unlocked
+         **/
+      }});
+      api.protoMethod("unlock", {intro: ()=>{
+        /**
+         * Release a lock on the mutex. Will allow another fiber to aquire the lock
+         **/
+      }});
 
       const mutex = new Mutex;
+
+      mutex.lock();
+      mutex.unlock();
+      api.done();
+
+      let ex;
+      let counter = 0;
 
       const runInner = (cb) =>{
         koru.runFiber(()=>{
@@ -99,14 +112,14 @@ isServer && define((require, exports, module)=>{
       }
 
       mutex.lock();
+      mutex.unlock();
+      if (ex) throw ex;
+
+      assert.same(counter, 3);
+
+      assert.exception(()=>{
         mutex.unlock();
-        if (ex) throw ex;
-
-        assert.same(counter, 3);
-
-        assert.exception(()=>{
-          mutex.unlock();
-        }, {message: 'mutex not locked'});
+      }, {message: 'mutex not locked'});
 
     });
   });

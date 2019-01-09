@@ -3,6 +3,7 @@ define((require, exports, module)=>{
    * A Balanced Tree. Implemented using a
 
    * [Red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree).
+
    **/
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
@@ -53,9 +54,16 @@ l  4 *
 
     group("traverse by nodes", ()=>{
       let tree;
-      beforeEach(()=>{
-        tree = new BTree();
-        insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
+
+      afterEach(()=>{tree = null});
+
+
+      const init = ()=>{
+        api.example(()=>{
+          tree = new BTree();
+          insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
+
+        });
         assertTree(tree, `
 50
 l  20
@@ -65,16 +73,22 @@ l      95 *
 r    120
 r      130 *
 `);
-      });
+      };
 
       test("nodeFrom", ()=>{
-        const n50 = tree.nodeFrom(35);
-        assert.same(n50.value, 50);
+        /**
+         * find node equal or greater than value
+         **/
+        api.protoMethod();
+        init();
+        //[
+        assert.same(tree.nodeFrom(35).value, 50);
 
         assert.same(tree.nodeFrom(95).value, 95);
         assert.same(tree.nodeFrom(5).value, 20);
 
         assert.same(tree.nodeFrom(200), null);
+        //]
       });
 
       test("no right nodeFrom", ()=>{
@@ -88,6 +102,12 @@ l  0 *
       });
 
       test("nodeTo", ()=>{
+        /**
+         * find node equal or less than value
+         **/
+        api.protoMethod();
+        init();
+        //[
         const n130 = tree.lastNode;
         assert.same(n130.value, 130);
 
@@ -95,6 +115,7 @@ l  0 *
         assert.same(tree.nodeTo(10), null);
         assert.same(tree.nodeTo(95).value, 95);
         assert.same(tree.nodeTo(105).value, 100);
+        //]
       });
 
       test("no left nodeFrom", ()=>{
@@ -115,6 +136,7 @@ r  20 *
 
 
       test("firstNode, nextNode", ()=>{
+        init();
         const ans = [];
         for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
           ans.push(n.value);
@@ -385,8 +407,10 @@ r  170 *
 
     test("iterator", ()=>{
       /**
-       * iterator tree in order
+       * iterate the tree in order
        **/
+      api.protoMethod(Symbol.iterator);
+      //[
       const tree = new BTree();
       insertNodes(tree, [123, 456]);
       assert.equals(Array.from(tree), [123, 456]);
@@ -395,6 +419,7 @@ r  170 *
       tree.add(53);
       assert.equals(i.next().value, 53);
       assert.equals(Array.from(tree), [53, 123, 456]);
+      //]
     });
 
     test("forEach", ()=>{
