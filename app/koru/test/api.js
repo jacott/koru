@@ -294,25 +294,20 @@ define((require, exports, module)=>{
     if (func == undefined)
       throw new Error(`method "${methodKey}" not found`);
 
-    const methodName = methodKey.toString();
+    let methodName = methodKey.toString();
+    if (typeof methodKey === 'symbol') {
+      const m = /^Symbol\((Symbol\..*?)\)$/.exec(methodName);
+      if (m !== null) methodName = m[1];
+      methodName = '['+methodName+']';
+    }
+
     let details = methods[methodName];
     const calls = details ? details.calls : [];
     if (details === undefined) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
       const isGenerator = sig[0] === '*';
       if (isGenerator)
-        sig = sig.replace(/^\*\s*/, '');
-      if (! sig.startsWith(methodName)) {
-        if (sig.startsWith('('))
-          sig = methodName+sig.slice(0, jsParser.findMatch(sig, '('));
-        else {
-          if (sig.endsWith(' => {/*...*/}'))
-            sig = sig.slice(0, -13);
-          sig = `${methodName}(${sig})`;
-        }
-      }
-      if (isGenerator)
-        sig = '*'+sig;
+        sig = sig.replace(/^\*\s*/, '*');
 
       details = methods[methodName] = {
         sig,

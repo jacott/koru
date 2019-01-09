@@ -805,6 +805,51 @@ assert.same(Color.colors.red, '#f00');`,
       API.method('foo', {subject: {foo() {}}, intro: "intro"});
     });
 
+    test("well known symbol name", ()=>{
+      class ADT {
+        *[Symbol.iterator]() {
+          yield 1; yield 2;
+        }
+      }
+      API.module({subjectModule: {id: 'myMod', exports: ADT}, subjectName: 'ADT'});
+      API.protoMethod(Symbol.iterator);
+
+      const adt = new ADT;
+      assert.equals(Array.from(adt), [1, 2]);
+
+      API.done();
+
+      assert.equals(API.instance.protoMethods["[Symbol.iterator]"], {
+        test,
+        sig: '*[Symbol.iterator]()',
+        intro: void 0,
+        subject: ['F', ADT, 'ADT'],
+        calls: [[[], ['O', ({}), '{}']]]
+      });
+    });
+
+    test("local symbol name", ()=>{
+      const foo$ = Symbol("foo");
+      class ADT {
+        [foo$]() {return "foo"}
+      }
+      API.module({subjectModule: {id: 'myMod', exports: ADT}, subjectName: 'ADT'});
+      API.protoMethod(foo$);
+
+      const adt = new ADT;
+      assert.equals(adt[foo$](), "foo");
+
+      API.done();
+
+      assert.equals(API.instance.protoMethods["[Symbol(foo)]"], {
+        test,
+        sig: '[foo$]()',
+        intro: void 0,
+        subject: ['F', ADT, 'ADT'],
+        calls: [[[], 'foo']]
+      });
+    });
+
     test("protoMethod", ()=>{
       /**
        * Document prototype `methodName` for the current subject
