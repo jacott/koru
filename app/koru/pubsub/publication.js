@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const BTree           = require('koru/btree');
   const DLinkedList     = require('koru/dlinked-list');
   const LinkedList      = require('koru/linked-list');
   const TransQueue      = require('koru/model/trans-queue');
@@ -21,29 +22,69 @@ define((require, exports, module)=>{
     if (sub.conn._subs !== void 0) delete sub.conn._subs[sub.id];
   };
 
+  const WaitSubCompare = (a, b)=> a.time - b.time;
+
+  const loadDocs = (lq, sub)=>{
+    lq.discreteLastSubscribed = sub.discreteLastSubscribed;
+
+    const msg = message.withEncoder('W', sub.conn._session.globalDict, encode =>{
+      lq.union.loadInitial((doc)=>{
+        encode(['A', [doc.constructor.modelName, doc._id, doc.attributes]]);
+      });
+    });
+
+    lq.union[addQueue$] = void 0;
+
+    let node = lq.subs.front;
+    lq.subs.clear();
+    const wnode = lq.waitingSubs.lastNode;
+    if (wnode !== null) {
+      lq.waitingSubs.deleteNode(wnode);
+      lq.subs = wnode.value.queue;
+    }
+
+    for(; node !== void 0; node = node.next) {
+      const {sub, future} = node.value;
+      sub.conn.sendEncoded(msg);
+      future !== void 0 && future.return();
+    }
+
+    if (lq.subs.size != 0) koru.runFiber(()=>{
+      loadDocs(lq, lq.subs.back.value.sub);
+    });
+  };
+
   class LoadQueue {
     constructor(union) {
       this.union = union;
       union[addQueue$] = this;
 
       this.subs = new LinkedList();
-      // FIXME this.waitingSubs = new BTree();
+      this.waitingSubs = new BTree(WaitSubCompare);
+      this.discreteLastSubscribed = 0;
     }
 
     add(sub) {
-      // FIXME can be added to subs or waitingSubs?
-      this.subs.push(sub);
-      if (this.subs.size != 1) return;
-
-      const msg = message.withEncoder('W', sub.conn._session.globalDict, encode =>{
-        this.union.loadInitial((doc)=>{
-          encode(['A', [doc.constructor.modelName, doc._id, doc.attributes]]);
-        });
-      });
-
-      this.union[addQueue$] = void 0;
-
-      for (const {conn} of this.subs) conn.sendEncoded(msg);
+      const time = sub.discreteLastSubscribed;
+      if (this.subs.size !== 0) {
+        const future = new util.Future;
+        if (this.discreteLastSubscribed == time) {
+          this.subs.push({sub, future});
+        } else {
+          const waiting = this.waitingSubs.find({time});
+          if (waiting !== void 0) {
+            waiting.queue.push({sub, future});
+          } else {
+            const waiting = {time, queue: new LinkedList()};
+            waiting.queue.push({sub, future});
+            this.waitingSubs.add(waiting);
+          }
+        }
+        future.wait();
+      } else {
+        this.subs.push({sub, future: void 0});
+        loadDocs(this, sub);
+      }
     }
   }
 
@@ -118,7 +159,7 @@ define((require, exports, module)=>{
       this.conn = conn;
 
       this.id = id;
-      this.lastSubscribed = lastSubscribed;
+      this.lastSubscribed = +lastSubscribed || 0;
       this[stopped$] = false;
     }
 
@@ -134,7 +175,7 @@ define((require, exports, module)=>{
 
     get userId() {return koru.userId()}
 
-    get lastSubscribedBin() {
+    get discreteLastSubscribed() {
       const {lastSubscribedInterval} = this.constructor;
       return Math.floor(this.lastSubscribed/lastSubscribedInterval)*lastSubscribedInterval;
     }

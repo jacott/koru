@@ -4,6 +4,7 @@ isServer && define((require, exports, module)=>{
    *
    * See also {#../subscription}
    **/
+  const koru            = require('koru');
   const ModelMap        = require('koru/model/map');
   const TransQueue      = require('koru/model/trans-queue');
   const Val             = require('koru/model/validation');
@@ -22,7 +23,7 @@ isServer && define((require, exports, module)=>{
     let conn, origQ;
     beforeEach(()=>{
       origQ = session._commands.Q;
-      conn = PublishTH.mockConnection();
+      conn = PublishTH.mockConnection("conn1");
       conn.onMessage = (args)=>{
         session._commands.Q.call(conn, args);
       };
@@ -160,7 +161,7 @@ isServer && define((require, exports, module)=>{
       assert.equals(conn._subs, {});
     });
 
-    test("lastSubscribedBin", ()=>{
+    test("discreteLastSubscribed", ()=>{
       /**
        * converted `#lastSubscribed` time to the lower
        * `lastSubscribedInterval` boundry.
@@ -170,7 +171,7 @@ isServer && define((require, exports, module)=>{
       //[
       Publication.lastSubscribedInterval = 20*60*1000;
       const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
-      assert.equals(new Date(sub.lastSubscribedBin), new Date(2019, 0, 4, 9, 0));
+      assert.equals(new Date(sub.discreteLastSubscribed), new Date(2019, 0, 4, 9, 0));
       //]
       api.protoProperty('lastSubscribed', {
         info: "The subscriptions last successful subscription time in ms"});
@@ -181,7 +182,7 @@ isServer && define((require, exports, module)=>{
        * Allow grouping subscription downloads to an interval bin so that subscriptions wanting
        * similar data can be satisfied with one pass of the database. Specified in milliseconds.
        *
-       * See `#lastSubscribedBin`
+       * See `#discreteLastSubscribed`
        **/
       api.property();
       assert.same(Publication.lastSubscribedInterval, 5*60*1000);
@@ -199,6 +200,10 @@ isServer && define((require, exports, module)=>{
       let sapi;
       before(()=>{
         sapi = api.innerSubject(Publication.Union);
+      });
+
+      afterEach(()=>{
+        conn.sendEncoded.reset();
       });
 
       test("constructor", ()=>{
@@ -220,8 +225,10 @@ isServer && define((require, exports, module)=>{
 
          * For performance, if other subscribers are added to the union then they will be added to
          * the same loadQueue (if still running) as a previous subscriber if and only if their
-         * `#lastSubscribedBin` is the same as a previous subscriber; otherwise a new
+         * `#discreteLastSubscribed` is the same as a previous subscriber; otherwise a new
          * loadInitial will be run.
+         *
+         * It is important to note that addSub blocks the thread until loadInitial has finished.
          **/
         sapi.protoMethod();
 
@@ -243,7 +250,7 @@ isServer && define((require, exports, module)=>{
         }
         const union = new MyUnion();
 
-        const sub = new Publication({id: 's123', conn, lastSubscribed: void 0});
+        const sub = new Publication({id: 'sub1', conn, lastSubscribed: void 0});
         /** ⏿ ⮧ here we add the sub **/
         union.addSub(sub);
 
@@ -256,8 +263,99 @@ isServer && define((require, exports, module)=>{
         //]
       });
 
-      test("//addSub withinInterval", ()=>{
+      test("addSub withinInterval", ()=>{
+        let now = util.dateNow();
+        now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+        const conn1 = conn;
+        const conn2 = PublishTH.mockConnection("conn2");
+        const conn3 = PublishTH.mockConnection("conn3");
+        const conn4 = PublishTH.mockConnection("conn4");
+        const conn5 = PublishTH.mockConnection("conn5");
 
+        const db = new MockDB(['Book']);
+        const mc = new MockConn(conn);
+
+        const {Book} = db.models;
+        const book1 = Book.create();
+        const book2 = Book.create();
+
+        const events = [];
+
+        class MyUnion extends Publication.Union {
+          constructor(author_id) {
+            super(Publication);
+            this.future = new util.Future;
+          }
+          loadInitial(addDoc) {
+            events.push(`li`);
+            this.future.wait();
+            Book.query.forEach(addDoc);
+            events.push(`liDone`);
+          }
+        }
+        const union = new MyUnion();
+        onEnd(()=>{union.future.isResolved() || union.future.return()});
+
+        const newSub = (id, conn, lastSubscribed)=>{
+          const sub = new Publication({id, conn, lastSubscribed});
+          koru.runFiber(()=>{
+            union.addSub(sub);
+            events.push('done'+sub.id);
+          });
+          return sub;
+        };
+
+        const completeQuery = ()=>{
+          events.push('completeQuery');
+          const future = union.future;
+          union.future = new util.Future;
+          future.return();
+        };
+
+
+        newSub('sub1', conn1, now);
+        newSub('sub2', conn2, now + 30000);
+        newSub('sub3', conn3, now - 1);
+        newSub('sub4', conn4, now - 60000);
+        newSub('sub5', conn5, now - 1 - Publication.lastSubscribedInterval);
+
+        refute.called(conn1.sendEncoded);
+        refute.called(conn2.sendEncoded);
+
+        completeQuery();
+        assert.called(conn1.sendEncoded);
+        assert.called(conn2.sendEncoded);
+        refute.called(conn3.sendEncoded);
+        refute.called(conn4.sendEncoded);
+
+        completeQuery();
+        assert.called(conn3.sendEncoded);
+        assert.called(conn4.sendEncoded);
+        refute.called(conn5.sendEncoded);
+
+        completeQuery();
+        assert.calledOnce(conn1.sendEncoded);
+        assert.calledOnce(conn3.sendEncoded);
+        assert.called(conn5.sendEncoded);
+
+        assert.equals(events, [
+          'li',
+          'completeQuery',
+          'liDone',
+          'donesub2',
+
+          'li',
+          'donesub1',
+
+          'completeQuery',
+          'liDone',
+          'donesub4',
+          'donesub3',
+          'li',
+
+          'completeQuery',
+          'liDone',
+          'donesub5']);
       });
 
       test("//removeSub", ()=>{
