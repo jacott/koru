@@ -1014,8 +1014,11 @@ define((require, exports, module)=>{
 
   API.isRecord = module.config().record;
 
+  const STUB_TOPIC = {addBody() {}};
+
+
   class APIOff extends API {
-    class({sig, intro}) {
+    class({sig, intro}={}) {
       const func = typeof sig === 'function'
             ? sig
             : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);
@@ -1027,14 +1030,14 @@ define((require, exports, module)=>{
     }
     property() {}
     comment() {}
-    topic() {}
+    topic() {return STUB_TOPIC}
     example(body) {return typeof body === 'function' && body();}
     exampleCont(body) {return typeof body === 'function' && body();}
     method() {}
     protoMethod() {}
     protoProperty() {}
     done() {}
-    custom(func) {return func}
+    custom(func=(this.tc === TH.Core.currentTestCase || API.module(), this.subject)) {return func}
   }
 
   if (! API.isRecord) {

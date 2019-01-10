@@ -420,10 +420,12 @@ assert.same(Color.colors.red, '#f00');`,
       });
 
       const {target} = MainAPI._instance;
-      const {calls} = target;
-      target.calls = [];
-      MainAPI.done();
-      target.calls = calls;
+      if (target !== void 0) {
+        const {calls} = target;
+        target.calls = [];
+        MainAPI.done();
+        target.calls = calls;
+      }
     });
 
     test("comment", ()=>{
