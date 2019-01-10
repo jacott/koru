@@ -6,7 +6,6 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const message         = require('./message');
   const publishTH       = require('./publish-test-helper-server');
-  const scFactory       = require('./server-connection-factory');
 
   const {stub, spy, onEnd, intercept, match: m} = TH;
 

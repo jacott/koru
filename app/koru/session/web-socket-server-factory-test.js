@@ -3,9 +3,8 @@ define((require, exports, module)=>{
   const Random          = require('koru/random');
   const SessionBase     = require('koru/session/base').constructor;
   const message         = require('koru/session/message');
-  const Conn            = require('koru/session/server-connection-factory').Base;
+  const ServerConnection = require('koru/session/server-connection');
   const util            = require('koru/util');
-  const ConnectionBase  = require('./server-connection-factory').Base;
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
@@ -44,7 +43,7 @@ define((require, exports, module)=>{
           const data = [v.msgId, 'foo.rpc', 1, 2, 3];
           const buffer = message.encodeMessage('M', data, v.sess.globalDict);
 
-          v.conn = util.merge(new Conn(v.ws, '123', () => {}), {
+          v.conn = util.merge(new ServerConnection(v.mockSess, v.ws, '123', () => {}), {
             batchMessages: stub(),
             releaseMessages: stub(),
             abortMessages: stub(),

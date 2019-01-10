@@ -14,7 +14,7 @@ isServer && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, onEnd, util, intercept, stubProperty} = TH;
 
   const Publication = require('./publication');
 
@@ -160,24 +160,35 @@ isServer && define((require, exports, module)=>{
       assert.equals(conn._subs, {});
     });
 
-    test("//lastSubscribedBin", ()=>{
+    test("lastSubscribedBin", ()=>{
       /**
-       * `lastSubscribedBin` converts the subscription `lastSubscribed` time to the lower
-       * {#.lastSubscribedInterval} boundry.
-       *
+       * converted `#lastSubscribed` time to the lower
+       * `lastSubscribedInterval` boundry.
        **/
+      api.protoProperty();
+      stubProperty(Publication, 'lastSubscribedInterval', 123);
+      //[
+      Publication.lastSubscribedInterval = 20*60*1000;
+      const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
+      assert.equals(new Date(sub.lastSubscribedBin), new Date(2019, 0, 4, 9, 0));
+      //]
+      api.protoProperty('lastSubscribed', {
+        info: "The subscriptions last successful subscription time in ms"});
     });
 
-    test("//withinInterval", ()=>{
-    });
-
-    test("//lastSubscribedInterval", ()=>{
+    test("lastSubscribedInterval", ()=>{
       /**
-       * `lastSubscribedInterval` allows grouping subscription downloads to an interval bin so that
-       * subscriptions wanting similar data can be satisfied with one pass of the database.
+       * Allow grouping subscription downloads to an interval bin so that subscriptions wanting
+       * similar data can be satisfied with one pass of the database. Specified in milliseconds.
        *
-       * See {##lastSubscribedBin}
+       * See `#lastSubscribedBin`
        **/
+      api.property();
+      assert.same(Publication.lastSubscribedInterval, 5*60*1000);
+      onEnd(()=>{Publication.lastSubscribedInterval = 5*60*1000});
+
+      Publication.lastSubscribedInterval = 10*60*1000;
+      assert.same(Publication.lastSubscribedInterval, 10*60*1000);
     });
 
     group("Union", ()=>{
@@ -209,7 +220,7 @@ isServer && define((require, exports, module)=>{
 
          * For performance, if other subscribers are added to the union then they will be added to
          * the same loadQueue (if still running) as a previous subscriber if and only if their
-         * {#../#lastSubscribedBin} is the same as a previous subscriber; otherwise a new
+         * `#lastSubscribedBin` is the same as a previous subscriber; otherwise a new
          * loadInitial will be run.
          **/
         sapi.protoMethod();
@@ -261,7 +272,30 @@ isServer && define((require, exports, module)=>{
       test("//loadInitial", ()=>{
       });
 
-      test("//sendEncoded", ()=>{
+      test("sendEncoded", ()=>{
+        /**
+         * Send a pre encoded {#koru/session/message} to all subscribers.
+         *
+         * See {#koru/session/server-connection#sendEncoded}
+         **/
+        sapi.protoMethod();
+
+        const conn2 = PublishTH.mockConnection('sess124');
+
+        const union = new Publication.Union();
+
+        //[
+        const sub1 = new Publication({id: 'sub123', conn});
+        union.addSub(sub1);
+        const sub2 = new Publication({id: 'sub124', conn: conn2});
+        union.addSub(sub1);
+        union.addSub(sub2);
+
+        union.sendEncoded('myEncodedMessage');
+
+        assert.calledWith(conn.sendEncoded, 'myEncodedMessage');
+        assert.calledWith(conn2.sendEncoded, 'myEncodedMessage');
+        //]
       });
 
       test("buildBatchUpdate", ()=>{

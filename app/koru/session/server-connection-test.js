@@ -1,9 +1,13 @@
 isServer && define((require, exports, module)=>{
+  /**
+   * ServerConnection is the server side of a client-server webSocket connection.
+   **/
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const DocChange       = require('koru/model/doc-change');
   const baseSession     = require('koru/session');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
   const match           = require('./match');
   const message         = require('./message');
@@ -13,12 +17,13 @@ isServer && define((require, exports, module)=>{
   const {stub, spy, onEnd, intercept} = TH;
 
   const session = new (baseSession.constructor)('testServerConnection');
-  const Connection  = require('./server-connection-factory')(session);
+
+  const ServerConnection = require('./server-connection');
 
   let v = {};
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
-      v.conn = new Connection(v.ws = {
+      v.conn = new ServerConnection(session, v.ws = {
         send: stub(), close: stub(), on: stub(),
       }, {}, 123, v.sessClose = stub());
       stub(v.conn, 'sendBinary');
@@ -153,7 +158,7 @@ isServer && define((require, exports, module)=>{
       v.conn.sendBinary.restore();
       v.thread = v.c2t = {name: 'c2'};
       TH.stubProperty(util, 'thread', {get() {return v.thread}});
-      v.conn2 = new Connection(v.ws = {
+      v.conn2 = new ServerConnection(session, v.ws = {
         send: stub(), close: stub(), on: stub(),
       }, {}, 456, v.sessClose = stub());
 
@@ -192,8 +197,14 @@ isServer && define((require, exports, module)=>{
     });
 
     test("sendEncoded", ()=>{
+      /**
+       * Send a pre encoded binary {#../message} to the client.
+       **/
+      api.protoMethod();
+      //[
       v.conn.sendEncoded("myMessage");
       assert.calledWith(v.conn.ws.send, 'myMessage', {binary: true});
+      //]
       const error = new Error("an error");
       v.conn.ws.send.throws(error);
 
@@ -223,8 +234,18 @@ isServer && define((require, exports, module)=>{
 
 
     test("send", ()=>{
+      /**
+       * Send a text message to the client
+       *
+       * @param type the one character type for the message. See {#../base#provide}.
+
+       * @param data the text message to send.
+       **/
+      api.protoMethod();
+      //[
       v.conn.send('X', 'FOO');
       assert.calledWith(v.ws.send, 'XFOO');
+      //]
 
       stub(koru, 'info');
       refute.exception(function () {

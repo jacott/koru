@@ -2,7 +2,7 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const session         = require('koru/session');
   const message         = require('koru/session/message');
-  const SCFactory       = require('koru/session/server-connection-factory');
+  const ServerConnection = require('koru/session/server-connection');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
@@ -19,8 +19,8 @@ define((require, exports, module)=>{
 
   const publishTH = {
     mockConnection(sessId='s123', session=this.mockSession()) {
-      const conn = new (SCFactory(session))(
-        {send: stub(), on: stub()}, {}, sessId, ()=>{}
+      const conn = new ServerConnection(session, {
+        send: stub(), on: stub()}, {}, sessId, ()=>{}
       );
       spy(conn, 'batchMessages');
       spy(conn, 'releaseMessages');

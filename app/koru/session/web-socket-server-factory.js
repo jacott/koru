@@ -1,14 +1,13 @@
 define((require, exports, module)=>{
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
+  const ServerConnection = require('koru/session/server-connection');
   const accSha256       = require('koru/srp/acc-sha256');
   const koru            = require('../main');
   const util            = require('../util');
   const message         = require('./message');
 
   function webSocketServerFactory(session, execWrapper) {
-    const Connection = require('./server-connection-factory')(session);
-
     let sessCounter = 0;
     const globalDictAdders = {};
     let _globalDict, _globalDictEncoded;
@@ -70,7 +69,7 @@ define((require, exports, module)=>{
 
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
-        const conn = session.conns[sessId] = new Connection(ws, ugr, sessId, () => {
+        const conn = session.conns[sessId] = new ServerConnection(session, ws, ugr, sessId, () => {
           ws.close();
           const conn = session.conns[sessId];
           if (conn) {

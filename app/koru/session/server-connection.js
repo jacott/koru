@@ -1,20 +1,32 @@
-define((require)=>{
+define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const Observable      = require('koru/observable');
   const BatchMessage    = require('koru/session/batch-message');
+  const Match           = require('koru/session/match');
+  const message         = require('koru/session/message');
   const util            = require('koru/util');
-  const Match           = require('./match');
-  const message         = require('./message');
-
   const crypto          = requirejs.nodeRequire('crypto');
 
   const sideQueue$ = Symbol();
 
   const BINARY = {binary: true};
 
-  class Base {
-    constructor(ws, request, sessId, close) {
+  const filterAttrs = (attrs, filter)=>{
+    if (! filter) return attrs;
+
+    const result = {};
+
+    for(const key in attrs) {
+      if (filter[key] === undefined)
+        result[key] = attrs[key];
+    }
+    return result;
+  };
+
+  class ServerConnection {
+    constructor(session, ws, request, sessId, close) {
+      this._session = session;
       this.ws = ws;
       this.request = request;
       this.sessId = sessId;
@@ -209,31 +221,8 @@ define((require)=>{
     get userId() {return this._userId}
   }
 
-  const serverConnectionFactory = session =>{
-    class ServerConnection extends Base {
-      constructor (ws, request, sessId, close) {
-        super(ws, request, sessId, close);
-        this._session = session;
-      }
-    }
 
-    return ServerConnection;
-  };
+  ServerConnection.filterAttrs = filterAttrs;
 
-  const filterAttrs = (attrs, filter)=>{
-    if (! filter) return attrs;
-
-    const result = {};
-
-    for(const key in attrs) {
-      if (filter[key] === undefined)
-        result[key] = attrs[key];
-    }
-    return result;
-  };
-
-  serverConnectionFactory.Base = Base;
-  serverConnectionFactory.filterAttrs = filterAttrs;
-
-  return serverConnectionFactory;
+  return ServerConnection;
 });

@@ -1,5 +1,4 @@
 isServer && define((require, exports, module)=>{
-  const Conn    = require('koru/session/server-connection-factory').Base;
   const koru    = require('../main');
   const util    = require('../util');
   const session = require('./main');

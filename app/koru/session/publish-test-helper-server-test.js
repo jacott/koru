@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const session         = require('koru/session');
   const message         = require('koru/session/message');
   const publish         = require('koru/session/publish');
-  const scFactory       = require('koru/session/server-connection-factory');
+  const ServerConnection = require('koru/session/server-connection');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const Stubber         = require('koru/test/stubber');
@@ -58,7 +58,7 @@ define((require, exports, module)=>{
       assert.same(mockConnection.sessId, "s456");
 
 
-      assert(mockConnection instanceof scFactory.Base);
+      assert(mockConnection instanceof ServerConnection);
       assert(Stubber.isStubbed(mockConnection.sendBinary));
       assert(Stubber.isStubbed(mockConnection.added));
       assert(Stubber.isStubbed(mockConnection.changed));

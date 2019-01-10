@@ -134,6 +134,11 @@ define((require, exports, module)=>{
 
     get userId() {return koru.userId()}
 
+    get lastSubscribedBin() {
+      const {lastSubscribedInterval} = this.constructor;
+      return Math.floor(this.lastSubscribed/lastSubscribedInterval)*lastSubscribedInterval;
+    }
+
     static get pubName() {return this[pubName$]}
     static set pubName(v) {
       if (Session._commands.Q !== subscribe)
@@ -167,6 +172,8 @@ define((require, exports, module)=>{
     }
   }
   Publication.Union = Union;
+
+  Publication.lastSubscribedInterval = 5 * 60*1000;
 
   Publication.delete = deletePublication;
 
