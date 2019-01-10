@@ -74,7 +74,7 @@ isClient && define((require, exports, module)=>{
         assert.same(count, 1);
         ++count;
         assert.same(count, 2);
-      //] //[ }); //]
+      //] //[# }); //]
     });
 
     test("promisify", async ()=>{
@@ -97,7 +97,7 @@ isClient && define((require, exports, module)=>{
       );
 
       assert.equals(id, "id1");
-      //] //[ }); //]
+      //] //[# }); //]
     });
 
     group("queueChange", ()=>{
@@ -150,7 +150,7 @@ isClient && define((require, exports, module)=>{
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
-        //] //[ }); //]
+        //] //[# }); //]
       });
 
       test("simulated remove", async ()=>{
@@ -176,7 +176,7 @@ isClient && define((require, exports, module)=>{
           assert.equals(iDoc, {_id: 'foo123', $sim: [{
             _id: 'foo123', name: 'foo', age: 5, gender: 'm'}, undefined]});
         }
-        //] //[ }); //]
+        //] //[# }); //]
 
         await v.db.whenReady();
       });
@@ -210,7 +210,7 @@ isClient && define((require, exports, module)=>{
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, undefined);
         }
-        //] //[ }); //]
+        //] //[# }); //]
 
         await v.db.whenReady();
       });

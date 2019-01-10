@@ -6,7 +6,8 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./main');
 
-  const onEnd$ = Symbol(), level$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
+  const onEnd$ = Symbol(),
+        level$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
   const {ctx} = module;
@@ -24,9 +25,9 @@ define((require, exports, module)=>{
     if (api[onEnd$] === void 0) {
       const foo = count++;
       const onEnd = api[onEnd$] = ()=>{
-        if (api[onEnd$] === void 0) return;
+        if (api[onEnd$] !== onEnd) return;
         api[onEnd$] = void 0;
-        api.target === void 0 || extractBodyExample(api.target, api.target[currentTest$]);
+        api.target === void 0 || extractBodyExample(api.target, api.target.test);
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
         callbacks.forEach(cb => cb());
@@ -222,36 +223,33 @@ define((require, exports, module)=>{
     return start.name.replace(/^.*test ([^\s.]+).*$/, '$1');
   };
 
-  const addBody = (details, body)=>{
+  const addBody = (details, body, isNew=true)=>{
+    if (body === '') return;
     let calls = details.calls.slice(details[callLength$]);
     details.calls.length = Math.min(details[callLength$] || 0, details.calls.length);
-    if (body === '') {
-      (calls.length != 0 || details.calls.length != 0) && details.calls.push({calls});
-    } else {
-      body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
-      if (details.calls.length !== 0) {
-        const last = details.calls[details.calls.length-1];
-        details.calls.length -= 1;
-        if (last.body !== void 0) {
-          body = last.body + body;
-        }
-        if (last.calls.length != 0) {
-          calls.length != 0 && last.calls.push(...calls);
-          calls = last.calls;
-        }
+
+    body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
+    if (details.calls.length !== 0 && ! isNew) {
+      const last = details.calls[details.calls.length-1];
+      details.calls.length -= 1;
+      if (last.body !== void 0) {
+        body = last.body + body;
       }
-      details.calls.push({body, calls});
+      if (last.calls.length != 0) {
+        calls.length != 0 && last.calls.push(...calls);
+          calls = last.calls;
+      }
     }
+    details.calls.push({body, calls});
     details[callLength$] = details.calls.length;
   };
 
-  const example = (api, body, cont)=>{
+  const example = (api, body, isNew)=>{
     try {
       return typeof body === 'function' && body();
     } finally {
       if (api.target !== void 0) {
-        cont || addBody(api.target, '');
-        addBody(api.target,  extractFnBody(body));
+        addBody(api.target,  extractFnBody(body), isNew);
       }
     }
   };
@@ -272,18 +270,20 @@ define((require, exports, module)=>{
     let m = re.exec(raw);
     if (m == null) return;
 
-    let body = '';
+    let body = '', isNew = true;
     while (m !== null) {
-      let sec = m[1];
+      const sec = m[1];
       if (sec[0] === '#') {
-        addBody(details, body);
-        addBody(details, body = '');
-        sec = sec.slice(1);
+        isNew = false;
+        body += sec.slice(1);
+      } else {
+        addBody(details, body, isNew);
+        isNew = true;
+        body = sec;
       }
-      body += sec;
       m = re.exec(raw);
     }
-    addBody(details, body);
+    addBody(details, body, isNew);
   };
 
   const method = (api, methodKey, obj, intro, methods)=>{
@@ -329,7 +329,6 @@ define((require, exports, module)=>{
           undefined,
         ];
         addComment(api, entry);
-        extractBodyExample(details);
         calls.push(entry);
 
         const ans = func.apply(this, args);
@@ -745,10 +744,11 @@ define((require, exports, module)=>{
         [callLength$]: 0,
       };
       onTestEnd(this);
-      return {target: this.target, addBody(body) {addBody(this.target, body)}};
+      return {target: this.target, addBody(body, isNew) {addBody(this.target, body, isNew)}};
     }
     example(body) {return example(this, body)}
-    exampleCont(body) {return example(this, body, 'cont')}
+    exampleCont(body) {return example(this, body, false)}
+    exampleNoExec(body, isNew) {addBody(this.target, body, isNew)}
     comment(comment) {this.currentComment = comment}
 
     method(methodName, {subject, intro}={}) {
@@ -775,8 +775,6 @@ define((require, exports, module)=>{
     [inspect$]() {
       return `API(${this.subjectName})`;
     }
-
-    addBody(body) {addBody(this.target, body)}
 
     serialize() {
       const {methods, protoMethods, customMethods, abstract, topics} = this;

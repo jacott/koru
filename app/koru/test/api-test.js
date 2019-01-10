@@ -25,7 +25,7 @@ define((require, exports, module)=>{
   const TestModule = ctx.modules['koru/test/api-test'];
 
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let API, v = {};
     beforeEach(()=>{
       test = TH.test;
@@ -196,19 +196,19 @@ define((require, exports, module)=>{
       let Iam = "example one";
       //]
       Iam = "outside an example";
-      //[
+      //[#
       Iam = "continuing example one";
       //]
 
-      //[#
+      //[
       Iam = "example two";
       //]
     };
 
     test("example-comments", ()=>{
       /**
-       * Alternately the special comments `//[#`, `//[` and `//]` can be used instead. `//[#` records
-       * a new example, `//[` continues an example and `//]` stops recording.
+       * Alternately the special comments `//[`, `//[#` and `//]` can be used instead. `//[` records
+       * a new example, `//[#` continues an example and `//]` stops recording.
        *
        * {{example:0}}
        **/
@@ -281,6 +281,43 @@ assert.same(Color.colors.red, '#f00');`,
         }, {
           body: `return Color.define('green', '#0f0')`, calls: [[['green', '#0f0'], '#0f0']]
         }]
+      });
+    });
+
+    group("multi tests on a subject", ()=>{
+      const foo = {bar: a => "b"};
+      let result;
+      before(()=>{
+        API.module({subjectModule: {id: 'myMod', exports: foo}});
+      });
+
+      after(()=>{
+        assert.equals(result.calls, [
+          {body: 'foo.bar(1);\n', calls: [[[1], 'b']]},
+          {body: 'foo.bar(2);\n', calls: [[[2], 'b']]},
+        ]);
+      });
+
+      test("test 1", ()=>{
+        API.method('bar');
+
+        //[
+        foo.bar(1);
+        //]
+
+        API.done();
+        assert(result = API.instance.methods.bar);
+      });
+
+      test("test 2", ()=>{
+        API.method('bar');
+
+        //[
+        foo.bar(2);
+        //]
+
+        API.done();
+        assert(result = API.instance.methods.bar);
       });
     });
 
@@ -360,7 +397,7 @@ assert.same(Color.colors.red, '#f00');`,
             receipt = book.borrow();
           //]
 
-          //[#
+          //[
           receipt.returnBook();
           //]
 

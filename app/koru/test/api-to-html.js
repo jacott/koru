@@ -179,8 +179,14 @@ define((require)=>{
       for (const dir of Object.keys(node).sort(sortKeys)) {
         const child = node[dir];
         const id = child[id$];
-        if (id !== undefined)
-          renderNode(child, id);
+        if (id !== undefined) {
+          try {
+            renderNode(child, id);
+          } catch(ex) {
+            ex.message += `\nWhile processing ${id}`;
+            throw ex;
+          }
+        }
         walkNode(child, level+1);
       }
     };
