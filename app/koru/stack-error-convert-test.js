@@ -1,9 +1,11 @@
 isServer && define((require, exports, module)=>{
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
+  const Mutex           = require('koru/mutex');
   const TH              = require('./test-helper');
 
   const {SourceMapGenerator} = requirejs.nodeRequire('source-map');
+  const {SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
   const {stub, spy, onEnd, util} = TH;
 
@@ -55,6 +57,15 @@ isServer && define((require, exports, module)=>{
         lineAdjust: -1,
       });
 
+      const consumer = util.Future.fromPromise(new SourceMapConsumer(map.toString())).wait();
+      consumer.destroy();
+
+      const BasicSourceMapConsumer = consumer.constructor;
+
+      const lock = spy(Mutex.prototype, 'lock');
+      const unlock = spy(Mutex.prototype, 'unlock');
+      const destroy = spy(BasicSourceMapConsumer.prototype, 'destroy');
+
       assert.equals(
         koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
@@ -69,6 +80,11 @@ Cannot read property 'class' of undefined
     at missing (nofound.js:4:334)
     at j.toChildren robin (myPrefix/nested/file2.js:4:1)`
       );
+
+      assert.calledOnce(lock);
+      assert.calledTwice(destroy);
+      assert(lock.calledBefore(destroy));
+      assert(unlock.firstCall.globalCount > destroy.lastCall.globalCount);
 
       StackErrorConvert.stop();
       StackErrorConvert.start({sourceMapDir: 'test/maps'});
