@@ -111,6 +111,8 @@ define((require, exports, module)=>{
         property.value = api.serializeValue(property.value);
       if (property.calls)
         property.calls = serializeCalls(api, property.calls);
+      if (property.test) property.test = property.test.name,
+
       property.properties &&
         serializeProperties(api, property.properties);
     }
@@ -135,6 +137,7 @@ define((require, exports, module)=>{
         property.value = api.valueTag(options.value);
       } else if (desc == null || desc.get || desc.set) {
         const calls = property.calls || (property.calls = []);
+        api.target = property;
         util.setProperty(subject, name, {
           get() {
             const entry = [[], null];

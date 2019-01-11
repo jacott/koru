@@ -217,7 +217,8 @@ define((require)=>{
           api,
           property.info
             .replace(/\$\{value\}/, '[](#jsdoc-value)'),
-          argMap
+          argMap,
+          property
         ) : value;
         if (property.info) {
           const vref = findHref(info, '#jsdoc-value', true);
@@ -778,7 +779,7 @@ define((require)=>{
     },
   };
 
-  const jsdocToHtml = (api, text, argMap)=>{
+  const jsdocToHtml = (api, text, argMap, env=api)=>{
     const div = document.createElement('div');
     const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
@@ -807,7 +808,7 @@ define((require)=>{
       if (action === void 0)
         return m;
       else
-        return action(args, api, argMap);
+        return action(args, env, argMap);
     });
 
     if (blockTags.length && argMap) {

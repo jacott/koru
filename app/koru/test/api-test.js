@@ -570,6 +570,7 @@ assert.same(Color.colors.red, '#f00');`,
               [['Room'], undefined, 'sets title'],
               [[], 'Room'],
             ],
+            test,
           },
         });
       });
@@ -1200,11 +1201,11 @@ assert.same(Color.colors.red, '#f00');`,
             properties: {
               theme: {
                 info: 'theme info',
-                value: ['O', 'MainAPI'],
+                value: ['O', MainAPI, 'MainAPI'],
               },
               color: {
                 info: 'color info',
-                calls: [[[], ['O', 'rgb:blue']], [['green']]],
+                calls: [[[], ['O', {r: 0, g: 0, b: 1}, 'rgb:blue']], [['green'], undefined]],
               },
             }
           }
