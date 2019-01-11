@@ -10,10 +10,16 @@ define((require, exports, module)=>{
   const message         = require('koru/session/message');
   const util            = require('koru/util');
 
-  const config$ = Symbol(),
+  const config$ = Symbol(), testDoc$ = Symbol(),
         handles$ = Symbol();
 
-  const config = (obj)=> obj[config$] || (obj.resetConfig(), obj[config$]);
+  const {hasOwn} = util;
+
+  const config = (obj)=> hasOwn(obj, config$) ?
+      obj[config$]
+        : (obj[config$] === void 0 ?
+           obj.resetConfig() :
+           obj[config$] = Object.assign({}, obj[config$]));
 
   class AllUnion extends Publication.Union {
     constructor(pubClass) {
@@ -29,7 +35,7 @@ define((require, exports, module)=>{
     initObservers() {
       this[handles$] = [];
 
-      const batchUpdate=this.buildBatchUpdate();
+      let batchUpdate=this.buildBatchUpdate();
 
       const {excludeModels, includeModels} = config(this.pubClass);
 
@@ -41,14 +47,18 @@ define((require, exports, module)=>{
       }
     }
 
-    loadInitial(addDoc) {
-      const {excludeModels, includeModels} = config(this.pubClass);
+    loadInitial(addDoc, discreteLastSubscribed) {
+      const {excludeModels, includeModels, loadInitial} = config(this.pubClass);
 
       for (const name in util.isObjEmpty(includeModels) ? ModelMap : includeModels) {
         if (excludeModels[name] !== void 0) continue;
         const model = ModelMap[name];
         if (model.query === void 0) continue;
-        model.query.forEach(addDoc);
+        const {query} = model;
+        if (loadInitial !== void 0) {
+          loadInitial.whereUpdated(query, discreteLastSubscribed);
+        }
+        query.forEach(addDoc);
       }
     }
   }
@@ -56,7 +66,8 @@ define((require, exports, module)=>{
   class AllPub extends Publication {
     constructor(options) {
       super(options);
-      config(this.constructor).requireUserId && Val.allowAccessIf(this.userId);
+      const cfg = config(this.constructor);
+      cfg.requireUserId && Val.allowAccessIf(this.userId);
     }
 
     init() {
@@ -72,8 +83,30 @@ define((require, exports, module)=>{
       union !== void 0 && union.removeSub(this);
     }
 
+    static buildUpdate(dc) {
+      const testDoc = this[testDoc$];
+      if (testDoc === null) return super.buildUpdate(dc);
+      const {doc, model: {modelName}} = dc;
+      if (dc.isAdd) {
+        if (! testDoc(dc.doc)) return;
+        return ['A', [modelName, doc._id, doc.attributes]];
+      } else if (dc.isDelete) {
+        if (! testDoc(dc.was)) return;
+        return ['R', [modelName, doc._id]];
+      } else  {
+        const wasHere = testDoc(dc.was), isHere = testDoc(dc.doc);
+        if (wasHere) {
+          if (isHere) return ['C', [modelName, doc._id, dc.changes]];
+          else return ['R', [modelName, doc._id]];
+        } else if (isHere) {
+          return ['A', [modelName, doc._id, doc.attributes]];
+        }
+      }
+    }
+
     static resetConfig() {
-      this[config$] = {
+      this.testDoc = null;
+      return this[config$] = {
         requireUserId: false,
         excludeModels: {UserLogin: true},
         includeModels: {},
@@ -83,23 +116,38 @@ define((require, exports, module)=>{
     static get requireUserId() {return config(this).requireUserId}
     static set requireUserId(value) {config(this).requireUserId = !! value}
 
-    static isModelExcluded(name) {return config(this).excludeModels[name] !== void 0}
+    static isModelExcluded(name) {
+      const cfg = config(this);
+      if (util.isObjEmpty(cfg.includeModels))
+        return cfg.excludeModels[name] !== void 0;
+      return cfg.includeModels[name] === void 0;
+    }
+
     static excludeModel(...names) {
       const cfg = config(this);
       cfg.includeModels = {};
       for (const name of names) cfg.excludeModels[name] = true;
     }
 
-    // TODO
-    // static get updatesOnly() {return config(this).updatesOnly}
-    // static set updatesOnly(value) {config(this).updatesOnly = !! value}
     static includeModel(...names) {
       const cfg = config(this);
       cfg.excludeModels = {};
       for (const name of names) cfg.includeModels[name] = true;
     }
+
+    static get loadInitialConfig() {return config(this).loadInitial}
+    static set loadInitialConfig(v) {
+      const cfg = config(this);
+      cfg.loadInitial = v;
+      this[testDoc$] = null;
+      if (cfg.loadInitial !== void 0) {
+        this[testDoc$] = cfg.loadInitial.test;
+      }
+
+    }
   }
   AllPub.Union = AllUnion;
+  AllPub[testDoc$] = null;
 
   return AllPub;
 });

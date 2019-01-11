@@ -103,7 +103,7 @@ isClient && define((require, exports, module)=>{
 
       login.setUserId(session, "user456");
 
-      assert.calledOnceWith(session.sendBinary, 'Q', ['2', 2, 'Library', [123, 456], undefined]);
+      assert.calledOnceWith(session.sendBinary, 'Q', ['2', 2, 'Library', [123, 456], 0]);
       session.sendBinary.reset();
 
       sub2.stop();

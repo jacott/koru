@@ -19,6 +19,8 @@ isServer && define((require, exports, module)=>{
 
   const Publication = require('./publication');
 
+  const API = api;
+
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let conn, origQ;
     beforeEach(()=>{
@@ -165,6 +167,8 @@ isServer && define((require, exports, module)=>{
       /**
        * converted `#lastSubscribed` time to the lower
        * `lastSubscribedInterval` boundry.
+       *
+       * {{example:0}}
        **/
       api.protoProperty();
       stubProperty(Publication, 'lastSubscribedInterval', 123);
@@ -173,8 +177,15 @@ isServer && define((require, exports, module)=>{
       const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
       assert.equals(new Date(sub.discreteLastSubscribed), new Date(2019, 0, 4, 9, 0));
       //]
-      api.protoProperty('lastSubscribed', {
-        info: "The subscriptions last successful subscription time in ms"});
+    });
+
+    test("lastSubscribed", ()=>{
+      /**
+       * The subscriptions last successful subscription time in ms
+       **/
+      api.protoProperty();
+      const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
+      assert.equals(new Date(sub.lastSubscribed), new Date(2019, 0, 4, 9, 10, 11, 123));
     });
 
     test("lastSubscribedInterval", ()=>{
@@ -192,14 +203,41 @@ isServer && define((require, exports, module)=>{
       assert.same(Publication.lastSubscribedInterval, 10*60*1000);
     });
 
+    test("lastSubscribedMaximumAge", ()=>{
+      /**
+       * Any subscription with a lastSubscribed older than this is aborted with error 400, reason
+       * `{lastSubscribed: "too_old"}`. Specified in milliseconds. Defaults to 180 days.
+       *
+       * Client subscriptions should not send a `lastSubscribed` value if it is not later than this
+       * value, by at least 10000. It should also mark any current documents as simulated.
+       **/
+      api.property();
+
+      class Library extends Publication {}
+      Library.pubName = "Library";
+
+      Library.lastSubscribedMaximumAge = 30 * util.DAY;
+
+      assert.same(Library.lastSubscribedMaximumAge, 30 * util.DAY);
+
+      let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+
+      conn.onMessage(["sub1", 1, 'Library', [], now - 30 * util.DAY]);
+      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, now]);
+
+      conn.sendBinary.reset();
+      conn.onMessage(["sub2", 1, 'Library', [], now - 31 * util.DAY]);
+      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 400, {lastSubscribed: "too_old"}]);
+    });
+
     group("Union", ()=>{
       /**
        * Publication.Union is an abstract interface used to combine Subscriptions to minimise work
        * on the server.
        **/
-      let sapi;
+      let api;
       before(()=>{
-        sapi = api.innerSubject(Publication.Union);
+        api = API.innerSubject(Publication.Union);
       });
 
       afterEach(()=>{
@@ -210,7 +248,7 @@ isServer && define((require, exports, module)=>{
         /**
          * Create a Union instance
          **/
-        const Union = sapi.class();
+        const Union = api.class();
         //[
         class MyUnion extends Union {
         }
@@ -230,7 +268,7 @@ isServer && define((require, exports, module)=>{
          *
          * It is important to note that addSub blocks the thread until loadInitial has finished.
          **/
-        sapi.protoMethod();
+        api.protoMethod();
 
         //[
         const db = new MockDB(['Book']);
@@ -365,7 +403,7 @@ isServer && define((require, exports, module)=>{
          *
          * See {##addSub}, {##initObservers}
          **/
-        sapi.protoMethod();
+        api.protoMethod();
 
         //[
         const db = new MockDB(['Book']);
@@ -475,6 +513,8 @@ isServer && define((require, exports, module)=>{
          * subscribers is added.
 
          * @param addDoc a function to call with a doc to be added to the subscribers.
+
+         * @param discreteLastSubscribed the lastSubscribed time related to this load request.
          **/
         api.protoMethod();
         const db = new MockDB(['Book']);
@@ -489,7 +529,7 @@ isServer && define((require, exports, module)=>{
           constructor() {
             super(Publication);
           }
-          loadInitial(addDoc) {
+          loadInitial(addDoc, discreteLastSubscribed) {
             Book.query.forEach(addDoc);
           }
         }
@@ -513,7 +553,7 @@ isServer && define((require, exports, module)=>{
          *
          * See {#koru/session/server-connection#sendEncoded}
          **/
-        sapi.protoMethod();
+        api.protoMethod();
 
         const conn2 = PublishTH.mockConnection('sess124');
 
@@ -544,7 +584,7 @@ isServer && define((require, exports, module)=>{
          *
          * See also {##initObservers}
          **/
-        sapi.protoMethod();
+        api.protoMethod();
 
         //[
         const db = new MockDB(['Book']);

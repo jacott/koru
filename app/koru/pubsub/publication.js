@@ -30,7 +30,7 @@ define((require, exports, module)=>{
     const msg = message.withEncoder('W', sub.conn._session.globalDict, encode =>{
       lq.union.loadInitial((doc)=>{
         encode(['A', [doc.constructor.modelName, doc._id, doc.attributes]]);
-      });
+      }, lq.discreteLastSubscribed);
     });
 
     lq.union[addQueue$] = void 0;
@@ -111,7 +111,7 @@ define((require, exports, module)=>{
 
     stopListeners() {}
     initObservers() {}
-    loadInitial(addDoc) {}
+    loadInitial(addDoc, discreteLastSubscribed) {}
 
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
@@ -130,6 +130,7 @@ define((require, exports, module)=>{
 
       return dc =>{
         const upd = this.pubClass.buildUpdate(dc);
+        if (upd === void 0) return;
         if (TransQueue.isInTransaction()) {
           if (encoder === null) {
             future = new util.Future;
@@ -160,6 +161,9 @@ define((require, exports, module)=>{
 
       this.id = id;
       this.lastSubscribed = +lastSubscribed || 0;
+      if (this.lastSubscribed != 0 &&
+          util.dateNow() - this.constructor.lastSubscribedMaximumAge > this.lastSubscribed)
+        throw new koru.Error(400, {lastSubscribed: "too_old"});
       this[stopped$] = false;
     }
 
@@ -182,8 +186,8 @@ define((require, exports, module)=>{
 
     static get pubName() {return this[pubName$]}
     static set pubName(v) {
-      if (Session._commands.Q !== subscribe)
-        Session.provide('Q', subscribe);
+      if (Session._commands.Q !== onSubscribe)
+        Session.provide('Q', onSubscribe);
 
       if (this[pubName$] !== void 0) {
         delete _pubs[this[pubName$]];
@@ -215,10 +219,11 @@ define((require, exports, module)=>{
   Publication.Union = Union;
 
   Publication.lastSubscribedInterval = 5 * 60*1000;
+  Publication.lastSubscribedMaximumAge = 180 * util.DAY;
 
   Publication.delete = deletePublication;
 
-  function subscribe([id, msgId, name, args=[], lastSubscribed]) {
+  function onSubscribe([id, msgId, name, args=[], lastSubscribed]) {
     const subs = this._subs;
     if (subs == null) return; // we are closed
 
