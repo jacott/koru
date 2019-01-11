@@ -128,7 +128,8 @@ isServer && define((require, exports, module)=>{
 
     test("excludeModel", ()=>{
       /**
-       * Exclude {#koru/model/main}s from being published. UserLogin is always excluded.
+       * Exclude {#koru/model/main}s from being published. UserLogin is always excluded. This will
+       * clear {#.includeModel}
 
        * @param ...names one or more model names to exclude
        **/
@@ -177,6 +178,56 @@ isServer && define((require, exports, module)=>{
       });
       mc.assertChange(bookChange);
       mc.refuteChange(auditLogChange);
+      //]
+    });
+
+    test("includeModel", ()=>{
+      /**
+       * Explicitly include the {#koru/model/main}s which should be published. All other models are
+       * excluded. This clears {#.excludeModel}
+
+       * @param ...names one or more model names to include
+       **/
+      api.method();
+      let now = util.dateNow(); intercept(util, "dateNow", ()=>now);
+
+      //[
+      const models = "Book Author UserLogin ErrorLog AuditLog".split(" ");
+      const db = new MockDB(models);
+      const mc = new MockConn(conn);
+
+      const {Book, Author, UserLogin, AuditLog, ErrorLog} = db.models;
+      const book = Book.create();
+      const author = Author.create();
+      const userLogin = UserLogin.create();
+      const auditLog = AuditLog.create();
+      const errorLog = ErrorLog.create();
+
+      class MyAllPub extends AllPub {}
+      MyAllPub.pubName = "All"; // register publication All
+      //]
+      onEnd(()=>{MyAllPub.pubName = undefined});
+      //[
+      MyAllPub.includeModel("UserLogin", "Author");
+
+      const sub = conn.onMessage(["s123", 1, "All"]);
+      //]
+      onEnd(()=>{sub && sub.stop()});
+      assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
+      //[
+      mc.refuteAdded(book);
+      mc.assertAdded(author);
+      mc.assertAdded(userLogin);
+      mc.refuteAdded(auditLog);
+      mc.refuteAdded(errorLog);
+
+      let bookChange, authorChange;
+      TransQueue.transaction(()=>{
+        bookChange = db.change(book);
+        authorChange = db.change(author);
+      });
+      mc.refuteChange(bookChange);
+      mc.assertChange(authorChange);
       //]
     });
   });

@@ -31,9 +31,9 @@ define((require, exports, module)=>{
 
       const batchUpdate=this.buildBatchUpdate();
 
-      const {excludeModels} = config(this.pubClass);
+      const {excludeModels, includeModels} = config(this.pubClass);
 
-      for (const name in ModelMap) {
+      for (const name in util.isObjEmpty(includeModels) ? ModelMap : includeModels) {
         if (excludeModels[name] !== void 0) continue;
         const model = ModelMap[name];
         if (model.query === void 0) continue;
@@ -42,9 +42,9 @@ define((require, exports, module)=>{
     }
 
     loadInitial(addDoc) {
-      const {excludeModels} = config(this.pubClass);
+      const {excludeModels, includeModels} = config(this.pubClass);
 
-      for (const name in ModelMap) {
+      for (const name in util.isObjEmpty(includeModels) ? ModelMap : includeModels) {
         if (excludeModels[name] !== void 0) continue;
         const model = ModelMap[name];
         if (model.query === void 0) continue;
@@ -76,6 +76,7 @@ define((require, exports, module)=>{
       this[config$] = {
         requireUserId: false,
         excludeModels: {UserLogin: true},
+        includeModels: {},
       };
     }
 
@@ -84,12 +85,19 @@ define((require, exports, module)=>{
 
     static isModelExcluded(name) {return config(this).excludeModels[name] !== void 0}
     static excludeModel(...names) {
-      for (const name of names) config(this).excludeModels[name] = true;
+      const cfg = config(this);
+      cfg.includeModels = {};
+      for (const name of names) cfg.excludeModels[name] = true;
     }
 
     // TODO
     // static get updatesOnly() {return config(this).updatesOnly}
     // static set updatesOnly(value) {config(this).updatesOnly = !! value}
+    static includeModel(...names) {
+      const cfg = config(this);
+      cfg.excludeModels = {};
+      for (const name of names) cfg.includeModels[name] = true;
+    }
   }
   AllPub.Union = AllUnion;
 
