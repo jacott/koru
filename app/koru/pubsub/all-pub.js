@@ -26,8 +26,10 @@ define((require, exports, module)=>{
         handle.stop();
     }
 
-    initObservers(batchUpdate=this.buildBatchUpdate()) {
+    initObservers() {
       this[handles$] = [];
+
+      const batchUpdate=this.buildBatchUpdate();
 
       const {excludeModels} = config(this.pubClass);
 

@@ -111,7 +111,7 @@ define((require, exports, module)=>{
 
     stopListeners() {}
     initObservers() {}
-    loadInitial() {}
+    loadInitial(addDoc) {}
 
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);

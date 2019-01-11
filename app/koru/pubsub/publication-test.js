@@ -358,16 +358,153 @@ isServer && define((require, exports, module)=>{
           'donesub5']);
       });
 
-      test("//removeSub", ()=>{
+      test("removeSub", ()=>{
+        /**
+         * Remove a subscriber from a union. When all subscriber have been removed from the union
+         * {##stopListeners} will be called
+         *
+         * See {##addSub}, {##initObservers}
+         **/
+        sapi.protoMethod();
+
+        //[
+        const db = new MockDB(['Book']);
+        const mc = new MockConn(conn);
+
+        const {Book} = db.models;
+        const book1 = Book.create();
+        const book2 = Book.create();
+
+        let stopListenersCalled = false;
+        class MyUnion extends Publication.Union {
+          stopListeners() {stopListenersCalled = true}
+        }
+
+        const union = new MyUnion();
+
+        class MyPub extends Publication {
+          constructor(options) {
+            super(options);
+            union.addSub(this);
+          }
+
+          stop() {
+            super.stop();
+            /** ⏿ ⮧ here we remove the sub **/
+            union.removeSub(this);
+          }
+        }
+
+        const sub = new MyPub({id: 'sub1', conn, lastSubscribed: void 0});
+
+        sub.stop();
+
+        assert.isTrue(stopListenersCalled);
+        //]
       });
 
-      test("//stopListeners", ()=>{
+      test("stopListeners", ()=>{
+        /**
+         * Override this method to stop observers when all subscribers have been stopped.
+         *
+         * See {{##initObservers}}
+         **/
+        api.protoMethod();
+        new Publication.Union().stopListeners();
+        assert(true);
       });
 
-      test("//initObservers", ()=>{
+      test("initObservers", ()=>{
+        /**
+         * Override this method to start observers when one or more subscribers are added.
+         * the {##stopListeners} method should stop any observers started here.
+         *
+         * {##buildBatchUpdate} can be used to build an updater suitable as an argument for
+         * {#koru/models/base-model.onChange}
+
+         **/
+        api.protoMethod();
+        const db = new MockDB(['Book']);
+        const mc = new MockConn(conn);
+        const {Book} = db.models;
+
+        const conn1 = conn;
+        const conn2 = PublishTH.mockConnection("conn2");
+
+        //[
+        class MyUnion extends Publication.Union {
+          stopListeners() {
+            for (const listener of this.listeners)
+              listener.stop();
+          }
+
+          initObservers() {
+            const batchUpdate = this.buildBatchUpdate();
+
+            this.listeners = [Book.onChange(batchUpdate)];
+          }
+        }
+        const union = new MyUnion();
+
+        const initObservers = spy(union, 'initObservers');
+        const stopListeners = spy(union, 'stopListeners');
+
+        const sub1 = new Publication({id: 'sub1', conn: conn1});
+        union.addSub(sub1);
+        const sub2 = new Publication({id: 'sub2', conn: conn2});
+        union.addSub(sub2);
+
+        union.removeSub(sub1);
+
+        assert.calledOnce(initObservers);
+        refute.called(stopListeners);
+
+        union.removeSub(sub2);
+        assert.calledOnce(stopListeners);
+        //]
+
+        union.addSub(sub2);
+        assert.calledTwice(initObservers);
+        union.removeSub(sub2);
+        assert.calledTwice(stopListeners);
       });
 
-      test("//loadInitial", ()=>{
+      test("loadInitial", ()=>{
+        /**
+         * Override this method to select the initial documents to download when a new group of
+         * subscribers is added.
+
+         * @param addDoc a function to call with a doc to be added to the subscribers.
+         **/
+        api.protoMethod();
+        const db = new MockDB(['Book']);
+        const mc = new MockConn(conn);
+
+        const {Book} = db.models;
+        //[
+        const book1 = Book.create();
+        const book2 = Book.create();
+
+        class MyUnion extends Publication.Union {
+          constructor() {
+            super(Publication);
+          }
+          loadInitial(addDoc) {
+            Book.query.forEach(addDoc);
+          }
+        }
+        const union = new MyUnion();
+
+        const sub = new Publication({id: 'sub1', conn});
+        union.addSub(sub);
+
+        const msgs = mc.decodeLastSend();
+
+        assert.equals(msgs, [
+          ['A', ['Book', 'book1', {name: 'Book 1'}]],
+          ['A', ['Book', 'book2', {name: 'Book 2'}]]
+        ]);
+        //]
       });
 
       test("sendEncoded", ()=>{
@@ -404,6 +541,8 @@ isServer && define((require, exports, module)=>{
          * Updates are batched until the successful end of the current transaction and the resulting
          * message is sent to all subs in the union. If the transaction is aborted no messages are
          * sent.
+         *
+         * See also {##initObservers}
          **/
         sapi.protoMethod();
 
