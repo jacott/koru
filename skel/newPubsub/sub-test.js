@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const {stub, spy, onEnd, util} = TH;
 
   const $$modelName$$ = require('models/$$modelModule$$');
-  require('publish/$$publishModule$$');
+  const $$publishName$$Sub = require('publish/$$fileName$$-sub');
 
   let v = {};
 
@@ -21,11 +21,9 @@ define((require, exports, module)=>{
       v = {};
     });
 
-    test("publish", ()=>{
-      const pubFunc = publish._pubs.$$publishName$$;
-
-      const sub = publishTH.mockSubscribe('$$publishName$$');
-      const matcher = sub._mockMatches.get($$modelName$$);
+    test("subscribe", ()=>{
+      const sub = $$publishName$$Sub.subscribe([]);
+      const matcher = sub._matchers.$$modelName$$;
 
       const doc1 = Factory.create$$modelName$$();
 
