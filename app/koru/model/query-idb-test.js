@@ -47,6 +47,62 @@ isClient && define((require, exports, module)=>{
       v = null;
     });
 
+    test("whenReady", async ()=>{
+      /**
+       * Return a promise that is resolved when the DB is ready to query
+       **/
+      api.protoMethod();
+      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      assert.isFalse(db.isReady);
+
+      await db.whenReady();
+
+      assert.isTrue(db.isReady);
+    });
+
+    test("whenIdle", async ()=>{
+      /**
+       * Return a promise that is resolved when the DB is ready and has commited all outstanding
+       * updates.
+       **/
+      api.protoMethod();
+      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      await db.whenReady();
+      assert.isTrue(db.isIdle);
+
+      db.put('TestModel', {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+
+      assert.isTrue(db.isReady);
+      assert.isFalse(db.isIdle);
+
+      await db.whenIdle();
+
+      assert.isTrue(db.isIdle);
+    });
+
+    test("properties", ()=>{
+      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      api.protoProperty('isReady', {intro() {
+        /**
+         * true if db has completed initializing and is not closed, otherwise false
+         **/
+      }});
+      api.protoProperty('isIdle', {intro() {
+        /**
+         * true if db has completed initializing and is not closed and has no outstanding updates,
+         * otherwise false
+         **/
+      }});
+      assert.isFalse(db.isIdle);
+      assert.isFalse(db.isReady);
+    });
+
     test("constructor", async ()=>{
       /**
        * Open a indexedDB database
@@ -86,9 +142,10 @@ isClient && define((require, exports, module)=>{
        **/
 
       api.protoMethod('promisify');
-      const db = await new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
+      await db.whenReady();
       //[
       const id = await db.promisify(
         ()=>db.transaction(['TestModel'], 'readwrite')
@@ -449,7 +506,7 @@ isClient && define((require, exports, module)=>{
 
       v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-      assert.isFalse(v.db.isReady);
+      assert.isFalse(v.db.isIdle);
 
       await v.db.whenReady();
 
@@ -556,7 +613,7 @@ isClient && define((require, exports, module)=>{
       v.db.whenReady().then(() => {
         v.db.delete('TestModel', 'foo123');
       });
-      await v.db.whenReady();
+      await v.db.whenIdle();
       assert.equals(v.foo._store.TestModel.docs, {
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     });
@@ -656,7 +713,7 @@ isClient && define((require, exports, module)=>{
         v.db.count('TestModel', IDBKeyRange.bound('r1', 'r4', false, true))
           .then(ans => v.ans = ans);
 
-        await v.db.whenReady();
+        await v.db.whenIdle();
 
         assert.same(v.ans, 3);
       });
@@ -692,7 +749,7 @@ isClient && define((require, exports, module)=>{
         v.db.index("TestModel", "name")
           .getAllKeys(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ansKeys = docs);
 
-        await v.db.whenReady();
+        await v.db.whenIdle();
         assert.equals(v.ans, [v.r4]);
         assert.equals(v.ansKeys, ['r4']);
 
@@ -702,20 +759,20 @@ isClient && define((require, exports, module)=>{
         v.db.index("TestModel", "name")
           .getAllKeys().then(docs => v.ansKeys = docs);
 
-        await v.db.whenReady();
+        await v.db.whenIdle();
         assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
         assert.equals(v.ansKeys, ['r3', 'r4', 'r1', 'r2']);
 
         v.db.index("TestModel", "name")
           .count(IDBKeyRange.bound('Lucy', 'Ronald', false, false)).then(ans => v.ans = ans);
 
-        await v.db.whenReady();
+        await v.db.whenIdle();
         assert.equals(v.ans, 3);
 
         v.db.index("TestModel", "name")
           .get('Ronald').then(docs => v.ans = docs);
 
-        await v.db.whenReady();
+        await v.db.whenIdle();
         assert.equals(v.ans, v.r1);
       });
 
@@ -786,7 +843,7 @@ isClient && define((require, exports, module)=>{
       let done = false;
       QueryIDB.deleteDatabase('foo').then(() => done = true);
 
-      await db.whenReady();
+      await db.whenIdle();
       assert(done);
       //]
       refute(mockIndexeddb._dbs.foo);
