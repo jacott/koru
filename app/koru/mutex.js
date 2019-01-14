@@ -7,14 +7,16 @@ define((require)=>{
 
   class Mutex {
     constructor() {
-      this[head$] = undefined;
-      this[tail$] = undefined;
+      this[head$] = void 0;
+      this[tail$] = void 0;
     }
 
-    lock() {
-      const current = Fiber.current, node = [current, undefined];
+    get isLocked() {return this[head$] !== void 0}
 
-      if (this[head$] === undefined) {
+    lock() {
+      const current = Fiber.current, node = [current, void 0];
+
+      if (this[head$] === void 0) {
         this[head$] = this[tail$] = node;
         return;
       }
@@ -27,13 +29,13 @@ define((require)=>{
 
     unlock() {
       const {current} = Fiber, node = this[head$];
-      if (node === undefined)
+      if (node === void 0)
         throw new Error("mutex not locked");
 
       const nh = this[head$] = node[1];
 
-      if (nh === undefined) {
-        this[tail$] = undefined;
+      if (nh === void 0) {
+        this[tail$] = void 0;
       } else {
         nh[0].run();
       }

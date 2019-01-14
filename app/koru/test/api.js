@@ -259,6 +259,7 @@ define((require, exports, module)=>{
 
   const extractBodyExample = (details, fromTest)=>{
     if (details === undefined) return;
+
     const currentTest = fromTest || details[currentTest$];
     if (fromTest === undefined) {
       const {test} = TH;
@@ -271,7 +272,11 @@ define((require, exports, module)=>{
     const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*\*\//, '');
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
-    if (m == null) return;
+    if (m == null) {
+      const m = /^[\s\S]*?\bapi\.(?:method|protoMethod).*\n([\s\S]*)}[^}]*$/.exec(raw);
+      if (m != null) addBody(details, m[1], true);
+      return;
+    }
 
     let body = '', isNew = true;
     while (m !== null) {

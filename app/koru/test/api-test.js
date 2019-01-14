@@ -698,12 +698,14 @@ assert.same(Color.colors.red, '#f00');`,
        **/
 
       MainAPI.method('custom');
-
+      //[
       function myCustomFunction(arg) {
         this.ans = arg;
         return 'success';
       }
+      //]
       API.module({subjectModule: {id: 'myMod', exports: {}}});
+      //[#
       const thisValue = {};
 
       let proxy = API.custom(myCustomFunction);
@@ -711,6 +713,7 @@ assert.same(Color.colors.red, '#f00');`,
       proxy.call(thisValue, 2);
 
       assert.same(thisValue.ans, 2);
+      //]
 
       assert.equals(API.instance.customMethods.myCustomFunction, {
         test,
@@ -722,11 +725,13 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
+      //[#
       proxy = API.custom(myCustomFunction, {name: 'example2', sig: 'foobar = function example2(arg)'});
 
       proxy.call(thisValue, 4);
 
       assert.same(thisValue.ans, 4);
+      //]
 
       assert.equals(API.instance.customMethods.example2, {
         test,
@@ -738,6 +743,7 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
+      //[#
       proxy = API.custom(myCustomFunction, {name: 'example3'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example3.sig, 'example3(arg)');
@@ -756,6 +762,7 @@ assert.same(Color.colors.red, '#f00');`,
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example6.sigPrefix, 'Container.');
       assert.equals(API.instance.customMethods.example6.sig, 'foo()');
+      //]
 
       API.done();
     });

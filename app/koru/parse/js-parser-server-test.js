@@ -82,6 +82,13 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
 ~kd#let# ~nv#y# = ~k#async# ~kd#function#(~nv#a#) {};`);
     });
 
+    test("await", ()=>{
+      assertMarkup(async ()=>{
+        let x = await 123;
+      }, `
+~kd#let# ~nv#x# = ~k#await# ~m#123#;`);
+    });
+
     test("yield", ()=>{
       assertMarkup(()=>{
         function *x(a) {yield *a()};

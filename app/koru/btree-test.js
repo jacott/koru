@@ -81,7 +81,7 @@ r      130 *
          **/
         api.protoMethod();
         init();
-        //[
+        //[#
         assert.same(tree.nodeFrom(35).value, 50);
 
         assert.same(tree.nodeFrom(95).value, 95);
@@ -107,7 +107,7 @@ l  0 *
          **/
         api.protoMethod();
         init();
-        //[
+        //[#
         const n130 = tree.lastNode;
         assert.same(n130.value, 130);
 

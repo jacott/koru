@@ -60,6 +60,7 @@ isServer && define((require, exports, module)=>{
       api.innerSubject(pg.defaultDb.constructor)
         .protoMethod('jsFieldToPg');
 
+      //[
       assert.equals(pg.defaultDb.jsFieldToPg('foo', 'text'), '"foo" text');
       assert.equals(pg.defaultDb.jsFieldToPg('foo', 'color'), '"foo" text collate "C"');
       assert.equals(pg.defaultDb.jsFieldToPg('foo', 'belongs_to'), '"foo" text collate "C"');
@@ -67,9 +68,10 @@ isServer && define((require, exports, module)=>{
       assert.equals(pg.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
       assert.equals(pg.defaultDb.jsFieldToPg('name'), '"name" text');
       assert.equals(pg.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
-      assert.equals(pg.defaultDb.jsFieldToPg('map', {type: 'object',
-                                                      default: {treasure: 'lost'}}),
-                    `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
+      assert.equals(
+        pg.defaultDb.jsFieldToPg('map', {type: 'object', default: {treasure: 'lost'}}),
+        `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
+      //]
     });
 
     test("connection", ()=>{

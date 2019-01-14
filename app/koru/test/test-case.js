@@ -38,9 +38,9 @@ define((require, exports, module)=>{
 
   const runCallbacks = (list)=>{
     const {test} = Core;
-    if (list === undefined) return;
+    if (list === void 0) return;
     let prev;
-    for (let node = list.front; node !== undefined; node = node.next) {
+    for (let node = list.front; node !== void 0; node = node.next) {
       if (node[temp$] === true)
         list.removeNode(node, prev);
       else
@@ -74,7 +74,7 @@ define((require, exports, module)=>{
 
   const runTearDowns = (tc, common)=>{
     currentTC = tc;
-    if (tc === undefined) return;
+    if (tc === void 0) return;
 
     const sameTC = tc === common;
     const once = tc[once$];
@@ -82,41 +82,41 @@ define((require, exports, module)=>{
     runCallbacks(tc[after$]);
 
     if (sameTC) {
-      if (once !== undefined) return;
+      if (once !== void 0) return;
     } else {
-      once === undefined || runOnceCallbacks(once.after);
+      once === void 0 || runOnceCallbacks(once.after);
     }
     const p = tc.tc;
-    if (p === undefined) {
-      common === undefined && reset(tc);
+    if (p === void 0) {
+      common === void 0 && reset(tc);
     } else
       runTearDowns(p, sameTC ? p : common);
   };
 
   const runSetups = (tc, common)=>{
     currentTC = tc;
-    if (tc === undefined) return;
+    if (tc === void 0) return;
 
     const sameTC = tc === common;
     const once = tc[once$];
 
 
-    if (! sameTC || once === undefined) {
+    if (! sameTC || once === void 0) {
       const p = tc.tc;
       runSetups(p, sameTC ? p : common);
       currentTC = tc;
-      once === undefined || runOnceCallbacks(once.before);
+      once === void 0 || runOnceCallbacks(once.before);
     }
     runCallbacks(tc[before$]);
   };
 
   const commonTC = (ot, nt)=>{
-    if (ot === undefined || nt === undefined)
+    if (ot === void 0 || nt === void 0)
       return;
 
     let otc = ot.tc, ntc = nt.tc;
 
-    if (otc === undefined || ntc === undefined)
+    if (otc === void 0 || ntc === void 0)
       return;
 
     while (ntc.level > otc.level) ntc = ntc.tc;
@@ -134,14 +134,14 @@ define((require, exports, module)=>{
   const after = (tc, func)=> (tc[after$] || (tc[after$] = new LinkedList)).addFront(func);
 
   const reset = (tc)=>{
-    tc[before$] = tc[after$] = tc[once$] = undefined;
+    tc[before$] = tc[after$] = tc[once$] = void 0;
   };
 
   class TestCase {
     constructor(name, tc, body) {
       this.name = name;
       this.tc = tc;
-      this.level = tc === undefined ? 0 : tc.level + 1;
+      this.level = tc === void 0 ? 0 : tc.level + 1;
       this.body = body;
     }
 
@@ -177,7 +177,7 @@ define((require, exports, module)=>{
 
       const fn = this.fullName(name);
 
-      if (Core.runArg === undefined || fn.indexOf(Core.runArg) !== -1) {
+      if (Core.runArg === void 0 || fn.indexOf(Core.runArg) !== -1) {
         ++Core.testCount;
         if (skipped) {
           ++Core.skipCount;
@@ -194,7 +194,7 @@ define((require, exports, module)=>{
 
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
 
-  Core.testCase = (name, body)=> new TestCase(name, undefined, body);
+  Core.testCase = (name, body)=> new TestCase(name, void 0, body);
 
   Object.defineProperty(Core, 'currentTestCase', {get: () => currentTC});
 
@@ -340,14 +340,14 @@ define((require, exports, module)=>{
       done[isDone$] = true;
 
       const to = done[timeout$];
-      to === undefined || clearTimeout(to);
+      to === void 0 || clearTimeout(to);
 
       if (ex)
         failed(test, ex);
       else
         checkAssertionCount(test, assertCount);
 
-      to === undefined || asyncNext(runNext);
+      to === void 0 || asyncNext(runNext);
     };
     done.maxTime = MAX_TIME;
 
@@ -375,19 +375,20 @@ define((require, exports, module)=>{
 
   Core.start = (testCases, runNextWrapper)=>{
     tests = [];
-    Core.test = undefined;
+    Core.test = void 0;
+    Core.lastText = void 0;
     let _runNext, nt = 0;
     let lastTest;
 
     const runTest = (oldTest, newTest)=>{
       const common = commonTC(oldTest, newTest);
-      if (oldTest !== undefined) {
+      if (oldTest !== void 0) {
         oldTest.mode = 'after';
         runTearDowns(oldTest.tc, common);
         Core.runCallBacks('testEnd', oldTest);
       }
-      if (newTest === undefined) {
-        lastTest = Core.test = tests = undefined;
+      if (newTest === void 0) {
+        Core.lastTest = Core.test = tests = void 0;
         Core.runCallBacks('end');
       } else {
         newTest.mode = 'before';
@@ -398,7 +399,7 @@ define((require, exports, module)=>{
           if (newTest.body.length === 1) {
             const done = doneFunc(newTest, _runNext);
             const ans = newTest.body(done);
-            if (ans !== undefined)
+            if (ans !== void 0)
               failed(newTest, ans);
             else {
               if (done[isDone$]) return;
@@ -408,7 +409,7 @@ define((require, exports, module)=>{
           } else {
             const {assertCount} = Core;
             const ans = newTest.body();
-            if (ans === undefined) {
+            if (ans === void 0) {
               checkAssertionCount(newTest, assertCount);
             } else {
               if (typeof ans.then === 'function') {
@@ -428,16 +429,16 @@ define((require, exports, module)=>{
 
     const runNext = ()=>{
       while(true) {
+        lastTest = Core.lastTest = Core.test;
         if (nt == tlen) {
-          runTest(Core.test);
+          runTest(lastTest);
           return;
         }
-        lastTest = Core.test;
         Core.test = tests[nt++];
         try {
           if (runTest(lastTest, Core.test)) return;
         } catch(ex) {
-          if (currentTC !== undefined)
+          if (currentTC !== void 0)
             ex.message = `While running test case ${currentTC.fullName()}:\n${ex.message}`;
           throw ex;
         }
@@ -446,7 +447,7 @@ define((require, exports, module)=>{
 
     for(let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
-      if (tc === undefined) continue;
+      if (tc === void 0) continue;
 
       skipped = false;
 
