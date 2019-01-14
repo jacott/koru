@@ -470,13 +470,14 @@ assert.same(Color.colors.red, '#f00');`,
 
       test("value property", ()=>{
         /**
-         * Document a property of the current subject. The property
-         * can be either plain value or a get/set function.
+         * Document a property of the current subject. The property can be either plain value or a
+         * get/set function.
 
          * @param [options.info] description of property. Defaults to the current test's doc
-         * comment.  When `function` should return an info `string`. The info `string` can contain
-         * `${value}` which will be substituted with a description of the properties value. Alias
-         * `intro`
+         * comment.  When `function` should return an info `string` or contain a doc comment.
+         *
+         * Alias `intro`
+
          * @param [options.properties] document child properties
          *
          **/

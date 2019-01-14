@@ -175,8 +175,16 @@ define((require, exports, module)=>{
         break;
       case 'object':
         if (options != null) {
-          if (options.info) property.info = options.info;
-          if (options.intro) property.info = options.intro;
+          const info = options.info || options.intro;
+          if (info !== void 0) {
+            if (typeof info === 'function') {
+              property.info = info(savedValue);
+              if (property.info === void 0)
+                property.info = docComment(info);
+            } else
+              property.info = info.toString();
+          }
+          else if (options.intro) property.info = options.intro;
           if (options.properties) {
             const properties = property.properties ||
                     (property.properties = {});
@@ -313,6 +321,9 @@ define((require, exports, module)=>{
     const calls = details ? details.calls : [];
     if (details === undefined) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
+      if (sig.indexOf(methodName) === -1 && sig[0] === '(') {
+        sig = methodName+sig;
+      }
       const isGenerator = sig[0] === '*';
       if (isGenerator)
         sig = sig.replace(/^\*\s*/, '*');
