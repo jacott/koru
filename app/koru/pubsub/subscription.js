@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  const Query           = require('koru/model/query');
   const Observable      = require('koru/observable');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');
@@ -21,6 +22,7 @@ define((require, exports, module)=>{
       this.subSession = SubscriptionSession.get(session);
       this._id = this.subSession.makeId();
       this[state$] = 'setup';
+      this.lastSubscribed = 0;
       this._matches = Object.create(null);
     }
 
@@ -100,11 +102,13 @@ define((require, exports, module)=>{
       return sub;
     }
 
+    static get lastSubscribedMaximumAge() {return -1}
+
     _connected({lastSubscribed}) {
       switch (this[state$]) {
       case 'connect':
         this[state$] = 'active';
-        this.lastSubscribed = lastSubscribed;
+        this.lastSubscribed = +lastSubscribed || 0;
         const onConnect = this[onConnect$];
         if (onConnect !== undefined) {
           this[onConnect$] = undefined;
@@ -114,6 +118,10 @@ define((require, exports, module)=>{
       }
     }
   }
+
+  Subscription.markForRemove = doc =>{
+    Query.simDocsFor(doc.constructor)[doc._id] = ['del', void 0];
+  };
 
   return Subscription;
 });

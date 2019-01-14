@@ -1,6 +1,5 @@
 define((require, exports, module)=>{
   const Subscription    = require('koru/pubsub/subscription');
-
   const $$modelName$$ = require('models/$$modelModule$$');
 
   class $$publishName$$Sub extends Subscription {
@@ -9,8 +8,8 @@ define((require, exports, module)=>{
       super.connect();
     }
 
-    simulateMatchingDocuments() {
-      $$modelName$$.query.forEach(Subscription.markSimulatedAdd);
+    onReconnecting() {
+      $$modelName$$.query.forEach(Subscription.markForRemove);
     }
   }
   $$publishName$$Sub.module = module;

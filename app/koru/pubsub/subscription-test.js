@@ -5,6 +5,7 @@ isClient && define((require, exports, module)=>{
    * See also {#../publication}
    **/
   const Model           = require('koru/model');
+  const BaseModel       = require('koru/model/base-model');
   const Query           = require('koru/model/query');
   const MockServer      = require('koru/pubsub/mock-server');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
@@ -75,7 +76,7 @@ isClient && define((require, exports, module)=>{
 
       const waitForServer = ()=>{
         assert.calledWith(session.sendBinary, 'Q', [
-          '1', 1, 'Library', [{shelf: 'mathematics'}], undefined]);
+          '1', 1, 'Library', [{shelf: 'mathematics'}], 0]);
         mockServer.sendSubResponse(['1', 1, 200, Date.now()]);
       };
 
@@ -120,7 +121,7 @@ isClient && define((require, exports, module)=>{
 
       const waitForServerResponse = (sub, {error, lastSubscribed})=>{
         assert.calledWith(session.sendBinary, 'Q', [
-          '1', 1, 'Library', [{shelf: 'mathematics'}], undefined]);
+          '1', 1, 'Library', [{shelf: 'mathematics'}], 0]);
         if (error === null)
           mockServer.sendSubResponse([sub._id, 1, 200, lastSubscribed]);
         else
@@ -318,5 +319,49 @@ isClient && define((require, exports, module)=>{
       assert.equals(response, {error: null, state: 'active'});
       //]
     });
+
+    test("lastSubscribedMaximumAge", ()=>{
+      /**
+       * Any subscription with a lastSubscribed older than this sends 0 (no last subscribed) to the
+       * server. Specified in milliseconds. Defaults to -1 (always send 0).
+
+       **/
+      api.property();
+      assert.same(Subscription.lastSubscribedMaximumAge, -1);
+    });
+
+    test("onReconnecting", ()=>{
+      /**
+       * Override This method to be called when a subscription reconnect is attempted.
+       *
+       * When there is no `lastSubscribed` time, or lastSubscribed is older than
+       * `lastSubscribedMaximumAge`, {#.markForRemove} should be called on documents matching this
+       * subscription.
+       **/
+      api.protoMethod();
+      // ensure that this method is called at least once before a reconnect attempt
+    });
+
+    test("markForRemove", ()=>{
+      /**
+       * Mark the given document as a simulated add which will be removed if not updated by the
+       * server. This method can be called without a `this` value
+       **/
+      api.method();
+
+      class Book extends BaseModel {
+      }
+      Book.define({name: 'Book'});
+      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+
+      //[
+      const {markForRemove} = Subscription;
+
+      const book1 = Book.create();
+      markForRemove(book1);
+      assert.equals(Query.simDocsFor(Book)[book1._id], ['del', void 0]);
+      //]
+    });
+
   });
 });
