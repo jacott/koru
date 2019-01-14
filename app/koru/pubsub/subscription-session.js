@@ -9,7 +9,7 @@ define((require)=>{
   const TransQueue      = require('koru/model/trans-queue');
   const Match           = require('koru/session/match');
 
-  const loginObserver$ = Symbol(), msgId$ = Symbol();
+  const loginObserver$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
 
   const sessions = Object.create(null);
 
@@ -37,6 +37,11 @@ define((require)=>{
   }
 
   const sendInit = (ss, sub)=>{
+    if (sub[reconnect$] === void 0) {
+      sub[reconnect$] = true;
+    } else {
+      sub.reconnecting();
+    }
     ss.session.sendBinary('Q', [sub._id, sub[msgId$], sub.constructor.pubName, sub.args, sub.lastSubscribed]);
   };
 

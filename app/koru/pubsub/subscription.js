@@ -27,6 +27,7 @@ define((require, exports, module)=>{
     }
 
     onConnect(callback) {return observe(this, onConnect$, callback)}
+    reconnecting() {}
 
     connect(...args) {
       assertNotStopped(this);

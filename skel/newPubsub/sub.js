@@ -8,7 +8,7 @@ define((require, exports, module)=>{
       super.connect();
     }
 
-    onReconnecting() {
+    reconnecting() {
       $$modelName$$.query.forEach(Subscription.markForRemove);
     }
   }

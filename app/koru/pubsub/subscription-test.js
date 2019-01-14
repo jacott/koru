@@ -330,16 +330,41 @@ isClient && define((require, exports, module)=>{
       assert.same(Subscription.lastSubscribedMaximumAge, -1);
     });
 
-    test("onReconnecting", ()=>{
+    test("reconnecting", ()=>{
       /**
-       * Override This method to be called when a subscription reconnect is attempted.
+       * Override this method to be called when a subscription reconnect is attempted.
        *
        * When there is no `lastSubscribed` time, or lastSubscribed is older than
        * `lastSubscribedMaximumAge`, {#.markForRemove} should be called on documents matching this
        * subscription.
        **/
       api.protoMethod();
-      // ensure that this method is called at least once before a reconnect attempt
+      class Book extends BaseModel {
+      }
+      Book.define({name: 'Book'});
+      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      intercept(session, 'reconnected', ()=>{
+        session.state._onConnect['10-subscribe2']();
+      });
+      //[
+      class Library extends Subscription {
+        /** ⏿ ⮧ here we override reconnecting **/
+        reconnecting() {
+          Book.query.forEach(Subscription.markForRemove);
+        }
+      }
+      const reconnecting = spy(Library.prototype, 'reconnecting');
+
+      const sub = new Library(session);
+      sub.connect();
+      refute.called(reconnecting);
+
+      session.reconnected(); // simulate a session reconnect
+
+      assert.calledOnce(reconnecting);
+      //]
+
+      // ensure that this method is called once-and-only-once before a reconnect attempt
     });
 
     test("markForRemove", ()=>{
