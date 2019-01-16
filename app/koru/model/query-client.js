@@ -30,14 +30,15 @@ define((require, exports, module)=>{
     const reset = ()=>{
       unload();
 
-      // FIXME this is not triggered for vimaly and triggered too much for other apps. I think
-      // pubsub should control it instead
-
-      syncOb = session.state.pending.onChange(
-        pending => pending == 0 && Query.revertSimChanges());
+      syncOb = session.state.pending.onChange(pending =>{
+        pending == 0 && Query.revertSimChanges();
+      });
 
       stateOb = session.state.onChange(ready => {
         if (ready) return;
+
+      // FIXME this is not triggered for vimaly and triggered too much for other apps. I think
+      // pubsub should control it instead
 
         const dbs = Model._databases[dbBroker.dbId];
         if (dbs === undefined) return;
