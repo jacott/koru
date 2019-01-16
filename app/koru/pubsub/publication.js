@@ -175,6 +175,9 @@ define((require, exports, module)=>{
       this.conn.sendBinary('Q', [this.id]);
     }
 
+    onMessage() {
+    }
+
     get isStopped() {return this[stopped$]}
 
     get userId() {return koru.userId()}
@@ -238,6 +241,19 @@ define((require, exports, module)=>{
 
     this.batchMessages();
     try {
+      if (name === null) {
+        const sub = subs[id];
+        if (sub === void 0) return;
+        try {
+          const ans = sub.onMessage(args);
+          this.sendBinary('Q', [id, msgId, 0, ans]);
+        } catch(ex) {
+          if (ex.error === void 0)
+            koru.unhandledException(ex);
+          this.sendBinary('Q', [id, msgId, -(ex.error || 500), ex.reason]);
+        }
+        return;
+      }
       const Sub = _pubs[name];
       if (Sub === void 0) {
         const msg = 'unknown publication: ' + name;

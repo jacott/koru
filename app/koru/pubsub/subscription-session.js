@@ -9,7 +9,7 @@ define((require)=>{
   const TransQueue      = require('koru/model/trans-queue');
   const Match           = require('koru/session/match');
 
-  const loginObserver$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
+  const loginObserver$ = Symbol(), messages$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
 
   const sessions = Object.create(null);
 
@@ -21,32 +21,46 @@ define((require)=>{
 
   function provideP(data) {
     const subSess = sessions[this._id];
-    if (subSess === undefined) return;
+    if (subSess === void 0) return;
     const sub = subSess.subs[data[0]];
-    if (sub === undefined) return;
-    if (sub[msgId$] !== data[1]) return;
-    sub[msgId$] = undefined;
+    if (sub === void 0) return;
+    const status = data[2];
     try {
-      if (data[2] !== 200)
-        sub.stop({code: data[2], reason: data[3]});
-      else
+      if (status !== 200) {
+        if (status <=0) {
+          const callback = sub[messages$][data[1]];
+          if (callback === void 0) return;
+          if (status == 0) {
+            callback(null, data[3]);
+          } else {
+            callback(new koru.Error(-status, data[3]));
+          }
+        } else {
+          sub.stop({code: data[2], reason: data[3]});
+        }
+      } else
         sub._connected({lastSubscribed: data[3]});
     } finally {
-      subSess.session.state.decPending();
+      if (sub[msgId$] === data[1]) {
+        sub[msgId$] = void 0;
+        sub[messages$].length = 0;
+        subSess.session.state.decPending();
+      }
     }
   }
 
   const sendInit = (ss, sub)=>{
-    if (sub[reconnect$] === void 0) {
-      sub[reconnect$] = true;
-    } else {
+    if (sub[reconnect$]) {
       sub.reconnecting();
+    } else {
+      sub[reconnect$] = true;
     }
-    ss.session.sendBinary('Q', [sub._id, sub[msgId$], sub.constructor.pubName, sub.args, sub.lastSubscribed]);
+    ss.session.sendBinary('Q', [
+      sub._id, sub[msgId$], sub.constructor.pubName, sub.args, sub.lastSubscribed]);
   };
 
   const incPending = (ss, sub)=>{
-    if (sub[msgId$] === undefined) {
+    if (sub[msgId$] === void 0) {
       sub[msgId$] = 1;
       ss.session.state.incPending();
     } else ++sub[msgId$];
@@ -58,7 +72,7 @@ define((require)=>{
       this.subs = util.createDictionary();
       this.session = session;
 
-      session._commands.Q === undefined && session.provide('Q', provideP);
+      session._commands.Q === void 0 && session.provide('Q', provideP);
 
       this.userId = koru.userId();
       this[loginObserver$] = login.onChange(session, (state)=>{
@@ -76,6 +90,9 @@ define((require)=>{
       session.state.onConnect('10-subscribe2', ()=>{
         for(const id in this.subs) {
           const sub = this.subs[id];
+          sub[msgId$] === void 0 && incPending(this, sub);
+          sub[msgId$] = 1;
+          sub[messages$].length = 0;
           sendInit(this, this.subs[id]);
         }
       });
@@ -84,18 +101,31 @@ define((require)=>{
     }
 
     connect(sub) {
+      if (this.subs[sub._id] !== void 0)
+        throw new Error("Illegal connect on active subscription");
       this.subs[sub._id] = sub;
+      sub[reconnect$] = false;
+      sub[messages$] = [];
       incPending(this, sub);
 
       this.session.state.isReady() &&
         sendInit(this, sub);
     }
 
+    postMessage(sub, message, callback) {
+      if (! this.session.state.isReady()) return;
+      incPending(this, sub);
+      if (callback !== void 0)
+        sub[messages$][sub[msgId$]] = callback;
+
+      this.session.sendBinary('Q', [sub._id, sub[msgId$], null, message]);
+    }
+
     _delete(sub) {
       assertState(sub.state === 'stopped');
       delete this.subs[sub._id];
-      if (sub[msgId$] !== undefined) {
-        sub[msgId$] = undefined;
+      if (sub[msgId$] !== void 0) {
+        sub[msgId$] = void 0;
         this.session.state.decPending();
       }
     }
@@ -112,25 +142,25 @@ define((require)=>{
 
     static unload(session) {
       const ss = sessions[session._id];
-      if (ss === undefined) return;
+      if (ss === void 0) return;
       ss.session.state.stopOnConnect('10-subscribe2');
       ss[loginObserver$] !== null && ss[loginObserver$].stop();
       ss.session.unprovide('Q');
       ss.clientUpdate.unload();
       ss.userId = ss.loginOb = null;
 
-      delete sessions[ss.session._id];
+      delete sessions[session._id];
     }
 
     static _filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
         for(const name in models) {
           const _mm = match._models;
-          if (_mm === undefined) continue;
+          if (_mm === void 0) continue;
           const mm = _mm[name];
-          if (mm === undefined) continue;
+          if (mm === void 0) continue;
           const model = ModelMap[name];
-          if (model === undefined) continue;
+          if (model === void 0) continue;
           const docs = model.docs;
           for (const id in docs) {
             const doc = docs[id];
@@ -144,7 +174,7 @@ define((require)=>{
             if (remove) {
               const simDocs = Query.simDocsFor(model);
               const sim = simDocs[doc._id];
-              if (sim !== undefined)
+              if (sim !== void 0)
                 delete simDocs[doc._id];
               delete docs[id];
               Query.notify(DocChange.delete(doc, reason));
@@ -159,11 +189,15 @@ define((require)=>{
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);
         const sim = simDocs[doc._id];
-        if (sim !== undefined)
+        if (sim !== void 0)
           delete simDocs[doc._id];
         delete model.docs[doc._id];
         Query.notify(DocChange.delete(doc, 'stopped'));
       }
+    }
+
+    static get _sessions() {
+      return sessions;
     }
   }
 

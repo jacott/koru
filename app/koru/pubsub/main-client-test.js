@@ -1,5 +1,7 @@
 define((require)=>{
   const Subscription    = require('koru/pubsub/subscription');
+  const SubscriptionSession = require('koru/pubsub/subscription-session');
+  const Session         = require('koru/session');
   const api             = require('koru/test/api');
 
   return ({TH, module}) =>{
@@ -8,6 +10,10 @@ define((require)=>{
     TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
       before(()=>{
         api.module({pseudoModule: 'Overview'});
+      });
+
+      after(()=>{
+        SubscriptionSession.unload(Session);
       });
 
       test("client-subscription", ()=>{

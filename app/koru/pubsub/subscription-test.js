@@ -9,24 +9,23 @@ isClient && define((require, exports, module)=>{
   const Query           = require('koru/model/query');
   const MockServer      = require('koru/pubsub/mock-server');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
-  const SessionBase     = require('koru/session/base').constructor;
+  const session         = require('koru/session');
   const Match           = require('koru/session/match');
   const State           = require('koru/session/state').constructor;
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
+  const ClientLogin     = require('koru/user-account/client-login');
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, onEnd, util, intercept, stubProperty} = TH;
 
   const Subscription = require('./subscription');
-
-  const session = new SessionBase(module.id);
 
   const mockServer = new MockServer(session);
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
-      session.state = new State();
-      session.sendBinary = stub();
+      stubProperty(session, 'state', {value: new State()});
+      stub(session, 'sendBinary');
       session.state._state = 'ready';
     });
 
@@ -41,7 +40,6 @@ isClient && define((require, exports, module)=>{
        * @param session The session to subscribe to (defaults to {#koru/session/main}).
 
        **/
-      util.FULL_STACK = 1;
       const Subscription = api.class();
 
       const module = new TH.MockModule("library-sub");
@@ -51,7 +49,7 @@ isClient && define((require, exports, module)=>{
       Library.module = module;
       assert.same(Library.pubName, 'Library');
 
-      const sub = new Library(session);
+      const sub = new Library();
 
       assert.same(sub._id, '1');
 
@@ -89,8 +87,8 @@ isClient && define((require, exports, module)=>{
       }
       Library.module = module;
 
-      const sub = new Library(session);
-      assert.same(sub.state, 'setup');
+      const sub = new Library();
+      assert.same(sub.state, 'stopped');
 
       sub.connect({shelf: 'mathematics'});
       assert.same(sub.state, 'connect');
@@ -134,7 +132,7 @@ isClient && define((require, exports, module)=>{
       Library.module = module;
 
       { /** success */
-        const sub1 = new Library(session);
+        const sub1 = new Library();
         let resonse;
         sub1.onConnect((error)=>{
           resonse = {error, state: sub1.state};
@@ -157,7 +155,7 @@ isClient && define((require, exports, module)=>{
       }
 
       { /** error **/
-        const sub2 = new Library(session);
+        const sub2 = new Library();
 
         let resonse;
         sub2.onConnect((error)=>{
@@ -173,7 +171,7 @@ isClient && define((require, exports, module)=>{
       }
 
       { /** stopped early **/
-        const sub3 = new Library(session);
+        const sub3 = new Library();
 
         let resonse;
         sub3.onConnect((error)=>{
@@ -215,7 +213,7 @@ isClient && define((require, exports, module)=>{
       }
       Library.module = module;
 
-      const sub1 = new Library(session);
+      const sub1 = new Library();
       sub1.connect();
 
       assert.equals(sub1._matches, {Book: 'registered Book'});
@@ -225,7 +223,7 @@ isClient && define((require, exports, module)=>{
     test("stop", ()=>{
       /**
        * Ensures when we stop that all docs the subscription doesn't want are removed unless matched
-       * elsewhere. A stopped subscription can not be reused.
+       * elsewhere.
        */
       api.protoMethod();
 
@@ -261,7 +259,8 @@ isClient && define((require, exports, module)=>{
         }
       }
 
-      const sub = new Library(session);
+      const sub = new Library();
+      sub.connect();
       sub.stop();
 
       refute(Book.findById('doc1'));
@@ -281,7 +280,7 @@ isClient && define((require, exports, module)=>{
       class Library extends Subscription {}
 
       //[
-      const sub = new Library(session);
+      const sub = new Library();
 
       sub.filterModels('Book', 'Catalog');
       //]
@@ -355,7 +354,7 @@ isClient && define((require, exports, module)=>{
       }
       const reconnecting = spy(Library.prototype, 'reconnecting');
 
-      const sub = new Library(session);
+      const sub = new Library();
       sub.connect();
       refute.called(reconnecting);
 
@@ -388,5 +387,58 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
+    test("userIdChanged", ()=>{
+      /**
+       * The default behavior is to stop and reconnect the subscription when {#koru/main.userId}
+       * changes. Override this method to stop the default behavior.
+       **/
+      onEnd(()=>{util.thread.userId = void 0});
+      api.protoMethod();
+      class Library extends Subscription {
+      }
+
+      const sub = Library.subscribe([123, 456]);
+      spy(sub, 'stop');
+      spy(sub, 'connect');
+      ClientLogin.setUserId(session, 'uid123');
+      assert.called(sub.stop);
+      assert.calledWithExactly(sub.connect, 123, 456);
+    });
+
+    test("postMessage", ()=>{
+      /**
+       * Send a message to publication. Messages can be used to alter the state of the publication.
+       *
+       * Messages are NOT re-transmitted if the connection is lost; Intead the subscription `args`
+       * should be modified to reflect the change in state.
+       *
+       * See {#../publication#onMessage}
+
+       * @param {any-type} message the message to send
+       * @param callback a function with the arguments `error`, `result`. This function will be
+       * called when the message has finished.
+       **/
+      api.protoMethod();
+
+      const receivePost = ()=>{
+        session._commands.Q.call(session, [sub._id, 2, 0]);
+      };
+
+      //[
+      class Library extends Subscription {
+      }
+
+      const sub = Library.subscribe([123, 456]);
+
+      sub.args.push(789);
+      let done = false;
+      sub.postMessage({addArg: 789}, (err, result)=>{
+        if (err) sub.stop();
+        done = true;
+      });
+      receivePost();
+      assert.isTrue(done);
+      //]
+    });
   });
 });

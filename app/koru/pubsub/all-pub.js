@@ -42,8 +42,8 @@ define((require, exports, module)=>{
       for (const name in util.isObjEmpty(includeModels) ? ModelMap : includeModels) {
         if (excludeModels[name] !== void 0) continue;
         const model = ModelMap[name];
-        if (model.query === void 0) continue;
-        this[handles$].push(model.onChange(batchUpdate));
+        if ('query' in model)
+          this[handles$].push(model.onChange(batchUpdate));
       }
     }
 

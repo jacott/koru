@@ -15,7 +15,7 @@ isServer && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util, intercept, stubProperty} = TH;
+  const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
 
   const Publication = require('./publication');
 
@@ -148,7 +148,7 @@ isServer && define((require, exports, module)=>{
       api.protoMethod("stop");
       let sub;
       class Library extends Publication {
-        init() {sub = this;}
+        init() {sub = this}
       }
       Library.pubName = 'Library';
 
@@ -161,6 +161,49 @@ isServer && define((require, exports, module)=>{
       refute.called(conn.sendBinary); // no need to send to client
       //]
       assert.equals(conn._subs, {});
+    });
+
+    test("onMessage", ()=>{
+      /**
+       * Called when a message has been sent from the subscription. Messages are used to alter the
+       * state of a subscription. If an error is thrown the client callback will receive the error.
+       *
+       * See {#../subscription#postMessage}
+       **/
+      api.protoMethod();
+      const Book = {where: ()=>({forEach: (cb) => {
+        cb({_id: 'book2', attributes: {name: 'The Bone People', shelf: 'fiction'}});
+      }})};
+      //[
+      let sub;
+      class Library extends Publication {
+        init(args) {
+          this.args = args;
+          sub = this;
+        }
+        onMessage(message) {
+          const name = message.addShelf;
+          if (name !== void 0) {
+            this.args.shelf.push(name);
+            Book.where({shelf: name}).forEach(doc =>{
+              this.conn.sendBinary('A', ['Book', doc._id, doc.attributes]);
+            });
+            return "done :)";
+          }
+        }
+      }
+      Library.pubName = 'Library';
+      conn.onMessage(["sub1", 1, 'Library', [{shelf: ["mathematics"]}]]);
+
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 1, 200, m.number]);
+      conn.sendBinary.reset();
+      conn.onMessage(["sub1", 2, null, {addShelf: "fiction"}]);
+
+      assert.equals(conn.sendBinary.firstCall.args, [
+        'A', ['Book', 'book2', {name: 'The Bone People', shelf: 'fiction'}]]);
+      assert.equals(conn.sendBinary.lastCall.args, [
+        'Q', ["sub1", 2, 0, "done :)"]]);
+      //]
     });
 
     test("discreteLastSubscribed", ()=>{
@@ -445,7 +488,7 @@ isServer && define((require, exports, module)=>{
         /**
          * Override this method to stop observers when all subscribers have been stopped.
          *
-         * See {{##initObservers}}
+         * See {##initObservers}
          **/
         api.protoMethod();
         new Publication.Union().stopListeners();

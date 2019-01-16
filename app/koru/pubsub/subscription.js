@@ -19,9 +19,9 @@ define((require, exports, module)=>{
 
   class Subscription {
     constructor(session=Session) {
-      this.subSession = SubscriptionSession.get(session);
+      this.subSession = SubscriptionSession.get(Session);
       this._id = this.subSession.makeId();
-      this[state$] = 'setup';
+      this[state$] = 'stopped';
       this.lastSubscribed = 0;
       this._matches = Object.create(null);
     }
@@ -30,13 +30,13 @@ define((require, exports, module)=>{
     reconnecting() {}
 
     connect(...args) {
-      assertNotStopped(this);
       this.args = args;
-      this[state$] = 'connect';
       this.subSession.connect(this);
+      this[state$] = 'connect';
     }
 
     userIdChanged(newUID, oldUID) {
+      this.stop();
       this.connect(...this.args);
     }
 
@@ -81,6 +81,10 @@ define((require, exports, module)=>{
       const models = {};
       util.forEach(modelNames, mn => {models[mn] = true});
       SubscriptionSession._filterModels(models);
+    }
+
+    postMessage(message, callback) {
+      this.subSession.postMessage(this, message, callback);
     }
 
     static get pubName() {return this[pubName$] || this.name}
