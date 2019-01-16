@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const sideQueue$ = Symbol();
+  const sideQueue$ = Symbol(), userId$ = Symbol();
 
   const BINARY = {binary: true};
 
@@ -196,7 +196,7 @@ define((require, exports, module)=>{
     }
 
     set userId(userId) {
-      this._userId = userId;
+      this[userId$] = userId;
       util.thread.userId = userId;
       if (userId) {
         const future = new util.Future;
@@ -218,7 +218,7 @@ define((require, exports, module)=>{
       this.send('VC');
     }
 
-    get userId() {return this._userId}
+    get userId() {return this[userId$]}
   }
 
 

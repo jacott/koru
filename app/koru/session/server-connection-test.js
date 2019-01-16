@@ -313,7 +313,7 @@ isServer && define((require, exports, module)=>{
 
       v.conn.userId = 'u456';
 
-      assert.same(v.conn._userId, 'u456');
+      assert.same(util.thread.userId, 'u456');
       assert.same(v.conn.userId, 'u456');
 
       assert.called(v.s1);
