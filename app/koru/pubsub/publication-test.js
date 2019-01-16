@@ -273,6 +273,33 @@ isServer && define((require, exports, module)=>{
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 400, {lastSubscribed: "too_old"}]);
     });
 
+    test("filterDoc", ()=>{
+      /**
+       * Filter out attributes from a doc. The filtered attributes are shallow copied.
+       *
+       * @param doc the document to be filtered.
+
+       * @param filter an Object who properties will override the document.
+
+       * @return an object suitable for sending to client; namely it has an `_id`, a `constructor`
+       * model, and a `attributes` field.
+       **/
+      api.method();
+      //[
+      const doc = {
+        _id: 'book1', constructor: {modelName: 'Book'}, other: 123,
+        attributes: {name: 'The little yellow digger', wholesalePrice: 1095}
+      };
+
+      const filteredDoc = Publication.filterDoc(doc, {wholesalePrice: void 0});
+      assert.equals(filteredDoc, {
+        _id: 'book1',
+        constructor: {modelName: 'Book'},
+        attributes: {name: 'The little yellow digger', wholesalePrice: void 0}
+      });
+      //]
+    });
+
     group("Union", ()=>{
       /**
        * Publication.Union is an abstract interface used to combine Subscriptions to minimise work

@@ -226,6 +226,10 @@ define((require, exports, module)=>{
 
   Publication.delete = deletePublication;
 
+  Publication.filterDoc = (doc, filter)=>({
+    _id: doc._id, constructor: doc.constructor,
+    attributes: Object.assign({}, doc.attributes, filter)});
+
   function onSubscribe([id, msgId, name, args=[], lastSubscribed]) {
     const subs = this._subs;
     if (subs == null) return; // we are closed

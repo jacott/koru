@@ -73,7 +73,7 @@ define((require, exports, module)=>{
     init() {
       const {constructor} = this;
       (constructor.union ||
-       (constructor.union = new constructor.Union(constructor, this.conn._session))
+       (constructor.union = new constructor.Union(constructor))
       ).addSub(this);
     }
 
@@ -147,7 +147,7 @@ define((require, exports, module)=>{
     }
   }
   AllPub.Union = AllUnion;
-  AllPub[testDoc$] = null;
+  AllPub[testDoc$] = AllPub.union = null;
 
   return AllPub;
 });
