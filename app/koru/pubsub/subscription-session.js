@@ -130,8 +130,6 @@ define((require)=>{
       }
     }
 
-    set _userId(value) {this.userId = value}
-
     makeId() {return (++this.nextId).toString(36)}
 
     static get(session) {

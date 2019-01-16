@@ -295,7 +295,6 @@ define((require, exports, module)=>{
     });
 
     test("reconcile docs", ()=>{
-      const stateOC = stub(sessState, 'onChange').returns(v.stateOb = {stop: stub()});
       const syncOC = stub(sessState.pending, 'onChange')
               .returns(v.syncOb = {stop: stub()});
 
@@ -305,41 +304,13 @@ define((require, exports, module)=>{
       sut(MockQuery, null, 'notifyAC');
       spy(MockQuery, 'revertSimChanges');
 
-      assert.calledOnce(stateOC);
       assert.calledOnce(syncOC);
 
-      assert.same(sessState._onConnect['01'], Query._onConnect);
-
-      MockQuery.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
-
-      v.TestModel2 = Model.define('TestModel2').defineFields({moe: 'text'});
-
-      const moe =  MockQuery.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
-
-      stateOC.yield(false);
-
-      const simDocs = Model._databases.foo.TestModel.simDocs;
-
-      assert(simDocs);
-
-      assert.equals(simDocs.foo123, ['del', undefined]);
-      assert.equals(simDocs.foo2, ['del', undefined]);
-      assert.equals(Model._databases.foo.TestModel2.simDocs.moe1, ['del', undefined]);
-
-      let pending = true;
-
-      stub(sessState, 'pendingCount', () => pending);
-      stateOC.yield(true);
-
+      syncOC.yield(1);
       refute.called(MockQuery.revertSimChanges);
 
-      stateOC.yield(true);
-      refute.called(MockQuery.revertSimChanges);
-
-      syncOC.yield(pending = false);
+      syncOC.yield(0);
       assert.called(MockQuery.revertSimChanges);
-
-
     });
 
     group("recording", ()=>{

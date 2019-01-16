@@ -10,8 +10,8 @@ isServer && define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const MockConn        = require('koru/pubsub/mock-conn');
   const MockDB          = require('koru/pubsub/mock-db');
+  const PublishTH       = require('koru/pubsub/test-helper-server');
   const session         = require('koru/session');
-  const PublishTH       = require('koru/session/publish-test-helper-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -26,9 +26,6 @@ isServer && define((require, exports, module)=>{
     beforeEach(()=>{
       origQ = session._commands.Q;
       conn = PublishTH.mockConnection("conn1");
-      conn.onMessage = (args)=>{
-        session._commands.Q.call(conn, args);
-      };
     });
 
     afterEach(()=>{
@@ -64,7 +61,7 @@ isServer && define((require, exports, module)=>{
       Library.module = module;
       assert.same(Library.pubName, 'Library');
 
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed);
 
 
       assert.same(sub.constructor, Library);
@@ -99,7 +96,7 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed);
 
       assert.same(sub.conn, conn);
       assert.same(sub.id, 'sub1');
@@ -114,7 +111,7 @@ isServer && define((require, exports, module)=>{
       // Validation error
       conn.sendBinary.reset();
 
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: 123}], lastSubscribed]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: 123}], lastSubscribed);
 
       assert.calledWith(conn.sendBinary, 'Q', ['sub1', 1, 400, {shelf: [['is_invalid']]}]);
       assert.isTrue(sub.isStopped);
@@ -133,7 +130,7 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: "mathematics"}]]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}]);
       conn.sendBinary.reset();
       //[
       // server stops the subscription
@@ -152,11 +149,11 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: "mathematics"}]]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}]);
       conn.sendBinary.reset();
       //[
       // client stops the subscription
-      conn.onMessage(["sub1", 2]);
+      conn.onSubscribe("sub1", 2);
       assert.isTrue(sub.isStopped);
       refute.called(conn.sendBinary); // no need to send to client
       //]
@@ -181,7 +178,8 @@ isServer && define((require, exports, module)=>{
           this.args = args;
           sub = this;
         }
-        onMessage(message) {
+        onMessage(message) {//]
+          super.onMessage(message); //[#
           const name = message.addShelf;
           if (name !== void 0) {
             this.args.shelf.push(name);
@@ -193,11 +191,11 @@ isServer && define((require, exports, module)=>{
         }
       }
       Library.pubName = 'Library';
-      conn.onMessage(["sub1", 1, 'Library', [{shelf: ["mathematics"]}]]);
+      conn.onSubscribe("sub1", 1, 'Library', [{shelf: ["mathematics"]}]);
 
       assert.calledWith(conn.sendBinary, 'Q', ["sub1", 1, 200, m.number]);
       conn.sendBinary.reset();
-      conn.onMessage(["sub1", 2, null, {addShelf: "fiction"}]);
+      conn.onSubscribe("sub1", 2, null, {addShelf: "fiction"});
 
       assert.equals(conn.sendBinary.firstCall.args, [
         'A', ['Book', 'book2', {name: 'The Bone People', shelf: 'fiction'}]]);
@@ -265,38 +263,49 @@ isServer && define((require, exports, module)=>{
 
       let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-      conn.onMessage(["sub1", 1, 'Library', [], now - 30 * util.DAY]);
+      conn.onSubscribe("sub1", 1, 'Library', [], now - 30 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, now]);
 
       conn.sendBinary.reset();
-      conn.onMessage(["sub2", 1, 'Library', [], now - 31 * util.DAY]);
+      conn.onSubscribe("sub2", 1, 'Library', [], now - 31 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 400, {lastSubscribed: "too_old"}]);
     });
 
-    test("filterDoc", ()=>{
+    test("userId", ()=>{
       /**
-       * Filter out attributes from a doc. The filtered attributes are shallow copied.
-       *
-       * @param doc the document to be filtered.
-
-       * @param filter an Object who properties will override the document.
-
-       * @return an object suitable for sending to client; namely it has an `_id`, a `constructor`
-       * model, and a `attributes` field.
+       * userId is a short cut to `this.conn.userId`. See {#../session/server-connection}
        **/
-      api.method();
-      //[
-      const doc = {
-        _id: 'book1', constructor: {modelName: 'Book'}, other: 123,
-        attributes: {name: 'The little yellow digger', wholesalePrice: 1095}
-      };
+      api.protoProperty();
+      const conn = {userId: null};
+      const sub = new Publication({conn});
 
-      const filteredDoc = Publication.filterDoc(doc, {wholesalePrice: void 0});
-      assert.equals(filteredDoc, {
-        _id: 'book1',
-        constructor: {modelName: 'Book'},
-        attributes: {name: 'The little yellow digger', wholesalePrice: void 0}
-      });
+      sub.userId = 'uid123';
+      assert.same(conn.userId, 'uid123');
+      conn.userId = 'uid456';
+      assert.same(sub.userId, 'uid456');
+    });
+
+    test("userIdChanged", ()=>{
+      /**
+       * The default behavior is to do nothing. Override this if an userId change needs to be handled.
+       **/
+      onEnd(()=>{util.thread.userId = void 0});
+      api.protoMethod();
+      //[
+      class Library extends Publication {
+        userIdChanged(newUID, oldUID) {//]
+          super.userIdChanged(newUID, oldUID); //[#
+          if (newUID === void 0) this.stop();
+        }
+      }
+      Library.pubName = "Library";
+
+      const sub = conn.onSubscribe("sub1", 1, "Library");
+      spy(sub, 'stop');
+      sub.conn.userId = "uid123";
+      refute.called(sub.stop);
+      sub.conn.userId = null;
+      assert.called(sub.stop);
       //]
     });
 

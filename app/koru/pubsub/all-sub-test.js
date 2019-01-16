@@ -1,4 +1,4 @@
-false && isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module)=>{
   /**
    * AllSub is an extended {#../subscription} which will subscribe to all documents in
    * every defined {#koru/model/main}.
@@ -21,8 +21,8 @@ false && isClient && define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
-      SubscriptionSession.unload(session);
       AllSub.resetConfig();
+      SubscriptionSession.unload(session);
     });
 
     test("subscribe", ()=>{
@@ -106,7 +106,8 @@ false && isClient && define((require, exports, module)=>{
 
       MyAllSub.excludeModel("AuditLog", "ErrorLog");
 
-      const sub = MyAllSub.subscribe();
+      const sub = MyAllSub.subscribe();//]
+      onEnd(()=>{sub.stop()});//[#
 
       assert(sub._matches.Book);
       assert(sub._matches.Author);
@@ -144,7 +145,8 @@ false && isClient && define((require, exports, module)=>{
       assert.isTrue(MyAllSub.isModelExcluded("Book"));
       assert.isFalse(MyAllSub.isModelExcluded("UserLogin"));
 
-      const sub = MyAllSub.subscribe();
+      const sub = MyAllSub.subscribe();//]
+      onEnd(()=>{sub.stop()});//[#
 
       refute(sub._matches.Book);
       assert(sub._matches.Author);

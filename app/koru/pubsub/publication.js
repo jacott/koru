@@ -167,7 +167,9 @@ define((require, exports, module)=>{
       this[stopped$] = false;
     }
 
-    init(args) {} // override me
+    init(args) {}                    // override me
+    onMessage(message) {}            // override me
+    userIdChanged(newUID, oldUID) {} // override me
 
     stop() {
       if (this[stopped$]) return;
@@ -175,12 +177,10 @@ define((require, exports, module)=>{
       this.conn.sendBinary('Q', [this.id]);
     }
 
-    onMessage() {
-    }
-
     get isStopped() {return this[stopped$]}
 
-    get userId() {return koru.userId()}
+    get userId() {return this.conn.userId}
+    set userId(v) {this.conn.userId = v}
 
     get discreteLastSubscribed() {
       const {lastSubscribedInterval} = this.constructor;
@@ -225,10 +225,6 @@ define((require, exports, module)=>{
   Publication.lastSubscribedMaximumAge = 180 * util.DAY;
 
   Publication.delete = deletePublication;
-
-  Publication.filterDoc = (doc, filter)=>({
-    _id: doc._id, constructor: doc.constructor,
-    attributes: Object.assign({}, doc.attributes, filter)});
 
   function onSubscribe([id, msgId, name, args=[], lastSubscribed]) {
     const subs = this._subs;

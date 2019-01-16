@@ -64,7 +64,7 @@ define((require, exports, module)=>{
 
     [inspect$]() {return `${this.constructor.pubName}Subscription("${this._id}")`}
 
-    stopped() {} // just for overriding
+    stopped(unmatch) {} // just for overriding
 
     get state() {return this[state$]}
 

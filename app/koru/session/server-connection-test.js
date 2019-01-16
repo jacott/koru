@@ -40,16 +40,6 @@ isServer && define((require, exports, module)=>{
       v = {};
     });
 
-    test("match", ()=>{
-      v.conn.match.register('Foo', v.m1 = stub().returns(true));
-
-      assert.isTrue(v.conn.match.has(v.foo = {constructor: {modelName: 'Foo'}, a: 1}));
-      assert.isFalse(v.conn.match.has(v.bar = {constructor: {modelName: 'Bar'}, a: 1}));
-
-      assert.calledWith(v.m1, v.foo);
-      refute.calledWith(v.m1, v.bar);
-    });
-
     group("onMessage", ()=>{
       beforeEach(()=>{
         v.tStub = stub();
@@ -309,14 +299,14 @@ isServer && define((require, exports, module)=>{
         toString: stub().withArgs('base64').returns('crypto64Id==')});
       const sendUid = v.ws.send.withArgs('VSu456:123|crypto64Id');
       const sendUidCompleted = v.ws.send.withArgs('VC');
-      v.conn._subs = {s1: {resubscribe: v.s1 = stub()}, s2: {resubscribe: v.s2 = stub()}};
+      v.conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
 
       v.conn.userId = 'u456';
 
       assert.same(util.thread.userId, 'u456');
       assert.same(v.conn.userId, 'u456');
 
-      assert.called(v.s1);
+      assert.calledWith(v.s1, 'u456', void 0);
       assert.called(v.s2);
 
       assert.calledWith(crypto.randomBytes, 36);
@@ -327,54 +317,31 @@ isServer && define((require, exports, module)=>{
       assert(sendUidCompleted.calledAfter(v.s2));
     });
 
-    test("sendMatchUpdate", ()=>{
-      v.doc = {
-        constructor: {modelName: 'Foo'},
-        _id: 'f123',
-        attributes: {name: 'x'},
-        $withChanges: stub().withArgs('changes')
-          .returns(v.before = {constructor: {modelName: 'Foo'}, _id: 'f123', attributes: {name: 'y'}}),
-        $invertChanges: stub().withArgs('changes')
-          .returns(v.changes= {changes: true}),
+    test("filterDoc", ()=>{
+      /**
+       * Filter out attributes from a doc. The filtered attributes are shallow copied.
+       *
+       * @param doc the document to be filtered.
+
+       * @param filter an Object who properties will override the document.
+
+       * @return an object suitable for sending to client; namely it has an `_id`, a `constructor`
+       * model, and a `attributes` field.
+       **/
+      api.method();
+      //[
+      const doc = {
+        _id: 'book1', constructor: {modelName: 'Book'}, other: 123,
+        attributes: {name: 'The little yellow digger', wholesalePrice: 1095}
       };
-      refute(v.conn.sendMatchUpdate(DocChange.add(v.doc)));
-      refute.called(v.conn.sendBinary);
-      v.conn.match.register('Foo', doc => v.func(doc));
 
-      // added
-      v.func = doc => v.doc === doc;
-      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'added');
-      assert.calledWith(v.doc.$withChanges, 'changes');
-      assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
-      // simple add
-      v.conn.sendBinary.reset();
-      v.doc.$withChanges.reset();
-      assert.same(v.conn.sendMatchUpdate(DocChange.add(v.before)), undefined);
-      refute.called(v.conn.sendBinary);
-      assert.same(v.conn.sendMatchUpdate(DocChange.add(v.doc)), 'added');
-      assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
-      refute.called(v.doc.$withChanges);
-
-      // changed
-      v.conn.sendBinary.reset();
-      v.doc.$withChanges.reset();
-      v.func = doc => v.doc === doc || doc === v.before;
-      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'changed');
-      assert.calledWith(v.doc.$withChanges, 'changes');
-      assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
-
-      // removed
-      v.doc.$withChanges.reset();
-      v.conn.sendBinary.reset();
-      v.func = function (doc) {return doc === v.before};
-      assert.same(v.conn.sendMatchUpdate(DocChange.change(v.doc, 'changes')), 'changed');
-      assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
-      // simple remove
-      v.conn.sendBinary.reset();
-      assert.same(v.conn.sendMatchUpdate(DocChange.delete(v.doc)), undefined);
-      refute.called(v.conn.sendBinary);
-      assert.same(v.conn.sendMatchUpdate(DocChange.delete(v.before)), 'removed');
-      assert.calledOnceWith(v.conn.sendBinary, 'R', ['Foo', 'f123']);
+      const filteredDoc = ServerConnection.filterDoc(doc, {wholesalePrice: true});
+      assert.equals(filteredDoc, {
+        _id: 'book1',
+        constructor: {modelName: 'Book'},
+        attributes: {name: 'The little yellow digger'}
+      });
+      //]
     });
 
     test("added", ()=>{

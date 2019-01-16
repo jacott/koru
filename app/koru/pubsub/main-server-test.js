@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const Publication     = require('koru/pubsub/publication');
+  const PublishTH       = require('koru/pubsub/test-helper-server');
   const session         = require('koru/session');
-  const publishTH       = require('koru/session/publish-test-helper-server');
   const api             = require('koru/test/api');
 
   return ({TH, module}) =>{
@@ -13,13 +13,8 @@ define((require, exports, module)=>{
       before(()=>{
         api.module({pseudoModule: 'Overview'});
 
-        conn = publishTH.mockConnection('s123', session);
+        conn = PublishTH.mockConnection();
         gDict = session.globalDict;
-        conn.onMessage = (args)=>{
-          conn._session._commands.Q.call(conn, args);
-          return conn._subs[args[0]];
-
-        };
       });
 
       test("server-publish", ()=>{

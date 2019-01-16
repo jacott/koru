@@ -17,7 +17,7 @@ isServer && define((require, exports, module)=>{
   const MockDB          = require('koru/pubsub/mock-db');
   const session         = require('koru/session');
   const message         = require('koru/session/message');
-  const publishTH       = require('koru/session/publish-test-helper-server');
+  const PublishTH       = require('./test-helper-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -29,13 +29,10 @@ isServer && define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     let conn, gDict;
+
     beforeEach(()=>{
-      conn = publishTH.mockConnection('s123', session);
+      conn = PublishTH.mockConnection('s123', session);
       gDict = session.globalDict;
-      conn.onMessage = (args)=>{
-        conn._session._commands.Q.call(conn, args);
-        return conn._subs[args[0]];
-      };
     });
 
     afterEach(()=>{
@@ -51,12 +48,12 @@ isServer && define((require, exports, module)=>{
       MyAllPub.pubName = "All";
 
       MyAllPub.requireUserId = true;
-      conn.onMessage(["sub1", 1, "All"]);
+      conn.onSubscribe("sub1", 1, "All");
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 403, 'Access denied']);
 
       conn.sendBinary.reset();
       MyAllPub.requireUserId = false;
-      conn.onMessage(["sub2", 1, "All"]);
+      conn.onSubscribe("sub2", 1, "All");
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 200, m.number]);
       //]
     });
@@ -107,10 +104,10 @@ isServer && define((require, exports, module)=>{
       //[#
       let sub1, sub2;
       koru.runFiber(()=>{
-        sub1 = conn.onMessage(['s123', 1, 'All']);
+        sub1 = conn.onSubscribe('s123', 1, 'All');
       });
       koru.runFiber(()=>{
-        sub2 = conn.onMessage(['s124', 1, 'All']);
+        sub2 = conn.onSubscribe('s124', 1, 'All');
       });
 
       future.return();
@@ -123,7 +120,7 @@ isServer && define((require, exports, module)=>{
       //]
 
       mc.sendEncoded.reset();
-      const sub3 = conn.onMessage(['s124', 1, 'All']);
+      const sub3 = conn.onSubscribe('s124', 1, 'All');
 
       mc.assertAdded(book1);
       mc.assertAdded(book2);
@@ -162,7 +159,7 @@ isServer && define((require, exports, module)=>{
       //[#
       MyAllPub.excludeModel("AuditLog", "ErrorLog");
 
-      const sub = conn.onMessage(["s123", 1, "All"]);
+      const sub = conn.onSubscribe("s123", 1, "All");
       //]
       onEnd(()=>{sub && sub.stop()});
       assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
@@ -216,7 +213,7 @@ isServer && define((require, exports, module)=>{
       assert.isTrue(MyAllPub.isModelExcluded("Book"));
       assert.isFalse(MyAllPub.isModelExcluded("UserLogin"));
 
-      const sub = conn.onMessage(["s123", 1, "All"]);
+      const sub = conn.onSubscribe("s123", 1, "All");
       //]
       onEnd(()=>{sub && sub.stop()});
       assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
@@ -301,7 +298,7 @@ isServer && define((require, exports, module)=>{
 
       const lastSubscribed = +new Date(2019, 0, 4, 9, 10, 11, 123);
 
-      const sub = conn.onMessage(["sub1", 1, "All", [], lastSubscribed]);
+      const sub = conn.onSubscribe("sub1", 1, "All", [], lastSubscribed);
 
       //]
       assert.calledWith(whereSql, m.string, {discreteLastSubscribed: new Date(2019, 0, 4, 9, 10)});

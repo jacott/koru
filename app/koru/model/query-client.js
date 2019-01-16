@@ -9,7 +9,7 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const dbBroker        = require('./db-broker');
 
-  const {stopGap$} = require('koru/symbols');
+  const {stopGap$, private$} = require('koru/symbols');
 
   const {hasOwn, deepEqual, createDictionary} = util;
 
@@ -20,40 +20,14 @@ define((require, exports, module)=>{
   const EMPTY_OBJ = {};
 
   const __init__ = session => (Query, condition, notifyAC$)=>{
-    let syncOb, stateOb;
+    let syncOb = session.state.pending.onChange(pending =>{
+      pending == 0 && Query.revertSimChanges();
+    });
 
     const unload = ()=>{
-      syncOb != null && syncOb.stop();
-      stateOb != null && stateOb.stop();
+      syncOb !== void 0 && syncOb.stop();
+      syncOb = void 0;
     };
-
-    const reset = ()=>{
-      unload();
-
-      syncOb = session.state.pending.onChange(pending =>{
-        pending == 0 && Query.revertSimChanges();
-      });
-
-      stateOb = session.state.onChange(ready => {
-        if (ready) return;
-
-      // FIXME this is not triggered for vimaly and triggered too much for other apps. I think
-      // pubsub should control it instead
-
-        const dbs = Model._databases[dbBroker.dbId];
-        if (dbs === undefined) return;
-        for(const name in dbs) {
-          const model = Model[name];
-          if (model === undefined) continue;
-          const docs = model.docs;
-          const sd = dbs[name].simDocs = createDictionary();
-          for(const id in docs) {
-            sd[id] = ['del', undefined];
-          }
-        }
-      });
-    };
-
 
     const simDocsFor = model => Model._getSetProp(
       model.dbId, model.modelName, 'simDocs', createDictionary);
@@ -175,13 +149,8 @@ define((require, exports, module)=>{
         notify(docChange);
       },
 
-      // for testing
-      _reset: reset,
-
-      _unload: unload,
+      [private$]: {unload}
     });
-
-    reset();
 
     util.merge(Query.prototype, {
       get docs() {

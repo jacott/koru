@@ -1,7 +1,6 @@
 define((require, exports, module)=>{
   const TH              = require('koru/model/test-db-helper');
-  const publish         = require('koru/session/publish');
-  const publishTH       = require('koru/session/publish-test-helper-client');
+  const PublishTH       = require('koru/pubsub/test-helper-server');
   const Factory         = require('test/factory');
 
   const {stub, spy, onEnd, util} = TH;

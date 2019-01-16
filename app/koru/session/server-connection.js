@@ -8,21 +8,21 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const sideQueue$ = Symbol(), userId$ = Symbol();
+  const sideQueue$ = Symbol(), onClose$ = Symbol(), userId$ = Symbol();
 
   const BINARY = {binary: true};
 
   const filterAttrs = (attrs, filter)=>{
-    if (! filter) return attrs;
+    if (filter === void 0) return attrs;
 
     const result = {};
 
     for(const key in attrs) {
-      if (filter[key] === undefined)
-        result[key] = attrs[key];
+      if (filter[key] === void 0) result[key] = attrs[key];
     }
     return result;
   };
+
 
   class ServerConnection {
     constructor(session, ws, request, sessId, close) {
@@ -30,25 +30,23 @@ define((require, exports, module)=>{
       this.ws = ws;
       this.request = request;
       this.sessId = sessId;
-      // FIXME move _subs out of here to Publication
-      this._subs = Object.create(null);
-      this._onClose = null;
+      this[onClose$] = null;
       this.close = () => {
-        if (this._onClose !== null) {
-          this._onClose.notify(this);
-          this._onClose = null;
-        }
         const subs = this._subs;
         this._subs = null;
         this.ws = null;
-        if (subs) for(const key in subs) {
+        for(const key in subs) {
           try {subs[key].stop();}
           catch(ex) {koru.unhandledException(ex);}
         }
+        if (this[onClose$] !== null) {
+          this[onClose$].notify(this);
+          this[onClose$] = null;
+        }
         close();
       };
+      this._subs = util.createDictionary();
       this._last = null;
-      this.match = new Match();
       this.sessAuth = null;
 
       ws.on('error', err => koru.fiberConnWrapper(()=>{
@@ -59,13 +57,13 @@ define((require, exports, module)=>{
     }
 
     onClose(func) {
-      const subj = this._onClose || (this._onClose = new Observable());
+      const subj = this[onClose$] || (this[onClose$] = new Observable());
       return subj.onChange(func);
     }
 
     send(type, data) {
       try {
-        this.ws === null || this.ws.send(type + (data === undefined ? '' : data));
+        this.ws === null || this.ws.send(type + (data === void 0 ? '' : data));
       } catch(ex) {
         koru.info('send exception', ex);
         this.close();
@@ -93,27 +91,11 @@ define((require, exports, module)=>{
       }
     }
 
-    sendMatchUpdate(dc, filter) {
-      const {doc, model: {modelName}} = dc;
-      if (dc.isDelete) {
-        if (this.match.has(doc)) {
-          this.removed(modelName, doc._id);
-          return 'removed';
-        }
-      } else if (dc.isChange && this.match.has(dc.was)) {
-        this.changed(modelName, doc._id, dc.changes, filter);
-        return 'changed';
-      } else if (this.match.has(doc)) {
-        this.added(modelName, doc._id, doc.attributes, filter);
-        return 'added';
-      }
-    }
-
     onMessage(data, flags) {
       if (data[0] === 'H')
         return void this.send(`K${Date.now()}`);
 
-      if (this._last) {
+      if (this._last !== null) {
         this._last = this._last[1] = [data, null];
         return;
       }
@@ -148,28 +130,28 @@ define((require, exports, module)=>{
     }
     releaseMessages() {
       const bm = util.thread.batchMessage;
-      if (bm === undefined) return;
+      if (bm === void 0) return;
       const sq = this[sideQueue$];
-      this[sideQueue$] = undefined;
-      sq !== undefined && sq.forEach(args =>{bm.batch(this, ...args)});
-      util.thread.batchMessage = undefined;
+      this[sideQueue$] = void 0;
+      sq !== void 0 && sq.forEach(args =>{bm.batch(this, ...args)});
+      util.thread.batchMessage = void 0;
       bm.release();
     }
     abortMessages() {
       const bm = util.thread.batchMessage;
-      if (bm === undefined) return;
+      if (bm === void 0) return;
       bm.abort();
       this.releaseMessages();
-      util.thread.batchMessage = undefined;
+      util.thread.batchMessage = void 0;
     }
 
     sendBinary(type, args, func) {
       const bm = util.thread.batchMessage;
-      if (this[sideQueue$] !== undefined && (bm === undefined || bm.conn !== this)) {
+      if (this[sideQueue$] !== void 0 && (bm === void 0 || bm.conn !== this)) {
         this[sideQueue$].push([type, args, func]);
         return;
       }
-      if (bm !== undefined) {
+      if (bm !== void 0) {
         bm.batch(this, type, args, func);
         return;
       }
@@ -196,7 +178,9 @@ define((require, exports, module)=>{
     }
 
     set userId(userId) {
+      const oldId = this[userId$];
       this[userId$] = userId;
+      if (! userId) userId = void 0;
       util.thread.userId = userId;
       if (userId) {
         const future = new util.Future;
@@ -213,7 +197,7 @@ define((require, exports, module)=>{
       }
       const subs = this._subs;
       for(const key in subs) {
-        subs[key].resubscribe();
+        subs[key].userIdChanged(userId, oldId);
       }
       this.send('VC');
     }
@@ -221,8 +205,11 @@ define((require, exports, module)=>{
     get userId() {return this[userId$]}
   }
 
-
   ServerConnection.filterAttrs = filterAttrs;
+
+  ServerConnection.filterDoc = (doc, filter)=>({
+    _id: doc._id, constructor: doc.constructor,
+    attributes: filterAttrs(doc.attributes, filter)});
 
   return ServerConnection;
 });
