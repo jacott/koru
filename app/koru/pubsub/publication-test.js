@@ -5,6 +5,7 @@ isServer && define((require, exports, module)=>{
    * See also {#../subscription}
    **/
   const koru            = require('koru');
+  const DocChange       = require('koru/model/doc-change');
   const ModelMap        = require('koru/model/map');
   const TransQueue      = require('koru/model/trans-queue');
   const Val             = require('koru/model/validation');
@@ -309,10 +310,50 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
+    test("buildUpdate", ()=>{
+      /**
+       * Used by {#::Union}. BuildUpdate converts a {#koru/model/doc-change} object into a update command
+       * to send to clients. Override this method especially when certain document states should not
+       * be allowed on the client or certain fields are sensitive.
+       *
+       * @param dc for the document that has been updated
+
+       * @param union the {#::Union} instance that called this method
+
+       * @returns an update command. Where
+
+       * |index 0|index 1|
+       * |-------|-------|
+       * |`A`    |`[modelName, doc._id, doc.attributes]|
+       * |`C`    |`[modelName, doc._id, dc.changes]|
+       * |`R`    |`[modelName, doc._id]|
+       **/
+      api.method();
+      const db = new MockDB(['Book']);
+      const {Book} = db.models;
+      const book1 = Book.create();
+
+      //[
+      class Library extends Publication {}
+
+      assert.equals(Library.buildUpdate(DocChange.add(book1)),
+                    ['A', ['Book', 'book1', {name: 'Book 1'}]]);
+      //]
+      book1.attributes.name = "new name";//[#
+      assert.equals(Library.buildUpdate(DocChange.change(book1, {name: 'old name'})),
+                    ['C', ['Book', 'book1', {name: 'new name'}]]);
+
+      assert.equals(Library.buildUpdate(DocChange.delete(book1)),
+                    ['R', ['Book', 'book1']]);
+      //]
+    });
+
     group("Union", ()=>{
       /**
        * Publication.Union is an abstract interface used to combine Subscriptions to minimise work
        * on the server.
+       *
+       * See also {#../publication.buildUpdate}
        **/
       let api;
       before(()=>{
@@ -522,19 +563,27 @@ isServer && define((require, exports, module)=>{
 
       test("stopListeners", ()=>{
         /**
-         * Override this method to stop observers when all subscribers have been stopped.
+         * This method to stops listeners that have been added to the `listeners` array. If
+         * overriden ensure that `super.stopListeners()` is run.
          *
          * See {##initObservers}
          **/
+        api.protoProperty('listeners', {intro() {
+          /**
+           * An array to store any listeners that should be stopped when the union is empty
+           **/
+        }});
         api.protoMethod();
         new Publication.Union().stopListeners();
         assert(true);
+        api.done();
       });
 
       test("initObservers", ()=>{
         /**
-         * Override this method to start observers when one or more subscribers are added.
-         * the {##stopListeners} method should stop any observers started here.
+         * Override this method to start observers when one or more subscribers are added.  the
+         * {##stopListeners} method should be overriden to stop any listeners not stored in the
+         * `listeners` array property.
          *
          * {##buildBatchUpdate} can be used to build an updater suitable as an argument for
          * {#koru/models/base-model.onChange}

@@ -26,8 +26,9 @@ isServer && define((require, exports, module)=>{
 
   const AllPub = require('./all-pub');
 
+  const API = api;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let conn, gDict;
 
     beforeEach(()=>{
@@ -58,14 +59,16 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("isModelExcluded", ()=>{
+    test("includedModels", ()=>{
       /**
-       * Check is a model name is excluded.
+       * Return an iterator over the models that are included in the subscription
        **/
       api.method();
       //[
-      assert.isTrue(AllPub.isModelExcluded('UserLogin'));
-      assert.isFalse(AllPub.isModelExcluded('User'));
+      const db = new MockDB(['Book', 'Author']);
+      const {Book, Author} = db.models;
+      assert.equals(Array.from(AllPub.includedModels()).map(m => m.modelName).sort(), [
+        'Author', 'Book']);
       //]
     });
 
@@ -210,8 +213,8 @@ isServer && define((require, exports, module)=>{
       //[#
       MyAllPub.includeModel("UserLogin", "Author");
 
-      assert.isTrue(MyAllPub.isModelExcluded("Book"));
-      assert.isFalse(MyAllPub.isModelExcluded("UserLogin"));
+      assert.equals(Array.from(MyAllPub.includedModels()).map(m => m.modelName).sort(), [
+        'Author', 'UserLogin']);
 
       const sub = conn.onSubscribe("s123", 1, "All");
       //]
@@ -232,80 +235,6 @@ isServer && define((require, exports, module)=>{
       mc.refuteChange(bookChange);
       mc.assertChange(authorChange);
       //]
-    });
-
-    test("loadInitialConfig", ()=>{
-      /**
-       * AllPub can be configured to only send updates since lastSubscribed to the clients during
-       * the loadInitial call.  This property supplies AllPub with the information to do that.
-
-       * When sending only updates it is important the a `lastSubscribedMaximumAge` is set and that
-       * no records are actually deleted until the document has been unchanged for the duration of
-       * {#../publication}.`lastSubscribedMaximumAge`. In This way clients will not miss any data
-       * changes.
-       *
-       * The value should contain the following properties:
-       *
-       * 1. `whereNotDeleted` a function that is passed a query that should be modified so that
-       * records that are deleted from the client's perspective are excluded.
-
-       * 1. `whereUpdated` a function that is passed a query and a `discreteLastSubscribed` value. The
-       * query should be modified so that only changes are returned.
-
-       * 1. `test` a function that when given a document returns `true` to add the document
-       * and `false` to remove.
-
-       * {{example:0}}
-
-       **/
-      api.property();
-      onEnd(()=>{MyAllPub.pubName = undefined});
-
-      const db = new MockDB(["Book"]);
-      const mc = new MockConn(conn);
-
-      const {Book} = db.models;
-      const book1 = Book.create();
-
-      const whereSql = stub(), testStub = stub();
-
-      const was = {state: null};
-      stubProperty(DocChange.prototype, 'was', {get() {return was}});
-
-      //[
-      class MyAllPub extends AllPub {}
-      MyAllPub.pubName = "All";
-
-      MyAllPub.loadInitialConfig = {
-        whereNotDeleted: (query)=>{
-          query.whereSql(`state is null`);
-        },
-        whereUpdated: (query, discreteLastSubscribed)=>{
-          //]
-          query.whereSql = whereSql;
-          //[#
-          query.whereSql(`"updatedAt" >= {$discreteLastSubscribed}`, {
-            discreteLastSubscribed: new Date(discreteLastSubscribed),
-          });
-        },
-        test: (doc)=>{
-          //]
-          testStub(doc);
-          //[#
-          return doc.state == null;
-        },
-      };
-
-      const lastSubscribed = +new Date(2019, 0, 4, 9, 10, 11, 123);
-
-      const sub = conn.onSubscribe("sub1", 1, "All", [], lastSubscribed);
-
-      //]
-      assert.calledWith(whereSql, m.string, {discreteLastSubscribed: new Date(2019, 0, 4, 9, 10)});
-      //[#
-      db.change(book1);
-      //]
-      assert.calledWith(testStub, book1);
     });
   });
 });

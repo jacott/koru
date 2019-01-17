@@ -27,8 +27,15 @@ define((require, exports, module)=>{
    * 1. It does not use `lastSubscribed` to reduce server-to-client traffic.
 
    *
-   * It is non-trivial to fix these deficiencies but looking at the {#../all-pub} source code
-   * illustrates how to use `lastSubscribed`.
+   * It is non-trivial to fix these deficiencies; however:
+
+   * 1. `discreteLastSubscribed` can be used to only send updates.  When sending only updates it is
+   * important the a `lastSubscribedMaximumAge` is set and that no records are actually deleted
+   * until the document has been unchanged for the duration of
+   * {#../publication}.`lastSubscribedMaximumAge`. In this way clients will not miss any data
+   * changes.
+
+   * 1. {#../publication::Union} can be used to combine subscriptions to reduce traffic.
    **/
   const TH = require('koru/test-helper');
 

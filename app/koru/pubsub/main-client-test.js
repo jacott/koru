@@ -37,6 +37,10 @@ define((require)=>{
             // connect to server
             super.connect(options);
           }
+
+          reconnecting() {
+            Book.query.forEach(Subscription.markForRemove);
+          }
         }
         LibrarySub.pubName = "Library";
         //]

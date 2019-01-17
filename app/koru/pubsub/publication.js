@@ -19,7 +19,7 @@ define((require, exports, module)=>{
 
   const stopped = (sub)=>{
     sub[stopped$] = true;
-    if (sub.conn._subs !== void 0) delete sub.conn._subs[sub.id];
+    if (sub.conn._subs !== null) delete sub.conn._subs[sub.id];
   };
 
   const WaitSubCompare = (a, b)=> a.time - b.time;
@@ -92,6 +92,7 @@ define((require, exports, module)=>{
     constructor(pubClass) {
       this.pubClass = pubClass;
       this[subs$] = new DLinkedList(()=>{this.stopListeners()});
+      this.listeners = [];
     }
 
     addSub(sub) {
@@ -109,7 +110,9 @@ define((require, exports, module)=>{
       node.delete();
     }
 
-    stopListeners() {}
+    stopListeners() {
+      for (const l of this.listeners) l.stop();
+    }
     initObservers() {}
     loadInitial(addDoc, discreteLastSubscribed) {}
 
@@ -129,7 +132,7 @@ define((require, exports, module)=>{
       const {globalDict} = Session;
 
       return dc =>{
-        const upd = this.pubClass.buildUpdate(dc);
+        const upd = this.pubClass.buildUpdate(dc, this);
         if (upd === void 0) return;
         if (TransQueue.isInTransaction()) {
           if (encoder === null) {
@@ -158,7 +161,6 @@ define((require, exports, module)=>{
   class Publication {
     constructor({id, conn, lastSubscribed}) {
       this.conn = conn;
-
       this.id = id;
       this.lastSubscribed = +lastSubscribed || 0;
       if (this.lastSubscribed != 0 &&
@@ -208,7 +210,7 @@ define((require, exports, module)=>{
 
     static get module() {return this[module$]}
 
-    static buildUpdate(dc) {
+    static buildUpdate(dc, union) {
       const {doc, model: {modelName}} = dc;
       if (dc.isAdd)
         return ['A', [modelName, doc._id, doc.attributes]];

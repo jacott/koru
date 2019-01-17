@@ -19,7 +19,7 @@ define((require)=>{
     if (! truth) throw new Error("Illegal action");
   };
 
-  function provideP(data) {
+  function provideQ(data) {
     const subSess = sessions[this._id];
     if (subSess === void 0) return;
     const sub = subSess.subs[data[0]];
@@ -72,7 +72,7 @@ define((require)=>{
       this.subs = util.createDictionary();
       this.session = session;
 
-      session._commands.Q === void 0 && session.provide('Q', provideP);
+      session._commands.Q === void 0 && session.provide('Q', provideQ);
 
       this.userId = koru.userId();
       this[loginObserver$] = login.onChange(session, (state)=>{

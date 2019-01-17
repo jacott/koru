@@ -34,24 +34,31 @@ define((require, exports, module)=>{
     },
 
     findEncodedCall: (conn, type, exp)=>{
-      for (const call of conn.sendEncoded.calls) {
+      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
+        const baseType = String.fromCharCode(call.args[0][0]);
         const msgs = decodeMessage(call.args[0], conn);
-        for (const msg of msgs) {
+        if (baseType === 'W') {
+          for (const msg of msgs) {
           if (msg[0] === type && util.deepEqual(msg[1], exp))
             return true;
-        }
+          }
+        } else if (baseType === type && util.deepEqual(msgs, exp))
+          return true;
       }
       return false;
     },
 
     listEncodedCalls: (conn, type)=>{
       const ans = [];
-      for (const call of conn.sendEncoded.calls) {
+      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
+        const baseType = String.fromCharCode(call.args[0][0]);
         const msgs = decodeMessage(call.args[0], conn);
-        for (const msg of msgs) {
-          if (msg[0] === type || type === void 0)
-            ans.push(msg);
-        }
+        if (baseType === 'W') {
+          for (const msg of msgs) {
+            if (msg[0] === type || type === void 0)
+              ans.push(msg);
+          }
+        } else ans.push([baseType, msgs]);
       }
       return ans;
     },

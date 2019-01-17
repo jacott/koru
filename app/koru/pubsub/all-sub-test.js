@@ -21,7 +21,7 @@ isClient && define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
-      AllSub.resetConfig();
+      AllSub.resetModelList();
       SubscriptionSession.unload(session);
     });
 
@@ -66,14 +66,16 @@ isClient && define((require, exports, module)=>{
       refute(Book.findById(b1._id));
     });
 
-    test("isModelExcluded", ()=>{
+    test("includedModels", ()=>{
       /**
-       * Check is a model name is excluded.
+       * Return an iterator over the models that are included in the subscription
        **/
       api.method();
       //[
-      assert.isTrue(AllSub.isModelExcluded('UserLogin'));
-      assert.isFalse(AllSub.isModelExcluded('User'));
+      const db = new MockDB(['Book', 'Author']);
+      const {Book, Author} = db.models;
+      assert.equals(Array.from(AllSub.includedModels()).map(m => m.modelName).sort(), [
+        'Author', 'Book']);
       //]
     });
 
@@ -142,8 +144,8 @@ isClient && define((require, exports, module)=>{
 
       MyAllSub.includeModel("UserLogin", "Author");
 
-      assert.isTrue(MyAllSub.isModelExcluded("Book"));
-      assert.isFalse(MyAllSub.isModelExcluded("UserLogin"));
+      assert.equals(Array.from(MyAllSub.includedModels()).map(m => m.modelName).sort(), [
+        'Author', 'UserLogin']);
 
       const sub = MyAllSub.subscribe();//]
       onEnd(()=>{sub.stop()});//[#
