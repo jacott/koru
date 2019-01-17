@@ -36,10 +36,12 @@ define((require, exports, module)=>{
         assert.same(now, util.dateNow());
         sut.onAbort(err1);
         sut.onSuccess(stub1);
-        sut.transaction(v.TestModel, () => sut.onSuccess(function () {
+        sut.transaction(v.TestModel, () => sut.onSuccess(()=>{
           assert.same(now, util.dateNow()); // ensure same time as top transaction
 
           sut.onSuccess(stub2); // double nested should still fire
+          assert.isTrue(sut.isInTransaction());
+          refute.called(stub2);
         }));
         refute.called(stub1);
         refute.called(stub2);
@@ -79,6 +81,14 @@ define((require, exports, module)=>{
       assert.exception(() => {
         sut.transaction(v.TestModel, () => {throw new Error("an error")});
       }, {message: 'an error'});
+    });
+
+    test("onSuccess in onSuccess", ()=>{
+      sut.transaction(()=>{
+        sut.onSuccess(()=>{
+          assert(sut.isInTransaction);
+        });
+      });
     });
 
     test("exception", ()=>{

@@ -8,7 +8,7 @@ define(require =>{
     transaction(db, body) {
       let prevTime;
       let list = util.thread[success$];
-      const firstLevel = list === undefined;
+      const firstLevel = list === void 0;
       if (firstLevel) {
         list = util.thread[success$] = [];
         prevTime = util.thread.date;
@@ -18,12 +18,16 @@ define(require =>{
         util.thread.date = lastTime = now;
       }
       try {
-        const result = body === undefined ?
+        const result = body === void 0 ?
               db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
-          util.thread[success$] = undefined;
-          for(let i = 0; i < list.length; ++i) {
-            list[i]();
+          while (list != null) {
+            const l = list;
+            list = void 0;
+            util.thread[success$] = null;
+
+            for(let i = 0; i < l.length; ++i) l[i]();
+            list = util.thread[success$];
           }
         }
         return result;
@@ -38,30 +42,31 @@ define(require =>{
       } finally {
         if (firstLevel) {
           util.thread.date = prevTime;
-          util.thread[success$] = util.thread[abort$] = undefined;
+          util.thread[success$] = util.thread[abort$] = void 0;
         }
       }
     },
 
     onSuccess(func) {
-      const list = util.thread[success$];
-      if (list !== undefined)
+      let list = util.thread[success$];
+      if (list !== void 0) {
+        if (list === null) list = util.thread[success$] = [];
         list.push(func);
-      else
+      } else
         func();
     },
 
     onAbort(func) {
-      if (util.thread[success$] === undefined) return;
+      if (util.thread[success$] === void 0) return;
       const list = util.thread[abort$];
-      if (list === undefined)
+      if (list === void 0)
         util.thread[abort$] = [func];
       else
         list.push(func);
     },
 
     isInTransaction() {
-      return util.thread[success$] !== undefined;
+      return util.thread[success$] !== void 0;
     },
 
     _clearLastTime() {lastTime = null},
