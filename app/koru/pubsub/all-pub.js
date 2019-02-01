@@ -7,6 +7,7 @@ define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const ModelListMixin  = require('koru/pubsub/model-list-mixin');
   const Publication     = require('koru/pubsub/publication');
+  const Union           = require('koru/pubsub/union');
   const message         = require('koru/session/message');
   const util            = require('koru/util');
 
@@ -14,17 +15,18 @@ define((require, exports, module)=>{
 
   const {hasOwn} = util;
 
-  class AllUnion extends Publication.Union {
+  class AllUnion extends Union {
     constructor(pubClass) {
-      super(pubClass);
+      super();
+      this.pubClass = pubClass;
     }
 
     initObservers() {
       const batchUpdate = this.buildBatchUpdate();
-      const {listeners} = this;
+      const {handles} = this;
 
       for (const model of this.pubClass.includedModels()) {
-        listeners.push(this.onChange(model, batchUpdate));
+        handles.push(this.onChange(model, batchUpdate));
       }
     }
 
@@ -37,6 +39,8 @@ define((require, exports, module)=>{
         model.query.forEach(addDoc);
       }
     }
+
+
   }
 
   class AllPub extends ModelListMixin(Publication) {
@@ -68,7 +72,7 @@ define((require, exports, module)=>{
   AllPub.module = module;
   AllPub.resetConfig();
   AllPub.Union = AllUnion;
-  AllPub.union = null;
+  AllPub.union = void 0;
 
   return AllPub;
 });

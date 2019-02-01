@@ -35,7 +35,7 @@ define((require, exports, module)=>{
    * {#../publication}.`lastSubscribedMaximumAge`. In this way clients will not miss any data
    * changes.
 
-   * 1. {#../publication::Union} can be used to combine subscriptions to reduce traffic.
+   * 1. {#../union} can be used to combine subscriptions to reduce traffic.
    **/
   const TH = require('koru/test-helper');
 
