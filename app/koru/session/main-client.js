@@ -1,5 +1,3 @@
-/*global WebSocket */
-
 define((require, exports, module)=>{
   const koru            = require('koru');
   const State           = require('koru/session/state');
@@ -28,7 +26,7 @@ define((require, exports, module)=>{
       return search === '' ? path : `${path}?${search}`;
     };
 
-    session.newWs = function () {return new WebSocket(this._url())};
+    session.newWs = function () {return new window.WebSocket(this._url())};
     return webSocketSenderFactory(session, state);
   };
 });
