@@ -80,17 +80,6 @@ define((require, exports, module)=>{
       }
     }
 
-    sendUpdate(dc, filter) {
-      const {doc, model: {modelName}} = dc;
-      if (dc.isAdd)
-        this.added(modelName, doc._id, doc.attributes, filter);
-      else if (dc.isDelete)
-        this.removed(modelName, doc._id);
-      else  {
-        this.changed(modelName, doc._id, dc.changes, filter);
-      }
-    }
-
     onMessage(data, flags) {
       if (data[0] === 'H')
         return void this.send(`K${Date.now()}`);
@@ -203,6 +192,17 @@ define((require, exports, module)=>{
     }
 
     get userId() {return this[userId$]}
+
+    static buildUpdate(dc) {
+      const {doc, model: {modelName}} = dc;
+      if (dc.isAdd)
+        return ['A', [modelName, doc._id, doc.attributes]];
+      else if (dc.isDelete)
+        return ['R', [modelName, doc._id]];
+      else  {
+        return ['C', [modelName, doc._id, dc.changes]];
+      }
+    }
   }
 
   ServerConnection.filterAttrs = filterAttrs;

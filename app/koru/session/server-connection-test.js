@@ -5,6 +5,7 @@ isServer && define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const DocChange       = require('koru/model/doc-change');
+  const MockDB          = require('koru/pubsub/mock-db');
   const baseSession     = require('koru/session');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -341,6 +342,39 @@ isServer && define((require, exports, module)=>{
         constructor: {modelName: 'Book'},
         attributes: {name: 'The little yellow digger'}
       });
+      //]
+    });
+
+    test("buildUpdate", ()=>{
+      /**
+       * BuildUpdate converts a {#koru/model/doc-change} object into a update command to send to
+       * clients.
+
+       * @param dc for the document that has been updated
+
+       * @returns an update command. Where
+       *
+       * |index 0|index 1|
+       * |-------|-------|
+       * |`A`    |`[modelName, doc._id, doc.attributes]|
+       * |`C`    |`[modelName, doc._id, dc.changes]|
+       * |`R`    |`[modelName, doc._id]|
+       **/
+      api.method();
+      const db = new MockDB(['Book']);
+      const {Book} = db.models;
+      const book1 = Book.create();
+
+      //[
+      assert.equals(ServerConnection.buildUpdate(DocChange.add(book1)),
+                    ['A', ['Book', 'book1', {name: 'Book 1'}]]);
+      //]
+      book1.attributes.name = "new name";//[#
+      assert.equals(ServerConnection.buildUpdate(DocChange.change(book1, {name: 'old name'})),
+                    ['C', ['Book', 'book1', {name: 'new name'}]]);
+
+      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1)),
+                    ['R', ['Book', 'book1']]);
       //]
     });
 
