@@ -376,7 +376,7 @@ define((require, exports, module)=>{
   Core.start = (testCases, runNextWrapper)=>{
     tests = [];
     Core.test = void 0;
-    Core.lastText = void 0;
+    Core.lastTest = void 0;
     let _runNext, nt = 0;
     let lastTest;
 
