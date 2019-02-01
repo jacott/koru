@@ -46,7 +46,7 @@ define((require, exports, module)=>{
         this[state$] = 'stopped';
         this.subSession._delete(this);
         const {_matches} = this;
-        this._matches = null;
+        this._matches = Object.create(null);
         for (const name in _matches) _matches[name].delete();
         const onConnect = this[onConnect$];
         try {

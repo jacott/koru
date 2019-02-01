@@ -30,6 +30,7 @@ isClient && define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      SubscriptionSession.match._clear();
       SubscriptionSession.unload(session);
     });
 
@@ -260,14 +261,19 @@ isClient && define((require, exports, module)=>{
       }
 
       const sub = new Library();
+      sub.match('Book', () => true);
       sub.connect();
+      assert(Book.findById('doc1'));
+      assert(SubscriptionSession.match.has(doc1, 'stopped'));
       sub.stop();
 
       refute(Book.findById('doc1'));
       assert(Book.findById('doc2'));
       assert(Book.findById('doc3'));
       //]
+
       assert.equals(simDocs, {doc2: ['del']});
+      assert.equals(sub._matches, {});
     });
 
     test("filterModels", ()=>{

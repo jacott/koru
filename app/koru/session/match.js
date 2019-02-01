@@ -31,6 +31,19 @@ define((require)=>{
       handle.modelName = modelName;
       return handle;
     }
+
+    _clear() {
+      const dbs = this[dbs$];
+      const {dbId} = dbBroker;
+      const models = dbs[dbId];
+      if (models === void 0) return;
+      for (const modelName in models) {
+        const matchFuncs = models[modelName];
+        if (matchFuncs !== void 0)
+          matchFuncs.clear();
+      }
+      dbs[dbId] = void 0;
+    }
   }
 
   return Match;
