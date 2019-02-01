@@ -8,8 +8,8 @@ define((require, exports, module)=>{
 
   const {stub, spy, onEnd} = TH;
 
-
-  const decodeMessage = (msg, conn)=> message.decodeMessage(msg.subarray(1), conn._session.globalDict);
+  const decodeMessage = (msg, conn)=> message.decodeMessage(
+    msg.subarray(1), conn._session.globalDict);
 
   const PublishTH = {
     mockConnection(sessId='s123', session=Session) {
@@ -33,16 +33,20 @@ define((require, exports, module)=>{
       return conn;
     },
 
-    findEncodedCall: (conn, type, exp)=>{
+    decodeEncodedCall: (conn, call)=>({
+      type: String.fromCharCode(call.args[0][0]),
+      data: decodeMessage(call.args[0], conn)}),
+
+
+    findEncodedCall: (conn, expType, expData)=>{
       if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
-        const baseType = String.fromCharCode(call.args[0][0]);
-        const msgs = decodeMessage(call.args[0], conn);
-        if (baseType === 'W') {
-          for (const msg of msgs) {
-          if (msg[0] === type && util.deepEqual(msg[1], exp))
+        const {type, data} = PublishTH.decodeEncodedCall(conn, call);
+        if (type === 'W') {
+          for (const msg of data) {
+          if (msg[0] === expType && util.deepEqual(msg[1], expData))
             return true;
           }
-        } else if (baseType === type && util.deepEqual(msgs, exp))
+        } else if (type === expType && util.deepEqual(data, expData))
           return true;
       }
       return false;
