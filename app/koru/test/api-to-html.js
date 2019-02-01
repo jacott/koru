@@ -226,6 +226,7 @@ define((require)=>{
             vref.parentNode.replaceChild(value, vref);
         }
         const ap = extractTypes(
+          api,
           property.calls ?
             argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
           : argProfile([[property.value]], value => value[0])
@@ -575,12 +576,12 @@ define((require)=>{
     if (args.length === 0 && ret === undefined)
       return;
 
-    const retTypes = ret && ret.types && extractTypes(ret);
+    const retTypes = ret && ret.types && extractTypes(api, ret);
 
     const eachParam = arg => {
       const am = argMap[arg];
       if (am.optNames === undefined) {
-        const types = extractTypes(am);
+        const types = extractTypes(api, am);
         return {
           class: "jsdoc-arg", tr: [
             {td: am.optional ? `[${arg}]` : arg},
@@ -610,7 +611,7 @@ define((require)=>{
     ]};
   };
 
-  const extractTypes = ({types, href})=>{
+  const extractTypes = (api, {types, href})=>{
     const ans = [];
     const typeMap = {};
     for (let type in types) {
@@ -618,7 +619,11 @@ define((require)=>{
       typeMap[types[type]] = true;
       if (ans.length != 0)
         ans.push('\u200a/\u200a');
-      ans.push(targetExternal({a: idToText(types[type]), $href: (href || typeHRef)(type)}));
+      let mod = types[type];
+      const destMod = mod && api.top && api.top[mod];
+      if (destMod)
+        mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
+      ans.push(targetExternal({a: idToText(mod), $href: (href || typeHRef)(type)}));
     }
     return ans;
   };
