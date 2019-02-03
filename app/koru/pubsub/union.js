@@ -81,6 +81,7 @@ define((require, exports, module)=>{
     constructor() {
       this[subs$] = new DLinkedList(()=>{this.onEmpty()});
       this.handles = [];
+      this.batchUpdate = this.buildBatchUpdate();
     }
 
     addSub(sub) {

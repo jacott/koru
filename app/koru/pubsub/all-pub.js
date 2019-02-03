@@ -22,11 +22,10 @@ define((require, exports, module)=>{
     }
 
     initObservers() {
-      const batchUpdate = this.buildBatchUpdate();
       const {handles} = this;
 
       for (const model of this.pubClass.includedModels()) {
-        handles.push(this.onChange(model, batchUpdate));
+        handles.push(this.onChange(model, this.batchUpdate));
       }
     }
 

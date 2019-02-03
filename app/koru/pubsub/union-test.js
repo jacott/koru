@@ -358,7 +358,7 @@ isServer && define((require, exports, module)=>{
 
     test("sendEncoded", ()=>{
       /**
-       * Send a pre encoded {#koru/session/message} to all subscribers.
+       * Send a pre encoded {#koru/session/message} to all subscribers. Called by {##batchUpdate}.
        *
        * See {#koru/session/server-connection#sendEncoded}
        **/
@@ -414,8 +414,23 @@ isServer && define((require, exports, module)=>{
 
     test("buildBatchUpdate", ()=>{
       /**
-       * buildBatchUpdate builds an BatchUpdate function that can be used to broadcast document
-       * updates to multiple client subscriptions.
+       * buildBatchUpdate builds the {##batchUpdate} function that can be used to broadcast document
+       * updates to multiple client subscriptions. It is called during Union construction.
+       **/
+      api.protoMethod();
+      //[
+      class MyUnion extends Union {
+      }
+      const union = new MyUnion();
+      assert.isFunction(union.batchUpdate);
+      //]
+    });
+
+    test("batchUpdate", ()=>{
+      /**
+       * The batchUpdate function is built by the {##buildBatchUpdate} method on Union
+       * construction. It is used to broadcast document updates to multiple client subscriptions. It
+       * does not need a `this` argument.
        *
        * Updates are batched until the successful end of the current transaction and the resulting
        * message is sent to all subs in the union. If the transaction is aborted no messages are
@@ -435,11 +450,8 @@ isServer && define((require, exports, module)=>{
 
       class MyUnion extends Union {
         initObservers() {
-
-          /** ⏿ here we build the update ⮧ **/
-          const batchUpdate = this.buildBatchUpdate();
-
-          this.handles.push(Book.onChange(batchUpdate));
+          /**       ⏿ here we pass the batchUpdate ⮧ **/
+          this.handles.push(Book.onChange(this.batchUpdate));
         }
       }
       const union = new MyUnion();
