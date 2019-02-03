@@ -114,6 +114,8 @@ define((require, exports, module)=>{
       return ServerConnection.buildUpdate(dc);
     }
 
+    batchUpdate() {} // overriden during construction
+
     buildBatchUpdate() {
       let encoder = null;
       let future = null;

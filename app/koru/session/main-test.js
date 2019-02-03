@@ -5,35 +5,35 @@ define((require, exports, module)=>{
    **/
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
-  const session         = require('./main');
+  const Session         = require('./main');
 
   const {stub, spy, onEnd} = TH;
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     before(()=>{
-      api.module({subjectName: 'session'});
+      api.module({subjectName: 'Session'});
     });
 
     afterEach(()=>{
-      delete session._commands.t;
+      delete Session._commands.t;
     });
 
     test("setup", ()=>{
       api.property('_id', () => {
-        return "The session _id: "+JSON.stringify(session._id);
+        return "The Session _id: "+JSON.stringify(Session._id);
       });
-      assert.same(session._id, 'default');
+      assert.same(Session._id, 'default');
     });
 
     test("provide", ()=>{
-      refute.hasOwn(session._commands, 't');
+      refute.hasOwn(Session._commands, 't');
 
       let t;
 
-      refute(session.provide('t', t = stub()));
-      assert.same(session.provide('t', t), t);
+      refute(Session.provide('t', t = stub()));
+      assert.same(Session.provide('t', t), t);
 
-      assert.same(session._commands.t, t);
+      assert.same(Session._commands.t, t);
     });
 
     test("defineRpc", ()=>{
@@ -42,15 +42,17 @@ define((require, exports, module)=>{
        **/
       api.method('defineRpc');
       function func() {}
-      refute(session.isRpcGet("Book.update"));
-      refute(session.isRpc("Book.update"));
-      session.defineRpc('Book.update', func);
+      //[
+      refute(Session.isRpcGet("Book.update"));
+      refute(Session.isRpc("Book.update"));
+      Session.defineRpc('Book.update', func);//]
 
-      onEnd(() => delete session._rpcs['Book.update']);
-
-      assert.same(session._rpcs['Book.update'], func);
-      refute(session.isRpcGet("Book.update"));
-      assert(session.isRpc("Book.update"));
+      onEnd(() => delete Session._rpcs['Book.update']);
+      //[#
+      assert.same(Session._rpcs['Book.update'], func);
+      refute(Session.isRpcGet("Book.update"));
+      assert(Session.isRpc("Book.update"));
+      //]
     });
 
     test("defineRpcGet", ()=>{
@@ -59,14 +61,14 @@ define((require, exports, module)=>{
        **/
       api.method('defineRpcGet');
       function func() {}
-      refute(session.isRpc(func));
-      session.defineRpcGet('Book.list', func);
+      refute(Session.isRpc(func));
+      Session.defineRpcGet('Book.list', func);
 
-      onEnd(() => delete session._rpcs['Book.list']);
+      onEnd(() => delete Session._rpcs['Book.list']);
 
-      assert.same(session._rpcs['Book.list'], func);
-      assert(session.isRpcGet('Book.list'));
-      assert(session.isRpc('Book.list'));
+      assert.same(Session._rpcs['Book.list'], func);
+      assert(Session.isRpcGet('Book.list'));
+      assert(Session.isRpc('Book.list'));
     });
   });
 });

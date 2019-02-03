@@ -84,27 +84,6 @@ define((require, exports, module)=>{
         refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
       });
 
-      test("withBatch", ()=>{
-        /**
-         * build an encoded batch message.
-
-         * @param callback a function that will be called with an `encode` argument that is called on
-         * each message to encode.
-         **/
-        api.protoMethod();
-        const Session = v.mockSess;
-        //[
-        const msg = Session.withBatch(encode =>{
-          encode(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
-          encode(['R', ['Book', 'book2']]);
-        });
-
-        assert.equals(String.fromCharCode(msg[0]), 'W');
-        assert.equals(message.decodeMessage(msg.subarray(1), Session.globalDict), [
-          ['A', ['Book', {_id: 'book1', title: 'Dune'}]], ['R', ['Book', 'book2']]]);
-        //]
-      });
-
       test("result", ()=>{
         v.run(function (...args) {
           v.thisValue = this;
