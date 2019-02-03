@@ -28,8 +28,8 @@ define((require)=>{
     };
   };
 
-  const added = modelUpdate('Add', (model, id, attrs) => {
-    Query.insertFromServer(model, id, attrs);
+  const added = modelUpdate('Add', (model, attrs) => {
+    Query.insertFromServer(model, attrs);
   });
 
   const changed = modelUpdate('Upd', (model, id, attrs) => {

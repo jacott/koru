@@ -88,8 +88,8 @@ isServer && define((require, exports, module)=>{
       const msgs = mc.decodeLastSend();
 
       assert.equals(msgs, [
-        ['A', ['Book', 'book1', {name: 'Book 1'}]],
-        ['A', ['Book', 'book2', {name: 'Book 2'}]]
+        ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
+        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
       ]);
       //]
     });
@@ -350,8 +350,8 @@ isServer && define((require, exports, module)=>{
       const msgs = mc.decodeLastSend();
 
       assert.equals(msgs, [
-        ['A', ['Book', 'book1', {name: 'Book 1'}]],
-        ['A', ['Book', 'book2', {name: 'Book 2'}]]
+        ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
+        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
       ]);
       //]
     });
@@ -469,7 +469,7 @@ isServer && define((require, exports, module)=>{
 
       assert.equals(msgs, [
         ['C', ['Book', 'book1', {name: 'name change'}]],
-        ['A', ['Book', 'book3', {name: 'Book 3'}]],
+        ['A', ['Book', {_id: 'book3', name: 'Book 3'}]],
         ['R', ['Book', 'book2']]
       ]);
       //]

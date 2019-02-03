@@ -4,6 +4,7 @@ define((require, exports, module)=>{
   const SessionBase     = require('koru/session/base').constructor;
   const message         = require('koru/session/message');
   const ServerConnection = require('koru/session/server-connection');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
@@ -83,37 +84,25 @@ define((require, exports, module)=>{
         refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
       });
 
-      group("batch messages", ()=>{
-        test("send after return", ()=>{
-          v.run((one, two, three) => {
-            assert.called(v.conn.batchMessages);
-            refute.called(v.conn.releaseMessages);
-            return 'result';
-          });
+      test("withBatch", ()=>{
+        /**
+         * build an encoded batch message.
 
-          refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'r', 'result']);
-          assert(v.conn.releaseMessages.calledAfter(v.conn.sendBinary));
-          refute.called(v.conn.abortMessages);
+         * @param callback a function that will be called with an `encode` argument that is called on
+         * each message to encode.
+         **/
+        api.protoMethod();
+        const Session = v.mockSess;
+        //[
+        const msg = Session.withBatch(encode =>{
+          encode(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
+          encode(['R', ['Book', 'book2']]);
         });
 
-        test("abort", ()=>{
-          v.run((one, two, three) => {
-            assert.called(v.conn.batchMessages);
-            refute.called(v.conn.releaseMessages);
-            refute.called(v.conn.abortMessages);
-            stub(koru, 'error');
-            throw 'test aborted';
-          });
-
-          koru.error.restore();
-
-          refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'e', 'test aborted']);
-          assert(v.conn.abortMessages.calledBefore(v.conn.sendBinary));
-          refute.called(v.conn.releaseMessages);
-        });
-
+        assert.equals(String.fromCharCode(msg[0]), 'W');
+        assert.equals(message.decodeMessage(msg.subarray(1), Session.globalDict), [
+          ['A', ['Book', {_id: 'book1', title: 'Dune'}]], ['R', ['Book', 'book2']]]);
+        //]
       });
 
       test("result", ()=>{

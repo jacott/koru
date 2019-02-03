@@ -16,9 +16,9 @@ define((require, exports, module)=>{
   const loadDocs = (lq, sub)=>{
     lq.discreteLastSubscribed = sub.discreteLastSubscribed;
 
-    const msg = message.withEncoder('W', sub.conn._session.globalDict, encode =>{
+    const msg = sub.conn._session.withBatch(encode =>{
       lq.union.loadInitial((doc)=>{
-        encode(['A', [doc.constructor.modelName, doc._id, doc.attributes]]);
+        encode(['A', [doc.constructor.modelName, doc.attributes]]);
       }, lq.discreteLastSubscribed);
     });
 
@@ -123,8 +123,6 @@ define((require, exports, module)=>{
         encoder = future = null;
       };
 
-      const {globalDict} = Session;
-
       return dc =>{
         const upd = this.buildUpdate(dc);
         if (upd === void 0) return;
@@ -133,7 +131,7 @@ define((require, exports, module)=>{
             future = new util.Future;
             let msg;
             koru.runFiber(()=>{
-              msg = message.withEncoder('W', globalDict, _encoder => {
+              msg = Session.withBatch(_encoder => {
                 encoder = _encoder;
                 future.wait();
               });
@@ -146,7 +144,7 @@ define((require, exports, module)=>{
           }
           encoder(upd);
         } else {
-          this.sendEncoded(message.encodeMessage(...upd, globalDict));
+          this.sendEncoded(message.encodeMessage(...upd, Session.globalDict));
         }
       };
     }

@@ -109,9 +109,9 @@ define((require, exports, module)=>{
         model.docs[attrs._id] = new model(attrs);
       },
 
-      insertFromServer(model, id, attrs) {
+      insertFromServer(model, attrs) {
         return TransQueue.transaction(() => {
-          attrs._id = id;
+          const id = attrs._id;
           const doc = model.docs[id];
           if (session.state.pendingCount() != 0) {
             if (fromServer(model, id, attrs)) {

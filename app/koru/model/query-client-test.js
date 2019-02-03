@@ -115,7 +115,7 @@ define((require, exports, module)=>{
       });
 
       test("insertFromServer", ()=>{
-        Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+        Query.insertFromServer(v.TestModel, {_id: 'foo2', name: 'foo2'});
         const foo2 = v.TestModel.findById('foo2');
 
         refute.called(afterLocalChange);
@@ -150,7 +150,7 @@ define((require, exports, module)=>{
       const onChange = stub();
       onEnd(v.TestModel.onChange(onChange));
 
-      Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+      Query.insertFromServer(v.TestModel, {_id: 'foo2', name: 'foo2'});
       const doc = v.TestModel.findById('foo2');
       assert(doc);
       assert.calledOnceWith(onChange, DocChange.add(doc, 'serverUpdate'));
@@ -161,7 +161,7 @@ define((require, exports, module)=>{
       assert.calledOnceWith(onChange, DocChange.add(foo1, undefined));
       onChange.reset();
 
-      Query.insertFromServer(v.TestModel, 'foo4', {name: 'foo4'});
+      Query.insertFromServer(v.TestModel, {_id: 'foo4', name: 'foo4'});
       const foo4 = v.TestModel.findById('foo4');
       assert(foo4);
       assert.calledOnceWith(onChange, DocChange.add(foo4, 'serverUpdate'));
@@ -181,11 +181,11 @@ define((require, exports, module)=>{
       const _QueryClient = sut.__init__(_session);
       const _Query = Query.__init__(_QueryClient);
       _sessState.connected(_session);
-      _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
+      _Query.insertFromServer(v.TestModel, {_id: 'foo2', nested: {a: 1, b: 2}});
       _sessState.retry();
       _session.rpc('fooUpdate');
       _sessState.connected(_session);
-      _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
+      _Query.insertFromServer(v.TestModel, {_id: 'foo2', nested: {a: 1, b: 2}});
       const query = new _Query(v.TestModel).onId('foo2');
       query.isFromServer = true;
       query.update({$partial: {nested: ['b', 3]}});
@@ -199,7 +199,7 @@ define((require, exports, module)=>{
       const foo = v.TestModel.createStopGap({name: 'foo'});
       assert.isTrue(foo[stopGap$]);
 
-      Query.insertFromServer(v.TestModel, foo._id, {
+      Query.insertFromServer(v.TestModel, {
         _id: foo._id, name: 'foo new'});
 
       assert.same(foo[stopGap$], undefined);
@@ -209,7 +209,7 @@ define((require, exports, module)=>{
       const foo = v.TestModel.createStopGap({name: 'foo'});
       assert.isTrue(foo[stopGap$]);
 
-      Query.insertFromServer(v.TestModel, foo._id, {
+      Query.insertFromServer(v.TestModel, {
         _id: foo._id, name: 'foo new'});
 
       assert.same(foo[stopGap$], undefined);
@@ -219,7 +219,7 @@ define((require, exports, module)=>{
       bar.name = 'bar new';
       bar.$$save();
 
-      Query.insertFromServer(v.TestModel, bar._id, {
+      Query.insertFromServer(v.TestModel, {
         _id: bar._id, name: 'bar new'});
 
       assert.same(bar[stopGap$], undefined);
@@ -229,7 +229,7 @@ define((require, exports, module)=>{
       const {_id, age} = v.foo;
       v.foo.attributes.iShouldGo = 123;
       onEnd(v.TestModel.onChange(v.onChange = stub()));
-      Query.insertFromServer(v.TestModel, v.foo._id, {
+      Query.insertFromServer(v.TestModel, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledOnceWith(v.onChange);
@@ -250,7 +250,7 @@ define((require, exports, module)=>{
       sessState.incPending();
       const onChange = stub();
       onEnd(v.TestModel.onChange(onChange));
-      Query.insertFromServer(v.TestModel, v.foo._id, {
+      Query.insertFromServer(v.TestModel, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledWith(onChange, DocChange.change(v.foo, {
@@ -498,7 +498,7 @@ define((require, exports, module)=>{
         const bar = v.TestModel.create({name: 'baz', age: 7});
         const onChange = stub();
         onEnd(v.TestModel.onChange(onChange));
-        Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, age: 7, name: 'baz'});
+        Query.insertFromServer(v.TestModel, {_id: bar._id, age: 7, name: 'baz'});
 
         sessState.decPending();
 
@@ -513,7 +513,7 @@ define((require, exports, module)=>{
         const onAnyChange = [];
         onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
-        Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, name: 'bar', age: 5});
+        Query.insertFromServer(v.TestModel, {_id: bar._id, name: 'bar', age: 5});
 
         assert.equals(bar.attributes, {_id: bar._id, name: 'bar', age: 5});
 
@@ -535,7 +535,7 @@ define((require, exports, module)=>{
         const onAnyChange = [];
         onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
-        Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, name: 'sam'});
+        Query.insertFromServer(v.TestModel, {_id: bar._id, name: 'sam'});
 
         assert.equals(bar.attributes, {_id: bar._id, name: 'bar', age: 5});
 

@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const sideQueue$ = Symbol(), onClose$ = Symbol(), userId$ = Symbol();
+  const onClose$ = Symbol(), userId$ = Symbol();
 
   const BINARY = {binary: true};
 
@@ -80,6 +80,14 @@ define((require, exports, module)=>{
       }
     }
 
+    encodeMessage(type, args) {
+      return message.encodeMessage(type, args, this._session.globalDict);
+    }
+
+    sendBinary(type, args) {
+      this.sendEncoded(args === void 0 ? type : this.encodeMessage(type, args));
+    }
+
     onMessage(data, flags) {
       if (data[0] === 'H')
         return void this.send(`K${Date.now()}`);
@@ -112,50 +120,8 @@ define((require, exports, module)=>{
       process(this._last = [data, null]);
     }
 
-
-    batchMessages() {
-      this[sideQueue$] = [];
-      return util.thread.batchMessage = new BatchMessage(this);
-    }
-    releaseMessages() {
-      const bm = util.thread.batchMessage;
-      if (bm === void 0) return;
-      const sq = this[sideQueue$];
-      this[sideQueue$] = void 0;
-      sq !== void 0 && sq.forEach(args =>{bm.batch(this, ...args)});
-      util.thread.batchMessage = void 0;
-      bm.release();
-    }
-    abortMessages() {
-      const bm = util.thread.batchMessage;
-      if (bm === void 0) return;
-      bm.abort();
-      this.releaseMessages();
-      util.thread.batchMessage = void 0;
-    }
-
-    sendBinary(type, args, func) {
-      const bm = util.thread.batchMessage;
-      if (this[sideQueue$] !== void 0 && (bm === void 0 || bm.conn !== this)) {
-        this[sideQueue$].push([type, args, func]);
-        return;
-      }
-      if (bm !== void 0) {
-        bm.batch(this, type, args, func);
-        return;
-      }
-      const msg = arguments.length === 1 ? type :
-              message.encodeMessage(type, func ? func(args) : args, this._session.globalDict);
-      try {
-        this.ws && this.ws.send(msg, {binary: true});
-      } catch(ex) {
-        koru.info('sendBinary exception', ex);
-
-        this.close();
-      }
-    }
-    added(name, id, attrs, filter) {
-      this.sendBinary('A', [name, id, filterAttrs(attrs, filter)]);
+    added(name, attrs, filter) {
+      this.sendBinary('A', [name, filterAttrs(attrs, filter)]);
     }
 
     changed(name, id, attrs, filter) {
@@ -196,7 +162,7 @@ define((require, exports, module)=>{
     static buildUpdate(dc) {
       const {doc, model: {modelName}} = dc;
       if (dc.isAdd)
-        return ['A', [modelName, doc._id, doc.attributes]];
+        return ['A', [modelName, doc.attributes]];
       else if (dc.isDelete)
         return ['R', [modelName, doc._id]];
       else  {

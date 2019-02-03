@@ -132,61 +132,6 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("send batched", ()=>{
-      const bm = util.thread.batchMessage = {batch: stub()};
-      onEnd(() => util.thread.batchMessage = undefined);
-
-      v.conn.sendBinary.restore();
-
-      v.conn.sendBinary('M', [1, 2, 3], v.func = stub());
-
-      assert.calledWith(bm.batch, v.conn, 'M', [1, 2, 3], v.func);
-
-      refute.called(v.conn.ws.send);
-    });
-
-    test("message ordering", ()=>{
-      v.conn.sendBinary.restore();
-      v.thread = v.c2t = {name: 'c2'};
-      TH.stubProperty(util, 'thread', {get() {return v.thread}});
-      v.conn2 = new ServerConnection(session, v.ws = {
-        send: stub(), close: stub(), on: stub(),
-      }, {}, 456, v.sessClose = stub());
-
-      const bm2 = v.conn2.batchMessages();
-      spy(bm2, 'batch');
-      v.conn2.sendBinary('A', 1);
-      assert.calledWith(bm2.batch, v.conn2, 'A', 1);
-      v.thread = v.ct = {name: 'c'};
-      v.conn2.sendBinary('C', 2);
-      const bm = v.conn.batchMessages();
-
-      v.conn.sendBinary('A', 11);
-      v.conn2.sendBinary('C', 3);
-      v.thread = v.c2t;
-      v.conn2.sendBinary('A', 4);
-      v.thread = v.ct;
-      v.conn2.sendBinary('C', 5);
-
-      stub(message, 'encodeMessage');
-      const aEncode = message.encodeMessage.withArgs('A');
-      const wEncode = message.encodeMessage.withArgs('W');
-
-      v.conn.releaseMessages();
-      assert.calledWith(aEncode, 'A', 11);
-
-      v.thread = v.c2t;
-      v.conn2.releaseMessages();
-
-      assert.calledWith(wEncode, 'W', [
-        ['A', 1],
-        ['A', 4],
-        ['C', 2], ['C', 3],
-        ['C', 5],
-      ], session.globalDict);
-      assert(wEncode.calledAfter(aEncode));
-    });
-
     test("sendEncoded", ()=>{
       /**
        * Send a pre encoded binary {#../message} to the client.
@@ -204,25 +149,6 @@ isServer && define((require, exports, module)=>{
       assert.same(v.conn.ws, null);
       assert.calledWith(koru.info, 'Websocket exception for connection: 123', error);
     });
-
-    test("message abort", ()=>{
-      v.conn.sendBinary.restore();
-      v.thread = v.ct = {name: 'c'};
-      TH.stubProperty(util, 'thread', {get() {return v.thread}});
-
-      const bm = v.conn.batchMessages();
-      v.conn.sendBinary('C', 6);
-      v.thread = v.c2t = {name: 'c2'};
-      v.conn.sendBinary('C', 5);
-      v.conn.sendBinary('C', 4);
-      v.thread = v.ct;
-      v.conn.sendBinary('C', 7);
-
-       stub(message, 'encodeMessage');
-      v.conn.abortMessages();
-      assert.calledOnceWith(message.encodeMessage, 'W', [['C', 5], ['C', 4]]);
-    });
-
 
     test("send", ()=>{
       /**
@@ -367,7 +293,7 @@ isServer && define((require, exports, module)=>{
 
       //[
       assert.equals(ServerConnection.buildUpdate(DocChange.add(book1)),
-                    ['A', ['Book', 'book1', {name: 'Book 1'}]]);
+                    ['A', ['Book', {_id: 'book1', name: 'Book 1'}]]);
       //]
       book1.attributes.name = "new name";//[#
       assert.equals(ServerConnection.buildUpdate(DocChange.change(book1, {name: 'old name'})),
@@ -379,13 +305,13 @@ isServer && define((require, exports, module)=>{
     });
 
     test("added", ()=>{
-      v.conn.added('Foo', '123', v.attrs = {name: 'bar', age: 5});
+      v.conn.added('Foo', v.attrs = {name: 'bar', age: 5});
 
-      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', v.attrs]);
+      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', v.attrs]);
 
-      v.conn.added('Foo', '123', v.attrs = {name: 'fbar', age: 5}, {age: 1});
+      v.conn.added('Foo', v.attrs = {name: 'fbar', age: 5}, {age: 1});
 
-      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', {name: 'fbar'}]);
+      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', {name: 'fbar'}]);
     });
 
     test("changed", ()=>{

@@ -35,7 +35,7 @@ define((require, exports, module)=>{
     }
 
     assertAdded(doc) {
-      const ans = [doc.constructor.modelName, doc._id, doc.attributes];
+      const ans = [doc.constructor.modelName, doc.attributes];
       let msg;
       if (!this.findCall("A", ans, r =>{msg = r}))
         assert.elideFromStack(

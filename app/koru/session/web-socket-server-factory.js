@@ -135,9 +135,12 @@ define((require, exports, module)=>{
         return buildGlobalDict();
       },
 
+      withBatch(callback) {
+        return message.withEncoder('W', this.globalDict, callback);
+      },
+
       // for testing
       get _sessCounter() {return sessCounter},
-      get _Connection() {return Connection},
       get _globalDictAdders() {return globalDictAdders},
     });
 
@@ -162,7 +165,6 @@ define((require, exports, module)=>{
     session.provide('M', function (data) {
       const msgId = data[0];
       const func = session._rpcs[data[1]];
-      this.batchMessages();
       try {
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
@@ -172,9 +174,7 @@ define((require, exports, module)=>{
           util.thread.random = new Random(msgId);
         const result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
-        this.releaseMessages();
       } catch(ex) {
-        this.abortMessages();
         if (ex.error) {
           this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         } else {

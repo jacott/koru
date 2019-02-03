@@ -218,7 +218,7 @@ isClient && define((require, exports, module)=>{
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
           onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-          Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
+          Query.insertFromServer(v.TestModel, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.f1 = v.TestModel.findById('foo123');
         }
         await v.db.whenReady(); {
@@ -383,7 +383,7 @@ isClient && define((require, exports, module)=>{
       group("with stopGap$", ()=>{
         beforeEach(()=>{
           v.db.whenReady().then(()=>{
-            Query.insertFromServer(v.TestModel, 'foo123', {
+            Query.insertFromServer(v.TestModel, {
               _id: 'foo123', name: 'stopGap', age: 5, gender: 'm'});
             v.foo123 = v.TestModel.docs.foo123;
             v.foo123[stopGap$] = true;

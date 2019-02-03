@@ -40,17 +40,17 @@ isClient && define((require, exports, module)=>{
 
     test("added", ()=>{
       const insertSpy = spy(Query, 'insertFromServer');
-      v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
+      v.recvA('Foo', v.attrs = {_id: 'f123', name: 'bob', age: 5});
 
       const foo = v.Foo.findById('f123');
 
       assert(foo);
       v.attrs._id = 'f123';
       assert.equals(foo.attributes, v.attrs);
-      assert.calledWith(insertSpy, v.Foo, 'f123', v.attrs);
+      assert.calledWith(insertSpy, v.Foo, v.attrs);
 
       v.sess._id = 'foo01';
-      v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 7});
+      v.recvA('Foo', v.attrs = {_id: 'f123', name: 'bob', age: 7});
 
       {
         const foo = v.Foo.findById('f123');

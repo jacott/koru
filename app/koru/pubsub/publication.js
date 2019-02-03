@@ -88,49 +88,41 @@ define((require, exports, module)=>{
       return;
     }
 
-    this.batchMessages();
-    try {
-      if (name === null) {
-        const sub = subs[id];
-        if (sub === void 0) return;
-        try {
-          const ans = sub.onMessage(args);
-          this.sendBinary('Q', [id, msgId, 0, ans]);
-        } catch(ex) {
-          if (ex.error === void 0)
-            koru.unhandledException(ex);
-          this.sendBinary('Q', [id, msgId, -(ex.error || 500), ex.reason]);
-        }
-        return;
+    if (name === null) {
+      const sub = subs[id];
+      if (sub === void 0) return;
+      try {
+        const ans = sub.onMessage(args);
+        this.sendBinary('Q', [id, msgId, 0, ans]);
+      } catch(ex) {
+        if (ex.error === void 0)
+          koru.unhandledException(ex);
+        this.sendBinary('Q', [id, msgId, -(ex.error || 500), ex.reason]);
       }
-      const Sub = _pubs[name];
-      if (Sub === void 0) {
-        const msg = 'unknown publication: ' + name;
-        this.sendBinary('Q', [id, msgId, 500, msg]);
-        koru.info(msg);
-      } else {
-        let sub;
-        try {
-          sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
-          sub.init(...args);
-          subs[id] !== void 0 && this.sendBinary('Q', [
-            id, msgId, 200, sub.lastSubscribed = util.dateNow()]); // ready
+      return;
+    }
+    const Sub = _pubs[name];
+    if (Sub === void 0) {
+      const msg = 'unknown publication: ' + name;
+      this.sendBinary('Q', [id, msgId, 500, msg]);
+      koru.info(msg);
+    } else {
+      let sub;
+      try {
+        sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
+        sub.init(...args);
+        subs[id] !== void 0 && this.sendBinary('Q', [
+          id, msgId, 200, sub.lastSubscribed = util.dateNow()]); // ready
 
-        } catch (ex) {
-          if (ex.error === void 0)
-            koru.unhandledException(ex);
-          this.sendBinary('Q', [id, msgId, ex.error || 500, ex.reason]);
-          if (sub !== void 0) {
-            stopped(sub);
-            sub.stop();
-          }
+      } catch (ex) {
+        if (ex.error === void 0)
+          koru.unhandledException(ex);
+        this.sendBinary('Q', [id, msgId, ex.error || 500, ex.reason]);
+        if (sub !== void 0) {
+          stopped(sub);
+          sub.stop();
         }
       }
-
-      this.releaseMessages();
-    } catch(ex) {
-      this.abortMessages();
-      throw ex;
     }
   }
 

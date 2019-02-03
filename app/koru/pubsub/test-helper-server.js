@@ -16,9 +16,6 @@ define((require, exports, module)=>{
       const conn = new ServerConnection(session, {
         send: stub(), on: stub()}, {}, sessId, ()=>{}
       );
-      spy(conn, 'batchMessages');
-      spy(conn, 'releaseMessages');
-      spy(conn, 'abortMessages');
       conn.userId = koru.userId();
       conn.sendBinary = stub();
       conn.sendEncoded = stub();

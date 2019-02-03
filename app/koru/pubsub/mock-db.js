@@ -10,7 +10,7 @@ define((require, exports, module)=>{
   class MockModel {
     constructor(_id, name) {
       this._id = _id;
-      this.attributes = {name};
+      this.attributes = {_id, name};
     }
 
     get name() {return this.attributes.name}
