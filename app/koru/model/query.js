@@ -374,10 +374,10 @@ define((require, exports, module)=>{
     return Query;
   };
 
-  exports = __init__(require('../env!./query'));
-  exports.__init__ = __init__;
+  const Query = __init__(require('../env!./query'));
+  Query.__init__ = __init__;
 
-  module.onUnload(()=>{exports[private$].unload && exports[private$].unload()});
+  module.onUnload(()=>{Query[private$] && Query[private$].unload && Query[private$].unload()});
 
-  return exports;
+  return Query;
 });

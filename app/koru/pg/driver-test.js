@@ -507,28 +507,38 @@ isServer && define((require, exports, module)=>{
       });
 
       test("abort startTransaction, endTransaction", ()=>{
-        const tx = v.foo._client.startTransaction(); {
+        const client = v.foo._client;
+        api.innerSubject(pg.defaultDb.constructor).protoProperty('inTransaction', {intro() {
+          /**
+           * determine if client is in a transaction
+           **/
+        }});
+
+        assert.isFalse(client.inTransaction);
+        const tx = client.startTransaction(); {
+          assert.isTrue(client.inTransaction);
           v.foo.updateById('123', {name: 'a1'});
 
-          assert.same(v.foo._client.startTransaction(), tx);
+          assert.same(client.startTransaction(), tx);
           {
+            assert.isTrue(client.inTransaction);
             assert.equals(tx.savepoint, 1);
 
             v.foo.updateById('123', {name: 'a2'});
             assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
 
           }
-          assert.same(v.foo._client.endTransaction('abort'), 1);
+          assert.same(client.endTransaction('abort'), 1);
 
           assert.equals(v.foo.findOne({_id: '123'}).name, 'a1');
 
         }
-        assert.same(v.foo._client.endTransaction('abort'), 0);
+        assert.same(client.endTransaction('abort'), 0);
+        assert.isFalse(client.inTransaction);
         assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
         assert.exception(()=>{
-          v.foo._client.endTransaction('abort');
+          client.endTransaction('abort');
         }, {message: 'No transaction in progress!'});
-
       });
 
       test("commit startTransaction, endTransaction", ()=>{
@@ -547,9 +557,11 @@ isServer && define((require, exports, module)=>{
       });
 
       test("nested transactions", ()=>{
+        const client = v.foo._client;
+
         try {
           v.foo.transaction(tran =>{
-            v.foo._client.onCommit(v.onCommit = stub());
+            client.onCommit(v.onCommit = stub());
             v.foo.updateById('123', {name: 'eee'});
             tran.onAbort(v.onAbort = stub());
             tran.onAbort(v.onAbort2 = stub());
@@ -599,9 +611,9 @@ isServer && define((require, exports, module)=>{
 
         v.foo.transaction(tran =>{
           tran.onAbort(v.onAbort = stub());
-          v.foo._client.onCommit(v.onCommit1 = stub());
+          client.onCommit(v.onCommit1 = stub());
           v.foo.transaction(tran =>{
-            v.foo._client.onCommit(v.onCommit2 = stub());
+            client.onCommit(v.onCommit2 = stub());
             v.foo.updateById('123', {name: 'fff'});
           });
           refute.called(v.onCommit1);

@@ -10,6 +10,8 @@ define((require, exports, module)=>{
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
+  const notNested = (db)=> db.inTransaction ? void 0 : db;
+
   return (Query, condition, notifyAC$)=>{
 
     const notify = (docChange)=>{
@@ -20,15 +22,17 @@ define((require, exports, module)=>{
     util.merge(Query, {
       insert(doc) {
         const model = doc.constructor;
-        const result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
-        if (Array.isArray(result))
-          doc.attributes._id = result[0]._id;
+        TransQueue.transaction(notNested(model.db), ()=>{
+          const result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+          if (Array.isArray(result))
+            doc.attributes._id = result[0]._id;
 
-        model._$docCacheSet(doc);
-        TransQueue.onAbort(() => model._$docCacheDelete(doc));
-        const dc = DocChange.add(doc);
-        Model._support.callAfterLocalChange(dc);
-        TransQueue.onSuccess(() => notify(dc));
+          model._$docCacheSet(doc);
+          TransQueue.onAbort(() => model._$docCacheDelete(doc));
+          const dc = DocChange.add(doc);
+          Model._support.callAfterLocalChange(dc);
+          TransQueue.onSuccess(()=>{notify(dc)});
+        });
       },
 
       _insertAttrs(model, attrs) {
@@ -192,7 +196,7 @@ define((require, exports, module)=>{
         const {model} = this;
         const {docs} = model;
         const onSuccess = [];
-        TransQueue.transaction(model.db, tran => {
+        TransQueue.transaction(notNested(model.db), tran => {
           this.forEach(doc => {
             ++count;
             Model._support.callBeforeObserver('beforeRemove', doc);
@@ -201,8 +205,8 @@ define((require, exports, module)=>{
             Model._support.callAfterLocalChange(DocChange.delete(doc));
             onSuccess.push(doc);
           });
+          TransQueue.onSuccess(()=>{onSuccess.forEach(doc =>{notify(DocChange.delete(doc))})});
         });
-        TransQueue.onSuccess(()=>{onSuccess.forEach(doc =>{notify(DocChange.delete(doc))})});
         return count;
       },
 
@@ -226,7 +230,7 @@ define((require, exports, module)=>{
         let count = 0;
         let onSuccess = [], onAbort = [];
 
-        TransQueue.transaction(model.db, tran => {
+        TransQueue.transaction(notNested(model.db), tran => {
           const {docs} = model;
           TransQueue.onAbort(() => {
             onAbort.forEach(doc => model._$docCacheDelete(doc));
@@ -254,9 +258,9 @@ define((require, exports, module)=>{
               onSuccess.push(dc);
             }
           });
-        });
-        TransQueue.onSuccess(() => {
-          onSuccess.forEach(dc => notify(dc));
+          TransQueue.onSuccess(() => {
+            onSuccess.forEach(notify);
+          });
         });
         return count;
       },

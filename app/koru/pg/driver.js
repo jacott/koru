@@ -254,6 +254,11 @@ define((require, exports, module)=>{
       this.query(`DROP TABLE IF EXISTS "${name}"`);
     }
 
+    get inTransaction() {
+      const tx = util.thread[this[tx$]];
+      return (tx && tx.transaction) === 'COMMIT';
+    }
+
     startTransaction() {
       getConn(this); // ensure connection
       const tx = util.thread[this[tx$]];
@@ -355,7 +360,7 @@ define((require, exports, module)=>{
         releaseConn(this);
       }
     }
-  };
+  }
 
   Client.prototype[private$] = {tx$};
 

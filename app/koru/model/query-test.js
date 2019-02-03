@@ -340,9 +340,11 @@ define((require, exports, module)=>{
 
     test("onChange", ()=>{
       /**
-       * Observe changes to documents matching query
+       * Observe changes to documents matching query.
        *
        * See {#koru/observable#add}
+       *
+       * @param callback called with one argument {#../doc-change} detailing the change.
        **/
       api.protoMethod('onChange');
 
@@ -353,36 +355,36 @@ define((require, exports, module)=>{
         return handle;
       });
 
-      api.example(_=>{
-        const query = TestModel.query.where(doc => doc.name.startsWith('F'));
-        const oc = stub();
-        const handle = query.onChange(oc);
+      //[
+      const query = TestModel.query.where(doc => doc.name.startsWith('F'));
+      const oc = stub();
+      const handle = query.onChange(oc);
 
-        const fred = TestModel.create({name: 'Fred'});
+      const fred = TestModel.create({name: 'Fred'});
 
-        assert.calledWith(oc, DocChange.add(fred));
-        oc.reset();
+      assert.calledWith(oc, DocChange.add(fred));
+      oc.reset();
 
-        const emma = TestModel.create({name: 'Emma'});
-        refute.called(oc);
+      const emma = TestModel.create({name: 'Emma'});
+      refute.called(oc);
 
-        emma.$update('name', 'Fiona');
-        assert.calledWith(oc, DocChange.add(emma.$reload()));
-        emma.$update('name', 'Fi');
-        assert.calledWith(oc, DocChange.change(emma.$reload(), {name: 'Fiona'}));
+      emma.$update('name', 'Fiona');
+      assert.calledWith(oc, DocChange.add(emma.$reload()));
+      emma.$update('name', 'Fi');
+      assert.calledWith(oc, DocChange.change(emma.$reload(), {name: 'Fiona'}));
 
-        fred.$update('name', 'Eric');
-        assert.calledWith(oc, DocChange.delete(fred.$reload()));
+      fred.$update('name', 'Eric');
+      assert.calledWith(oc, DocChange.delete(fred.$reload()));
 
 
-        /** stop cancels observer **/
-        handle.stop();
+      /** stop cancels observer **/
+      handle.stop();
 
-        oc.reset();
-        fred.$update('name', 'Freddy');
+      oc.reset();
+      fred.$update('name', 'Freddy');
 
-        refute.called(oc);
-      });
+      refute.called(oc);
+      //]
 
       assert.called(v.stopSpy);
     });

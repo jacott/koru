@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  const TransQueue      = require('koru/model/trans-queue');
   const koru            = require('../main');
   const Model           = require('./main');
   const Query           = require('./query');
@@ -45,6 +46,32 @@ define((require, exports, module)=>{
 
     test("$or", ()=>{
       assert.same(v.TestModel.where({$or: [{name: 'foo'}, {age: 3}]}).count(), 1);
+    });
+
+    test("notify", ()=>{
+      const {TestModel} = v;
+      let isInTransaction = false, count = 0;
+      const onChange = (dc)=>{
+        isInTransaction = TransQueue.isInTransaction();
+        ++count;
+      };
+
+      onEnd(TestModel.onChange(onChange));
+      const doc1 = TestModel.create({name: 'doc1'});
+
+      assert.same(count, 1);
+      assert.same(isInTransaction, true);
+
+      count = 0;
+      TestModel.query.update('age', 10);
+      assert.same(count, 2);
+      assert.same(isInTransaction, true);
+
+      count = 0;
+      TestModel.query.remove();
+
+      assert.same(count, 2);
+      assert.same(isInTransaction, true);
     });
 
     group("waitForOne", ()=>{

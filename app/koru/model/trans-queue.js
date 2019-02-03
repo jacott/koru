@@ -19,7 +19,7 @@ define(require =>{
       }
       try {
         const result = body === void 0 ?
-              db() : db.transaction(tx => body.call(db, tx));
+              db() : db === void 0 ? body() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
           while (list != null) {
             const l = list;
