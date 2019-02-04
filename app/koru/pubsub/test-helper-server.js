@@ -30,12 +30,18 @@ define((require, exports, module)=>{
       return conn;
     },
 
+    stopAllSubs: (conn) => {
+      for (const id in conn._subs) {
+        conn._subs[id].stop();
+      }
+    },
+
     decodeEncodedCall: (conn, call)=>({
       type: String.fromCharCode(call.args[0][0]),
       data: decodeMessage(call.args[0], conn)}),
 
 
-    findEncodedCall: (conn, expType, expData)=>{
+    hasEncodedCall: (conn, expType, expData)=>{
       if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
         const {type, data} = PublishTH.decodeEncodedCall(conn, call);
         if (type === 'W') {
@@ -67,7 +73,7 @@ define((require, exports, module)=>{
 
   TH.Core.assertions.add("encodedCall", {
     assert(conn, type, exp) {
-      const ans = PublishTH.findEncodedCall(conn, type, exp);
+      const ans = PublishTH.hasEncodedCall(conn, type, exp);
       if (! this._asserting || ans) return ans;
       this.type = type;
       this.exp = exp;

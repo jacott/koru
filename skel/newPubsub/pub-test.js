@@ -19,6 +19,7 @@ define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      PublishTH.stopAllSubs(conn);
       TH.rollbackTransaction();
       v = {};
     });

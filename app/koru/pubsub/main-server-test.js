@@ -17,6 +17,10 @@ define((require, exports, module)=>{
         gDict = session.globalDict;
       });
 
+      after(()=>{
+        PublishTH.stopAllSubs(conn);
+      });
+
       test("server-publish", ()=>{
         api.topic();
 

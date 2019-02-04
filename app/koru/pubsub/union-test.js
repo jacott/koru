@@ -26,6 +26,7 @@ isServer && define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      PublishTH.stopAllSubs(conn);
       Session._commands.Q = origQ;
     });
 

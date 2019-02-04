@@ -37,6 +37,7 @@ isServer && define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      PublishTH.stopAllSubs(conn);
       AllPub.resetConfig();
     });
 
