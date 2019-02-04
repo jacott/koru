@@ -4,12 +4,12 @@ define((require, exports, module)=>{
 
   const config$ = Symbol();
 
-  const truth = ()=> true;
+  const tautology = () => true;
 
   class AllSub extends ModelListMixin(Subscription) {
     connect(...args) {
       for (const model of this.constructor.includedModels()) {
-        this.match(model.modelName, truth);
+        this.match(model.modelName, tautology);
       }
       super.connect(...args);
     }

@@ -57,6 +57,7 @@ define((require, exports, module)=>{
         delete _pubs[this[pubName$]];
       }
 
+      Session.addToDict(v);
       this[pubName$] = v;
       if (v !== void 0) _pubs[v] = this;
     }

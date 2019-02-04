@@ -359,13 +359,14 @@ define((require, exports, module)=>{
   }
 
   function addToDictionary(adder) {
-    for (let mname in ModelMap) {
+    for (const mname in ModelMap) {
       adder(mname);
       const model = ModelMap[mname];
       for (let name in model.$fields) {
         adder(name);
       }
     }
+    for (const name in session._rpcs) adder(name);
   }
 
   return ModelEnv;
