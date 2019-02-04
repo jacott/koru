@@ -41,7 +41,7 @@ define((require, exports, module)=>{
   const koru = {
     onunload,
 
-    PROTOCOL_VERSION: 5,
+    PROTOCOL_VERSION: 6,
 
     unload: (id)=>{
       const mod = module.ctx.modules[id];
