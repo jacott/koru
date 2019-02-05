@@ -112,7 +112,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("change userId", ()=>{
-      onEnd(()=>{util.thread.userId = undefined});
+      onEnd(()=>{util.thread.userId = void 0});
       login.setUserId(session, "user123"); // no userId change
       const sub = new Library(session);
       const sub2 = new Library(session);

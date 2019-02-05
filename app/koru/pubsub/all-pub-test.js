@@ -44,7 +44,7 @@ isServer && define((require, exports, module)=>{
     test("requireUserId", ()=>{
       api.property('requireUserId', {info: 'require user to be signed in'});
       TH.noInfo();
-      onEnd(()=>{MyAllPub.pubName = undefined});
+      onEnd(()=>{MyAllPub.pubName = void 0});
       //[
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All";
@@ -94,7 +94,7 @@ isServer && define((require, exports, module)=>{
       //]
       MyAllPub.pubName = "All";
 
-      onEnd(()=>{MyAllPub.pubName = undefined});
+      onEnd(()=>{MyAllPub.pubName = void 0});
 
       const future = new util.Future;
 
@@ -159,7 +159,7 @@ isServer && define((require, exports, module)=>{
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All"; // register publication All
       //]
-      onEnd(()=>{MyAllPub.pubName = undefined});
+      onEnd(()=>{MyAllPub.pubName = void 0});
       //[#
       MyAllPub.excludeModel("AuditLog", "ErrorLog");
 
@@ -210,7 +210,7 @@ isServer && define((require, exports, module)=>{
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All"; // register publication All
       //]
-      onEnd(()=>{MyAllPub.pubName = undefined});
+      onEnd(()=>{MyAllPub.pubName = void 0});
       //[#
       MyAllPub.includeModel("UserLogin", "Author");
 

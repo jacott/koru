@@ -52,7 +52,7 @@ define((require, exports, module)=>{
       onEnd(()=>{
         for (const name of models) {
           const orig = this.origModels[name];
-          if (orig === undefined)
+          if (orig === void 0)
             delete ModelMap[name];
           else
             ModelMap[name] = orig;

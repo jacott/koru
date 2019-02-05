@@ -317,7 +317,7 @@ isClient && define((require, exports, module)=>{
         response = {error, state: sub.state};
       });
       assert.same(sub.state, 'connect');
-      assert.same(response, undefined);
+      assert.same(response, void 0);
 
       responseFromServer();
 
@@ -333,6 +333,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.property();
       assert.same(Subscription.lastSubscribedMaximumAge, -1);
+      // FIXME test sends 0
     });
 
     test("reconnecting", ()=>{

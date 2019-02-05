@@ -10,9 +10,6 @@ define((require, exports, module)=>{
   const module$ = Symbol(),
         state$ = Symbol(), pubName$ = Symbol(), onConnect$ = Symbol();
 
-  const observe = (sub, sym, callback)=> (
-    sub[sym] || (sub[sym] = new Observable())).add(callback);
-
   const assertNotStopped = (sub)=>{
     if (sub[state$] === 'stopped') throw new Error("Illegal action on stopped subscription");
   };
@@ -26,7 +23,9 @@ define((require, exports, module)=>{
       this._matches = Object.create(null);
     }
 
-    onConnect(callback) {return observe(this, onConnect$, callback)}
+    onConnect(callback) {
+      return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+    }
     reconnecting() {}
 
     connect(...args) {
@@ -52,8 +51,8 @@ define((require, exports, module)=>{
         try {
           this.stopped(SubscriptionSession._filterStopped);
         } finally {
-          if (onConnect !== undefined) {
-            if (error !== undefined)
+          if (onConnect !== void 0) {
+            if (error !== void 0)
               onConnect.notify(error);
             else if (oldState === 'connect')
               onConnect.notify({code: 409, reason: 'stopped'});
@@ -72,7 +71,7 @@ define((require, exports, module)=>{
       if (typeof modelName !== 'string')
         modelName = modelName.modelName;
       const {_matches} = this;
-      if (_matches[modelName] !== undefined)
+      if (_matches[modelName] !== void 0)
         _matches[modelName].delete();
       this._matches[modelName] = SubscriptionSession.match.register(modelName, test);
     }
@@ -99,7 +98,7 @@ define((require, exports, module)=>{
 
     static subscribe(args, callback) {
       const sub = new this();
-      callback !== undefined && sub.onConnect(callback);
+      callback !== void 0 && sub.onConnect(callback);
       if (Array.isArray(args))
         sub.connect(...args);
       else
@@ -115,8 +114,8 @@ define((require, exports, module)=>{
         this[state$] = 'active';
         this.lastSubscribed = +lastSubscribed || 0;
         const onConnect = this[onConnect$];
-        if (onConnect !== undefined) {
-          this[onConnect$] = undefined;
+        if (onConnect !== void 0) {
+          this[onConnect$] = void 0;
           onConnect.notify(null);
         }
         break;
