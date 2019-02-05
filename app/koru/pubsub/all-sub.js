@@ -7,11 +7,11 @@ define((require, exports, module)=>{
   const tautology = () => true;
 
   class AllSub extends ModelListMixin(Subscription) {
-    connect(...args) {
+    constructor() {
+      super();
       for (const model of this.constructor.includedModels()) {
         this.match(model.modelName, tautology);
       }
-      super.connect(...args);
     }
 
     reconnecting() {

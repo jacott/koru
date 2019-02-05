@@ -90,8 +90,10 @@ define((require)=>{
       session.state.onConnect('10-subscribe2', ()=>{
         for(const id in this.subs) {
           const sub = this.subs[id];
-          sub[msgId$] === void 0 && incPending(this, sub);
-          sub[msgId$] = 1;
+          if (sub[msgId$] === void 0)
+            incPending(this, sub);
+          else
+            sub[msgId$] = 1;
           sub[messages$].length = 0;
           sendInit(this, this.subs[id]);
         }
@@ -146,6 +148,8 @@ define((require)=>{
       ss.session.unprovide('Q');
       ss.clientUpdate.unload();
       ss.userId = ss.loginOb = null;
+
+      for (const msgId in ss.subs) ss.subs[msgId].stop();
 
       delete sessions[session._id];
     }

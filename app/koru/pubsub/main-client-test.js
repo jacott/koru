@@ -19,23 +19,26 @@ define((require)=>{
       test("client-subscription", ()=>{
         api.topic();
 
-        const lookupLastSubscribed = (options)=>{
+        const lookupLastSubscribed = (sub)=>{
           return new Date(2019, 0, 1, 20, 22, 34);
         };
 
-        const Book = {onChange: stub()};
+        const Book = {modelName: 'Book', onChange: stub()};
 
         //[
         // Step 1 - Register the subscription
         class LibrarySub extends Subscription {
-          async connect(options) {
-            // step 2 from below calls this
-            const {shelf} = options;
+          constructor(args) {
+            super(args);
+            const {shelf} = this.args;
             this.match(Book, doc => doc.shelf === self);
+          }
+          async connect() {
+            // step 2 from below calls this
             this.lastSubscribed =
-              await lookupLastSubscribed(options);
+              await lookupLastSubscribed(this);
             // connect to server
-            super.connect(options);
+            super.connect();
           }
 
           reconnecting() {

@@ -15,10 +15,11 @@ define((require, exports, module)=>{
   };
 
   class Subscription {
-    constructor(session=Session) {
+    constructor(args, session=Session) {
+      this.args = args;
       this.subSession = SubscriptionSession.get(Session);
       this._id = this.subSession.makeId();
-      this[state$] = 'stopped';
+      this[state$] = 'new';
       this.lastSubscribed = 0;
       this._matches = Object.create(null);
     }
@@ -28,15 +29,14 @@ define((require, exports, module)=>{
     }
     reconnecting() {}
 
-    connect(...args) {
-      this.args = args;
+    connect() {
       this.subSession.connect(this);
       this[state$] = 'connect';
     }
 
     userIdChanged(newUID, oldUID) {
       this.stop();
-      this.connect(...this.args);
+      this.connect();
     }
 
     stop(error) {
@@ -97,12 +97,9 @@ define((require, exports, module)=>{
     static get module() {return this[module$]}
 
     static subscribe(args, callback) {
-      const sub = new this();
+      const sub = new this(args);
       callback !== void 0 && sub.onConnect(callback);
-      if (Array.isArray(args))
-        sub.connect(...args);
-      else
-        sub.connect(args);
+      sub.connect();
       return sub;
     }
 

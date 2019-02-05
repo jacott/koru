@@ -9,35 +9,37 @@ isClient && define((require, exports, module)=>{
   const Query           = require('koru/model/query');
   const MockServer      = require('koru/pubsub/mock-server');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
-  const session         = require('koru/session');
+  const Session         = require('koru/session');
   const Match           = require('koru/session/match');
   const State           = require('koru/session/state').constructor;
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const ClientLogin     = require('koru/user-account/client-login');
 
-  const {stub, spy, onEnd, util, intercept, stubProperty} = TH;
+  const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
 
   const Subscription = require('./subscription');
 
-  const mockServer = new MockServer(session);
+  const mockServer = new MockServer(Session);
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    const origState = Session.state;
     beforeEach(()=>{
-      stubProperty(session, 'state', {value: new State()});
-      stub(session, 'sendBinary');
-      session.state._state = 'ready';
+      stub(Session, 'sendBinary');
+      Session.state._state = 'ready';
     });
 
     afterEach(()=>{
       SubscriptionSession.match._clear();
-      SubscriptionSession.unload(session);
+      SubscriptionSession.unload(Session);
+      Session.state = origState;
     });
 
     test("constructor", ()=>{
       /**
        * Create a subscription
 
+       * @param {...any-type} [args] the arguments to send to the publication.
        * @param session The session to subscribe to (defaults to {#koru/session/main}).
 
        **/
@@ -50,13 +52,15 @@ isClient && define((require, exports, module)=>{
       Library.module = module;
       assert.same(Library.pubName, 'Library');
 
-      const sub = new Library();
+      const sub = new Library({shelf: 'mathematics'});
 
       assert.same(sub._id, '1');
+      assert.equals(sub.args, {shelf: 'mathematics'});
 
-      assert.same(sub.subSession, SubscriptionSession.get(session));
 
-      const sub2 = new Library(session);
+      assert.same(sub.subSession, SubscriptionSession.get(Session));
+
+      const sub2 = new Library(Session);
       assert.same(sub.subSession, sub2.subSession);
       assert.same(sub2._id, '2');
       //]
@@ -66,34 +70,27 @@ isClient && define((require, exports, module)=>{
       /**
        * Connect to the {#../publication} when session is ready.
        *
-       * @param {...any-type} [params] a list of parameters to send to
-       * the publication.
        *
        **/
       api.protoMethod();
       const module = new TH.MockModule("library-client");
 
       const waitForServer = ()=>{
-        assert.calledWith(session.sendBinary, 'Q', [
-          '1', 1, 'Library', [{shelf: 'mathematics'}], 0]);
+        assert.calledWith(Session.sendBinary, 'Q', [
+          '1', 1, 'Library', {shelf: 'mathematics'}, 0]);
         mockServer.sendSubResponse(['1', 1, 200, Date.now()]);
       };
 
       //[
       class Library extends Subscription {
-        connect(params) {
-          // maybe preload from indexeddb then
-          super.connect(params);
-        }
       }
       Library.module = module;
 
-      const sub = new Library();
-      assert.same(sub.state, 'stopped');
+      const sub = new Library({shelf: 'mathematics'});
+      assert.same(sub.state, 'new');
 
-      sub.connect({shelf: 'mathematics'});
+      sub.connect();
       assert.same(sub.state, 'connect');
-      assert.equals(sub.args, [{shelf: 'mathematics'}]);
 
       waitForServer();
 
@@ -119,8 +116,8 @@ isClient && define((require, exports, module)=>{
       const module = new TH.MockModule("library-client");
 
       const waitForServerResponse = (sub, {error, lastSubscribed})=>{
-        assert.calledWith(session.sendBinary, 'Q', [
-          '1', 1, 'Library', [{shelf: 'mathematics'}], 0]);
+        assert.calledWith(Session.sendBinary, 'Q', [
+          '1', 1, 'Library', {shelf: 'mathematics'}, 0]);
         if (error === null)
           mockServer.sendSubResponse([sub._id, 1, 200, lastSubscribed]);
         else
@@ -133,13 +130,13 @@ isClient && define((require, exports, module)=>{
       Library.module = module;
 
       { /** success */
-        const sub1 = new Library();
+        const sub1 = new Library({shelf: 'mathematics'});
         let resonse;
         sub1.onConnect((error)=>{
           resonse = {error, state: sub1.state};
         });
 
-        sub1.connect({shelf: 'mathematics'});
+        sub1.connect();
 
         const lastSubscribed = Date.now();
         waitForServerResponse(sub1, {error: null, lastSubscribed});
@@ -198,8 +195,8 @@ isClient && define((require, exports, module)=>{
 
       const module = new TH.MockModule("library-client");
 
-      const regBook = stub(Match.prototype, "register").withArgs('Book', TH.match.func)
-            .returns("registered Book");
+      const regBook = spy(Match.prototype, "register").withArgs('Book', TH.match.func);
+
       //[
       class Book extends Model.BaseModel {
         static get modelName() {return 'Book'}
@@ -217,8 +214,9 @@ isClient && define((require, exports, module)=>{
       const sub1 = new Library();
       sub1.connect();
 
-      assert.equals(sub1._matches, {Book: 'registered Book'});
+      //]
       assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
+      assert.equals(sub1._matches, {Book: m(n => n.modelName === 'Book')});
     });
 
     test("stop", ()=>{
@@ -299,7 +297,7 @@ isClient && define((require, exports, module)=>{
        * A convience method to create a subscription that connects to the publication and calls
        * callback on connect.
 
-       * @param args either an array of arguments or an object
+       * @param {any-type} args the arguments to send to the server
 
        * @param [callback] called when connection complete
 
@@ -349,8 +347,8 @@ isClient && define((require, exports, module)=>{
       }
       Book.define({name: 'Book'});
       onEnd(()=>{Model._destroyModel('Book', 'drop')});
-      intercept(session, 'reconnected', ()=>{
-        session.state._onConnect['10-subscribe2']();
+      intercept(Session, 'reconnected', ()=>{
+        Session.state._onConnect['10-subscribe2']();
       });
       //[
       class Library extends Subscription {
@@ -365,7 +363,7 @@ isClient && define((require, exports, module)=>{
       sub.connect();
       refute.called(reconnecting);
 
-      session.reconnected(); // simulate a session reconnect
+      Session.reconnected(); // simulate a session reconnect
 
       assert.calledOnce(reconnecting);
       //]
@@ -407,9 +405,9 @@ isClient && define((require, exports, module)=>{
       const sub = Library.subscribe([123, 456]);
       spy(sub, 'stop');
       spy(sub, 'connect');
-      ClientLogin.setUserId(session, 'uid123');
+      ClientLogin.setUserId(Session, 'uid123');
       assert.called(sub.stop);
-      assert.calledWithExactly(sub.connect, 123, 456);
+      assert.calledWithExactly(sub.connect);
     });
 
     test("postMessage", ()=>{
@@ -428,7 +426,7 @@ isClient && define((require, exports, module)=>{
       api.protoMethod();
 
       const receivePost = ()=>{
-        session._commands.Q.call(session, [sub._id, 2, 0]);
+        Session._commands.Q.call(Session, [sub._id, 2, 0]);
       };
 
       //[
