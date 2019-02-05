@@ -30,6 +30,11 @@ define((require, exports, module)=>{
     reconnecting() {}
 
     connect() {
+      if (this.lastSubscribed != 0) {
+        const {lastSubscribedMaximumAge} = this.constructor;
+        if (lastSubscribedMaximumAge == -1 || this.lastSubscribed < lastSubscribedMaximumAge)
+          this.lastSubscribed = 0;
+      }
       this.subSession.connect(this);
       this[state$] = 'connect';
     }

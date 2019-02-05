@@ -331,7 +331,32 @@ isClient && define((require, exports, module)=>{
        **/
       api.property();
       assert.same(Subscription.lastSubscribedMaximumAge, -1);
-      // FIXME test sends 0
+      api.done();
+
+      let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      let lastSubscribedMaximumAge = now - util.DAY;
+
+      stubProperty(Subscription, 'lastSubscribedMaximumAge', {get: () => lastSubscribedMaximumAge});
+
+      const sub = new Subscription();
+      const lastSubscribed = now + 1 - 1*util.DAY;
+      sub.lastSubscribed = lastSubscribed;
+      sub.connect();
+
+      assert.calledWith(Session.sendBinary, 'Q', ['1', 1, 'Subscription', undefined, lastSubscribed]);
+
+      Session.sendBinary.reset();
+
+      const sub2 = new Subscription();
+      sub2.lastSubscribed = now - 2*util.DAY;
+      sub2.connect();
+      assert.calledWith(Session.sendBinary, 'Q', ['2', 1, 'Subscription', undefined, 0]);
+
+      lastSubscribedMaximumAge = -1;
+      const sub3 = new Subscription();
+      sub3.lastSubscribed = now;
+      sub3.connect();
+      assert.calledWith(Session.sendBinary, 'Q', ['3', 1, 'Subscription', undefined, 0]);
     });
 
     test("reconnecting", ()=>{
