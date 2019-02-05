@@ -76,7 +76,7 @@ define((require, exports, module)=>{
 
   Publication.delete = deletePublication;
 
-  function onSubscribe([id, msgId, name, args=[], lastSubscribed]) {
+  function onSubscribe([id, msgId, name, args, lastSubscribed]) {
     const subs = this._subs;
     if (subs == null) return; // we are closed
 
@@ -111,7 +111,7 @@ define((require, exports, module)=>{
       let sub;
       try {
         sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
-        sub.init(...args);
+        sub.init(args);
         subs[id] !== void 0 && this.sendBinary('Q', [
           id, msgId, 200, sub.lastSubscribed = util.dateNow()]); // ready
 

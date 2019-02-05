@@ -63,7 +63,7 @@ isServer && define((require, exports, module)=>{
       Library.module = module;
       assert.same(Library.pubName, 'Library');
 
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: "mathematics"}, lastSubscribed);
 
 
       assert.same(sub.constructor, Library);
@@ -98,7 +98,7 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}], lastSubscribed);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: "mathematics"}, lastSubscribed);
 
       assert.same(sub.conn, conn);
       assert.same(sub.id, 'sub1');
@@ -113,7 +113,7 @@ isServer && define((require, exports, module)=>{
       // Validation error
       conn.sendBinary.reset();
 
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: 123}], lastSubscribed);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: 123}, lastSubscribed);
 
       assert.calledWith(conn.sendBinary, 'Q', ['sub1', 1, 400, {shelf: [['is_invalid']]}]);
       assert.isTrue(sub.isStopped);
@@ -132,7 +132,7 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}]);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: "mathematics"});
       conn.sendBinary.reset();
       //[
       // server stops the subscription
@@ -151,7 +151,7 @@ isServer && define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: "mathematics"}]);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: "mathematics"});
       conn.sendBinary.reset();
       //[
       // client stops the subscription
@@ -193,7 +193,7 @@ isServer && define((require, exports, module)=>{
         }
       }
       Library.pubName = 'Library';
-      conn.onSubscribe("sub1", 1, 'Library', [{shelf: ["mathematics"]}]);
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
 
       assert.calledWith(conn.sendBinary, 'Q', ["sub1", 1, 200, m.number]);
       conn.sendBinary.reset();
@@ -266,11 +266,11 @@ isServer && define((require, exports, module)=>{
 
       let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-      conn.onSubscribe("sub1", 1, 'Library', [], now - 30 * util.DAY);
+      conn.onSubscribe("sub1", 1, 'Library', void 0, now - 30 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, now]);
 
       conn.sendBinary.reset();
-      conn.onSubscribe("sub2", 1, 'Library', [], now - 31 * util.DAY);
+      conn.onSubscribe("sub2", 1, 'Library', void 0, now - 31 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 400, {lastSubscribed: "too_old"}]);
     });
 
