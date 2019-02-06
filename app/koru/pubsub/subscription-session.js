@@ -1,13 +1,15 @@
 define((require)=>{
   const koru            = require('koru');
-  const ClientUpdate    = require('koru/session/client-update');
-  const login           = require('koru/user-account/client-login');
-  const util            = require('koru/util');
+  const Model           = require('koru/model');
+  const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const Match           = require('koru/session/match');
+  const Trace           = require('koru/trace');
+  const login           = require('koru/user-account/client-login');
+  const util            = require('koru/util');
 
   const loginObserver$ = Symbol(), messages$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
 
@@ -66,13 +68,57 @@ define((require)=>{
     } else ++sub[msgId$];
   };
 
+  let debug_clientUpdate = false;
+  Trace.debug_clientUpdate = value => {debug_clientUpdate = value};
+
+  const modelUpdate = (type, func) => {
+    return function (data) {
+      const session = this;
+      if (debug_clientUpdate) {
+        if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
+          koru.logger("D", type, '< ' + util.inspect(data));
+      }
+      session.isUpdateFromServer = true;
+      const prevDbId = dbBroker.dbId;
+      try {
+        dbBroker.dbId = session._id;
+        func(Model[data[0]], data[1], data[2]);
+      } finally {
+        session.isUpdateFromServer = false;
+        dbBroker.dbId = prevDbId;
+      }
+    };
+  };
+
+  // FIXME match updates
+  // for change:
+  //   if did match and now does not match reason = "noMatch"
+  //   if did not match reason = "stopped"
+  // and maybe the server sends the reason for remove?
+
+  // need to queue changes and remove until subs have completed
+  const added = modelUpdate('Add', (model, attrs) => {
+    Query.insertFromServer(model, attrs);
+  });
+
+  const changed = modelUpdate('Upd', (model, id, attrs) => {
+    model.serverQuery.onId(id).update(attrs);
+  });
+
+  const removed = modelUpdate('Rem', (model, id) => {
+    model.serverQuery.onId(id).remove();
+  });
+
   class SubscriptionSession {
     constructor(session) {
       this.nextId = 0;
       this.subs = util.createDictionary();
       this.session = session;
 
-      session._commands.Q === void 0 && session.provide('Q', provideQ);
+      session.provide('Q', provideQ);
+      session.provide('A', added);
+      session.provide('C', changed);
+      session.provide('R', removed);
 
       this.userId = koru.userId();
       this[loginObserver$] = login.onChange(session, (state)=>{
@@ -98,8 +144,6 @@ define((require)=>{
           sendInit(this, this.subs[id]);
         }
       });
-
-      this.clientUpdate = ClientUpdate(session);
     }
 
     connect(sub) {
@@ -140,68 +184,53 @@ define((require)=>{
 
     static get match() {return match}
 
-    static unload(session) {
-      const ss = sessions[session._id];
+    static unload({_id}) {
+      const ss = sessions[_id];
       if (ss === void 0) return;
-      ss.session.state.stopOnConnect('10-subscribe2');
+      const {session} = ss;
+      session.state.stopOnConnect('10-subscribe2');
+      session.unprovide('Q');
+      session.unprovide('A');
+      session.unprovide('C');
+      session.unprovide('R');
       ss[loginObserver$] !== null && ss[loginObserver$].stop();
-      ss.session.unprovide('Q');
-      ss.clientUpdate.unload();
       ss.userId = ss.loginOb = null;
 
       for (const msgId in ss.subs) ss.subs[msgId].stop();
 
-      delete sessions[session._id];
+      delete sessions[_id];
     }
 
     static _filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
         for(const name in models) {
-          const _mm = match._models;
-          if (_mm === void 0) continue;
-          const mm = _mm[name];
-          if (mm === void 0) continue;
           const model = ModelMap[name];
-          if (model === void 0) continue;
-          const docs = model.docs;
-          for (const id in docs) {
-            const doc = docs[id];
-            let remove = true;
-            for(const compare of mm) {
-              if (compare(doc, reason)) {
-                remove = false;
-                break;
-              }
-            }
-            if (remove) {
-              const simDocs = Query.simDocsFor(model);
-              const sim = simDocs[doc._id];
-              if (sim !== void 0)
-                delete simDocs[doc._id];
-              delete docs[id];
-              Query.notify(DocChange.delete(doc, reason));
-            }
+          if (model !== void 0) {
+            const {docs} = model;
+            for (const id in docs) filterDoc(docs[id], reason);
           }
         }
       });
     }
 
-    static _filterStopped(doc) {
-      if (! match.has(doc, 'stopped')) {
-        const model = doc.constructor;
-        const simDocs = Query.simDocsFor(model);
-        const sim = simDocs[doc._id];
-        if (sim !== void 0)
-          delete simDocs[doc._id];
-        delete model.docs[doc._id];
-        Query.notify(DocChange.delete(doc, 'stopped'));
-      }
-    }
+    static _filterStopped(doc) {filterDoc(doc, 'stopped')}
 
     static get _sessions() {
       return sessions;
     }
   }
+
+  const filterDoc = SubscriptionSession.filterDoc = (doc, reason) => {
+    if (! match.has(doc, reason)) {
+      const model = doc.constructor;
+      const simDocs = Query.simDocsFor(model);
+      const sim = simDocs[doc._id];
+      if (sim !== void 0)
+        delete simDocs[doc._id];
+      delete model.docs[doc._id];
+      Query.notify(DocChange.delete(doc, reason));
+    }
+  };
 
   return SubscriptionSession;
 });

@@ -4,6 +4,8 @@ define((require)=>{
   const koru            = require('../main');
   const message         = require('./message');
 
+  const {inspect$} = require('koru/symbols');
+
   const rpcType$ = Symbol();
 
   let debug_msg = false;
@@ -16,6 +18,8 @@ define((require)=>{
       this._commands = {};
       this[private$] = {};
     }
+
+    [inspect$]() {return 'SessionBase('+this._id+')'}
 
     defineRpc(name, func) {
       this._rpcs[name] = func;

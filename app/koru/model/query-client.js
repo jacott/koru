@@ -284,8 +284,6 @@ define((require, exports, module)=>{
         this.isFromServer || Model._support._updateTimestamps(
           origChanges, model.updateTimestamps, util.newDate());
 
-
-
         return TransQueue.transaction(() => {
           let count = 0;
 
@@ -294,6 +292,7 @@ define((require, exports, module)=>{
             if (isPending && this.isFromServer &&
                 fromServer(model, this.singleId, origChanges))
               return 0;
+
 
             const dc = DocChange.change();
             this.forEach(doc => {

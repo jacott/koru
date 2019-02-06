@@ -5,6 +5,9 @@ isClient && define((require, exports, module)=>{
    * See {#../subscription}
    **/
   const koru            = require('koru');
+  const Model           = require('koru/model');
+  const dbBroker        = require('koru/model/db-broker');
+  const Query           = require('koru/model/query');
   const MockServer      = require('koru/pubsub/mock-server');
   const Subscription    = require('koru/pubsub/subscription');
   const Session         = require('koru/session');
@@ -139,6 +142,67 @@ isClient && define((require, exports, module)=>{
 
       login.setUserId(Session, "user123");
       refute.called(Session.sendBinary);
+    });
+
+    group("clientUpdate", ()=>{
+      let Foo, fooSess, ss;
+
+      const sendMsg = (type, ...args) => {fooSess._commands[type].call(fooSess, args)};
+
+      beforeEach(()=>{
+        Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
+        fooSess = new (Session.constructor)('foo01');
+        fooSess.state = new State();
+        ss = SubscriptionSession.get(fooSess);
+      });
+
+      afterEach(()=>{
+        SubscriptionSession.unload(fooSess);
+        Model._destroyModel('Foo', 'drop');
+        dbBroker.clearDbId();
+        delete Model._databases.foo01;
+      });
+
+      test("added", ()=>{
+        const insertSpy = spy(Query, 'insertFromServer');
+        const attrs = {_id: 'f123', name: 'bob', age: 5};
+        sendMsg('A', 'Foo', attrs);
+
+        assert.same(dbBroker.dbId, 'default');
+
+        dbBroker.dbId = 'foo01';
+        const foo = Foo.findById('f123');
+        assert(foo);
+
+        assert.same(foo.attributes, attrs);
+        assert.calledWith(insertSpy, Foo, attrs);
+      });
+
+      test("changed", ()=>{
+        dbBroker.dbId = 'foo01';
+        const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
+        const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
+
+        dbBroker.clearDbId();
+        sendMsg('C', 'Foo', 'f222', {age: 7});
+        sendMsg('C', 'Foo', 'f333', {age: 9});
+
+        assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
+        assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
+      });
+
+      test("remove", ()=>{
+        dbBroker.dbId = 'foo01';
+        const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
+        const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
+
+        dbBroker.clearDbId();
+        sendMsg('R', 'Foo', 'f222');
+
+        dbBroker.dbId = 'foo01';
+        refute(Foo.findById('f222'));
+        assert(Foo.findById('f333'));
+      });
     });
   });
 });
