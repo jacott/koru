@@ -30,7 +30,6 @@ isClient && define((require, exports, module)=>{
     });
 
     afterEach(()=>{
-      SubscriptionSession.match._clear();
       SubscriptionSession.unload(Session);
       Session.state = origState;
     });
@@ -241,7 +240,7 @@ isClient && define((require, exports, module)=>{
       const doc2 = Book.create({_id: 'doc2'});
       const doc3 = Book.create({_id: 'doc3'});
 
-      const mr = SubscriptionSession.match.register('Book', (doc, reason) =>{
+      const mr = SubscriptionSession.get(Session).match.register('Book', (doc, reason) =>{
         assert.same(reason, 'stopped');
 
         return doc === doc2;
@@ -267,7 +266,7 @@ isClient && define((require, exports, module)=>{
       sub.match('Book', () => true);
       sub.connect();
       assert(Book.findById('doc1'));
-      assert(SubscriptionSession.match.has(doc1, 'stopped'));
+      assert(sub.subSession.match.has(doc1, 'stopped'));
       sub.stop();
 
       refute(Book.findById('doc1'));
@@ -285,7 +284,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      stub(SubscriptionSession, '_filterModels');
+      const filterModels = stub(SubscriptionSession.prototype, 'filterModels');
       class Library extends Subscription {}
 
       //[
@@ -294,7 +293,9 @@ isClient && define((require, exports, module)=>{
       sub.filterModels('Book', 'Catalog');
       //]
 
-      assert.calledWithExactly(SubscriptionSession._filterModels, {Book: true, Catalog: true});
+      assert.calledWithExactly(filterModels, {Book: true, Catalog: true});
+      assert.same(filterModels.firstCall.thisValue, sub.subSession);
+
     });
 
     test("subscribe", ()=>{

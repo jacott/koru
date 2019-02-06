@@ -48,13 +48,14 @@ define((require, exports, module)=>{
       if (this[state$] !== 'stopped') {
         const oldState = this[state$];
         this[state$] = 'stopped';
-        this.subSession._delete(this);
+        const {subSession} = this;
+        subSession._delete(this);
         const {_matches} = this;
         this._matches = Object.create(null);
         for (const name in _matches) _matches[name].delete();
         const onConnect = this[onConnect$];
         try {
-          this.stopped(SubscriptionSession._filterStopped);
+          this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
         } finally {
           if (onConnect !== void 0) {
             if (error !== void 0)
@@ -78,13 +79,13 @@ define((require, exports, module)=>{
       const {_matches} = this;
       if (_matches[modelName] !== void 0)
         _matches[modelName].delete();
-      this._matches[modelName] = SubscriptionSession.match.register(modelName, test);
+      this._matches[modelName] = this.subSession.match.register(modelName, test);
     }
 
     filterModels(...modelNames) {
       const models = {};
       util.forEach(modelNames, mn => {models[mn] = true});
-      SubscriptionSession._filterModels(models);
+      this.subSession.filterModels(models);
     }
 
     postMessage(message, callback) {

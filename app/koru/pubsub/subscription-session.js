@@ -15,8 +15,6 @@ define((require)=>{
 
   const sessions = Object.create(null);
 
-  const match = new Match();
-
   const assertState = (truth)=>{
     if (! truth) throw new Error("Illegal action");
   };
@@ -94,8 +92,7 @@ define((require)=>{
   // for change:
   //   if did match and now does not match reason = "noMatch"
   //   if did not match reason = "stopped"
-  // and maybe the server sends the reason for remove?
-
+  // done - and maybe the server sends the reason for remove?
   // need to queue changes and remove until subs have completed
   const added = modelUpdate('Add', (model, attrs) => {
     Query.insertFromServer(model, attrs);
@@ -114,6 +111,7 @@ define((require)=>{
       this.nextId = 0;
       this.subs = util.createDictionary();
       this.session = session;
+      this.match = new Match();
 
       session.provide('Q', provideQ);
       session.provide('A', added);
@@ -182,8 +180,6 @@ define((require)=>{
       return sessions[session._id] || (sessions[session._id] = new SubscriptionSession(session));
     }
 
-    static get match() {return match}
-
     static unload({_id}) {
       const ss = sessions[_id];
       if (ss === void 0) return;
@@ -201,36 +197,34 @@ define((require)=>{
       delete sessions[_id];
     }
 
-    static _filterModels(models, reason="noMatch") {
+    filterDoc(doc, reason) {
+      if (! this.match.has(doc, reason)) {
+        const model = doc.constructor;
+        const simDocs = Query.simDocsFor(model);
+        const sim = simDocs[doc._id];
+        if (sim !== void 0)
+          delete simDocs[doc._id];
+        delete model.docs[doc._id];
+        Query.notify(DocChange.delete(doc, reason));
+      }
+    };
+
+    filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
         for(const name in models) {
           const model = ModelMap[name];
           if (model !== void 0) {
             const {docs} = model;
-            for (const id in docs) filterDoc(docs[id], reason);
+            for (const id in docs) this.filterDoc(docs[id], reason);
           }
         }
       });
     }
 
-    static _filterStopped(doc) {filterDoc(doc, 'stopped')}
-
     static get _sessions() {
       return sessions;
     }
   }
-
-  const filterDoc = SubscriptionSession.filterDoc = (doc, reason) => {
-    if (! match.has(doc, reason)) {
-      const model = doc.constructor;
-      const simDocs = Query.simDocsFor(model);
-      const sim = simDocs[doc._id];
-      if (sim !== void 0)
-        delete simDocs[doc._id];
-      delete model.docs[doc._id];
-      Query.notify(DocChange.delete(doc, reason));
-    }
-  };
 
   return SubscriptionSession;
 });
