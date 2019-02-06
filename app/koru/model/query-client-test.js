@@ -187,7 +187,7 @@ define((require, exports, module)=>{
       _sessState.connected(_session);
       _Query.insertFromServer(v.TestModel, {_id: 'foo2', nested: {a: 1, b: 2}});
       const query = new _Query(v.TestModel).onId('foo2');
-      query.isFromServer = true;
+      query.fromServer();
       query.update({$partial: {nested: ['b', 3]}});
 
       _sessState.decPending();

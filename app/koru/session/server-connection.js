@@ -128,8 +128,8 @@ define((require, exports, module)=>{
       this.sendBinary('C', [name, id, filterAttrs(attrs, filter)]);
     }
 
-    removed(name, id) {
-      this.sendBinary('R', [name, id]);
+    removed(name, id, flag) {
+      this.sendBinary('R', [name, id, flag]);
     }
 
     set userId(userId) {
@@ -164,7 +164,7 @@ define((require, exports, module)=>{
       if (dc.isAdd)
         return ['A', [modelName, doc.attributes]];
       else if (dc.isDelete)
-        return ['R', [modelName, doc._id]];
+        return ['R', [modelName, doc._id, dc.flag]];
       else  {
         return ['C', [modelName, doc._id, dc.changes]];
       }

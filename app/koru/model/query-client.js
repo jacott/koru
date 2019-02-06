@@ -175,8 +175,10 @@ define((require, exports, module)=>{
         return this;
       },
 
-      fromServer() {
-        this.isFromServer = true;
+      isFromServer: '',
+
+      fromServer(type="serverUpdate") {
+        this.isFromServer = type;
         return this;
       },
 
@@ -253,16 +255,16 @@ define((require, exports, module)=>{
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const {model, docs} = this;
             const isPending = session.state.pendingCount() != 0;
-            if (isPending && this.isFromServer) {
+            if (isPending && this.isFromServer !== '') {
               if (fromServer(model, this.singleId))
                 return 0;
             }
             const dc = DocChange.delete();
-            if (this.isFromServer) dc.flag = 'serverUpdate';
+            if (this.isFromServer !== '') dc.flag = this.isFromServer;
             this.forEach(doc => {
               ++count;
               Model._support.callBeforeObserver('beforeRemove', doc);
-              if (isPending && ! this.isFromServer) {
+              if (isPending && this.isFromServer === '') {
                 recordChange(model, doc._id, doc.attributes);
               }
               delete docs[doc._id];
@@ -281,7 +283,7 @@ define((require, exports, module)=>{
           delete origChanges._id;
 
         const {model, docs, singleId} = this;
-        this.isFromServer || Model._support._updateTimestamps(
+        this.isFromServer === '' && Model._support._updateTimestamps(
           origChanges, model.updateTimestamps, util.newDate());
 
         return TransQueue.transaction(() => {
@@ -289,7 +291,7 @@ define((require, exports, module)=>{
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const isPending = session.state.pendingCount() != 0;
-            if (isPending && this.isFromServer &&
+            if (isPending && this.isFromServer !== '' &&
                 fromServer(model, this.singleId, origChanges))
               return 0;
 
@@ -304,7 +306,7 @@ define((require, exports, module)=>{
               }
 
               const undo = Changes.applyAll(attrs, origChanges);
-              if (this.isFromServer) {
+              if (this.isFromServer !== '') {
                 dc.flag = 'serverUpdate';
               } else if (isPending) {
                 recordChange(model, attrs._id, undo);

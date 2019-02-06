@@ -105,8 +105,8 @@ define((require)=>{
     model.serverQuery.onId(id).update(attrs);
   });
 
-  const removed = modelUpdate('Rem', (model, id) => {
-    model.serverQuery.onId(id).remove();
+  const removed = modelUpdate('Rem', (model, id, flag) => {
+    model.query.fromServer(flag).onId(id).remove();
   });
 
   class SubscriptionSession {

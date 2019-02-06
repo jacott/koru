@@ -471,7 +471,7 @@ isServer && define((require, exports, module)=>{
       assert.equals(msgs, [
         ['C', ['Book', 'book1', {name: 'name change'}]],
         ['A', ['Book', {_id: 'book3', name: 'Book 3'}]],
-        ['R', ['Book', 'book2']]
+        ['R', ['Book', 'book2', void 0]]
       ]);
       //]
     });

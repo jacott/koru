@@ -196,12 +196,22 @@ isClient && define((require, exports, module)=>{
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
 
+        let flag;
+        onEnd(Foo.onChange(dc => {
+          flag = dc.flag;
+        }));
+
         dbBroker.clearDbId();
         sendMsg('R', 'Foo', 'f222');
 
         dbBroker.dbId = 'foo01';
         refute(Foo.findById('f222'));
         assert(Foo.findById('f333'));
+
+        assert.same(flag, 'serverUpdate');
+
+        sendMsg('R', 'Foo', 'f333', 'noMatch');
+        assert.same(flag, 'noMatch');
       });
     });
   });
