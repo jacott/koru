@@ -950,12 +950,17 @@ assert.same(Color.colors.red, '#f00');`,
         sig: TH.match(/(function )?prune\(branchCount\)/),
         intro: TH.match(/Document prototype `methodName` for the current subject/),
         subject: ['F', TH.match.func, 'Tree'],
+        calls: m.any
+      });
+
+      assert.equals(API.instance.protoMethods.prune.calls, [{
+        body: m(/class Tree/),
         calls: [[
           [3], 7
         ],[
           [2], 5
         ]]
-      });
+      }]);
 
       API.protoMethod('graft', {intro: "an intro"});
     });

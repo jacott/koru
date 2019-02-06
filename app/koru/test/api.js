@@ -21,20 +21,23 @@ define((require, exports, module)=>{
   let count = 0;
 
   const onTestEnd = (api, func)=>{
-    if (api.target !== void 0) api.target.test = getTestLevel();
     if (api[onEnd$] === void 0) {
       const foo = count++;
       const onEnd = api[onEnd$] = ()=>{
         if (api[onEnd$] !== onEnd) return;
         api[onEnd$] = void 0;
-        api.target === void 0 || extractBodyExample(api.target, api.target.test);
+        api.target = void 0;
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
         callbacks.forEach(cb => cb());
-        api.target = void 0;
       };
       onEnd.callbacks = [];
       TH.onEnd(onEnd);
+    }
+    let {target} = api;
+    if (target !== void 0) {
+      target.test = getTestLevel();
+      api[onEnd$].callbacks.push(() => {extractBodyExample(target, target.test)});
     }
 
     func === void 0 || api[onEnd$].callbacks.push(func);
@@ -277,7 +280,7 @@ define((require, exports, module)=>{
       if (currentTest === undefined) return;
     }
 
-    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*\*\//, '');
+    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
     if (m == null) {
@@ -442,7 +445,7 @@ define((require, exports, module)=>{
         this.properties = this.protoProperties =
         this.currentComment = this.target =
         this.propertyName = this.initInstExample =
-        this.initExample = undefined;
+        this.initExample = void 0;
 
       this.methods = Object.create(null);
       this.protoMethods = Object.create(null);
@@ -661,7 +664,7 @@ define((require, exports, module)=>{
         };
       }
 
-      this.target = this.newInstance;
+      const details = this.target = this.newInstance;
 
       onTestEnd(this);
 
@@ -671,11 +674,11 @@ define((require, exports, module)=>{
       return class extends api.subject {
         constructor(...args) {
           super(...args);
-          const {calls} = api.target;
+          const {calls} = details;
           if (calls === undefined) {
             return;
           }
-          extractBodyExample(api.target);
+          extractBodyExample(details);
           const entry = [
             args.map(obj => api.valueTag(obj)),
             undefined,
