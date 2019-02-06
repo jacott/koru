@@ -221,8 +221,7 @@ isClient && define((require, exports, module)=>{
 
     test("stop", ()=>{
       /**
-       * Ensures when we stop that all docs the subscription doesn't want are removed unless matched
-       * elsewhere.
+       * Stops a subscription. Releases any matchers that were set up and calls {##stopped}.
        */
       api.protoMethod();
 
@@ -250,14 +249,20 @@ isClient && define((require, exports, module)=>{
       //]
       onEnd(()=>{mr.delete()});
 
-      //[
+      //[#
       class Library extends Subscription {
         stopped(unmatch) {
           unmatch(doc1);
           unmatch(doc2);
         }
-      }
-
+      }//]
+      api.protoMethod("stopped", {intro() {
+        /**
+         * Called with an `unmatch` function that can be called on all documents that no longer
+         * match this subscription.
+         **/
+      }, subject: Library.prototype});
+      //[#
       const sub = new Library();
       sub.match('Book', () => true);
       sub.connect();
