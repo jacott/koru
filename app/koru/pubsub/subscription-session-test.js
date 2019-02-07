@@ -7,6 +7,7 @@ isClient && define((require, exports, module)=>{
   const koru            = require('koru');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
+  const DocChange       = require('koru/model/doc-change');
   const Query           = require('koru/model/query');
   const MockServer      = require('koru/pubsub/mock-server');
   const Subscription    = require('koru/pubsub/subscription');
@@ -164,6 +165,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("added", ()=>{
+        ss.match.register('Foo', doc => doc.age > 4);
         const insertSpy = spy(Query, 'insertFromServer');
         const attrs = {_id: 'f123', name: 'bob', age: 5};
         sendMsg('A', 'Foo', attrs);
@@ -178,7 +180,19 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(insertSpy, Foo, attrs);
       });
 
+      test("added noMatch", ()=>{
+        dbBroker.dbId = 'foo01';
+
+        ss.match.register('Foo', doc => doc.age < 4);
+        const insertSpy = spy(Query, 'insertFromServer');
+        const attrs = {_id: 'f123', name: 'bob', age: 5};
+        sendMsg('A', 'Foo', attrs);
+
+        refute(Foo.findById('f123'));
+      });
+
       test("changed", ()=>{
+        ss.match.register('Foo', doc => doc.age > 4);
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
@@ -189,6 +203,31 @@ isClient && define((require, exports, module)=>{
 
         assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
         assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
+      });
+
+      test("changed noMatch", ()=>{
+        const handle = ss.match.register('Foo', doc => doc.age > 4);
+        dbBroker.dbId = 'foo01';
+        const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
+        const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
+
+        const onChange = stub();
+        onEnd(Foo.onChange(onChange));
+
+        sendMsg('C', 'Foo', 'f222', {age: 3});
+
+        refute(Foo.findById('f222'));
+        assert.calledOnceWith(onChange, DocChange.delete(bob, 'noMatch'));
+
+        sam.attributes.age = 3;
+        sendMsg('C', 'Foo', 'f333', {age: 9});
+        assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
+
+        onChange.reset();
+        handle.delete();
+        sendMsg('C', 'Foo', 'f333', {age: 6});
+        refute(Foo.findById('f222'));
+        assert.calledOnceWith(onChange, DocChange.delete(sam, 'stopped'));
       });
 
       test("remove", ()=>{

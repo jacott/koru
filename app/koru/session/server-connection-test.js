@@ -10,7 +10,6 @@ isServer && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const match           = require('./match');
   const message         = require('./message');
 
   const crypto      = requirejs.nodeRequire('crypto');

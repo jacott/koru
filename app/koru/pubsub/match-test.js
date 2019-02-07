@@ -1,22 +1,19 @@
 define((require, exports, module)=>{
   /**
-   * A Factory method to create a match registry that compares a
-   * {#koru/model/main} record to a set of match functions.
+   * A class to create a match registry that compares a {#koru/model/main} document to a set of
+   * match functions.
    *
-   * Used in {#koru/session/publish}
+   * Used in {#../subscription}
    *
    **/
-  const dbBroker = require('koru/model/db-broker');
   const Model    = require('koru/model/main');
   const api      = require('koru/test/api');
-  const util     = require('koru/util');
-  const TH       = require('./test-helper');
+  const TH       = require('koru/test-helper');
 
   const Match = require('./match');
 
-  let v = {};
-
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    const handles = [];
     class Book {
       static get modelName() {return 'Book'}
       static fetch() {
@@ -24,20 +21,14 @@ define((require, exports, module)=>{
       }
     }
 
-    beforeEach( ()=>{
-      v.handles = [];
-    });
-
     afterEach( ()=>{
-      v.handles.forEach(h =>{h.delete()});
-      dbBroker.clearDbId();
-      v = {};
+      handles.forEach(h =>{h.delete()});
+      handles.length = 0;
     });
 
     test("constructor", ()=>{
       /**
-       * Create a match registry. Do not use this directly; instead use it inside a
-       * {#koru/session/publish} body
+       * Create a match registry.
        **/
       const Match = api.class();
 
@@ -48,7 +39,9 @@ define((require, exports, module)=>{
 
     test("register", ()=>{
       /**
-       * Register a matcher agains a model. See also {##has}
+       * Register a matcher agains a model.
+       *
+       * See also {##has}, {#../subscription#match}
 
        * @param modelName or model
 
@@ -74,7 +67,7 @@ define((require, exports, module)=>{
       });
 
       //]
-      v.handles.push(m1);
+      handles.push(m1);
       //[
       assert.isTrue(myMatch.has(book2));
       assert.isFalse(myMatch.has(book2, "stopped"));
@@ -109,7 +102,7 @@ define((require, exports, module)=>{
       });
 
       //]
-      v.handles.push(m1, m2);
+      handles.push(m1, m2);
       //[
 
       assert.isTrue(myMatch.has(book1));

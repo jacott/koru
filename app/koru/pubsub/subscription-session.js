@@ -6,7 +6,7 @@ define((require)=>{
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
-  const Match           = require('koru/session/match');
+  const Match           = require('koru/pubsub/match');
   const Trace           = require('koru/trace');
   const login           = require('koru/user-account/client-login');
   const util            = require('koru/util');
@@ -88,18 +88,25 @@ define((require)=>{
     };
   };
 
-  // FIXME match updates
-  // for change:
-  //   if did match and now does not match reason = "noMatch"
-  //   if did not match reason = "stopped"
-  // done - and maybe the server sends the reason for remove?
-  // need to queue changes and remove until subs have completed
+  // FIXME need to queue changes and remove until subs have completed
   const added = modelUpdate('Add', (model, attrs) => {
-    Query.insertFromServer(model, attrs);
+    const ss = sessions[dbBroker.dbId];
+    if (ss !== void 0 && ss.match.has(new model(attrs)))
+      Query.insertFromServer(model, attrs);
   });
 
-  const changed = modelUpdate('Upd', (model, id, attrs) => {
-    model.serverQuery.onId(id).update(attrs);
+  const changed = modelUpdate('Upd', (model, id, changes) => {
+    const ss = sessions[dbBroker.dbId];
+    if (ss !== void 0) {
+      const doc = model.findById(id);
+      if (doc === void 0) return;
+      const nowDoc = doc.$withChanges(changes);
+      if (ss.match.has(nowDoc)) {
+        model.serverQuery.onId(id).update(changes);
+      } else {
+        model.query.fromServer(ss.match.has(doc) ? 'noMatch' : 'stopped').onId(id).remove();
+      }
+    }
   });
 
   const removed = modelUpdate('Rem', (model, id, flag) => {
