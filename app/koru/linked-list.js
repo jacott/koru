@@ -4,9 +4,18 @@ define(()=>{
   class LinkedList {
     constructor() {this.clear()}
 
+    get frontValue() {
+      const {front} = this;
+      return front && front.value;
+    }
+
+    get backValue() {
+      const {back} = this;
+      return back && back.value;
+    }
 
     clear() {
-      this.front = this.back = undefined;
+      this.front = this.back = void 0;
       this[size$] = 0;
     }
 
@@ -14,15 +23,15 @@ define(()=>{
 
     push(value) {
       ++this[size$];
-      if (this.front === undefined)
-        return this.front = this.back = {value, next: undefined};
+      if (this.front === void 0)
+        return this.front = this.back = {value, next: void 0};
       else
         return this.front = {value, next: this.front};
     }
 
     popNode() {
       const node = this.front;
-      if (node !== undefined) {
+      if (node !== void 0) {
         --this[size$];
         if (this.back === this.front)
           this.back = this.front.next;
@@ -38,7 +47,7 @@ define(()=>{
 
     addAfter(prev, value) {
       ++this[size$];
-      if (prev === undefined)
+      if (prev === void 0)
         return this.addFront(value);
       else
         return prev.next = {value, next: prev.next};
@@ -46,18 +55,18 @@ define(()=>{
 
     addBack(value) {
       ++this[size$];
-      if (this.front === undefined)
-        return this.front = this.back = {value, next: undefined};
+      if (this.front === void 0)
+        return this.front = this.back = {value, next: void 0};
       else
-        return this.back.next = this.back = {value, next: undefined};
+        return this.back.next = this.back = {value, next: void 0};
     }
 
     removeNode(node, prev) {
-      for (let curr = prev === undefined ? this.front : prev.next;
-           curr !== undefined; prev = curr, curr = curr.next ) {
+      for (let curr = prev === void 0 ? this.front : prev.next;
+           curr !== void 0; prev = curr, curr = curr.next ) {
         if (curr === node) {
           --this[size$];
-          if (prev === undefined)
+          if (prev === void 0)
             this.front = curr.next;
           else
             prev.next = curr.next;
@@ -70,19 +79,19 @@ define(()=>{
     }
 
     forEach(callback) {
-      for(let node = this.front; node !== undefined; node = node.next) {
-        if (node.value !== undefined)
+      for(let node = this.front; node !== void 0; node = node.next) {
+        if (node.value !== void 0)
           callback(node.value);
       }
     }
 
     *values() {
-      for(let node = this.front; node !== undefined; node = node.next)
-        if (node.value !== undefined) yield(node.value);
+      for(let node = this.front; node !== void 0; node = node.next)
+        if (node.value !== void 0) yield(node.value);
     }
 
     *nodes() {
-      for(let node = this.front; node !== undefined; node = node.next)
+      for(let node = this.front; node !== void 0; node = node.next)
         yield(node);
     }
   }
