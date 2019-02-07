@@ -15,14 +15,16 @@ define((require, exports, module)=>{
 
   const loadDocs = (lq, sub)=>{
     lq.discreteLastSubscribed = sub.discreteLastSubscribed;
+    lq.minLastSubscribed = sub.lastSubscribed;
 
     const msg = sub.conn._session.withBatch(encode =>{
-      lq.union.loadInitial((doc)=>{
-        encode(['A', [doc.constructor.modelName, doc.attributes]]);
-      }, lq.discreteLastSubscribed);
+      lq.union.loadInitial(
+        (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
+        (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
+        lq.minLastSubscribed);
     });
 
-    lq.union[addQueue$] = void 0;
+    lq.discreteLastSubscribed = NaN;
 
     let node = lq.subs.front;
     lq.subs.clear();
@@ -104,7 +106,7 @@ define((require, exports, module)=>{
       this.handles.length = 0;
     }
     initObservers() {}
-    loadInitial(addDoc, discreteLastSubscribed) {}
+    loadInitial(addDoc, remDoc, minLastSubscribed) {}
 
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);

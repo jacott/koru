@@ -52,12 +52,15 @@ isServer && define((require, exports, module)=>{
       /**
        * Add a subscriber to a union. This will cause {##loadInitial} to be run for the subscriber.
 
-       * For performance, if other subscribers are added to the union then they will be added to
-       * the same loadQueue (if still running) as a previous subscriber if and only if their
-       * `#discreteLastSubscribed` is the same as a previous subscriber; otherwise a new
+       * For performance, if other subscribers are added to the union then they will be added to the
+       * same loadQueue (if still running) as a previous subscriber if and only if their
+       * `#discreteLastSubscribed` is the same as a previous subscriber and their `#lastSubscribed`
+       * is greater than the `minLastSubscribed` passed to `loadInitial`; otherwise a new
        * loadInitial will be run.
        *
-       * It is important to note that addSub blocks the thread until loadInitial has finished.
+       * It is important to note that addSub blocks the thread and queues batchUpdate until
+       * loadInitial has finished. This ensures that the initial load will be sent before any
+       * changes during the load.
        **/
       api.protoMethod();
 
@@ -181,8 +184,8 @@ isServer && define((require, exports, module)=>{
 
         'completeQuery',
         'liDone',
-        'donesub4',
         'donesub3',
+        'donesub4',
         'li',
 
         'completeQuery',
@@ -323,36 +326,70 @@ isServer && define((require, exports, module)=>{
     test("loadInitial", ()=>{
       /**
        * Override this method to select the initial documents to download when a new group of
-       * subscribers is added.
+       * subscribers is added. Subscribers are partitioned by their `discreteLastSubscribed` time.
 
        * @param addDoc a function to call with a doc to be added to the subscribers.
 
-       * @param discreteLastSubscribed the lastSubscribed time related to this load request.
+       * @param remDoc a function to call with a doc (and optional flag) to be removed from the
+       * subscribers. The flag is sent to the client as a {#koru/models/doc-change}#flag which
+       * defaults to "serverUpdate". Useful values are "noMatch" and "stopped" which a client
+       * persistence manager can used to decide to not remove the persitent document.
+
+       * @param minLastSubscribed the lastSubscribed time related to the first subscriber for this
+       * load request. Only subscribers with a lastSubscribed >= first subscriber will be added to
+       * the load.
        **/
       api.protoMethod();
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
+      const conn2 = PublishTH.mockConnection("conn2");
+      const mc2 = new MockConn(conn2);
 
       const {Book} = db.models;
+      let now = Date.now();
       //[
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = Book.create({updatedAt: new Date(now - 80000)});
+      const book2 = Book.create({updatedAt: new Date(now - 40000)});
+      const book3 = Book.create({updatedAt: new Date(now - 50000), state: 'D'});//]
+      Book.whereNot = stub().returns({forEach: (cb) => {
+        cb(book1); cb(book2);
+      }});
+      Book.where = stub().returns({forEach: (cb) => {
+        cb(book2); cb(book3);
+      }});
+      //[#
 
       class MyUnion extends Union {
-        loadInitial(addDoc, discreteLastSubscribed) {
-          Book.query.forEach(addDoc);
+        loadInitial(addDoc, remDoc, minLastSubscribed) {
+          if (minLastSubscribed == 0)
+            Book.whereNot({state: 'D'}).forEach(addDoc);
+          else {
+            Book.where({updatedAt: {$gte: new Date(minLastSubscribed)}}).forEach(doc => {
+              if (doc.state === 'D')
+                remDoc(doc);
+              else
+                addDoc(doc);
+            });
+          }
         }
       }
       const union = new MyUnion();
 
-      const sub = new Publication({id: 'sub1', conn});
-      union.addSub(sub);
+      const sub1 = new Publication({id: 'sub1', conn}); // no lastSubscribed
+      union.addSub(sub1);
 
-      const msgs = mc.decodeLastSend();
+      assert.equals(mc.decodeLastSend(), [
+        ['A', ['Book', book1.attributes]],
+        ['A', ['Book', book2.attributes]]
+      ]);
 
-      assert.equals(msgs, [
-        ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
-        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
+      const lastSubscribed = now - 600000;
+
+      const sub2 = new Publication({id: 'sub2', conn: conn2, lastSubscribed});
+      union.addSub(sub2);
+      assert.equals(mc2.decodeLastSend(), [
+        ['A', ['Book', book2.attributes]],
+        ['R', ['Book', 'book3', void 0]],
       ]);
       //]
     });

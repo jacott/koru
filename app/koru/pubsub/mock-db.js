@@ -8,20 +8,32 @@ define((require, exports, module)=>{
   const {stub, onEnd} = TH;
 
   class MockModel {
-    constructor(_id, name) {
-      this._id = _id;
-      this.attributes = {_id, name};
+    constructor(attrs) {
+      this._id = attrs._id;
+      this.attributes = attrs;
     }
 
     get name() {return this.attributes.name}
+    get state() {return this.attributes.state}
+    get updatedAt() {return this.attributes.updatedAt}
 
     $invertChanges(beforeChange) {
       return Changes.extractChangeKeys(this.attributes, beforeChange);
     }
 
-    static create(name) {
+    static create(opts) {
       const _id = this.modelName.toLowerCase()+(++this.seq);
-      const doc = this.docs[_id] = new this(_id, name || this.modelName+' '+this.seq);
+      let name, attrs;
+      if (typeof opts !== 'object') {
+        name = opts;
+        attrs = {_id, name};
+      } else {
+        attrs = opts;
+        name = attrs.name;
+        if (attrs._id === void 0) attrs._id = _id;
+      }
+      if (attrs.name === void 0) attrs.name = this.modelName+' '+this.seq;
+      const doc = this.docs[_id] = new this(attrs);
       this.notify(DocChange.add(doc));
       return doc;
     }
