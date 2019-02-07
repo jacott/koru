@@ -17,7 +17,7 @@ define((require, exports, module)=>{
   class Subscription {
     constructor(args, session=Session) {
       this.args = args;
-      this.subSession = SubscriptionSession.get(Session);
+      this.subSession = SubscriptionSession.get(session);
       this._id = this.subSession.makeId();
       this[state$] = 'new';
       this.lastSubscribed = 0;

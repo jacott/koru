@@ -11,12 +11,25 @@ define((require)=>{
   const login           = require('koru/user-account/client-login');
   const util            = require('koru/util');
 
-  const loginObserver$ = Symbol(), messages$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
+  const loginObserver$ = Symbol(),
+        messages$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
 
   const sessions = Object.create(null);
 
   const assertState = (truth)=>{
     if (! truth) throw new Error("Illegal action");
+  };
+
+  const incPending = (ss, sub)=>{
+    if (sub[msgId$] === void 0) {
+      sub[msgId$] = 1;
+      ss.session.state.incPending();
+    } else ++sub[msgId$];
+  };
+
+  const decPending = (ss, sub)=>{
+    sub[msgId$] = void 0;
+    ss.session.state.decPending();
   };
 
   function provideQ(data) {
@@ -42,9 +55,8 @@ define((require)=>{
         sub._connected({lastSubscribed: data[3]});
     } finally {
       if (sub[msgId$] === data[1]) {
-        sub[msgId$] = void 0;
         sub[messages$].length = 0;
-        subSess.session.state.decPending();
+        decPending(subSess, sub);
       }
     }
   }
@@ -59,57 +71,47 @@ define((require)=>{
       sub._id, sub[msgId$], sub.constructor.pubName, sub.args, sub.lastSubscribed]);
   };
 
-  const incPending = (ss, sub)=>{
-    if (sub[msgId$] === void 0) {
-      sub[msgId$] = 1;
-      ss.session.state.incPending();
-    } else ++sub[msgId$];
-  };
-
   let debug_clientUpdate = false;
   Trace.debug_clientUpdate = value => {debug_clientUpdate = value};
 
   const modelUpdate = (type, func) => {
     return function (data) {
-      const session = this;
+      const ss = sessions[this._id];
+      if (ss === void 0) return;
       if (debug_clientUpdate) {
         if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
           koru.logger("D", type, '< ' + util.inspect(data));
       }
-      session.isUpdateFromServer = true;
+      this.isUpdateFromServer = true;
       const prevDbId = dbBroker.dbId;
       try {
-        dbBroker.dbId = session._id;
-        func(Model[data[0]], data[1], data[2]);
+        dbBroker.dbId = this._id;
+        func(ss, Model[data[0]], data[1], data[2]);
       } finally {
-        session.isUpdateFromServer = false;
+        this.isUpdateFromServer = false;
         dbBroker.dbId = prevDbId;
       }
     };
   };
 
   // FIXME need to queue changes and remove until subs have completed
-  const added = modelUpdate('Add', (model, attrs) => {
-    const ss = sessions[dbBroker.dbId];
-    if (ss !== void 0 && ss.match.has(new model(attrs)))
+  const added = modelUpdate('Add', (ss, model, attrs) => {
+    if (ss.match.has(new model(attrs)))
       Query.insertFromServer(model, attrs);
   });
 
-  const changed = modelUpdate('Upd', (model, id, changes) => {
-    const ss = sessions[dbBroker.dbId];
-    if (ss !== void 0) {
-      const doc = model.findById(id);
-      if (doc === void 0) return;
-      const nowDoc = doc.$withChanges(changes);
-      if (ss.match.has(nowDoc)) {
-        model.serverQuery.onId(id).update(changes);
-      } else {
-        model.query.fromServer(ss.match.has(doc) ? 'noMatch' : 'stopped').onId(id).remove();
-      }
+  const changed = modelUpdate('Upd', (ss, model, id, changes) => {
+    const doc = model.findById(id);
+    if (doc === void 0) return;
+    const nowDoc = doc.$withChanges(changes);
+    if (ss.match.has(nowDoc)) {
+      model.serverQuery.onId(id).update(changes);
+    } else {
+      model.query.fromServer(ss.match.has(doc) ? 'noMatch' : 'stopped').onId(id).remove();
     }
   });
 
-  const removed = modelUpdate('Rem', (model, id, flag) => {
+  const removed = modelUpdate('Rem', (ss, model, id, flag) => {
     model.query.fromServer(flag).onId(id).remove();
   });
 
@@ -176,8 +178,7 @@ define((require)=>{
       assertState(sub.state === 'stopped');
       delete this.subs[sub._id];
       if (sub[msgId$] !== void 0) {
-        sub[msgId$] = void 0;
-        this.session.state.decPending();
+        decPending(this, sub);
       }
     }
 

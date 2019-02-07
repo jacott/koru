@@ -154,6 +154,7 @@ isClient && define((require, exports, module)=>{
         Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
         fooSess = new (Session.constructor)('foo01');
         fooSess.state = new State();
+        fooSess.sendBinary = stub();
         ss = SubscriptionSession.get(fooSess);
       });
 
@@ -251,6 +252,21 @@ isClient && define((require, exports, module)=>{
 
         sendMsg('R', 'Foo', 'f333', 'noMatch');
         assert.same(flag, 'noMatch');
+      });
+
+      test("alt session", ()=>{
+        dbBroker.dbId = 'foo01';
+        const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
+        fooSess.state.connected(fooSess);
+
+        const fooMatch = ss.match.register('Foo', doc => true);
+        const sub = new Library(null, fooSess);
+        sub.connect();
+
+        sendMsg('C', 'Foo', 'f222', {age: 7});
+        sendMsg('C', 'Foo', 'f222', {age: 6});
+        sendMsg('Q', sub._id, 1, 0);
+        assert.same(bob.age, 6);
       });
     });
   });
