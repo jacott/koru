@@ -43,12 +43,19 @@ define((require, exports, module)=>{
     if (lq.subs.size != 0) koru.runFiber(()=>{
       loadDocs(lq, lq.subs.back.value.sub);
     });
+
+    lq.union[addQueue$] = void 0;
+    const {msgQueue, union} = lq;
+    for(let i = 0; i < msgQueue.length; ++i) {
+      union.sendEncoded(msgQueue[i]);
+    }
   };
 
   class LoadQueue {
     constructor(union) {
       this.union = union;
       union[addQueue$] = this;
+      this.msgQueue = [];
 
       this.subs = new LinkedList();
       this.waitingSubs = new BTree(WaitSubCompare);
@@ -59,12 +66,17 @@ define((require, exports, module)=>{
       const time = sub.discreteLastSubscribed;
       if (this.subs.size !== 0) {
         const future = new util.Future;
-        if (this.discreteLastSubscribed == time) {
+        if (this.discreteLastSubscribed == time &&
+            sub.lastSubscribed >= this.minLastSubscribed) {
           this.subs.push({sub, future});
         } else {
           const waiting = this.waitingSubs.find({time});
           if (waiting !== void 0) {
-            waiting.queue.push({sub, future});
+            const oldestSub = waiting.queue.back.value.sub;
+            if (sub.lastSubscribed < oldestSub.lastSubscribed)
+              waiting.queue.addBack({sub, future});
+            else
+              waiting.queue.push({sub, future});
           } else {
             const waiting = {time, queue: new LinkedList()};
             waiting.queue.push({sub, future});
@@ -78,6 +90,14 @@ define((require, exports, module)=>{
       }
     }
   }
+
+  const sendEncodedWhenIdle = (union, msg) => {
+    const lq = union[addQueue$];
+    if (lq === void 0)
+      union.sendEncoded(msg);
+    else
+      lq.msgQueue.push(msg);
+  };
 
   class Union {
     constructor() {
@@ -142,13 +162,13 @@ define((require, exports, module)=>{
             });
             TransQueue.onSuccess(()=>{
               tidyUp();
-              this.sendEncoded(msg);
+              sendEncodedWhenIdle(this, msg);
             });
             TransQueue.onAbort(tidyUp);
           }
           encoder(upd);
         } else {
-          this.sendEncoded(message.encodeMessage(...upd, Session.globalDict));
+          sendEncodedWhenIdle(this, message.encodeMessage(...upd, Session.globalDict));
         }
       };
     }

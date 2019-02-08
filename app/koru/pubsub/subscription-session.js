@@ -94,7 +94,6 @@ define((require)=>{
     };
   };
 
-  // FIXME need to queue changes and remove until subs have completed
   const added = modelUpdate('Add', (ss, model, attrs) => {
     if (ss.match.has(new model(attrs)))
       Query.insertFromServer(model, attrs);

@@ -98,8 +98,8 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("addSub withinInterval", ()=>{
-      let now = util.dateNow();
+    test("addSub partitions based on discreteLastSubscribed", ()=>{
+      let now = +new Date(2019, 1, 1);
       now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
       const conn1 = conn;
       const conn2 = PublishTH.mockConnection("conn2");
@@ -121,8 +121,8 @@ isServer && define((require, exports, module)=>{
           super();
           this.future = new util.Future;
         }
-        loadInitial(addDoc) {
-          events.push(`li`);
+        loadInitial(addDoc, remDoc, minLastSubscribed) {
+          events.push(`li`, minLastSubscribed);
           this.future.wait();
           Book.query.forEach(addDoc);
           events.push(`liDone`);
@@ -174,19 +174,19 @@ isServer && define((require, exports, module)=>{
       assert.called(conn5.sendEncoded);
 
       assert.equals(events, [
-        'li',
+        'li', now,
         'completeQuery',
         'liDone',
         'donesub2',
 
-        'li',
+        'li', now - 60000,
         'donesub1',
 
         'completeQuery',
         'liDone',
         'donesub3',
         'donesub4',
-        'li',
+        'li', now - 1 - Publication.lastSubscribedInterval,
 
         'completeQuery',
         'liDone',
@@ -392,6 +392,153 @@ isServer && define((require, exports, module)=>{
         ['R', ['Book', 'book3', void 0]],
       ]);
       //]
+    });
+
+    test("loadInitial queues batchUpdates", ()=>{
+      let now = util.dateNow();
+      now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+
+      const db = new MockDB(['Book']);
+      const mc = new MockConn(conn);
+
+      const {Book} = db.models;
+      const book1 = Book.create();
+      const book2 = Book.create();
+
+      const events = [];
+
+      class MyUnion extends Union {
+        constructor() {
+          super();
+          this.future = new util.Future;
+        }
+        initObservers() {
+          this.handles.push(Book.onChange(this.batchUpdate));
+        }
+        loadInitial(addDoc) {
+          events.push(`li`);
+          this.future.wait();
+          Book.query.forEach(addDoc);
+          events.push(`liDone`);
+        }
+      }
+      const union = new MyUnion();
+      onEnd(()=>{union.future.isResolved() || union.future.return()});
+
+      const sub = new Publication({id: 'sub1', conn});
+      koru.runFiber(()=>{
+        union.addSub(sub);
+        events.push('done'+sub.id);
+      });
+
+      db.change(book1);
+
+      refute.called(conn.sendEncoded);
+
+      union.future.return();
+
+      assert.calledTwice(conn.sendEncoded);
+      assert.equals(mc.decodeMessage(conn.sendEncoded.firstCall.args[0]), [
+        ['A', ['Book', book1.attributes]],
+        ['A', ['Book', book2.attributes]],
+      ]);
+      assert.equals(String.fromCharCode(conn.sendEncoded.lastCall.args[0][0]), 'C');
+      assert.equals(mc.decodeMessage(conn.sendEncoded.lastCall.args[0]), [
+        'Book', 'book1', {name: 'name change'}]);
+    });
+
+    test("addSub adds to running partition", ()=>{
+      let now = +new Date(2019, 1, 1);
+      now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+      const conn1 = conn;
+      const conn2 = PublishTH.mockConnection("conn2");
+      const conn3 = PublishTH.mockConnection("conn3");
+      const conn4 = PublishTH.mockConnection("conn4");
+      const conn5 = PublishTH.mockConnection("conn5");
+
+      const db = new MockDB(['Book']);
+      const mc = new MockConn(conn);
+
+      const {Book} = db.models;
+      const book1 = Book.create();
+      const book2 = Book.create();
+
+      const events = [];
+
+      class MyUnion extends Union {
+        constructor() {
+          super();
+          this.future = new util.Future;
+        }
+        loadInitial(addDoc, remDoc, minLastSubscribed) {
+          events.push(`li`, minLastSubscribed);
+          this.future.wait();
+          Book.query.forEach(addDoc);
+          events.push(`liDone`);
+        }
+      }
+      const union = new MyUnion();
+      onEnd(()=>{union.future.isResolved() || union.future.return()});
+
+      const newSub = (id, conn, lastSubscribed)=>{
+        const sub = new Publication({id, conn, lastSubscribed});
+        koru.runFiber(()=>{
+          union.addSub(sub);
+          events.push('done'+sub.id);
+        });
+        return sub;
+      };
+
+      const completeQuery = ()=>{
+        events.push('completeQuery');
+        const future = union.future;
+        union.future = new util.Future;
+        future.return();
+      };
+
+
+      newSub('sub1', conn1, now + 10000);
+      newSub('sub2', conn2, now + 30000);
+      newSub('sub3', conn3, now +  5000);
+      newSub('sub4', conn4, now - 60000);
+      newSub('sub5', conn5, now +  4000);
+
+      refute.called(conn1.sendEncoded);
+      refute.called(conn2.sendEncoded);
+
+      completeQuery();
+      assert.called(conn1.sendEncoded);
+      assert.called(conn2.sendEncoded);
+      refute.called(conn3.sendEncoded);
+      refute.called(conn4.sendEncoded);
+      refute.called(conn5.sendEncoded);
+
+      completeQuery();
+      assert.called(conn3.sendEncoded);
+      assert.called(conn5.sendEncoded);
+      refute.called(conn4.sendEncoded);
+
+      completeQuery();
+      assert.called(conn4.sendEncoded);
+
+      assert.equals(events, [
+        'li', now + 10000,
+        'completeQuery',
+        'liDone',
+        'donesub2',
+
+        'li', now + 4000,
+        'donesub1',
+
+        'completeQuery',
+        'liDone',
+        'donesub3',
+        'donesub5',
+        'li', now - 60000,
+
+        'completeQuery',
+        'liDone',
+        'donesub4']);
     });
 
     test("sendEncoded", ()=>{
