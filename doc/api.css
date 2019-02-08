@@ -471,6 +471,10 @@ td {
   text-decoration: none;
 }
 
+#Results>a.search-result-selected {
+  background-color: rgb(96, 125, 139, .2);
+}
+
 #Results>a:any-link {
   color: #444;
 }
