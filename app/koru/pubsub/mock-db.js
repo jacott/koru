@@ -7,6 +7,8 @@ define((require, exports, module)=>{
 
   const {stub, onEnd} = TH;
 
+  const noIndex = makeSubject({});
+
   class MockModel {
     constructor(attrs) {
       this._id = attrs._id;
@@ -20,6 +22,9 @@ define((require, exports, module)=>{
     $invertChanges(beforeChange) {
       return Changes.extractChangeKeys(this.attributes, beforeChange);
     }
+    $clearCache() {}
+
+    static get _indexUpdate() {return noIndex}
 
     static create(opts) {
       const _id = this.modelName.toLowerCase()+(++this.seq);

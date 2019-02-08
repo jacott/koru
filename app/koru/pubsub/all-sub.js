@@ -14,6 +14,12 @@ define((require, exports, module)=>{
       }
     }
 
+    stopped(unmatch) {
+      for (const model of this.constructor.includedModels()) {
+        model.query.forEach(unmatch);
+      }
+    }
+
     reconnecting() {
       for (const model of this.constructor.includedModels()) {
         model.query.forEach(Subscription.markForRemove);

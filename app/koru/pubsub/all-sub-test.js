@@ -11,7 +11,7 @@ isClient && define((require, exports, module)=>{
   const MockDB          = require('koru/pubsub/mock-db');
   const Subscription    = require('koru/pubsub/subscription');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
-  const session         = require('koru/session');
+  const Session         = require('koru/session');
   const State           = require('koru/session/state').constructor;
   const api             = require('koru/test/api');
 
@@ -22,7 +22,7 @@ isClient && define((require, exports, module)=>{
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       AllSub.resetModelList();
-      SubscriptionSession.unload(session);
+      SubscriptionSession.unload(Session);
     });
 
     test("subscribe", ()=>{
@@ -51,6 +51,20 @@ isClient && define((require, exports, module)=>{
       assert.isTrue(match.lastCall.args[1]({}));
     });
 
+    test("stopped", ()=>{
+      class Book extends Model.BaseModel {
+      }
+      Book.define({name: 'Book'});
+      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+
+      const b1 = Book.create('');
+
+      const sub = AllSub.subscribe();
+      sub.stop();
+
+      refute(Book.findById(b1._id));
+    });
+
     test("reconnecting", ()=>{
       class Book extends Model.BaseModel {
       }
@@ -61,7 +75,7 @@ isClient && define((require, exports, module)=>{
 
       const sub = AllSub.subscribe();
       sub.reconnecting();
-      sub.stop();
+      Session._commands.Q.call(Session, [sub._id, 1, 200]);
 
       refute(Book.findById(b1._id));
     });
