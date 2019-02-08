@@ -3,7 +3,8 @@ define((require)=>{
   const {merge, inspect, hasOwn} = require('koru/util');
   const {deepEqual, AssertionError}     = require('./core');
 
-  const yields$ = Symbol(), listeners$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
+  const listeners$ = Symbol(),
+        invokes$ = Symbol(), yields$ = Symbol(), throws$ = Symbol(),
         returns$ = Symbol(),
         replacement$ = Symbol();
 
@@ -170,7 +171,6 @@ define((require)=>{
   }
 
   const invokeReturn = (stub, call) => {
-    if (call.throws !== undefined) throw call.throws;
     if (call.invokes !== undefined) return call.returnValue = call.invokes(call);
     if (call.yields !== undefined) {
       const {args} = call;
@@ -182,6 +182,7 @@ define((require)=>{
         }
       }
     }
+    if (call.throws !== undefined) throw call.throws;
     return call.returnValue;
   };
 
@@ -204,14 +205,14 @@ define((require)=>{
       (this.calls === undefined ? (this.calls = []) : this.calls)
         .push(call);
 
-      if (this[throws$] !== undefined)
-        call.throws = this[throws$];
+      if (this[invokes$] !== undefined)
+        call.invokes = this[invokes$];
 
       if (this[yields$] !== undefined)
         call.yields = this[yields$];
 
-      if (this[invokes$] !== undefined)
-        call.invokes = this[invokes$];
+      if (this[throws$] !== undefined)
+        call.throws = this[throws$];
 
       notifyListeners(this, call);
 
@@ -235,9 +236,9 @@ define((require)=>{
       this.globalCount = ++globalCount;
       this.args = args.slice();
       this.thisValue = thisValue;
-      if (proxy[throws$] !== undefined) this.throws = proxy[throws$];
-      if (proxy[yields$] !== undefined) this.yields = proxy[yields$];
       if (proxy[invokes$] !== undefined) this.invokes = proxy[invokes$];
+      if (proxy[yields$] !== undefined) this.yields = proxy[yields$];
+      if (proxy[throws$] !== undefined) this.throws = proxy[throws$];
       const {calls} = proxy;
       (calls === undefined ? (proxy.calls = []) : calls).push(this);
     };
