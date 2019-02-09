@@ -246,7 +246,7 @@ define((require, exports, module)=>{
       assert.isFalse(match.undefined.test(''));
       assert.isFalse(match.undefined.test(null));
 
-      docProp('undefined', 'match null');
+      docProp('null', 'match null');
       assert.isTrue(match.null.test(null));
       assert.isFalse(match.null.test(''));
       assert.isFalse(match.null.test(undefined));
