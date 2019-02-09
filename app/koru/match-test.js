@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
   /**
    * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
-   * The {#koru/util.deepEqual} function will honour any matchers found in the `exprected` (second)
+   * The {#koru/util.deepEqual} function will honour any matchers found in the `expected` (second)
    * argument.
    **/
   const api             = require('koru/test/api');
