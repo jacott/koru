@@ -51,7 +51,7 @@ isServer && define((require, exports, module)=>{
     test("addSub", ()=>{
       /**
        * Add a subscriber to a union. This will cause {##loadInitial} to be run for the subscriber.
-
+       *
        * For performance, if other subscribers are added to the union then they will be added to the
        * same loadQueue (if still running) as a previous subscriber if and only if their
        * `#discreteLastSubscribed` is the same as a previous subscriber and their `#lastSubscribed`
@@ -83,7 +83,7 @@ isServer && define((require, exports, module)=>{
           Book.where('author_id', this.author_id).forEach(addDoc);
         }
       }
-      const union = new MyUnion();
+      const union = new MyUnion('a123');
 
       const sub = new Publication({id: 'sub1', conn, lastSubscribed: void 0});
       /** ⏿ ⮧ here we add the sub **/
@@ -96,6 +96,61 @@ isServer && define((require, exports, module)=>{
         ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
       ]);
       //]
+    });
+
+    test("addSubByToken", ()=>{
+      /**
+       * Like {##addSub} but instead of using lastSubscribed to group for {##loadInitial} the token
+       * is used to group for {##loadByToken}. The token can be anything is compared sameness.
+       *
+       * This is useful when critera changes such as permisssions which causes a `sub` to change
+       * unions which requires some records to be removed from the client and some new records to be
+       * added. Usually the client will automatically handle the removes but the adds will need to
+       * be calculated based on the new and old unions. The token should contain the information
+       * needed to calculate the subset.
+       *
+       **/
+      api.protoMethod();
+
+      const db = new MockDB(['Book']);
+      const mc = new MockConn(conn);
+
+      const {Book} = db.models;
+      const forEach = (addDoc) => {addDoc(book2)};
+      const whereNot = stub().returns({forEach});
+      Book.where = stub().returns({whereNot});
+
+      //[
+      const book1 = Book.create({genre_ids: ['drama', 'comedy']});
+      const book2 = Book.create({genre_ids: ['drama']});
+
+      class MyUnion extends Union {
+        constructor(genre_id) {
+          super();
+          this.genre_id = genre_id;
+        }
+        loadByToken(addDoc, remDoc, oldUnion) {
+          Book
+            .where('genre_ids', this.genre_id)
+            .whereNot('genre_ids', oldUnion.genre_id)
+            .forEach(addDoc);
+        }
+      }
+      const oldUnion = new MyUnion('comedy');
+      const union = new MyUnion('drama');
+
+      const sub = new Publication({id: 'sub1', conn, lastSubscribed: void 0});
+      /** ⏿ ⮧ here we add the sub **/
+      union.addSubByToken(sub, oldUnion);
+
+      const msgs = mc.decodeLastSend();
+
+      assert.equals(msgs, [
+        ['A', ['Book', book2.attributes]]
+      ]);
+      //]
+      assert.calledWith(Book.where, 'genre_ids', 'drama');
+      assert.calledWith(whereNot, 'genre_ids', 'comedy');
     });
 
     test("addSub partitions based on discreteLastSubscribed", ()=>{
@@ -187,6 +242,99 @@ isServer && define((require, exports, module)=>{
         'donesub3',
         'donesub4',
         'li', now - 1 - Publication.lastSubscribedInterval,
+
+        'completeQuery',
+        'liDone',
+        'donesub5']);
+    });
+
+    test("addSubByToken partitions based on token", ()=>{
+      const conn1 = conn;
+      const conn2 = PublishTH.mockConnection("conn2");
+      const conn3 = PublishTH.mockConnection("conn3");
+      const conn4 = PublishTH.mockConnection("conn4");
+      const conn5 = PublishTH.mockConnection("conn5");
+
+      const db = new MockDB(['Book']);
+      const mc = new MockConn(conn);
+
+      const {Book} = db.models;
+      const book1 = Book.create();
+      const book2 = Book.create();
+
+      const events = [];
+
+      class MyUnion extends Union {
+        constructor() {
+          super();
+          this.future = new util.Future;
+        }
+        loadByToken(addDoc, remDoc, token) {
+          events.push(`li`, token);
+          this.future.wait();
+          Book.query.forEach(addDoc);
+          events.push(`liDone`);
+        }
+      }
+      const union = new MyUnion();
+      onEnd(()=>{union.future.isResolved() || union.future.return()});
+
+      const newSub = (id, conn, token)=>{
+        const sub = new Publication({id, conn});
+        koru.runFiber(()=>{
+          union.addSubByToken(sub, token);
+          events.push('done'+sub.id);
+        });
+        return sub;
+      };
+
+      const completeQuery = ()=>{
+        events.push('completeQuery');
+        const future = union.future;
+        union.future = new util.Future;
+        future.return();
+      };
+
+
+      newSub('sub1', conn1, 'token1');
+      newSub('sub2', conn2, 'token1');
+      newSub('sub3', conn3, 'token2');
+      newSub('sub4', conn4, 'token2');
+      newSub('sub5', conn5, 'token3');
+
+      refute.called(conn1.sendEncoded);
+      refute.called(conn2.sendEncoded);
+
+      completeQuery();
+      assert.called(conn1.sendEncoded);
+      assert.called(conn2.sendEncoded);
+      refute.called(conn3.sendEncoded);
+      refute.called(conn4.sendEncoded);
+
+      completeQuery();
+      assert.called(conn3.sendEncoded);
+      assert.called(conn4.sendEncoded);
+      refute.called(conn5.sendEncoded);
+
+      completeQuery();
+      assert.calledOnce(conn1.sendEncoded);
+      assert.calledOnce(conn3.sendEncoded);
+      assert.called(conn5.sendEncoded);
+
+      assert.equals(events, [
+        'li', 'token1',
+        'completeQuery',
+        'liDone',
+        'donesub2',
+
+        'li', 'token2',
+        'donesub1',
+
+        'completeQuery',
+        'liDone',
+        'donesub4',
+        'donesub3',
+        'li', 'token3',
 
         'completeQuery',
         'liDone',
@@ -390,6 +538,56 @@ isServer && define((require, exports, module)=>{
       assert.equals(mc2.decodeLastSend(), [
         ['A', ['Book', book2.attributes]],
         ['R', ['Book', 'book3', void 0]],
+      ]);
+      //]
+    });
+
+    test("loadByToken", ()=>{
+      /**
+       * Like {##loadInitial} but instead of using minLastSubscribed passes the token from
+       * {##addSubByToken} to calculate which documents to load.
+
+       * @param addDoc a function to call with a doc to be added to the subscribers.
+
+       * @param remDoc a function to call with a doc (and optional flag) to be removed from the
+       * subscribers. This is not usually needed as the client can calcuate itself which documents
+       * to remove.
+
+       * @param token from {##addSubByToken}. Usually an old union the subscriptions belonged to.
+       **/
+      api.protoMethod();
+
+      const db = new MockDB(['Book']);
+      const mc = new MockConn(conn);
+
+      const {Book} = db.models;
+
+      const book1 = Book.create();
+      const book2 = Book.create();
+
+      //[
+      // see addSubByToken for better example
+      class MyUnion extends Union {
+        /** ⏿ ⮧ here we loadByToken **/
+        loadByToken(addDoc, remDoc, token) {
+          if (token === 'myToken') {
+            addDoc(book1);
+            remDoc(book2, 'noMatch');
+          }
+        }
+      }
+
+      const union = new MyUnion();
+
+      const sub1 = new Publication({id: 'sub1', conn});
+
+      union.addSubByToken(sub1, 'myToken');
+
+      const msgs = mc.decodeLastSend();
+
+      assert.equals(msgs, [
+        ['A', ['Book', book1.attributes]],
+        ['R', ['Book', book2._id, 'noMatch']]
       ]);
       //]
     });

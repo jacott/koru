@@ -9,55 +9,72 @@ define((require, exports, module)=>{
   const ServerConnection = require('koru/session/server-connection');
   const util            = require('koru/util');
 
-  const subs$ = Symbol(), addQueue$ = Symbol(), unionNode$ = Symbol();
+  const subs$ = Symbol(),
+        unionNode$ = Symbol(),
+        loadQueue$ = Symbol();
 
   const WaitSubCompare = (a, b)=> a.time - b.time;
 
-  const loadDocs = (lq, sub)=>{
-    lq.discreteLastSubscribed = sub.discreteLastSubscribed;
-    lq.minLastSubscribed = sub.lastSubscribed;
-
-    const msg = sub.conn._session.withBatch(encode =>{
-      lq.union.loadInitial(
-        (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
-        (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
-        lq.minLastSubscribed);
-    });
-
-    lq.discreteLastSubscribed = NaN;
-
-    let node = lq.subs.front;
-    lq.subs.clear();
-    const wnode = lq.waitingSubs.lastNode;
-    if (wnode !== null) {
-      lq.waitingSubs.deleteNode(wnode);
-      lq.subs = wnode.value.queue;
-    }
-
-    for(; node !== void 0; node = node.next) {
-      const {sub, future} = node.value;
-      sub.conn.sendEncoded(msg);
-      future !== void 0 && future.return();
-    }
-
-    if (lq.subs.size != 0) koru.runFiber(()=>{
-      loadDocs(lq, lq.subs.back.value.sub);
-    });
-
-    lq.union[addQueue$] = void 0;
-    const {msgQueue, union} = lq;
-    for(let i = 0; i < msgQueue.length; ++i) {
-      union.sendEncoded(msgQueue[i]);
-    }
-  };
-
-  class LoadQueue {
+  class LoadQueueBase {
     constructor(union) {
       this.union = union;
-      union[addQueue$] = this;
-      this.msgQueue = [];
-
       this.subs = new LinkedList();
+    }
+
+    static addSub(union, sub, token) {
+      const subs = union[subs$];
+      subs.head === null && union.initObservers();
+      sub[unionNode$] = union[subs$].add(sub);
+
+      let loadQueue = union[loadQueue$];
+      let myQueue;
+      if (loadQueue === null)
+        loadQueue = union[loadQueue$] = {msgQueue: [], map: new Map()};
+      else
+        myQueue = loadQueue.map.get(this);
+      myQueue === void 0 && loadQueue.map.set(this, myQueue = new this(union));
+      myQueue.add(sub, token);
+    }
+
+    _loadDocsPart1(sub, loadInitial, token) {
+      return sub.conn._session.withBatch(encode =>{
+        loadInitial.call(this.union,
+                         (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
+                         (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
+                         token);
+      });
+    }
+
+    _loadDocsPart2(msg, node, token) {
+      for(; node !== void 0; node = node.next) {
+        const {sub, future} = node.value;
+        sub.conn.sendEncoded(msg);
+        future !== void 0 && future.return();
+      }
+
+      if (this.subs.size != 0) koru.runFiber(()=>{
+        this.loadDocs(this.subs.back.value.sub, token);
+      });
+
+      const {union} = this;
+
+      const loadQueue = union[loadQueue$];
+      if (loadQueue !== null) {
+        loadQueue.map.delete(this.constructor);
+        if (loadQueue.map.size == 0) {
+          union[loadQueue$] = null;
+          const {msgQueue} = loadQueue;
+          for(let i = 0; i < msgQueue.length; ++i) {
+            union.sendEncoded(msgQueue[i]);
+          }
+        }
+      }
+    }
+  }
+
+  class LoadQueue extends LoadQueueBase {
+    constructor(union) {
+      super(union);
       this.waitingSubs = new BTree(WaitSubCompare);
       this.discreteLastSubscribed = 0;
     }
@@ -86,32 +103,101 @@ define((require, exports, module)=>{
         future.wait();
       } else {
         this.subs.push({sub, future: void 0});
-        loadDocs(this, sub);
+        this.loadDocs(sub, time);
       }
+    }
+
+    loadDocs(sub) {
+      this.discreteLastSubscribed = sub.discreteLastSubscribed;
+      this.minLastSubscribed = sub.lastSubscribed;
+
+      const msg = super._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
+
+      this.discreteLastSubscribed = NaN;
+
+      let node = this.subs.front;
+      this.subs.clear();
+      const wnode = this.waitingSubs.lastNode;
+      if (wnode !== null) {
+        this.waitingSubs.deleteNode(wnode);
+        this.subs = wnode.value.queue;
+      }
+
+      super._loadDocsPart2(msg, node);
+    }
+  }
+
+  class LoadQueueByToken extends LoadQueueBase {
+    constructor(union) {
+      super(union);
+      this.waitingSubs = new Map();
+      this.token = null;
+    }
+
+    add(sub, token) {
+      if (this.subs.size !== 0) {
+        const future = new util.Future;
+        if (this.token === token) {
+          this.subs.push({sub, future});
+        } else {
+          const waiting = this.waitingSubs.get(token);
+          if (waiting !== void 0) {
+            waiting.queue.push({sub, future});
+          } else {
+            const waiting = {token, queue: new LinkedList()};
+            waiting.queue.push({sub, future});
+            this.waitingSubs.set(token, waiting);
+          }
+        }
+        future.wait();
+      } else {
+        this.subs.push({sub, future: void 0});
+        this.loadDocs(sub, token);
+      }
+    }
+
+    loadDocs(sub, token) {
+      this.token = token;
+
+      const msg = this._loadDocsPart1(sub, this.union.loadByToken, token);
+
+      this.token = null;
+
+      let node = this.subs.front;
+      this.subs.clear();
+      for (const waiting of this.waitingSubs.values()) {
+        token = waiting.token;
+        this.waitingSubs.delete(token);
+        this.subs = waiting.queue;
+        break;
+      }
+
+      this._loadDocsPart2(msg, node, token);
     }
   }
 
   const sendEncodedWhenIdle = (union, msg) => {
-    const lq = union[addQueue$];
-    if (lq === void 0)
+    const loadQueue = union[loadQueue$];
+    if (loadQueue === null)
       union.sendEncoded(msg);
     else
-      lq.msgQueue.push(msg);
+      loadQueue.msgQueue.push(msg);
   };
 
   class Union {
     constructor() {
       this[subs$] = new DLinkedList(()=>{this.onEmpty()});
       this.handles = [];
+      this[loadQueue$] = null;
       this.batchUpdate = this.buildBatchUpdate();
     }
 
     addSub(sub) {
-      const subs = this[subs$];
-      subs.head === null && this.initObservers();
-      sub[unionNode$] = this[subs$].add(sub);
+      LoadQueue.addSub(this, sub);
+    }
 
-      (this[addQueue$] || new LoadQueue(this)).add(sub);
+    addSubByToken(sub, token) {
+      LoadQueueByToken.addSub(this, sub, token);
     }
 
     removeSub(sub) {
@@ -125,8 +211,11 @@ define((require, exports, module)=>{
       for (const h of this.handles) h.stop();
       this.handles.length = 0;
     }
+
+    // overriden by subclasses
     initObservers() {}
     loadInitial(addDoc, remDoc, minLastSubscribed) {}
+    loadByToken(addDoc, remDoc, token) {}
 
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
@@ -143,8 +232,10 @@ define((require, exports, module)=>{
       let future = null;
 
       const tidyUp = ()=>{
-        future.return();
-        encoder = future = null;
+        if (future !== null) {
+          future.return();
+          encoder = future = null;
+        }
       };
 
       return dc =>{
