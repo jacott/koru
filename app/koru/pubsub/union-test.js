@@ -857,5 +857,31 @@ isServer && define((require, exports, module)=>{
       ]);
       //]
     });
+
+    test("multiple unions on one sub", ()=>{
+      const empty = [];
+      class Union1 extends Union {
+        onEmpty() {empty.push("union1")}
+      }
+
+      class Union2 extends Union {
+        onEmpty() {empty.push("union2")}
+      }
+
+      const union11 = new Union1();
+      const union12 = new Union1();
+      const union2 = new Union2();
+      const sub = new Publication({id: 's123', conn});
+
+      union11.addSub(sub);
+      union12.addSub(sub);
+      union2.addSub(sub);
+
+      union12.removeSub(sub);
+      union2.removeSub(sub);
+      union11.removeSub(sub);
+
+      assert.equals(empty.join(' '), 'union1 union2 union1');
+    });
   });
 });

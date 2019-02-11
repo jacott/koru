@@ -9,8 +9,7 @@ define((require, exports, module)=>{
   const ServerConnection = require('koru/session/server-connection');
   const util            = require('koru/util');
 
-  const subs$ = Symbol(),
-        unionNode$ = Symbol(),
+  const subs$ = Symbol(), unionSym$ = Symbol(),
         loadQueue$ = Symbol();
 
   const WaitSubCompare = (a, b)=> a.time - b.time;
@@ -24,7 +23,7 @@ define((require, exports, module)=>{
     static addSub(union, sub, token) {
       const subs = union[subs$];
       subs.head === null && union.initObservers();
-      sub[unionNode$] = union[subs$].add(sub);
+      sub[union[unionSym$]] = union[subs$].add(sub);
 
       let loadQueue = union[loadQueue$];
       let myQueue;
@@ -190,9 +189,12 @@ define((require, exports, module)=>{
       this.handles = [];
       this[loadQueue$] = null;
       this.batchUpdate = this.buildBatchUpdate();
+      this.count = 0;
+      this[unionSym$] = Symbol();
     }
 
     addSub(sub) {
+      this.count++;
       LoadQueue.addSub(this, sub);
     }
 
@@ -201,9 +203,10 @@ define((require, exports, module)=>{
     }
 
     removeSub(sub) {
-      const node = sub[unionNode$];
+      this.count--;
+      const node = sub[this[unionSym$]];
       if (node === void 0) return;
-      sub[unionNode$] = void 0;
+      sub[this[unionSym$]] = void 0;
       node.delete();
     }
 
