@@ -323,6 +323,10 @@ pre {
   padding-top: .5em;
 }
 
+.jsdoc-alias>:not(:first-child) {
+  padding-left: 1em;
+}
+
 .jsdoc-deprecated {
   align-items: flex-start;
 }

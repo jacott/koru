@@ -8,7 +8,7 @@ define((require)=>{
 
   const {private$} = require('koru/symbols');
 
-  const return$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
+  const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
   const noContent = (tag)=> opts =>{
     const attrs = {[tag]: ''};
@@ -307,6 +307,20 @@ define((require)=>{
       ans.classList.add('jsdoc-deprecated');
       ans.insertBefore(Dom.h({h1: 'Deprecated'}), ans.firstChild);
       div.appendChild(ans);
+    },
+    alias: (api, row, argMap, div)=>{
+      const container = div[alias$] || (div[alias$] = Dom.h({class: "jsdoc-alias", h1: ["Aliases"]}));
+      row = row.slice(6);
+      const idx = row.indexOf(' ');
+      const name = row.slice(0, idx == -1 ? void 0 : idx);
+      row = row.slice(name.length);
+
+      const desc = jsdocToHtml(api, row, {}).firstChild || Dom.h({});
+
+      desc.insertBefore(Dom.h({class: 'jsdoc-alias-term', code: [name]}), desc.firstChild);
+      container.appendChild(desc);
+      if (container.parentNode === null)
+        div.appendChild(container);
     },
     param: (api, row, argMap)=>{
       const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);

@@ -203,6 +203,8 @@ define((require, exports, module)=>{
     test("values", ()=>{
       /**
        * Return an iterator over the values from front to back.
+
+       * @alias [symbol.iterator]
        **/
       api.protoMethod();
       //[
