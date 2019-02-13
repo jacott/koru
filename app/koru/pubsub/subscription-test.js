@@ -189,6 +189,8 @@ isClient && define((require, exports, module)=>{
       /**
        * Register a match function used to check if a document should
        * be in the database.
+
+       * @param modelName the name of the model or the model itself
        **/
       api.protoMethod();
 
@@ -196,26 +198,64 @@ isClient && define((require, exports, module)=>{
 
       const regBook = spy(Match.prototype, "register").withArgs('Book', TH.match.func);
 
-      //[
       class Book extends Model.BaseModel {
         static get modelName() {return 'Book'}
       }
 
+      //[
       class Library extends Subscription {
-        connect() {
+        constructor(args) {
+          super(args);
           this.match(Book, doc => /lord/i.test(doc.name));
-
-          super.connect();
         }
       }
+      //]
       Library.module = module;
 
       const sub1 = new Library();
-      sub1.connect();
 
-      //]
       assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
       assert.equals(sub1._matches, {Book: m(n => n.modelName === 'Book')});
+      const myFunc = ()=>{};
+      sub1.match("Book", myFunc);
+      assert.equals(sub1._matches, {Book: m(n => n.value === myFunc)});
+    });
+
+    test("unmatch", ()=>{
+      /**
+       * Deregister a {##match} function.
+
+       * @param modelName the name of the model or the model itself
+       **/
+      api.protoMethod();
+
+      const module = new TH.MockModule("library-client");
+
+      class Book extends Model.BaseModel {
+        static get modelName() {return 'Book'}
+      }
+
+      //[
+      class Library extends Subscription {
+        constructor(args) {
+          super(args);
+          this.match(Book, doc => /lord/i.test(doc.name));
+        }
+
+        noBooks() {
+          this.unmatch(Book);
+        }
+      }
+      //]
+      Library.module = module;
+
+      const sub1 = new Library();
+      sub1.noBooks();
+
+      assert.equals(sub1._matches, {Book: void 0});
+      sub1.match("Book", ()=>{});
+      sub1.unmatch("Book");
+      assert.equals(sub1._matches, {Book: void 0});
     });
 
     test("stop", ()=>{

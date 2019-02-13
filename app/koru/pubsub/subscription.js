@@ -52,7 +52,7 @@ define((require, exports, module)=>{
         subSession._delete(this);
         const {_matches} = this;
         this._matches = Object.create(null);
-        for (const name in _matches) _matches[name].delete();
+        for (const name in _matches) _matches[name] !== void 0 && _matches[name].delete();
         const onConnect = this[onConnect$];
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
@@ -80,6 +80,16 @@ define((require, exports, module)=>{
       if (_matches[modelName] !== void 0)
         _matches[modelName].delete();
       this._matches[modelName] = this.subSession.match.register(modelName, test);
+    }
+
+    unmatch(modelName) {
+      if (typeof modelName !== 'string')
+        modelName = modelName.modelName;
+      const handle = this._matches[modelName];
+      if (handle !== void 0) {
+        this._matches[modelName] = void 0;
+        handle.delete();
+      }
     }
 
     filterModels(...modelNames) {
