@@ -224,6 +224,8 @@ define((require, exports, module)=>{
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
     }
 
+    subs() {return this[subs$][Symbol.iterator]()}
+
     buildUpdate(dc) {
       return ServerConnection.buildUpdate(dc);
     }

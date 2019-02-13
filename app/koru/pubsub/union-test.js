@@ -765,6 +765,27 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
+    test("subs", ()=>{
+      /**
+       * Return an iterator over the union's subs.
+       *
+       **/
+      api.protoMethod();
+
+      const conn2 = PublishTH.mockConnection('sess124');
+
+      const union = new Union();
+
+      //[
+      const sub1 = new Publication({id: 'sub123', conn});
+      union.addSub(sub1);
+      const sub2 = new Publication({id: 'sub124', conn: conn2});
+      union.addSub(sub2);
+
+      assert.equals(Array.from(union.subs()), [sub1, sub2]);
+      //]
+    });
+
     test("buildUpdate", ()=>{
       /**
        * Override this to manipulate the document sent to clients. By default calls
