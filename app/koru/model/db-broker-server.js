@@ -32,6 +32,29 @@ define((require)=>{
     }
   }
 
+  class DBRunner {
+    constructor() {
+      this.db = dbBroker.db;
+      this.handles = [];
+    }
+
+    stop() {
+      const orig = dbBroker.db;
+      try {
+        dbBroker.db = this.db;
+        this.stopped();
+      } finally {
+        dbBroker.db = orig;
+      }
+    }
+
+    stopped() {
+      for (const h of this.handles)
+        h.stop();
+      this.handles.length = 0;
+    }
+  }
+
   const dbBroker = {
     get db() {
       if (driver === undefined) return;
@@ -52,6 +75,8 @@ define((require)=>{
     makeFactory(DBRunner, ...args) {
       return new DBS(DBRunner, ...args);
     },
+
+    DBRunner,
   };
 
   return dbBroker;
