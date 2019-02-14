@@ -3,6 +3,8 @@ define((require, exports, module)=>{
   const Session         = require('koru/session');
   const util            = require('koru/util');
 
+  const {inspect$} = require('koru/symbols');
+
   const pubName$ = Symbol(),
         stopped$ = Symbol(), module$ = Symbol();
 
@@ -69,6 +71,8 @@ define((require, exports, module)=>{
     }
 
     static get module() {return this[module$]}
+
+    [inspect$]() {return `${this.constructor.pubName}Pub("${this.id}")`}
   }
 
   Publication.lastSubscribedInterval = 5 * 60*1000;
