@@ -542,6 +542,21 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
+    test("loadInitial change with no send", ()=>{
+      class MyUnion extends Union {
+        loadInitial(addDoc) {
+        }
+      }
+
+      const union = new MyUnion();
+
+      const sub1 = new Publication({id: 'sub1', conn});
+
+      union.addSub(sub1);
+
+      refute.called(sub1.conn.sendEncoded);
+    });
+
     test("loadByToken", ()=>{
       /**
        * Like {##loadInitial} but instead of using minLastSubscribed passes the token from
@@ -591,6 +606,23 @@ isServer && define((require, exports, module)=>{
       ]);
       //]
     });
+
+    test("loadByToken change with no send", ()=>{
+      class MyUnion extends Union {
+        loadByToken(addDoc, remDoc, token) {
+        }
+      }
+
+      const union = new MyUnion();
+
+      const sub1 = new Publication({id: 'sub1', conn});
+
+      union.addSubByToken(sub1, 'myToken');
+
+      refute.called(sub1.conn.sendEncoded);
+    });
+
+
 
     test("loadInitial queues batchUpdates", ()=>{
       let now = util.dateNow();

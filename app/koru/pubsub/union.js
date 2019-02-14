@@ -47,7 +47,8 @@ define((require, exports, module)=>{
     _loadDocsPart2(msg, node, token) {
       for(; node !== void 0; node = node.next) {
         const {sub, future} = node.value;
-        sub.conn.sendEncoded(msg);
+        if (String.fromCharCode(msg[0]) !== 'W' || msg.length > 2)
+          sub.conn.sendEncoded(msg);
         future !== void 0 && future.return();
       }
 
