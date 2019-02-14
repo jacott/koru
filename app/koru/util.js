@@ -1071,6 +1071,8 @@ define((require)=>{
       if (assoc._id !== _id) assoc._id = _id;
       return assoc;
     },
+
+    noopHandle: {stop: ()=>{}},
   });
 
   return util;
