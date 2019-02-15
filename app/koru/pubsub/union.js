@@ -200,13 +200,14 @@ define((require, exports, module)=>{
     }
 
     addSubByToken(sub, token) {
+      this.count++;
       LoadQueueByToken.addSub(this, sub, token);
     }
 
     removeSub(sub) {
-      this.count--;
       const node = sub[this[unionSym$]];
       if (node === void 0) return;
+      this.count--;
       sub[this[unionSym$]] = void 0;
       node.delete();
     }

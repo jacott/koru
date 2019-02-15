@@ -203,11 +203,13 @@ isServer && define((require, exports, module)=>{
       };
 
 
-      newSub('sub1', conn1, now);
-      newSub('sub2', conn2, now + 30000);
-      newSub('sub3', conn3, now - 1);
-      newSub('sub4', conn4, now - 60000);
-      newSub('sub5', conn5, now - 1 - Publication.lastSubscribedInterval);
+      const sub1 = newSub('sub1', conn1, now);
+      const sub2 = newSub('sub2', conn2, now + 30000);
+      const sub3 = newSub('sub3', conn3, now - 1);
+      const sub4 = newSub('sub4', conn4, now - 60000);
+      const sub5 = newSub('sub5', conn5, now - 1 - Publication.lastSubscribedInterval);
+
+      assert.same(union.count, 5);
 
       refute.called(conn1.sendEncoded);
       refute.called(conn2.sendEncoded);
@@ -246,6 +248,13 @@ isServer && define((require, exports, module)=>{
         'completeQuery',
         'liDone',
         'donesub5']);
+
+      union.removeSub(sub1);
+      union.removeSub(sub3);
+      assert.same(union.count, 3);
+
+      union.removeSub(sub3);
+      assert.same(union.count, 3);
     });
 
     test("addSubByToken partitions based on token", ()=>{
@@ -296,11 +305,13 @@ isServer && define((require, exports, module)=>{
       };
 
 
-      newSub('sub1', conn1, 'token1');
-      newSub('sub2', conn2, 'token1');
-      newSub('sub3', conn3, 'token2');
-      newSub('sub4', conn4, 'token2');
-      newSub('sub5', conn5, 'token3');
+      const sub1 = newSub('sub1', conn1, 'token1');
+      const sub2 = newSub('sub2', conn2, 'token1');
+      const sub3 = newSub('sub3', conn3, 'token2');
+      const sub4 = newSub('sub4', conn4, 'token2');
+      const sub5 = newSub('sub5', conn5, 'token3');
+
+      assert.same(union.count, 5);
 
       refute.called(conn1.sendEncoded);
       refute.called(conn2.sendEncoded);
@@ -339,6 +350,11 @@ isServer && define((require, exports, module)=>{
         'completeQuery',
         'liDone',
         'donesub5']);
+
+      union.removeSub(sub5);
+      union.removeSub(sub5);
+
+      assert.same(union.count, 4);
     });
 
     test("removeSub", ()=>{
