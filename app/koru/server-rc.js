@@ -23,7 +23,7 @@ define((require, exports, module)=>{
     const logHandle = msg =>{
       const {connection} = util.thread;
       const key = connection == null ? 'Server' : connection.engine;
-      key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
+      console.log('INFO ' + key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
       } catch(ex) {} // ignore

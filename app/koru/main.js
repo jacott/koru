@@ -32,6 +32,7 @@ define((require, exports, module)=>{
 
   const logDebug = (...args)=>{
     koru.logger('\x44EBUG', ...args);
+    return args.length == 0 ? void 0 : args[args.length-1];
   };
 
   logDebug.inspect = (...args)=>{

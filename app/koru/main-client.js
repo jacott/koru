@@ -5,7 +5,9 @@ define((require, exports, module)=>{
   const TWENTY_DAYS = 20*util.DAY;
 
   return koru =>{
-    window['_koru'+'_'] = koru; // avoid search for de-bug statements
+    // avoid search for de-bug statements
+    window['_koru'+'_'] = koru;
+    window['k'+'dbg'] = koru["\x64ebug"];
 
     koru.onunload(module, 'reload');
 

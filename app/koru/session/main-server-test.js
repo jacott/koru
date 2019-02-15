@@ -105,8 +105,8 @@ isServer && define((require, exports, module)=>{
 
       stub(koru, 'logger');
       v.sess.sessId = 's123';
-      func.call({send: v.send = stub()}, 'hello world');
-      assert.calledWith(koru.logger, 'ERROR', 'hello world');
+      func.call({send: v.send = stub(), sessId: 'sess123', engine: 'myEngine'}, 'hello world');
+      assert.calledWith(koru.logger, 'ERROR', 'sess123', 'myEngine', 'hello world');
     });
 
     test("clientErrorConvert", ()=>{
@@ -120,10 +120,10 @@ isServer && define((require, exports, module)=>{
       stub(koru, 'logger');
       v.sess.sessId = 's123';
       stubProperty(koru, 'clientErrorConvert', {value: clientErrorConvert});
-      func.call({send: v.send = stub()}, 'my message');
+      func.call({send: v.send = stub(), sessId: 'sess123', engine: 'myEngine'}, 'my message');
 
       assert.calledWith(
-        koru.logger, 'ERROR', 'converted');
+        koru.logger, 'ERROR', 'sess123', 'myEngine', 'converted');
     });
 
     test("onerror", ()=>{
