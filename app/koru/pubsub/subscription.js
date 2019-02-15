@@ -22,10 +22,15 @@ define((require, exports, module)=>{
       this[state$] = 'new';
       this.lastSubscribed = 0;
       this._matches = Object.create(null);
+      this.error = null;
     }
 
     onConnect(callback) {
-      return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+      if (this[state$] === 'active' || this[state$] === 'stopped') {
+        callback(this.error);
+        return util.noopHandle;
+      } else
+        return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
     }
     reconnecting() {}
 
@@ -35,8 +40,9 @@ define((require, exports, module)=>{
         if (lastSubscribedMaximumAge == -1 || this.lastSubscribed < lastSubscribedMaximumAge)
           this.lastSubscribed = 0;
       }
-      this.subSession.connect(this);
+      this.error = null;
       this[state$] = 'connect';
+      this.subSession.connect(this);
     }
 
     userIdChanged(newUID, oldUID) {
@@ -57,11 +63,11 @@ define((require, exports, module)=>{
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
         } finally {
-          if (onConnect !== void 0) {
-            if (error !== void 0)
-              onConnect.notify(error);
-            else if (oldState === 'connect')
-              onConnect.notify({code: 409, reason: 'stopped'});
+          if (error !== void 0) {
+            this.error = error;
+            onConnect !== void 0 && onConnect.notify(error);
+          } else if (onConnect !== void 0 && oldState !== 'stopped') {
+            onConnect.notify({code: 409, reason: 'stopped'});
           }
         }
       }

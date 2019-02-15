@@ -1,13 +1,34 @@
 define((require, exports, module)=>{
   const Observable      = require('koru/observable');
   const Subscription    = require('koru/pubsub/subscription');
+  const util            = require('koru/util');
 
-  const onConnect$ = Symbol();
+  const onConnect$ = Symbol(), state$ = Symbol();
 
   class PreloadSubscription extends Subscription {
-    onConnect(callback) {
-      return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+    constructor(...args) {
+      super(...args);
+      this[state$] = null;
     }
+    onConnect(callback) {
+      if (this.state === 'active' || this.state === 'stopped') {
+        callback(this.error);
+        return util.noopHandle;
+      } else
+        return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+    }
+
+    get state() {
+      const me = this[state$];
+      const p = super.state;
+      return me !== null && p === 'connect' ? me : p;
+    }
+
+    get isServerConnected() {
+      return super.state === 'active';
+    }
+
+    onServerConnect(callback) {return super.onConnect(callback);}
 
     preload(idb, preloadComplete) {}
     getQueryIDB() {}
@@ -16,6 +37,7 @@ define((require, exports, module)=>{
     async connect() {
       try {
         const finished = (err=null) => {
+          this[state$] = 'active';
           const onConnect = this[onConnect$];
           if (onConnect !== void 0) {
             this[onConnect$] = void 0;
@@ -25,7 +47,7 @@ define((require, exports, module)=>{
 
         const idb = this.getQueryIDB();
 
-        super.onConnect((err) => {
+        this.onServerConnect((err) => {
           this.serverResponse(err, idb);
           finished(err);
         });

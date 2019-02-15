@@ -30,6 +30,23 @@ isClient && define((require, exports, module)=>{
       SubscriptionSession.unload(Session);
     });
 
+    test("onConnect already connected", ()=>{
+      const connect = stub(SubscriptionSession.prototype, 'connect');
+      class Library extends PreloadSubscription {}
+      const sub = Library.subscribe();
+
+      sub._connected({});
+
+      const callback = stub();
+      const handle = sub.onConnect(callback);
+      assert.calledWith(callback, null);
+      assert.same(handle, util.noopHandle);
+      sub.stop('myerror');
+
+      sub.onConnect(callback);
+      assert.calledWith(callback, 'myerror');
+    });
+
     test("constructor", ()=>{
       /**
        * Used to initialise matchers and any other common synchronous work
