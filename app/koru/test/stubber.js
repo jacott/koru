@@ -312,7 +312,7 @@ define((require)=>{
     if (object != null && typeof object !== 'string' && ! (
       typeof object === 'function' && property === undefined &&
         repFunc === undefined)) {
-        if (typeof property !== 'string')
+        if (typeof property !== 'string' && typeof property !== 'symbol')
           throw new AssertionError(
             `Invalid stub call: ${inspect(property)} is not a string`);
         if (! (property in object))

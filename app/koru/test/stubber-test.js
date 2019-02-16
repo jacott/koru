@@ -35,9 +35,12 @@ const {stub, spy, intercept} = TH;
       standalone();
       assert.called(standalone);
 
+      const privateMethod$ = Symbol();
+
       const Book = {
         lastReadPage: 0,
-        read(pageNo) {this.lastReadPage = pageNo}
+        read(pageNo) {this.lastReadPage = pageNo},
+        [privateMethod$]() {},
       };
 
       const read = stubber.stub(Book, 'read', n => n*2);
@@ -47,6 +50,10 @@ const {stub, spy, intercept} = TH;
 
       assert.same(Book.lastReadPage, 0);
       assert.calledWith(read, 28);
+
+      const pm = stubber.stub(Book, privateMethod$);
+      Book[privateMethod$]();
+      assert.called(pm);
       //]
     });
 
