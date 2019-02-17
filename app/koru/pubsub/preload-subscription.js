@@ -6,8 +6,8 @@ define((require, exports, module)=>{
   const onConnect$ = Symbol(), state$ = Symbol();
 
   class PreloadSubscription extends Subscription {
-    constructor(...args) {
-      super(...args);
+    constructor(args, session) {
+      super(args, session);
       this[state$] = null;
     }
     onConnect(callback) {

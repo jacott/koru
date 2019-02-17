@@ -200,6 +200,11 @@ define((require)=>{
       delete sessions[_id];
     }
 
+    static unloadAll() {
+      for (const id in sessions)
+        this.unload(sessions[id]);
+    }
+
     filterDoc(doc, reason) {
       if (! this.match.has(doc, reason)) {
         const model = doc.constructor;

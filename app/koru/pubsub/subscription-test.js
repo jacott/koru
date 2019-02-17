@@ -91,13 +91,15 @@ isClient && define((require, exports, module)=>{
 
       const sub = new Library({shelf: 'mathematics'});
       assert.same(sub.state, 'new');
+      assert.isTrue(sub.isClosed);
 
       sub.connect();
       assert.same(sub.state, 'connect');
-
+      assert.isFalse(sub.isClosed);
       waitForServer();
 
       assert.same(sub.state, 'active');
+      assert.isFalse(sub.isClosed);
       //]
     }),
 
@@ -188,6 +190,8 @@ isClient && define((require, exports, module)=>{
 
         assert.equals(resonse, {
           error: m(e => e.error == 409 && e.reason == 'stopped'), state: 'stopped'});
+
+        assert.isTrue(sub3.isClosed);
       }
       //]
     });
@@ -336,6 +340,8 @@ isClient && define((require, exports, module)=>{
       refute(Book.findById('doc1'));
       assert(Book.findById('doc2'));
       assert(Book.findById('doc3'));
+
+      assert.isTrue(sub.isClosed);
       //]
 
       assert.equals(simDocs, {doc2: ['del']});

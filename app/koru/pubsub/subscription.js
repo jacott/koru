@@ -91,6 +91,7 @@ define((require, exports, module)=>{
     stopped(unmatch) {} // just for overriding
 
     get state() {return STATE_NAMES[this[state$]]}
+    get isClosed() {return this[state$] <= 1}
 
     match(modelName, test) {
       if (typeof modelName !== 'string')
