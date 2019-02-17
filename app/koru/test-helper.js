@@ -109,7 +109,7 @@ define((require)=>{
   ga.add('validators', {
     assert(validators, expected) {
       if (validators == null)
-        Core.fail("Could not find field");
+        assert.fail("Could not find field");
       this.actual = validators;
       this.expected = expected;
       if (Object.keys(expected).length !== Object.keys(validators).length) {

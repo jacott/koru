@@ -63,7 +63,7 @@ define((require, exports, module)=>{
                 assert.isTrue(v.Book.isLocked("a"));
                 throw ex;
               }
-              TH.fail("should not reach here");
+              assert.fail("should not reach here");
             });
           } catch (ex) {
             if (ex.message !== "catch me")

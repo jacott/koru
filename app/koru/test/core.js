@@ -8,6 +8,21 @@ define((require)=>{
   const {is} = Object;
 
   class AssertionError extends Error {
+    constructor(message, elidePoint=0) {
+      super(message);
+      const {stack} = this;
+      if (elidePoint != 0) {
+        let idx = stack.indexOf("\n    at ");
+        if (idx != -1) {
+          const el = stack.slice(0, idx);
+          for (; idx != -1 && elidePoint != 0; --elidePoint) {
+            idx = stack.indexOf("\n", idx+8);
+          }
+          if (idx != -1)
+            this.stack = el + stack.slice(idx);
+        }
+      }
+    }
   }
   AssertionError.name = AssertionError.prototype.name = 'AssertionError';
 
@@ -17,6 +32,8 @@ define((require)=>{
     message = message ? message.toString() : 'no message';
     let ex;
     if (elidePoint !== null) {
+      if (typeof elidePoint === 'number' && elidePoint > 0)
+        throw new AssertionError(message, elidePoint+1);
       const {stack} = elidePoint;
       if (typeof stack != 'string') throw new AssertionError(message);
 
@@ -51,6 +68,8 @@ define((require)=>{
     }
     fail(msg, ep);
   };
+
+  assert.fail = fail;
 
   const refute = (truth, msg)=>{
     Core.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
@@ -194,7 +213,6 @@ define((require)=>{
     _init() {
       this.testCount = this.skipCount = this.assertCount = 0;
     },
-    fail(message) {assert(false, message);},
     abort: undefined,
     get __elidePoint() {return elidePoint},
     set __elidePoint(v) {elidePoint = v},

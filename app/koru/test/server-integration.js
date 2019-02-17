@@ -34,7 +34,7 @@ define(function(require, exports, module) {
           if (cm[0] === 'ok')
             assert.elideFromStack.same(cm[1][0], when);
           else
-            Core.fail(cm[1]);
+            assert.fail(cm[1]);
 
           if (func) {
             var response = func.apply(this, cm[1]);

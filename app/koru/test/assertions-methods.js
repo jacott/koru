@@ -89,7 +89,7 @@ define((require)=>{
 
   const checkSpy = spy =>{
     Stubber.isStubbed(spy) ||
-      Core.fail("Argument is not a spy/stub");
+      assert.fail("Argument is not a spy/stub");
   };
 
   Core.assert.benchMark = ({subject, duration=1000, control=empty, setup=empty})=>{
@@ -375,7 +375,7 @@ define((require)=>{
         element = selectNode[0];
       }
       if (typeof element.className == "undefined") {
-        return Core.fail(format("{1} Expected object to have className property", className));
+        return assert.fail(format("{1} Expected object to have className property", className));
       }
       this.expected = className;
       const expected = typeof className == "string" ? className.split(" ") : className;

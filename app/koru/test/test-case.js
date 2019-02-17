@@ -320,7 +320,7 @@ define((require, exports, module)=>{
             break;
           default:
             if (! name.startsWith("test ")) {
-              Core.fail('misnamed test '+currentTC.fullName(name));
+              assert.fail('misnamed test '+currentTC.fullName(name));
             }
             builder.test(name.slice(5), value);
           }
