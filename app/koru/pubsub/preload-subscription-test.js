@@ -12,6 +12,8 @@ isClient && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
+  const {private$} = require('koru/symbols');
+
   const {IDBKeyRange} = window;
 
   const {stub, spy, onEnd, util} = TH;
@@ -24,6 +26,7 @@ isClient && define((require, exports, module)=>{
     return {promise, resolve};
   };
 
+  const {connected$} = SubscriptionSession[private$];
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
@@ -35,7 +38,7 @@ isClient && define((require, exports, module)=>{
       class Library extends PreloadSubscription {}
       const sub = Library.subscribe();
 
-      sub._connected({});
+      sub[connected$]({});
 
       const callback = stub();
       const handle = sub.onConnect(callback);
@@ -194,7 +197,7 @@ isClient && define((require, exports, module)=>{
         const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
 
         await connect.promise;
-        sub._connected({lastSubscribed: 0});
+        sub[connected$]({lastSubscribed: 0});
         const err = await promise;
         if (err) throw err;
         assert.isTrue(callbackNotCalled); // assert serverResponse called before callback
@@ -289,7 +292,7 @@ isClient && define((require, exports, module)=>{
         assert.called(callback);
 
         refute.called(sub.serverResponse);
-        sub._connected({});
+        sub[connected$]({});
         assert.called(sub.serverResponse);
         assert.calledOnce(callback);
       });
@@ -298,7 +301,7 @@ isClient && define((require, exports, module)=>{
         const {sub, callback} = await initConnect();
 
         refute.called(sub.serverResponse);
-        sub._connected({});
+        sub[connected$]({});
         assert.called(sub.serverResponse);
         assert.calledOnce(callback);
 

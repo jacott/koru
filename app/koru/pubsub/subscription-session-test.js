@@ -24,6 +24,8 @@ isClient && define((require, exports, module)=>{
 
   const SubscriptionSession = require('./subscription-session');
 
+  const {messageResponse$, connected$} = SubscriptionSession[private$];
+
   const mockServer = new MockServer(Session);
 
   class Library extends Subscription {}
@@ -87,6 +89,18 @@ isClient && define((require, exports, module)=>{
       assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
     });
 
+    test("postMessage error", ()=>{
+      const {state} = Session;
+      const sub1 = Library.subscribe([123, 456]);
+      Session.sendBinary.reset();
+
+      const callback = stub();
+      sub1.postMessage({add: 789}, callback);
+
+      sub1.stop('myError');
+      assert.calledWithExactly(callback, 'myError');
+    });
+
     test("postMessage before Session ready", ()=>{
       const {state} = Session;
       Session.state._state = 'startup';
@@ -101,6 +115,20 @@ isClient && define((require, exports, module)=>{
       assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
       mockServer.sendSubResponse([sub1._id, 1, 200]);
       assert.same(state.pendingCount(), 0);
+      assert.calledWithExactly(callback, null);
+    });
+
+    test("postMessage error before Session ready", ()=>{
+      const {state} = Session;
+      Session.state._state = 'startup';
+      const sub1 = Library.subscribe([123, 456]);
+      Session.sendBinary.reset();
+
+      const callback = stub();
+      sub1.postMessage({add: 789}, callback);
+
+      sub1.stop('myError');
+      assert.calledWithExactly(callback, 'myError');
     });
 
     test("not Ready", ()=>{

@@ -1,32 +1,35 @@
 define((require, exports, module)=>{
+  const koru            = require('koru');
   const Query           = require('koru/model/query');
   const Observable      = require('koru/observable');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');
   const util            = require('koru/util');
 
-  const {inspect$} = require('koru/symbols');
+  const {inspect$, private$} = require('koru/symbols');
 
-  const module$ = Symbol(),
+  const module$ = Symbol(), messages$ = Symbol(),
         state$ = Symbol(), pubName$ = Symbol(), onConnect$ = Symbol();
 
-  const assertNotStopped = (sub)=>{
-    if (sub[state$] === 'stopped') throw new Error("Illegal action on stopped subscription");
-  };
+  const {messageResponse$, connected$} = SubscriptionSession[private$];
+
+  const STATE_NAMES = ['stopped', 'new', 'connect', 'active'];
+  const STATE_MAP = {stopped: 0, new: 1, connect: 2, active: 3};
 
   class Subscription {
     constructor(args, session=Session) {
       this.args = args;
       this.subSession = SubscriptionSession.get(session);
       this._id = this.subSession.makeId();
-      this[state$] = 'new';
+      this[state$] = STATE_MAP.new;
       this.lastSubscribed = 0;
       this._matches = Object.create(null);
       this.error = null;
+      this[messages$] = null;
     }
 
     onConnect(callback) {
-      if (this[state$] === 'active' || this[state$] === 'stopped') {
+      if (this[state$] === STATE_MAP.active || this[state$] === STATE_MAP.stopped) {
         callback(this.error);
         return util.noopHandle;
       } else
@@ -41,7 +44,7 @@ define((require, exports, module)=>{
           this.lastSubscribed = 0;
       }
       this.error = null;
-      this[state$] = 'connect';
+      this[state$] = STATE_MAP.connect;
       this.subSession.connect(this);
     }
 
@@ -51,9 +54,9 @@ define((require, exports, module)=>{
     }
 
     stop(error) {
-      if (this[state$] !== 'stopped') {
+      if (this[state$] !== STATE_MAP.stopped) {
         const oldState = this[state$];
-        this[state$] = 'stopped';
+        this[state$] = STATE_MAP.stopped;
         const {subSession} = this;
         subSession._delete(this);
         const {_matches} = this;
@@ -63,11 +66,21 @@ define((require, exports, module)=>{
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
         } finally {
+          const msgCallbacks = this[messages$];
           if (error !== void 0) {
             this.error = error;
             onConnect !== void 0 && onConnect.notify(error);
-          } else if (onConnect !== void 0 && oldState !== 'stopped') {
-            onConnect.notify({code: 409, reason: 'stopped'});
+            if (msgCallbacks !== null) {
+              this[messages$] = null;
+              msgCallbacks.forEach(cb => cb(error));
+            }
+          } else if (onConnect !== void 0 && oldState !== STATE_MAP.stopped) {
+            const error = new koru.Error(409, 'stopped');
+            onConnect.notify(error);
+            if (msgCallbacks !== null) {
+              this[messages$] = null;
+              msgCallbacks.forEach(cb => cb(error));
+            }
           }
         }
       }
@@ -77,7 +90,7 @@ define((require, exports, module)=>{
 
     stopped(unmatch) {} // just for overriding
 
-    get state() {return this[state$]}
+    get state() {return STATE_NAMES[this[state$]]}
 
     match(modelName, test) {
       if (typeof modelName !== 'string')
@@ -105,7 +118,12 @@ define((require, exports, module)=>{
     }
 
     postMessage(message, callback) {
-      this.subSession.postMessage(this, message, callback);
+      const msgId = this.subSession.postMessage(this, message);
+      if (msgId == -1 && callback !== void 0)
+        this.onConnect(callback);
+      else if (callback !== void 0) {
+        (this[messages$] || (this[messages$] = []))[msgId] = callback;
+      }
     }
 
     static get pubName() {return this[pubName$] || this.name}
@@ -127,10 +145,10 @@ define((require, exports, module)=>{
 
     static get lastSubscribedMaximumAge() {return -1}
 
-    _connected({lastSubscribed}) {
+    [connected$]({lastSubscribed}) {
       switch (this[state$]) {
-      case 'connect':
-        this[state$] = 'active';
+      case STATE_MAP.connect:
+        this[state$] = STATE_MAP.active;
         this.lastSubscribed = +lastSubscribed || 0;
         const onConnect = this[onConnect$];
         if (onConnect !== void 0) {
@@ -138,6 +156,18 @@ define((require, exports, module)=>{
           onConnect.notify(null);
         }
         break;
+      }
+    }
+
+    [messageResponse$](data) {
+      const callback = this[messages$] === null ? void 0 : this[messages$][data[1]];
+      if (callback !== void 0) {
+        this[messages$][data[1]] = void 0;
+        const status = data[2];
+        if (status == 0)
+          callback(null, data[3]);
+        else
+          callback(new koru.Error(-status, data[3]));
       }
     }
   }

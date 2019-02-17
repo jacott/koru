@@ -16,11 +16,15 @@ isClient && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const ClientLogin     = require('koru/user-account/client-login');
 
+  const {private$} = require('koru/symbols');
+
   const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
 
   const Subscription = require('./subscription');
 
   const mockServer = new MockServer(Session);
+
+  const {messageResponse$, connected$} = SubscriptionSession[private$];
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     const origState = Session.state;
@@ -183,7 +187,7 @@ isClient && define((require, exports, module)=>{
         sub3.stop();
 
         assert.equals(resonse, {
-          error: {code: 409, reason: 'stopped'}, state: 'stopped'});
+          error: m(e => e.error == 409 && e.reason == 'stopped'), state: 'stopped'});
       }
       //]
     });
@@ -193,7 +197,7 @@ isClient && define((require, exports, module)=>{
       class Library extends Subscription {}
       const sub = Library.subscribe();
 
-      sub._connected({});
+      sub[connected$]({});
 
       const callback = stub();
       const handle = sub.onConnect(callback);
@@ -371,7 +375,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.method();
       const connect = stub(SubscriptionSession.prototype, 'connect');
-      const responseFromServer = ()=>{connect.firstCall.args[0]._connected({})};
+      const responseFromServer = ()=>{connect.firstCall.args[0][connected$]({})};
 
       //[
       class Library extends Subscription {
@@ -506,19 +510,19 @@ isClient && define((require, exports, module)=>{
        * Send a message to publication. Messages can be used to alter the state of the publication.
        *
        * Messages are NOT re-transmitted if the connection is lost; Intead the subscription `args`
-       * should be modified to reflect the change in state.
+       * should be modified to reflect the change in state. In such cases the callback will be
+       * added to the {##onConnect} queue.
        *
        * See {#../publication#onMessage}
 
        * @param {any-type} message the message to send
        * @param callback a function with the arguments `error`, `result`. This function will be
-       * called when the message has finished.
+       * called when the message has finished or; if connection lost of not yet started, will be
+       * called when the subscription is active with no `result` (via the {##onConnect} queue).
        **/
       api.protoMethod();
 
-      const receivePost = ()=>{
-        Session._commands.Q.call(Session, [sub._id, 2, 0]);
-      };
+      const receivePost = (sub)=>{sub[messageResponse$](['sub1', 2, 0, 'added'])};
 
       //[
       class Library extends Subscription {
@@ -530,9 +534,9 @@ isClient && define((require, exports, module)=>{
       let done = false;
       sub.postMessage({addArg: 789}, (err, result)=>{
         if (err) sub.stop();
-        done = true;
+        done = result === 'added';
       });
-      receivePost();
+      receivePost(sub);
       assert.isTrue(done);
       //]
     });

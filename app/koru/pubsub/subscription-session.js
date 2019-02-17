@@ -11,8 +11,11 @@ define((require)=>{
   const login           = require('koru/user-account/client-login');
   const util            = require('koru/util');
 
+  const {private$} = require('koru/symbols');
+
   const loginObserver$ = Symbol(),
-        messages$ = Symbol(), reconnect$ = Symbol(), msgId$ = Symbol();
+        connected$ = Symbol(), messageResponse$ = Symbol(),
+        reconnect$ = Symbol(), msgId$ = Symbol();
 
   const sessions = Object.create(null);
 
@@ -41,21 +44,14 @@ define((require)=>{
     try {
       if (status !== 200) {
         if (status <=0) {
-          const callback = sub[messages$][data[1]];
-          if (callback === void 0) return;
-          if (status == 0) {
-            callback(null, data[3]);
-          } else {
-            callback(new koru.Error(-status, data[3]));
-          }
+          sub[messageResponse$](data);
         } else {
           sub.stop({code: data[2], reason: data[3]});
         }
       } else
-        sub._connected({lastSubscribed: data[3]});
+        sub[connected$]({lastSubscribed: data[3]});
     } finally {
       if (sub[msgId$] === data[1]) {
-        sub[messages$].length = 0;
         decPending(subSess, sub);
       }
     }
@@ -146,7 +142,6 @@ define((require)=>{
             incPending(this, sub);
           else
             sub[msgId$] = 1;
-          sub[messages$].length = 0;
           sendInit(this, this.subs[id]);
         }
       });
@@ -157,20 +152,21 @@ define((require)=>{
         throw new Error("Illegal connect on active subscription");
       this.subs[sub._id] = sub;
       sub[reconnect$] = false;
-      sub[messages$] = [];
       incPending(this, sub);
 
       this.session.state.isReady() &&
         sendInit(this, sub);
     }
 
-    postMessage(sub, message, callback) {
-      if (! this.session.state.isReady()) return;
-      incPending(this, sub);
-      if (callback !== void 0)
-        sub[messages$][sub[msgId$]] = callback;
+    postMessage(sub, message) {
+      if (this.session.state.isReady() && this.subs[sub._id] !== void 0) {
+        incPending(this, sub);
 
-      this.session.sendBinary('Q', [sub._id, sub[msgId$], null, message]);
+        this.session.sendBinary('Q', [sub._id, sub[msgId$], null, message]);
+        return sub[msgId$];
+      } else {
+        return -1;
+      }
     }
 
     _delete(sub) {
@@ -232,6 +228,9 @@ define((require)=>{
       return sessions;
     }
   }
+  SubscriptionSession[private$] = {
+    messageResponse$, connected$,
+  };
 
   return SubscriptionSession;
 });
