@@ -174,6 +174,7 @@ define((require)=>{
       return elm.firstChild;
     },
     h: html,
+    html,
 
     escapeHTML: (text)=>{
       const pre = document.createElement('pre');

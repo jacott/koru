@@ -7,7 +7,9 @@ define((require, exports, module)=>{
   const TH              = require('./main');
 
   const onEnd$ = Symbol(),
-        level$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
+        extactTest$ = Symbol(), currentTest$ = Symbol(),
+        level$ = Symbol(),
+        callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
   const {ctx} = module;
@@ -272,6 +274,11 @@ define((require, exports, module)=>{
     if (details === undefined) return;
 
     const currentTest = fromTest || details[currentTest$];
+
+    if (details[extactTest$] === currentTest) return;
+
+    details[extactTest$] = currentTest;
+
     if (fromTest === undefined) {
       const {test} = TH;
       if (test === currentTest) return;
