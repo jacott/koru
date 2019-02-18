@@ -2,7 +2,6 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const Observable      = require('koru/observable');
-  const BatchMessage    = require('koru/session/batch-message');
   const message         = require('koru/session/message');
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
