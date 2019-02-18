@@ -173,6 +173,12 @@ isClient && define((require, exports, module)=>{
       refute.called(Session.sendBinary);
     });
 
+    test("//filterDoc", ()=>{
+    });
+
+    test("//filterModels", ()=>{
+    });
+
     group("clientUpdate", ()=>{
       let Foo, fooSess, ss;
 

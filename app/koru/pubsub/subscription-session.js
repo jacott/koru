@@ -6,7 +6,7 @@ define((require)=>{
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
-  const Match           = require('koru/pubsub/match');
+  const Match           = require('koru/pubsub/model-match');
   const Trace           = require('koru/trace');
   const login           = require('koru/user-account/client-login');
   const util            = require('koru/util');
@@ -214,7 +214,9 @@ define((require)=>{
           delete simDocs[doc._id];
         delete model.docs[doc._id];
         Query.notify(DocChange.delete(doc, reason));
+        return true;
       }
+      return false;
     };
 
     filterModels(models, reason="noMatch") {

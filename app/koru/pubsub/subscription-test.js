@@ -7,7 +7,7 @@ isClient && define((require, exports, module)=>{
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const Query           = require('koru/model/query');
-  const Match           = require('koru/pubsub/match');
+  const Match           = require('koru/pubsub/model-match');
   const MockServer      = require('koru/pubsub/mock-server');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');
@@ -360,7 +360,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const filterDoc = stub(SubscriptionSession.prototype, 'filterDoc');
+      const filterDoc = stub(SubscriptionSession.prototype, 'filterDoc').returns(true);
       class Library extends Subscription {}
 
       const book1 = {_id: 'book1'};
@@ -372,6 +372,8 @@ isClient && define((require, exports, module)=>{
       //]
 
       assert.calledWithExactly(filterDoc, book1, 'stopped');
+
+      assert.isTrue(sub.filterDoc(book1));
     });
 
     test("filterModels", ()=>{

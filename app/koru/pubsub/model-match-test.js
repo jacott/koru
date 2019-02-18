@@ -10,7 +10,7 @@ define((require, exports, module)=>{
   const api      = require('koru/test/api');
   const TH       = require('koru/test-helper');
 
-  const Match = require('./match');
+  const ModelMatch = require('./model-match');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     const handles = [];
@@ -30,9 +30,9 @@ define((require, exports, module)=>{
       /**
        * Create a match registry.
        **/
-      const Match = api.class();
+      const ModelMatch = api.class();
 
-      const myMatch = new Match();
+      const myMatch = new ModelMatch();
 
       assert(myMatch.register);
     });
@@ -57,7 +57,7 @@ define((require, exports, module)=>{
        **/
       api.protoMethod();
       //[
-      const myMatch = new Match();
+      const myMatch = new ModelMatch();
       const book1 = Book.fetch();
       const book2 = Book.fetch();
 
@@ -83,13 +83,13 @@ define((require, exports, module)=>{
        * @param doc the document to test if matches a matcher
 
        * @param reason [client side only] the reason for matching. Use `"stopped"` when a
-       * subscription has stopped. `undefined` is the default for server updates. 'noMatch' is the
+       * subscription has stopped. `undefined` is the default for server updates. 'noModelMatch' is the
        * default for {#../subscription#filterModels}
        **/
 
       api.protoMethod();
       //[
-      const myMatch = new Match();
+      const myMatch = new ModelMatch();
       const book1 = Book.fetch();
       const book2 = Book.fetch();
       const book3 = Book.fetch();

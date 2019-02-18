@@ -53,7 +53,7 @@ define((require, exports, module)=>{
       this.connect();
     }
 
-    filterDoc(doc, reason) {this.subSession.filterDoc(doc, reason)}
+    filterDoc(doc, reason="noMatch") {return this.subSession.filterDoc(doc, reason)}
 
     stop(error) {
       if (this[state$] !== STATE_MAP.stopped) {
