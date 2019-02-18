@@ -663,7 +663,7 @@ define((require, exports, module)=>{
           v.TestModel.onChange(v.oc = stub()),
         ]);
         {
-          const dc = DocChange.change(v.foo, {age: 1}, "noMatch");
+          const dc = DocChange.change(v.foo, {age: 1}, "stopped");
           Query.notify(dc);
           assert.calledWith(v.indexUpdate, dc);
           assert.calledWith(v.onAnyChange, dc);

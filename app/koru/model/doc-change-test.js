@@ -11,7 +11,7 @@ define((require, exports, module)=>{
    * a [change](#koru/changes) object that will undo the change.
 
    * * `flag` is only present on client and a truthy value indicates change was not a
-   * simulation. Some truthy values include: "fromServer", "idbLoad", "simComplete" and "noMatch"
+   * simulation. Some truthy values include: "fromServer", "idbLoad", "simComplete" and "stopped"
 
    * NOTE: DocChange should be treated immutable and not stored as it is recycled by koru. If you
    * need to mutate or store the change use {##clone}.

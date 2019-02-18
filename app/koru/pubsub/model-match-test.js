@@ -6,29 +6,24 @@ define((require, exports, module)=>{
    * Used in {#../subscription}
    *
    **/
-  const Model    = require('koru/model/main');
-  const api      = require('koru/test/api');
-  const TH       = require('koru/test-helper');
+  const BaseModel       = require('koru/model/base-model');
+  const Model           = require('koru/model/main');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const ModelMatch = require('./model-match');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    const handles = [];
-    class Book {
+    class Book extends BaseModel {
       static get modelName() {return 'Book'}
       static fetch() {
         return new Book();
       }
     }
 
-    afterEach( ()=>{
-      handles.forEach(h =>{h.delete()});
-      handles.length = 0;
-    });
-
     test("constructor", ()=>{
       /**
-       * Create a match registry.
+       * Create a ModelMatch registry.
        **/
       const ModelMatch = api.class();
 
@@ -45,46 +40,47 @@ define((require, exports, module)=>{
 
        * @param modelName or model
 
-       * @param comparator The `comparator(doc, reason){}` should take one or two arguments. The
-       * first is the `doc` to test if matches and the second [client side only] is a `reason` for
-       * testing. Return `true` to match the document otherwise `false`.
-       *
-       * The `reason` is usally `undefined` but will be set to `"stopped"` when a subscription is
-       * stopped. Use the `reason` to determine if the `doc` should be fully deleted from the client
-       * or just unloaded from memory. For instance when the `reason` is `"stopped"` the matcher can
-       * return false if the subscription has finished with the document but should not be deleted
-       * from offline storage.
+       * @param comparator The `comparator(doc){}` should take one argument `doc`to test if matches.
+       * Return `true` to match the document, `false` to explicitly not match the document and
+       * `undefined` if no opinion about the document. See {##has}
+
+       * @return `handle` with `delete` method to unregister the `comparator`.
        **/
       api.protoMethod();
       //[
       const myMatch = new ModelMatch();
       const book1 = Book.fetch();
       const book2 = Book.fetch();
+      const book3 = Book.fetch();
 
-      // no matchers match the document if stopped
-      const m1 = myMatch.register('Book', (doc, reason)=>{
-        return reason === 'stopped' ? doc === book1 : true;
-      });
+      const comparator = doc => doc === book1 || (doc === book2 ? false : void 0);
+      const m1 = myMatch.register('Book', comparator);
 
-      //]
-      handles.push(m1);
-      //[
-      assert.isTrue(myMatch.has(book2));
-      assert.isFalse(myMatch.has(book2, "stopped"));
-      assert.isTrue(myMatch.has(book1, "stopped"));
+      assert.isTrue(myMatch.has(book1));
+      assert.isFalse(myMatch.has(book2));
+      assert.same(myMatch.has(book3), void 0);
       //]
     });
 
     test("has", ()=>{
       /**
-       * Test if a document matches a matcher. See {##register}. (This is not usally called
-       * directly).
+       * Test if a document matches a matcher. See {##register}.
 
        * @param doc the document to test if matches a matcher
 
-       * @param reason [client side only] the reason for matching. Use `"stopped"` when a
-       * subscription has stopped. `undefined` is the default for server updates. 'noModelMatch' is the
-       * default for {#../subscription#filterModels}
+       * @return `true`, `false`, or `undefined`.
+
+       * 1. `true` if the `doc` matches any matcher. No further matchers are tested.
+
+       * 1. `false` if at least one matcher returns `false` and no matcher returns `true`. `false`
+       * indicates that this document should be removed both from memory and client persistent
+       * storage.
+
+       * 1. `undefined` if all matchers return `undefined` or no matchers are
+       * registered. `undefined` indicates that this document should be removed from memory but not
+       * from client persistent storage. Incoming changes from a server which match `undefined` will
+       * notify [model](#koru/model/base-model) observers with a {#koru/model/doc-change.delete}
+       * flag of "stopped".
        **/
 
       api.protoMethod();
@@ -94,31 +90,28 @@ define((require, exports, module)=>{
       const book2 = Book.fetch();
       const book3 = Book.fetch();
 
-      const m1 = myMatch.register('Book', (doc, reason)=>{
-        return reason === 'stopped' ? doc !== book1 : true;
+      assert.same(myMatch.has(book1), void 0);
+
+      const m1 = myMatch.register('Book', doc =>{});
+
+      assert.same(myMatch.has(book1), void 0);
+
+      const m2 = myMatch.register('Book', doc =>{
+        return doc === book1 ? true : void 0;
       });
 
-      const m2 = myMatch.register('Book', doc => {
+      const m3 = myMatch.register('Book', doc => {
         return doc === book2;
       });
 
-      //]
-      handles.push(m1, m2);
-      //[
-
       assert.isTrue(myMatch.has(book1));
-      assert.isFalse(myMatch.has(book1, "stopped"));
-      assert.isTrue(myMatch.has(book2, "stopped"));
-      assert.isTrue(myMatch.has(book3, "stopped"));
-
-      m1.delete();
-
-      assert.isFalse(myMatch.has(book1));
       assert.isTrue(myMatch.has(book2));
       assert.isFalse(myMatch.has(book3));
-      m2.delete();
 
-      assert.isFalse(myMatch.has(book2));
+      m3.delete();
+
+      assert.isTrue(myMatch.has(book1));
+      assert.same(myMatch.has(book2), void 0);
       //]
     });
   });

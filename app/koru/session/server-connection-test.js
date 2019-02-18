@@ -301,8 +301,8 @@ isServer && define((require, exports, module)=>{
       assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1)),
                     ['R', ['Book', 'book1', void 0]]);
 
-      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1, 'noMatch')),
-                    ['R', ['Book', 'book1', 'noMatch']]);
+      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1, 'stopped')),
+                    ['R', ['Book', 'book1', 'stopped']]);
       //]
     });
 
@@ -332,10 +332,10 @@ isServer && define((require, exports, module)=>{
       assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123', void 0]);
     });
 
-    test("removed noMatch", ()=>{
-      v.conn.removed('Foo', '123', 'noMatch');
+    test("removed stopped", ()=>{
+      v.conn.removed('Foo', '123', 'stopped');
 
-      assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123', 'noMatch']);
+      assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123', 'stopped']);
     });
 
     test("closed", ()=>{

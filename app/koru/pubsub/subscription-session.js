@@ -99,10 +99,11 @@ define((require)=>{
     const doc = model.findById(id);
     if (doc === void 0) return;
     const nowDoc = doc.$withChanges(changes);
-    if (ss.match.has(nowDoc)) {
+    const ansNow = ss.match.has(nowDoc);
+    if (ansNow) {
       model.serverQuery.onId(id).update(changes);
     } else {
-      model.query.fromServer(ss.match.has(doc) ? 'noMatch' : 'stopped').onId(id).remove();
+      model.query.fromServer(ansNow === false ? 'fromServer' : 'stopped').onId(id).remove();
     }
   });
 
@@ -205,27 +206,28 @@ define((require)=>{
         this.unload(sessions[id]);
     }
 
-    filterDoc(doc, reason="noMatch") {
-      if (! this.match.has(doc, reason)) {
+    filterDoc(doc) {
+      const ans = this.match.has(doc);
+      if (! ans) {
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);
         const sim = simDocs[doc._id];
         if (sim !== void 0)
           delete simDocs[doc._id];
         delete model.docs[doc._id];
-        Query.notify(DocChange.delete(doc, reason));
+        Query.notify(DocChange.delete(doc, ans === false ? 'fromServer' : 'stopped'));
         return true;
       }
       return false;
     };
 
-    filterModels(models, reason="noMatch") {
+    filterModels(models) {
       TransQueue.transaction(() => {
         for(const name in models) {
           const model = ModelMap[name];
           if (model !== void 0) {
             const {docs} = model;
-            for (const id in docs) this.filterDoc(docs[id], reason);
+            for (const id in docs) this.filterDoc(docs[id]);
           }
         }
       });

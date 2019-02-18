@@ -3,16 +3,22 @@ define((require)=>{
 
   const models$ = Symbol();
 
-  class Match {
+  class ModelMatch {
     constructor() {
       this[models$] = Object.create(null);
     }
 
-    has(doc, reason) {
+    has(doc) {
       const mm = this[models$][doc.constructor.modelName];
-      if (mm === undefined) return false;
-      for (const comparator of mm) if (comparator(doc, reason)) return true;
-      return false;
+      if (mm === void 0) return void 0;
+      let result = void 0;
+      for (const comparator of mm) {
+        const ans = comparator(doc);
+        if (ans === true) return true;
+        if (ans === false) result = false;
+      }
+
+      return result;
     }
 
     register(modelName, comparator) {
@@ -35,5 +41,5 @@ define((require)=>{
     }
   }
 
-  return Match;
+  return ModelMatch;
 });

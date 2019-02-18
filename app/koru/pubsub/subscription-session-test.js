@@ -8,7 +8,9 @@ isClient && define((require, exports, module)=>{
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
+  const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
+  const TransQueue      = require('koru/model/trans-queue');
   const MockServer      = require('koru/pubsub/mock-server');
   const Subscription    = require('koru/pubsub/subscription');
   const Session         = require('koru/session');
@@ -173,13 +175,25 @@ isClient && define((require, exports, module)=>{
       refute.called(Session.sendBinary);
     });
 
-    test("//filterDoc", ()=>{
+    test("filterModels", ()=>{
+      const ss = SubscriptionSession.get(Session);
+      let count = 0;
+      stub(ss, 'filterDoc', ()=>{TransQueue.isInTransaction() && ++count});
+      onEnd(()=>{
+        delete ModelMap.Foo;
+        delete ModelMap.Bar;
+      });
+      ModelMap.Foo = {docs: {foo1: {_id: 'foo1'}}};
+      ModelMap.Bar = {docs: {bar1: {_id: 'bar1'}, bar2: {_id: 'bar2'}}};
+      ss.filterModels({Foo: true, Bar: true});
+
+      assert.calledThrice(ss.filterDoc);
+      assert.same(count, 3);
+      assert.calledWith(ss.filterDoc, ModelMap.Foo.docs.foo1);
+      assert.calledWith(ss.filterDoc, ModelMap.Bar.docs.bar2);
     });
 
-    test("//filterModels", ()=>{
-    });
-
-    group("clientUpdate", ()=>{
+    group("query updates", ()=>{
       let Foo, fooSess, ss;
 
       const sendMsg = (type, ...args) => {fooSess._commands[type].call(fooSess, args)};
@@ -199,6 +213,28 @@ isClient && define((require, exports, module)=>{
         delete Model._databases.foo01;
       });
 
+      test("filterDoc", ()=>{
+        const bob = Foo.findById(Foo._insertAttrs({_id: 'bob'}));
+        const sam = Foo.findById(Foo._insertAttrs({_id: 'sam'}));
+        const sue = Foo.findById(Foo._insertAttrs({_id: 'sue'}));
+        const onChange = stub();
+        onEnd(Foo.onChange(onChange));
+        const has = {bob: true, sam: false};
+        ss.match.register('Foo', doc => has[doc._id]);
+
+        assert.isFalse(ss.filterDoc(bob));
+        refute.called(onChange);
+        assert(Foo.findById('bob'));
+
+        assert.isTrue(ss.filterDoc(sam));
+        refute(Foo.findById('sam'));
+        assert.calledWith(onChange, DocChange.delete(sam, 'fromServer'));
+
+        assert.isTrue(ss.filterDoc(sue));
+        refute(Foo.findById('sue'));
+        assert.calledWith(onChange, DocChange.delete(sue, 'stopped'));
+      });
+
       test("added", ()=>{
         ss.match.register('Foo', doc => doc.age > 4);
         const insertSpy = spy(Query, 'insertFromServer');
@@ -215,7 +251,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(insertSpy, Foo, attrs);
       });
 
-      test("added noMatch", ()=>{
+      test("added no match", ()=>{
         dbBroker.dbId = 'foo01';
 
         ss.match.register('Foo', doc => doc.age < 4);
@@ -240,11 +276,12 @@ isClient && define((require, exports, module)=>{
         assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
       });
 
-      test("changed noMatch", ()=>{
-        const handle = ss.match.register('Foo', doc => doc.age > 4);
+      test("changed no match", ()=>{
+        const handle = ss.match.register('Foo', doc => doc.age > 4 ? doc.age < 10 : void 0);
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
+        const sue = Foo.findById(Foo._insertAttrs({_id: 'f444', name: 'sue', age: 5}));
 
         const onChange = stub();
         onEnd(Foo.onChange(onChange));
@@ -252,7 +289,13 @@ isClient && define((require, exports, module)=>{
         sendMsg('C', 'Foo', 'f222', {age: 3});
 
         refute(Foo.findById('f222'));
-        assert.calledOnceWith(onChange, DocChange.delete(bob, 'noMatch'));
+        assert.calledOnceWith(onChange, DocChange.delete(bob, 'stopped'));
+
+        onChange.reset();
+        sendMsg('C', 'Foo', 'f444', {age: 13});
+
+        refute(Foo.findById('f444'));
+        assert.calledOnceWith(onChange, DocChange.delete(sue, 'fromServer'));
 
         sam.attributes.age = 3;
         sendMsg('C', 'Foo', 'f333', {age: 9});
@@ -284,8 +327,8 @@ isClient && define((require, exports, module)=>{
 
         assert.same(flag, 'serverUpdate');
 
-        sendMsg('R', 'Foo', 'f333', 'noMatch');
-        assert.same(flag, 'noMatch');
+        sendMsg('R', 'Foo', 'f333', 'stopped');
+        assert.same(flag, 'stopped');
       });
 
       test("alt session", ()=>{

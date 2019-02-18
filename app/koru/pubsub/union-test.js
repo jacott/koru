@@ -496,8 +496,8 @@ isServer && define((require, exports, module)=>{
 
        * @param remDoc a function to call with a doc (and optional flag) to be removed from the
        * subscribers. The flag is sent to the client as a {#koru/models/doc-change}#flag which
-       * defaults to "serverUpdate". Useful values are "noMatch" and "stopped" which a client
-       * persistence manager can used to decide to not remove the persitent document.
+       * defaults to "serverUpdate". A Useful value is "stopped" which a client persistence manager
+       * can used to decide to not remove the persitent document.
 
        * @param minLastSubscribed the lastSubscribed time related to the first subscriber for this
        * load request. Only subscribers with a lastSubscribed >= first subscriber will be added to
@@ -603,7 +603,7 @@ isServer && define((require, exports, module)=>{
         loadByToken(addDoc, remDoc, token) {
           if (token === 'myToken') {
             addDoc(book1);
-            remDoc(book2, 'noMatch');
+            remDoc(book2, 'stopped');
           }
         }
       }
@@ -618,7 +618,7 @@ isServer && define((require, exports, module)=>{
 
       assert.equals(msgs, [
         ['A', ['Book', book1.attributes]],
-        ['R', ['Book', book2._id, 'noMatch']]
+        ['R', ['Book', book2._id, 'stopped']]
       ]);
       //]
     });

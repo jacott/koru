@@ -309,9 +309,7 @@ isClient && define((require, exports, module)=>{
       const doc2 = Book.create({_id: 'doc2'});
       const doc3 = Book.create({_id: 'doc3'});
 
-      const mr = SubscriptionSession.get(Session).match.register('Book', (doc, reason) =>{
-        assert.same(reason, 'stopped');
-
+      const mr = SubscriptionSession.get(Session).match.register('Book', doc =>{
         return doc === doc2;
       });
       //]
@@ -355,8 +353,6 @@ isClient && define((require, exports, module)=>{
 
        * @param doc the document to test if matches a matcher
 
-       * @param reason the reason for testing match. See {#../match#has}. Defaults to "noMatch".
-
        **/
       api.protoMethod();
 
@@ -368,10 +364,10 @@ isClient && define((require, exports, module)=>{
       //[
       const sub = new Library();
 
-      sub.filterDoc(book1, 'stopped');
+      sub.filterDoc(book1);
       //]
 
-      assert.calledWithExactly(filterDoc, book1, 'stopped');
+      assert.calledWithExactly(filterDoc, book1);
 
       assert.isTrue(sub.filterDoc(book1));
     });
