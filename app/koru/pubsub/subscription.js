@@ -53,6 +53,8 @@ define((require, exports, module)=>{
       this.connect();
     }
 
+    filterDoc(doc, reason) {this.subSession.filterDoc(doc, reason)}
+
     stop(error) {
       if (this[state$] !== STATE_MAP.stopped) {
         const oldState = this[state$];

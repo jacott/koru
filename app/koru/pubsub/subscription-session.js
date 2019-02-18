@@ -205,7 +205,7 @@ define((require)=>{
         this.unload(sessions[id]);
     }
 
-    filterDoc(doc, reason) {
+    filterDoc(doc, reason="noMatch") {
       if (! this.match.has(doc, reason)) {
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);

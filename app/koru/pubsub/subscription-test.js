@@ -106,8 +106,9 @@ isClient && define((require, exports, module)=>{
     test("onConnect", ()=>{
       /**
        * Observe connection completions. The `callback` is called on success with a null argument,
-       * on error with an `error` argument, and if stopped before connected with an `error` argument
-       * with `code` 409, `reason` "stopped".
+       * on error with an `error` argument, and if stopped before connected with
+
+       * `Error(409, 'stopped')`.
 
        * Callbacks will only be called once. To be called again after a re-connect they will need to
        * be set up again inside the callback.
@@ -346,6 +347,31 @@ isClient && define((require, exports, module)=>{
 
       assert.equals(simDocs, {doc2: ['del']});
       assert.equals(sub._matches, {});
+    });
+
+    test("filterDoc", ()=>{
+      /**
+       * Remove a model document if it does not match this subscription
+
+       * @param doc the document to test if matches a matcher
+
+       * @param reason the reason for testing match. See {#../match#has}. Defaults to "noMatch".
+
+       **/
+      api.protoMethod();
+
+      const filterDoc = stub(SubscriptionSession.prototype, 'filterDoc');
+      class Library extends Subscription {}
+
+      const book1 = {_id: 'book1'};
+
+      //[
+      const sub = new Library();
+
+      sub.filterDoc(book1, 'stopped');
+      //]
+
+      assert.calledWithExactly(filterDoc, book1, 'stopped');
     });
 
     test("filterModels", ()=>{

@@ -82,8 +82,9 @@ define((require, exports, module)=>{
 
        * @param doc the document to test if matches a matcher
 
-       * @param reason [client side only] `"stopped"` when a subscription is stopped; noMatch if
-       * `userId` changes.
+       * @param reason [client side only] the reason for matching. Use `"stopped"` when a
+       * subscription has stopped. `undefined` is the default for server updates. 'noMatch' is the
+       * default for {#../subscription#filterModels}
        **/
 
       api.protoMethod();
