@@ -9,7 +9,7 @@ define((require)=>{
   const {deepEqual} = Core;
 
   const TH = koru.util.reverseMerge({
-    login(id, func) {
+    login: (id, func)=>{
       if (func === void 0) {
         TH.stubProperty(util.thread, 'userId', {value: id});
         return;
@@ -23,9 +23,17 @@ define((require)=>{
         util.thread.userId = oldId;
       }
     },
-    noInfo() {
-      if (! koru.info.restore)
+    noInfo: ()=>{
+      if (koru.info.restore === void 0)
         Core.test.intercept(koru, 'info');
+    },
+
+    createPromiseCallback: ()=>{
+      let resolve, reject;
+      return {
+        promise: new Promise((suc, err)=>{resolve = suc, reject = err}),
+        callback: TH.stub((err)=>{err ? reject(err) : resolve()}),
+      };
     },
   }, Test);
 
