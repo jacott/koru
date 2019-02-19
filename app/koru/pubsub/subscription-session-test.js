@@ -199,7 +199,7 @@ isClient && define((require, exports, module)=>{
       });
       ModelMap.Foo = {docs: {foo1: {_id: 'foo1'}}};
       ModelMap.Bar = {docs: {bar1: {_id: 'bar1'}, bar2: {_id: 'bar2'}}};
-      ss.filterModels({Foo: true, Bar: true});
+      ss.filterModels(['Foo', 'Bar']);
 
       assert.calledThrice(ss.filterDoc);
       assert.same(count, 3);

@@ -224,7 +224,7 @@ define((require)=>{
 
     filterModels(models) {
       TransQueue.transaction(() => {
-        for(const name in models) {
+        for(const name of models) {
           const model = ModelMap[name];
           if (model !== void 0) {
             const {docs} = model;

@@ -115,9 +115,7 @@ define((require, exports, module)=>{
     }
 
     filterModels(...modelNames) {
-      const models = {};
-      util.forEach(modelNames, mn => {models[mn] = true});
-      this.subSession.filterModels(models);
+      this.subSession.filterModels(modelNames);
     }
 
     postMessage(message, callback) {

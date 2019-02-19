@@ -387,7 +387,7 @@ isClient && define((require, exports, module)=>{
       sub.filterModels('Book', 'Catalog');
       //]
 
-      assert.calledWithExactly(filterModels, {Book: true, Catalog: true});
+      assert.calledWithExactly(filterModels, ['Book', 'Catalog']);
       assert.same(filterModels.firstCall.thisValue, sub.subSession);
 
     });
