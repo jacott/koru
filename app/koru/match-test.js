@@ -4,6 +4,7 @@ define((require, exports, module)=>{
    * The {#koru/util.deepEqual} function will honour any matchers found in the `expected` (second)
    * argument.
    **/
+  const koru            = require('koru');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
 
@@ -261,6 +262,11 @@ define((require, exports, module)=>{
       assert.isFalse(match.date.test(''));
       assert.isFalse(match.date.test({}));
       assert.isFalse(match.date.test(new Date('invalid')));
+
+      docProp('error');
+      assert.isTrue(match.error.test(new Error()));
+      assert.isTrue(match.error.test(new koru.Error()));
+      assert.isFalse(match.error.test({}));
 
       docProp('integer');
       assert.isTrue(match.integer.test(1234));
