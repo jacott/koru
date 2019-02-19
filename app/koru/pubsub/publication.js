@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const TransQueue      = require('koru/model/trans-queue');
   const Session         = require('koru/session');
   const util            = require('koru/util');
 
@@ -97,12 +98,14 @@ define((require, exports, module)=>{
       const sub = subs[id];
       if (sub === void 0) return;
       try {
-        const ans = sub.onMessage(args);
-        this.sendBinary('Q', [id, msgId, 0, ans]);
+        this.sendBinary('Q', [id, msgId, 0, TransQueue.transaction(()=> sub.onMessage(args))]);
       } catch(ex) {
-        if (ex.error === void 0)
+        if (ex.error === void 0) {
           koru.unhandledException(ex);
-        this.sendBinary('Q', [id, msgId, -(ex.error || 500), ex.reason]);
+          this.sendBinary('Q', [id, msgId, 500, ex.toString()]);
+        } else {
+          this.sendBinary('Q', [id, msgId, -ex.error, ex.reason]);
+        }
       }
       return;
     }
@@ -114,15 +117,22 @@ define((require, exports, module)=>{
     } else {
       let sub;
       try {
-        sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
-        sub.init(args);
+        let subStartTime;
+        TransQueue.transaction(()=>{
+          subStartTime = util.dateNow();
+          sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
+          sub.init(args);
+        });
         subs[id] !== void 0 && this.sendBinary('Q', [
-          id, msgId, 200, sub.lastSubscribed = util.dateNow()]); // ready
+          id, msgId, 200, sub.lastSubscribed = subStartTime]); // ready
 
       } catch (ex) {
-        if (ex.error === void 0)
+        if (ex.error === void 0) {
           koru.unhandledException(ex);
-        this.sendBinary('Q', [id, msgId, ex.error || 500, ex.reason]);
+          this.sendBinary('Q', [id, msgId, 500, ex.toString()]);
+        } else {
+          this.sendBinary('Q', [id, msgId, ex.error, ex.reason]);
+        }
         if (sub !== void 0) {
           stopped(sub);
           sub.stop();

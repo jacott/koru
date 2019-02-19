@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
   const ServerConnection = require('koru/session/server-connection');
@@ -169,17 +170,19 @@ define((require, exports, module)=>{
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
-        util.thread.msgId = msgId;
-        if (msgId.length > 17)
-          util.thread.random = new Random(msgId);
-        const result = func.apply(this, data.slice(2));
+        const result = TransQueue.transaction(()=>{
+          util.thread.msgId = msgId;
+          if (msgId.length > 17)
+            util.thread.random = new Random(msgId);
+          return func.apply(this, data.slice(2));
+        });
         this.sendBinary('M', [msgId, 'r', result]);
       } catch(ex) {
-        if (ex.error) {
-          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
-        } else {
+        if (ex.error === void 0) {
           koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
+        } else {
+          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         }
       }
     });

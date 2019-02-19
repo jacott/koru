@@ -120,6 +120,63 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
+    test("init in TransQueue transaction success", ()=>{
+      let inTrans = false;
+      let sub, now;
+      class Library extends Publication {
+        init(args) {
+          sub = this;
+          assert.isTrue(inTrans);
+        }
+      }
+      Library.pubName = 'Library';
+
+      conn.sendBinary.reset();
+      intercept(TransQueue, 'transaction', func =>{
+        inTrans = true;
+        now = util.dateNow() - 12000; intercept(util, 'dateNow', ()=>now);
+        try {
+          return func();
+        } finally {
+          inTrans = false;
+        }
+      });
+      conn.sendBinary.invokes(c => {
+        assert.isFalse(inTrans);
+      });
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 1, 200, now]);
+    });
+
+    test("init in TransQueue transaction failure", ()=>{
+      let inTrans = false;
+      let sub;
+      class Library extends Publication {
+        init(args) {
+          sub = this;
+          assert.isTrue(inTrans);
+          throw new koru.Error(404, 'not_found');
+        }
+      }
+      Library.pubName = 'Library';
+
+      conn.sendBinary.reset();
+      intercept(TransQueue, 'transaction', func =>{
+        inTrans = true;
+        try {
+          return func();
+        } finally {
+          inTrans = false;
+        }
+      });
+      conn.sendBinary.invokes(c => {
+        assert.isFalse(inTrans);
+      });
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 1, 404, "not_found"]);
+    });
+
+
     test("stop", ()=>{
       /**
        * Stop a subscription. This method can be called directly on the server to stop a
@@ -204,6 +261,68 @@ isServer && define((require, exports, module)=>{
       assert.equals(conn.sendBinary.lastCall.args, [
         'Q', ["sub1", 2, 0, "done :)"]]);
       //]
+    });
+
+    test("onMessage in TransQueue transaction success", ()=>{
+      let inTrans = false;
+      let sub;
+      class Library extends Publication {
+        init(args) {
+          sub = this;
+        }
+        onMessage(message) {
+          assert.isTrue(inTrans);
+          return "done :)";
+        }
+      }
+      Library.pubName = 'Library';
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
+
+      conn.sendBinary.reset();
+      intercept(TransQueue, 'transaction', func =>{
+        inTrans = true;
+        try {
+          return func();
+        } finally {
+          inTrans = false;
+        }
+      });
+      conn.sendBinary.invokes(c => {
+        assert.isFalse(inTrans);
+      });
+      conn.onSubscribe("sub1", 2, null, 'foo');
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 2, 0, "done :)"]);
+    });
+
+    test("onMessage in TransQueue transaction failure", ()=>{
+      let inTrans = false;
+      let sub;
+      class Library extends Publication {
+        init(args) {
+          sub = this;
+        }
+        onMessage(message) {
+          assert.isTrue(inTrans);
+          throw new koru.Error(404, 'not_found');
+        }
+      }
+      Library.pubName = 'Library';
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
+
+      conn.sendBinary.reset();
+      intercept(TransQueue, 'transaction', func =>{
+        inTrans = true;
+        try {
+          return func();
+        } finally {
+          inTrans = false;
+        }
+      });
+      conn.sendBinary.invokes(c => {
+        assert.isFalse(inTrans);
+      });
+      conn.onSubscribe("sub1", 2, null, 'foo');
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 2, -404, "not_found"]);
     });
 
     test("discreteLastSubscribed", ()=>{
