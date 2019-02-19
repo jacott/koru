@@ -207,7 +207,7 @@ define((require)=>{
     }
 
     filterDoc(doc) {
-      const ans = this.match.has(doc);
+      const ans = doc === void 0 || this.match.has(doc);
       if (! ans) {
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);

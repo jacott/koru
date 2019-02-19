@@ -222,6 +222,8 @@ isClient && define((require, exports, module)=>{
         const has = {bob: true, sam: false};
         ss.match.register('Foo', doc => has[doc._id]);
 
+        assert.isFalse(ss.filterDoc(void 0));
+
         assert.isFalse(ss.filterDoc(bob));
         refute.called(onChange);
         assert(Foo.findById('bob'));
