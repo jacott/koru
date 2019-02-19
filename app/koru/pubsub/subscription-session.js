@@ -60,6 +60,7 @@ define((require)=>{
   const sendInit = (ss, sub)=>{
     if (sub[reconnect$]) {
       sub.reconnecting();
+      if (sub.state === 'stopped') return;
     } else {
       sub[reconnect$] = true;
     }

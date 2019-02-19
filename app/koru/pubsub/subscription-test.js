@@ -461,7 +461,8 @@ isClient && define((require, exports, module)=>{
 
     test("reconnecting", ()=>{
       /**
-       * Override this method to be called when a subscription reconnect is attempted.
+       * Override this method to be called when a subscription reconnect is attempted. Calling
+       * {##stop} within this method will stop the reconnect.
        *
        * When there is no `lastSubscribed` time, or lastSubscribed is older than
        * `lastSubscribedMaximumAge`, {#.markForRemove} should be called on documents matching this

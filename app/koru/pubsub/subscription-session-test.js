@@ -51,8 +51,22 @@ isClient && define((require, exports, module)=>{
       const sub1 = Library.subscribe([123, 456]);
 
       refute.called(reconnecting);
+      Session.sendBinary.reset();
       Session.state._onConnect['10-subscribe2']();
       assert.called(reconnecting);
+
+      assert.calledWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
+    });
+
+    test("reconnecting stopped", ()=>{
+      const reconnecting = stub(Library.prototype, 'reconnecting', function () {this.stop()});
+      const sub1 = Library.subscribe([123, 456]);
+
+      Session.sendBinary.reset();
+      Session.state._onConnect['10-subscribe2']();
+      assert.called(reconnecting);
+
+      refute.called(Session.sendBinary);
     });
 
     test("postMessage", ()=>{
