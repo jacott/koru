@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const TransQueue      = require('koru/model/trans-queue');
+  const SQLStatement    = require('koru/pg/sql-statement');
   const api             = require('koru/test/api');
   const koru            = require('../main');
   const Model           = require('./main');
@@ -53,32 +54,44 @@ define((require, exports, module)=>{
 
     test("whereSql", ()=>{
       /**
-       * Add a where condition to the query which is written in sql. Two formats are supported:
+       * Add a where condition to the query which is written in sql.
 
-       * 1. `whereSql(queryString, properties)`
+       * @param args Four formats are supported:
 
-       * 1. `` whereSql`queryTemplate` ``
+       * 1. `whereSql(queryString, params)` queryString is a sql where-clause where `$n` parameters
+       * corresponds to the nth-1 position in params.
 
-       * @param {string} queryString a sql where-clause where `{$varName}` expressions within the
-       * string get converted to parameters corresponding the the `properties`.
+       * 1. `whereSql(queryString, properties)` queryString is a sql where-clause where `{$varName}`
+       * expressions within the string get converted to parameters corresponding the the
+       * `properties`.
 
-       * @param {object} properties key value properties mapping to the `{$varName}` expressions within
-       * `queryString`
+       * 1. `whereSql(sqlStatement, properties)` sqlStatment is a pre-compiled
+         * {#koru/pg/sql-statement} and properties are referenced in the statement.
 
-       * @param {template-literal} queryTemplate a sql where-clause where `${varName}` expressions
-       * within the template get converted to parameters.
+       * 1. `` whereSql`queryTemplate` queryTemplate a sql where-clause where `${varName}`
+       * expressions within the template get converted to parameters.
        **/
       TestModel.create({name: 'foo2', age: 4});
       api.protoMethod('whereSql', {subject: TestModel.query, subjectName: 'Query'});
       //[
       assert.same(TestModel.query.whereSql(
+        `name = $1 and age > $2`, ['foo2', 3]).fetchOne().name, 'foo2');
+      //]
+      //[
+      assert.same(TestModel.query.whereSql(
         `name = {$name} and age > {$age}`, {name: 'foo2', age: 3}).fetchOne().name, 'foo2');
       //]
-
+      //[
+      const statement = new SQLStatement(`name = {$name} and age > {$age}`);
+      assert.same(TestModel.query.whereSql(
+        statement, {name: 'foo2', age: 3}).fetchOne().name, 'foo2');
+      //]
       //[
       const name = 'foo2';
       assert.same(TestModel.query.whereSql`name = ${name} and age > ${3}`.fetchOne().name, 'foo2');
       //]
+
+      assert.same(TestModel.query.whereSql(new SQLStatement(`name = 'foo2'`)).fetchOne().name, 'foo2');
     });
 
     test("notify", ()=>{

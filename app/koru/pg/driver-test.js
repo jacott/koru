@@ -10,6 +10,7 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
   const util            = require('../util');
+  const SQLStatement    = require('./sql-statement');
 
   const {stub, spy, onEnd} = TH;
 
@@ -86,25 +87,32 @@ isServer && define((require, exports, module)=>{
 
       test("query", ()=>{
         /**
-         * Query the database with a SQL instruction. Four formats are supported:
+         * Query the database with a SQL instruction. Five formats are supported (most performant
+         * first):
 
          * 1. `query(text)` where no parameters are in the query text
 
-         * 1. `query(text, params)` where parameters correspond to array position (1 is first position)
+         * 1. `query(text, params)` where parameters correspond to array position (1 is first
+         * position)
 
-         * 1. `query(text, params)` where params is an object
+         * 1. `query(sqlStatment, params)` where `sqlStatment` is a pre-compiled {#../sql-statement}
+         * and params is a key-value object.
+
+         * 1. `query(text, params)` where params is a key-value object
 
          * 1. `` query`queryTemplate` ``
 
-         * @param {string|template-literal} text a sql where-clause where either:
+         * @param {string|templateLiteral|../sql-statement} text a sql where-clause where either:
 
          * 1. no paramters are supplied
 
          * 1. `$n` parameters within the text correspond to `params` array position (n-1).
 
+         * 1. See {#../sql-statement}
+
          * 1. `{$varName}` parameters within the text correspond to `params` object properties.
 
-         * 1. `${varName}` expressions * within the template get converted to parameters.
+         * 1. `${varName}` expressions within the template get converted to parameters.
 
          * @param {array|object} params either an array of positional arguments or key value
          * properties mapping to the `{$varName}` expressions within `text`
@@ -125,6 +133,11 @@ isServer && define((require, exports, module)=>{
 
         assert.equals(
           pg.defaultDb.query`SELECT ${a}::int + ${b}::int as ans`[0].ans, 5);
+
+
+        const statment = new SQLStatement(`SELECT {$a}::int + {$b}::int as ans`);
+        assert.equals(
+          pg.defaultDb.query(statment, {a, b})[0].ans, 5);
         //]
       });
     });

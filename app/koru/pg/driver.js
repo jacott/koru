@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const Libpq = requirejs.nodeRequire('pg-libpq');
   const Observable      = require('koru/observable');
+  const SQLStatement    = require('koru/pg/sql-statement');
   const koru            = require('../main');
   const match           = require('../match');
   const Pool            = require('../pool-server');
@@ -217,27 +218,31 @@ define((require, exports, module)=>{
       return this.query(text, params).rows[0];
     }
 
-    query(text, params) {
+    query(text, ...args) {
+      if (text instanceof SQLStatement) {
+        const params = args.length == 0 ? void 0 : text.convertArgs(args[0]);
+        return this.withConn(conn => query(conn, text.text, params));
+      }
+
       if (Array.isArray(text)) {
-        const params = new Array(text.length-1);
         let sqlStr = text[0];
-        let i = 1;
-        for(; i < arguments.length; ++i) {
+        for(let i = 1; i <= args.length; ++i) {
           sqlStr += '$' + i + text[i];
-          params[i-1] = arguments[i];
         }
-        return this.withConn(conn => query(conn, sqlStr, params));;
+        return this.withConn(conn => query(conn, sqlStr, args));;
       }
-      if (params !== void 0 && ! Array.isArray(params)) {
-        const fields = params;
-        const posMap = {};
-        let count = 0;
-        params = [];
-        text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
-            params.push(fields[key]),
+      if (args.length == 0)
+        return this.withConn(conn => query(conn, text));
+
+      const arg0 = args[0];
+      if (Array.isArray(arg0))
+        return this.withConn(conn => query(conn, text, arg0));
+
+      const posMap = {}, params = [];
+      let count = 0;
+      text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
+        params.push(arg0[key]),
           (posMap[key] = `$${++count}`)));
-        return this.withConn(conn => query(conn, text, params));
-      }
       return this.withConn(conn => query(conn, text, params));
     }
 
@@ -576,6 +581,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
               ++count;
               whereValues.push(item);
             });
+          } else if (value[0] instanceof SQLStatement) {
+            const statment = value[0];
+            statment.convertArgs(items, whereValues);
+            result.push(statment.text);
           } else {
             result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
               const tag = paramNos[key];
@@ -1178,7 +1187,6 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
   };
 
   koru.onunload(module, closeDefaultDb);
-  koru.onunload(module, 'reload');
 
   return Driver;
 });
