@@ -266,7 +266,7 @@ define((require)=>{
     ArrayBuffer: true,
     Boolean: true,
     Date: true,
-    Element: 'Web/API',
+    Element: 'Web/API/',
     Error: true,
     EvalError: true,
     Generator: true,
@@ -281,7 +281,7 @@ define((require)=>{
     Null: true,
     Number: true,
     Object: true,
-    Primitive: 'Glossary',
+    Primitive: 'Glossary/',
     Promise: true,
     RangeError: true,
     ReferenceError: true,
@@ -299,6 +299,7 @@ define((require)=>{
     URIError: true,
     WeakMap: true,
     WeakSet: true,
+    TemplateLiteral: 'Web/JavaScript/Reference/Template_literals',
   };
 
   const BLOCK_TAGS = {
@@ -386,16 +387,22 @@ define((require)=>{
       prefix = node[name$]+"/"+prefix;
       node = node[parent$];
     }
-    return {node, fullPath: prefix+suffix};
+    return prefix+suffix;
   };
 
   const execInlineTag = (api, text)=>{
     if (/^\.\.?\//.test(text)) {
-      const {node, fullPath} = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
-      text = fullPath;
+      text = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
+    }
+    const idx = text.indexOf(';');
+    let suffix = '';
+    if (idx != -1) {
+      suffix = text.slice(idx+1);
+      text = text.slice(0, idx);
     }
     let [mod, type, method=''] = text.split(/([.#:]+)/);
-    let href = text.replace(/\(.*$/, '');
+    let href = text.replace(/[;\(].*$/, '');
+    if (idx != -1) method += suffix;
     if (mod) {
       const destMod = mod && api.top && api.top[mod];
       if (destMod)
@@ -406,7 +413,7 @@ define((require)=>{
       text = method;
     }
 
-    return Dom.h({class: 'jsdoc-link', a: idToText(text), $href: '#'+href});
+    return {class: 'jsdoc-link', a: idToText(text), $href: '#'+href};
   };
 
   const buildConstructor = (api, subject, {sig, intro, calls}, requireLine)=>{
@@ -634,9 +641,15 @@ define((require)=>{
       if (ans.length != 0)
         ans.push('\u200a/\u200a');
       let mod = types[type];
-      const destMod = mod && api.top && api.top[mod];
-      if (destMod)
-        mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
+      if (mod !== void 0) {
+        if (mod.startsWith('../')) {
+          ans.push(execInlineTag(api, mod));
+          continue;
+        }
+        const destMod = api.top && api.top[mod];
+        if (destMod)
+          mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
+      }
       ans.push(targetExternal({a: idToText(mod), $href: (href || typeHRef)(type)}));
     }
     return ans;
@@ -711,8 +724,8 @@ define((require)=>{
     if (type.startsWith('...'))
       type = type.slice(3);
 
-    const m = /^\[([-\w]+)(?:,\.\.\.)\]$/.exec(type);
-    if (m)
+    const m = /^\[([-\w]+)(?:,\.\.\.)?\]$/.exec(type);
+    if (m !== null)
       type = m[1];
 
     let ans = hrefMap[type];
@@ -722,8 +735,8 @@ define((require)=>{
     const ct = CORE_TYPES[cType] || type === 'any-type';
     if (ct)
       return 'https://developer.mozilla.org/en-US/docs/'+
-      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
-      (type === 'any-type' ? '' : cType);
+      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct) +
+      (type === 'any-type' ? '' : ct === true || ct.endsWith('/') ? cType : '');
     return '#'+type;
   };
 
@@ -767,8 +780,7 @@ define((require)=>{
     const path = args.length == 1 ? "." : args[0];
     const name = args[args.length - 1];
     if (path !== ".") {
-      const {node, fullPath} = expandLink(api[node$], path);
-      api = api.top[fullPath];
+      api = api.top[expandLink(api[node$], path)];
     }
     const sapi = api.topics[name];
     if (sapi === void 0) throw new Error("Can't find topic "+path+":"+name+" in "+api.id+
@@ -805,7 +817,7 @@ define((require)=>{
     mdRenderer.link = (href, title, text)=>{
       switch (href) {
       case '#jsdoc-tag':
-        return execInlineTag(api, text).outerHTML;
+        return Dom.h(execInlineTag(api, text)).outerHTML;
       default:
         const a = {a: text, $href: href};
         if (title) a.$title = title;
