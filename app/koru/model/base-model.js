@@ -287,11 +287,11 @@ define((require, exports, module)=>{
       }
       ModelEnv.save(this, callback);
 
-      return this;
+      return true;
     }
 
     $$save() {
-      return this.$save('assert');
+      this.$save('assert'); return this;
     }
 
     $savePartial(...args) {
@@ -299,7 +299,7 @@ define((require, exports, module)=>{
     }
 
     $$savePartial(...args) {
-      return savePartial(this, args, 'assert');
+      savePartial(this, args, 'assert'); return this;
     }
 
     $isValid() {

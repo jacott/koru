@@ -678,13 +678,14 @@ define((require, exports, module)=>{
       test("$$savePartial calls save", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
-        stub(doc, '$save').returns('answer');;
+        const assertSave = stub(doc, '$save').withArgs('assert').returns(true);
         const ans = doc.$$savePartial('name', ['$append', '.sfx'], 'foo', ['bar', 'abc']);
-        assert.equals(ans, 'answer');
+        assert.same(ans, doc);
 
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
 
-        assert.calledWith(doc.$save, 'assert');
+        assert.calledOnce(assertSave);
+        assert.same(assertSave.firstCall.thisValue, doc);
       });
 
       test("$hasChanged", ()=>{
