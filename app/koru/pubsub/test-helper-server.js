@@ -71,20 +71,37 @@ define((require, exports, module)=>{
     },
   };
 
+  const LINE_SEP = "\n   ";
+
+  const callsToString = (calls)=> LINE_SEP+calls.map(
+    msg =>util.inspect(msg)).join(LINE_SEP);
+
   TH.Core.assertions.add("encodedCall", {
     assert(conn, type, exp) {
       this.type = type;
       this.exp = exp;
       const ans = PublishTH.hasEncodedCall(conn, type, exp);
-      if (! this._asserting || ans) return ans;
-      this.calls = PublishTH.listEncodedCalls(conn, type).map(
-        msg =>util.inspect(msg)).join("\n   ") || 'not called';
+      const calls = PublishTH.listEncodedCalls(conn, type);
+      this.calls = calls.length == 0 ? "not called" : callsToString(calls);
       return ans;
     },
 
-    assertMessage: "Expected sendEncoded to be called with {i$type} {i$exp} but was\n   {$calls}",
-    refuteMessage: "Did not expect sendEncoded to be called with {i$type} {i$exp}",
+    message: "sendEncoded to be called with {i$type} {i$exp}. Calls: {$calls}",
   });
+
+  TH.Core.assertions.add("encodedCount", {
+    assert(conn, count, type) {
+      this.count = count;
+      this.type = type || '';
+      const calls = PublishTH.listEncodedCalls(conn, type);
+      this.calls = calls.length == 0 ? "" : callsToString(calls);
+
+      return (this.callCount = calls.length) == count;
+    },
+
+    message: "sendEncoded {$type} call count to be {$count} but was {$callCount}. Calls: {$calls}",
+  });
+
 
   return PublishTH;
 });
