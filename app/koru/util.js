@@ -580,7 +580,7 @@ define((require)=>{
       return result;
     },
 
-    toMap (keyName, valueName/*, lists */) {
+    toMap(keyName, valueName/*, lists */) {
       if (arguments.length === 1) {
         return util.arrayToMap(keyName);
       }
