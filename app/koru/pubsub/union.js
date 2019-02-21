@@ -53,7 +53,8 @@ define((require, exports, module)=>{
       }
 
       if (this.subs.size != 0) koru.runFiber(()=>{
-        this.loadDocs(this.subs.back.value.sub, token);
+        this.loadDocs(this.subs.back.value.sub,
+                      token === void 0 ? this.subs.back.value : token);
       });
 
       const {union} = this;
@@ -79,37 +80,38 @@ define((require, exports, module)=>{
       this.discreteLastSubscribed = 0;
     }
 
-    add(sub) {
-      const time = sub.discreteLastSubscribed;
+    add(sub, lastSubscribed) {
+      const time = sub.constructor.discreteLastSubscribed(lastSubscribed);
       if (this.subs.size !== 0) {
         const future = new util.Future;
         if (this.discreteLastSubscribed == time &&
-            sub.lastSubscribed >= this.minLastSubscribed) {
+            lastSubscribed >= this.minLastSubscribed) {
           this.subs.push({sub, future});
         } else {
           const waiting = this.waitingSubs.find({time});
           if (waiting !== void 0) {
-            const oldestSub = waiting.queue.back.value.sub;
-            if (sub.lastSubscribed < oldestSub.lastSubscribed)
-              waiting.queue.addBack({sub, future});
+            const oldestSub = waiting.queue.back.value;
+            if (lastSubscribed < oldestSub.lastSubscribed)
+              waiting.queue.addBack({sub, lastSubscribed, future});
             else
-              waiting.queue.push({sub, future});
+              waiting.queue.push({sub, lastSubscribed, future});
           } else {
             const waiting = {time, queue: new LinkedList()};
-            waiting.queue.push({sub, future});
+            waiting.queue.push({sub, lastSubscribed, future});
             this.waitingSubs.add(waiting);
           }
         }
         future.wait();
       } else {
-        this.subs.push({sub, future: void 0});
-        this.loadDocs(sub, time);
+        const value = {sub, lastSubscribed, future: void 0};
+        this.subs.push(value);
+        this.loadDocs(sub, value);
       }
     }
 
-    loadDocs(sub) {
-      this.discreteLastSubscribed = sub.discreteLastSubscribed;
-      this.minLastSubscribed = sub.lastSubscribed;
+    loadDocs(sub, {lastSubscribed}) {
+      this.discreteLastSubscribed = sub.constructor.discreteLastSubscribed(lastSubscribed);
+      this.minLastSubscribed = lastSubscribed;
 
       const msg = super._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
 
@@ -194,9 +196,9 @@ define((require, exports, module)=>{
       this[unionSym$] = Symbol();
     }
 
-    addSub(sub) {
+    addSub(sub, lastSubscribed=sub.lastSubscribed) {
       this.count++;
-      LoadQueue.addSub(this, sub);
+      LoadQueue.addSub(this, sub, lastSubscribed);
     }
 
     addSubByToken(sub, token) {

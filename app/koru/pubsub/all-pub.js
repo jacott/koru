@@ -33,13 +33,11 @@ define((require, exports, module)=>{
       return model.onChange(batchUpdate);
     }
 
-    loadInitial(addDoc, discreteLastSubscribed) {
+    loadInitial(addDoc) {
       for (const model of this.pubClass.includedModels()) {
         model.query.forEach(addDoc);
       }
     }
-
-
   }
 
   class AllPub extends ModelListMixin(Publication) {

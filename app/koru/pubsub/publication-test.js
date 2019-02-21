@@ -327,17 +327,18 @@ isServer && define((require, exports, module)=>{
 
     test("discreteLastSubscribed", ()=>{
       /**
-       * converted `#lastSubscribed` time to the lower
-       * `lastSubscribedInterval` boundry.
+       * Convert `time` to the lower `lastSubscribedInterval` boundry.
        *
-       * {{example:0}}
+       * @param time the time (in ms) to convert
        **/
-      api.protoProperty();
+      api.method();
       stubProperty(Publication, 'lastSubscribedInterval', 123);
       //[
       Publication.lastSubscribedInterval = 20*60*1000;
-      const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
-      assert.equals(new Date(sub.discreteLastSubscribed), new Date(2019, 0, 4, 9, 0));
+
+      assert.equals(
+        Publication.discreteLastSubscribed(+new Date(2019, 0, 4, 9, 10, 11, 123)),
+        +new Date(2019, 0, 4, 9, 0));
       //]
     });
 
@@ -356,7 +357,7 @@ isServer && define((require, exports, module)=>{
        * similar data can be satisfied with one pass of the database. Specified in
        * milliseconds. Defaults to 5mins.
        *
-       * See `#discreteLastSubscribed`
+       * See {#.discreteLastSubscribed}
        **/
       api.property();
       assert.same(Publication.lastSubscribedInterval, 5*60*1000);
@@ -395,7 +396,7 @@ isServer && define((require, exports, module)=>{
 
     test("userId", ()=>{
       /**
-       * userId is a short cut to `this.conn.userId`. See {#../session/server-connection}
+       * userId is a short cut to `this.conn.userId`. See {#koru/session/server-connection}
        **/
       api.protoProperty();
       const conn = {userId: null};

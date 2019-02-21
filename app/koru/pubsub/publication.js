@@ -46,9 +46,9 @@ define((require, exports, module)=>{
     get userId() {return this.conn.userId}
     set userId(v) {this.conn.userId = v}
 
-    get discreteLastSubscribed() {
-      const {lastSubscribedInterval} = this.constructor;
-      return Math.floor(this.lastSubscribed/lastSubscribedInterval)*lastSubscribedInterval;
+    static discreteLastSubscribed(time) {
+      const {lastSubscribedInterval} = this;
+      return Math.floor(time/lastSubscribedInterval)*lastSubscribedInterval;
     }
 
     static get pubName() {return this[pubName$]}

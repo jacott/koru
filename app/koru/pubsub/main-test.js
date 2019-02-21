@@ -29,10 +29,10 @@ define((require, exports, module)=>{
    *
    * It is non-trivial to fix these deficiencies; however:
 
-   * 1. `discreteLastSubscribed` can be used to only send updates.  When sending only updates it is
-   * important the a `lastSubscribedMaximumAge` is set and that no records are actually deleted
-   * until the document has been unchanged for the duration of
-   * {#../publication}.`lastSubscribedMaximumAge`. In this way clients will not miss any data
+   * 1. {../publication.discreteLastSubscribed} can be used to only send updates.  When sending only
+   * updates it is important the `lastSubscribedMaximumAge` is set and that no records are actually
+   * deleted until the document has been unchanged for the duration of
+   * {#../publication;.lastSubscribedMaximumAge}. In this way clients will not miss any data
    * changes.
 
    * 1. {#../union} can be used to combine subscriptions to reduce traffic.

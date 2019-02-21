@@ -54,13 +54,18 @@ isServer && define((require, exports, module)=>{
        *
        * For performance, if other subscribers are added to the union then they will be added to the
        * same loadQueue (if still running) as a previous subscriber if and only if their
-       * `#discreteLastSubscribed` is the same as a previous subscriber and their `#lastSubscribed`
-       * is greater than the `minLastSubscribed` passed to `loadInitial`; otherwise a new
-       * loadInitial will be run.
+       * {#../publication.discreteLastSubscribed} is the same as a previous subscriber and their
+       * {#../publication;#lastSubscribed} is greater than the `minLastSubscribed` passed to
+       * `loadInitial`; otherwise a new loadInitial will be run.
        *
        * It is important to note that addSub blocks the thread and queues batchUpdate until
        * loadInitial has finished. This ensures that the initial load will be sent before any
        * changes during the load.
+
+       * @param sub the subscriber to add
+
+       * @param [lastSubscribed] when sub last subscribed (in ms). Defaults to
+       * {#../publication;#lastSubscribed}
        **/
       api.protoMethod();
 
@@ -96,6 +101,16 @@ isServer && define((require, exports, module)=>{
         ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
       ]);
       //]
+
+      {
+        const loadInitial = stub(MyUnion.prototype, 'loadInitial');
+        const now = Date.now();
+        const sub = new Publication({id: 'sub1', conn, lastSubscribed: now - 2*util.DAY});
+        const lastSubscribed = now - 1*util.DAY;
+        union.addSub(sub, lastSubscribed);
+
+        assert.calledWith(loadInitial, m.func, m.func, lastSubscribed);
+      }
     });
 
     test("addSubByToken", ()=>{
@@ -490,12 +505,13 @@ isServer && define((require, exports, module)=>{
     test("loadInitial", ()=>{
       /**
        * Override this method to select the initial documents to download when a new group of
-       * subscribers is added. Subscribers are partitioned by their `discreteLastSubscribed` time.
+       * subscribers is added. Subscribers are partitioned by their
+       * {#../publication.discreteLastSubscribed} time.
 
        * @param addDoc a function to call with a doc to be added to the subscribers.
 
        * @param remDoc a function to call with a doc (and optional flag) to be removed from the
-       * subscribers. The flag is sent to the client as a {#koru/models/doc-change}#flag which
+       * subscribers. The flag is sent to the client as a {#koru/models/doc-change;#flag} which
        * defaults to "serverUpdate". A Useful value is "stopped" which a client persistence manager
        * can used to decide to not remove the persitent document.
 
