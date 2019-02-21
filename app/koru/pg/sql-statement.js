@@ -11,13 +11,13 @@ define((require)=>{
     return text;
   };
 
-  const setParams = (i, parts, paramMap, posMap)=>{
-    const last = (parts.length-1) >> 1;
-    for (let i = 0; i < last; ++i) {
-      const key = parts[i*2+1];
+  const setParams = (pos, parts, paramMap, posMap)=>{
+    const last = parts.length-1;
+    for (let i = 1; i < last; i+=2) {
+      const key = parts[i];
       if (posMap[key] === void 0) {
-        posMap[key] = i;
-        paramMap[i] = key;
+        posMap[key] = pos;
+        paramMap[pos++] = key;
       }
     }
   };

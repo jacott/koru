@@ -55,6 +55,9 @@ isServer && define((require, exports, module)=>{
 
       assert.equals(statment.text, "SELECT $3::int+$4::int as a, $3::text || '0' as b");
       //]
+
+      const s2 = new SQLStatement(`SELECT {$foo} || {$foo} || {$bar} || {$bar}`);
+      assert.equals(s2.text, 'SELECT $1 || $1 || $2 || $2');
     });
 
     test("clone", ()=>{
