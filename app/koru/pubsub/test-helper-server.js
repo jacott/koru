@@ -73,17 +73,17 @@ define((require, exports, module)=>{
 
   TH.Core.assertions.add("encodedCall", {
     assert(conn, type, exp) {
-      const ans = PublishTH.hasEncodedCall(conn, type, exp);
-      if (! this._asserting || ans) return ans;
       this.type = type;
       this.exp = exp;
+      const ans = PublishTH.hasEncodedCall(conn, type, exp);
+      if (! this._asserting || ans) return ans;
       this.calls = PublishTH.listEncodedCalls(conn, type).map(
         msg =>util.inspect(msg)).join("\n   ") || 'not called';
       return ans;
     },
 
-    assertMessage: "sendEncoded to be called with {i$type} {i$exp} but was\n   {$calls}",
-    refuteMessage: "sendEncoded to be called with {i$type} {i$exp}",
+    assertMessage: "Expected sendEncoded to be called with {i$type} {i$exp} but was\n   {$calls}",
+    refuteMessage: "Did not expect sendEncoded to be called with {i$type} {i$exp}",
   });
 
   return PublishTH;
