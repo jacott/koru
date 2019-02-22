@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const Publication     = require('koru/pubsub/publication');
-  const PublishTH       = require('koru/pubsub/test-helper-server');
   const session         = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const api             = require('koru/test/api');
 
   return ({TH, module}) =>{
@@ -13,12 +13,12 @@ define((require, exports, module)=>{
       before(()=>{
         api.module({pseudoModule: 'Overview'});
 
-        conn = PublishTH.mockConnection();
+        conn = ConnTH.mockConnection();
         gDict = session.globalDict;
       });
 
       after(()=>{
-        PublishTH.stopAllSubs(conn);
+        ConnTH.stopAllSubs(conn);
       });
 
       test("server-publish", ()=>{

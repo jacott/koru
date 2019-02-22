@@ -11,11 +11,11 @@ define((require, exports, module)=>{
 
   const {stub, spy, onEnd, util, intercept} = TH;
 
-  const PublishTH = require('./test-helper-server');
+  const ConnTH = require('koru/session/conn-th-server');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     before(()=>{
-      api.module({subjectName: 'PublishTH'});
+      api.module({subjectName: 'ConnTH'});
     });
 
     test("mockConnection", ()=>{
@@ -24,13 +24,13 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const conn = PublishTH.mockConnection('sess123');
+      const conn = ConnTH.mockConnection('sess123');
       class Library extends Publication {
       }
       Library.pubName = 'Library';
 
       const sub1 = conn.onSubscribe("sub1", 1, 'Library');
-      onEnd(() => {PublishTH.stopAllSubs(conn)});
+      onEnd(() => {ConnTH.stopAllSubs(conn)});
 
       assert.same(sub1.conn, conn);
       //]
@@ -42,7 +42,7 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const conn = PublishTH.mockConnection('sess123');
+      const conn = ConnTH.mockConnection('sess123');
       class Library extends Publication {
       }
       Library.pubName = 'Library';
@@ -50,7 +50,7 @@ define((require, exports, module)=>{
       const sub1 = conn.onSubscribe("sub1", 1, 'Library');
       const stop = spy(sub1, 'stop');
 
-      PublishTH.stopAllSubs(conn);
+      ConnTH.stopAllSubs(conn);
 
       assert.called(stop);
       //]
@@ -65,7 +65,7 @@ define((require, exports, module)=>{
 
       const {Book} = db.models;
       //[
-      const conn = PublishTH.mockConnection();
+      const conn = ConnTH.mockConnection();
       const book1 = Book.create();
       const book2 = Book.create();
 
@@ -79,7 +79,7 @@ define((require, exports, module)=>{
       const sub = new Publication({id: 'sub1', conn});
       union.addSub(sub);
 
-      assert.equals(PublishTH.decodeEncodedCall(conn, conn.sendEncoded.firstCall), {
+      assert.equals(ConnTH.decodeEncodedCall(conn, conn.sendEncoded.firstCall), {
         type: 'W',
         data: [
           ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
@@ -100,7 +100,7 @@ define((require, exports, module)=>{
 
       const {Book} = db.models;
       //[
-      const conn = PublishTH.mockConnection();
+      const conn = ConnTH.mockConnection();
       const book1 = Book.create();
       const book2 = Book.create();
 

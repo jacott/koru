@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
   const TH              = require('koru/model/test-db-helper');
-  const PublishTH       = require('koru/pubsub/test-helper-server');
   const session         = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const Factory         = require('test/factory');
 
   const {stub, spy, onEnd, util} = TH;
@@ -15,11 +15,11 @@ define((require, exports, module)=>{
     let conn;
     beforeEach(()=>{
       TH.startTransaction();
-      conn = PublishTH.mockConnection();
+      conn = ConnTH.mockConnection();
     });
 
     afterEach(()=>{
-      PublishTH.stopAllSubs(conn);
+      ConnTH.stopAllSubs(conn);
       TH.rollbackTransaction();
       v = {};
     });

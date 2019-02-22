@@ -16,8 +16,8 @@ isServer && define((require, exports, module)=>{
   const MockConn        = require('koru/pubsub/mock-conn');
   const MockDB          = require('koru/pubsub/mock-db');
   const session         = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const message         = require('koru/session/message');
-  const PublishTH       = require('./test-helper-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -32,12 +32,12 @@ isServer && define((require, exports, module)=>{
     let conn, gDict;
 
     beforeEach(()=>{
-      conn = PublishTH.mockConnection('s123', session);
+      conn = ConnTH.mockConnection('s123', session);
       gDict = session.globalDict;
     });
 
     afterEach(()=>{
-      PublishTH.stopAllSubs(conn);
+      ConnTH.stopAllSubs(conn);
       AllPub.resetConfig();
     });
 

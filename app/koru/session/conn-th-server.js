@@ -11,7 +11,7 @@ define((require, exports, module)=>{
   const decodeMessage = (msg, conn)=> message.decodeMessage(
     msg.subarray(1), conn._session.globalDict);
 
-  const PublishTH = {
+  const ConnTH = {
     mockConnection(sessId='s123', session=Session) {
       const conn = new ServerConnection(session, {
         send: stub(), on: stub()}, {}, sessId, ()=>{}
@@ -43,7 +43,7 @@ define((require, exports, module)=>{
 
     hasEncodedCall: (conn, expType, expData)=>{
       if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
-        const {type, data} = PublishTH.decodeEncodedCall(conn, call);
+        const {type, data} = ConnTH.decodeEncodedCall(conn, call);
         if (type === 'W') {
           for (const msg of data) {
           if (msg[0] === expType && util.deepEqual(msg[1], expData))
@@ -73,35 +73,35 @@ define((require, exports, module)=>{
 
   const LINE_SEP = "\n   ";
 
-  const callsToString = (calls)=> LINE_SEP+calls.map(
+  const callsToString = (calls)=> "Calls:"+LINE_SEP+calls.map(
     msg =>util.inspect(msg)).join(LINE_SEP);
 
   TH.Core.assertions.add("encodedCall", {
     assert(conn, type, exp) {
       this.type = type;
       this.exp = exp;
-      const ans = PublishTH.hasEncodedCall(conn, type, exp);
-      const calls = PublishTH.listEncodedCalls(conn, type);
-      this.calls = calls.length == 0 ? "not called" : callsToString(calls);
+      const ans = ConnTH.hasEncodedCall(conn, type, exp);
+      const calls = ConnTH.listEncodedCalls(conn, type);
+      this.calls = calls.length == 0 ? "But was not called" : callsToString(calls);
       return ans;
     },
 
-    message: "sendEncoded to be called with {i$type} {i$exp}. Calls: {$calls}",
+    message: "sendEncoded to be called with {i$type} {i$exp}. {$calls}",
   });
 
   TH.Core.assertions.add("encodedCount", {
     assert(conn, count, type) {
       this.count = count;
       this.type = type || '';
-      const calls = PublishTH.listEncodedCalls(conn, type);
+      const calls = ConnTH.listEncodedCalls(conn, type);
       this.calls = calls.length == 0 ? "" : callsToString(calls);
 
       return (this.callCount = calls.length) == count;
     },
 
-    message: "sendEncoded {$type} call count to be {$count} but was {$callCount}. Calls: {$calls}",
+    message: "sendEncoded {$type} call count to be {$count} but was {$callCount}. {$calls}",
   });
 
 
-  return PublishTH;
+  return ConnTH;
 });

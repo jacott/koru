@@ -11,8 +11,8 @@ isServer && define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const MockConn        = require('koru/pubsub/mock-conn');
   const MockDB          = require('koru/pubsub/mock-db');
-  const PublishTH       = require('koru/pubsub/test-helper-server');
   const session         = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -26,11 +26,11 @@ isServer && define((require, exports, module)=>{
     let conn, origQ;
     beforeEach(()=>{
       origQ = session._commands.Q;
-      conn = PublishTH.mockConnection("conn1");
+      conn = ConnTH.mockConnection("conn1");
     });
 
     afterEach(()=>{
-      PublishTH.stopAllSubs(conn);
+      ConnTH.stopAllSubs(conn);
       session._commands.Q = origQ;
       Publication.delete('Library');
     });

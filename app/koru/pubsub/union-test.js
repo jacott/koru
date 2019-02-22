@@ -9,8 +9,8 @@ isServer && define((require, exports, module)=>{
   const MockConn        = require('koru/pubsub/mock-conn');
   const MockDB          = require('koru/pubsub/mock-db');
   const Publication     = require('koru/pubsub/publication');
-  const PublishTH       = require('koru/pubsub/test-helper-server');
   const Session         = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -22,11 +22,11 @@ isServer && define((require, exports, module)=>{
     let conn, origQ;
     beforeEach(()=>{
       origQ = Session._commands.Q;
-      conn = PublishTH.mockConnection("conn1");
+      conn = ConnTH.mockConnection("conn1");
     });
 
     afterEach(()=>{
-      PublishTH.stopAllSubs(conn);
+      ConnTH.stopAllSubs(conn);
       Session._commands.Q = origQ;
     });
 
@@ -172,10 +172,10 @@ isServer && define((require, exports, module)=>{
       let now = +new Date(2019, 1, 1);
       now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
       const conn1 = conn;
-      const conn2 = PublishTH.mockConnection("conn2");
-      const conn3 = PublishTH.mockConnection("conn3");
-      const conn4 = PublishTH.mockConnection("conn4");
-      const conn5 = PublishTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection("conn2");
+      const conn3 = ConnTH.mockConnection("conn3");
+      const conn4 = ConnTH.mockConnection("conn4");
+      const conn5 = ConnTH.mockConnection("conn5");
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
@@ -274,10 +274,10 @@ isServer && define((require, exports, module)=>{
 
     test("addSubByToken partitions based on token", ()=>{
       const conn1 = conn;
-      const conn2 = PublishTH.mockConnection("conn2");
-      const conn3 = PublishTH.mockConnection("conn3");
-      const conn4 = PublishTH.mockConnection("conn4");
-      const conn5 = PublishTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection("conn2");
+      const conn3 = ConnTH.mockConnection("conn3");
+      const conn4 = ConnTH.mockConnection("conn4");
+      const conn5 = ConnTH.mockConnection("conn5");
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
@@ -461,7 +461,7 @@ isServer && define((require, exports, module)=>{
       const {Book} = db.models;
 
       const conn1 = conn;
-      const conn2 = PublishTH.mockConnection("conn2");
+      const conn2 = ConnTH.mockConnection("conn2");
 
       //[
       class MyUnion extends Union {
@@ -522,7 +522,7 @@ isServer && define((require, exports, module)=>{
       api.protoMethod();
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
-      const conn2 = PublishTH.mockConnection("conn2");
+      const conn2 = ConnTH.mockConnection("conn2");
       const mc2 = new MockConn(conn2);
 
       const {Book} = db.models;
@@ -713,10 +713,10 @@ isServer && define((require, exports, module)=>{
       let now = +new Date(2019, 1, 1);
       now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
       const conn1 = conn;
-      const conn2 = PublishTH.mockConnection("conn2");
-      const conn3 = PublishTH.mockConnection("conn3");
-      const conn4 = PublishTH.mockConnection("conn4");
-      const conn5 = PublishTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection("conn2");
+      const conn3 = ConnTH.mockConnection("conn3");
+      const conn4 = ConnTH.mockConnection("conn4");
+      const conn5 = ConnTH.mockConnection("conn5");
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
@@ -811,7 +811,7 @@ isServer && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const conn2 = PublishTH.mockConnection('sess124');
+      const conn2 = ConnTH.mockConnection('sess124');
 
       const union = new Union();
 
@@ -836,7 +836,7 @@ isServer && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const conn2 = PublishTH.mockConnection('sess124');
+      const conn2 = ConnTH.mockConnection('sess124');
 
       const union = new Union();
 
