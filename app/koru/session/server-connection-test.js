@@ -5,8 +5,10 @@ isServer && define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const DocChange       = require('koru/model/doc-change');
+  const TransQueue      = require('koru/model/trans-queue');
   const MockDB          = require('koru/pubsub/mock-db');
   const baseSession     = require('koru/session');
+  const ConnTH          = require('koru/session/conn-th-server');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -184,8 +186,19 @@ isServer && define((require, exports, module)=>{
     });
 
     test("sendBinary", ()=>{
-      v.conn.sendBinary.restore();
-      v.conn.sendBinary('M', [1,2,3]);
+      /**
+       * Send a object to client as a binary message.
+
+       * @param type the one character type for the message. See {#../base#provide}.
+
+       * @param {any-type} data a object or primitive to encode and send as a binary message.
+       **/
+      api.protoMethod();
+      const {conn} = v;
+      conn.sendBinary.restore();
+      //[
+      conn.sendBinary('M', [1,2,3]);
+      //]
 
       assert.calledWith(v.ws.send, TH.match(function (data) {
         assert.same(data[0], 'M'.charCodeAt(0));
@@ -195,23 +208,84 @@ isServer && define((require, exports, module)=>{
 
       stub(koru, 'info');
       refute.exception(function () {
-        v.conn.ws.send = stub().throws(v.error = new Error('foo'));
-        v.conn.sendBinary('X', ['FOO']);
+        conn.ws.send = stub().throws(v.error = new Error('foo'));
+        conn.sendBinary('X', ['FOO']);
       });
 
       assert.called(koru.info);
 
       koru.info.reset();
-      v.conn.ws = null;
+      conn.ws = null;
       refute.exception(function () {
-        v.conn.sendBinary('X', ['FOO']);
+        conn.sendBinary('X', ['FOO']);
       });
 
       refute.called(koru.info);
 
-      v.conn.ws = {send: stub()};
-      v.conn.sendBinary('OneArg');
-      assert.calledWith(v.conn.ws.send, 'OneArg', {binary: true});
+      conn.ws = {send: stub()};
+      conn.sendBinary('OneArg');
+      assert.calledWith(conn.ws.send, 'OneArg', {binary: true});
+    });
+
+    test("batchMessage", ()=>{
+      /**
+       * Batch a binary message and send once current transaction completes successfully. The
+       * message is encoded immediately.
+
+       * @param type the one character type for the message. See {#../base#provide}.
+
+       * @param data a object or primitive to encode and send as a binary message.
+       **/
+      api.protoMethod();
+      const {conn} = v;
+      stub(conn, 'sendEncoded');
+      let finished = false;
+      //[
+      TransQueue.transaction(()=>{
+        conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
+        conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
+        koru.runFiber(()=>{
+          TransQueue.transaction(()=>{
+            conn.batchMessage('R', ['Bar', {_id: 'bar1'}]);
+          });
+        });
+        koru.runFiber(()=>{
+          try {
+            TransQueue.transaction(()=>{
+              conn.batchMessage('R', ['Nat', {_id: 'nat1'}]);
+              throw "abort";
+            });
+          } catch(ex) {
+            if (ex !== "abort") throw ex;//]
+            finished = true;//[#
+          }
+        });
+      });
+      assert.calledTwice(conn.sendEncoded);
+      assert.encodedCall(conn, 'R', ['Foo', {_id: 'foo1'}]);
+      assert.encodedCall(conn, 'R', ['Foo', {_id: 'foo2'}]);
+
+      assert.encodedCall(conn, 'R', ['Bar', {_id: 'bar1'}]);
+      refute.encodedCall(conn, 'R', ['Nat', {_id: 'nat1'}]);
+      //]
+      assert.isTrue(finished);
+
+      conn.sendEncoded.reset();
+      try {
+        TransQueue.transaction(()=>{
+          conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
+          conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
+          throw "abort";
+        });
+
+      } catch(e) {
+        if (e !== "abort") throw e;
+      }
+      refute.called(conn.sendEncoded);
+
+      assert.exception(()=>{
+        conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
+      }, {message: 'batchMessage called when not in transaction'});
     });
 
     test("when closed sendBinary", ()=>{

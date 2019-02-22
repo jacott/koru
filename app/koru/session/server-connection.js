@@ -1,12 +1,14 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
+  const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const message         = require('koru/session/message');
   const util            = require('koru/util');
+
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const onClose$ = Symbol(), userId$ = Symbol();
+  const onClose$ = Symbol(), batch$ = Symbol(), userId$ = Symbol();
 
   const BINARY = {binary: true};
 
@@ -21,6 +23,24 @@ define((require, exports, module)=>{
     return result;
   };
 
+  const startBatch = (conn, map, thread)=>{
+    const {encode, close} = message.openEncoder('W', conn._session.globalDict);
+
+    map.set(thread, encode);
+
+    const finish = ()=>{
+      map.delete(thread);
+      if (map.size == 0) conn[batch$] = null;
+    };
+
+    TransQueue.onSuccess(()=>{
+      finish();
+      conn.sendEncoded(close());
+    });
+    TransQueue.onAbort(finish);
+
+    return encode;
+  };
 
   class ServerConnection {
     constructor(session, ws, request, sessId, close) {
@@ -46,6 +66,7 @@ define((require, exports, module)=>{
       this._subs = util.createDictionary();
       this._last = null;
       this.sessAuth = null;
+      this[batch$] = null;
 
       ws.on('error', err => koru.fiberConnWrapper(()=>{
         koru.info('web socket error', err);
@@ -82,8 +103,17 @@ define((require, exports, module)=>{
       return message.encodeMessage(type, args, this._session.globalDict);
     }
 
-    sendBinary(type, args) {
-      this.sendEncoded(args === void 0 ? type : this.encodeMessage(type, args));
+    sendBinary(type, data) {
+      this.sendEncoded(data === void 0 ? type : this.encodeMessage(type, data));
+    }
+
+    batchMessage(type, data) {
+      if (! TransQueue.isInTransaction())
+        throw new Error("batchMessage called when not in transaction");
+
+      const map = this[batch$] || (this[batch$] = new Map());
+      const {thread} = util;
+      (map.get(thread) || startBatch(this, map, thread))([type, data]);
     }
 
     onMessage(data, flags) {
