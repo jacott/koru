@@ -306,12 +306,12 @@ define((require)=>{
 
   return {
     stub: (object, property, repFunc) => {
-    let func, desc, orig;
-    if (repFunc !== undefined && typeof repFunc !== 'function')
-      throw new AssertionError("Third argument to stub must be a function if supplied");
-    if (object != null && typeof object !== 'string' && ! (
-      typeof object === 'function' && property === undefined &&
-        repFunc === undefined)) {
+      let func, desc, orig;
+      if (repFunc !== undefined && typeof repFunc !== 'function')
+        throw new AssertionError("Third argument to stub must be a function if supplied");
+      if (object != null && typeof object !== 'string' && ! (
+        typeof object === 'function' && property === undefined &&
+          repFunc === undefined)) {
         if (typeof property !== 'string' && typeof property !== 'symbol')
           throw new AssertionError(
             `Invalid stub call: ${inspect(property)} is not a string`);
@@ -337,35 +337,35 @@ define((require)=>{
 
         func.original = orig;
         Object.defineProperty(object, property, {value: func, configurable: true});
-    } else {
-      if (typeof object === 'function')
-        repFunc = object;
-      func = stubFunction(null, Stub.prototype);
-      if (repFunc !== undefined) func[replacement$] = repFunc;
-      if (object != null)
-        func[stubName$] = object;
-    }
-    func.restore = () => {restore(object, property, desc, orig, func)};
+      } else {
+        if (typeof object === 'function')
+          repFunc = object;
+        func = stubFunction(null, Stub.prototype);
+        if (repFunc !== undefined) func[replacement$] = repFunc;
+        if (object != null)
+          func[stubName$] = object;
+      }
+      func.restore = () => {restore(object, property, desc, orig, func)};
 
-    return func;
-  },
+      return func;
+    },
 
     spy: (object, property) => {
-    if (object != null && typeof property === 'string') {
-      const desc = Object.getOwnPropertyDescriptor(object, property);
-      const orig = desc === undefined ? object[property] : desc.value;
-      if (typeof orig === 'function') {
-        const func = stubFunction(orig, Spy.prototype);
-        func.original = orig;
+      if (object != null && typeof property === 'string') {
+        const desc = Object.getOwnPropertyDescriptor(object, property);
+        const orig = desc === undefined ? object[property] : desc.value;
+        if (typeof orig === 'function') {
+          const func = stubFunction(orig, Spy.prototype);
+          func.original = orig;
 
-        Object.defineProperty(object, property, {value: func, configurable: true});
-        func.restore = () => {restore(object, property, desc, orig, func)};
-        return func;
+          Object.defineProperty(object, property, {value: func, configurable: true});
+          func.restore = () => {restore(object, property, desc, orig, func)};
+          return func;
+        }
       }
-    }
 
-    throw new AssertionError("Attempt to spy on non function");
-  },
+      throw new AssertionError("Attempt to spy on non function");
+    },
 
     intercept: (object, prop, replacement, restore) => {
       const orig = Object.getOwnPropertyDescriptor(object, prop);

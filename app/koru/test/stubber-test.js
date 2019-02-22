@@ -24,6 +24,9 @@ const {stub, spy, intercept} = TH;
   const stubber = require('./stubber');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.reportStubs();
+    });
     test("stub", ()=>{
       /**
        * Create a {#::Stub}. Can stub a object function or be unattached.

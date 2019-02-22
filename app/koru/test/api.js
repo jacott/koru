@@ -8,7 +8,7 @@ define((require, exports, module)=>{
 
   const onEnd$ = Symbol(),
         extactTest$ = Symbol(), currentTest$ = Symbol(),
-        level$ = Symbol(),
+        reportStubs$ = Symbol(), level$ = Symbol(),
         callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
@@ -19,6 +19,8 @@ define((require, exports, module)=>{
   const Element = (isClient ? window : global).Element || {};
 
   const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
+
+  const EMPTY_FUNC = ()=>{};
 
   let count = 0;
 
@@ -467,6 +469,11 @@ define((require, exports, module)=>{
       this._objCache = new Map;
     }
 
+    static reportStubs() {
+      this[reportStubs$] = true;
+      TH.onEnd(()=>{this[reportStubs$] = false});
+    }
+
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
       const tc = TH.Core.currentTestCase;
       if (pseudoModule !== void 0) {
@@ -901,6 +908,10 @@ define((require, exports, module)=>{
         return ['M', obj];
       switch (typeof obj) {
       case 'function':
+        if (! API[reportStubs$]) {
+          if (typeof obj.restore === 'function' && typeof obj.calledWith === 'function')
+            obj = obj.original || EMPTY_FUNC;
+        }
         return ['F', obj, obj[stubName$] || obj.name || funcToSig(obj)];
       case 'object':
         if (obj === null)
@@ -960,6 +971,7 @@ define((require, exports, module)=>{
       return ctx.exportsModule(value)[0].id;
     }
   }
+  API[reportStubs$] = false;
 
   const Generator = (function *() {})().constructor;
 
