@@ -769,7 +769,7 @@ define((require, exports, module)=>{
          * @param {string|object} params field or directive to match
          * on. If is object then whereNot is called for each key.
 
-         * @param {object|primative} [value] corresponding to `params`
+         * @param {object|primitive} [value] corresponding to `params`
          **/
         api.protoMethod('whereNot');
         let st = new Query(TestModel).where('gender', 'm');

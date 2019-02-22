@@ -151,7 +151,7 @@ isServer && define((require, exports, module)=>{
 
     test("send", ()=>{
       /**
-       * Send a text message to the client
+       * Send a text message to the client.
        *
        * @param type the one character type for the message. See {#../base#provide}.
 
