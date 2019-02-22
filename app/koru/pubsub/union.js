@@ -36,12 +36,12 @@ define((require, exports, module)=>{
     }
 
     _loadDocsPart1(sub, loadInitial, token) {
-      return sub.conn._session.withBatch(encode =>{
-        loadInitial.call(this.union,
-                         (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
-                         (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
-                         token);
-      });
+      const {encode, close} = sub.conn._session.openBatch();
+      loadInitial.call(this.union,
+                       (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
+                       (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
+                       token);
+      return close();
     }
 
     _loadDocsPart2(msg, node, token) {
@@ -255,10 +255,10 @@ define((require, exports, module)=>{
             future = new util.Future;
             let msg;
             koru.runFiber(()=>{
-              msg = Session.withBatch(_encoder => {
-                encoder = _encoder;
-                future.wait();
-              });
+              const obj = Session.openBatch();
+              encoder = obj.encode;
+              future.wait();
+              msg = obj.close();
             });
             TransQueue.onSuccess(()=>{
               tidyUp();

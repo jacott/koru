@@ -319,11 +319,11 @@ define((require, exports, module)=>{
       assert.equals(message.decodeMessage(u8, gDict), obj);
     });
 
-    test("withEncoder", ()=>{
-      const u8 = message.withEncoder("M", v.gDict, encoder =>{
-        for (const arg of [1, 2, {foo: 'bar', [Symbol()]: 'notme'}])
-          encoder(arg);
-      });
+    test("openEncoder", ()=>{
+      const {encode, close} = message.openEncoder("M", v.gDict);
+      for (const arg of [1, 2, {foo: 'bar', [Symbol()]: 'notme'}])
+        encode(arg);
+      const u8 = close();
       const data = [];
 
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');

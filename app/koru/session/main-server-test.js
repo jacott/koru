@@ -33,19 +33,19 @@ isServer && define((require, exports, module)=>{
       v = {};
     });
 
-    test("withBatch", ()=>{
+    test("openBatch", ()=>{
       /**
        * build an encoded batch message.
 
-       * @param callback a function that will be called with an `encode` argument that is called on
-       * each message to encode.
+       * @returns `{encode, close}`. Use `encode` to add a message to the batch. Use `close` to
+       * finalize and return the encoded message.
        **/
       api.method();
       //[
-      const msg = Session.withBatch(encode =>{
-        encode(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
-        encode(['R', ['Book', 'book2']]);
-      });
+      const {encode, close} = Session.openBatch();
+      encode(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
+      encode(['R', ['Book', 'book2']]);
+      const msg = close();
 
       assert.equals(String.fromCharCode(msg[0]), 'W');
       assert.equals(message.decodeMessage(msg.subarray(1), Session.globalDict), [

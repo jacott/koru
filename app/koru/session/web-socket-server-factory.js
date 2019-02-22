@@ -136,8 +136,8 @@ define((require, exports, module)=>{
         return buildGlobalDict();
       },
 
-      withBatch(callback) {
-        return message.withEncoder('W', this.globalDict, callback);
+      openBatch() {
+        return message.openEncoder('W', this.globalDict);
       },
 
       // for testing
