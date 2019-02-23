@@ -99,11 +99,13 @@ isServer && define((require, exports, module)=>{
        * @param {[any-type]} args arbitrary arguments to pass to the constructor
        **/
       api.method();
+      const {defDb, altDb} = v;
       //[
       class DBRunner extends dbBroker.DBRunner {
         constructor(a, b) {
           super();
           this.a = a; this.b = b;
+          this.hasStopped = false;
         }
 
         stopped() {this.hasStopped = true}
@@ -118,21 +120,21 @@ isServer && define((require, exports, module)=>{
 
 
       assert.same(defRunner.constructor, DBRunner);
-      assert.same(defRunner.db, v.defDb);
+      assert.same(defRunner.db, defDb);
 
-      sut.db = v.altDb;
+      sut.db = altDb;
 
       const altRunner = DBS.current;
 
-      assert.same(altRunner.db, v.altDb);
+      assert.same(altRunner.db, altDb);
 
-      sut.db = v.defDb;
+      sut.db = defDb;
 
       assert.same(DBS.current, defRunner);
 
       assert.equals(Object.keys(DBS.list).sort(), ['alt', 'default']);
 
-      assert.same(defRunner.hasStopped, undefined);
+      assert.isFalse(defRunner.hasStopped);
 
       DBS.stop();
 

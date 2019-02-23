@@ -1,4 +1,6 @@
-define(() =>{
+define((require) =>{
+  const DBRunner        = require('koru/model/db-runner');
+
   let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';
 
   const dbBroker = {
@@ -28,6 +30,8 @@ define(() =>{
     get: ()=>threadDbId, set: v =>{threadDbId = v || defaultDbId},
     configurable: true
   });
+
+  DBRunner(dbBroker);
 
   return dbBroker;
 });
