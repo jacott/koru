@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const TransQueue      = require('koru/model/trans-queue');
   const Session         = require('koru/session');
   const message         = require('koru/session/message');
   const ServerConnection = require('koru/session/server-connection');
@@ -22,10 +23,10 @@ define((require, exports, module)=>{
       conn.added = stub();
       conn.changed = stub();
       conn.removed = stub();
-      conn.onSubscribe = (...args)=>{
+      conn.onSubscribe = (...args)=> TransQueue.transaction(()=>{
         conn._session._commands.Q.call(conn, args);
         return conn._subs[args[0]];
-      };
+      });
 
       return conn;
     },

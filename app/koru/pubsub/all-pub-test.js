@@ -49,12 +49,16 @@ isServer && define((require, exports, module)=>{
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All";
 
-      MyAllPub.requireUserId = true;
       conn.onSubscribe("sub1", 1, "All");
-      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 403, 'Access denied']);
+      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, m.number]);
 
       conn.sendBinary.reset();
-      MyAllPub.requireUserId = false;
+      MyAllPub.requireUserId = true;
+      conn.onSubscribe("sub2", 1, "All");
+      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 403, 'Access denied']);
+
+      conn.sendBinary.reset();
+      conn.userId = "user123";
       conn.onSubscribe("sub2", 1, "All");
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 200, m.number]);
       //]

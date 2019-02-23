@@ -132,9 +132,9 @@ isServer && define((require, exports, module)=>{
       Library.pubName = 'Library';
 
       conn.sendBinary.reset();
+      now = util.dateNow() - 12000; intercept(util, 'dateNow', ()=>now);
       intercept(TransQueue, 'transaction', func =>{
         inTrans = true;
-        now = util.dateNow() - 12000; intercept(util, 'dateNow', ()=>now);
         try {
           return func();
         } finally {
