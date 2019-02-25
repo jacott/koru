@@ -178,14 +178,6 @@ define((require, exports, module)=>{
     }
   }
 
-  const sendEncodedWhenIdle = (union, msg) => {
-    const loadQueue = union[loadQueue$];
-    if (loadQueue === null)
-      union.sendEncoded(msg);
-    else
-      loadQueue.msgQueue.push(msg);
-  };
-
   class Union {
     constructor() {
       this[subs$] = new DLinkedList(()=>{this.onEmpty()});
@@ -228,6 +220,14 @@ define((require, exports, module)=>{
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
     }
 
+    sendEncodedWhenIdle( msg) {
+      const loadQueue = this[loadQueue$];
+      if (loadQueue === null)
+        this.sendEncoded(msg);
+      else
+        loadQueue.msgQueue.push(msg);
+    }
+
     subs() {return this[subs$][Symbol.iterator]()}
 
     buildUpdate(dc) {
@@ -262,13 +262,13 @@ define((require, exports, module)=>{
             });
             TransQueue.onSuccess(()=>{
               tidyUp();
-              sendEncodedWhenIdle(this, msg);
+              this.sendEncodedWhenIdle(msg);
             });
             TransQueue.onAbort(tidyUp);
           }
           encoder(upd);
         } else {
-          sendEncodedWhenIdle(this, message.encodeMessage(...upd, Session.globalDict));
+          this.sendEncodedWhenIdle(message.encodeMessage(...upd, Session.globalDict));
         }
       };
     }

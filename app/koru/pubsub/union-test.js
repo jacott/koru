@@ -805,9 +805,11 @@ isServer && define((require, exports, module)=>{
 
     test("sendEncoded", ()=>{
       /**
-       * Send a pre encoded {#koru/session/message} to all subscribers. Called by {##batchUpdate}.
+       * Send a pre-encoded {#koru/session/message} to all subscribers. Called by {##batchUpdate}.
        *
        * See {#koru/session/server-connection#sendEncoded}
+
+       * @param msg the pre-encoded message
        **/
       api.protoMethod();
 
@@ -826,6 +828,32 @@ isServer && define((require, exports, module)=>{
 
       assert.calledWith(conn.sendEncoded, 'myEncodedMessage');
       assert.calledWith(conn2.sendEncoded, 'myEncodedMessage');
+      //]
+    });
+
+    test("sendEncodedWhenIdle", ()=>{
+      /**
+       * Delays calling {##sendEncoded} until {##loadInitial} and {##loadByToken} have finished
+       **/
+      api.protoMethod();
+      //[
+      const union = new Union();
+      union.sendEncoded = stub();
+      let callCount;
+
+      union.loadInitial = ()=>{
+        union.sendEncodedWhenIdle('msg1');
+        callCount = union.sendEncoded.callCount;
+      };
+
+      const sub1 = new Publication({id: 'sub123', conn});
+      union.addSub(sub1);
+
+      assert.same(callCount, 0);
+      assert.calledOnceWith(union.sendEncoded, 'msg1');
+
+      union.sendEncodedWhenIdle('msg2');
+      assert.calledWith(union.sendEncoded, 'msg2');
       //]
     });
 
