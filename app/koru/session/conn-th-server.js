@@ -43,32 +43,13 @@ define((require, exports, module)=>{
 
 
     hasEncodedCall: (conn, expType, expData)=>{
-      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
-        const {type, data} = ConnTH.decodeEncodedCall(conn, call);
-        if (type === 'W') {
-          for (const msg of data) {
-          if (msg[0] === expType && util.deepEqual(msg[1], expData))
-            return true;
-          }
-        } else if (type === expType && util.deepEqual(data, expData))
-          return true;
-      }
-      return false;
+      cacheConn(conn);
+      return hasEncodedCall(expType, expData);
     },
 
     listEncodedCalls: (conn, type)=>{
-      const ans = [];
-      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
-        const baseType = String.fromCharCode(call.args[0][0]);
-        const msgs = decodeMessage(call.args[0], conn);
-        if (baseType === 'W') {
-          for (const msg of msgs) {
-            if (msg[0] === type || type === void 0)
-              ans.push(msg);
-          }
-        } else ans.push([baseType, msgs]);
-      }
-      return ans;
+      cacheConn(conn);
+      return cache.calls;
     },
   };
 
@@ -77,13 +58,49 @@ define((require, exports, module)=>{
   const callsToString = (calls)=> "Calls:"+LINE_SEP+calls.map(
     msg =>util.inspect(msg)).join(LINE_SEP);
 
+  const cache = {
+    sendEncoded: null, lastCall: null,
+    calls: null, _callsString: null,
+    get callsString() {
+      return this._callsString || (this._callsString = callsToString(this.calls));
+    }
+  };
+
+  const clearCache = ()=>{
+    cache.sendEncoded = cache.lastCall = cache.calls = cache._callsString = null;
+  };
+
+  const cacheConn = (conn)=>{
+    if (cache.sendEncoded !== conn.sendEncoded || cache.lastCall !== conn.sendEncoded.lastCall) {
+      if (cache.sendEncoded === null) {
+        TH.onEnd(clearCache);
+      }
+      cache.sendEncoded = conn.sendEncoded; cache.lastCall = conn.sendEncoded.lastCall;
+      cache.calls = [];
+      for (const call of conn.sendEncoded.calls) {
+        const {type, data} = ConnTH.decodeEncodedCall(conn, call);
+        if (type === 'W') {
+          cache.calls.push(...data);
+        } else
+          cache.calls.push([type, data]);
+      }
+    }
+  };
+
+  const hasEncodedCall = (expType, expData)=> cache.calls
+        .some(msg => msg[0] === expType && util.deepEqual(msg[1], expData));
+
+
   TH.Core.assertions.add("encodedCall", {
     assert(conn, type, exp) {
+      cacheConn(conn);
+      const ans = hasEncodedCall(type, exp);
+      if (ans === this._asserting)
+        return ans;
       this.type = type;
       this.exp = exp;
-      const ans = ConnTH.hasEncodedCall(conn, type, exp);
-      const calls = ConnTH.listEncodedCalls(conn, type);
-      this.calls = calls.length == 0 ? "But was not called" : callsToString(calls);
+      const calls = type === '' ? cache.calls : cache.calls.filter(call => call[0] === type);
+      this.calls = calls.length == 0 ? "But was not called" : cache.callsString;
       return ans;
     },
 
@@ -91,13 +108,18 @@ define((require, exports, module)=>{
   });
 
   TH.Core.assertions.add("encodedCount", {
-    assert(conn, count, type) {
-      this.count = count;
-      this.type = type || '';
-      const calls = ConnTH.listEncodedCalls(conn, type);
-      this.calls = calls.length == 0 ? "" : callsToString(calls);
+    assert(conn, count, type='') {
+      cacheConn(conn);
 
-      return (this.callCount = calls.length) == count;
+      const calls = type === '' ? cache.calls : cache.calls.filter(call => call[0] === type);
+
+      if ((calls.length == count) === this._asserting)
+        return this._asserting;
+      this.count = count;
+      this.type = type;
+      this.calls = (this.callCount = calls.length) == 0 ? "" : cache.callsString;
+
+      return ! this._asserting;
     },
 
     message: "sendEncoded {$type} call count to be {$count} but was {$callCount}. {$calls}",

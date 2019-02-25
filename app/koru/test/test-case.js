@@ -434,7 +434,8 @@ define((require, exports, module)=>{
           runTest(lastTest);
           return;
         }
-        Core.test = tests[nt++];
+        Core.test = tests[nt];
+        tests[nt++] = null;
         try {
           if (runTest(lastTest, Core.test)) return;
         } catch(ex) {
@@ -452,6 +453,7 @@ define((require, exports, module)=>{
       skipped = false;
 
       expandTestCase(tc);
+      testCases[i] = null;
     }
 
     const tlen = tests.length;
