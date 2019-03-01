@@ -24,9 +24,9 @@ define((require, exports, module)=>{
   };
 
   const startBatch = (conn, map, thread)=>{
-    const {encode, close} = message.openEncoder('W', conn._session.globalDict);
+    const {push, encode} = message.openEncoder('W', conn._session.globalDict);
 
-    map.set(thread, encode);
+    map.set(thread, push);
 
     const finish = ()=>{
       map.delete(thread);
@@ -35,11 +35,11 @@ define((require, exports, module)=>{
 
     TransQueue.onSuccess(()=>{
       finish();
-      conn.sendEncoded(close());
+      conn.sendEncoded(encode());
     });
     TransQueue.onAbort(finish);
 
-    return encode;
+    return push;
   };
 
   class ServerConnection {

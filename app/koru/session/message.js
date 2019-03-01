@@ -328,13 +328,13 @@ define((require)=>{
       const dicts = [globalDict, dict];
 
       return {
-        encode: arg =>{encode(buffer, arg, dicts)},
-        close() {
-          dict = encodeDict(dict, [type.charCodeAt(0)]);
+        push: arg =>{encode(buffer, arg, dicts)},
+        encode() {
+          const ed = encodeDict(dict, [type.charCodeAt(0)]);
 
-          const result = new Uint8Array(dict.length + buffer.length);
-          result.set(dict, 0);
-          result.set(buffer, dict.length);
+          const result = new Uint8Array(ed.length + buffer.length);
+          result.set(ed, 0);
+          result.set(buffer, ed.length);
 
           return result;
         }

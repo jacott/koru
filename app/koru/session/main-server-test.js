@@ -35,17 +35,17 @@ isServer && define((require, exports, module)=>{
 
     test("openBatch", ()=>{
       /**
-       * build an encoded batch message.
+       * Build an encoded batch message.
 
-       * @returns `{encode, close}`. Use `encode` to add a message to the batch. Use `close` to
-       * finalize and return the encoded message.
+       * @returns `{push, encode}`. Use `push` to append a message to the batch. Use `encode` to
+       * return the encoded batch.
        **/
       api.method();
       //[
-      const {encode, close} = Session.openBatch();
-      encode(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
-      encode(['R', ['Book', 'book2']]);
-      const msg = close();
+      const {push, encode} = Session.openBatch();
+      push(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
+      push(['R', ['Book', 'book2']]);
+      const msg = encode();
 
       assert.equals(String.fromCharCode(msg[0]), 'W');
       assert.equals(message.decodeMessage(msg.subarray(1), Session.globalDict), [

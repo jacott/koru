@@ -84,8 +84,8 @@ isServer && define((require, exports, module)=>{
           super();
           this.author_id = author_id;
         }
-        loadInitial(addDoc) {
-          Book.where('author_id', this.author_id).forEach(addDoc);
+        loadInitial(encoder) {
+          Book.where('author_id', this.author_id).forEach(doc =>{encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion('a123');
@@ -109,7 +109,7 @@ isServer && define((require, exports, module)=>{
         const lastSubscribed = now - 1*util.DAY;
         union.addSub(sub, lastSubscribed);
 
-        assert.calledWith(loadInitial, m.func, m.func, lastSubscribed);
+        assert.calledWith(loadInitial, m(e => e.encode), lastSubscribed);
       }
     });
 
@@ -131,7 +131,7 @@ isServer && define((require, exports, module)=>{
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const forEach = (addDoc) => {addDoc(book2)};
+      const forEach = (callback) => {callback(book2)};
       const whereNot = stub().returns({forEach});
       Book.where = stub().returns({whereNot});
 
@@ -144,11 +144,11 @@ isServer && define((require, exports, module)=>{
           super();
           this.genre_id = genre_id;
         }
-        loadByToken(addDoc, remDoc, oldUnion) {
+        loadByToken(encoder, oldUnion) {
           Book
             .where('genre_ids', this.genre_id)
             .whereNot('genre_ids', oldUnion.genre_id)
-            .forEach(addDoc);
+            .forEach(doc =>{encoder.addDoc(doc)});
         }
       }
       const oldUnion = new MyUnion('comedy');
@@ -191,10 +191,10 @@ isServer && define((require, exports, module)=>{
           super();
           this.future = new util.Future;
         }
-        loadInitial(addDoc, remDoc, minLastSubscribed) {
+        loadInitial(encoder, minLastSubscribed) {
           events.push(`li`, minLastSubscribed);
           this.future.wait();
-          Book.query.forEach(addDoc);
+          Book.query.forEach(doc =>{encoder.addDoc(doc)});
           events.push(`liDone`);
         }
       }
@@ -293,10 +293,10 @@ isServer && define((require, exports, module)=>{
           super();
           this.future = new util.Future;
         }
-        loadByToken(addDoc, remDoc, token) {
+        loadByToken(encoder, token) {
           events.push(`li`, token);
           this.future.wait();
-          Book.query.forEach(addDoc);
+          Book.query.forEach(encoder.addDoc.bind(encoder));
           events.push(`liDone`);
         }
       }
@@ -508,12 +508,18 @@ isServer && define((require, exports, module)=>{
        * subscribers is added. Subscribers are partitioned by their
        * {#../publication.discreteLastSubscribed} time.
 
-       * @param addDoc a function to call with a doc to be added to the subscribers.
+       * @param encoder an object that has methods `addDoc`, `remDoc` and `add`:
 
-       * @param remDoc a function to call with a doc (and optional flag) to be removed from the
-       * subscribers. The flag is sent to the client as a {#koru/models/doc-change;#flag} which
+       * 1. `addDoc` is a function to call with a doc to be added to the subscribers.
+
+       * 2. `remDoc` a function to call with a doc (and optional flag) to be removed from the
+       * subscribers. The flag is sent to the client as a {#koru/model/doc-change;#flag} which
        * defaults to "serverUpdate". A Useful value is "stopped" which a client persistence manager
        * can used to decide to not remove the persitent document.
+
+       * 3. `push` is for adding any `message` to the batch. The message format is:
+
+       * `[type, data]` (see {#koru/session/server-connection.buildUpdate} for examples).
 
        * @param minLastSubscribed the lastSubscribed time related to the first subscriber for this
        * load request. Only subscribers with a lastSubscribed >= first subscriber will be added to
@@ -540,7 +546,9 @@ isServer && define((require, exports, module)=>{
       //[#
 
       class MyUnion extends Union {
-        loadInitial(addDoc, remDoc, minLastSubscribed) {
+        loadInitial(encoder, minLastSubscribed) {
+          const addDoc = encoder.addDoc.bind(encoder);
+          const remDoc = encoder.remDoc.bind(encoder);
           if (minLastSubscribed == 0)
             Book.whereNot({state: 'D'}).forEach(addDoc);
           else {
@@ -576,7 +584,7 @@ isServer && define((require, exports, module)=>{
 
     test("loadInitial change with no send", ()=>{
       class MyUnion extends Union {
-        loadInitial(addDoc) {
+        loadInitial(encoder) {
         }
       }
 
@@ -594,11 +602,7 @@ isServer && define((require, exports, module)=>{
        * Like {##loadInitial} but instead of using minLastSubscribed passes the token from
        * {##addSubByToken} to calculate which documents to load.
 
-       * @param addDoc a function to call with a doc to be added to the subscribers.
-
-       * @param remDoc a function to call with a doc (and optional flag) to be removed from the
-       * subscribers. This is not usually needed as the client can calcuate itself which documents
-       * to remove.
+       * @param encoder an encoder object; see {##loadInitial}
 
        * @param token from {##addSubByToken}. Usually an old union the subscriptions belonged to.
        **/
@@ -616,10 +620,10 @@ isServer && define((require, exports, module)=>{
       // see addSubByToken for better example
       class MyUnion extends Union {
         /** ⏿ ⮧ here we loadByToken **/
-        loadByToken(addDoc, remDoc, token) {
+        loadByToken(encoder, token) {
           if (token === 'myToken') {
-            addDoc(book1);
-            remDoc(book2, 'stopped');
+            encoder.addDoc(book1);
+            encoder.remDoc(book2, 'stopped');
           }
         }
       }
@@ -641,7 +645,7 @@ isServer && define((require, exports, module)=>{
 
     test("loadByToken change with no send", ()=>{
       class MyUnion extends Union {
-        loadByToken(addDoc, remDoc, token) {
+        loadByToken(encoder, token) {
         }
       }
 
@@ -677,10 +681,10 @@ isServer && define((require, exports, module)=>{
         initObservers() {
           this.handles.push(Book.onChange(this.batchUpdate));
         }
-        loadInitial(addDoc) {
+        loadInitial(encoder) {
           events.push(`li`);
           this.future.wait();
-          Book.query.forEach(addDoc);
+          Book.query.forEach(doc =>{encoder.addDoc(doc)});
           events.push(`liDone`);
         }
       }
@@ -732,10 +736,10 @@ isServer && define((require, exports, module)=>{
           super();
           this.future = new util.Future;
         }
-        loadInitial(addDoc, remDoc, minLastSubscribed) {
+        loadInitial(encoder, minLastSubscribed) {
           events.push(`li`, minLastSubscribed);
           this.future.wait();
-          Book.query.forEach(addDoc);
+          Book.query.forEach(encoder.addDoc.bind(encoder));
           events.push(`liDone`);
         }
       }

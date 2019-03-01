@@ -70,8 +70,8 @@ define((require, exports, module)=>{
       const book2 = Book.create();
 
       class MyUnion extends Union {
-        loadInitial(addDoc, discreteLastSubscribed) {
-          Book.query.forEach(addDoc);
+        loadInitial(encoder, discreteLastSubscribed) {
+          Book.query.forEach(doc =>{encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion();
@@ -105,8 +105,8 @@ define((require, exports, module)=>{
       const book2 = Book.create();
 
       class MyUnion extends Union {
-        loadInitial(addDoc, discreteLastSubscribed) {
-          Book.query.forEach(addDoc);
+        loadInitial(encoder, discreteLastSubscribed) {
+          Book.query.forEach(doc =>{encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion();

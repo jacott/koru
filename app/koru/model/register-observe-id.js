@@ -1,5 +1,6 @@
 define((require)=>{
   const Observable      = require('koru/observable');
+  const util            = require('koru/util');
   const dbBroker        = require('./db-broker');
 
   return model=>{
@@ -9,7 +10,7 @@ define((require)=>{
 
     const observeId = (id, callback)=>{
       const {dbId} = dbBroker;
-      const observers = dbObservers[dbId] || (dbObservers[dbId] = {});
+      const observers = dbObservers[dbId] || (dbObservers[dbId] = util.createDictionary());
 
       const obs = observers[id] || (observers[id] = new Observable(()=>{
         delete observers[id];

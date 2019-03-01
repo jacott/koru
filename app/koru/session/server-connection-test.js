@@ -16,7 +16,7 @@ isServer && define((require, exports, module)=>{
 
   const crypto      = requirejs.nodeRequire('crypto');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const session = new (baseSession.constructor)('testServerConnection');
 
@@ -29,7 +29,7 @@ isServer && define((require, exports, module)=>{
         send: stub(), close: stub(), on: stub(),
       }, {}, 123, v.sessClose = stub());
       stub(v.conn, 'sendBinary');
-      intercept(session, 'execWrapper', function (func, conn) {
+      intercept(session, 'execWrapper', (func, conn)=>{
         const thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
@@ -83,7 +83,7 @@ isServer && define((require, exports, module)=>{
       });
 
       test("thread vars", ()=>{
-        v.tStub = function () {
+        v.tStub = ()=>{
           v.threadUserId = util.thread.userId;
           v.threadConnection = util.thread.connection;
         };
@@ -101,11 +101,11 @@ isServer && define((require, exports, module)=>{
         let error;
         let token = 'first';
         session.execWrapper.restore();
-        intercept(session, 'execWrapper', function (func, conn) {
+        intercept(session, 'execWrapper', (func, conn)=>{
           v.calls.push(token);
           func(conn);
         });
-        intercept(session, '_onMessage', function (conn, data) {
+        intercept(session, '_onMessage', (conn, data)=>{
           token = 'second';
           try {
             v.calls.push(data);
@@ -166,7 +166,7 @@ isServer && define((require, exports, module)=>{
       //]
 
       stub(koru, 'info');
-      refute.exception(function () {
+      refute.exception(()=>{
         v.conn.ws.send = stub().throws(v.error = new Error('foo'));
         v.conn.send('X', 'FOO');
       });
@@ -177,7 +177,7 @@ isServer && define((require, exports, module)=>{
       v.sessClose.reset();
       koru.info.reset();
       v.conn.ws = null;
-      refute.exception(function () {
+      refute.exception(()=>{
         v.conn.send('X', 'FOO');
       });
 
@@ -200,14 +200,14 @@ isServer && define((require, exports, module)=>{
       conn.sendBinary('M', [1,2,3]);
       //]
 
-      assert.calledWith(v.ws.send, TH.match(function (data) {
+      assert.calledWith(v.ws.send, m(data =>{
         assert.same(data[0], 'M'.charCodeAt(0));
         assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3]);
         return true;
       }, {binary: true, mask: true}));
 
       stub(koru, 'info');
-      refute.exception(function () {
+      refute.exception(()=>{
         conn.ws.send = stub().throws(v.error = new Error('foo'));
         conn.sendBinary('X', ['FOO']);
       });
@@ -216,7 +216,7 @@ isServer && define((require, exports, module)=>{
 
       koru.info.reset();
       conn.ws = null;
-      refute.exception(function () {
+      refute.exception(()=>{
         conn.sendBinary('X', ['FOO']);
       });
 

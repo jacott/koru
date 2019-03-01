@@ -33,7 +33,8 @@ define((require, exports, module)=>{
       return model.onChange(batchUpdate);
     }
 
-    loadInitial(addDoc) {
+    loadInitial(encoder) {
+      const addDoc = encoder.addDoc.bind(encoder);
       for (const model of this.pubClass.includedModels()) {
         model.query.forEach(addDoc);
       }

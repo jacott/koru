@@ -77,7 +77,7 @@ define((require, exports, module)=>{
       }
       cache.sendEncoded = conn.sendEncoded; cache.lastCall = conn.sendEncoded.lastCall;
       cache.calls = [];
-      for (const call of conn.sendEncoded.calls) {
+      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
         const {type, data} = ConnTH.decodeEncodedCall(conn, call);
         if (type === 'W') {
           cache.calls.push(...data);

@@ -14,6 +14,20 @@ define((require, exports, module)=>{
 
   const WaitSubCompare = (a, b)=> a.time - b.time;
 
+  class Encoder {
+    constructor(session) {
+      Object.assign(this, session.openBatch());
+    }
+
+    addDoc(doc) {
+      this.push(['A', [doc.constructor.modelName, doc.attributes]]);
+    }
+
+    remDoc(doc, flag) {
+      this.push(['R', [doc.constructor.modelName, doc._id, flag]]);
+    }
+  }
+
   class LoadQueueBase {
     constructor(union) {
       this.union = union;
@@ -36,12 +50,10 @@ define((require, exports, module)=>{
     }
 
     _loadDocsPart1(sub, loadInitial, token) {
+      const encoder = new Encoder(sub.conn._session);
       const {encode, close} = sub.conn._session.openBatch();
-      loadInitial.call(this.union,
-                       (doc)=>{encode(['A', [doc.constructor.modelName, doc.attributes]])},
-                       (doc, flag)=>{encode(['R', [doc.constructor.modelName, doc._id, flag]])},
-                       token);
-      return close();
+      loadInitial.call(this.union, encoder, token);
+      return encoder.encode();
     }
 
     _loadDocsPart2(msg, node, token) {
@@ -213,8 +225,8 @@ define((require, exports, module)=>{
 
     // overriden by subclasses
     initObservers() {}
-    loadInitial(addDoc, remDoc, minLastSubscribed) {}
-    loadByToken(addDoc, remDoc, token) {}
+    loadInitial(encoder, minLastSubscribed) {}
+    loadByToken(encoder, token) {}
 
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
@@ -237,13 +249,13 @@ define((require, exports, module)=>{
     batchUpdate() {} // overriden during construction
 
     buildBatchUpdate() {
-      let encoder = null;
+      let push = null;
       let future = null;
 
       const tidyUp = ()=>{
         if (future !== null) {
           future.return();
-          encoder = future = null;
+          push = future = null;
         }
       };
 
@@ -251,14 +263,14 @@ define((require, exports, module)=>{
         const upd = this.buildUpdate(dc);
         if (upd === void 0) return;
         if (TransQueue.isInTransaction()) {
-          if (encoder === null) {
+          if (push === null) {
             future = new util.Future;
             let msg;
             koru.runFiber(()=>{
               const obj = Session.openBatch();
-              encoder = obj.encode;
+              push = obj.push;
               future.wait();
-              msg = obj.close();
+              msg = obj.encode();
             });
             TransQueue.onSuccess(()=>{
               tidyUp();
@@ -266,7 +278,7 @@ define((require, exports, module)=>{
             });
             TransQueue.onAbort(tidyUp);
           }
-          encoder(upd);
+          push(upd);
         } else {
           this.sendEncodedWhenIdle(message.encodeMessage(...upd, Session.globalDict));
         }
