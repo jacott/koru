@@ -27,8 +27,7 @@ define((require)=>{
     const setState = (self, value)=>{
       const was = state;
       state = value;
-      if (was === 'ready')
-        self.notify(false);
+      was === 'ready' && was !== value && self.notify(false);
     };
 
     const sessionState = {
@@ -75,7 +74,7 @@ define((require)=>{
 
       pending: new Observable(),
 
-      incPending(isUpdate) {
+      incPending(isUpdate=false) {
         debug_pending && koru._incPendingStack.push(
           util.extractError(new Error(`${count} ${isUpdate}`)));
         if (isUpdate) ++updateCount;
@@ -83,7 +82,7 @@ define((require)=>{
           this.pending.notify(true);
       },
 
-      decPending(isUpdate) {
+      decPending(isUpdate=false) {
         debug_pending && koru._decPendingStack.push(
           util.extractError(new Error(`${count} ${isUpdate}`)));
         if (isUpdate) --updateCount;
@@ -100,7 +99,7 @@ define((require)=>{
 
       // for test use only
       _resetPendingCount() {
-        count = 0;
+        count = updateCount = 0;
       },
     };
 

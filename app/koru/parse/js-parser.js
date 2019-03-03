@@ -29,6 +29,13 @@ define((require)=>{
     else if (m = /^(\w+)\s*?=>/.exec(code))
       return `${name}(${m[1]})`;
 
+    // look for super class
+    if (typeof func === 'function' && /^class\s+\S+\s+extends\b/.test(code)) {
+      try {
+        return extractCallSignature(Object.getPrototypeOf(func));
+      } catch(ex) {}
+    }
+
     if (/^class\s+/.test(code))
       return "constructor()";
 

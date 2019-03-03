@@ -27,35 +27,48 @@ trace of the actual error. Access can be useful to save and restore in custom as
     });
 
     group("AssertionError", ()=>{
+      /**
+       * An error thrown by an assertion methods.
+       **/
       let aeApi;
       before(()=>{
-        aeApi = api.innerSubject(Core.AssertionError, null, {
-          abstract() {
-            /**
-             * An error thrown by an assertion methods.
-             **/
-          }
-        });
+        aeApi = api.innerSubject(Core.AssertionError, null);
       });
 
       after(()=>{aeApi = undefined});
 
-      test("new", ()=>{
+      test("constructor", ()=>{
+        /**
+         * Create an AssertionError.
+
+         * @param message the message for the error
+
+         * @param elidePoint the number of stack frames to elide
+         **/
         const AssertionError = aeApi.class();
+        //[
         const err = new AssertionError("I failed");
         assert(err instanceof Error);
         assert.same(err.message, "I failed");
+
+        const err2 = new AssertionError("I have a shortened stack", 2);
+        assert(err instanceof Error);
+        //]
       });
     });
 
     test("fail", ()=>{
       /**
-       * Shortcut for `assert(false, msg)`
+       * throw assertionError
+       *
+       * @param message the error message
+
+       * @param elidePoint the number of stack frames to elide
        **/
-      api.method();
+      api.customIntercept(assert, {name: 'fail', sig: 'assert.'});
       let ex;
       try {
-        Core.fail("I failed");
+        assert.fail("I failed", 1);
       } catch(e) {
         ex = e;
       }

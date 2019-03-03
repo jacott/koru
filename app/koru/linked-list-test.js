@@ -11,7 +11,7 @@ define((require, exports, module)=>{
 
   const listToString = (ll)=>{
     let ans = '';
-    for (let node = ll.front; node !== undefined; node = node.next) {
+    for (let node = ll.front; node !== void 0; node = node.next) {
       ans += node.value+' ';
     }
     return ans.trim();
@@ -101,13 +101,33 @@ define((require, exports, module)=>{
       assert.same(ll.size, 3);
     });
 
+    test("front, back", ()=>{
+      const ll = new LinkedList;
+
+      ll.addBack(1);
+      ll.addBack(2);
+      ll.addBack(3);
+
+      api.protoProperty('front', {info: `the front node in the list`}, ll);
+      assert.same(ll.front.value, 1);
+
+      api.protoProperty('frontValue', {info: `the front value in the list`});
+      assert.same(ll.frontValue, 1);
+
+      api.protoProperty('back', {info: `the back node in the list`}, ll);
+      assert.same(ll.back.value, 3);
+
+      api.protoProperty('backValue', {info: `the back value in the list`});
+      assert.same(ll.backValue, 3);
+    });
+
     test("removeNode", ()=>{
       /**
        * Search for and remove `node`
        *
        * @param node the  node to remove
        * @param [prev] where to start the search from. Defaults to `front`
-       * @return the node removed or undefined if not found
+       * @return the node removed or void 0 if not found
        **/
       api.protoMethod();
       const ll = new LinkedList;
@@ -116,7 +136,7 @@ define((require, exports, module)=>{
       add(ll, 1, 2, 3, 4);
 
       let prev;
-      for (let node = ll.front; node !== undefined; node = node.next) {
+      for (let node = ll.front; node !== void 0; node = node.next) {
         if (node.value % 2 == 1)
           ll.removeNode(node, prev);
         else
@@ -183,6 +203,8 @@ define((require, exports, module)=>{
     test("values", ()=>{
       /**
        * Return an iterator over the values from front to back.
+
+       * @alias [symbol.iterator]
        **/
       api.protoMethod();
       //[

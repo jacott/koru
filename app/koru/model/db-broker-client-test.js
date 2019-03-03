@@ -1,38 +1,46 @@
 define((require, exports, module)=>{
+  /**
+   * dbBroker allows for multiple databases and server connections within one browser instance.
+   **/
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
 
-  const sut = require('./db-broker');
+  const dbBroker = require('./db-broker');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      api.module({subjectName: 'dbBroker'});
+    });
+
     afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
-      sut.clearDbId();
+      dbBroker.clearDbId();
       delete Model._databases.foo1;
       delete Model._databases.foo2;
     });
 
     test("changing defaultDbId, mainDbId", ()=>{
-      onEnd(() => sut.setDefaultDbId('default'));
-      assert.same(sut.dbId, 'default');
-      sut.setMainDbId('bar');
-      assert.same(sut.dbId, 'bar');
-      sut.setDefaultDbId('foo');
-      sut.dbId = null;
-      assert.same(sut.dbId, 'foo');
-      sut.setMainDbId('bar');
-      sut.clearDbId();
-      assert.same(sut.dbId, 'foo');
+      onEnd(() => dbBroker.setDefaultDbId('default'));
+      assert.same(dbBroker.dbId, 'default');
+      dbBroker.setMainDbId('bar');
+      assert.same(dbBroker.dbId, 'bar');
+      dbBroker.setDefaultDbId('foo');
+      dbBroker.dbId = null;
+      assert.same(dbBroker.dbId, 'foo');
+      dbBroker.setMainDbId('bar');
+      dbBroker.clearDbId();
+      assert.same(dbBroker.dbId, 'foo');
     });
 
     test("changing dbId", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       const docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
 
-      sut.dbId = 'foo1';
+      dbBroker.dbId = 'foo1';
 
       const anyChanged = stub(), foo1Changed = stub();
 
@@ -41,7 +49,7 @@ define((require, exports, module)=>{
 
       const doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
 
-      sut.dbId = 'foo2';
+      dbBroker.dbId = 'foo2';
 
       const foo2Changed = stub();
 
@@ -73,14 +81,14 @@ define((require, exports, module)=>{
       assert.same(TestModel.findById('tmf1'), doc2);
 
       /** Test can change the main db id from within a temp change */
-      sut.withDB('foo2', () => {sut.setMainDbId('foo1')});
+      dbBroker.withDB('foo2', () => {dbBroker.setMainDbId('foo1')});
 
       assert.same(TestModel.findById('tmf1'), doc);
 
       assert.same(Model._getProp('foo1', 'TestModel', 'docs'), TestModel.docs);
       assert.same(Model._getProp('foo2', 'TestModel', 'docs').tmf1, doc2);
 
-      sut.dbId = 'foo2';
+      dbBroker.dbId = 'foo2';
 
 
       stub(TestModel._indexUpdate, 'reloadAll');
@@ -104,6 +112,62 @@ define((require, exports, module)=>{
       assert.equals(Model._databases.foo2, {
         FooModel: {docs: {foo: 123}}
       });
+    });
+
+    test("makeFactory", ()=>{
+      /**
+       * Make a factory that will create runners as needed for the current thread DB. Runners are
+       * useful to keep state information on a per DB basis
+
+       * @param {[any-type]} args arbitrary arguments to pass to the constructor
+       **/
+      api.method();
+      //[
+      const defId = dbBroker.dbId;
+      const altId = "alt";
+
+      class DBRunner extends dbBroker.DBRunner {
+        constructor(a, b) {
+          super();
+          this.a = a; this.b = b;
+          this.hasStopped = false;
+        }
+
+        stopped() {this.hasStopped = true}
+      }
+
+      const DBS = dbBroker.makeFactory(DBRunner, 1, 2);
+
+      const defRunner = DBS.current;
+
+      assert.same(defRunner.a, 1);
+      assert.same(defRunner.b, 2);
+
+
+      assert.same(defRunner.constructor, DBRunner);
+      assert.same(defRunner.dbId, defId);
+
+      dbBroker.dbId = altId;
+
+      const altRunner = DBS.current;
+
+      assert.same(altRunner.dbId, altId);
+
+      dbBroker.dbId = defId;
+
+      assert.same(DBS.current, defRunner);
+
+      assert.equals(Object.keys(DBS.list).sort(), ['alt', 'default']);
+
+      assert.isFalse(defRunner.hasStopped);
+
+      DBS.stop();
+
+      assert.equals(DBS.list, {});
+
+      assert.isTrue(defRunner.hasStopped);
+      assert.isTrue(altRunner.hasStopped);
+      //]
     });
   });
 });

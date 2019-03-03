@@ -1,9 +1,10 @@
 define((require, exports, module)=>{
   /**
    * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
-   * The {#koru/util.deepEqual} function will honour any matchers found in the `exprected` (second)
+   * The {#koru/util.deepEqual} function will honour any matchers found in the `expected` (second)
    * argument.
    **/
+  const koru            = require('koru');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
 
@@ -246,7 +247,7 @@ define((require, exports, module)=>{
       assert.isFalse(match.undefined.test(''));
       assert.isFalse(match.undefined.test(null));
 
-      docProp('undefined', 'match null');
+      docProp('null', 'match null');
       assert.isTrue(match.null.test(null));
       assert.isFalse(match.null.test(''));
       assert.isFalse(match.null.test(undefined));
@@ -261,6 +262,11 @@ define((require, exports, module)=>{
       assert.isFalse(match.date.test(''));
       assert.isFalse(match.date.test({}));
       assert.isFalse(match.date.test(new Date('invalid')));
+
+      docProp('error');
+      assert.isTrue(match.error.test(new Error()));
+      assert.isTrue(match.error.test(new koru.Error()));
+      assert.isFalse(match.error.test({}));
 
       docProp('integer');
       assert.isTrue(match.integer.test(1234));

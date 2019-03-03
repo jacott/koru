@@ -45,6 +45,9 @@ define((require, exports, module)=>{
   const {stub, spy, match} = TH;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.reportStubs();
+    });
     test("testCase", ()=>{
       /**
        * Create a {#koru/test/test-case} and set the exports for `module` to the `testCase`.

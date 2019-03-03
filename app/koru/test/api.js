@@ -7,7 +7,9 @@ define((require, exports, module)=>{
   const TH              = require('./main');
 
   const onEnd$ = Symbol(),
-        level$ = Symbol(), currentTest$ = Symbol(), callLength$ = Symbol(), tcInfo$ = Symbol();
+        extactTest$ = Symbol(), currentTest$ = Symbol(),
+        reportStubs$ = Symbol(), level$ = Symbol(),
+        callLength$ = Symbol(), tcInfo$ = Symbol();
 
   const {hasOwn} = util;
   const {ctx} = module;
@@ -18,23 +20,28 @@ define((require, exports, module)=>{
 
   const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
 
+  const EMPTY_FUNC = ()=>{};
+
   let count = 0;
 
   const onTestEnd = (api, func)=>{
-    if (api.target !== void 0) api.target.test = getTestLevel();
     if (api[onEnd$] === void 0) {
       const foo = count++;
       const onEnd = api[onEnd$] = ()=>{
         if (api[onEnd$] !== onEnd) return;
         api[onEnd$] = void 0;
-        api.target === void 0 || extractBodyExample(api.target, api.target.test);
+        api.target = void 0;
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
         callbacks.forEach(cb => cb());
-        api.target = void 0;
       };
       onEnd.callbacks = [];
       TH.onEnd(onEnd);
+    }
+    let {target} = api;
+    if (target !== void 0) {
+      target.test = getTestLevel();
+      api[onEnd$].callbacks.push(() => {extractBodyExample(target, target.test)});
     }
 
     func === void 0 || api[onEnd$].callbacks.push(func);
@@ -111,6 +118,8 @@ define((require, exports, module)=>{
         property.value = api.serializeValue(property.value);
       if (property.calls)
         property.calls = serializeCalls(api, property.calls);
+      if (property.test) property.test = property.test.name,
+
       property.properties &&
         serializeProperties(api, property.properties);
     }
@@ -135,6 +144,7 @@ define((require, exports, module)=>{
         property.value = api.valueTag(options.value);
       } else if (desc == null || desc.get || desc.set) {
         const calls = property.calls || (property.calls = []);
+        api.target = property;
         util.setProperty(subject, name, {
           get() {
             const entry = [[], null];
@@ -172,8 +182,16 @@ define((require, exports, module)=>{
         break;
       case 'object':
         if (options != null) {
-          if (options.info) property.info = options.info;
-          if (options.intro) property.info = options.intro;
+          const info = options.info || options.intro;
+          if (info !== void 0) {
+            if (typeof info === 'function') {
+              property.info = info(savedValue);
+              if (property.info === void 0)
+                property.info = docComment(info);
+            } else
+              property.info = info.toString();
+          }
+          else if (options.intro) property.info = options.intro;
           if (options.properties) {
             const properties = property.properties ||
                     (property.properties = {});
@@ -256,7 +274,13 @@ define((require, exports, module)=>{
 
   const extractBodyExample = (details, fromTest)=>{
     if (details === undefined) return;
+
     const currentTest = fromTest || details[currentTest$];
+
+    if (details[extactTest$] === currentTest) return;
+
+    details[extactTest$] = currentTest;
+
     if (fromTest === undefined) {
       const {test} = TH;
       if (test === currentTest) return;
@@ -265,10 +289,14 @@ define((require, exports, module)=>{
       if (currentTest === undefined) return;
     }
 
-    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*\*\//, '');
+    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
-    if (m == null) return;
+    if (m == null) {
+      const m = /^[\s\S]*?\bapi\.(?:method|protoMethod).*\n([\s\S]*)}[^}]*$/.exec(raw);
+      if (m != null) addBody(details, m[1], true);
+      return;
+    }
 
     let body = '', isNew = true;
     while (m !== null) {
@@ -305,6 +333,9 @@ define((require, exports, module)=>{
     const calls = details ? details.calls : [];
     if (details === undefined) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
+      if (sig.indexOf(methodName) === -1 && sig[0] === '(') {
+        sig = methodName+sig;
+      }
       const isGenerator = sig[0] === '*';
       if (isGenerator)
         sig = sig.replace(/^\*\s*/, '*');
@@ -423,7 +454,7 @@ define((require, exports, module)=>{
         this.properties = this.protoProperties =
         this.currentComment = this.target =
         this.propertyName = this.initInstExample =
-        this.initExample = undefined;
+        this.initExample = void 0;
 
       this.methods = Object.create(null);
       this.protoMethods = Object.create(null);
@@ -436,6 +467,11 @@ define((require, exports, module)=>{
       this._moduleMap = new Map;
       this._subjectMap = new Map;
       this._objCache = new Map;
+    }
+
+    static reportStubs() {
+      this[reportStubs$] = true;
+      TH.onEnd(()=>{this[reportStubs$] = false});
     }
 
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
@@ -642,7 +678,7 @@ define((require, exports, module)=>{
         };
       }
 
-      this.target = this.newInstance;
+      const details = this.target = this.newInstance;
 
       onTestEnd(this);
 
@@ -652,11 +688,11 @@ define((require, exports, module)=>{
       return class extends api.subject {
         constructor(...args) {
           super(...args);
-          const {calls} = api.target;
+          const {calls} = details;
           if (calls === undefined) {
             return;
           }
-          extractBodyExample(api.target);
+          extractBodyExample(details);
           const entry = [
             args.map(obj => api.valueTag(obj)),
             undefined,
@@ -872,6 +908,10 @@ define((require, exports, module)=>{
         return ['M', obj];
       switch (typeof obj) {
       case 'function':
+        if (! API[reportStubs$]) {
+          if (typeof obj.restore === 'function' && typeof obj.calledWith === 'function')
+            obj = obj.original || EMPTY_FUNC;
+        }
         return ['F', obj, obj[stubName$] || obj.name || funcToSig(obj)];
       case 'object':
         if (obj === null)
@@ -931,6 +971,7 @@ define((require, exports, module)=>{
       return ctx.exportsModule(value)[0].id;
     }
   }
+  API[reportStubs$] = false;
 
   const Generator = (function *() {})().constructor;
 

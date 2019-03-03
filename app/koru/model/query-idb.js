@@ -6,10 +6,11 @@ define((require)=>{
   const DocChange       = require('koru/model/doc-change');
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
+  const Observable      = require('koru/observable');
   const {stopGap$}      = require('koru/symbols');
   const util            = require('koru/util');
 
-  const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol(),
+  const iDB$ = Symbol(), idle$ = Symbol(), pendingUpdates$ = Symbol(),
         busyQueue$ = Symbol();
 
   const {simDocsFor} = Query;
@@ -68,12 +69,22 @@ define((require)=>{
 
   const dbClosedError = ()=> new Error('DB closed');
 
+  const dbReady = (db)=>{
+    if (db[pendingUpdates$] === null) {
+      const obs = db[idle$];
+      if (obs !== null) {
+        db[idle$] = null;
+        obs.notify(db);
+      }
+    };
+  };
+
   class QueryIDB {
     constructor({name, version, upgrade, catchAll}) {
       this.name = name;
       this.dbId = dbBroker.dbId;
       this[pendingUpdates$] = null;
-      this[ready$] = false;
+      this[idle$] = new Observable();
       this.catchAll = catchAll;
       let resolve, reject;
       this[busyQueue$] = new Promise((_resolve, _reject) => {
@@ -82,7 +93,7 @@ define((require)=>{
       const req = window.indexedDB.open(name, version);
 
       if (upgrade !== undefined) req.onupgradeneeded = (event) => {
-          this[iDB$] = event.target.result;
+        this[iDB$] = event.target.result;
         upgrade({
           db: this, oldVersion: event.oldVersion,
           event, transaction: event.target.transaction,
@@ -91,12 +102,12 @@ define((require)=>{
       req.onerror = req.onblocked = event => {
         this[busyQueue$] = undefined;
         error(this, event, reject);
-        };
+      };
       req.onsuccess = event => {
         const idb = this[iDB$] = event.target.result;
-        this[ready$] = this[pendingUpdates$] === null;
         if (! this.isClosed) this[busyQueue$] = null;
-          resolve();
+        dbReady(this);
+        resolve();
       };
     }
 
@@ -212,13 +223,25 @@ define((require)=>{
       this[iDB$] && this[iDB$].close();
     }
 
-    get isReady() {return this[ready$]}
+    get isReady() {return this[busyQueue$] === null}
+    get isIdle() {return this[busyQueue$] === null && this[idle$] === null}
+
 
     whenReady(noArgs) {
       if (noArgs !== undefined) throw new Error("Unexpected argument");
       if (this.isClosed) return Promise.reject(dbClosedError());
 
       return waitOnBusyQueue(this);
+    }
+
+    whenIdle() {
+      return this.whenReady().then(()=>{
+        const obs = this[idle$];
+        if (obs === null) return;
+        return new Promise((resolve) => {
+          obs.onChange(resolve);
+        });
+      });
     }
 
     createObjectStore(name) {
@@ -250,7 +273,7 @@ define((require)=>{
   const error = (db, ev, reject) => {
     const ex = ev.currentTarget ? ev.currentTarget.error : ev;
     try {
-      reject(ev);
+      reject !== void 0 && reject(ev);
     } finally {
       db.catchAll == null || db.catchAll(ex);
     }
@@ -259,8 +282,11 @@ define((require)=>{
   const getPendingUpdates = db =>{
     const pu = db[pendingUpdates$];
     if (pu !== null) return pu;
-    db[ready$] = false;
-    TransQueue.onAbort(() => {db[pendingUpdates$] = null; db[ready$] = true});
+    if (db[idle$] === null) db[idle$] = new Observable();
+    TransQueue.onAbort(() => {
+      db[pendingUpdates$] = null;
+      dbReady(db);
+    });
     TransQueue.onSuccess(() => {db.isClosed || waitOnBusyQueue(db).then(()=>{flushPending(db)})});
     return db[pendingUpdates$] = {};
   };
@@ -273,39 +299,36 @@ define((require)=>{
     const models = Object.keys(pu);
     const tran = db[iDB$].transaction(models, 'readwrite');
 
-    return new Promise((resolve, reject) => {
-      tran.onerror = tran.onabort = (ev=new Error("IDB flush aborted"))=>{
-        db[ready$] = db[pendingUpdates$] === null;
-        error(db, ev, reject);
-      };
-      tran.oncomplete = ()=>{
-        db[ready$] = db[pendingUpdates$] === null;
-        resolve();
-      };
+    tran.onerror = tran.onabort = (ev=new Error("IDB flush aborted"))=>{
+      dbReady(db);
+      error(db, ev);
+    };
+    tran.oncomplete = ()=>{
+      dbReady(db);
+    };
 
-      dbBroker.withDB(db.dbId, ()=>{
-        for(const modelName of models) {
-          const docs = pu[modelName];
-          const simDocs = Model._getProp(db.dbId, modelName, 'simDocs');
-          const os = tran.objectStore(modelName);
-          for (const _id in docs) {
-            const doc = docs[_id];
-            const sdoc = simDocs === undefined ? undefined : simDocs[_id];
-            if (sdoc === undefined)
-              doc !== null ? os.put(doc) : os.delete(_id);
-            else {
-              if (doc === null) {
-                if (sdoc[0] === 'del')
-                  os.delete(_id);
-                else
-                  os.put({_id: _id, $sim: sdoc});
-              } else {
-                os.put(Object.assign({$sim: sdoc}, doc));
-              }
+    dbBroker.withDB(db.dbId, ()=>{
+      for(const modelName of models) {
+        const docs = pu[modelName];
+        const simDocs = Model._getProp(db.dbId, modelName, 'simDocs');
+        const os = tran.objectStore(modelName);
+        for (const _id in docs) {
+          const doc = docs[_id];
+          const sdoc = simDocs === undefined ? undefined : simDocs[_id];
+          if (sdoc === undefined)
+            doc !== null ? os.put(doc) : os.delete(_id);
+          else {
+            if (doc === null) {
+              if (sdoc[0] === 'del')
+                os.delete(_id);
+              else
+                os.put({_id: _id, $sim: sdoc});
+            } else {
+              os.put(Object.assign({$sim: sdoc}, doc));
             }
           }
         }
-      });
+      }
     });
   };
 

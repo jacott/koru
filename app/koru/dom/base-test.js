@@ -160,7 +160,7 @@ define((require, exports, module)=>{
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
     });
 
-    test("Dom.h", ()=>{
+    test("html", ()=>{
       /**
        * Convert an `object` into a html node.
        *
@@ -177,22 +177,24 @@ define((require, exports, module)=>{
        * @param xmlns use xmlns instead of html
 
        * @returns A Dom node
-       **/
-      api.method('h');
 
-      const obj = {class: 'greeting', id: "gId", section: {
+       * @alias h
+       **/
+      api.method();
+
+      const body = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
              {li: {width: 500, svg: [], viewBox: "0 0 100 100"}}],
       }, 'data-lang': 'en'};
 
-      const ans = util.deepCopy(obj);
-      ans.section.ul[3].li.width = '500';
+      const ans = util.deepCopy(body);
+      ans.section.ul[3].li.width = '500'; // gets converted back to string
 
-      assert.equals(Dom.htmlToJson(Dom.h(obj)), ans);
+      const section = Dom.html(body);
+      assert.equals(Dom.htmlToJson(section), ans);
 
-      if (isClient) {
-        assert(Dom.h({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS) instanceof window.SVGPathElement);
-      }
+      const path = Dom.html({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS);
+      assert(path instanceof (isClient ?  window.SVGPathElement : global.Element));
 
       const br = Dom.h({br: ''});
       assert.isNull(br.firstChild);

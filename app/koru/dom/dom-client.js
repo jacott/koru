@@ -10,7 +10,6 @@ define((require)=>{
   const {ctx$, endMarker$, private$, original$} = require('koru/symbols');
   const destoryObservers$ = Ctx[private$].destoryObservers$ = Symbol();
   const destoryWith$ = Symbol();
-  const {onDestroy$} = Ctx[private$];
 
   const vendorStylePrefix = (() => {
     const style = document.documentElement.style;

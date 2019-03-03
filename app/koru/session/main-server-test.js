@@ -1,19 +1,23 @@
 isServer && define((require, exports, module)=>{
-  const Conn    = require('koru/session/server-connection-factory').Base;
-  const koru    = require('../main');
-  const util    = require('../util');
-  const session = require('./main');
-  const message = require('./message');
-  const TH      = require('./test-helper');
+  const koru            = require('koru');
+  const message         = require('koru/session/message');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const serverSession   = require('./main-server');
+  const TH              = require('./test-helper');
 
   const {test$} = require('koru/symbols');
 
   const {stub, spy, onEnd, match: m, stubProperty} = TH;
 
-  const serverSession = require('./main-server');
+  const Session = require('./main');
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.module({subjectModule: module.get('./main'), subjectName: 'Session'});
+    });
+
     beforeEach(()=>{
       v.ws = TH.mockWs();
       v.mockSess = {
@@ -27,6 +31,26 @@ isServer && define((require, exports, module)=>{
 
     afterEach(()=>{
       v = {};
+    });
+
+    test("openBatch", ()=>{
+      /**
+       * Build an encoded batch message.
+
+       * @returns `{push, encode}`. Use `push` to append a message to the batch. Use `encode` to
+       * return the encoded batch.
+       **/
+      api.method();
+      //[
+      const {push, encode} = Session.openBatch();
+      push(['A', ['Book', {_id: 'book1', title: 'Dune'}]]);
+      push(['R', ['Book', 'book2']]);
+      const msg = encode();
+
+      assert.equals(String.fromCharCode(msg[0]), 'W');
+      assert.equals(message.decodeMessage(msg.subarray(1), Session.globalDict), [
+        ['A', ['Book', {_id: 'book1', title: 'Dune'}]], ['R', ['Book', 'book2']]]);
+      //]
     });
 
     test("versionHash", ()=>{
@@ -47,7 +71,7 @@ isServer && define((require, exports, module)=>{
       v.func(v.ws, v.ws[test$].request);
 
       assert.calledWith(v.ws.send, TH.match(arg => {
-        v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);
+        v.msg = message.decodeMessage(arg.subarray(1), Session.globalDict);
         assert.equals(v.msg, ['', 'h1', TH.match.any, TH.match.string]);
 
         return arg[0] === 88;
@@ -81,8 +105,8 @@ isServer && define((require, exports, module)=>{
 
       stub(koru, 'logger');
       v.sess.sessId = 's123';
-      func.call({send: v.send = stub()}, 'hello world');
-      assert.calledWith(koru.logger, 'ERROR', 'hello world');
+      func.call({send: v.send = stub(), sessId: 'sess123', engine: 'myEngine'}, 'hello world');
+      assert.calledWith(koru.logger, 'ERROR', 'sess123', 'myEngine', 'hello world');
     });
 
     test("clientErrorConvert", ()=>{
@@ -96,10 +120,10 @@ isServer && define((require, exports, module)=>{
       stub(koru, 'logger');
       v.sess.sessId = 's123';
       stubProperty(koru, 'clientErrorConvert', {value: clientErrorConvert});
-      func.call({send: v.send = stub()}, 'my message');
+      func.call({send: v.send = stub(), sessId: 'sess123', engine: 'myEngine'}, 'my message');
 
       assert.calledWith(
-        koru.logger, 'ERROR', 'converted');
+        koru.logger, 'ERROR', 'sess123', 'myEngine', 'converted');
     });
 
     test("onerror", ()=>{
@@ -122,7 +146,7 @@ isServer && define((require, exports, module)=>{
 
       assert.calledWith(koru.info, 'web socket error', 'my error');
       assert.called(conn.close);
-      refute(conn.sessId in session.conns);
+      refute(conn.sessId in Session.conns);
     });
 
     test("onclose", ()=>{
@@ -143,7 +167,7 @@ isServer && define((require, exports, module)=>{
       koru.fiberConnWrapper.yield();
 
       assert.called(conn.close);
-      refute(conn.sessId in session.conns);
+      refute(conn.sessId in Session.conns);
     });
   });
 });

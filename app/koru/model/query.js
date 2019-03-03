@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const koru            = require('../main');
   const util            = require('../util');
 
-  const {inspect$} = require('koru/symbols');
+  const {inspect$, private$} = require('koru/symbols');
 
   const {compare, deepEqual} = util;
 
@@ -374,10 +374,10 @@ define((require, exports, module)=>{
     return Query;
   };
 
-  exports = __init__(require('../env!./query'));
-  exports.__init__ = __init__;
+  const Query = __init__(require('../env!./query'));
+  Query.__init__ = __init__;
 
-  module.onUnload(()=>{exports._unload && exports._unload()});
+  module.onUnload(()=>{Query[private$] && Query[private$].unload && Query[private$].unload()});
 
-  return exports;
+  return Query;
 });

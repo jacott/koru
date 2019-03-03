@@ -16,13 +16,20 @@ define((require, exports, module)=>{
   const pv = ModelMap[private$];
   const {makeDoc$, docCache$} = pv;
 
-  const uniqueIndexes = {};
-  const indexes = {};
   const _resetDocs = {};
 
   let _support, BaseModel;
 
-  session.registerGlobalDictionaryAdder(module, addToDictionary);
+  session.registerGlobalDictionaryAdder(module, adder => {
+    for (const mname in ModelMap) {
+      adder(mname);
+      const model = ModelMap[mname];
+      for (let name in model.$fields) {
+        adder(name);
+      }
+    }
+    for (const name in session._rpcs) adder(name);
+  });
 
   koru.onunload(module, ()=>{session.deregisterGlobalDictionaryAdder(module)});
 
@@ -36,15 +43,26 @@ define((require, exports, module)=>{
       get: dbBrokerDesc.get, set: dbBrokerDesc.set});
   }
 
+  function findById(id) {
+    if (id == null) return;
+    if (typeof id !== 'string') throw new Error('invalid id: '+ id);
+    let doc = this._$docCacheGet(id);
+    if (doc === undefined) {
+      const rec = this.docs.findOne({_id: id});
+      if (rec !== undefined) {
+        doc = new this(rec);
+        this._$docCacheSet(doc);
+      }
+    }
+    return doc;
+  }
+
   const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;
       if (drop === 'drop')
         model.db.dropTable(model.modelName);
       model.db = model.docs = null;
-
-      delete uniqueIndexes[model.modelName];
-      delete indexes[model.modelName];
     },
 
     init(_BaseModel, _baseSupport) {
@@ -54,24 +72,7 @@ define((require, exports, module)=>{
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 
-      function addUniqueIndex(...args) {
-        return prepareIndex(uniqueIndexes, this, args);
-      }
-
-      function ensureIndex(model, args, opts) {
-        if (util.Fiber.current) ensureIndex();
-        else util.Fiber(ensureIndex).run();
-
-        function ensureIndex() {
-          model.docs.ensureIndex(buidlKeys(args), opts);
-        }
-      }
-
-      function addIndex(...args) {
-        return prepareIndex(indexes, this, args);
-      }
-
-      function prepareIndex(type, model, args) {
+      const prepareIndex = (model, args) => {
         let filterTest;
         if (typeof args[args.length-1] === 'function') {
           filterTest = model.query;
@@ -79,8 +80,6 @@ define((require, exports, module)=>{
           --args.length;
         }
         const name = model.modelName;
-        const queue = type[name] || (type[name] = []);
-        queue.push(args);
         const sort = [];
         let dir = 1, from = -1;
         for(let i = 0; i < args.length; ++i) {
@@ -96,23 +95,13 @@ define((require, exports, module)=>{
           if (from == -1) from = i;
         }
         return {model, sort, from: args.slice(from), filterTest, stop: koru.nullFunc};
-      }
+      };
 
-      function _ensureIndexes(type, options) {
-        for(let name in type) {
-          const queue = type[name];
-          const model = ModelMap[name];
-          util.forEach(queue, args => {ensureIndex(model, args, options)});
-        }
-      }
+      function addUniqueIndex(...args) {return prepareIndex(this, args)}
 
-      function ensureIndexes () {
-        _ensureIndexes(uniqueIndexes, {unique : true, sparse: true});
-        _ensureIndexes(indexes);
-      }
+      function addIndex(...args) {return prepareIndex(this, args)}
 
       util.mergeNoEnum(ModelMap, {
-        ensureIndexes,
         get defaultDb() {return driver.defaultDb},
       });
 
@@ -331,42 +320,6 @@ define((require, exports, module)=>{
       });
     },
   };
-
-  function buidlKeys(args) {
-    const keys = {};
-    for(let i = 0; i < args.length; ++i) {
-      const name = args[i];
-      if (typeof args[i + 1] === 'number')
-        keys[name] = args[++i];
-      else
-        keys[name] = 1;
-    }
-    return keys;
-  }
-
-  function findById(id) {
-    if (id == null) return;
-    if (typeof id !== 'string') throw new Error('invalid id: '+ id);
-    let doc = this._$docCacheGet(id);
-    if (doc === undefined) {
-      const rec = this.docs.findOne({_id: id});
-      if (rec !== undefined) {
-        doc = new this(rec);
-        this._$docCacheSet(doc);
-      }
-    }
-    return doc;
-  }
-
-  function addToDictionary(adder) {
-    for (let mname in ModelMap) {
-      adder(mname);
-      const model = ModelMap[mname];
-      for (let name in model.$fields) {
-        adder(name);
-      }
-    }
-  }
 
   return ModelEnv;
 });

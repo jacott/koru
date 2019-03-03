@@ -1,8 +1,12 @@
-define((require, exports, module)=>{
+isServer && define((require, exports, module)=>{
+  /**
+   * dbBroker allows for multiple databases to be connected to one nodejs instance
+   **/
   const koru            = require('koru/main');
   const DocChange       = require('koru/model/doc-change');
   const Driver          = require('koru/pg/driver');
   const session         = require('koru/session');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
   const Model           = require('./main');
   const TH              = require('./test-helper');
@@ -11,6 +15,7 @@ define((require, exports, module)=>{
   const {stub, spy, onEnd} = TH;
 
   const sut = require('./db-broker');
+  const dbBroker = sut;
 
   const Future   = util.Future;
 
@@ -31,6 +36,7 @@ define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
+      api.module({subjectName: 'dbBroker'});
       TH.noInfo();
       v.TestModel = Model.define('TestModel');
       v.TestModel.defineFields({name: 'text'});
@@ -48,7 +54,11 @@ define((require, exports, module)=>{
       v = {};
     });
 
-    test("dbBroker.db", ()=>{
+    test("db", ()=>{
+      /**
+       * The database for the current thread
+       **/
+      api.property();
       const {TestModel, altDb, defDb} = v;
       v.doc = TestModel.create({name: 'bar1'});
       v.doc = TestModel.create({name: 'bar2'});
@@ -82,46 +92,57 @@ define((require, exports, module)=>{
     });
 
     test("makeFactory", ()=>{
-      class DBRunner {
-        constructor(a, b) {this.db=sut.db; this.a = a; this.b = b}
+      /**
+       * Make a factory that will create runners as needed for the current thread DB. Runners are
+       * useful to keep state information on a per DB basis
 
-        stop() {this.stopped = true}
+       * @param {[any-type]} args arbitrary arguments to pass to the constructor
+       **/
+      api.method();
+      const {defDb, altDb} = v;
+      //[
+      class DBRunner extends dbBroker.DBRunner {
+        constructor(a, b) {
+          super();
+          this.a = a; this.b = b;
+          this.hasStopped = false;
+        }
+
+        stopped() {this.hasStopped = true}
       }
 
-      const dbs = sut.makeFactory(DBRunner, 1, 2);
+      const DBS = sut.makeFactory(DBRunner, 1, 2);
 
-      const defRunner = dbs.current;
+      const defRunner = DBS.current;
 
       assert.same(defRunner.a, 1);
       assert.same(defRunner.b, 2);
 
 
       assert.same(defRunner.constructor, DBRunner);
-      assert.same(defRunner.db, v.defDb);
+      assert.same(defRunner.db, defDb);
 
-      sut.db = v.altDb;
+      sut.db = altDb;
 
-      const altRunner = dbs.current;
+      const altRunner = DBS.current;
 
-      assert.same(altRunner.db, v.altDb);
+      assert.same(altRunner.db, altDb);
 
-      sut.db = v.defDb;
+      sut.db = defDb;
 
-      assert.same(dbs.current, defRunner);
+      assert.same(DBS.current, defRunner);
 
-      assert.equals(Object.keys(dbs.list).sort(), ['alt', 'default']);
+      assert.equals(Object.keys(DBS.list).sort(), ['alt', 'default']);
 
-      assert.same(defRunner.stopped, undefined);
+      assert.isFalse(defRunner.hasStopped);
 
-      dbs.stop();
+      DBS.stop();
 
-      assert.equals(dbs.list, {});
+      assert.equals(DBS.list, {});
 
-      assert.isTrue(defRunner.stopped);
-      assert.isTrue(altRunner.stopped);
-
-
-
+      assert.isTrue(defRunner.hasStopped);
+      assert.isTrue(altRunner.hasStopped);
+      //]
     });
   });
 });

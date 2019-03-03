@@ -76,7 +76,7 @@ m1 intro
           ]},
           {tr: [
             {class: "searchable", td: 'singleton'},
-            {td: {a: ['mod'], href: '#my/mod'}},
+            {td: {a: ['MyMod'], href: '#my/mod'}},
             {class: 'jsdoc-info', 'data-env': 'server', td: {div: [
               {p: [
                 'prints ',

@@ -8,15 +8,15 @@ define((require)=>{
     webSocketServerFactory(session);
 
     session.provide('L', function (data) {
-      koru.logger('INFO', data);
+      koru.logger('INFO', this.engine, data);
     });
     session.provide('E', function (data) {
       if (koru.clientErrorConvert !== undefined)
         data = koru.clientErrorConvert(data);
-      koru.logger('ERROR', data);
+      koru.logger('ERROR', this.sessId, this.engine, data);
     });
 
-    session.connectionIntercept = function (newSession, ws, ugr, remoteAddress) {
+    session.connectionIntercept = (newSession, ws, ugr, remoteAddress)=>{
       if (/127\.0\.0\.1/.test(remoteAddress) && ugr.url === '/rc') {
         session.remoteControl && session.remoteControl(ws);
         return;
@@ -24,7 +24,8 @@ define((require)=>{
       newSession();
     };
 
-    session.wss = new (session._wssOverride || WebSocket.Server)({server: server, perMessageDeflate: false}),
+    session.wss = new (session._wssOverride || WebSocket.Server)({
+      server: server, perMessageDeflate: false}),
 
     session.wss.on('connection', session.onConnection);
 

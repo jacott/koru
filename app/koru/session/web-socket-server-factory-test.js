@@ -1,14 +1,15 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const TransQueue      = require('koru/model/trans-queue');
   const Random          = require('koru/random');
   const SessionBase     = require('koru/session/base').constructor;
   const message         = require('koru/session/message');
-  const Conn            = require('koru/session/server-connection-factory').Base;
+  const ServerConnection = require('koru/session/server-connection');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const ConnectionBase  = require('./server-connection-factory').Base;
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, intercept} = TH;
 
   const {test$} = require('koru/symbols');
 
@@ -35,6 +36,10 @@ define((require, exports, module)=>{
     });
 
     group("rpc", ()=>{
+      const makeConn = ()=> util.merge(new ServerConnection(v.sess, v.ws, '123', () => {}), {
+        sendBinary: stub(),
+      });
+
       beforeEach(()=>{
         v.sess = sut(v.mockSess);
         v.msgId = 'm123';
@@ -44,14 +49,53 @@ define((require, exports, module)=>{
           const data = [v.msgId, 'foo.rpc', 1, 2, 3];
           const buffer = message.encodeMessage('M', data, v.sess.globalDict);
 
-          v.conn = util.merge(new Conn(v.ws, '123', () => {}), {
-            batchMessages: stub(),
-            releaseMessages: stub(),
-            abortMessages: stub(),
-            sendBinary: stub(),
-          });
+          v.conn = makeConn();
           v.sess._onMessage(v.conn, buffer);
         };
+      });
+
+      test("in TransQueue transaction failure", ()=>{
+        let inTrans = false;
+        v.sess.defineRpc('foo.rpc', ()=>{
+          assert.isTrue(inTrans);
+          throw new koru.Error(404, 'not found');
+        });
+        intercept(TransQueue, 'transaction', func =>{
+          inTrans = true;
+          try {
+            return func();
+          } finally {
+            inTrans = false;
+          }
+        });
+        const conn = makeConn();
+        conn.sendBinary.invokes(c => {
+          assert.isFalse(inTrans);
+        });
+        v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
+        assert.calledWith(conn.sendBinary, 'M', ['m123', 'e', 404, 'not found']);
+      });
+
+      test("in TransQueue transaction success", ()=>{
+        let inTrans = false;
+        v.sess.defineRpc('foo.rpc', ()=>{
+          assert.isTrue(inTrans);
+          return "success";
+        });
+        intercept(TransQueue, 'transaction', func =>{
+          inTrans = true;
+          try {
+            return func();
+          } finally {
+            inTrans = false;
+          }
+        });
+        const conn = makeConn();
+        conn.sendBinary.invokes(c => {
+          assert.isFalse(inTrans);
+        });
+        v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
+        assert.calledWith(conn.sendBinary, 'M', ['m123', 'r', 'success']);
       });
 
       test("Random.id", ()=>{
@@ -82,39 +126,6 @@ define((require, exports, module)=>{
         });
 
         refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
-      });
-
-      group("batch messages", ()=>{
-        test("send after return", ()=>{
-          v.run((one, two, three) => {
-            assert.called(v.conn.batchMessages);
-            refute.called(v.conn.releaseMessages);
-            return 'result';
-          });
-
-          refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'r', 'result']);
-          assert(v.conn.releaseMessages.calledAfter(v.conn.sendBinary));
-          refute.called(v.conn.abortMessages);
-        });
-
-        test("abort", ()=>{
-          v.run((one, two, three) => {
-            assert.called(v.conn.batchMessages);
-            refute.called(v.conn.releaseMessages);
-            refute.called(v.conn.abortMessages);
-            stub(koru, 'error');
-            throw 'test aborted';
-          });
-
-          koru.error.restore();
-
-          refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'e', 'test aborted']);
-          assert(v.conn.abortMessages.calledBefore(v.conn.sendBinary));
-          refute.called(v.conn.releaseMessages);
-        });
-
       });
 
       test("result", ()=>{

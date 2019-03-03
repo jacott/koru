@@ -120,7 +120,7 @@ define((require, exports, module)=>{
         findById,
         get serverQuery() {
           const query = new Query(this);
-          query.isFromServer = true;
+          query.fromServer();
           return query;
         },
         createStopGap(attrs) {

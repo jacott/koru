@@ -1,14 +1,14 @@
 define((require, exports, module)=>{
+  const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
+  const ServerConnection = require('koru/session/server-connection');
   const accSha256       = require('koru/srp/acc-sha256');
   const koru            = require('../main');
   const util            = require('../util');
   const message         = require('./message');
 
   function webSocketServerFactory(session, execWrapper) {
-    const Connection = require('./server-connection-factory')(session);
-
     let sessCounter = 0;
     const globalDictAdders = {};
     let _globalDict, _globalDictEncoded;
@@ -70,7 +70,7 @@ define((require, exports, module)=>{
 
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
-        const conn = session.conns[sessId] = new Connection(ws, ugr, sessId, () => {
+        const conn = session.conns[sessId] = new ServerConnection(session, ws, ugr, sessId, () => {
           ws.close();
           const conn = session.conns[sessId];
           if (conn) {
@@ -136,9 +136,12 @@ define((require, exports, module)=>{
         return buildGlobalDict();
       },
 
+      openBatch() {
+        return message.openEncoder('W', this.globalDict);
+      },
+
       // for testing
       get _sessCounter() {return sessCounter},
-      get _Connection() {return Connection},
       get _globalDictAdders() {return globalDictAdders},
     });
 
@@ -163,24 +166,23 @@ define((require, exports, module)=>{
     session.provide('M', function (data) {
       const msgId = data[0];
       const func = session._rpcs[data[1]];
-      this.batchMessages();
       try {
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
-        util.thread.msgId = msgId;
-        if (msgId.length > 17)
-          util.thread.random = new Random(msgId);
-        const result = func.apply(this, data.slice(2));
+        const result = TransQueue.transaction(()=>{
+          util.thread.msgId = msgId;
+          if (msgId.length > 17)
+            util.thread.random = new Random(msgId);
+          return func.apply(this, data.slice(2));
+        });
         this.sendBinary('M', [msgId, 'r', result]);
-        this.releaseMessages();
       } catch(ex) {
-        this.abortMessages();
-        if (ex.error) {
-          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
-        } else {
+        if (ex.error === void 0) {
           koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
+        } else {
+          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         }
       }
     });

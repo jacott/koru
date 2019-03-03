@@ -2,6 +2,7 @@ define((require, exports, module)=>{
   const koru            = require('koru/main');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
+  const Query           = require('koru/model/query');
   const Driver          = require('koru/pg/driver');
   const session         = require('koru/session');
   const util            = require('koru/util');
@@ -441,15 +442,16 @@ define((require, exports, module)=>{
     test("addUniqueIndex", ()=>{
       const TestModel = Model.define('TestModel');
 
-      const ensureIndex = stub(TestModel.docs, 'ensureIndex');
+      const ignoreme = () => {};
+      const ans = TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd', ignoreme);
 
-      TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd', ignoreme=>{});
-
-      refute.called(ensureIndex);
-
-      Model.ensureIndexes();
-
-      assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1}, {sparse: true, unique: true});
+      assert.equals(ans, {
+        model: TestModel,
+        sort: ['a', 'b', 'c', -1, 'd'],
+        filterTest: m(q => q instanceof Query),
+        from: [-1, 'c', 1, 'd'],
+        stop: koru.nullFunc,
+      });
     });
 
     test("addIndex", ()=>{
@@ -457,13 +459,15 @@ define((require, exports, module)=>{
 
       const ensureIndex = stub(TestModel.docs, 'ensureIndex');
 
-      TestModel.addIndex('a', 'b', -1, 'c', 1, 'd');
+      const ans = TestModel.addIndex('a', 'b', -1, 'c', 1, 'd');
 
-      refute.called(ensureIndex);
-
-      Model.ensureIndexes();
-
-      assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
+      assert.equals(ans, {
+        model: TestModel,
+        sort: ['a', 'b', 'c', -1, 'd'],
+        filterTest: void 0,
+        from: [-1, 'c', 1, 'd'],
+        stop: koru.nullFunc,
+      });
     });
 
     test("transaction", ()=>{

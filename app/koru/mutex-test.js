@@ -17,7 +17,7 @@ isServer && define((require, exports, module)=>{
   const Mutex = require('./mutex');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("new, lock, unlock", ()=>{
+    test("constructor", ()=>{
       /**
        * Construct a Mutex.
        **/
@@ -50,18 +50,37 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("sequencing", ()=>{
-      api.protoMethod("lock", {intro: ()=>{
-        /**
-         * Aquire a lock on the mutex. Will pause until the mutex is unlocked
-         **/
-      }});
-      api.protoMethod("unlock", {intro: ()=>{
-        /**
-         * Release a lock on the mutex. Will allow another fiber to aquire the lock
-         **/
-      }});
+    test("lock", ()=>{
+      /**
+       * Aquire a lock on the mutex. Will pause until the mutex is unlocked
+       **/
+      api.protoMethod();
+      //[
+      const mutex = new Mutex;
 
+      assert.isFalse(mutex.isLocked);
+
+      mutex.lock();
+      assert.isTrue(mutex.isLocked);
+      //]
+    });
+
+    test("unlock", ()=>{
+      /**
+       * Release a lock on the mutex. Will allow another fiber to aquire the lock
+       **/
+      api.protoMethod();
+      //[
+      const mutex = new Mutex;
+      mutex.lock();
+      assert.isTrue(mutex.isLocked);
+
+      mutex.unlock();
+      assert.isFalse(mutex.isLocked);
+      //]
+    });
+
+    test("sequencing", ()=>{
       const mutex = new Mutex;
 
       mutex.lock();
@@ -73,20 +92,20 @@ isServer && define((require, exports, module)=>{
 
       const runInner = (cb) =>{
         koru.runFiber(()=>{
-          if (ex !== undefined) return;
+          if (ex !== void 0) return;
           try {
             mutex.lock();
             cb();
             ++counter;
           } catch (e) {
-            if (ex === undefined); {
+            if (ex === void 0); {
               ex = e;
             }
           } finally {
             try {
               mutex.unlock();
             } catch(e) {
-              if (ex === undefined); {
+              if (ex === void 0); {
                 ex = e;
               }
             }

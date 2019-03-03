@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const Libpq = requirejs.nodeRequire('pg-libpq');
   const Observable      = require('koru/observable');
+  const SQLStatement    = require('koru/pg/sql-statement');
   const koru            = require('../main');
   const match           = require('../match');
   const Pool            = require('../pool-server');
@@ -60,15 +61,15 @@ define((require, exports, module)=>{
 
   const releaseConn = client =>{
     const tx = util.thread[client[tx$]];
-    if (tx !== undefined && --tx.count === 0) {
+    if (tx !== void 0 && --tx.count === 0) {
       fetchPool(client).release(tx);
-      util.thread[client[tx$]] = undefined;
+      util.thread[client[tx$]] = void 0;
     }
   };
 
   const fetchPool = client =>{
     const pool = client[pool$];
-    if (pool !== undefined) return pool;
+    if (pool !== void 0) return pool;
     return client[pool$] = new Pool({
       name: client.name,
       create(callback) {
@@ -103,7 +104,7 @@ define((require, exports, module)=>{
 
       return future.wait();
     } catch(ex) {
-      if (ex.sqlState === undefined) {
+      if (ex.sqlState === void 0) {
         conn.finish();
       }
 
@@ -131,7 +132,7 @@ define((require, exports, module)=>{
     let add, col;
     const result = ['_id'];
     for (col in fields) {
-      if (add === undefined) {
+      if (add === void 0) {
         add = !! fields[col];
       } else if (add !== !! fields[col])
         throw new Error('fields must be all true or all false');
@@ -147,7 +148,7 @@ define((require, exports, module)=>{
   };
 
   const runOnCommit = (onCommit)=>{
-    while (onCommit !== undefined) {
+    while (onCommit !== void 0) {
       const {action} = onCommit;
       onCommit = onCommit.next;
       action();
@@ -179,15 +180,15 @@ define((require, exports, module)=>{
 
     end() {
       const pool = this[pool$];
-      if (pool !== undefined) {
+      if (pool !== void 0) {
         pool.drain();
       }
-      this[pool$] = undefined;
+      this[pool$] = void 0;
     }
 
     onCommit(action) {
       const tx = util.thread[this[tx$]];
-      if (tx === undefined || tx.transaction === undefined) {
+      if (tx === void 0 || tx.transaction === void 0) {
         action();
       } else if (tx.transaction === 'COMMIT') {
         tx[onCommit$] = {action, next: tx[onCommit$]};
@@ -217,16 +218,31 @@ define((require, exports, module)=>{
       return this.query(text, params).rows[0];
     }
 
-    query(text, params) {
-      if (params && ! Array.isArray(params)) {
-        const fields = params;
-        const posMap = {};
-        let count = 0;
-        params = [];
-        text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
-          params.push(fields[key]),
-          (posMap[key] = `$${++count}`)));
+    query(text, ...args) {
+      if (text instanceof SQLStatement) {
+        const params = args.length == 0 ? void 0 : text.convertArgs(args[0]);
+        return this.withConn(conn => query(conn, text.text, params));
       }
+
+      if (Array.isArray(text)) {
+        let sqlStr = text[0];
+        for(let i = 1; i <= args.length; ++i) {
+          sqlStr += '$' + i + text[i];
+        }
+        return this.withConn(conn => query(conn, sqlStr, args));;
+      }
+      if (args.length == 0)
+        return this.withConn(conn => query(conn, text));
+
+      const arg0 = args[0];
+      if (Array.isArray(arg0))
+        return this.withConn(conn => query(conn, text, arg0));
+
+      const posMap = {}, params = [];
+      let count = 0;
+      text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
+        params.push(arg0[key]),
+          (posMap[key] = `$${++count}`)));
       return this.withConn(conn => query(conn, text, params));
     }
 
@@ -252,6 +268,11 @@ define((require, exports, module)=>{
 
     dropTable(name) {
       this.query(`DROP TABLE IF EXISTS "${name}"`);
+    }
+
+    get inTransaction() {
+      const tx = util.thread[this[tx$]];
+      return (tx && tx.transaction) === 'COMMIT';
     }
 
     startTransaction() {
@@ -286,7 +307,7 @@ define((require, exports, module)=>{
           }
         } else {
           const onCommits = tx[onCommit$];
-          tx[onCommit$] = undefined;
+          tx[onCommit$] = void 0;
           const command = isAbort ? 'ROLLBACK' : 'COMMIT';
           tx.transaction = null;
           if (! tx.conn.isClosed()) {
@@ -339,7 +360,7 @@ define((require, exports, module)=>{
         } finally {
           const onCommits = tx[onCommit$];
 
-          tx[onCommit$] = undefined;
+          tx[onCommit$] = void 0;
           const command = tx.transaction;
           tx.transaction = null;
           if (! tx.conn.isClosed()) {
@@ -355,7 +376,8 @@ define((require, exports, module)=>{
         releaseConn(this);
       }
     }
-  };
+  }
+  Client.prototype.exec = query;
 
   Client.prototype[private$] = {tx$};
 
@@ -380,7 +402,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     constructor(name, schema, client) {
       this._name = name;
       this._client = client;
-      this.ready = undefined;
+      this.ready = void 0;
       Object.defineProperty(this, 'schema', {
         configurable: true,
         get: ()=> schema,
@@ -397,7 +419,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     [inspect$]() {return `PgTable("${this._name}")`}
 
     _resetTable() {
-      this._ready = undefined;
+      this._ready = void 0;
     }
 
     _ensureTable() {
@@ -511,7 +533,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
       const where = this.where(whereParams, set.values);
 
-      return performTransaction(this, where === undefined ? sql : `${sql} WHERE ${where}`, set);
+      return performTransaction(this, where === void 0 ? sql : `${sql} WHERE ${where}`, set);
     }
 
     where(query, whereValues) {
@@ -541,7 +563,16 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       const foundInSql = (value, result)=>{
         if (typeof value === 'string')
           result.push(value);
-        else {
+        else if (Array.isArray(value[0])) {
+          const strings = value[0];
+          let sqlStr = strings[0];
+          let i = 1;
+          for(; i < value.length; ++i) {
+            sqlStr += '$' + (++count) + strings[i];
+            whereValues.push(value[i]);
+          }
+          result.push(sqlStr);
+        } else {
           const items = value[1];
           const paramNos = {};
           if (Array.isArray(items)) {
@@ -550,10 +581,14 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
               ++count;
               whereValues.push(item);
             });
+          } else if (value[0] instanceof SQLStatement) {
+            const statment = value[0];
+            statment.convertArgs(items, whereValues);
+            result.push(statment.text);
           } else {
             result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
               const tag = paramNos[key];
-              if (tag !== undefined) return tag;
+              if (tag !== void 0) return tag;
               whereValues.push(items[key]);
               return paramNos[key] = '$'+ ++count;
             }));
@@ -669,7 +704,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
                 let regex;
                 for(const vk in value) {
                   const op = OPS[vk];
-                  if (op !== undefined) {
+                  if (op !== void 0) {
                     result.push(qkey+op+'$'+ ++count);
                     whereValues.push(value[vk]);
                     continue;
@@ -720,8 +755,8 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
           whereValues.push(query.singleId);
         }
 
-        query._wheres !== undefined && foundIn(query._wheres, whereSql);
-        query._whereSqls !== undefined && query._whereSqls.forEach(n => {
+        query._wheres !== void 0 && foundIn(query._wheres, whereSql);
+        query._whereSqls !== void 0 && query._whereSqls.forEach(n => {
           foundInSql(n, whereSql);
         });
         if (fields = query._whereNots) {
@@ -768,7 +803,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         where = table.where(where, values);
       }
 
-      if (where === undefined)
+      if (where === void 0)
         return new Cursor(this, sql, null, options);
 
       sql = sql+' WHERE '+where;
@@ -828,7 +863,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     if (cursor._batchSize) {
       const cname = 'c'+(++cursorCount).toString(36);
-      if (tx !== undefined && tx.transaction !== null) {
+      if (tx !== void 0 && tx.transaction !== null) {
         cursor._inTran = true;
         client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
       } else client.transaction(()=>{
@@ -875,8 +910,8 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     next(count) {
       initCursor(this);
-      if (this._index !== undefined) {
-        if (count === undefined) {
+      if (this._index !== void 0) {
+        if (count === void 0) {
           if (this._index >= this._rows.length)
             return;
           return this._rows[this._index++];
@@ -886,9 +921,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
           return this._rows.slice(this._index - count, this._index);
         }
       } else {
-        const c = count === undefined ? 1 : count;
+        const c = count === void 0 ? 1 : count;
         const result = this.table._client.query('FETCH '+c+' '+this._name);
-        return count === undefined ? result[0] : result;
+        return count === void 0 ? result[0] : result;
       }
     }
 
@@ -932,7 +967,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       values = [];
       where = table.where(where, values);
     }
-    if (where === undefined) {
+    if (where === void 0) {
       if (suffix) sql += suffix;
       return table._client.query(sql);
     }
@@ -944,13 +979,13 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   };
 
   const toColumns = (table, params, cols=Object.keys(params))=>{
-    const needCols = autoSchema ? {} : undefined;
+    const needCols = autoSchema ? {} : void 0;
     const values = new Array(cols.length);
     const colMap = table._colMap;
 
     util.forEach(cols, (col, i)=>{
       let value = params[col];
-      if (value === undefined) value = null;
+      if (value === void 0) value = null;
       const desc = colMap[col];
       if (desc) {
         switch (desc.data_type) {
@@ -978,7 +1013,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       }
       values[i] = value;
 
-      if (needCols !== undefined && ! desc) {
+      if (needCols !== void 0 && ! desc) {
         needCols[col] = mapType(col, params[col]);
       }
     });
@@ -1034,7 +1069,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   const mapType = (col, value) => jsFieldToPg(col, toBaseType(value));
 
   const pgFieldType = (colSchema)=>{
-    const type = (typeof colSchema === 'string') ? colSchema : colSchema === undefined
+    const type = (typeof colSchema === 'string') ? colSchema : colSchema === void 0
           ? 'text' : colSchema.type;
 
     switch(type) {
@@ -1064,7 +1099,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     let defaultVal = '';
 
     const richType = (typeof colSchema === 'string')
-          ? colSchema : colSchema === undefined ? 'text' : colSchema.type;
+          ? colSchema : colSchema === void 0 ? 'text' : colSchema.type;
 
     const type = pgFieldType(richType);
 
@@ -1152,7 +1187,6 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
   };
 
   koru.onunload(module, closeDefaultDb);
-  koru.onunload(module, 'reload');
 
   return Driver;
 });

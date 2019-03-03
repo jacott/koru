@@ -160,6 +160,17 @@ a(b.foo(
         assert.equals(jsParser.extractCallSignature("class()"), "class()");
       });
 
+      test("super constructor", ()=>{
+        class SuperSig {
+          constructor(a, b) {}
+        }
+        class Sig extends SuperSig {
+        }
+
+        assert.equals(jsParser.extractCallSignature(Sig),
+                      'constructor(a, b)');
+      });
+
       test("no constructor", ()=>{
         class Sig {}
 

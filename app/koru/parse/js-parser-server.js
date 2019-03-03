@@ -25,8 +25,23 @@ define((require)=> JsPaser => {
 
     let srcPos = 0;
 
-    const parseOpts = {module: true};
-    const ast = JsPaser.parse(codeIn, parseOpts);
+    const parseOpts = {module: true, bare_returns: true};
+    let ast, wrapper = false;
+    try {
+      ast = JsPaser.parse(codeIn, parseOpts);
+    } catch(ex) {
+      if (/Unexpected await identifier inside strict mode/.test(ex.message)) {
+        try {
+          codeIn = "async ()=>{"+codeIn+"}";
+          ast = terser.parse(codeIn, parseOpts);
+          wrapper = true;
+        } catch(_) {
+          throw ex;
+        }
+      } else {
+        throw ex;
+      }
+    }
 
     const div = document.createElement(tag);
     div.className = 'highlight';
@@ -379,9 +394,21 @@ define((require)=> JsPaser => {
       return true;
     });
 
-    ast.walk(visitor);
+    if (wrapper) {
+      ast.walk(new terser.TreeWalker((node) => {
+        if (node.TYPE === 'Arrow') {
+          const {body} = node;
+          srcPos = body[0].start.pos;
+          expr(body);
+          catchup(body[body.length-1].end.endpos);
+          return true;
+        }
+      }));
+    } else {
+      ast.walk(visitor);
 
-    catchup(codeIn.length);
+      catchup(codeIn.length);
+    }
 
     return div;
   };

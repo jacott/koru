@@ -8,7 +8,7 @@ define((require)=>{
 
   const {private$} = require('koru/symbols');
 
-  const return$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
+  const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
   const noContent = (tag)=> opts =>{
     const attrs = {[tag]: ''};
@@ -217,7 +217,8 @@ define((require)=>{
           api,
           property.info
             .replace(/\$\{value\}/, '[](#jsdoc-value)'),
-          argMap
+          argMap,
+          property
         ) : value;
         if (property.info) {
           const vref = findHref(info, '#jsdoc-value', true);
@@ -225,6 +226,7 @@ define((require)=>{
             vref.parentNode.replaceChild(value, vref);
         }
         const ap = extractTypes(
+          api,
           property.calls ?
             argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
           : argProfile([[property.value]], value => value[0])
@@ -264,7 +266,7 @@ define((require)=>{
     ArrayBuffer: true,
     Boolean: true,
     Date: true,
-    Element: 'Web/API',
+    Element: 'Web/API/',
     Error: true,
     EvalError: true,
     Generator: true,
@@ -279,7 +281,7 @@ define((require)=>{
     Null: true,
     Number: true,
     Object: true,
-    Primitive: 'Glossary',
+    Primitive: 'Glossary/',
     Promise: true,
     RangeError: true,
     ReferenceError: true,
@@ -297,6 +299,7 @@ define((require)=>{
     URIError: true,
     WeakMap: true,
     WeakSet: true,
+    TemplateLiteral: 'Web/JavaScript/Reference/Template_literals',
   };
 
   const BLOCK_TAGS = {
@@ -305,6 +308,20 @@ define((require)=>{
       ans.classList.add('jsdoc-deprecated');
       ans.insertBefore(Dom.h({h1: 'Deprecated'}), ans.firstChild);
       div.appendChild(ans);
+    },
+    alias: (api, row, argMap, div)=>{
+      const container = div[alias$] || (div[alias$] = Dom.h({class: "jsdoc-alias", h1: ["Aliases"]}));
+      row = row.slice(6);
+      const idx = row.indexOf(' ');
+      const name = row.slice(0, idx == -1 ? void 0 : idx);
+      row = row.slice(name.length);
+
+      const desc = jsdocToHtml(api, row, {}).firstChild || Dom.h({});
+
+      desc.insertBefore(Dom.h({class: 'jsdoc-alias-term', code: [name]}), desc.firstChild);
+      container.appendChild(desc);
+      if (container.parentNode === null)
+        div.appendChild(container);
     },
     param: (api, row, argMap)=>{
       const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
@@ -370,16 +387,22 @@ define((require)=>{
       prefix = node[name$]+"/"+prefix;
       node = node[parent$];
     }
-    return {node, fullPath: prefix+suffix};
+    return prefix+suffix;
   };
 
   const execInlineTag = (api, text)=>{
     if (/^\.\.?\//.test(text)) {
-      const {node, fullPath} = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
-      text = fullPath;
+      text = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
+    }
+    const idx = text.indexOf(';');
+    let suffix = '';
+    if (idx != -1) {
+      suffix = text.slice(idx+1);
+      text = text.slice(0, idx);
     }
     let [mod, type, method=''] = text.split(/([.#:]+)/);
-    let href = text.replace(/\(.*$/, '');
+    let href = text.replace(/[;\(].*$/, '');
+    if (idx != -1) method += suffix;
     if (mod) {
       const destMod = mod && api.top && api.top[mod];
       if (destMod)
@@ -390,7 +413,7 @@ define((require)=>{
       text = method;
     }
 
-    return Dom.h({class: 'jsdoc-link', a: idToText(text), $href: '#'+href});
+    return {class: 'jsdoc-link', a: idToText(text), $href: '#'+href};
   };
 
   const buildConstructor = (api, subject, {sig, intro, calls}, requireLine)=>{
@@ -574,12 +597,12 @@ define((require)=>{
     if (args.length === 0 && ret === undefined)
       return;
 
-    const retTypes = ret && ret.types && extractTypes(ret);
+    const retTypes = ret && ret.types && extractTypes(api, ret);
 
     const eachParam = arg => {
       const am = argMap[arg];
       if (am.optNames === undefined) {
-        const types = extractTypes(am);
+        const types = extractTypes(api, am);
         return {
           class: "jsdoc-arg", tr: [
             {td: am.optional ? `[${arg}]` : arg},
@@ -609,7 +632,7 @@ define((require)=>{
     ]};
   };
 
-  const extractTypes = ({types, href})=>{
+  const extractTypes = (api, {types, href})=>{
     const ans = [];
     const typeMap = {};
     for (let type in types) {
@@ -617,7 +640,17 @@ define((require)=>{
       typeMap[types[type]] = true;
       if (ans.length != 0)
         ans.push('\u200a/\u200a');
-      ans.push(targetExternal({a: idToText(types[type]), $href: (href || typeHRef)(type)}));
+      let mod = types[type];
+      if (mod !== void 0) {
+        if (mod.startsWith('../')) {
+          ans.push(execInlineTag(api, mod));
+          continue;
+        }
+        const destMod = api.top && api.top[mod];
+        if (destMod)
+          mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
+      }
+      ans.push(targetExternal({a: idToText(mod), $href: (href || typeHRef)(type)}));
     }
     return ans;
   };
@@ -691,8 +724,8 @@ define((require)=>{
     if (type.startsWith('...'))
       type = type.slice(3);
 
-    const m = /^\[([-\w]+)(?:,\.\.\.)\]$/.exec(type);
-    if (m)
+    const m = /^\[([-\w]+)(?:,\.\.\.)?\]$/.exec(type);
+    if (m !== null)
       type = m[1];
 
     let ans = hrefMap[type];
@@ -702,8 +735,8 @@ define((require)=>{
     const ct = CORE_TYPES[cType] || type === 'any-type';
     if (ct)
       return 'https://developer.mozilla.org/en-US/docs/'+
-      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
-      (type === 'any-type' ? '' : cType);
+      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct) +
+      (type === 'any-type' ? '' : ct === true || ct.endsWith('/') ? cType : '');
     return '#'+type;
   };
 
@@ -747,8 +780,7 @@ define((require)=>{
     const path = args.length == 1 ? "." : args[0];
     const name = args[args.length - 1];
     if (path !== ".") {
-      const {node, fullPath} = expandLink(api[node$], path);
-      api = api.top[fullPath];
+      api = api.top[expandLink(api[node$], path)];
     }
     const sapi = api.topics[name];
     if (sapi === void 0) throw new Error("Can't find topic "+path+":"+name+" in "+api.id+
@@ -778,14 +810,14 @@ define((require)=>{
     },
   };
 
-  const jsdocToHtml = (api, text, argMap)=>{
+  const jsdocToHtml = (api, text, argMap, env=api)=>{
     const div = document.createElement('div');
     const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
     mdRenderer.link = (href, title, text)=>{
       switch (href) {
       case '#jsdoc-tag':
-        return execInlineTag(api, text).outerHTML;
+        return Dom.h(execInlineTag(api, text)).outerHTML;
       default:
         const a = {a: text, $href: href};
         if (title) a.$title = title;
@@ -807,7 +839,7 @@ define((require)=>{
       if (action === void 0)
         return m;
       else
-        return action(args, api, argMap);
+        return action(args, env, argMap);
     });
 
     if (blockTags.length && argMap) {

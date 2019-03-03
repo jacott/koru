@@ -15,6 +15,7 @@ define((require, exports, module)=>{
     const session = this;
     const clients = {};
 
+    let lastSent = 0, lastMsg = '';
     let testMode = 'none', testExec = {client: null, server: null};
     let testClientCount = 0, pendingClientTests = [];
     let future, interceptObj;
@@ -23,7 +24,7 @@ define((require, exports, module)=>{
     const logHandle = msg =>{
       const {connection} = util.thread;
       const key = connection == null ? 'Server' : connection.engine;
-      key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
+      console.log('INFO ' + key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
       } catch(ex) {} // ignore
@@ -76,6 +77,7 @@ define((require, exports, module)=>{
     };
 
     const testWhenReady = ()=>{
+      lastSent = 0; lastMsg = '';
       if (testMode !== 'none') {
         if (testMode !== 'server' && testExec.client !== null && clientCount) {
           const apt = pendingClientTests;
@@ -194,7 +196,19 @@ define((require, exports, module)=>{
       const cs = clients[engine];
       const sent = (type !== 'R' && type !== 'F') || cs === undefined || cs.conns.size === 1;
       if (sent) {
-        ws.send(type + engine + '\x00' + msg);
+        const now = Date.now();
+        if (type !== 'R' || now-50 > lastSent) {
+          lastSent = now;
+          lastMsg !== '' && ws.send('R' + engine + '\x00' + lastMsg);
+          if (type === 'R')
+            lastMsg = msg;
+          else {
+            ws.send(type + engine + '\x00' + msg);
+            lastMsg = '';
+          }
+        } else {
+          lastMsg = msg;
+        }
       } else if (type === 'R') {
         const parts = msg.split('\x00');
         const {conns} = cs;

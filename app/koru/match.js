@@ -60,7 +60,9 @@ define((require)=>{
       any: match(() => true, 'match.any'),
       null: match(value => value === null, 'match.null'),
       nil: match(value => value == null, 'match.nil'),
-      date: match(value => value != null && value.constructor === Date && value.getDate() === value.getDate(), 'match.date'),
+      date: match(value => value != null && value.constructor === Date &&
+                  value.getDate() === value.getDate(), 'match.date'),
+      error: match(value => value instanceof Error, 'match.error'),
       integer: match(value => typeof value === 'number' && Math.floor(value) === value, 'match.integer'),
       baseObject: match(value => value != null && value.constructor === Object, 'match.baseObject'),
       object: match(value => typeof value === 'object' && value !== null, 'match.object'),

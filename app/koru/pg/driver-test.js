@@ -10,8 +10,11 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
   const util            = require('../util');
+  const SQLStatement    = require('./sql-statement');
 
   const {stub, spy, onEnd} = TH;
+
+  const API = api;
 
   const {private$} = require('koru/symbols');
   const pg = require('./driver');
@@ -29,47 +32,114 @@ isServer && define((require, exports, module)=>{
       v = {};
     });
 
-    test("::Client", ()=>{
-      const abstract = ()=>{
+    const clientSubject = () => API.innerSubject(pg.defaultDb.constructor, null, {
+      abstract() {
         /**
          * A connection to a database.
          *
-         * See {#koru/pg/driver.connect}
+         * See {#../driver.connect}
          **/
-      };
-      const Client = pg.defaultDb.constructor;
-      api.innerSubject(Client, null, {
-        abstract,
-        initExample() {
-          const Client = pg.defaultDb.constructor;
-        },
-        initInstExample() {
-          const client = pg.defaultDb;
-        },
-      });
-
-      const client = new Client('host=/var/run/postgresql dbname=korutest');
-      const client2 = new Client(undefined, 'my name');
-
-      assert.same(client._url, 'host=/var/run/postgresql dbname=korutest');
-      assert.same(client.name, 'public');
-      assert.same(client2.name, 'my name');
+          },
+      initExample() {
+        const Client = pg.defaultDb.constructor;
+      },
+      initInstExample() {
+            const client = pg.defaultDb;
+      },
     });
 
-    test("jsFieldToPg", ()=>{
-      api.innerSubject(pg.defaultDb.constructor)
-        .protoMethod('jsFieldToPg');
+    group("Client", ()=>{
+      let Client, api;
 
-      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'text'), '"foo" text');
-      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'color'), '"foo" text collate "C"');
-      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'belongs_to'), '"foo" text collate "C"');
-      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'has_many'), '"foo" text[] collate "C"');
-      assert.equals(pg.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
-      assert.equals(pg.defaultDb.jsFieldToPg('name'), '"name" text');
-      assert.equals(pg.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
-      assert.equals(pg.defaultDb.jsFieldToPg('map', {type: 'object',
-                                                      default: {treasure: 'lost'}}),
-                    `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
+      before(()=>{
+        Client = pg.defaultDb.constructor;
+        api = clientSubject();
+      });
+
+      test("constructor", ()=>{
+        const Client = api.class();
+        //[                  const Client = pg.defaultDb.constructor;
+        const client = new Client('host=/var/run/postgresql dbname=korutest');
+        const client2 = new Client(undefined, 'my name');
+
+        assert.same(client._url, 'host=/var/run/postgresql dbname=korutest');
+        assert.same(client.name, 'public');
+        assert.same(client2.name, 'my name');
+        //]
+      });
+
+      test("jsFieldToPg", ()=>{
+        api.protoMethod();
+        //[
+        assert.equals(pg.defaultDb.jsFieldToPg('foo', 'text'), '"foo" text');
+        assert.equals(pg.defaultDb.jsFieldToPg('foo', 'id'), '"foo" text collate "C"');
+        assert.equals(pg.defaultDb.jsFieldToPg('foo', 'color'), '"foo" text collate "C"');
+        assert.equals(pg.defaultDb.jsFieldToPg('foo', 'belongs_to'), '"foo" text collate "C"');
+        assert.equals(pg.defaultDb.jsFieldToPg('foo', 'has_many'), '"foo" text[] collate "C"');
+        assert.equals(pg.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
+        assert.equals(pg.defaultDb.jsFieldToPg('name'), '"name" text');
+        assert.equals(pg.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
+        assert.equals(
+          pg.defaultDb.jsFieldToPg('map', {type: 'object', default: {treasure: 'lost'}}),
+          `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
+        //]
+      });
+
+      test("query", ()=>{
+        /**
+         * Query the database with a SQL instruction. Five formats are supported (most performant
+         * first):
+
+         * 1. `query(text)` where no parameters are in the query text
+
+         * 1. `query(text, params)` where parameters correspond to array position (1 is first
+         * position)
+
+         * 1. `query(sqlStatment, params)` where `sqlStatment` is a pre-compiled {#../sql-statement}
+         * and params is a key-value object.
+
+         * 1. `query(text, params)` where params is a key-value object
+
+         * 1. `` query`queryTemplate` ``
+
+         * @param {string|templateLiteral|../sql-statement} text a sql where-clause where either:
+
+         * 1. no paramters are supplied
+
+         * 1. `$n` parameters within the text correspond to `params` array position (n-1).
+
+         * 1. See {#../sql-statement}
+
+         * 1. `{$varName}` parameters within the text correspond to `params` object properties.
+
+         * 1. `${varName}` expressions within the template get converted to parameters.
+
+         * @param {array|object} params either an array of positional arguments or key value
+         * properties mapping to the `{$varName}` expressions within `text`
+
+         * @returns {[object]} a list of result records
+
+         * @alias exec
+         **/
+        api.protoMethod();
+        //[
+        const a = 3, b = 2;
+
+        assert.equals(
+          pg.defaultDb.query(`SELECT {$a}::int + {$b}::int as ans`, {a, b})[0].ans, 5);
+
+        assert.equals(
+          pg.defaultDb.query(`SELECT $1::int + $2::int as ans`, [a, b])[0].ans, 5);
+
+        assert.equals(
+          pg.defaultDb.query`SELECT ${a}::int + ${b}::int as ans`[0].ans, 5);
+
+
+        const statment = new SQLStatement(`SELECT {$a}::int + {$b}::int as ans`);
+        assert.equals(
+          pg.defaultDb.query(statment, {a, b})[0].ans, 5);
+        //]
+      });
     });
 
     test("connection", ()=>{
@@ -505,28 +575,38 @@ isServer && define((require, exports, module)=>{
       });
 
       test("abort startTransaction, endTransaction", ()=>{
-        const tx = v.foo._client.startTransaction(); {
+        const client = v.foo._client;
+        clientSubject().protoProperty('inTransaction', {intro() {
+          /**
+           * determine if client is in a transaction
+           **/
+        }});
+
+        assert.isFalse(client.inTransaction);
+        const tx = client.startTransaction(); {
+          assert.isTrue(client.inTransaction);
           v.foo.updateById('123', {name: 'a1'});
 
-          assert.same(v.foo._client.startTransaction(), tx);
+          assert.same(client.startTransaction(), tx);
           {
+            assert.isTrue(client.inTransaction);
             assert.equals(tx.savepoint, 1);
 
             v.foo.updateById('123', {name: 'a2'});
             assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
 
           }
-          assert.same(v.foo._client.endTransaction('abort'), 1);
+          assert.same(client.endTransaction('abort'), 1);
 
           assert.equals(v.foo.findOne({_id: '123'}).name, 'a1');
 
         }
-        assert.same(v.foo._client.endTransaction('abort'), 0);
+        assert.same(client.endTransaction('abort'), 0);
+        assert.isFalse(client.inTransaction);
         assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
         assert.exception(()=>{
-          v.foo._client.endTransaction('abort');
+          client.endTransaction('abort');
         }, {message: 'No transaction in progress!'});
-
       });
 
       test("commit startTransaction, endTransaction", ()=>{
@@ -545,9 +625,11 @@ isServer && define((require, exports, module)=>{
       });
 
       test("nested transactions", ()=>{
+        const client = v.foo._client;
+
         try {
           v.foo.transaction(tran =>{
-            v.foo._client.onCommit(v.onCommit = stub());
+            client.onCommit(v.onCommit = stub());
             v.foo.updateById('123', {name: 'eee'});
             tran.onAbort(v.onAbort = stub());
             tran.onAbort(v.onAbort2 = stub());
@@ -597,9 +679,9 @@ isServer && define((require, exports, module)=>{
 
         v.foo.transaction(tran =>{
           tran.onAbort(v.onAbort = stub());
-          v.foo._client.onCommit(v.onCommit1 = stub());
+          client.onCommit(v.onCommit1 = stub());
           v.foo.transaction(tran =>{
-            v.foo._client.onCommit(v.onCommit2 = stub());
+            client.onCommit(v.onCommit2 = stub());
             v.foo.updateById('123', {name: 'fff'});
           });
           refute.called(v.onCommit1);

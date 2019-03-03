@@ -38,6 +38,7 @@ define((require, exports, module)=>{
 
       test("horizontal", ()=>{
         //[
+        // horizontal scroll
         const block = (text)=>Dom.h({
           style: 'flex:0 0 50px', div: [text]});
 
@@ -86,6 +87,7 @@ define((require, exports, module)=>{
 
       test("vertical", ()=>{
         //[
+        // vertical scroll
         const block = (text)=>Dom.h({style: 'width:50px;height:20px', div: [text]});
 
         const divs = 'one two three four five'.split(' ').map(t => block(t));

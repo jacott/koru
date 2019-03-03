@@ -21,6 +21,17 @@ define((require, exports, module)=>{
       v = {};
     });
 
+    test("noopHandle", ()=>{
+      /**
+       * A no operation handle. Has a stop method which does nothing. Useful when need to return a
+       * handle but nothing to stop.
+       **/
+      api.property();
+      assert.equals(util.noopHandle, {stop: m.func});
+      assert.same(util.noopHandle, util.noopHandle);
+      assert.same(util.noopHandle.stop(), void 0);
+    });
+
     test("setProperty", ()=>{
       /**
        * Set a property descriptor for an object. By default the descriptor options will be:
@@ -824,7 +835,24 @@ define((require, exports, module)=>{
       function testArgs() {return arguments}
     });
 
+    test("arrayToMap", ()=>{
+      /**
+       * convert an array of strings to an `object`.
+
+       * @param {[String]} list the array to convert
+
+       * @returns with its properties named the `list` elements and values of true.
+       **/
+      api.method();
+      assert.equals(util.arrayToMap(), {});
+      assert.equals(util.arrayToMap(['a', 'b', 'd']), {a: true, b: true, d: true});
+    });
+
     test("toMap", ()=>{
+      /**
+       * convert to a `object`;
+       **/
+      api.method();
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});

@@ -470,13 +470,14 @@ assert.same(Color.colors.red, '#f00');`,
 
       test("value property", ()=>{
         /**
-         * Document a property of the current subject. The property
-         * can be either plain value or a get/set function.
+         * Document a property of the current subject. The property can be either plain value or a
+         * get/set function.
 
          * @param [options.info] description of property. Defaults to the current test's doc
-         * comment.  When `function` should return an info `string`. The info `string` can contain
-         * `${value}` which will be substituted with a description of the properties value. Alias
-         * `intro`
+         * comment.  When `function` should return an info `string` or contain a doc comment.
+         *
+         * Alias `intro`
+
          * @param [options.properties] document child properties
          *
          **/
@@ -570,6 +571,7 @@ assert.same(Color.colors.red, '#f00');`,
               [['Room'], undefined, 'sets title'],
               [[], 'Room'],
             ],
+            test,
           },
         });
       });
@@ -697,12 +699,14 @@ assert.same(Color.colors.red, '#f00');`,
        **/
 
       MainAPI.method('custom');
-
+      //[
       function myCustomFunction(arg) {
         this.ans = arg;
         return 'success';
       }
+      //]
       API.module({subjectModule: {id: 'myMod', exports: {}}});
+      //[#
       const thisValue = {};
 
       let proxy = API.custom(myCustomFunction);
@@ -710,6 +714,7 @@ assert.same(Color.colors.red, '#f00');`,
       proxy.call(thisValue, 2);
 
       assert.same(thisValue.ans, 2);
+      //]
 
       assert.equals(API.instance.customMethods.myCustomFunction, {
         test,
@@ -721,11 +726,13 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
+      //[#
       proxy = API.custom(myCustomFunction, {name: 'example2', sig: 'foobar = function example2(arg)'});
 
       proxy.call(thisValue, 4);
 
       assert.same(thisValue.ans, 4);
+      //]
 
       assert.equals(API.instance.customMethods.example2, {
         test,
@@ -737,6 +744,7 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
+      //[#
       proxy = API.custom(myCustomFunction, {name: 'example3'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example3.sig, 'example3(arg)');
@@ -755,6 +763,7 @@ assert.same(Color.colors.red, '#f00');`,
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example6.sigPrefix, 'Container.');
       assert.equals(API.instance.customMethods.example6.sig, 'foo()');
+      //]
 
       API.done();
     });
@@ -941,12 +950,17 @@ assert.same(Color.colors.red, '#f00');`,
         sig: TH.match(/(function )?prune\(branchCount\)/),
         intro: TH.match(/Document prototype `methodName` for the current subject/),
         subject: ['F', TH.match.func, 'Tree'],
+        calls: m.any
+      });
+
+      assert.equals(API.instance.protoMethods.prune.calls, [{
+        body: m(/class Tree/),
         calls: [[
           [3], 7
         ],[
           [2], 5
         ]]
-      });
+      }]);
 
       API.protoMethod('graft', {intro: "an intro"});
     });
@@ -1200,11 +1214,11 @@ assert.same(Color.colors.red, '#f00');`,
             properties: {
               theme: {
                 info: 'theme info',
-                value: ['O', 'MainAPI'],
+                value: ['O', MainAPI, 'MainAPI'],
               },
               color: {
                 info: 'color info',
-                calls: [[[], ['O', 'rgb:blue']], [['green']]],
+                calls: [[[], ['O', {r: 0, g: 0, b: 1}, 'rgb:blue']], [['green'], undefined]],
               },
             }
           }

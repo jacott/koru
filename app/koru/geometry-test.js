@@ -10,6 +10,10 @@ define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("rotatePoints", ()=>{
+      /**
+       * rotate points around (0,0)
+       **/
+      api.method();
       const p = [0,0, -10, -20, 30, 40];
       assert.equals(sut.rotatePoints(p, 180), [0,0, 10, 20, -30, -40]);
       assert.equals(sut.rotatePoints(p, -180), [0,0, 10, 20, -30, -40]);
@@ -158,7 +162,7 @@ define((require, exports, module)=>{
 
     test("tTangent", ()=>{
       /**
-       * Calculate the point at t along a line or a bezier curve
+       * Calculate the tangent at t along a line or a bezier curve
 
        * @param t 0 < t < 1 where 0 is start point and 1 is end point
 
@@ -287,6 +291,7 @@ define((require, exports, module)=>{
        * @returns boundryBox in format `{left, top, right, bottom}`
        **/
       api.method('bezierBox');
+      //[
       assert.equals(sut.bezierBox([0,0], [0,0, 20,25, 20,25]),
                     {left: 0, top: 0, right: 20, bottom: 25});
 
@@ -298,7 +303,7 @@ define((require, exports, module)=>{
 
       assert.near(sut.bezierBox([10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
                   {left: 7653, top: 13101, right: 43120, bottom: 41454});
-
+      //]
 
       // // show visually
       // const ps = [150,200], c = [25,-100, 575,700, 400,300];

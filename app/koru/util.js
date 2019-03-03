@@ -571,15 +571,20 @@ define((require)=>{
           /(\+|%(?![a-f0-9]{2}))/ig, m=> m === '+' ? ' ' : '%25'));
     },
 
-    toMap (keyName, valueName/*, lists */) {
+    arrayToMap(list) {
       const result = {};
-      if (arguments.length === 1) {
-        if (Array.isArray(keyName)) {
-          const list = keyName, len = list.length;
-          for(let i = 0; i < len; ++i) result[list[i]] = true;
-        }
-        return result;
+      if (Array.isArray(list)) {
+        const len = list.length;
+        for(let i = 0; i < len; ++i) result[list[i]] = true;
       }
+      return result;
+    },
+
+    toMap(keyName, valueName/*, lists */) {
+      if (arguments.length === 1) {
+        return util.arrayToMap(keyName);
+      }
+      const result = {};
       let func;
       if (valueName == null)
         func = identity;
@@ -1066,6 +1071,8 @@ define((require)=>{
       if (assoc._id !== _id) assoc._id = _id;
       return assoc;
     },
+
+    noopHandle: {stop: ()=>{}},
   });
 
   return util;
