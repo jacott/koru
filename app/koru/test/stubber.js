@@ -1,7 +1,7 @@
 define((require)=>{
   const {stubName$}     = require('koru/symbols');
   const {merge, inspect, hasOwn} = require('koru/util');
-  const {deepEqual, AssertionError}     = require('./core');
+  const {deepEqual}     = require('./core');
 
   const listeners$ = Symbol(),
         invokes$ = Symbol(), yields$ = Symbol(), throws$ = Symbol(),
@@ -80,7 +80,7 @@ define((require)=>{
       const {firstCall} = this;
       const callArgs = this.firstCall === undefined ? undefined : firstCall.args;
       if (callArgs === undefined)
-        throw new AssertionError("Can't yield; stub with callback has not been called");
+        throw new Error("Can't yield; stub with callback has not been called");
 
       return yieldCall(callArgs, args);
     }
@@ -88,7 +88,7 @@ define((require)=>{
     yieldAndReset(...args) {
       const callArgs = this.firstCall === undefined ? undefined : this.firstCall.args;
       if (callArgs === undefined)
-        throw new AssertionError("Can't yield; stub has not been called");
+        throw new Error("Can't yield; stub has not been called");
       this.reset();
       return yieldCall(callArgs, args);
     }
@@ -96,7 +96,7 @@ define((require)=>{
     yieldAll(...args) {
       const {calls} = this;
       if (calls === undefined)
-        throw new AssertionError("Can't yield; stub has not been called");
+        throw new Error("Can't yield; stub has not been called");
       const {length} = calls;
       for(let i = 0; i < length; ++i) {
         calls[i].yield(...args);
@@ -260,7 +260,7 @@ define((require)=>{
         return arg.apply(null, callArgs);
       }
     }
-    throw new AssertionError("Can't yield; no function in arguments");
+    throw new Error("Can't yield; no function in arguments");
   };
 
   const notifyListeners = (proxy, call, args) => {
@@ -308,28 +308,28 @@ define((require)=>{
     stub: (object, property, repFunc) => {
       let func, desc, orig;
       if (repFunc !== undefined && typeof repFunc !== 'function')
-        throw new AssertionError("Third argument to stub must be a function if supplied");
+        throw new Error("Third argument to stub must be a function if supplied");
       if (object != null && typeof object !== 'string' && ! (
         typeof object === 'function' && property === undefined &&
           repFunc === undefined)) {
         if (typeof property !== 'string' && typeof property !== 'symbol')
-          throw new AssertionError(
+          throw new Error(
             `Invalid stub call: ${inspect(property)} is not a string`);
         if (! (property in object))
-          throw new AssertionError(
+          throw new Error(
             `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`);
 
         desc = Object.getOwnPropertyDescriptor(object, property);
         orig = desc !== undefined ? desc.value : object[property];
         if (orig !== undefined && typeof orig.restore === 'function')
-          throw new AssertionError(`Already stubbed ${property}`);
+          throw new Error(`Already stubbed ${property}`);
         if (typeof orig === 'function') {
           func = stubFunction(orig, Stub.prototype);
           func[replacement$] = repFunc;
           if (repFunc !== undefined) func[replacement$] = repFunc;
         } else {
           if (repFunc !== undefined) {
-            throw new AssertionError("Attempt to stub non function with a function");
+            throw new Error("Attempt to stub non function with a function");
           }
 
           func = Object.create(Stub.prototype);
@@ -364,7 +364,7 @@ define((require)=>{
         }
       }
 
-      throw new AssertionError("Attempt to spy on non function");
+      throw new Error("Attempt to spy on non function");
     },
 
     intercept: (object, prop, replacement, restore) => {
