@@ -497,6 +497,20 @@ isClient && define((require, exports, module)=>{
       // ensure that this method is called once-and-only-once before a reconnect attempt
     });
 
+    test("stop clears matchers", ()=>{
+      class MySub extends Subscription {
+        constructor() {
+          super();
+          this.match("Foo", ()=> true);
+        }
+      }
+      const sub = new MySub();
+      refute(util.isObjEmpty(sub._matches));
+      sub.stop();
+      assert(util.isObjEmpty(sub._matches));
+      refute(sub.subSession.match.has({constructor: {modelName: 'Foo'}}));
+    });
+
     test("markForRemove", ()=>{
       /**
        * Mark the given document as a simulated add which will be removed if not updated by the

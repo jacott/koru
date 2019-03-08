@@ -56,14 +56,17 @@ define((require, exports, module)=>{
     filterDoc(doc) {return this.subSession.filterDoc(doc)}
 
     stop(error) {
+      const {_matches} = this;
+      for (const _ in _matches) {
+        this._matches = Object.create(null);
+        for (const name in _matches) _matches[name] !== void 0 && _matches[name].delete();
+        break;
+      }
       if (this[state$] !== STATE_MAP.stopped) {
         const oldState = this[state$];
         this[state$] = STATE_MAP.stopped;
         const {subSession} = this;
         subSession._delete(this);
-        const {_matches} = this;
-        this._matches = Object.create(null);
-        for (const name in _matches) _matches[name] !== void 0 && _matches[name].delete();
         const onConnect = this[onConnect$];
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
