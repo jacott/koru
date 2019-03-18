@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const BTree           = require('koru/btree');
   const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');
@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const {createDictionary} = util;
 
   const {compare, hasOwn} = util;
-  const nullToUndef= val=>val === null ? undefined : val;
+  const nullToUndef= val=>val === null ? void 0 : val;
 
   return model => {
     model._indexUpdate = new Observable();
@@ -29,15 +29,15 @@ define((require, exports, module)=>{
 
     const extractCondition = fields=>{
       const condition = typeof fields[fields.length-1] === 'function' ?
-            fields[fields.length-1] : undefined;
-      if (condition !== undefined) --fields.length;
+            fields[fields.length-1] : void 0;
+      if (condition !== void 0) --fields.length;
       return condition;
     };
 
     const buildIndex = (_fields, _filterTest) => {
       const fields = _fields;
       let query;
-      if (_filterTest !== undefined) {
+      if (_filterTest !== void 0) {
         query = model.query;
         _filterTest(query);
       }
@@ -54,7 +54,7 @@ define((require, exports, module)=>{
         dbId = model.dbId;
         idx = indexes[dbId];
 
-        if (idx === undefined) idx = indexes[dbId] =
+        if (idx === void 0) idx = indexes[dbId] =
           leadLen === -1 ? newBTree() : createDictionary();
 
         return idx;
@@ -81,11 +81,11 @@ define((require, exports, module)=>{
             for(let i = 0; i < cLen; ++i) {
               const f = compKeys[i];
               const af = a[f], bf = b[f];
-              if ((af === undefined || bf === undefined) ? af != bf
+              if ((af === void 0 || bf === void 0) ? af != bf
                   : af.valueOf() !== bf.valueOf()) {
                 const dir = compMethod[i];
-                if (af === undefined) return -1;
-                if (bf === undefined) return 1;
+                if (af === void 0) return -1;
+                if (bf === void 0) return 1;
                 if (dir < -1 || dir > 1)
                   return compare(af, bf) < 0 ? -dir : dir;
                 return af < bf ? -dir : dir;
@@ -105,7 +105,7 @@ define((require, exports, module)=>{
         for(let i = 0; i < compKeysLen; ++i) {
           const key = compKeys[i];
           const value = doc[key];
-          if (value !== undefined) ans[key] = value;
+          if (value !== void 0) ans[key] = value;
         }
         for (const _ in ans) return ans;
       };
@@ -121,10 +121,10 @@ define((require, exports, module)=>{
 
       const deleteEntry = (tidx, doc, count)=>{
         const value = doc[fields[count]];
-        if (tidx === undefined) return true;
+        if (tidx === void 0) return true;
         const entry = tidx[value];
         if (count === leadLen) {
-          if (btCompare !== null && entry !== undefined) {
+          if (btCompare !== null && entry !== void 0) {
             entry.delete(doc);
             if (entry.size !== 0)
               return false;
@@ -140,7 +140,7 @@ define((require, exports, module)=>{
       const onChange = ({type, doc, was})=>{
         if (type === 'chg' && util.isObjEmpty(was.changes))
           return;
-        if (filterTest !== undefined) {
+        if (filterTest !== void 0) {
           if (type !== 'del' && ! filterTest.matches(doc)) {
             if (type === 'add') return;
             type = 'del';
@@ -192,11 +192,11 @@ define((require, exports, module)=>{
             let tidx = idx;
             for(let i = 0; i < leadLen; ++i) {
               const value = doc[fields[i]];
-              tidx = tidx[value] === undefined ? (tidx[value] = {}) : tidx[value];
+              tidx = tidx[value] === void 0 ? (tidx[value] = {}) : tidx[value];
             }
             const value = doc[fields[leadLen]];
             if (btCompare !== null) {
-              const tree = tidx[value] === undefined ?
+              const tree = tidx[value] === void 0 ?
                       (tidx[value] = newBTree()) : tidx[value];
               tree.add(BTValue(doc));
             } else {
@@ -219,10 +219,10 @@ define((require, exports, module)=>{
             ret = ret[nullToUndef(keys[field])];
           }
 
-          if (ret !== undefined && btCompare !== null) {
+          if (ret !== void 0 && btCompare !== null) {
             const {
               from=BTValue(keys), to, direction=1,
-              excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
+              excludeFrom=false, excludeTo=false} = options === void 0 ? {} : options;
             return ret.values({from, to, direction, excludeFrom, excludeTo});
           }
 

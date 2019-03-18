@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const Changes         = require('koru/changes');
   const Model           = require('koru/model/map');
   const DocChange       = require('koru/model/doc-change');
@@ -65,7 +65,7 @@ define((require, exports, module)=>{
             break;
           default:
             const value = values[field];
-            if (value === undefined) {
+            if (value === void 0) {
               qs.push(`("${field}" is not null or ("${field}" is null and`);
             } else {
               qs.push(`("${field}" ${cmp} {$${field}} or ("${field}" = {$${field}} and`);
@@ -74,7 +74,7 @@ define((require, exports, module)=>{
         });
         if (excludeFirst)
           qs.push('false');
-        else if (values._id === undefined )
+        else if (values._id === void 0 )
           qs.push('true');
         else
           qs.push(`_id ${cmp}= {$_id}`);
@@ -85,9 +85,9 @@ define((require, exports, module)=>{
       withIndex(idx, params, options) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params).sort(...idx.sort);
-        if (idx.filterTest !== undefined) this.where(idx.filterTest);
+        if (idx.filterTest !== void 0) this.where(idx.filterTest);
         this._index = idx;
-        if (options !== undefined) {
+        if (options !== void 0) {
           const {direction=1, from, to, excludeFrom=false, excludeTo=false} = options;
           if (direction === -1) this.reverseSort();
           if (from) {
@@ -166,14 +166,14 @@ define((require, exports, module)=>{
           const doc = this.fetchOne();
           doc && func(doc);
         } else {
-          const hasFields = this._fields !== undefined;
+          const hasFields = this._fields !== void 0;
           const {model} = this;
           const options = {};
           if (hasFields) options.fields = this._fields;
           const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for (let rec = cursor.next(); rec !== undefined; rec = cursor.next()) {
+            for (let rec = cursor.next(); rec !== void 0; rec = cursor.next()) {
               if (func(hasFields ? rec : model[makeDoc$](rec)) === true)
                 break;
             }
@@ -241,7 +241,7 @@ define((require, exports, module)=>{
             ++count;
             const attrs = doc.attributes;
 
-            if (this._incs !== undefined) for (let field in this._incs) {
+            if (this._incs !== void 0) for (let field in this._incs) {
               origChanges[field] = attrs[field] + this._incs[field];
             }
 
@@ -267,7 +267,7 @@ define((require, exports, module)=>{
 
       fetchOne() {
         let rec;
-        const hasFields = this._fields !== undefined;
+        const hasFields = this._fields !== void 0;
         if (this._sort && ! this.singleId) {
           const options = {limit: 1};
           if (this._sort) options.sort = this._sort;
@@ -281,13 +281,13 @@ define((require, exports, module)=>{
         } else {
           rec = this.model.docs.findOne(this, this._fields);
         }
-        if (rec === undefined) return;
+        if (rec === void 0) return;
         return hasFields ? rec : this.model[makeDoc$](rec);
       },
     });
 
     Query.prototype[Symbol.iterator] = function *() {
-        const hasFields = this._fields !== undefined;
+        const hasFields = this._fields !== void 0;
       if (this.singleId) {
         const doc = this.fetchOne();
         doc && (yield doc);

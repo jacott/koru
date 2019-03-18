@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require)=>{
   const makeSubject     = require('koru/make-subject');
   const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');
@@ -114,14 +114,14 @@ define((require, exports, module)=>{
       const fields = query.model.$fields;
       for (key in value) break;
       const expr = EXPRS[key];
-      if (expr !== undefined) return expr(param, value, key, fields[param].type);
+      if (expr !== void 0) return expr(param, value, key, fields[param].type);
     }
-    return undefined;
+    return void 0;
   };
 
   const copyConditions = (type, from, to)=>{
     const f = from[type];
-    if (f === undefined) return;
+    if (f === void 0) return;
     const t = to[type] || (to[type] = {[func$]: []});
     for (const field in f) {
       t[field] = f[field];
@@ -132,7 +132,7 @@ define((require, exports, module)=>{
   const assignCondition = (query, conditions, field, value)=>{
     conditions[field] = value;
     const func = exprToFunc(query, field, value);
-    if (func === undefined)
+    if (func === void 0)
       (conditions[matches$] || (conditions[matches$] = {}))[field] = value;
     else
       conditions[func$].push(func);
@@ -140,7 +140,7 @@ define((require, exports, module)=>{
 
   const condition = (query, map, params, value)=>{
     let conditions = query[map];
-    if (conditions === undefined) conditions = query[map] = {[func$]: []};
+    if (conditions === void 0) conditions = query[map] = {[func$]: []};
     const type = typeof params;
     if (type === 'function') {
       conditions[func$].push(params);
@@ -150,7 +150,7 @@ define((require, exports, module)=>{
 
     } else for (const field in params) {
       const value = params[field];
-      value !== undefined && assignCondition(query, conditions, field, value);
+      value !== void 0 && assignCondition(query, conditions, field, value);
     }
   };
 
@@ -184,7 +184,7 @@ define((require, exports, module)=>{
       }
 
       inc(field, amount) {
-        if (this._incs === undefined) this._incs = {};
+        if (this._incs === void 0) this._incs = {};
         this._incs[field] = amount || 1;
         return this;
       }
@@ -211,7 +211,7 @@ define((require, exports, module)=>{
           copyConditions('_wheres', params, this);
           copyConditions('_whereNots', params, this);
           const {_whereSomes} = params;
-          _whereSomes === undefined ||
+          _whereSomes === void 0 ||
             (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
         } else
           condition(this, '_wheres', params, value);
@@ -220,7 +220,7 @@ define((require, exports, module)=>{
 
       whereSome(...args) {
         let conditions = this._whereSomes;
-        if (conditions === undefined) conditions = this._whereSomes = [];
+        if (conditions === void 0) conditions = this._whereSomes = [];
         conditions.push(args.map(o => {
           const term = {[func$]: []};
           for (const field in o)
@@ -249,20 +249,20 @@ define((require, exports, module)=>{
       }
 
       sort(...fields) {
-        if (this._index !== undefined) throw new Error('withIndex may not be used with sort');
+        if (this._index !== void 0) throw new Error('withIndex may not be used with sort');
         fields = fields.filter(n => n !== 1);
-        if (this._sort === undefined)
+        if (this._sort === void 0)
           this._sort = fields;
         else
           this._sort = this._sort.concat(fields);
-        this[compare$] = undefined;
+        this[compare$] = void 0;
         return this;
       }
 
       get compare() {
-        if (this[compare$] === undefined) {
+        if (this[compare$] === void 0) {
           const {_sort} = this;
-          if (_sort == null) return undefined;
+          if (_sort == null) return void 0;
           const slen = _sort.length, {$fields} = this.model;
           const compKeys = this[compareKeys$] = [], compMethod = [];
 
@@ -286,8 +286,8 @@ define((require, exports, module)=>{
               const af = a[f], bf = b[f];
               if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
                 const dir = compMethod[i];
-                if (af === undefined) return -1;
-                if (bf === undefined) return 1;
+                if (af === void 0) return -1;
+                if (bf === void 0) return 1;
                 if (dir < -1 || dir > 1)
                   return compare(af, bf) < 0 ? -dir : dir;
                 return af < bf ? -dir : dir;
@@ -307,7 +307,7 @@ define((require, exports, module)=>{
 
       reverseSort() {
         const {_sort} = this;
-        if (_sort === undefined) return this;
+        if (_sort === void 0) return this;
         const ns = [], slen = _sort.length;
         for(let i = 0; i < slen; ++i) {
           if (i+1 == slen || typeof _sort[i+1] !== 'number')
@@ -316,7 +316,7 @@ define((require, exports, module)=>{
             ns.push(_sort[i++]);
         }
         this._sort = ns;
-        this[compare$] = undefined;
+        this[compare$] = void 0;
         return this;
       }
 
@@ -331,20 +331,20 @@ define((require, exports, module)=>{
       }
 
       matches(doc, attrs=doc) {
-        if (this._whereNots !== undefined && foundIn(doc, attrs, this._whereNots, false))
+        if (this._whereNots !== void 0 && foundIn(doc, attrs, this._whereNots, false))
           return false;
 
-        if (this._wheres !== undefined && ! foundIn(doc, attrs, this._wheres))
+        if (this._wheres !== void 0 && ! foundIn(doc, attrs, this._wheres))
           return false;
 
-        if (this._whereSomes !== undefined &&
+        if (this._whereSomes !== void 0 &&
             ! this._whereSomes.every(
               ors => ors.some(o => foundIn(doc, attrs, o)))) return false;
         return true;
       }
 
       onChange(callback) {
-        if (this[onChange$] === undefined) {
+        if (this[onChange$] === void 0) {
           const subject = this[onChange$] = new Observable(()=>subject.stop());
           subject.stop = this.model.onChange(({type, doc, undo, flag, was}) =>{
             let nt = type;
@@ -376,8 +376,6 @@ define((require, exports, module)=>{
 
   const Query = __init__(require('../env!./query'));
   Query.__init__ = __init__;
-
-  module.onUnload(()=>{Query[private$] && Query[private$].unload && Query[private$].unload()});
 
   return Query;
 });
