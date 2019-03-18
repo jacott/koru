@@ -13,7 +13,7 @@ define((require, exports, module)=>{
 
     test("thread", ()=>{
       /**
-       * An object associated with the current [Fiber](https://www.npmjs.com/package/fibers)
+       * An object associated with the current [Fiber](https://www.npmjs.com/package/fibers).
        **/
       api.property();
       assert.same(util.thread, util.thread);

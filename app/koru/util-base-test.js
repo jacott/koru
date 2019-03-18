@@ -12,7 +12,7 @@ define((require, exports, module)=>{
     });
 
     test("properties", ()=>{
-      api.property('idLen', v => `The length of an \`_id\` is ${v} characters`);
+      api.property('idLen', v => `${v}. The length of an \`_id\` in characters.`);
       assert.same(util.idLen, 17);
 
     });

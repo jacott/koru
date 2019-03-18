@@ -148,12 +148,13 @@ define((require, exports, module)=>{
 
     test("toDp", ()=>{
       /**
-       * Convert `number` to `dp` decimal places to a string.
+       * Return `number` to `dp` decimal places, converted to a string, padded with
+       * zeros if `zeroFill` is `true`.
        * @param number a number to be converted
        * @param dp the number of decimal places to display `number` to
        * @param zeroFill pad with zeros; `false` by default
        *
-       * @returns `number` to `dp` decimal places converted to a string, padded with
+       * @returns `number` to `dp` decimal places, converted to a string, padded with
        * zeros if `zeroFill` is `true`
        **/
       api.method('toDp');
@@ -170,7 +171,7 @@ define((require, exports, module)=>{
     });
 
     test("DAY", ()=>{
-      api.property('DAY', {info: 'the number of milliseconds in a day'});
+      api.property('DAY', {info: 'The number of milliseconds in a day.'});
       const d1 = new Date(2015, 1, 1);
       const d2 = new Date(2015, 1, 2);
       assert.same(util.DAY, +d2 - d1);
@@ -178,11 +179,10 @@ define((require, exports, module)=>{
 
     test("pc", ()=>{
       /**
-       * Convert `fraction` to a string of its percent form, with the percent symbol, %,
-       * at the end of the string.
+       * Return a string comprised of the percent form of `fraction`, with the percent symbol, %.
        * @param fraction a fraction
        *
-       * @returns a string comprised of the percent form of `fraction` followed by the percent symbol, %
+       * @returns a string comprised of the percent form of `fraction`, with the percent symbol, %
        **/
       api.method('pc');
       assert.same(util.pc(1.2345678), '123.45678%');
@@ -190,10 +190,10 @@ define((require, exports, module)=>{
 
     test("sansPx", ()=>{
       /**
-       * Convert `value` from a string to a number, removing 'px' from the end.
+       * Return `value` converted to a number; the suffix 'px' is removed.
        * @param value a value to be converted
        *
-       * @returns `value` converted to a number, with 'px' removed
+       * @returns `value` converted to a number; the suffix 'px' has been removed
        **/
       api.method('sansPx');
       assert.same(util.sansPx('123.23px'), 123.23);
@@ -203,10 +203,10 @@ define((require, exports, module)=>{
 
     test("sansPc", ()=>{
       /**
-       * Convert `value` from a string to a number, removing the percent symbol, %, from the end
+       * Return `value` converted to a number; the suffix '%' is removed.
        * @param value a value to be converted
        *
-       * @returns `value` converted to a number, with the percent symbol, %, removed
+       * @returns `value` converted to a number; the suffix '%' has been removed
        **/
       api.method('sansPc');
       assert.same(util.sansPc('123.23%'), 123.23);
@@ -216,15 +216,25 @@ define((require, exports, module)=>{
 
     test("diffString", ()=>{
       /**
-       * Find the difference between `oldstr` and `newstr`.
+       * Find the difference between `oldstr` and `newstr`. Return `undefined` if `oldstr` and
+       * `newstr` are the same; otherwise return an array of three numbers:
+
+       * 1. the index of the first non-matching character in oldstr and newstr
+
+       * 1. the length of the segment of `oldstr` that doesn't match `newstr`
+
+       * 1. the length of the segment of `newstr` that doesn't match `oldstr`
+
        * @param oldstr a string
+
        * @param newstr another string
-       *
-       * @returns {undefined|Array} `undefined` if `oldstr` and `newstr` are the same, otherwise an array
-       * of three numbers:
-       * the index of the first non-matching character in oldstr and newstr,
-       * the length of the segment of `oldstr` that doesn't match `newstr`,
-       * the length of the segment of `newstr` that doesn't match `oldstr`
+
+       * @returns {undefined|Array} `undefined` if `oldstr` and `newstr` are the same, otherwise an
+       * array of three numbers:
+
+       * 1. the index of the first non-matching character in oldstr and newstr
+       * 1. the length of the segment of `oldstr` that doesn't match `newstr`
+       * 1. the length of the segment of `newstr` that doesn't match `oldstr`
        **/
       api.method('diffString');
       //[
@@ -258,8 +268,9 @@ define((require, exports, module)=>{
 
     test("indexOfRegex", ()=>{
       /**
-       * Determine the index of the first item in `list` that has a property `fieldName`
-       * that contains a match for the regular expression `value`
+       * Return the index of the first item in `list` that has a property `fieldName`
+       * that contains a match for the regular expression `value`. Or if no match is
+       * found return -1.
        * @param list the list to search
        * @param value the regular expression to search `fieldName` for a match
        * @param fieldName the property name to search for in each item in `list`
@@ -292,7 +303,7 @@ define((require, exports, module)=>{
 
     test("hasOnly", ()=>{
       /**
-       * Determine if `obj` has only keys in `keyMap`.
+       * Determine if `obj` has only keys that are also in `keyMap`.
        * @param obj an object
        * @param keyMap a set of key-value pairs
        *
@@ -324,7 +335,8 @@ define((require, exports, module)=>{
 
     test("firstParam", ()=>{
       /**
-       * Return the value of the first property in `obj`.
+       * Return the value of the first property in `obj`. Or if `obj` is empty return
+       * `undefined`.
        * @param obj an object
        *
        * @returns {any-type} the value of the first property in `obj`, or `undefined` if
@@ -340,12 +352,13 @@ define((require, exports, module)=>{
 
     test("keyMatches", ()=>{
       /**
-       * Search for a property name in `obj` which matches the supplied `regex`.
-       * @param obj the object to search in
+       * Search for a property name in `obj` that matches `regex`. Test each enumerable
+       * property name against `regex` util a match is found. Return the result array
+       * from `regex.exec()` if a match is found, or `null` if not.
+       * @param obj the object to search
        * @param regex the regular expression to match
        *
-       * @returns the match result from `regex.exec()` if found or `null` if not. Each enumerable
-       * property name is tested against the `regex` util one matches.
+       * @returns the result array from `regex.exec()` if a match is found, or `null` if not
        **/
       api.method();
       //[
@@ -357,11 +370,13 @@ define((require, exports, module)=>{
     test("addItem", ()=>{
       /**
        * Add `item` to `list` if `list` does not already contain `item`.
+       * If `item` is added to `list`, return `undefined`. If `list` already
+       * contains `item`, return the index of `item`.
        * @param list the list to add `item` to
        * @param {any-type} item the item to add to `list`
        *
-       * @returns {undefined|number} Returns `undefined` if `item` is added to `list`. Returns -1 if
-       * `list` already contains `item`.
+       * @returns {undefined|number} Returns `undefined` if `item` is added to `list`.
+       * Returns the index of `item` if `list` already contains `item`.
        **/
       api.method('addItem');
       //[
@@ -384,9 +399,10 @@ define((require, exports, module)=>{
 
     test("itemIndex", ()=>{
       /**
-       * `itemIndex` returns the index of the first element in `list` that matches
+       * Return the index of the first element in `list` that matches
        * `item`. If `item` is an object, `itemIndex` returns the index of the first object in
-       * `list` that contains all the key-value pairs that `item` contains.
+       * `list` that contains all the key-value pairs that `item` contains. If no match is
+       * found, -1 is returned.
        * @param list the list to search
        * @param {any-type} item the item to search `list` for
        *
@@ -404,13 +420,14 @@ define((require, exports, module)=>{
 
     test("removeItem", ()=>{
       /**
-       * Remove `item` from `list`. `list` is modified. If `item` is an object,
-       * `removeItem` removes the first object in `list` that contains all the key-value pairs that
-       * `item` contains.
+       * Remove `item` from `list` and return it. `list` is modified. If `item` is an object,
+       * `removeItem` removes the first object in `list` that contains all the key-value
+       * pairs that `item` contains. If `list` does not contain `item`, `undefined` is
+       * returned.
        * @param list the list from which to remove `item`
        * @param {any-type} item the item to remove from `list`
        *
-       * @returns {any-type} the removed item; `undefined` if `list` does not contain `item`
+       * @returns {any-type} the removed item, or `undefined` if `list` does not contain `item`
        **/
       api.method('removeItem');
 
@@ -440,9 +457,10 @@ define((require, exports, module)=>{
 
     test("values", ()=>{
       /**
-       * Create a list of the values of the enumerable properties that `map` contains.
-       * @param map the object whose property values are used to create a list
+       * Create a list of the values of the enumerable properties of `map`.
+       * @param map an object
        *
+       * @returns a list made up of the values of the enumerable properties of `map`
        **/
       api.method('values');
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
@@ -466,8 +484,8 @@ define((require, exports, module)=>{
        * Create a shallow copy of `first` and add items to the new list, in each case only if the
        * item does not already exist in the new list.
        * @param first a list to be copied
-       * @param rest one or more lists of elements to be added to the new list created by copying
-       * `first` if they do not already exist in the new list
+       * @param rest one or more lists of elements to be added to the new list if they do not
+       * already exist in the new list
        *
        * @returns a list containing all the elements in `first` and one instance of each of the
        * unique elements in `rest` that are not also in `first`
@@ -567,6 +585,7 @@ define((require, exports, module)=>{
        * Merge the properties from `properties` that are named in `include` into `obj`. That is, add each
        * property in `properties` that is named in `include` to `obj`, or where a property of that name
        * already exists in `obj`, replace the property in `obj` with the property from `properties`.
+       * Return the modified `obj`.
 
        * @param obj an object to modify
        * @param properties properties to be added to or modified in `obj` if they are named in `include`
@@ -589,9 +608,9 @@ define((require, exports, module)=>{
 
     test("extractKeys", ()=>{
       /**
-       * Create and return an object made up of the properties in `obj` whose keys are named in `keys`.
+       * Create an object made up of the properties in `obj` whose keys are named in `keys`.
        * @param obj the object from which to collect properties
-       * @param keys a collection of properties or keys whose names identify which properties to collect
+       * @param keys a collection of keys or properties whose names identify which properties to collect
        * from `obj`
        *
        * @returns an object made up of the properties in `obj` whose keys are named in `keys`
@@ -609,7 +628,7 @@ define((require, exports, module)=>{
 
     test("extractNotKeys", ()=>{
       /**
-       * Create and return an object made up of the properties in `obj` whose keys are not named in
+       * Create an object made up of the properties in `obj` whose keys are not named in
        * `keys`.
        * @param obj the object from which to collect properties
        * @param keys a collection of properties whose names identify which properties not to
@@ -626,7 +645,7 @@ define((require, exports, module)=>{
 
     test("splitKeys", ()=>{
       /**
-       * Create and return an object containing two properties `include` and `exclude`. The former
+       * Create an object containing two properties, `include` and `exclude`. The former
        * is made up of the properties in `obj` whose keys are named in `includeKeys`, and the later
        * is made up of the other properties in `obj`.
        * @param obj the object from which to collect properties
@@ -780,8 +799,8 @@ define((require, exports, module)=>{
       /**
        * Execute `visitor` once for each element in `list`.
        * @param list a list
-       * @param visitor a function taking two arguments: the value of the current element in `list`
-       * being processed, and the index of that current element
+       * @param visitor a function taking two arguments: the value of the current element in `list`,
+       * and the index of that current element
        **/
       api.method('forEach');
 
@@ -801,8 +820,8 @@ define((require, exports, module)=>{
       /**
        * Visit `list` in reverse order, executing `visitor` once for each list element.
        * @param list a list
-       * @param visitor a function taking two arguments: the value of the current element in `list`
-       * being processed, and the index of that current element
+       * @param visitor a function taking two arguments: the value of the current element in `list`,
+       * and the index of that current element
        **/
       api.method('reverseForEach');
       //[
@@ -897,7 +916,7 @@ define((require, exports, module)=>{
 
     test("binarySearch", ()=>{
       /**
-       * Perform a binary search over a sorted `list` returning the closest index with a <= 0
+       * Perform a binary search over a sorted `list` and return the closest index with a <= 0
        * `compare` result.
        **/
       api.method();
@@ -1465,7 +1484,7 @@ define((require, exports, module)=>{
        * @param object an object to associate with `_id`
        * @param key defaults to [Symbol.withId$](#koru/Symbol)
        *
-       * @returns an associated object which has the given `_id` and a prototype of the given
+       * @returns an associated object which has the given `_id` and a prototype of
        * `object`. If an association for `key` is already attached to the `object` then it is used
        * otherwise a new one will be created.
        **/

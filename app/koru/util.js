@@ -633,17 +633,17 @@ define((require)=>{
       }
     },
 
-    binarySearch: (list, compare, start=list.length>>1, lower=0, upper = list.length)=>{
+    binarySearch: (list, compare, start=list.length>>1, lower=0, upper=list.length) => {
       if (upper == 0) return -1;
       if (start < lower) start = lower;
       else if (start >= upper) start = upper-1;
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
         if (upper-1 <= lower)
-          return ans > 0 && lower == 0
-          ? -1 : ans < 0 && upper == list.length ? list.length-1 : lower;
+          return ans > 0 && lower == 0 ? -1 :
+          ans < 0 && upper == list.length ? list.length-1 : lower;
         if (ans > 0) upper = start;
         else lower = start;
-        start = ((upper-lower)>>1) + lower;
+        start = ((upper-lower) >> 1) + lower;
       }
 
       return start;
