@@ -246,6 +246,20 @@ define((require, exports, module)=>{
       return this.withConn(conn => query(conn, text, params));
     }
 
+    timeLimitQuery(text, params, {timeout=20000, timeoutMessage="Query took too long to run"}={}) {
+      return this.transaction(()=>{
+        try {
+          this.query('set local statement_timeout to '+timeout);
+          return this.query(text, params);
+        } catch(ex) {
+          if (ex.sqlState === '57014')
+            throw new koru.Error(504, timeoutMessage);
+          throw ex;
+        }
+      });
+
+    }
+
     prepare(name, command) {
       return this.withConn(conn => {
         const future = new Future;
@@ -377,7 +391,7 @@ define((require, exports, module)=>{
       }
     }
   }
-  Client.prototype.exec = query;
+  Client.prototype.exec = Client.prototype.query;
 
   Client.prototype[private$] = {tx$};
 
@@ -1021,7 +1035,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     const res = {cols: cols, values: values};
     if (needCols) res.needCols = needCols;
     return res;
-  }
+  };
 
   const performTransaction = (table, sql, params)=>{
     if (table.schema || util.isObjEmpty(params.needCols)) {

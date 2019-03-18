@@ -140,6 +140,33 @@ isServer && define((require, exports, module)=>{
           pg.defaultDb.query(statment, {a, b})[0].ans, 5);
         //]
       });
+
+      test("timeLimitQuery", ()=>{
+        /**
+         * Same as {##query} but limit to time the query can run for. This method will wrap the
+         * query in a transaction/savepoint. Does not support queryTemplate.
+
+         * @param text See {##query}
+
+         * @param params See {##query}
+
+         * @param timeout max time for query in ms. Defaults to 20s.
+
+         * @param timeoutMessage Defaults to "Query took too long to run";
+         **/
+        api.protoMethod();
+        try {
+          assert.same(pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'])[0].a, 'ab');
+
+          pg.defaultDb.timeLimitQuery(`SELECT pg_sleep($1)`, [0.002], {
+            timeout: 1, timeoutMessage: 'My message'});
+          assert.fail("Expected timeout");
+        }
+        catch (e) {
+          if (e.error !== 504) throw e;
+          assert.same(e.reason, 'My message');
+        }
+      });
     });
 
     test("connection", ()=>{
