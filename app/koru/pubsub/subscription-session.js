@@ -173,9 +173,13 @@ define((require)=>{
 
     _delete(sub) {
       assertState(sub.state === 'stopped');
-      delete this.subs[sub._id];
-      if (sub[msgId$] !== void 0) {
-        decPending(this, sub);
+      if (this.subs[sub._id] !== void 0) {
+        if (this.session.state.isReady())
+          this.session.sendBinary('Q', [sub._id]); // stop
+        delete this.subs[sub._id];
+        if (sub[msgId$] !== void 0) {
+          decPending(this, sub);
+        }
       }
     }
 

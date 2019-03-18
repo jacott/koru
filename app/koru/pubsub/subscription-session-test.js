@@ -55,7 +55,7 @@ isClient && define((require, exports, module)=>{
       Session.state._onConnect['10-subscribe2']();
       assert.called(reconnecting);
 
-      assert.calledWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
+      assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
     });
 
     test("reconnecting stopped", ()=>{
@@ -66,7 +66,7 @@ isClient && define((require, exports, module)=>{
       Session.state._onConnect['10-subscribe2']();
       assert.called(reconnecting);
 
-      refute.called(Session.sendBinary);
+      assert.calledOnceWith(Session.sendBinary, 'Q', ['1']);
     });
 
     test("postMessage", ()=>{
@@ -180,13 +180,16 @@ isClient && define((require, exports, module)=>{
 
       login.setUserId(Session, "user456");
 
-      assert.calledOnceWith(Session.sendBinary, 'Q', ['2', 1, 'Library', 2, 0]);
+      assert.calledTwice(Session.sendBinary);
+      assert.calledWith(Session.sendBinary, 'Q', ['2']);
+      assert.equals(Session.sendBinary.firstCall.args[1], ['2']);
+      assert.calledWith(Session.sendBinary, 'Q', ['2', 1, 'Library', 2, 0]);
       Session.sendBinary.reset();
 
       sub2.stop();
 
       login.setUserId(Session, "user123");
-      refute.called(Session.sendBinary);
+      assert.calledOnceWith(Session.sendBinary, 'Q', ['2']);
     });
 
     test("filterModels", ()=>{
