@@ -126,15 +126,9 @@ define((require, exports, module)=>{
       }));
       return;
     }
-    if (err.name === 'SyntaxError') {
-      const m = /^([\S]*)([\s\S]*)    at.*vm.js:/m.exec(err.stack);
-      Main.logHandle('ERROR', m ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
-      return;
-    }
-
     const errEvent = err.event;
 
-    if (errEvent && errEvent.filename) {
+    if (err.name !== 'SyntaxError' && errEvent && errEvent.filename) {
       Main.logHandle('ERROR', koru.util.extractError({
         toString() {
           const uer = errEvent && errEvent.error;
@@ -145,7 +139,8 @@ define((require, exports, module)=>{
       return;
     }
 
-    Main.logHandle('ERROR', koru.util.extractError(err));
+    const m = /^([\S]*)([\s\S]*?)    at.*vm.js:/.exec(err.stack);
+    Main.logHandle('ERROR', m !== null ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
   };
 
   const warnFullPageReload = ()=>{
