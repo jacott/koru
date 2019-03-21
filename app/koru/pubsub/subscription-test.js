@@ -550,6 +550,34 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(sub.connect);
     });
 
+    test("onMessage", ()=>{
+      /**
+       * Receive an unsolicited `message` from the publication server.
+
+       * @param {any-type} message
+       **/
+      api.protoMethod();
+      const server = {
+        postMessage(message) {
+          Session._commands.Q.call(Session, [sub._id, 0, message]);
+        }
+      };
+      //[
+      class Library extends Subscription {
+        onMessage(message) {
+          this.answer = message;//]
+          super.onMessage(message);//[#
+        }
+      }
+
+      const sub = Library.subscribe([123]);
+
+      server.postMessage({hello: "subscriber"});
+      assert.equals(sub.answer, {hello: "subscriber"});
+
+      //]
+    });
+
     test("postMessage", ()=>{
       /**
        * Send a message to publication. Messages can be used to alter the state of the publication.

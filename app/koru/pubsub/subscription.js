@@ -53,6 +53,8 @@ define((require, exports, module)=>{
       this.connect();
     }
 
+    onMessage(message) {}
+
     filterDoc(doc) {return this.subSession.filterDoc(doc)}
 
     stop(error) {

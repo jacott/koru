@@ -35,6 +35,10 @@ define((require, exports, module)=>{
     onMessage(message) {}            // override me
     userIdChanged(newUID, oldUID) {} // override me
 
+    postMessage(message) {
+      this.conn.sendBinary('Q', [this.id, 0, message]);
+    }
+
     stop() {
       if (this[stopped$]) return;
       stopped(this);

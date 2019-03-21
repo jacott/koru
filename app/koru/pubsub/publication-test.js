@@ -219,6 +219,27 @@ isServer && define((require, exports, module)=>{
       assert.equals(conn._subs, {});
     });
 
+    test("postMessage", ()=>{
+      /**
+       * Post `message` directly to the subscriber client. See {#../subscription#onMessage}
+
+       * @param {any-type} message
+       **/
+      api.protoMethod();
+
+      //[
+      let sub;
+      class Library extends Publication {
+        init() {sub = this}
+      }
+      Library.pubName = 'Library';
+      conn.onSubscribe("sub1", 1, 'Library', {shelf: ["mathematics"]});
+
+      sub.postMessage({my: "message"});
+      //]
+      assert.calledWith(conn.sendBinary, 'Q', ["sub1", 0, {my: "message"}]);
+    });
+
     test("onMessage", ()=>{
       /**
        * Called when a message has been sent from the subscription. Messages are used to alter the

@@ -40,18 +40,24 @@ define((require)=>{
     if (subSess === void 0) return;
     const sub = subSess.subs[data[0]];
     if (sub === void 0) return;
+    const msgId = data[1];
+
+    if (msgId == 0) {
+      sub.onMessage(data[2]);
+      return;
+    }
     const status = data[2];
     try {
       if (status !== 200) {
         if (status <=0) {
           sub[messageResponse$](data);
         } else {
-          sub.stop({code: data[2], reason: data[3]});
+          sub.stop({code: status, reason: data[3]});
         }
       } else
         sub[connected$]({lastSubscribed: data[3]});
     } finally {
-      if (sub[msgId$] === data[1]) {
+      if (sub[msgId$] === msgId) {
         decPending(subSess, sub);
       }
     }
