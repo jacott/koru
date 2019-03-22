@@ -104,6 +104,9 @@ define((require)=>{
           return args.every(match => match[mthd](value));
         }, typeof args[args.length-1] === 'string' ? args.pop() : 'match.and');
       },
+      not(arg) {
+        return match(value => ! arg[match$](value), ()=> `match.not(${arg})`);
+      },
       tuple(array, name='match.tuple') {
         const len = array.length;
         return match((value, mthd=match$) => {

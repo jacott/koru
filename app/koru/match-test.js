@@ -175,6 +175,19 @@ define((require, exports, module)=>{
       assert.isFalse(mi.test('c'));
     });
 
+    test("match.not", ()=>{
+      /**
+       * Match not. Invert the result of `arg` matcher.
+
+       * @param arg the matcher to invert.
+       **/
+      api.customIntercept(match, {name: 'not', sig: 'match.'});
+      //[
+      assert.isTrue(match.not(match.string).test(1));
+      assert.isFalse(match.not(match.number).test(1));
+      //]
+    });
+
     test("match.or", ()=>{
       let mor = match.or(match.number, match.string, match.boolean, 'mymatch');
 
