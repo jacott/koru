@@ -141,6 +141,17 @@ isServer && define((require, exports, module)=>{
         //]
       });
 
+      test("explainQuery", ()=>{
+        /**
+         * Run an EXPLAIN ANALYZE on given query and return result text.
+         **/
+        api.protoMethod();
+        //[
+        const ans = pg.defaultDb.explainQuery(`SELECT {$a}::int + {$b}::int as ans`, {a: 1, b:2});
+
+        assert.match(ans, /^Result.*cost=.*\nPlanning time:.*\nExecution time/);
+      });
+
       test("timeLimitQuery", ()=>{
         /**
          * Same as {##query} but limit to time the query can run for. This method will wrap the

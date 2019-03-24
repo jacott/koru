@@ -97,7 +97,7 @@ define((require, exports, module)=>{
   const query = (conn, text, params)=>{
     try {
       const future = new Future;
-      if (params)
+      if (params !== void 0)
         conn.execParams(text, params, wait(future));
       else
         conn.exec(text, wait(future));
@@ -155,6 +155,33 @@ define((require, exports, module)=>{
     }
   };
 
+  const normalizeQuery = (text, args)=>{
+    if (text instanceof SQLStatement) {
+      const params = args.length == 0 ? void 0 : text.convertArgs(args[0]);
+      return [text.text, params];
+    }
+
+    if (Array.isArray(text)) {
+      let sqlStr = text[0];
+      for(let i = 1; i <= args.length; ++i) {
+        sqlStr += '$' + i + text[i];
+      }
+      return [sqlStr, args];
+    }
+    if (args.length == 0)
+      return [text, void 0];
+
+    const arg0 = args[0];
+    if (Array.isArray(arg0))
+      return [text, arg0];
+
+    const posMap = {}, params = [];
+    let count = 0;
+    text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
+      params.push(arg0[key]),
+      (posMap[key] = `$${++count}`)));
+    return [text, params];
+  };
 
   class Client {
     constructor(url, name) {
@@ -219,38 +246,22 @@ define((require, exports, module)=>{
     }
 
     query(text, ...args) {
-      if (text instanceof SQLStatement) {
-        const params = args.length == 0 ? void 0 : text.convertArgs(args[0]);
-        return this.withConn(conn => query(conn, text.text, params));
-      }
+      const tp = normalizeQuery(text, args);
+      return this.withConn(conn => query(conn, tp[0], tp[1]));
+    }
 
-      if (Array.isArray(text)) {
-        let sqlStr = text[0];
-        for(let i = 1; i <= args.length; ++i) {
-          sqlStr += '$' + i + text[i];
-        }
-        return this.withConn(conn => query(conn, sqlStr, args));;
-      }
-      if (args.length == 0)
-        return this.withConn(conn => query(conn, text));
-
-      const arg0 = args[0];
-      if (Array.isArray(arg0))
-        return this.withConn(conn => query(conn, text, arg0));
-
-      const posMap = {}, params = [];
-      let count = 0;
-      text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
-        params.push(arg0[key]),
-          (posMap[key] = `$${++count}`)));
-      return this.withConn(conn => query(conn, text, params));
+    explainQuery(text, ...args) {
+      const tp = normalizeQuery(text, args);
+      return this.withConn(conn => query(conn, 'EXPLAIN ANALYZE '+tp[0], tp[1])
+                           .map(d => d['QUERY PLAN']).join("\n"));
     }
 
     timeLimitQuery(text, params, {timeout=20000, timeoutMessage="Query took too long to run"}={}) {
-      return this.transaction(()=>{
+      return this.transaction(tx =>{
         try {
-          this.query('set local statement_timeout to '+timeout);
-          return this.query(text, params);
+          query(tx.conn, 'set local statement_timeout to '+timeout);
+          const tp = normalizeQuery(text, [params]);
+          return query(tx.conn, tp[0], tp[1]);
         } catch(ex) {
           if (ex.sqlState === '57014')
             throw new koru.Error(504, timeoutMessage);
