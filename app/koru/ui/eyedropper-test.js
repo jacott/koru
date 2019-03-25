@@ -261,7 +261,9 @@ isClient && define((require, exports, module)=>{
         : util.isSafari
           ? {r: 127, g: 27, b: 220, a: 0.988}
         : {r: 126, g: 27, b: 220, a: 0.988},
-        0.001);
+        2);
+
+      assert(color.a < 1 && color.a > 0.98);
     });
 
     test("layered images", async ()=>{
