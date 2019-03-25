@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util = require('./util-base');
 
   const match$ = Symbol();

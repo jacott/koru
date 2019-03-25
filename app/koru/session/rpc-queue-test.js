@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * Default queue for RPC messages to be sent. This queue is for an
    * in memory queue but can be replaced by a persistent queue for

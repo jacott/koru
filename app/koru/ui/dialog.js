@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Dom             = require('../dom');
   const Form            = require('./form');
   const Modal           = require('./modal');

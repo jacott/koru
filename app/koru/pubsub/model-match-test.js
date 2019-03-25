@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * A class to create a match registry that compares a {#koru/model/main} document to a set of
    * match functions.

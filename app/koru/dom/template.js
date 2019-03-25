@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const koru            = require('koru');
   const Ctx             = require('koru/dom/ctx');
   const util            = require('koru/util');

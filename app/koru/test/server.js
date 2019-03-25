@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const session         = require('../session/base');
   const Test            = require('./main');
 

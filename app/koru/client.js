@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const {extractError, inspect} = require('koru/util');
   const koru            = require('./main');
   const session         = require('./session/main');

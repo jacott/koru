@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * local-storage allows for easy stubbing on window.localStorage so
    * that real localStorage isn't changed in tests

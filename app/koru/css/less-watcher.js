@@ -2,6 +2,7 @@ const fs = require('fs');
 const Path = require('path');
 
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const fw              = require('koru/file-watch');
   const fst             = require('koru/fs-tools');

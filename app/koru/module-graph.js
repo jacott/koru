@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   exports.findPath = (start, goal)=>{
     const goalId = goal.id;
 

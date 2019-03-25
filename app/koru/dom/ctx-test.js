@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)

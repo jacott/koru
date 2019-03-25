@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const AutoList        = require('koru/ui/auto-list');
   const Dom             = require('../dom');
   const Query           = require('../model/query');

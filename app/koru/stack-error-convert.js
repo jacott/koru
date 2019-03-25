@@ -1,6 +1,7 @@
 const path = require('path');
 
 define((require)=>{
+  'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const Mutex           = require('koru/mutex');

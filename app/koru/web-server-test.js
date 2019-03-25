@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * The default web-server created from {#koru/web-server-factory}.
    * {#koru/idle-check} is used to keep track of active

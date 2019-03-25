@@ -1,6 +1,7 @@
 const path = require('path');
 
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const fileWatch       = require('koru/file-watch');
   const Model           = require('koru/model');

@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const fw              = require('koru/file-watch');
   const fst             = require('koru/fs-tools');
   const koru            = require('koru/main');

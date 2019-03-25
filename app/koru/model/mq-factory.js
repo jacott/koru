@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const dbBroker        = require('koru/model/db-broker');
   const util            = require('koru/util');

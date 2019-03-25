@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * Attach rpc to a session
    **/

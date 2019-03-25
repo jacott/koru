@@ -5,6 +5,7 @@ const autoprefixer = requirejs.nodeRequire("autoprefixer")({browsers: ['> 5%', '
 const postcss = requirejs.nodeRequire("postcss")([autoprefixer]);
 
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const fst             = require('koru/fs-tools');

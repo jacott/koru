@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const loader          = require('koru/env!./text');
 
   const Module = module.constructor;

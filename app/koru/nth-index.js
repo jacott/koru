@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util = require('koru/util');
 
   class NthIndex {

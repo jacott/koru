@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const WebServerFactory = require('koru/web-server-factory');
   const Path            = requirejs.nodeRequire('path');

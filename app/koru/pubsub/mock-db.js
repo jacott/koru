@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const makeSubject     = require('koru/make-subject');
   const DocChange       = require('koru/model/doc-change');

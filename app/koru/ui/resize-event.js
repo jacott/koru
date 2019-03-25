@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Dom             = require('koru/dom');
 
   const CSS = 'position:absolute;left:0;top:-100%;width:100%;height:100%;margin:1px 0 0;'+

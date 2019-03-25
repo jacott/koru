@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * Main koru module. Responsible for:
    *

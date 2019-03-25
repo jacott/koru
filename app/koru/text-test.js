@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const TH = require('./test-helper');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{

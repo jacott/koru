@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const fst             = require('koru/fs-tools');

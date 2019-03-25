@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Dom             = require('../dom');
 
   let topModal = null;

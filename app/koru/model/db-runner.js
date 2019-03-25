@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   return dbBroker =>{
 
     const stop = isClient ? self =>{

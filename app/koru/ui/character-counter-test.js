@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('koru/dom');
   const PlainText       = require('koru/ui/plain-text');
   const TH              = require('koru/ui/test-helper');

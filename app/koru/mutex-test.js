@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)). It
    * works by yielding the current

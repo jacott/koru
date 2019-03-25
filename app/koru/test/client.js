@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const SessionBase = new (require('koru/session/base').constructor)('test');
   const koru            = require('koru/client'); // load client so we can override koru.logger
   const localStorage    = require('koru/local-storage');

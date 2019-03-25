@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * PreloadSubscription extends {#../subscription} to facilitate preloading documents from a client
    * {#koru/model/query-idb} or similar in addition to fetching from server. This class overrides

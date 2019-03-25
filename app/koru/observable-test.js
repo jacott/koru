@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * An observeable object. Observable keeps track of subjects and notifies all of them if asked.
    * An Observable instance is iteratable.

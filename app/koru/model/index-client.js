@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const BTree           = require('koru/btree');
   const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');

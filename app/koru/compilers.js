@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const util            = require('koru/util');

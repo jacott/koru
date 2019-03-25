@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const koru = require('koru');
   const fs = requirejs.nodeRequire('fs');
 

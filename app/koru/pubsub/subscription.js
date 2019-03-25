@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Query           = require('koru/model/query');
   const Observable      = require('koru/observable');

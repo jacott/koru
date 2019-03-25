@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Dom             = require('../dom');
 
   const IGNORE_OPTIONS = {"class": true, type: true, atList: true};

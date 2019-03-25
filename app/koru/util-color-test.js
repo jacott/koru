@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const HtmlDoc         = require('koru/dom/html-doc');
   const TH              = require('koru/test-helper');
 

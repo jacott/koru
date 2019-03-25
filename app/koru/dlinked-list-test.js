@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * A double linked list. The list is iterable.
    **/

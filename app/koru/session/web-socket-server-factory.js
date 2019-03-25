@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');

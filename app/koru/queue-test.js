@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const TH              = require('koru/test-helper');
   const koru            = require('./main');
   const Future          = requirejs.nodeRequire('fibers/future');

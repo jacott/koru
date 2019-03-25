@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
   const util            = require('../util');
   const sut             = require('./calendar');
@@ -163,7 +164,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("focusout", ()=>{
-      v.open(new Date(2013-01-02));
+      v.open(new Date(2013, 1, 2));
       document.activeElement.blur();
       TH.trigger('[name=testField]', 'focusout');
 

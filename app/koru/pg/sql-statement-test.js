@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const Driver          = require('koru/pg/driver');
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');

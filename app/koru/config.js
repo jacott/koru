@@ -2,6 +2,7 @@
  * Load file based on config setting.
  */
 define((require, exports, module)=>{
+  'use strict';
   return {
     /**
      * Load a module cooresponding to the config setting of name.

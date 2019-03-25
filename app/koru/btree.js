@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util  = require('koru/util');
 
   const {inspect$, test$} = require('koru/symbols');

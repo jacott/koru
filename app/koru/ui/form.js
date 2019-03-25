@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const SelectMenu      = require('koru/ui/select-menu');
   const Dom             = require('../dom');
   const format          = require('../format');

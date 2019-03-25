@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const driver          = require('koru/config!DBDriver');
   const DBRunner        = require('koru/model/db-runner');
   const util            = require('koru/util');

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const {stubName$}     = require('koru/symbols');
   const {merge, inspect, hasOwn} = require('koru/util');
   const {deepEqual}     = require('./core');

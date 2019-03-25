@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Email           = require('koru/email');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');

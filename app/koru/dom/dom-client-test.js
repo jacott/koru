@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   // Adorn koru/dom/base with extra client only utilities
   const Ctx             = require('koru/dom/ctx');
   const TH              = require('koru/test-helper');

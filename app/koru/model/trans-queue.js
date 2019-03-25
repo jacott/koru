@@ -1,4 +1,5 @@
 define(require =>{
+  'use strict';
   const util  = require('koru/util');
 
   const success$ = Symbol(), finally$ = Symbol(), abort$ = Symbol();

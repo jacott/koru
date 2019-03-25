@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const TH              = require('koru/test-helper');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const {private$}      = require('koru/symbols');
   const koru            = require('../main');
   const util            = require('../util');

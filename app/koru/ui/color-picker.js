@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const ColorHelpers    = require('koru/color-helpers');
   const Eyedropper      = require('koru/ui/eyedropper');
   const Dom             = require('../dom');

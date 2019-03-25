@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const CharacterCounter = require('koru/ui/character-counter');
@@ -117,7 +118,7 @@ define((require, exports, module)=>{
       if ($.element.nodeType === document.COMMENT_NODE) return;
       const {extend} = $.ctx.parentCtx.data;
       const mentions = extend && extend.mentions;
-      if (mentions === undefined) return;
+      if (mentions == null) return;
       const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(id =>{
         frag.appendChild(Dom.h({

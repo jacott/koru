@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const koru   = require('./main');
   const TH     = require('./test-helper');
   const util   = require('./util');

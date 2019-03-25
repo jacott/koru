@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
   const completeListTpl = require('../html!./complete-list-test');
   const util            = require('../util');

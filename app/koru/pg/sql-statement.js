@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const cache$ = Symbol();
 
   const makeText = (parts, posMap, pos)=>{

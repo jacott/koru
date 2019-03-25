@@ -1,4 +1,5 @@
 define(['require', 'koru/util-base'], (require, util)=>{
+  'use strict';
   const ANON_FUNCTION = 'anonymous';
 
   const node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;

@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * ServerConnection is the server side of a client-server webSocket connection.
    **/

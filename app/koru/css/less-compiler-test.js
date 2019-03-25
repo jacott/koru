@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const fst      = require('../fs-tools');
   const TH       = require('koru/test-helper');
 

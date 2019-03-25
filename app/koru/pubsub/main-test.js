@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * The publish subscribe systems allows clients to be informed of changes on the server.  The
    * usual scenario is when a client is interested in one or more {#koru/model/main}s.

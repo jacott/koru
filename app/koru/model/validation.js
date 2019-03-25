@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const format         = require('../format');
   const koru           = require('../main');
   const match          = require('../match');
@@ -145,7 +146,7 @@ define((require)=>{
 
     matchFields(fieldSpec, name) {
       const m = match(doc=>{
-        if (! doc) return false;
+        if (doc === null || typeof doc !== 'object' ) return false;
         if (doc[error$] !== undefined) doc[error$] = undefined;
         for (const field in doc) {
           if (! hasOwn(fieldSpec, field)) {

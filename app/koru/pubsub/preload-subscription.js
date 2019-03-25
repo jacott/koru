@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Observable      = require('koru/observable');
   const Subscription    = require('koru/pubsub/subscription');
   const util            = require('koru/util');

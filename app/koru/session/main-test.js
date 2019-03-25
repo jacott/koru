@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * The main or active session for client server communication.
    * See {#koru/session/web-socket-sender-factory}

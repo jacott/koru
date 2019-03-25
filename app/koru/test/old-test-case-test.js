@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const TH              = require('./main');
   const TestCase        = require('./test-case');
 

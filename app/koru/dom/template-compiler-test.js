@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
   const fs              = requirejs.nodeRequire('fs');

@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 

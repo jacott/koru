@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * IndexedDB queue for RPC messages to be sent. This queue is for a
    * persistent indexedDB queue which is suitable for offline support.

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
    * The {#koru/util.deepEqual} function will honour any matchers found in the `expected` (second)

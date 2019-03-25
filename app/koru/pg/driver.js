@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Libpq = requirejs.nodeRequire('pg-libpq');
   const Observable      = require('koru/observable');
   const SQLStatement    = require('koru/pg/sql-statement');

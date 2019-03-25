@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const match           = require('koru/match');
 

@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const TH              = require('./test-helper');
 
   const sut = require('./slider');

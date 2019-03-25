@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * Factory for creating web-servers.
    *

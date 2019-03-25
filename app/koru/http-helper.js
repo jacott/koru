@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const koru            = require('koru');
   const util            = require('koru/util');
   const Readable        = requirejs.nodeRequire('stream').Readable;

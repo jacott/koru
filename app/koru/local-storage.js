@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Observable      = require('koru/observable');
 
   let observers;

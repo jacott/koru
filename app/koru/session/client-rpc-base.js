@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Random          = require('koru/random');
   const RPCQueue        = require('koru/session/rpc-queue');
   const util            = require('koru/util');

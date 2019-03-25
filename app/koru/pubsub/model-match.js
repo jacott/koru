@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const DLinkedList     = require('koru/dlinked-list');
 
   const models$ = Symbol();

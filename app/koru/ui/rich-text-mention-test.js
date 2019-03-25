@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
   const Modal           = require('./modal');
   const RichText        = require('./rich-text');

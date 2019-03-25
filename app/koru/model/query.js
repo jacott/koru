@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const makeSubject     = require('koru/make-subject');
   const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');

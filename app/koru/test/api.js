@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const moduleGraph     = require('koru/module-graph');
   const jsParser        = require('koru/parse/js-parser');

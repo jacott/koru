@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const Model           = require('koru/model/map');
   const DocChange       = require('koru/model/doc-change');

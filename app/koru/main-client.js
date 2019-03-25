@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const pep = require('koru/polyfill/maybe-pep');
   const util = require('./util-client');
 

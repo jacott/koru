@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
   const util            = require('koru/util');

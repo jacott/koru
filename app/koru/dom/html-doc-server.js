@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('koru/dom/base');
   const htmlEncode      = require('koru/dom/html-encode');
   const util            = require('koru/util');

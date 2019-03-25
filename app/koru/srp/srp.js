@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Random          = require('../random').global;
   const BigInteger      = require('./big-integer');
   const SHA256          = require('./sha256');

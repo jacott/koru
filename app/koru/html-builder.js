@@ -3,6 +3,7 @@
  The template-compiler will convert the html to js.
  */
 define((require, exports, module)=>{
+  'use strict';
   const util             = require('koru/util');
   const templateCompiler = require('./dom/template-compiler');
   const fs = requirejs.nodeRequire('fs');

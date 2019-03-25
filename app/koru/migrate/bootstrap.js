@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Migration       = require('koru/migrate/migration');
   const {defaultDb}     = require('koru/pg/driver');

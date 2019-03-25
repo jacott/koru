@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 define((require, exports, module)=>{
+  'use strict';
   return API =>{
     const util  = require('koru/util');
     const session = require('koru/session');

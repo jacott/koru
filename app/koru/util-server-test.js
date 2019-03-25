@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
 

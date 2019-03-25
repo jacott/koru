@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util            = require('koru/util');
 
   class KoruError extends Error {
@@ -9,8 +10,9 @@ define((require)=>{
       this.reason = reason;
       this.details = details;
     }
+
+    get name() {return 'KoruError'}
   }
-  KoruError.name = KoruError.prototype.name = 'KoruError';
 
   return KoruError;
 });

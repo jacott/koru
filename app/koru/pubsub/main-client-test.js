@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Subscription    = require('koru/pubsub/subscription');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');

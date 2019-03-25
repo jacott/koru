@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * Route is a paginging system within a one page app. It manages
    * creating and destroying pages and recording history.

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const UtilDate        = require('koru/util-date');
 
   const compiled$ = Symbol();

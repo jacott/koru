@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * Union is an interface used to combine server subscriptions to minimise work on the server.
    *

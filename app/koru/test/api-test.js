@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * API is a semi-automatic API document generator. It uses
    * unit-tests to determine types and values at test time.

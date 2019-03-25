@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Model           = require('koru/model');
   const Factory         = require('koru/model/test-factory');
 

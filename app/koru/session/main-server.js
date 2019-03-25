@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const koru            = require('koru');
   const server          = require('../web-server').server;
   const webSocketServerFactory = require('./web-socket-server-factory');

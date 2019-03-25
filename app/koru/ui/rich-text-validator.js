@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const util            = require('koru/util');
   const RichText        = require('./rich-text');

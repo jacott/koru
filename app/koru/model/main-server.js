@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
@@ -62,7 +63,8 @@ define((require, exports, module)=>{
       if (! model) return;
       if (drop === 'drop')
         model.db.dropTable(model.modelName);
-      model.db = model.docs = null;
+      const rd = _resetDocs[model.modelName];
+      rd !== void 0 && rd();
     },
 
     init(_BaseModel, _baseSupport) {

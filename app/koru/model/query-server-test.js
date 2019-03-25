@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const TransQueue      = require('koru/model/trans-queue');
   const SQLStatement    = require('koru/pg/sql-statement');
   const api             = require('koru/test/api');

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const format          = require('koru/format');
   const util            = require('koru/util');
   const match           = require('koru/match').__initBase__();
@@ -23,8 +24,10 @@ define((require)=>{
         }
       }
     }
+
+    get name() {return 'AssertionError'}
   }
-  AssertionError.name = AssertionError.prototype.name = 'AssertionError';
+
 
   let elidePoint = null;
 

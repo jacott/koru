@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const {private$}      = require('koru/symbols');
   const Trace           = require('koru/trace');
   const koru            = require('../main');

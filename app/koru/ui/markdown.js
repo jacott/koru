@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   require('koru/dom/html-doc');
   const koru            = require('koru/main');
   const util            = require('koru/util');

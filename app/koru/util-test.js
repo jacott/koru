@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * The `util` module provides commonly performed utility functions.
    **/

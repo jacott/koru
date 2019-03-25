@@ -1,6 +1,7 @@
 const Fiber = requirejs.nodeRequire('fibers');
 
 define((require)=>{
+  'use strict';
   const util            = require('koru/util');
 
   const head$ = Symbol(), tail$ = Symbol();

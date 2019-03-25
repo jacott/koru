@@ -1,4 +1,5 @@
 define((require) =>{
+  'use strict';
   const DBRunner        = require('koru/model/db-runner');
 
   let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';

@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  'use strict';
   const util            = require('koru/util');
   const session         = require('../session/main');
   const message         = require('../session/message');

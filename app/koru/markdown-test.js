@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const markdown        = require('./markdown');
   const TH              = require('./test-helper');
 

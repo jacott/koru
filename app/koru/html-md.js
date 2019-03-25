@@ -4,6 +4,7 @@
  */
 
 define((require, exports, module)=>{
+  'use strict';
   const koru = require('./main');
 
   koru.onunload(module, 'reload');

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const {utf8to16, utf16to8} = require('koru/text-encoder');
 
   const pushEach = (buffer, args) => {

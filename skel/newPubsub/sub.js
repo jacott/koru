@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Subscription    = require('koru/pubsub/subscription');
   const $$modelName$$ = require('models/$$modelModule$$');
 

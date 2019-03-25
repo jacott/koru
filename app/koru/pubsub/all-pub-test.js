@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * AllPub is an extended {#../publication} which publicizes all documents in every defined
    * {#koru/model/main}.

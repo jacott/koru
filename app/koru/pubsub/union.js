@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const BTree           = require('koru/btree');
   const DLinkedList     = require('koru/dlinked-list');

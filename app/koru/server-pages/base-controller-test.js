@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * BaseController provides the default actions for page requests. Action controllers extend
    * BaseController to intercept actions. See {#koru/server-pages/main}

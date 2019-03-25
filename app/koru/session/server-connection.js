@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const TransQueue      = require('koru/model/trans-queue');

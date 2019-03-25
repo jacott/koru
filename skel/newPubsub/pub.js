@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Publication     = require('koru/pubsub/publication');
 
   const $$modelName$$ = require('models/$$modelModule$$');

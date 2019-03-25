@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru = require('./main');
 
   const traceDep = (name, dir, done)=>{

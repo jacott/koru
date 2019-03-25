@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const markdownTemplateCompiler = require('koru/dom/markdown-template-compiler');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const State           = require('koru/session/state');
   const webSocketSenderFactory = require('koru/session/web-socket-sender-factory');

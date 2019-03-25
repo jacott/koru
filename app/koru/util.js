@@ -1,5 +1,6 @@
 /* global Intl */
 define((require)=>{
+  'use strict';
   const match           = require('./match');
   const stacktrace      = require('./stacktrace');
   const util            = require('./util-base');

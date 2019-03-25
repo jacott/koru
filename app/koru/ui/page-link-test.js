@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
   const util            = require('../util');
   const Route           = require('./route');

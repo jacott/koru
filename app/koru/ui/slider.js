@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
 
   const Tpl = Dom.newTemplate(module, require('../html!./slider'));

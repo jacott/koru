@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * A group of tests. Most methods are for internal purposes and are not documented here.
    *

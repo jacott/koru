@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const DocChange       = require('koru/model/doc-change');
   const api             = require('koru/test/api');
   const session         = require('../session');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('../dom');
   const koru            = require('../main');
   const util            = require('../util');

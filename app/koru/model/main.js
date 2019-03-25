@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const ModelEnv        = require('koru/env!./main');
   const BaseModel       = require('koru/model/base-model');
   const koru            = require('../main');

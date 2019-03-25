@@ -18,6 +18,7 @@ DebugStream.prototype._write = (data, encoding, callback)=>{callback()};
 
 
 define((require)=>{
+  'use strict';
   const util            = require('koru/util');
 
   const Email = {

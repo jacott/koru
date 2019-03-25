@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util            = require('koru/util');
   const Model           = require('../main');
   const Query           = require('../query');

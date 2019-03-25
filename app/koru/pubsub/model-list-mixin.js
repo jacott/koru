@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const ModelMap        = require('koru/model/map');
   const util            = require('koru/util');
 

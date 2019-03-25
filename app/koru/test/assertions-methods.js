@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const format          = require('koru/format');
   const Stubber         = require('koru/test/stubber');
   const util            = require('koru/util');

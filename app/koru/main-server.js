@@ -1,6 +1,7 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define((require, exports, module)=>{
+  'use strict';
   const util            = require('./util-server');
 
   const TWENTY_DAYS = 20*util.DAY;

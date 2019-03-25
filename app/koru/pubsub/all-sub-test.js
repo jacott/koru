@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * AllSub is an extended {#../subscription} which will subscribe to all documents in
    * every defined {#koru/model/main}.

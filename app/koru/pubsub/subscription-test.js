@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * A Subscription is a abstract interface for subscribing to publications.
    *
@@ -155,7 +156,9 @@ isClient && define((require, exports, module)=>{
 
         //]
         resonse = null;
-        sub1.state = 'connect';
+        stub(sub1.subSession, 'connect');
+        sub1.connect();
+        sub1.subSession.connect.restore();
         waitForServerResponse(sub1, {error: null});
         assert.same(resonse, null);
         //[#

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const localStorage    = require('../local-storage');
   const koru            = require('../main');
   const session         = require('../session/client-rpc');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const session         = require('koru/session');
   const Route           = require('koru/ui/route');

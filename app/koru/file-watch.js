@@ -3,6 +3,7 @@ const Future = requirejs.nodeRequire('fibers/future');
 const Path = require('path');
 
 define((require, exports, module)=>{
+  'use strict';
   const fst     = require('./fs-tools');
   const koru    = require('./main');
   const session = require('./session/base');

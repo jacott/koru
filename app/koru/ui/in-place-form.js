@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const Dom             = require('koru/dom');
   const Dialog          = require('koru/ui/dialog');
   const Form            = require('koru/ui/form');

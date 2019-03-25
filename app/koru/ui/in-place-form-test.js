@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const DomNav          = require('koru/ui/dom-nav');
   const Dom             = require('../dom');
   const ipfTpl          = require('../html!./in-place-form-test');

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util            = require('koru/util-base');
 
   const K = [ 0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,

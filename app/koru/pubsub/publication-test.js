@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * A Publication is a abstract interface for handling subscriptions.
    *

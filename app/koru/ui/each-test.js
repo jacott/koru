@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Ctx     = require('koru/dom/ctx');
   const Dom     = require('../dom');
   const eachTpl = require('../html!./each-test');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Changes         = require('koru/changes');
   const ModelEnv        = require('koru/env!./main');
   const dbBroker        = require('koru/model/db-broker');

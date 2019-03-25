@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * dbBroker allows for multiple databases and server connections within one browser instance.
    **/

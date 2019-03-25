@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Dom             = require('koru/dom');
 
   const COUNTER = Dom.h({class: 'ui-charCounter', div: {div: [{span: ''}, {span: ''}]}});

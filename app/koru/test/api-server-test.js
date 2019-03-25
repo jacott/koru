@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 define((require, exports, module)=>{
+  'use strict';
   const API             = require('./api');
   const TH              = require('./main');
 

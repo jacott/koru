@@ -2,6 +2,7 @@ const Path = require('path');
 const htmlparser = requirejs.nodeRequire("htmlparser2");
 
 define((require)=>{
+  'use strict';
   const Compilers       = require('koru/compilers');
   const htmlEncode      = require('koru/dom/html-encode');
   const fst             = require('../fs-tools');

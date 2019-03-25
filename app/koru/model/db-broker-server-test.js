@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   /**
    * dbBroker allows for multiple databases to be connected to one nodejs instance
    **/

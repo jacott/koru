@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const BTree           = require('koru/btree');
   const util            = require('koru/util');
 

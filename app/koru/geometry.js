@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const IGR = 2/(Math.sqrt(5) + 1) ;
 
   const DTR = Math.PI/180;

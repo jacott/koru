@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const session         = require('koru/session/base');
   const koru            = require('../main');
   const TH              = require('../test-helper');

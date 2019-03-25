@@ -1,6 +1,7 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define((require)=>{
+  'use strict';
   const {private$} = require('koru/symbols');
   const koru       = require('../main');
   const util       = require('../util');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Compilers       = require('koru/compilers');
   const fst             = require('./fs-tools');
   const IdleCheck       = require('./idle-check').singleton;

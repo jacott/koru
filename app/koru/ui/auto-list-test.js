@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * Automatically manage a list of Elements matching a {#koru/model/query}.
 

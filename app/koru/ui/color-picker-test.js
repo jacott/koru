@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   const Eyedropper      = require('koru/ui/eyedropper');
   const util            = require('koru/util');
   const Dom             = require('../dom');

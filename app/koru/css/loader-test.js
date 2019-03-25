@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  'use strict';
   /**
    * css/loader allows dynamic replacement of css and less files when
    * their contents change.

@@ -2,6 +2,7 @@ if (! (window.PointerEvent && window.Element && window.Element.prototype.setPoin
   requirejs.polyfill_pep = 'koru/polyfill/pep';
 
 define((require)=>{
+  'use strict';
   const pf = require('koru/polyfill!pep');
 
   if (pf !== undefined && pf.PointerEvent === window.PointerEvent)

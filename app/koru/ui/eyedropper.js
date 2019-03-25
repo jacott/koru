@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const Geometry        = require('koru/geometry');

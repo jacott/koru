@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * This is useful for building a hash in small increments; it is not the same as hashing the
    * entire string in one go.

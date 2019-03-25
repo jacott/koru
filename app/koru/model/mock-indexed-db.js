@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const TH              = require('koru/test/main');
   const util            = require('koru/util');
 

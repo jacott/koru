@@ -5,6 +5,7 @@ const readdir = Future.wrap(fs.readdir);
 const stat = Future.wrap(fs.stat);
 
 define((require, exports, module)=>{
+  'use strict';
   const ModelMap = require('koru/model/map');
   const koru     = require('../main');
   const util     = require('../util');

@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const {hasOwnProperty} = Object.prototype;
   const qstr = s => JSON.stringify(s).slice(1, -1);
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;

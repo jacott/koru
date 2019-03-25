@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * DocChange encapsulates a change to a {#koru/model/base-model} instance. Used with
    * {#koru/model/base-model.onChange} and other observe methods. The main properties are:

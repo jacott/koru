@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const KoruError       = require('koru/koru-error');
   const util            = require('./util');
 

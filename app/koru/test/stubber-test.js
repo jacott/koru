@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * Spies and Stubs are functions which record the call arguments, this value and return of each
    * call made to them. They can intercept calls to Object getter, setter and function properties.

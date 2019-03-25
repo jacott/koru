@@ -1,4 +1,5 @@
 isServer && define((require, exports, module)=>{
+  'use strict';
   const request = requirejs.nodeRequire('request');
   const koru            = require('koru');
   const HttpHelper      = require('koru/http-helper');

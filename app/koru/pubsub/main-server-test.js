@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const Val             = require('koru/model/validation');
   const Publication     = require('koru/pubsub/publication');
   const session         = require('koru/session');

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const MIN = 60*1000;
   const HOUR = MIN*60;
   const DAY = 24*HOUR;

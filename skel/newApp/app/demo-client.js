@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const session         = require('koru/session');
 
   const cssLoader = new (require('koru/css/loader'))(session);

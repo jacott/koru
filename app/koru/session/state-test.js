@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   const TH              = require('koru/test-helper');
   const stateFactory    = require('./state').constructor;
 

@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const util = require('./util');
 
   function format(fmt, ...args) {

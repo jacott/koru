@@ -1,4 +1,5 @@
 define((require, exports, module)=>{
+  'use strict';
   /**
    * Enumerable wraps iterables with Array like methods.
    **/

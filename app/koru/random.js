@@ -1,4 +1,5 @@
 define((require)=>{
+  'use strict';
   const AccSha256       = require('koru/srp/acc-sha256');
   const util            = require('koru/util');
 
