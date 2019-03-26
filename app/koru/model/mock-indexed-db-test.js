@@ -134,6 +134,17 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.t1.docs.q1, rec);
       });
 
+      test("clear", ()=>{
+        const tx = v.db.transaction(['t1'], 'readwrite');
+        let ans = 'nofinished';
+        tx.objectStore('t1').clear()
+          .onsuccess = ({target: {result}}) => {ans = result};
+
+        v.idb._run();
+        assert.equals(v.t1.docs, {});
+        assert.same(ans, undefined);
+      });
+
       test("createIndex", ()=>{
         v.t1Name = v.t1.createIndex('name', 'name');
         v.t1Name.get('Ronald')

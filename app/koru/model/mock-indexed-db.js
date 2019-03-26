@@ -277,6 +277,16 @@ define((require)=>{
       };
     }
 
+    clear() {
+      for (const id in this.docs) {
+        delete this.docs[id];
+      }
+      const {db} = this;
+      return {
+        set onsuccess(f) {db._addPending(() => {f({target: {result: undefined}})})},
+      };
+    }
+
     createIndex(name, keyPath, options) {
       if (this.indexes[name])
         throw new Error(this.name + " index already exists: "+name);
