@@ -1,23 +1,18 @@
 isServer && define((require, exports, module)=>{
   'use strict';
   /**
-   * The default web-server created from {#koru/web-server-factory}.
-   * {#koru/idle-check} is used to keep track of active
-   * requests.
+   * The default web-server created from {#koru/web-server-factory}.  {#koru/idle-check} is used to
+   * keep track of active requests.
    *
    * @config host listen on the specified address
 
    * @config port listen on the specified port
 
-   * @config defaultPage defaults to `/index.html`: used when no path
-   * is supplied in the url.
+   * @config defaultPage defaults to `/index.html`: used when no path is supplied in the url.
 
-   * @config index.js the file to serve for `index.js` or
-   * `require.js`; defaults to `yaajs.js`
+   * @config indexjs the file to serve for `index.js` or `require.js`; defaults to `yaajs.js`
 
-   * @config require.js alias for `index.js`
-
-   * @config koru where to find koru files; defaults to `app/koru`
+   * @config indexcss the file to serve for `index.css`; defaults to `index.css`
    *
    **/
   const Compilers       = require('koru/compilers');

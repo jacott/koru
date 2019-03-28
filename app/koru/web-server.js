@@ -7,17 +7,23 @@ define((require, exports, module)=>{
   const root = module.toUrl('');
   const koruParent = Path.join(koru.libDir, 'app');
 
-  const DEFAULT_PAGE = module.config().defaultPage || '/index.html';
+  const config = module.config();
 
-  const port = module.config().port || 3000;
-  const host = module.config().host;
+  const DEFAULT_PAGE = config.defaultPage || '/index.html';
 
-  const indexjs = ()=> [koru.config.indexjs ||
+  const port = config.port || 3000;
+  const host = config.host;
+
+  const indexjs = ()=> [config.indexjs ||
                         requirejs.nodeRequire.resolve('yaajs/yaa.js'), '/'];
+
+  const indexcss = ()=> [config.indexcss ||
+                         "index.css", '/'];
 
   const SPECIALS = {
     "index.js": indexjs,
     "require.js": indexjs,
+    "index.css": indexcss,
 
     koru: m => [m[0], koruParent],
   };
