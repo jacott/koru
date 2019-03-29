@@ -1,12 +1,12 @@
-define(function(require, exports, module) {
+define((require)=>{
   'use strict';
   const util            = require('koru/util');
   const session         = require('../session/main');
   const message         = require('../session/message');
-  const TH              = require('./main');
+  const BaseTH          = require('./main');
   const Future          = requirejs.nodeRequire('fibers/future');
 
-  const {Core} = TH;
+  const {Core} = BaseTH;
   let clientMessage, cmFuture;
 
   session.provide('i', data =>{
@@ -14,7 +14,9 @@ define(function(require, exports, module) {
     cmFuture && cmFuture.return('');
   });
 
-  TH = util.reverseMerge({
+  return {
+    __proto__: BaseTH,
+
     cleanup() {
       clientMessage = null;
     },
@@ -25,12 +27,12 @@ define(function(require, exports, module) {
       }
       assert(v.conn, "should start client first");
       v.script = {
-        wait:   function waitClient(when, func) {
+        wait(when, func) {
           if (! clientMessage) {
             cmFuture = new Future;
             cmFuture.wait();
           }
-          var cm = clientMessage;
+          const cm = clientMessage;
           clientMessage = null;
           if (cm[0] === 'ok')
             assert.elideFromStack.same(cm[1][0], when);
@@ -38,7 +40,7 @@ define(function(require, exports, module) {
             assert.fail(cm[1]);
 
           if (func) {
-            var response = func.apply(this, cm[1]);
+            const response = func.apply(this, cm[1]);
 
             v.conn.sendBinary('i', [when, response]);
           }
@@ -50,8 +52,5 @@ define(function(require, exports, module) {
       session.unload(module);
       session.load(module);
     },
-
-  }, TH);
-
-  return TH;
+  };
 });

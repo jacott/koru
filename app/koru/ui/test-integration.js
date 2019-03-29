@@ -1,18 +1,31 @@
-define(function(require, exports, module) {
+define((require)=>{
   'use strict';
-  var util = require('koru/util');
-  var session = require('../session');
-  var message = require('../session/message');
-  var Route = require('./route');
-  var Dom = require('../dom');
-  var koru = require('koru');
+  const koru            = require('koru');
+  const util            = require('koru/util');
+  const Dom             = require('../dom');
+  const session         = require('../session');
+  const message         = require('../session/message');
+  const Route           = require('./route');
 
-  var queueHead, queueTail;
-  var syncMsg;
+  let queueHead, queueTail;
+  let syncMsg;
+  let exits;
 
-  var helper = {};
+  const helper = {};
 
-  function send(msg) {
+  const handleError = ex =>{
+    session.sendBinary('i', ['error', util.extractError(ex)]);
+    exitScript(ex);
+  };
+
+  const exitScript = ex =>{
+    for (const exit of exits) {
+      exit.stop ? exit.stop() : exit();
+    }
+    if (ex) throw ex;
+  };
+
+  const send = msg =>{
     if (typeof msg === 'string')
       msg = [msg];
     assert.elideFromStack(Array.isArray(msg) && typeof msg[0] == 'string', "invalid server message");
@@ -21,32 +34,31 @@ define(function(require, exports, module) {
     session.sendBinary('i', ['ok', msg]);
 
     queueHead || exitScript();
-  }
+  };
 
-  session.provide('i', function (data) {
+  session.provide('i', data =>{
     queueHead ||
       handleError(new Error('unexpected server message: ' + util.inpect(data)));
 
-    var actions = queueHead;
+    const actions = queueHead;
     queueHead = queueHead.next;
-    if (! queueHead) queueTail = null;
+    if (queueHead === null) queueTail = null;
     syncMsg = false;
     actions.func.call(helper, data);
   });
 
-  function Client(func) {
-    var actions = {};
+  const Client = async func =>{
+    const actions = {};
     syncMsg = false;
     queueHead = queueTail = null;
     exits = [];
 
-    var script = {
-      waitForClassChange(elm, classname, hasClass, duration) {
+    const script = {
+      waitForClassChange: (elm, classname, hasClass, duration)=> new Promise((resolve, reject)=>{
         if (typeof elm === 'string')
           elm = document.querySelector(elm);
         duration = duration || 2000;
-        return new Promise(function (resolve, reject) {
-          var observer = new window.MutationObserver(function (mutations) {
+          var observer = new window.MutationObserver(mutations =>{
             if (Dom.hasClass(elm, classname) === hasClass) {
               observer.disconnect();
               koru.clearTimeout(timeout);
@@ -54,16 +66,16 @@ define(function(require, exports, module) {
             }
           });
           observer.observe(elm, {attributes: true});
-          var timeout = koru.setTimeout(function () {
+          var timeout = koru.setTimeout(()=>{
             observer.disconnect();
             reject(new Error('Timed out waiting for element to change' + util.inspect(elm)));
           }, duration);
-        });
-      },
-      tellServer(...args) {
-        var msg = args[0];
-        return new Promise(function (resolve, reject) {
-          var entry = {func(data) {
+      }),
+
+      tellServer: (...args)=> new Promise((resolve, reject)=>{
+        const msg = args[0];
+        const entry = {
+          func(data) {
             try {
               if (data[0] === msg)
                 resolve(data[1]);
@@ -72,45 +84,27 @@ define(function(require, exports, module) {
             } catch(ex) {
               reject(ex);
             }
-          }};
-          if (queueTail)
-            queueTail.next = entry;
-          else
-            queueHead = entry;
-          queueTail = entry;
+          },
+          next: null,
+        };
+        if (queueTail !== null)
+          queueTail.next = entry;
+        else
+          queueHead = entry;
+        queueTail = entry;
 
-          send(args);
-        });
-      },
+        send(args);
+      }),
 
-      onExit(func) {
-        exits.push(func);
-      },
+      onExit: func =>{exits.push(func)},
     };
 
-
     try {
-      var promise = func(script);
-      if (promise.then)
-        promise.then(null, handleError);
+      await func(script);
     } catch(ex) {
       handleError(ex);
     }
-  }
-
-  function handleError(ex) {
-    session.sendBinary('i', ['error', util.extractError(ex)]);
-    exitScript(ex);
-  }
-
-  var exits;
-
-  function exitScript(ex) {
-    util.forEach(exits, function (exit) {
-      exit.stop ? exit.stop() : exit();
-    });
-    if (ex) throw ex;
-  }
+  };
 
   return Client;
 });
