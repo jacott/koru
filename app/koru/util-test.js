@@ -22,17 +22,6 @@ define((require, exports, module)=>{
       v = {};
     });
 
-    test("noopHandle", ()=>{
-      /**
-       * A no operation handle. Has a stop method which does nothing. Useful when need to return a
-       * handle but nothing to stop.
-       **/
-      api.property();
-      assert.equals(util.noopHandle, {stop: m.func});
-      assert.same(util.noopHandle, util.noopHandle);
-      assert.same(util.noopHandle.stop(), void 0);
-    });
-
     test("setProperty", ()=>{
       /**
        * Set a property descriptor for an object. By default the descriptor options will be:
