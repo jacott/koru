@@ -31,13 +31,14 @@ define((require, exports, module)=>{
 
     onServerConnect(callback) {return super.onConnect(callback);}
 
-    preload(idb, preloadComplete) {}
+    preload(idb, preloadComplete) {preloadComplete(null)}
     getQueryIDB() {}
     serverResponse(err, idb) {}
 
     async connect() {
       try {
         const finished = (err=null) => {
+          if (this[state$] === 'active') return;
           this[state$] = 'active';
           const onConnect = this[onConnect$];
           if (onConnect !== void 0) {
@@ -48,13 +49,23 @@ define((require, exports, module)=>{
 
         const idb = this.getQueryIDB();
 
+        let ignorePreload = false, serverFinished = false;
+
         this.onServerConnect((err) => {
+          serverFinished = true;
           this.serverResponse(err, idb);
-          finished(err);
+          ignorePreload && finished(err);
         });
-        if (idb !== void 0) {
+        if (idb === void 0)
+          ignorePreload = true;
+        else {
           if (! idb.isReady) await idb.whenReady();
-          await this.preload(idb, finished);
+          ignorePreload = 'ignorePreload' === await this.preload(idb, (err, _ignorePreload)=>{
+            if (_ignorePreload !== 'ignorePreload' || serverFinished)
+              finished(err);
+            else
+              ignorePreload = true;
+          });
         }
 
         super.connect();

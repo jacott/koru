@@ -41,7 +41,7 @@
     "send": "^0.16.1",
     "source-map": "^0.7.3",
     "terser": "^3.17.0",
-    "ws": "^6.2.0",
+    "ws": "^6.2.1",
     "yaajs": "^3.2.1"
   },
   "devDependencies": {

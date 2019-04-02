@@ -85,8 +85,13 @@ isClient && define((require, exports, module)=>{
 
        * @param idb returned from {##getQueryIDB}
 
-       * @param preloadComplete call this once all loading has finished. Takes one argument which is
-       * an error if an error occurred.
+       * @param preloadComplete call this once all loading has finished. Takes the arguments `error`
+       * and `ignorePreload`. Set `error` if an error occurred. If `ignorePreload` is set to
+       * `"ignorePreload"` then the {##onConnect} callbacks wont be called until the server has
+       * replied else the callbacks will be called now.
+
+       * @return {undefined|"ignorePreload"} if `"ignorePreload"` is returned then `preloadComplete`
+       * will not be waited for.
        **/
       api.protoMethod();
       class Book {
@@ -96,7 +101,7 @@ isClient && define((require, exports, module)=>{
       }
       const whenReady = promiseResolve();
       const books = [{_id: 'book1'}];
-      let idb = {
+      const idb = {
         isReady: false,
         async whenReady() {},
         get: stub().returns({name: 'mathematics'}),
@@ -109,13 +114,19 @@ isClient && define((require, exports, module)=>{
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
         async preload(idb, preloadComplete) {
-          const shelf = await idb.get('last', 'self');
+          try {
+            const shelf = await idb.get('last', 'self');
+            if (self == null) return "ignorePreload";
 
-          idb.index('Book', 'shelf').getAll(IDBKeyRange.only(shelf.name))
-            .then(books => {
-              idb.loadDocs('Book', books);
-              preloadComplete();
-            }).catch(ex => {preloadComplete(ex)});
+            idb.index('Book', 'shelf').getAll(IDBKeyRange.only(shelf.name))
+              .then(books =>{
+                idb.loadDocs('Book', books);
+                preloadComplete();
+              })
+              .catch(ex =>{preloadComplete(ex)});
+          } catch(ex) {
+            preloadComplete(ex);
+          }
         }
       }
       LibrarySub.pubName = 'Library';
@@ -127,6 +138,59 @@ isClient && define((require, exports, module)=>{
       if (err) throw err;
       assert(Book.query.count(), 1);
       //]
+    });
+
+    test("preload returns ignorePreload", async ()=>{
+      const idb = {isReady: true};
+      class LibrarySub extends PreloadSubscription {
+        getQueryIDB() {return idb}
+        async preload(idb, preloadComplete) {
+          return "ignorePreload";
+        }
+      }
+      LibrarySub.pubName = 'Library';
+      let resolve;
+
+      const connect = promiseResolve();
+      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+        connect.resolve();
+        return c.returnValue;
+      });
+
+      const callback = stub();
+      const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
+
+      await connect.promise;
+      sub[connected$]({});
+      assert.called(callback);
+    });
+
+    test("preloadComplete returns ignorePreload", async ()=>{
+      const idb = {isReady: true};
+      let _preloadComplete;
+      class LibrarySub extends PreloadSubscription {
+        getQueryIDB() {return idb}
+        async preload(idb, preloadComplete) {
+          _preloadComplete = preloadComplete;
+        }
+      }
+      LibrarySub.pubName = 'Library';
+      let resolve;
+
+      const connect = promiseResolve();
+      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+        connect.resolve();
+        return c.returnValue;
+      });
+
+      const callback = stub();
+      const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
+
+      await connect.promise;
+      _preloadComplete(null, "ignorePreload");
+      refute.called(callback);
+      sub[connected$]({});
+      assert.called(callback);
     });
 
     test("getQueryIDB", async ()=>{
@@ -304,7 +368,7 @@ isClient && define((require, exports, module)=>{
         refute.called(sub.serverResponse);
         sub[connected$]({});
         assert.called(sub.serverResponse);
-        assert.calledOnce(callback);
+        refute.called(callback);
 
         sub.preloadComplete();
         assert.called(callback);
