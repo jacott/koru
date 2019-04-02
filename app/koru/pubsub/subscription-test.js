@@ -114,9 +114,6 @@ isClient && define((require, exports, module)=>{
        * Callbacks will only be called once. To be called again after a re-connect they will need to
        * be set up again inside the callback.
 
-       * If the subscription is already connected the callback will be called immediately and a
-       * {#koru/util.noopHandle} will be returned.
-       *
        * @param callback called with an `error` argument.
 
        * @returns handler with a `stop` method to cancel the onConnect.
@@ -209,12 +206,8 @@ isClient && define((require, exports, module)=>{
 
       const callback = stub();
       const handle = sub.onConnect(callback);
+      sub[connected$]({});
       assert.calledWith(callback, null);
-      assert.same(handle, util.noopHandle);
-      sub.stop('myerror');
-
-      sub.onConnect(callback);
-      assert.calledWith(callback, 'myerror');
     });
 
     test("match", ()=>{

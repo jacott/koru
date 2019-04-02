@@ -30,11 +30,7 @@ define((require, exports, module)=>{
     }
 
     onConnect(callback) {
-      if (this[state$] === STATE_MAP.active || this[state$] === STATE_MAP.stopped) {
-        callback(this.error);
-        return util.noopHandle;
-      } else
-        return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+      return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
     }
     reconnecting() {}
 
@@ -153,16 +149,14 @@ define((require, exports, module)=>{
     static get lastSubscribedMaximumAge() {return -1}
 
     [connected$]({lastSubscribed}) {
-      switch (this[state$]) {
-      case STATE_MAP.connect:
+      if (this[state$] == STATE_MAP.connect)
         this[state$] = STATE_MAP.active;
-        this.lastSubscribed = +lastSubscribed || 0;
-        const onConnect = this[onConnect$];
-        if (onConnect !== void 0) {
-          this[onConnect$] = void 0;
-          onConnect.notify(null);
-        }
-        break;
+
+      this.lastSubscribed = +lastSubscribed || 0;
+      const onConnect = this[onConnect$];
+      if (onConnect !== void 0) {
+        this[onConnect$] = void 0;
+        onConnect.notify(null);
       }
     }
 

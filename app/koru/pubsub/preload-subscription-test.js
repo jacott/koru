@@ -43,12 +43,8 @@ isClient && define((require, exports, module)=>{
 
       const callback = stub();
       const handle = sub.onConnect(callback);
+      sub[connected$]({});
       assert.calledWith(callback, null);
-      assert.same(handle, util.noopHandle);
-      sub.stop('myerror');
-
-      sub.onConnect(callback);
-      assert.calledWith(callback, 'myerror');
     });
 
     test("constructor", ()=>{

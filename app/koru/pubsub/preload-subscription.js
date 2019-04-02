@@ -13,8 +13,7 @@ define((require, exports, module)=>{
     }
     onConnect(callback) {
       if (this.state === 'active' || this.state === 'stopped') {
-        callback(this.error);
-        return util.noopHandle;
+        super.onConnect(callback);
       } else
         return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
     }
