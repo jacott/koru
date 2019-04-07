@@ -149,15 +149,19 @@ define((require, exports, module)=>{
         u8[i] = i;
       }
 
-      assert.equals(_encode(u8), v.ans = [
+      const ans = _encode(u8);
+      assert.equals(ans, [
         16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
-      const result = _decode(v.ans);
+      const u8ans = new Uint8Array(ans);
+      const result = message._decode(u8ans, 0, [v.gDict])[0];
       assert(result.constructor === Uint8Array);
-      const ary = [];
-      Array.prototype.push.apply(ary, result);
+      const ary = Array.from(result);
       assert.equals(ary, [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+
+      u8ans[10] = 88;
+      assert.same(result[5], 5); // ensure Uint8Array is copied
     });
 
     test("populated array", ()=>{

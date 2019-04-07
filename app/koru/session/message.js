@@ -122,7 +122,7 @@ define((require)=>{
       tmpU8.set(buffer.subarray(index, index + 4), 0);
       const len = tmpDv.getUint32(0);
       index += 4;
-      return [buffer.subarray(index, index + len), index + len];
+      return [buffer.slice(index, index + len), index + len];
     }}
 
     if (byte & 0x80)
