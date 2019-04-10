@@ -9,6 +9,11 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const message         = require('./message');
 
+  const forceReload = ws =>{
+    ws.send('Lforce-reload');
+    ws.close();
+  };
+
   function webSocketServerFactory(session, execWrapper) {
     let sessCounter = 0;
     const globalDictAdders = {};
@@ -34,18 +39,17 @@ define((require, exports, module)=>{
     const onConnection = (ws, ugr) => {
       const _remoteAddress = ugr.connection.remoteAddress;
       const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress) ?
-              ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
+            ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
 
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
         let gdict = globalDictEncoded(), dictHash = dictHashStr;
         const parts = url === null ? null : url.split('?', 2);
         const [clientProtocol, clientVersion, clientHash] = url === null ?
-                [] : parts[0].split('/').slice(2);
+              [] : parts[0].split('/').slice(2);
         if (url !== null) {
           if (+clientProtocol !== koru.PROTOCOL_VERSION) {
-            ws.send('Lforce-reload');
-            ws.close();
+            forceReload(ws);
             return;
           }
 
@@ -53,10 +57,16 @@ define((require, exports, module)=>{
             if (session.version === 'dev')
               newVersion = session.version;
             else {
-              const cmp = session.compareVersion ?
-                      session.compareVersion(clientVersion, clientHash)
-                      : util.compareVersion(clientVersion, session.version);
-              if (cmp < 0) newVersion = session.version;
+              const cmp = session.compareVersion !== void 0 ?
+                    session.compareVersion(clientVersion, clientHash)
+                    : util.compareVersion(clientVersion, session.version);
+              if (cmp < 0) {
+                if (cmp == -2) {
+                  forceReload(ws);
+                  return;
+                }
+                newVersion = session.version;
+              }
               else if (cmp > 0) return; // client on greater version; we will update (hopefully) so
               // just wait around
             }
@@ -64,7 +74,7 @@ define((require, exports, module)=>{
             const search = util.searchStrToMap(parts[1]);
             if (search.dict === dictHashStr) {
               gdict = null;
-              dictHash = undefined;
+              dictHash = void 0;
             }
           }
         }
@@ -86,7 +96,7 @@ define((require, exports, module)=>{
         conn.remotePort = ugr.connection.remotePort;
 
         const onMessage = conn.onMessage.bind(conn);
-        ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
+        ws.on('message', wrapOnMessage === void 0 ? onMessage : wrapOnMessage(onMessage));
 
         conn.sendBinary('X', [
           newVersion, session.versionHash,
@@ -159,8 +169,8 @@ define((require, exports, module)=>{
       return _globalDict;
     };
 
-    const globalDictEncoded =
-            () => session.globalDict === undefined ? undefined : _globalDictEncoded;
+    const globalDictEncoded = ()=> session.globalDict === void 0 ?
+          void 0 : _globalDictEncoded;
 
     session.countNotify = new Observable();
 

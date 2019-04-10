@@ -288,6 +288,16 @@ define((require, exports, module)=>{
           v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
         });
 
+        test("force-reload", ()=>{
+          stub(util, 'compareVersion');
+          const compareVersion = v.sess.compareVersion = stub().returns(-2);
+
+          v.sess.onConnection(v.ws, v.ws[test$].request);
+
+          assert.calledOnceWith(v.ws.send, 'Lforce-reload');
+          assert.called(v.ws.close);
+        });
+
         test("compareVersion", ()=>{
           /** client < server **/
           v.sess.onConnection(v.ws, v.ws[test$].request);
