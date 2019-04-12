@@ -34,7 +34,7 @@ define((require, exports, module)=>{
           break;
         case 'S':
           const [userId, crypto] = data.slice(1).toString().split(':');
-          login.setUserId(this, userId || null);
+          login.setUserId(this, userId);
           this.sessAuth = crypto;
           break;
         case 'F':

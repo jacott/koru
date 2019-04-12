@@ -263,7 +263,7 @@ define((require, exports, module)=>{
 
         session._onMessage(session, 'VS');
 
-        assert.same(koru.userId(), null);
+        assert.same(koru.userId(), void 0);
         assert.same(localStorage.getItem('koru.loginToken'), null);
       });
 

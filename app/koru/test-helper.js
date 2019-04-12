@@ -17,7 +17,7 @@ define((require)=>{
       }
       const oldId = util.thread.userId;
       try {
-        util.thread.userId = id;
+        util.thread.userId = id || void 0;
         func();
       }
       finally {
