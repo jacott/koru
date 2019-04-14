@@ -10,7 +10,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const {test$} = require('koru/symbols');
 
@@ -204,7 +204,8 @@ define((require, exports, module)=>{
 
         v.sess.onConnection(v.ws, v.ws[test$].request);
 
-        assert.calledOnceWith(v.ws.send, 'Lforce-reload');
+        assert.calledWith(v.ws.send, m(/^Uh\d+$/));
+        assert.calledWith(v.ws.send, 'Lforce-reload');
       });
 
       group("dictHash", ()=>{
@@ -294,7 +295,8 @@ define((require, exports, module)=>{
 
           v.sess.onConnection(v.ws, v.ws[test$].request);
 
-          assert.calledOnceWith(v.ws.send, 'Lforce-reload');
+          assert.calledWith(v.ws.send, 'Uh456');
+          assert.calledWith(v.ws.send, 'Lforce-reload');
           assert.called(v.ws.close);
         });
 

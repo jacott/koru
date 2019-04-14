@@ -17,13 +17,11 @@ define((require, exports, module)=>{
   const indexjs = ()=> [config.indexjs ||
                         requirejs.nodeRequire.resolve('yaajs/yaa.js'), '/'];
 
-  const indexcss = ()=> [config.indexcss ||
-                         "index.css", '/'];
-
   const SPECIALS = {
+    "index.html": config.indexhtml && [config.indexhtml, '/'],
     "index.js": indexjs,
     "require.js": indexjs,
-    "index.css": indexcss,
+    "index.css": config.indexcss && [config.indexcss, '/'],
 
     koru: m => [m[0], koruParent],
   };

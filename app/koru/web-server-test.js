@@ -10,9 +10,11 @@ isServer && define((require, exports, module)=>{
 
    * @config defaultPage defaults to `/index.html`: used when no path is supplied in the url.
 
-   * @config indexjs the file to serve for `index.js` or `require.js`; defaults to `yaajs.js`
+   * @config indexjs the file to serve for `/index.js` or `require.js`; defaults to `yaajs.js`
 
-   * @config indexcss the file to serve for `index.css`; defaults to `index.css`
+   * @config indexhtml the file to serve for `/index.html`; defaults to `index.html`
+
+   * @config indexcss the file to serve for `/index.css`; defaults to `index.css`
    *
    **/
   const Compilers       = require('koru/compilers');

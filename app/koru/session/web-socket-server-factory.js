@@ -9,7 +9,8 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const message         = require('./message');
 
-  const forceReload = ws =>{
+  const forceReload = (ws, session) =>{
+    ws.send('U'+session.versionHash);
     ws.send('Lforce-reload');
     ws.close();
   };
@@ -49,7 +50,7 @@ define((require, exports, module)=>{
               [] : parts[0].split('/').slice(2);
         if (url !== null) {
           if (+clientProtocol !== koru.PROTOCOL_VERSION) {
-            forceReload(ws);
+            forceReload(ws, session);
             return;
           }
 
@@ -62,7 +63,7 @@ define((require, exports, module)=>{
                     : util.compareVersion(clientVersion, session.version);
               if (cmp < 0) {
                 if (cmp == -2) {
-                  forceReload(ws);
+                  forceReload(ws, session);
                   return;
                 }
                 newVersion = session.version;
