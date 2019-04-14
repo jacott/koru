@@ -37,7 +37,7 @@ define((require, exports, module)=>{
     });
 
     test("initial KORU_APP_VERSION", ()=>{
-      onEnd(() => delete window.KORU_APP_VERSION);
+      onEnd(() => window.KORU_APP_VERSION=void 0);
 
       window.KORU_APP_VERSION = "v1,hash";
 
