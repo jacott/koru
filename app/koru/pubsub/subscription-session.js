@@ -53,7 +53,7 @@ define((require)=>{
         if (status <=0) {
           sub[messageResponse$](data);
         } else {
-          sub.stop({code: status, reason: data[3]});
+          sub.stop(new koru.Error(status, data[3]));
         }
       } else
         sub[connected$]({lastSubscribed: data[3]});

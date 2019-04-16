@@ -5,11 +5,12 @@ isClient && define((require, exports, module)=>{
    *
    * See also {#../publication}
    **/
+  const koru            = require('koru');
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const Query           = require('koru/model/query');
-  const Match           = require('koru/pubsub/model-match');
   const MockServer      = require('koru/pubsub/mock-server');
+  const Match           = require('koru/pubsub/model-match');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');
   const State           = require('koru/session/state').constructor;
@@ -109,7 +110,7 @@ isClient && define((require, exports, module)=>{
        * Observe connection completions. The `callback` is called on success with a null argument,
        * on error with an `error` argument, and if stopped before connected with
 
-       * `Error(409, 'stopped')`.
+       * `koru.Error(409, 'stopped')`.
 
        * Callbacks will only be called once. To be called again after a re-connect they will need to
        * be set up again inside the callback.
@@ -174,7 +175,10 @@ isClient && define((require, exports, module)=>{
         waitForServerResponse(sub2, {error: {code: 400, reason: {self: [['is_invalid']]}}});
 
         assert.equals(resonse, {
-          error: {code: 400, reason: {self: [['is_invalid']]}}, state: 'stopped'});
+          error: m(err => (err instanceof koru.Error) &&
+                   err.error === 400 &&
+                   util.deepEqual(err.reason, {self: [['is_invalid']]})),
+          state: 'stopped'});
       }
 
       { /** stopped early **/
