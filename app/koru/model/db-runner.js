@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define(()=>{
   'use strict';
   return dbBroker =>{
 
