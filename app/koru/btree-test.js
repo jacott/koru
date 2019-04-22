@@ -10,10 +10,8 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {test$} = require('koru/symbols');
-
   const BTree = require('koru/btree');
-  const {left$, right$, up$, red$} = BTree[test$];
+  const {left$, right$, up$, red$} = BTree[isTest];
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("cursor handles deletes", ()=>{

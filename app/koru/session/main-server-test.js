@@ -7,8 +7,6 @@ isServer && define((require, exports, module)=>{
   const serverSession   = require('./main-server');
   const TH              = require('./test-helper');
 
-  const {test$} = require('koru/symbols');
-
   const {stub, spy, onEnd, match: m, stubProperty} = TH;
 
   const Session = require('./main');
@@ -69,7 +67,7 @@ isServer && define((require, exports, module)=>{
       v.sess.versionHash = 'h1';
 
       TH.noInfo();
-      v.func(v.ws, v.ws[test$].request);
+      v.func(v.ws, v.ws[isTest].request);
 
       assert.calledWith(v.ws.send, TH.match(arg => {
         v.msg = message.decodeMessage(arg.subarray(1), Session.globalDict);

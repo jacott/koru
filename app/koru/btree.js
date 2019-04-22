@@ -2,7 +2,7 @@ define((require)=>{
   'use strict';
   const util  = require('koru/util');
 
-  const {inspect$, test$} = require('koru/symbols');
+  const {inspect$} = require('koru/symbols');
 
   const red$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
         size$ = Symbol(), memo$ = Symbol();
@@ -526,7 +526,7 @@ formatter, node[right$], level+1, 'r')}`;
     throw err;
   };
 
-  BTree[test$] = {left$, right$, up$, red$};
+  if (isTest) BTree[isTest] = {left$, right$, up$, red$};
 
   return BTree;
 });

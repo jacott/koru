@@ -388,12 +388,10 @@ define((require, exports, module)=>{
     // });
   });
 
-  const test$ = Symbol();
-
   const getSvg = ()=>{
     let div = Dom('div');
     if (div != null) {
-      if (div[test$] === TH.test) return div.querySelector('svg');
+      if (div[isTest] === TH.test) return div.querySelector('svg');
       Dom.remove(div);
     }
     div = Dom.h({
@@ -405,7 +403,7 @@ define((require, exports, module)=>{
         svg: []
       }
     });
-    div[test$] = TH.test;
+    div[isTest] = TH.test;
     document.body.appendChild(div);
     return div.querySelector('svg');
   };

@@ -150,7 +150,7 @@ isServer && define((require, exports, module)=>{
         //[
         const ans = pg.defaultDb.explainQuery(`SELECT {$a}::int + {$b}::int as ans`, {a: 1, b:2});
 
-        assert.match(ans, /^Result.*cost=.*\nPlanning time:.*\nExecution time/);
+        assert.match(ans, /^Result.*cost=.*\nPlanning time:.*\nExecution time/i);
       });
 
       test("timeLimitQuery", ()=>{

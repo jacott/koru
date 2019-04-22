@@ -5,8 +5,6 @@ define((require)=>{
   const stream          = requirejs.nodeRequire('stream');
   const zlib            = requirejs.nodeRequire('zlib');
 
-  const {test$} = require('koru/symbols');
-
   let request = requirejs.nodeRequire('request');
 
   const DAY24 = 24*util.DAY;
@@ -207,11 +205,11 @@ define((require)=>{
       if (prefix !== undefined) response.write(prefix);
       response.end(data);
     },
+  };
 
-    [test$]: {
-      get request() {return request},
-      set request(v) {request = v},
-    },
+  if (isTest) HttpUtil[isTest] = {
+    get request() {return request},
+    set request(v) {request = v},
   };
 
   return HttpUtil;

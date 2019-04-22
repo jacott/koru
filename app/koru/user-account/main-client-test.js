@@ -8,8 +8,6 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const login           = require('./client-login');
 
-  const {test$} = require('koru/symbols');
-
   const {stub, spy, onEnd, match: m} = TH;
 
   const userAccount = require('./main');
@@ -219,15 +217,15 @@ define((require, exports, module)=>{
     test("setSessionPersistence", ()=>{
       onEnd(() => {
         userAccount.stop();
-        userAccount[test$].storage = localStorage;
+        userAccount[isTest].storage = localStorage;
       });
-      assert.same(userAccount[test$].storage, localStorage);
+      assert.same(userAccount[isTest].storage, localStorage);
       const myStorage = {
         getItem: stub().returns('my token'),
         removeItem: stub(),
       };
-      userAccount[test$].storage = myStorage;
-      assert.same(userAccount[test$].storage, myStorage);
+      userAccount[isTest].storage = myStorage;
+      assert.same(userAccount[isTest].storage, myStorage);
       stub(session, 'send');
       userAccount.logout();
       assert.calledWith(myStorage.removeItem, 'koru.loginToken');
@@ -276,12 +274,12 @@ define((require, exports, module)=>{
       });
 
       test("sending login token", ()=>{
-        assert.same(session.state._onConnect['05-login'], userAccount[test$].onConnect);
+        assert.same(session.state._onConnect['05-login'], userAccount[isTest].onConnect);
 
         refute.calledWith(session.send, 'VL');
 
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount[test$].onConnect(session);
+        userAccount[isTest].onConnect(session);
 
         assert.same(login.getState(session), 'wait');
 
@@ -311,14 +309,14 @@ define((require, exports, module)=>{
       test("no loginToken onConnect", ()=>{
         stub(login, 'ready');
 
-        userAccount[test$].onConnect();
+        userAccount[isTest].onConnect();
 
         assert.called(login.ready);
       });
 
       test("login failure", ()=>{
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount[test$].onConnect(session);
+        userAccount[isTest].onConnect(session);
 
         session._onMessage(session, 'VF');
 

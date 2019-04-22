@@ -5,20 +5,18 @@ define((require, exports, module)=>{
   const session         = require('../session/base');
   const BaseTH          = require('koru/model/test-helper');
 
-  const {test$} = require('koru/symbols');
-
   const {Core, stub} = BaseTH;
 
   return {
     __proto__: BaseTH,
     sessionConnect(ws) {
-      session.onConnection(ws, ws[test$].request);
+      session.onConnection(ws, ws[isTest].request);
       return session.conns[session._sessCounter.toString(36)];
     },
 
     mockWs() {
       return {
-        [test$]: {
+        [isTest]: {
           request: {connection: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`}
         },
         on: stub(),

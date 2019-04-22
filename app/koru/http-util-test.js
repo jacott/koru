@@ -7,8 +7,6 @@ isServer && define((require, exports, module)=>{
   const util            = require('koru/util');
   const zlib            = requirejs.nodeRequire('zlib');
 
-  const {test$} = require('koru/symbols');
-
   const {stub, spy, onEnd, intercept, match} = TH;
 
   const sut  = require('./http-util');
@@ -22,9 +20,9 @@ isServer && define((require, exports, module)=>{
 
     group("request", ()=>{
       beforeEach(()=>{
-        v.orig = sut[test$].request;
+        v.orig = sut[isTest].request;
         v.req = stub();
-        sut[test$].request = v.req;
+        sut[isTest].request = v.req;
       });
 
       test("throw opts", ()=>{
@@ -36,7 +34,7 @@ isServer && define((require, exports, module)=>{
       });
 
       afterEach(()=>{
-        sut[test$].request = v.orig;
+        sut[isTest].request = v.orig;
       });
 
       test("setup", ()=>{

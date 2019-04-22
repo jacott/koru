@@ -6,8 +6,6 @@ define((require, exports, module)=>{
   const SRP             = require('../srp/srp');
   const login           = require('./client-login');
 
-  const {test$} = require('koru/symbols');
-
   let storage = localStorage;
 
   const onConnect = session =>{
@@ -92,12 +90,12 @@ define((require, exports, module)=>{
     secureCall(method, email, password, payload, callback) {
       SRPCall(method, email, password, callback, response =>{response.payload = payload});
     },
+  };
 
-    [test$]: {
-      get storage() {return storage},
-      set storage(value) {storage=value},
-      onConnect,
-    }
+  if (isTest) UserAccount[isTest] = {
+    get storage() {return storage},
+    set storage(value) {storage=value},
+    onConnect,
   };
 
   session.defineRpcGet('resetPassword', ()=>{});

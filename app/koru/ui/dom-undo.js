@@ -4,8 +4,6 @@ define((require)=>{
   const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
-  const {test$} = require('koru/symbols');
-
   const {hasOwn} = util;
 
   const mo$ = Symbol(), paused$ = Symbol(), onchange$ = Symbol(),
@@ -33,8 +31,8 @@ define((require)=>{
 
   // const db = (node)=>{
   //   if (node == null) return node;
-  //   if (node[test$]) return node[test$];
-  //   return node[test$] = `${++gid}:${node.tagName || node.nodeValue}`;
+  //   if (node[isTest]) return node[isTest];
+  //   return node[isTest] = `${++gid}:${node.tagName || node.nodeValue}`;
   // };
 
   const SUM_ACTIONS = {
@@ -327,7 +325,7 @@ define((require)=>{
     }
   }
 
-  DomUndo[test$] = {
+  if (isTest) DomUndo[isTest] = {
     range$
   };
 

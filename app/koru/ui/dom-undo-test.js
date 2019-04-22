@@ -3,15 +3,13 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const TH              = require('./test-helper');
 
-  const {test$} = require('koru/symbols');
-
   const {stub, spy, onEnd, util, match: m} = TH;
 
   const DomUndo = require('./dom-undo');
 
   const htj = Dom.htmlToJson;
 
-  const {range$} = DomUndo[test$];
+  const {range$} = DomUndo[isTest];
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let input;
