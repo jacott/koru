@@ -429,7 +429,7 @@ define((require, exports, module)=>{
       if (func === undefined) return;
     }
     const code = func.toString();
-    let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
+    let m = /\)\s*(?:=>)?\s*{\s*(:?\s*['"]use strict['"];\s*)?/.exec(code);
     if (m == null) return;
     let re = /\/\*\*\s*([\s\S]*?)\s*\*?\*\//y;
     re.lastIndex = m.index+m[0].length;

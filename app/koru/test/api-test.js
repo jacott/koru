@@ -70,7 +70,6 @@ define((require, exports, module)=>{
 
       assert.same(API.instance.subjectName, 'API');
 
-
       const myHelper = {
         clean() {}
       };
@@ -93,6 +92,7 @@ define((require, exports, module)=>{
       API.module({subjectModule: {id: 'myMod2', exports: Book}});
 
       assert.same(API.instance.subjectName, 'Book');
+
     });
 
     test("innerSubject", ()=>{
@@ -379,6 +379,7 @@ assert.same(Color.colors.red, '#f00');`,
       MainAPI.example(() => {
         API.module({subjectModule: {id: 'myMod', exports: Library}});
         test("borrow book", ()=>{
+          'use strict';
           /**
            * In order to borrow a book it needs to be found in the library; then call the borrow
            * method on it:
