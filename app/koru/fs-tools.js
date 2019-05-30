@@ -54,7 +54,7 @@ const rm_rf_w = Future.wrap((dir, callback) => {
 
 
 const appendData = (path, data)=>{
-  const fd = futureWrap(fs, fs.open, [path, 'a', {mode: 0644}]);
+  const fd = futureWrap(fs, fs.open, [path, 'a', 0o644]);
   try {
     return futureWrap(fs, fs.write, [fd, data, 0, data.length, null]);
   } finally {
