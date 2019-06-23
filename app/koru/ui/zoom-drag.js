@@ -98,9 +98,9 @@ define((require)=>{
       }
     } : complete;
 
-    document.addEventListener('wheel', wheel, true);
-    window.addEventListener('keyup', checkFinished, true);
-    document.addEventListener('pointermove', checkFinished, true);
+    document.addEventListener('wheel', wheel, Dom.captureEventOption);
+    window.addEventListener('keyup', checkFinished, Dom.captureEventOption);
+    document.addEventListener('pointermove', checkFinished, Dom.captureEventOption);
 
     wheel(event);
 
@@ -315,17 +315,17 @@ define((require)=>{
 
       pri.id = sec.id = undefined;
 
-      target.removeEventListener('pointerdown', pointerdown, true);
-      target.removeEventListener('pointermove', pointermove, true);
-      target.removeEventListener('pointerup', pointerup, true);
-      target.removeEventListener('lostpointercapture', pointerup, true);
+      target.removeEventListener('pointerdown', pointerdown, Dom.captureEventOption);
+      target.removeEventListener('pointermove', pointermove, Dom.captureEventOption);
+      target.removeEventListener('pointerup', pointerup, Dom.captureEventOption);
+      target.removeEventListener('lostpointercapture', pointerup, Dom.captureEventOption);
     };
 
 
-    target.addEventListener('pointerdown', pointerdown, true);
-    target.addEventListener('pointermove', pointermove, true);
-    target.addEventListener('pointerup', pointerup, true);
-    target.addEventListener('lostpointercapture', pointerup, true);
+    target.addEventListener('pointerdown', pointerdown, Dom.captureEventOption);
+    target.addEventListener('pointermove', pointermove, Dom.captureEventOption);
+    target.addEventListener('pointerup', pointerup, Dom.captureEventOption);
+    target.addEventListener('lostpointercapture', pointerup, Dom.captureEventOption);
 
     pointerdown(event);
 
