@@ -14,7 +14,7 @@ define((require, exports, module)=>{
     const {serviceWorker} = navigator;
     if (serviceWorker != null && serviceWorker.controller != null) {
       serviceWorker.register(serviceWorker.controller.scriptURL).then(reg => {
-        reg.unregister().then(koru.reload());
+        reg.unregister().then(koru.reload);
       });
       return;
     }
