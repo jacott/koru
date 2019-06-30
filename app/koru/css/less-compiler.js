@@ -1,7 +1,7 @@
 const Path = require('path');
 const less = requirejs.nodeRequire("less");
 const Future = requirejs.nodeRequire('fibers/future');
-const autoprefixer = requirejs.nodeRequire("autoprefixer")({browsers: ['> 5%', 'last 2 versions']});
+const autoprefixer = requirejs.nodeRequire("autoprefixer")({browserlist: ['> 5%', 'last 2 versions']});
 const postcss = requirejs.nodeRequire("postcss")([autoprefixer]);
 
 define((require, exports, module)=>{
