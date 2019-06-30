@@ -67,6 +67,7 @@ define((require, exports, module)=>{
         const {subSession} = this;
         subSession._delete(this);
         const onConnect = this[onConnect$];
+        if (onConnect !== void 0) this[onConnect$] = void 0;
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
         } finally {

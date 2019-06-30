@@ -214,6 +214,24 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(callback, null);
     });
 
+    test("onConnect during stop", ()=>{
+      const sub = new Subscription();
+      const oc2 = stub();
+      let called = false;
+      sub.onConnect(()=>{
+        called = true;
+        sub.onConnect(oc2);
+      });
+
+      sub.stop();
+      assert.isTrue(called);
+      refute.called(oc2);
+
+      sub.connect();
+      sub.stop();
+      assert.called(oc2);
+    });
+
     test("match", ()=>{
       /**
        * Register a match function used to check if a document should
