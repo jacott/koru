@@ -509,16 +509,16 @@ isServer && define((require, exports, module)=>{
        * subscribers is added. Subscribers are partitioned by their
        * {#../publication.discreteLastSubscribed} time.
 
-       * @param encoder an object that has methods `addDoc`, `remDoc` and `add`:
+       * @param encoder an object that has methods `addDoc`, `remDoc` and `push`:
 
-       * 1. `addDoc` is a function to call with a doc to be added to the subscribers.
+       * * `addDoc` is a function to call with a doc to be added to the subscribers.
 
-       * 2. `remDoc` a function to call with a doc (and optional flag) to be removed from the
+       * * `remDoc` a function to call with a doc (and optional flag) to be removed from the
        * subscribers. The flag is sent to the client as a {#koru/model/doc-change;#flag} which
        * defaults to "serverUpdate". A Useful value is "stopped" which a client persistence manager
        * can used to decide to not remove the persitent document.
 
-       * 3. `push` is for adding any `message` to the batch. The message format is:
+       * * `push` is for adding any `message` to the batch. The message format is:
 
        * `[type, data]` (see {#koru/session/server-connection.buildUpdate} for examples).
 
