@@ -179,17 +179,19 @@ isClient && define((require, exports, module)=>{
       login.setUserId(Session, util.thread.userId); // no userId change
       refute.called(Session.sendBinary);
 
+
+      stub(sub2, 'userIdChanged');
       login.setUserId(Session, "user456");
 
-      assert.calledTwice(Session.sendBinary);
-      assert.calledWith(Session.sendBinary, 'Q', ['2']);
-      assert.equals(Session.sendBinary.firstCall.args[1], ['2']);
-      assert.calledWith(Session.sendBinary, 'Q', ['2', 1, 'Library', 2, 0]);
-      Session.sendBinary.reset();
+      assert.calledWith(sub2.userIdChanged, 'user456');
+      refute.called(Session.sendBinary);
+      sub2.userIdChanged.reset();
 
       sub2.stop();
 
       login.setUserId(Session, "user123");
+
+      refute.called(sub2.userIdChanged);
       assert.calledOnceWith(Session.sendBinary, 'Q', ['2']);
     });
 

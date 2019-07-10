@@ -561,11 +561,12 @@ isClient && define((require, exports, module)=>{
       }
 
       const sub = Library.subscribe([123, 456]);
-      spy(sub, 'stop');
-      spy(sub, 'connect');
+      sub.userIdChanged = stub();
       ClientLogin.setUserId(Session, 'uid123');
-      assert.called(sub.stop);
-      assert.calledWithExactly(sub.connect);
+      assert.calledWithExactly(sub.userIdChanged, 'uid123', void 0);
+
+      ClientLogin.setUserId(Session, 'uid456');
+      assert.calledWithExactly(sub.userIdChanged, 'uid456', 'uid123');
     });
 
     test("onMessage", ()=>{

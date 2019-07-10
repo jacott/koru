@@ -45,10 +45,7 @@ define((require, exports, module)=>{
       this.subSession.connect(this);
     }
 
-    userIdChanged(newUID, oldUID) {
-      this.stop();
-      this.connect();
-    }
+    userIdChanged(newUID, oldUID) {}
 
     onMessage(message) {}
 
