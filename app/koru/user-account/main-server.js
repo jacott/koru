@@ -63,6 +63,18 @@ define((require, exports, module)=>{
     },
   });
 
+  const configureEmail = ()=>{
+    emailConfig = koru.config.userAccount && koru.config.userAccount.emailConfig || {};
+
+    if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
+    if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
+    if (! emailConfig.sendResetPasswordEmailText)
+      koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
+    if (typeof emailConfig.sendResetPasswordEmailText !== 'function')
+      koru.throwConfigError('userAccount.sendResetPasswordEmailText',
+                            'must be of type function(userId, resetToken)');
+  };
+
   const UserAccount = {
     init() {
       session.provide('V', onMessage);
@@ -86,7 +98,7 @@ define((require, exports, module)=>{
 
       if (lu && lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
         lu.srp = passwordHash;
-        lu.resetToken = lu.resetTokenExpire = undefined;
+        lu.resetToken = lu.resetTokenExpire = void 0;
         const loginToken = lu.makeToken();
         lu.$$save();
         return [lu, loginToken];
@@ -96,7 +108,7 @@ define((require, exports, module)=>{
 
     verifyClearPassword(email, password) {
       const doc = UserLogin.findBy('email', email);
-      if (doc === undefined) return;
+      if (doc === void 0) return;
 
       const C = new SRP.Client(password);
       const S = new SRP.Server(doc.srp);
@@ -115,7 +127,7 @@ define((require, exports, module)=>{
     verifyToken(emailOrId, token) {
       const doc = emailOrId.indexOf('@') === -1 ? UserLogin.findById(emailOrId)
               : UserLogin.findBy('email', emailOrId);
-      if (doc !== undefined && doc.unexpiredTokens()[token] !== undefined)
+      if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0)
         return doc;
     },
 
@@ -199,7 +211,7 @@ define((require, exports, module)=>{
 
   function SRPBegin(request) {
     const doc = UserLogin.findBy('email', request.email);
-    if (doc === undefined || doc.srp == null) throw new koru.Error(403, 'failure');
+    if (doc === void 0 || doc.srp == null) throw new koru.Error(403, 'failure');
     const srp = new SRP.Server(doc.srp);
     this.$srp = srp;
     this.$srpUserAccount = doc;
@@ -253,18 +265,6 @@ define((require, exports, module)=>{
     this.loginToken = result[1];
   });
 
-  function configureEmail() {
-    emailConfig = koru.config.userAccount && koru.config.userAccount.emailConfig || {};
-
-    if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
-    if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
-    if (! emailConfig.sendResetPasswordEmailText)
-      koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
-    if (typeof emailConfig.sendResetPasswordEmailText !== 'function')
-      koru.throwConfigError('userAccount.sendResetPasswordEmailText',
-                            'must be of type function(userId, resetToken)');
-  }
-
   function onMessage(data) {
     const conn = this;
     const cmd = data[0];
@@ -284,10 +284,10 @@ define((require, exports, module)=>{
     case 'X': { // logout me
       const [_id, token] = getToken(data);
       token && UserAccount.logout(_id, token);
-      conn.userId = null; // will send a VS + VC. See server-connection
+      conn.userId = void 0; // will send a VS + VC. See server-connection
     } break;
     case 'O': {// logoutOtherClients
-      if (conn.userId == null) return;
+      if (conn.userId === conn._session.DEFAULT_USER_ID) return;
       const [_id, token] = getToken(data);
       token && UserAccount.logoutOtherClients(_id, token);
       const conns = session.conns;
@@ -296,7 +296,7 @@ define((require, exports, module)=>{
         const curr = conns[sessId];
 
         if (curr.userId === conn.userId)
-          curr.userId = null;
+          curr.userId = void 0;
       }
     }}
   }

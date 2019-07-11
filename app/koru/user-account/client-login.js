@@ -18,7 +18,7 @@ define((require)=>{
       return subject.onChange(func);
     },
     setUserId(session, id) {
-      util.thread.userId = id || void 0;
+      util.thread.userId = id || session.DEFAULT_USER_ID;
       setState(session, 'change');
     },
 

@@ -17,7 +17,7 @@ isServer && define((require, exports, module)=>{
 
   const crypto      = requirejs.nodeRequire('crypto');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, onEnd, intercept, match: m, stubProperty} = TH;
 
   const session = new (baseSession.constructor)('testServerConnection');
 
@@ -295,27 +295,34 @@ isServer && define((require, exports, module)=>{
       refute.exception(() => v.conn.sendBinary('M', [1,2,3]));
     });
 
-    test("set userId", ()=>{
+    test("set userId and DEFAULT_USER_ID", ()=>{
+      stubProperty(session, 'DEFAULT_USER_ID', {value: 'public'});
+      const conn = new ServerConnection(session, v.ws, {}, 888, v.sessClose = stub());
       stub(crypto, 'randomBytes').yields(null, {
         toString: stub().withArgs('base64').returns('crypto64Id==')});
-      const sendUid = v.ws.send.withArgs('VSu456:123|crypto64Id');
+      const sendUid = v.ws.send.withArgs('VSu456:888|crypto64Id');
       const sendUidCompleted = v.ws.send.withArgs('VC');
-      v.conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
+      conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
 
-      v.conn.userId = 'u456';
+      conn.userId = 'u456';
 
       assert.same(util.thread.userId, 'u456');
-      assert.same(v.conn.userId, 'u456');
+      assert.same(conn.userId, 'u456');
 
-      assert.calledWith(v.s1, 'u456', void 0);
+      assert.calledWith(v.s1, 'u456', 'public');
       assert.called(v.s2);
 
       assert.calledWith(crypto.randomBytes, 36);
-      assert.calledWith(v.ws.send, 'VSu456:123|crypto64Id');
-      assert.same(v.conn.sessAuth, '123|crypto64Id');
+      assert.calledWith(v.ws.send, 'VSu456:888|crypto64Id');
+      assert.same(conn.sessAuth, '888|crypto64Id');
 
       assert(sendUid.calledBefore(v.s1));
       assert(sendUidCompleted.calledAfter(v.s2));
+
+      conn.userId = null;
+
+      assert.same(util.thread.userId, 'public');
+      assert.calledWith(v.s1, 'public', 'u456');
     });
 
     test("filterDoc", ()=>{

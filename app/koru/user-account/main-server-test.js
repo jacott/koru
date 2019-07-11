@@ -401,7 +401,7 @@ define((require, exports, module)=>{
 
         session._commands.V.call(v.conn, 'X' + v.lu._id+'|abc');
 
-        assert.same(v.conn.userId, null);
+        assert.same(v.conn.userId, void 0);
         assert.same(v.conn.sessAuth, null);
 
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
@@ -414,7 +414,7 @@ define((require, exports, module)=>{
 
         session._commands.V.call(v.conn, 'X');
 
-        assert.same(v.conn.userId, null);
+        assert.same(v.conn.userId, void 0);
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', 'def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
       });
@@ -437,8 +437,8 @@ define((require, exports, module)=>{
         session._commands.V.call(v.conn, 'O' + v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
-        assert.same(v.conn2.userId, null);
-        assert.same(v.conn3.userId, null);
+        assert.same(v.conn2.userId, void 0);
+        assert.same(v.conn3.userId, void 0);
         assert.same(v.connOther.userId, 'uid444');
 
         assert.calledWith(v.ws2.send, 'VS');

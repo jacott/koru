@@ -18,6 +18,7 @@ define((require)=>{
       this._rpcs = {};
       this._commands = {};
       this[private$] = {};
+      this.DEFAULT_USER_ID = void 0;
     }
 
     [inspect$]() {return 'SessionBase('+this._id+')'}

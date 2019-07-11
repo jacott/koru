@@ -50,6 +50,7 @@ define((require, exports, module)=>{
       this.request = request;
       this.sessId = sessId;
       this[onClose$] = null;
+      this[userId$] = session.DEFAULT_USER_ID;
       this.close = () => {
         const subs = this._subs;
         this._subs = null;
@@ -163,10 +164,10 @@ define((require, exports, module)=>{
 
     set userId(userId) {
       const oldId = this[userId$];
+      if (! userId) userId = this._session.DEFAULT_USER_ID;
       this[userId$] = userId;
-      if (! userId) userId = void 0;
       util.thread.userId = userId;
-      if (userId) {
+      if (userId !== this._session.DEFAULT_USER_ID) {
         const future = new util.Future;
         crypto.randomBytes(36, (err, ans) => {
           if (err) future.throw(err);
