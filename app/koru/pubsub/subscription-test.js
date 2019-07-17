@@ -342,8 +342,10 @@ isClient && define((require, exports, module)=>{
       }//]
       api.protoMethod("stopped", {intro() {
         /**
-         * Called with an `unmatch` function that can be called on all documents that no longer
-         * match this subscription.
+         * Override this method to be called with an `unmatch` function when the subscription is
+         * stopped.
+
+         * @param unmatch can be called on all documents that no longer match this subscription.
          **/
       }, subject: Library.prototype});
       //[#
@@ -552,8 +554,8 @@ isClient && define((require, exports, module)=>{
 
     test("userIdChanged", ()=>{
       /**
-       * The default behavior is to stop and reconnect the subscription when {#koru/main.userId}
-       * changes. Override this method to stop the default behavior.
+       * Override this method to change the default behavior of doing nothing when the user id
+       * changes.
        **/
       onEnd(()=>{util.thread.userId = void 0});
       api.protoMethod();
@@ -561,17 +563,20 @@ isClient && define((require, exports, module)=>{
       }
 
       const sub = Library.subscribe([123, 456]);
-      sub.userIdChanged = stub();
+      spy(sub, 'userIdChanged');
       ClientLogin.setUserId(Session, 'uid123');
       assert.calledWithExactly(sub.userIdChanged, 'uid123', void 0);
 
       ClientLogin.setUserId(Session, 'uid456');
       assert.calledWithExactly(sub.userIdChanged, 'uid456', 'uid123');
+
+      ClientLogin.setUserId(Session, void 0);
+      assert.calledWithExactly(sub.userIdChanged, void 0, 'uid456');
     });
 
     test("onMessage", ()=>{
       /**
-       * Receive an unsolicited `message` from the publication server.
+       * Override this method to receive an unsolicited `message` from the publication server.
 
        * @param {any-type} message
        **/
