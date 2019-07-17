@@ -73,21 +73,39 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
+    test("connect no idb", ()=>{
+      class LibrarySub extends PreloadSubscription {
+      }
+      LibrarySub.pubName = 'Library';
+
+      let resolve;
+
+      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+        return c.returnValue;
+      });
+
+      const callback = stub();
+      const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
+
+      refute.called(callback);
+      sub[connected$]({});
+      assert.called(callback);
+    });
+
     test("preload", async ()=>{
       /**
-       * A (usally) async method to load client records, using say, {#koru/model/query-idb}. Can
-       * load before and after server connection request. `await` any before loads and call
-       * `preloadComplete` once all loads have completed.
+       * Override this (usally) async method to load client records, using say,
+       * {#koru/model/query-idb}. Should `await` for loads to complete before returning. Any
+       * exception thrown during execution will be caught and sent to the
+       * {#../subscription#onConnect} observers.
 
        * @param idb returned from {##getQueryIDB}
 
-       * @param preloadComplete call this once all loading has finished. Takes the arguments `error`
-       * and `ignorePreload`. Set `error` if an error occurred. If `ignorePreload` is set to
-       * `"ignorePreload"` then the {##onConnect} callbacks wont be called until the server has
-       * replied else the callbacks will be called now.
-
-       * @return {undefined|"ignorePreload"} if `"ignorePreload"` is returned then `preloadComplete`
-       * will not be waited for.
+       * @returns {"skipServer" | "waitServer" | undefined} Unless return is `"skipServer"` the
+       * server will be called with the subscription request.
+       *
+       * If return is `"waitServer"` {#../subscription#onConnect} observers will be called after
+       * server request completes; otherwise observers are called immediately.
        **/
       api.protoMethod();
       class Book {
@@ -106,26 +124,20 @@ isClient && define((require, exports, module)=>{
           Book.docs = docs;
         }
       };
+      const isOffline = false;
       //[
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
-        async preload(idb, preloadComplete) {
-          try {
-            const shelf = await idb.get('last', 'self');
-            if (self == null) return "ignorePreload";
-
-            idb.index('Book', 'shelf').getAll(IDBKeyRange.only(shelf.name))
-              .then(books =>{
-                idb.loadDocs('Book', books);
-                preloadComplete();
-              })
-              .catch(ex =>{preloadComplete(ex)});
-          } catch(ex) {
-            preloadComplete(ex);
-          }
+        async preload(idb) {
+          const shelf = await idb.get('last', 'self');
+          if (self == null) return "waitServer";
+          const books = await idb.index('Book', 'shelf').getAll(IDBKeyRange.only(shelf.name));
+          idb.loadDocs('Book', books);
+          if (isOffline) return "skipServer";
         }
       }
       LibrarySub.pubName = 'Library';
+      //]
       let resolve;
       const promise = new Promise((_resolve) => {resolve = _resolve});
       const callback = (err) => {resolve(err)};
@@ -133,15 +145,13 @@ isClient && define((require, exports, module)=>{
       const err = await promise;
       if (err) throw err;
       assert(Book.query.count(), 1);
-      //]
     });
 
-    test("preload returns ignorePreload", async ()=>{
+    test("preload returns undefined", async ()=>{
       const idb = {isReady: true};
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
         async preload(idb, preloadComplete) {
-          return "ignorePreload";
         }
       }
       LibrarySub.pubName = 'Library';
@@ -161,13 +171,12 @@ isClient && define((require, exports, module)=>{
       assert.called(callback);
     });
 
-    test("preloadComplete returns ignorePreload", async ()=>{
+    test("preload returns waitServer", async ()=>{
       const idb = {isReady: true};
-      let _preloadComplete;
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
-        async preload(idb, preloadComplete) {
-          _preloadComplete = preloadComplete;
+        async preload(idb) {
+          return "waitServer";
         }
       }
       LibrarySub.pubName = 'Library';
@@ -183,17 +192,44 @@ isClient && define((require, exports, module)=>{
       const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
 
       await connect.promise;
-      _preloadComplete(null, "ignorePreload");
       refute.called(callback);
       sub[connected$]({});
       assert.called(callback);
     });
 
+    test("preload returns skipServer", async ()=>{
+      const idb = {isReady: true};
+      class LibrarySub extends PreloadSubscription {
+        getQueryIDB() {return idb}
+        async preload(idb) {
+          await pl.resolve();
+          return "skipServer";
+        }
+      }
+      LibrarySub.pubName = 'Library';
+      let resolve;
+
+      const pl = promiseResolve();
+      const superConnect = spy(Subscription.prototype, 'connect');
+
+      const cb = promiseResolve();
+      const callback = stub().invokes(()=>{
+        cb.resolve();
+      });
+      const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
+
+      await pl.promise;
+      refute.called(callback);
+      await cb.promise;
+      refute.called(superConnect);
+      assert.called(callback);
+    });
+
     test("getQueryIDB", async ()=>{
       /**
-       * Should return a {#koru/model/query-idb} like instance or undefined (if none). The idb
-       * instance is passed to the {##preload} method. If no idb is returned {##preload} is not
-       * called.
+       * Override this method to return a {#koru/model/query-idb} like instance or undefined (if
+       * none). The idb instance is passed to the {##preload} method. If no idb is returned
+       * {##preload} is not called.
        **/
       let idb = {
         isReady: false,
@@ -203,12 +239,11 @@ isClient && define((require, exports, module)=>{
       //[
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
-        async preload(idb, preloadComplete) {
+        async preload(idb) {
           this.shelf = await idb.get('last', 'self');
-          preloadComplete();
         }
       }//]
-      api.protoMethod(void 0, {subject: LibrarySub.prototype});//[#
+      api.protoMethod(void 0, {subject: LibrarySub.prototype});
       let resolve;
       const promise = new Promise((_resolve) => {resolve = _resolve});
       const callback = (err) => {resolve(err)};
@@ -216,12 +251,11 @@ isClient && define((require, exports, module)=>{
       const err = await promise;
       if (err) throw err;
       assert.equals(sub.shelf, {name: 'mathematics'});
-      //]
     });
 
     test("serverResponse", async ()=>{
       /**
-       * Intercept the serverResponse to the subscribe.
+       * Override this method to intercept the serverResponse to the subscribe.
 
        * @param err null for success else error from server
 
@@ -294,81 +328,6 @@ isClient && define((require, exports, module)=>{
       const sub = LibrarySub.subscribe({shelf: 'Mathematics'}, callback);
       assert.equals(sub.args, {shelf: 'Mathematics'});
       assert.isFalse(preloadCalled);
-    });
-
-    group("with queryIDB", ()=>{
-      const initConnect = async () => {
-        const whenReady = promiseResolve();
-        const preload = promiseResolve();
-        const preloadStarted = promiseResolve();
-        const connect = promiseResolve();
-        let superConnectCalled = false;
-        const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
-          superConnectCalled = true;
-          connect.resolve();
-          return c.returnValue;
-        });
-
-        const idb = {
-          isReady: false,
-          async whenReady() {return whenReady.promise}
-        };
-
-        class MySub extends PreloadSubscription {
-          async preload(_idb, preloadComplete) {
-            this.preloadComplete = preloadComplete;
-            preloadStarted.resolve();
-            return preload.promise;
-          }
-
-          getQueryIDB() {
-            return idb;
-          }
-        }
-        MySub.pubName = "My";
-
-        const callback = stub();
-
-        const sub = MySub.subscribe(123, callback);
-        sub.serverResponse = stub();
-
-        whenReady.resolve();
-        await whenReady.promise;
-        refute(sub.preloadComplete);
-        await preloadStarted.promise;
-        refute.called(superConnect);
-        preload.resolve();
-        refute(superConnectCalled);
-        await connect.promise;
-        assert.called(superConnect);
-        refute.called(callback);
-
-        return {sub, callback};
-      };
-
-      test("connect client before server", async ()=>{
-        const {sub, callback} = await initConnect();
-
-        sub.preloadComplete();
-        assert.called(callback);
-
-        refute.called(sub.serverResponse);
-        sub[connected$]({});
-        assert.called(sub.serverResponse);
-        assert.calledOnce(callback);
-      });
-
-      test("server finish before client", async ()=>{
-        const {sub, callback} = await initConnect();
-
-        refute.called(sub.serverResponse);
-        sub[connected$]({});
-        assert.called(sub.serverResponse);
-        refute.called(callback);
-
-        sub.preloadComplete();
-        assert.called(callback);
-      });
     });
   });
 });
