@@ -343,7 +343,7 @@ define((require)=>{
     },
   };
 
-  const accessDenied = (details, nolog)=>{
+  const accessDenied = (details='', nolog)=>{
     const error = new koru.Error(403, "Access denied", details);
 
     if (! nolog && ! util.thread.suppressAccessDenied)
