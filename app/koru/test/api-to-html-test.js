@@ -262,30 +262,31 @@ m1 intro
         assert.equals(Dom.htmlToJson(abstract), {
           div: [
             {p: 'Some text\n'},
-            {p: [
-              'text begin ', {
-                class: 'jsdoc-example highlight',
-                pre: {
-                  class: 'highlight',
-                  div: [
-                    {class: 'k', span: 'class'}, ' ',
-                    {class: 'nc', span: 'Book'}, ' ',
-                    {class: 'k', span: 'extends'}, ' ', {class: 'nx', span: 'Publication'},
-                    ' {\n}']}
-              },
-              ' more text ',
-              {class: 'jsdoc-example highlight',
-               pre: {
-                 class: 'highlight', div: [
-                   {class: 'nx', span: 'Book'}, '.',
-                   {class: 'na', span: 'Union'}, ' ',
-                   {class: 'o', span: '='}, ' ',
-                   {class: 'k', span: 'class'}, ' ',
-                   {class: 'k', span: 'extends'}, ' ',
+            {p: 'text begin '},
+            {
+              class: 'jsdoc-example highlight',
+              pre: {
+                class: 'highlight',
+                div: [
+                  {class: 'k', span: 'class'}, ' ',
+                  {class: 'nc', span: 'Book'}, ' ',
+                  {class: 'k', span: 'extends'}, ' ', {class: 'nx', span: 'Publication'},
+                  ' {\n}']}
+            },
+            ' more text ',
+            {class: 'jsdoc-example highlight',
+             pre: {
+               class: 'highlight', div: [
+                 {class: 'nx', span: 'Book'}, '.',
+                 {class: 'na', span: 'Union'}, ' ',
+                 {class: 'o', span: '='}, ' ',
+                 {class: 'k', span: 'class'}, ' ',
+                 {class: 'k', span: 'extends'}, ' ',
                    {class: 'nx', span: 'Publication'}, '.',
-                   {class: 'na', span: 'Union'}, ' {}'
-                 ]}}, ' end text'
-            ]},
+                 {class: 'na', span: 'Union'}, ' {}'
+               ]}},
+            ' end text',
+            {p: ''},
             '\n\nAn external example ',
             {
               class: 'jsdoc-example highlight',
