@@ -6,7 +6,7 @@ define((require)=>{
   let execute = new Set();
 
   const OrigPromise = Promise;
-  const top = (isServer ? global : window);
+  const top = globalThis;
 
   class MockPromise {
     constructor(body) {

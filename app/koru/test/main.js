@@ -92,10 +92,8 @@ define((require, exports, module)=>{
 
   koru.onunload(module, 'reload');
 
-  const top = isServer ? global : window;
-
-  top.assert = Core.assert;
-  top.refute = Core.refute;
+  globalThis.assert = Core.assert;
+  globalThis.refute = Core.refute;
 
   let count, errorCount, timer, lastTest;
 

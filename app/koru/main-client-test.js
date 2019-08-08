@@ -20,10 +20,6 @@ define((require, exports, module)=>{
       assert.same(koru.getHashOrigin(), 'p//hn');
     });
 
-    test("koru.global", ()=>{
-      assert.same(koru.global, window);
-    });
-
     test("runFiber", ()=>{
       koru.runFiber(() => {v.success = true});
       assert(v.success);

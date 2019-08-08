@@ -17,7 +17,7 @@ define((require, exports, module)=>{
 
   const {inspect$} = require('koru/symbols');
 
-  const Element = (isClient ? window : global).Element || {};
+  const Element = globalThis.Element || {};
 
   const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
 

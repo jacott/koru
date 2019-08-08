@@ -69,7 +69,7 @@ define((require, exports, module)=>{
     test("setTimeout", ()=>{
       stub(koru, 'error');
       stub(util, 'extractError').returns("EXTRACT CATCH ME");
-      stub(isServer ? global : window, 'setTimeout').returns(123);
+      stub(globalThis, 'setTimeout').returns(123);
 
       const func = stub(null, null, ()=>{throw "CATCH ME"});
       const token = koru.setTimeout(func , 123000);
@@ -88,7 +88,7 @@ define((require, exports, module)=>{
     });
 
     test("clearTimeout", ()=>{
-      stub(isServer ? global : window, 'clearTimeout');
+      stub(globalThis, 'clearTimeout');
 
       koru.clearTimeout(1234);
 

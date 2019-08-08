@@ -102,6 +102,10 @@ define((require, exports, module)=>{
     fetchDependants,
   };
 
+  // avoid search for de-bug statements
+  globalThis['_\x6Boru_'] = koru;
+  globalThis['k\x64bg'] = logDebug;
+
   require('koru/env!./main')(koru);
 
   return koru;

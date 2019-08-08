@@ -7,10 +7,6 @@ define((require, exports, module)=>{
   const TWENTY_DAYS = 20*util.DAY;
 
   return koru =>{
-    // avoid search for de-bug statements
-    global['_koru'+'_'] = koru;
-    global['k'+'dbg'] = koru["\x64ebug"];
-
     koru.onunload(module, 'reload');
 
     let dbBroker = null;
@@ -22,14 +18,13 @@ define((require, exports, module)=>{
     }
 
     util.merge(koru, {
-      global,
       reload() {
         if (koru.loadError) throw koru.loadError;
         console.log('=> Reloading');
 
-        const argv = process.argv.slice(0,1).concat(process.execArgv.concat(process.argv.slice(1)));
+        const argv = [process.argv[0], ...process.execArgv, ...process.argv.slice(1)];
         try {
-          requirejs.nodeRequire('bindings')('koru_restart.node')
+          requirejs.nodeRequire('../build/Release/koru_restart.node')
             .execv(process.execPath, argv);
         } catch(err) {
           console.log(`=> Reload not supported`);
@@ -41,7 +36,6 @@ define((require, exports, module)=>{
 
       appDir: koru.config.appDir || module.toUrl('').slice(0,-1),
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
-
 
       afTimeout(func, duration) {
         let cancel = 0;

@@ -1,8 +1,8 @@
 define((require, exports, module)=>{
   'use strict';
-  const dbBroker = require('koru/model/db-broker');
-  const util     = require('koru/util');
-  const TH       = require('./test-helper');
+  const dbBroker        = require('koru/model/db-broker');
+  const util            = require('koru/util');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, match: m, intercept} = TH;
 
@@ -13,10 +13,6 @@ define((require, exports, module)=>{
     afterEach(()=>{
       cleanup();
       v = {};
-    });
-
-    test("koru.global", ()=>{
-      assert.same(koru.global, global);
     });
 
     group("afTimeout", ()=>{

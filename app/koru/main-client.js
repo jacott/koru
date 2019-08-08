@@ -1,19 +1,14 @@
 define((require, exports, module)=>{
   'use strict';
-  const pep = require('koru/polyfill/maybe-pep');
-  const util = require('./util-client');
+  const pep             = require('koru/polyfill/maybe-pep');
+  const util            = require('./util-client');
 
   const TWENTY_DAYS = 20*util.DAY;
 
   return koru =>{
-    // avoid search for de-bug statements
-    window['_koru'+'_'] = koru;
-    window['k'+'dbg'] = koru["\x64ebug"];
-
     koru.onunload(module, 'reload');
 
     util.merge(koru, {
-      global: window,
       reload() {
         if (koru.loadError) throw koru.loadError;
 
