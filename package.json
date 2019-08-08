@@ -45,7 +45,7 @@
     "yaajs": "^3.2.1"
   },
   "devDependencies": {
-    "pg-libpq": "^3.0.0"
+    "pg-libpq": "^3.0.1"
   },
   "engines": {
     "node": ">=12.3"
