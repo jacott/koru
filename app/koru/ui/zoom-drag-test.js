@@ -274,6 +274,28 @@ isClient && define((require, exports, module)=>{
       assert.isFalse(v.click);
     });
 
+    test("touch pinchZoom one finger move", ()=>{
+      spy(Dom, 'stopEvent');
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
+      const {target} = v;
+      const event = Dom.buildEvent('touchstart', {
+        touches: [{clientX: 123+17, clientY: 45+51}]
+      });
+      const onChange = stub();
+      onEnd(sut.start({event, target, onChange}));
+
+      assert.calledWith(Dom.stopEvent, event);
+
+      TH.trigger(target, 'touchmove', {test: 1, touches: [
+        {clientX: 123+17, clientY: 45+51}
+      ]});
+      assert.calledWith(Dom.stopEvent, m(e => e.test === 1));
+
+      raf.yieldAll().reset();
+      assert.calledWith(onChange, {
+        scale: 1, midX: 123, midY: 45, adjustX: 0, adjustY: 0});
+    });
+
     test("pinchZoom", ()=>{
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;

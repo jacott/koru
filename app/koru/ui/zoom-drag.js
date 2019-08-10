@@ -141,8 +141,8 @@ define((require)=>{
     const x0 = t0.x = touches[0].clientX - left;
     const y0 = t0.y = touches[0].clientY - top;
 
-    const x1 = t1.x = touches[1].clientX - left;
-    const y1 = t1.y = touches[1].clientY - top;
+    const x1 = t1.x = touches.length == 1 ? t0.x : touches[1].clientX - left;
+    const y1 = t1.y = touches.length == 1 ? t0.y : touches[1].clientY - top;
 
     const dx = x1 - x0, dy = y1 - y0;
 
@@ -157,8 +157,8 @@ define((require)=>{
       t0.x = touches[0].clientX - left;
       t0.y = touches[0].clientY - top;
 
-      t1.x = touches[1].clientX - left;
-      t1.y = touches[1].clientY - top;
+      t1.x = touches.length == 1 ? t0.x : touches[1].clientX - left;
+      t1.y = touches.length == 1 ? t0.y : touches[1].clientY - top;
 
       if (pendingMove == 0)
         pendingMove = window.requestAnimationFrame(reportMove);
@@ -172,7 +172,7 @@ define((require)=>{
       const cx = x0 + dx/2, cy = y0 + dy/2;
 
       dim.adjustX = cx - dim.midX; dim.adjustY = cy - dim.midY;
-      dim.scale = (
+      dim.scale = sMag == 0 ? 1 : (
         constrainZoom === 'x' ? Math.abs(dx) : constrainZoom === 'y'
           ? Math.abs(dy) : Math.sqrt(dx*dx + dy*dy)
       ) / sMag;
