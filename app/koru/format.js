@@ -25,10 +25,10 @@ define((require)=>{
       if (spec === undefined) return result;
 
 
-      let argIndex = spec && +spec.substring(1);
+      let argIndex = spec ? +spec.substring(1) : -1;
 
 
-      const arg = (argIndex != null && argIndex === argIndex) ? args[argIndex] :
+      const arg = (argIndex != -1 && argIndex === argIndex) ? args[argIndex] :
               nested(spec.substring(2), last, this);
       switch (spec.substring(0,1)) {
       case 'e':
@@ -49,7 +49,7 @@ define((require)=>{
     }
 
     return result;
-  }
+  };
 
   const zeros = '00000000000000000000';
 
@@ -78,7 +78,7 @@ define((require)=>{
 
   const nested = (key, values)=>{
     key = key.split('.');
-    for(let i=0;values && i < key.length;++i) {
+    for(let i=0; values && i < key.length;++i) {
       values = values[key[i]];
     }
 
