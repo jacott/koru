@@ -43,7 +43,7 @@ define((require)=>{
     const byte = buffer[index++];
 
     switch(byte) {
-    case tUndef: return [undefined, index];
+    case tUndef: return [void 0, index];
     case tNull: return [null, index];
     case tTrue: return [true, index];
     case tFalse: return [false, index];
@@ -144,7 +144,7 @@ define((require)=>{
       if (object.length !== 1) {
         const dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{' ?
                 addToDict(dict, object) : getStringCode(dict, object);
-        if (dkey !== null) {
+        if (dkey != -1) {
           buffer.push(tDictString, dkey >> 8, dkey & 0xff);
           return;
         }
@@ -206,13 +206,13 @@ define((require)=>{
 
     const constructor = object.constructor;
 
-    if(constructor === Object || constructor === undefined) {
+    if(constructor === Object || constructor === void 0) {
       buffer.push(tObject);
       for (let key in object) {
         const value = object[key];
         if (typeof value === 'symbol') continue;
         const dkey = addToDict(dict, key);
-        if (dkey === null) throw new Error("Dictionary overflow");
+        if (dkey == -1) throw new Error("Dictionary overflow");
         buffer.push(dkey >> 8, dkey & 0xff);
         encode(buffer, value, dict);
       }
@@ -267,8 +267,7 @@ define((require)=>{
       dict = dict[1];
     }
     const code = dict.k2c[word];
-    if (code) return code;
-    return null;
+    return code === void 0 ? -1 : code;
   };
 
   const addToDict = (dict, name) => {
@@ -276,16 +275,16 @@ define((require)=>{
     if (dict.constructor === Array) {
       limit = dict[0].limit;
       const code = dict[0].k2c[name];
-      if (code !== undefined) return code;
+      if (code !== void 0) return code;
       dict = dict[1];
     }
     const k2c = dict.k2c;
     const code = k2c[name];
-    if (code !== undefined) return code;
+    if (code !== void 0) return code;
 
-    const index = dict.index === 0 ? 0x100 : dict.index;
+    const index = dict.index == 0 ? 0x100 : dict.index;
 
-    if (index >= limit) return null;
+    if (index >= limit) return -1;
     dict.index = index + 1;
 
     k2c[name] = index;
@@ -389,14 +388,14 @@ define((require)=>{
     },
 
     finalizeGlobalDict: (dict)=>{
-      if (dict.index === null) return;
+      if (dict.index == -1) return;
       const {c2k, k2c} = dict;
       const delta = dict.limit = 0xffff - c2k.length;
 
       for (let i = 0; i < c2k.length; ++i) {
         k2c[c2k[i]] = i + delta;
       }
-      dict.index = null;
+      dict.index = -1;
       return dict;
     },
 

@@ -32,9 +32,10 @@ define((require, exports, module)=>{
 
     const addToDict = word => {
       if (_preloadDict === null) return;
-      message.getStringCode(_preloadDict, word) === null &&
+      if (message.getStringCode(_preloadDict, word) == -1) {
         accSha256.add(word, dictHash);
-      message.addToDict(_preloadDict, word);
+        message.addToDict(_preloadDict, word);
+      }
     };
 
     const onConnection = (ws, ugr) => {

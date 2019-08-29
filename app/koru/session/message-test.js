@@ -232,7 +232,7 @@ define((require, exports, module)=>{
 
 
       dict.index = 0xfff0;
-      assert.same(message.addToDict(dict, "ubig"), null);
+      assert.same(message.addToDict(dict, "ubig"), -1);
       assert.equals(message.addToDict(dict, "x0"), 257);
     });
 
