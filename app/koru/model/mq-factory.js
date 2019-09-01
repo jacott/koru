@@ -4,6 +4,8 @@ define((require, exports, module)=>{
   const dbBroker        = require('koru/model/db-broker');
   const util            = require('koru/util');
 
+  const {private$} = require('koru/symbols');
+
   const {hasOwn} = util;
 
   const timer$ = Symbol(), retryInterval$ = Symbol(),
@@ -240,6 +242,10 @@ select _id,"dueAt",message from "${table._name}"
     getQueue(name) {
       return this[dbs$].current.getQueue(name);
     }
+  };
+
+  MQFactory[private$] = {
+    MQ
   };
 
   return MQFactory;

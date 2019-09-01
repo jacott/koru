@@ -10,9 +10,13 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('./test-db-helper');
 
+  const {private$} = require('koru/symbols');
+
   const {stub, spy, onEnd, util, intercept} = TH;
 
   const MQFactory = require('./mq-factory');
+
+  const {MQ} = MQFactory[private$];
 
   let v = {};
 
@@ -265,7 +269,13 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    group("with queue", ()=>{
+    group("MQ", ()=>{
+      /**
+       * The class for queue instances.
+       *
+       * See {#../mq-factory#getQueue}
+       **/
+      let mqApi;
       beforeEach(()=>{
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout');
@@ -277,6 +287,8 @@ isServer && define((require, exports, module)=>{
 
         mqFactory.registerQueue({
           module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
+
+        mqApi = api.innerSubject(MQ);
       });
 
       test("creates table", ()=>{
@@ -310,7 +322,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 `);
       });
 
-      test("add message", ()=>{
+      test("add", ()=>{
         /**
          * Add a message to the queue. The message is persisted.
 
@@ -325,7 +337,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         const queue = mqFactory.getQueue('foo');
 
-        api.innerSubject(queue, 'MQ').method('add');
+        mqApi.protoMethod();
 
         queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
         assert.calledWith(koru.setTimeout, TH.match.func, 30);
@@ -395,7 +407,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         const queue = mqFactory.getQueue('foo');
 
-        api.innerSubject(queue, 'MQ').method('peek');
+        mqApi.protoMethod();
 
         queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
         queue.add({dueAt: new Date(now+10), message: {another: 'message'}});
@@ -433,7 +445,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         const queue = mqFactory.getQueue('foo');
 
-        api.innerSubject(queue, 'MQ').method('peek');
+        mqApi.protoMethod();
 
         queue.add({dueAt: new Date(now+10), message: {my: 'message'}});
         queue.add({dueAt: new Date(now+20), message: {another: 'message'}});
