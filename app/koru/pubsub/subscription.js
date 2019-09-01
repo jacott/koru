@@ -17,6 +17,14 @@ define((require, exports, module)=>{
   const STATE_NAMES = ['stopped', 'new', 'connect', 'active'];
   const STATE_MAP = {stopped: 0, new: 1, connect: 2, active: 3};
 
+  const runMessageCallbacks = (sub, error)=>{
+    const msgCallbacks = sub[messages$];
+    if (msgCallbacks !== null) {
+      sub[messages$] = null;
+      msgCallbacks.forEach(cb => cb !== void 0 && cb(error));
+    }
+  };
+
   class Subscription {
     constructor(args, session=Session) {
       this.args = args;
@@ -68,21 +76,14 @@ define((require, exports, module)=>{
         try {
           this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
         } finally {
-          const msgCallbacks = this[messages$];
           if (error !== void 0) {
             this.error = error;
             onConnect !== void 0 && onConnect.notify(error);
-            if (msgCallbacks !== null) {
-              this[messages$] = null;
-              msgCallbacks.forEach(cb => cb(error));
-            }
+            runMessageCallbacks(this, error);
           } else if (onConnect !== void 0 && oldState !== STATE_MAP.stopped) {
             const error = new koru.Error(409, 'stopped');
             onConnect.notify(error);
-            if (msgCallbacks !== null) {
-              this[messages$] = null;
-              msgCallbacks.forEach(cb => cb(error));
-            }
+            runMessageCallbacks(this, error);
           }
         }
       }

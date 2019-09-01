@@ -625,7 +625,8 @@ isClient && define((require, exports, module)=>{
       class Library extends Subscription {
       }
 
-      const sub = Library.subscribe([123, 456]);
+      const onConnect = stub();
+      const sub = Library.subscribe([123, 456], onConnect);
 
       sub.args.push(789);
       let done = false;
@@ -636,6 +637,10 @@ isClient && define((require, exports, module)=>{
       receivePost(sub);
       assert.isTrue(done);
       //]
+
+      refute.exception(()=>{
+        sub.stop(); // ensure runMessageCallbacks ignores fulfilled (undefined) callbacks
+      });
     });
   });
 });
