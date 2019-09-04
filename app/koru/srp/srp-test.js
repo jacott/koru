@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
+  const md5sum          = require('koru/md5sum');
   const TH              = require('koru/test-helper');
   const SRP             = require('./srp');
 
@@ -50,6 +51,7 @@ define((require, exports, module)=>{
 
       const verifier = SRP.generateVerifier(
         password, {identity: identity, salt: salt});
+      assert.same(verifier.verifier, "56778b720d20b2e306f04e47180fb94335b88a6052808483acb0e85612606f9f1d8d5a3c6b85e0c7bfec7f08c07bdfbd0d40b032f517871dd8afd045b0f24e2edc05ccdc47b19f35d2eb9f7670521a38c1b358fcee63f052a1aedbb1282d3b92c7a554f8523f3379c2fbc6885be8227fbd426ad6960c3839809f8c94d80a6c51");
 
       const C = new SRP.Client(password, {a: a});
       const S = new SRP.Server(verifier, {b: b});
@@ -77,7 +79,7 @@ define((require, exports, module)=>{
       // function needs to output numbers.
 
       const baseOptions = {
-        hash(x) { return x; },
+        hash(x) { return md5sum(x); },
         N: 'b',
         g: '2',
         k: '1'
@@ -97,7 +99,7 @@ define((require, exports, module)=>{
 
       assert.same(verifier.identity, 'a');
       assert.same(verifier.salt, 'b');
-      assert.same(verifier.verifier, '3');
+      assert.same(verifier.verifier, '1');
 
       const C = new SRP.Client('c', clientOptions);
       const S = new SRP.Server(verifier, serverOptions);
@@ -108,14 +110,14 @@ define((require, exports, module)=>{
       const challenge = S.issueChallenge(request);
       assert.same(challenge.identity, 'a');
       assert.same(challenge.salt, 'b');
-      assert.same(challenge.B, '7');
+      assert.same(challenge.B, '5');
 
       const response = C.respondToChallenge(challenge);
-      assert.same(response.M, '471');
+      assert.same(response.M, '821fa74b50ba3f7cba1e6c53e8fa6845');
 
       const confirmation = S.verifyResponse(response);
       assert(confirmation);
-      assert.same(confirmation.HAMK, '44711');
+      assert.same(confirmation.HAMK, '4b37d71480ae4a83e14f715ffac303dc');
     });
   });
 });

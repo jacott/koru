@@ -13,6 +13,11 @@ define((require)=>{
    * Based on code from Meteor.com: meteor/packages/srp/srp.js
    */
 
+  const absModPow = (b, e, m)=>{
+    const ans = b.modPow(e, m);
+    return ans.isNegative() ? ans.add(m) : ans;
+  };
+
   /**
    * Default parameter values for SRP.
    *
@@ -93,7 +98,7 @@ define((require)=>{
         else
           throw new Error("Invalid parameter: a");
 
-        A = g.modPow(a, N);
+        A = absModPow(g, a, N);
 
         if (A.mod(N) === 0)
           throw new Error("Invalid parameter: a: A mod N == 0.");
@@ -101,7 +106,7 @@ define((require)=>{
       } else {
         while (!A || A.mod(N) === 0) {
           a = randInt();
-          A = g.modPow(a, N);
+          A = absModPow(g, a, N);
         }
       }
 
@@ -146,9 +151,9 @@ define((require)=>{
       const x = new BigInteger(
         H(this.salt + H(this.identity + ":" + this.password)), 16);
 
-      const kgx = k.multiply(g.modPow(x, N));
+      const kgx = k.multiply(absModPow(g, x, N));
       const aux = this.a.add(u.multiply(x));
-      const S = this.B.subtract(kgx).modPow(aux, N);
+      const S = absModPow(this.B.subtract(kgx), aux, N);
       const M = H(this.Astr + this.Bstr + S.toString(16));
       const HAMK = H(this.Astr + M + S.toString(16));
 
@@ -199,7 +204,7 @@ define((require)=>{
         else
           throw new Error("Invalid parameter: b");
 
-        B = k.multiply(v).add(g.modPow(b, N)).mod(N);
+        B = k.multiply(v).add(absModPow(g, b, N)).mod(N);
 
         if (B.mod(N) === 0)
           throw new Error("Invalid parameter: b: B mod N == 0.");
@@ -207,7 +212,7 @@ define((require)=>{
       } else {
         while (!B || B.mod(N) === 0) {
           b = randInt();
-          B = k.multiply(v).add(g.modPow(b, N)).mod(N);
+          B = k.multiply(v).add(absModPow(g, b, N)).mod(N);
         }
       }
 
@@ -243,8 +248,8 @@ define((require)=>{
       // Compute M and HAMK in advance. Don't send to client yet.
       const u = new BigInteger(H(this.Astr + this.Bstr), 16);
       const v = new BigInteger(this.verifier.verifier, 16);
-      const avu = this.A.multiply(v.modPow(u, N));
-      this.S = avu.modPow(this.b, N);
+      const avu = this.A.multiply(absModPow(v, u, N));
+      this.S = absModPow(avu, this.b, N);
       this.M = H(this.Astr + this.Bstr + this.S.toString(16));
       this.HAMK = H(this.Astr + this.M + this.S.toString(16));
 
@@ -289,7 +294,7 @@ define((require)=>{
 
       const x = params.hash(salt + params.hash(identity + ":" + password));
       const xi = new BigInteger(x, 16);
-      const v = params.g.modPow(xi, params.N);
+      const v = absModPow(params.g, xi, params.N);
 
       return {
         identity,
