@@ -433,6 +433,11 @@ define((require, exports, module)=>{
     return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
   };
 
+  class Topic {
+    constructor(target) {this.target = target}
+    addBody(body, isNew) {addBody(this.target, body, isNew)}
+  }
+
   class API {
     constructor(parent, moduleOrSubject, subjectName, testModule, abstract) {
       this.parent = parent;
@@ -777,7 +782,7 @@ define((require, exports, module)=>{
         [callLength$]: 0,
       };
       onTestEnd(this);
-      return {target: this.target, addBody(body, isNew) {addBody(this.target, body, isNew)}};
+      return new Topic(this.target);
     }
     example(body) {return example(this, body)}
     exampleCont(body) {return example(this, body, false)}

@@ -339,8 +339,8 @@ assert.same(Color.colors.red, '#f00');`,
 
     test("topic", ()=>{
       /**
-       * Record a test as a topic for insertion into a method document comment using the syntax
-       * `{{{topic:[<path>:]<topicName>}}`
+       * Record a test as a topic for insertion into a method test document comment using the syntax
+       * `{{{topic:[<path>:]<topicName>}}` and `{{{example:<number>}}`
 
        * @param {string} [options.name] override the name of the topic. Defaults to test name.
 
@@ -353,6 +353,7 @@ assert.same(Color.colors.red, '#f00');`,
       let mockTest;
       const test = (name, body)=>{
         const orig = Core.test;
+        if (mockTest !== void 0) return;
         try {
           mockTest = Core.test = {
             mode: 'running',
@@ -363,7 +364,7 @@ assert.same(Color.colors.red, '#f00');`,
           body();
         } finally {
           Core.test = orig;
-          mockTest.onEnd.yield();
+          if (mockTest.onEnd.called) mockTest.onEnd.yield();
         }
       };
 
@@ -376,8 +377,8 @@ assert.same(Color.colors.red, '#f00');`,
         }
       }
 
+      API.module({subjectModule: {id: 'myMod', exports: Library}});
       MainAPI.example(() => {
-        API.module({subjectModule: {id: 'myMod', exports: Library}});
         test("borrow book", ()=>{
           'use strict';
           /**
@@ -404,6 +405,17 @@ assert.same(Color.colors.red, '#f00');`,
           //]
 
           assert.equals(receipt.book, Library.findBook("Dune"));
+        });
+
+        test("findBook", ()=>{
+          /**
+           * After browsing the library you may want to borrow a book.
+           *
+           * {{topic:borrow book}} (or with path {{topic:models/library:borrow book}})
+           **/
+          API.method();
+          const book = Library.findBook("Dune");
+          assert(book);
         });
       });
 
