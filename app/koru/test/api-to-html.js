@@ -396,19 +396,28 @@ define((require)=>{
       text = expandLink(api[node$], text[1] === "/" ? text.slice(2) : text);
     }
     const idx = text.indexOf(';');
-    let suffix = '';
+    let suffix = '', isReplace = false;
     if (idx != -1) {
-      suffix = text.slice(idx+1);
+      if (text[idx+1] === ';') {
+        isReplace = true;
+        suffix = text.slice(idx+2);
+      } else
+        suffix = text.slice(idx+1);
       text = text.slice(0, idx);
     }
     let [mod, type, method=''] = text.split(/([.#:]+)/);
-    let href = text.replace(/[;\(].*$/, '');
-    if (idx != -1) method += suffix;
+    let href = text.replace(/\(.*$/, '');
+    if (suffix !== '') {
+      if (isReplace)
+        method = suffix;
+      else
+        method += suffix;
+    }
     if (mod) {
       const destMod = mod && api.top && api.top[mod];
       if (destMod)
         mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
-      text = `${mod}${type||''}${method}`;
+      text = isReplace ? method : `${mod}${type||''}${method}`;
     } else {
       href = api.id+href;
       text = method;

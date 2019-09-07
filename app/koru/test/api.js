@@ -293,11 +293,7 @@ define((require, exports, module)=>{
     const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
-    if (m == null) {
-      const m = /^[\s\S]*?\bapi\.(?:method|protoMethod).*\n([\s\S]*)}[^}]*$/.exec(raw);
-      if (m != null) addBody(details, m[1], true);
-      return;
-    }
+    if (m == null) return;
 
     let body = '', isNew = true;
     while (m !== null) {
