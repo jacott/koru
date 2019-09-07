@@ -7,20 +7,17 @@ define((require)=>{
   const {inspect$} = require('koru/symbols');
 
   const {hasOwn} = util;
-  const {is} = Object;
 
-  function Constructor() {
-    const match = (test, name) => new Match(test, name);
-
+  const constructor = ()=>{
     class Match {
       constructor(test, message=`match(${test.name||test})`) {
         if (typeof test === 'function')
           this[match$] = test;
         else switch(test.constructor) {
-        case RegExp:
+          case RegExp:
           this[match$] = value => typeof value === 'string' && test.test(value);
           break;
-        default:
+          default:
           this[match$] = value => util.deepEqual(value, test);
         }
         this.message = message;
@@ -40,7 +37,11 @@ define((require)=>{
         return typeof message === 'function'
           ? message() : ''+message;
       }
-    };
+    }
+
+    const match = (test, name) => new Match(test, name);
+
+    match.constructor = Match;
 
     match.make = (obj, test)=>{obj[match$] = test};
 
@@ -83,7 +84,7 @@ define((require)=>{
         return match(value => {return util.deepEqual(value, expected)}, name);
       },
       is(expected, name=()=> `match.is(${util.inspect(expected)})`) {
-        return match(value => is(value, expected), name);
+        return match(value => Object.is(value, expected), name);
       },
       regExp(regexp, name='match.regExp') {
         return match(value => typeof value === 'string' &&
@@ -132,9 +133,9 @@ define((require)=>{
     Match.prototype[inspect$] = Match.prototype.toString;
 
     return match;
-  }
+  };
 
-  const Match = Constructor();
-  Match.__initBase__ = Constructor;
-  return Match;
+  const match = constructor();
+  if (isTest) match[isTest] = constructor();
+  return match;
 });

@@ -4,6 +4,9 @@ define((require, exports, module)=>{
    * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
    * The {#koru/util.deepEqual} function will honour any matchers found in the `expected` (second)
    * argument.
+   *
+   * Note when testing {#koru/test/core;.match} is a separate clone of this match framework. This
+   * ensures any stubbing of match properties will not interfere with the test asserts.
    **/
   const koru            = require('koru');
   const api             = require('koru/test/api');
@@ -27,7 +30,49 @@ define((require, exports, module)=>{
     api.property(name, {info});
   };
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    group("matchClass", ()=>{
+      /**
+       * Class of matchers.
+       *
+       **/
+      let matchApi;
+
+      before(()=>{
+        matchApi = api.innerSubject(match.constructor);
+      });
+
+      test("test", ()=>{
+        /**
+         * Test if matcher matches.
+         **/
+        matchApi.protoMethod();
+        //[
+        assert.isTrue(match.any.test(null));
+        assert.isFalse(match.func.test(123));
+        //]
+      });
+
+      test("$throwTest", ()=>{
+        /**
+         * Throw if test fails
+         **/
+        matchApi.protoMethod();
+        //[
+        try {
+          assert.isTrue(match.any.$throwTest(null));
+        } catch(ex) {
+          assert.fail("did not expect "+ex);
+        }
+        try {
+          match.func.$throwTest(123);
+          assert.fail("expected expection");
+        } catch(ex) {
+          assert.same(ex, 'match.func');
+        }
+        //]
+      });
+    });
     test("custom matchers", ()=>{
       /**
        * Build a custom matcher.
@@ -59,7 +104,7 @@ define((require, exports, module)=>{
     });
 
     test("match.optional", ()=>{
-      docProp('optional', 'match a standard matcher or null or undefined; `match.optional.date`');
+      docProp('optional', 'match a standard matcher or `null` or `undefined`; `match.optional.date`');
       assert.isTrue(match.optional.id.test(null));
       assert.isTrue(match.optional.id.test(undefined));
       assert.isTrue(match.optional.id.test("aAgGzZqQ8901234567890123"));

@@ -3,6 +3,7 @@ define((require, exports, module)=>{
   /**
    * The heart of the test framework.
    **/
+  const match           = require('koru/match');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -25,6 +26,12 @@ trace of the actual error. Access can be useful to save and restore in custom as
       assert.same(Core.__elidePoint, null);
       assert.elideFromStack.same(Core.__elidePoint.constructor, Core.AssertionError);
       Core.__elidePoint = new Core.AssertionError();
+
+      api.property('match', {info: `
+A clone of the {#koru/match} framework. This is conventionally assigned to the constant \`m\`
+because of its widespread use.
+`});
+      assert.same(Core.match, match[isTest]);
     });
 
     group("AssertionError", ()=>{

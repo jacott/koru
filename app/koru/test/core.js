@@ -2,7 +2,10 @@ define((require)=>{
   'use strict';
   const format          = require('koru/format');
   const util            = require('koru/util');
-  const match           = require('koru/match').__initBase__();
+
+  const {private$} = require('koru/symbols');
+
+  const match = require('koru/match')[isTest];
 
   const {inspect, extractError, hasOwn} = util;
 
