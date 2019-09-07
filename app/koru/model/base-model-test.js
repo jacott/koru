@@ -11,16 +11,19 @@ define((require, exports, module)=>{
   const session         = require('koru/session');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
-  const val             = require('./validation');
+  const Val             = require('./validation');
 
   const {inspect$, error$} = require('koru/symbols');
 
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, onEnd, util, intercept, match: m} = TH;
 
   const BaseModel = require('./base-model');
 
-  val.register(module, {required: require('./validators/required-validator')});
+  Val.register(module, {
+    required: require('./validators/required-validator'),
+    text: require('koru/model/validators/text-validator'),
+  });
 
   let v = {};
 
@@ -35,6 +38,115 @@ define((require, exports, module)=>{
       v = {};
     });
 
+    test("define", ()=>{
+      /**
+       * Define and register a model.
+       *
+
+       * @param {Module} [module] needed to auto unload module when file changed
+
+       * @param {string} [name] name of model. Defaults to derived from module name.
+
+       * @param {object} [fields] call {#.defineFields} with fields
+
+       * @returns the model
+       **/
+      api.method();
+
+      const module = new require.module.constructor();
+      module.id = 'book';
+      //[
+      class Book extends BaseModel {
+      }
+
+      Book.define({module, fields: {
+        title: 'text',
+        pages: {type: 'number', number: {'>': 0}}
+      }});
+      assert.same(Model.Book, Book);
+
+      const book = new Book();
+
+      book.title = 'The Hedge Knight';
+      assert.equals(book.changes, {title: 'The Hedge Knight'});
+
+      book.pages = -1;
+      refute(book.$isValid());
+      assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
+      //]
+    });
+
+    test("defineFields", ()=>{
+      /**
+       * Define the types and {#../validators/main;;validators} of the fields in a model. Usually
+       * called with {#.define}
+       *
+       * Valid types are:
+       *
+       * |type            |javascript type |DB type          | |
+       * |:---            |:-----------    |:------          |:----- |
+       * |any             |object          |                 | |
+       * |auto_timestamp  |Date            |timestamp        |Set the timestamp on create; if field name contains `/create/i`; otherwise on update.|
+       * |baseObject      |object          |jsonb            | |
+       * |belongs_to_dbId |string          |text             |{{topic:belongs_to_dbId}} |
+       * |belongs_to      |string          |text             |Associate this model belonging to another model. A getter is defined to retrieve the associated model using this fields name less the `_id` suffix.|
+       * |boolean         |boolean         |boolean          | |
+       * |color           |string          |text             | |
+       * |date            |Date            |date             | |
+       * |has_many        |Array           |text[]           |Used with the {#../validators/associated-validator} to map to many ids.|
+       * |id              |string          |text             | |
+       * |integer         |number          |integer          | |
+       * |jsonb           |object          |jsonb            | |
+       * |number          |number          |double precision | |
+       * |object          |object          |jsonb            | |
+       * |string          |string          |text             | |
+       * |text            |string          |text             | |
+       * |user_id_on_create |string        |text             |Like `belongs_to` but also sets the field on create to the logged in `user_id`.|
+
+       * @param fields an key-value object with keys naming the fields and values defining the field
+       * `type`, the {#../validators/main;;validators} and any of the following generic options:
+       *
+       * |option |usage |
+       * |:----- |:---- |
+       * |default |The field's default value to assign in a new document |
+       * |pseudo_field |The field does not have accessors and is not set in `<Model>.$fields` property |
+       * |accessor |Use `accessor.get` and `accessor.set` for this field.<br>An accessor of `false` means no accessors |
+       * |readOnly |Saving a change to the field should not be allowed|
+       * Types and validators may also make use of other specific options.
+       *
+       * The field `_id` is added by default with a type of `id`. It can be given an option of
+       * `auto` to specify that the DB will generate an id for this field if none is supplied.
+       *
+
+
+       * @returns the model
+       **/
+      api.method();
+
+      const module = new require.module.constructor();
+      module.id = 'book';
+      //[
+      class Book extends BaseModel {
+      }
+      Book.define({module});
+
+      Book.defineFields({
+        title: 'text',
+        pages: {type: 'number', number: {'>': 0}}
+      });
+
+      const book = new Book();
+
+      book.title = 'The Hedge Knight';
+      assert.equals(book.changes, {title: 'The Hedge Knight'});
+
+      book.pages = -1;
+      refute(book.$isValid());
+      assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
+      //]
+
+    });
+
     group("with Model", ()=>{
       beforeEach(()=>{
         class Book extends BaseModel {
@@ -45,10 +157,6 @@ define((require, exports, module)=>{
           fields: {name: 'text', foo: 'jsonb', pages: 'number'}
         });
         v.Book = Book;
-        v.exampleWithBook = func => {
-          api.example("class Book extends BaseModel {}\n\n");
-          api.exampleCont(func);
-        };
       });
 
       group("model lock", ()=>{
@@ -125,7 +233,7 @@ define((require, exports, module)=>{
         onEnd(Book.onChange(observer));
 
         const Oasis = Book.create({_id: 'm123', name: 'Oasis', pages: 425});
-        const matchOasis = TH.match.field('_id', Oasis._id);
+        const matchOasis = m.field('_id', Oasis._id);
         assert.calledWith(observer, DocChange.add(Oasis));
 
         Oasis.$update('pages', 420);
@@ -465,72 +573,85 @@ define((require, exports, module)=>{
       });
 
       group("belongs_to", ()=>{
+        let Publisher;
         beforeEach(()=>{
-          v.Qux = Model.define('Qux').defineFields({name: 'text'});
-          onEnd(function () {Model._destroyModel('Qux', 'drop')});
-          v.qux = v.Qux.create({name: "qux"});
+          Publisher = Model.define('Publisher').defineFields({name: 'text'});
+          onEnd(function () {Model._destroyModel('Publisher', 'drop')});
         });
 
         afterEach(()=>{
-          Model._destroyModel('Qux', 'drop');
+          Model._destroyModel('Publisher', 'drop');
         });
 
         test("belongs_to_dbId", ()=>{
+          /**
+           * A `pseudo_field` synced to the {#../db-broker;.dbId}. It defines a model getter like
+           * `belongs_to` does. It can only be defined once per model.
+           *
+           * {{example:0}}
+           **/
           const {Book} = v;
+          api.topic();
+          //[
           Book.defineFields({
-            qux_id: {type: 'belongs_to_dbId'},
-            name: 'text',
+            publisher_id: {type: 'belongs_to_dbId'},
+            title: 'text',
           });
 
-          const sut = Book.create({name: 'sam'});
-          assert.equals(sut.$reload().attributes, {name: 'sam', _id: TH.match.any});
-          assert.same(sut.qux_id, dbBroker.dbId);
+          const book = Book.create({title: 'White Fang'});
+          assert.equals(book.$reload().attributes, {title: 'White Fang', _id: m.id});
+          assert.same(book.publisher_id, dbBroker.dbId);
 
-          v.Qux.create({name: 'dbQux', _id: 'default'});
+          Publisher.create({name: 'Macmillan', _id: 'default'});
 
-          assert.same(sut.qux.name, "dbQux");
+          assert.same(book.publisher.name, "Macmillan");
+          //]
         });
 
         test("accessor", ()=>{
           const {Book} = v;
-          Book.defineFields({qux_id: {type: 'belongs_to'}});
+          Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
           const sut = Book.build();
-          sut.qux_id = '';
-          assert.same(sut.changes.qux_id, undefined);
+          sut.publisher_id = '';
+          assert.same(sut.changes.publisher_id, undefined);
         });
 
         test("belongs_to auto", ()=>{
           const {Book} = v;
-          Book.defineFields({qux_id: {type: 'belongs_to'}});
+          Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
-          const sut = Book.build({qux_id: v.qux._id});
+          const publisher = Publisher.create({name: "Macmillan"});
+          const sut = Book.build({publisher_id: publisher._id});
 
-          const quxFind = spy(v.Qux, 'findById');
+          const publisherFind = spy(Publisher, 'findById');
 
-          assert.same(sut.qux.name, "qux");
-          assert.same(sut.qux.name, "qux");
-          assert.same(Book.$fields.qux_id.model, v.Qux);
+          const cached = sut.publisher;
+          assert.same(sut.publisher, cached);
+          assert.same(sut.publisher.name, "Macmillan");
+          assert.same(Book.$fields.publisher_id.model, Publisher);
 
-          assert.calledOnce(quxFind);
+          assert.calledOnce(publisherFind);
         });
 
         test("belongs_to manual name", ()=>{
           const {Book} = v;
-          Book.defineFields({baz_id: {type: 'belongs_to', modelName: 'Qux'}});
+          Book.defineFields({baz_id: {type: 'belongs_to', modelName: 'Publisher'}});
 
-          const sut = Book.build({baz_id: v.qux._id});
+          const publisher = Publisher.create({name: "Macmillan"});
+          const sut = Book.build({baz_id: publisher._id});
 
-          assert.same(sut.baz.name, "qux");
+          assert.same(sut.baz.name, "Macmillan");
         });
 
         test("belongs_to manual model", ()=>{
           const {Book} = v;
-          Book.defineFields({baz_id: {type: 'belongs_to', model: v.Qux}});
+          Book.defineFields({baz_id: {type: 'belongs_to', model: Publisher}});
 
-          const sut = Book.build({baz_id: v.qux._id});
+          const publisher = Publisher.create({name: "Macmillan"});
+          const sut = Book.build({baz_id: publisher._id});
 
-          assert.same(sut.baz.name, "qux");
+          assert.same(sut.baz.name, "Macmillan");
         });
       });
 
@@ -849,50 +970,6 @@ define((require, exports, module)=>{
         assert.same(Book.toDoc(doc)._id, 'theId');
         assert.same(Book.toDoc('astring'), 'found astring');
       });
-    });
-
-    test("using a class", ()=>{
-      /**
-       * Define and register a model.
-       *
-       * @param {Module} [module] needed to auto unload module when file changed
-
-       * @param {string} [name] name of model. Defaults to derived from module name.
-
-       * @param {object} [fields] call defineFields with fields
-
-       * @returns the model
-       **/
-      api.method("define");
-
-      const module = new TH.MockModule("book-server");
-
-      stub(module, 'onUnload');
-
-      //[
-      class Book extends BaseModel {
-        foo() {return this.name;}
-      }
-
-      Book.define({
-        module,
-        fields: {name: 'text'},
-      });
-
-      assert.same(Model.Book, Book);
-      assert.same(Book.modelName, 'Book');
-      assert.same(Book._module, module);
-
-      let tm = Book.create({name: 'my name'});
-
-      assert.same(tm.foo(), 'my name');
-      //]
-
-      assert.calledWith(module.onUnload, TH.match.func);
-
-      module.onUnload.yield();
-
-      refute(Model.Book);
     });
   });
 });

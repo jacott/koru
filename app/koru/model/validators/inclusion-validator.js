@@ -4,7 +4,7 @@ define((require, exports, module)=>{
 
   const {hasOwn} = util;
 
-  return function (doc, field, options) {
+  return {inclusion(doc, field, options) {
     const value = doc[field];
     if (! value) {
       const {allowBlank} = options;
@@ -21,5 +21,5 @@ define((require, exports, module)=>{
 
     if ('matches' in options && ! options['matches'].test(value))
       return this.addError(doc,field,'invalid_format');
-  };
+  }};
 });

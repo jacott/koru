@@ -1,141 +1,246 @@
 define((require, exports, module)=>{
   'use strict';
-  const Dom      = require('koru/dom');
-  const TH       = require('koru/test-helper');
-  const RichText = require('./rich-text');
+  /**
+   * {#./rich-Text} validators.
+   *
+   * Enable with {#koru/model/validation.register;(module, RichTextValidator)} which is
+   * conventionally done in `app/models/model.js`
+   **/
+  const Dom             = require('koru/dom');
+  const ValidatorHelper = require('koru/model/validators/validator-helper');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const RichText        = require('./rich-text');
 
   const {stub, spy, onEnd, intercept} = TH;
 
   const {error$} = require('koru/symbols');
 
-  const sut = require('../model/validation');
+  const RichTextValidator = require('koru/ui/rich-text-validator');
 
-  sut.register(module, {required: require('./rich-text-validator')});
+  class Book extends ValidatorHelper.ModelStub {
+  }
+  Book.registerValidator(RichTextValidator);
 
-  let v= {};
-
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      intercept(RichText, 'isValid', function (text, markup) {
-        v.args = [text, markup];
-        return v.rt && text === v.rt[0]  && markup === v.rt[1];
-      });
-    });
-
-    afterEach(()=>{
-      v = {};
-    });
-
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     group("richText", ()=>{
-      test("valid markup", ()=>{
-        v.rt = RichText.fromHtml(Dom.h([{b: "one"}, "\ntwo"]));
-        const doc = {changes: {foo: v.rt}, foo: v.rt};
+      /**
+       * Validate field is rich text. Field error set to `'invalid_html'` if invalid.
+       *
+       * @param options use `'filter'` to remove any invalid markup.
+       **/
 
-        sut.validators('richText')(doc, 'foo');
-        assert.same(doc[error$], undefined);
-        assert.equals(v.args, v.rt);
-        assert.equals(doc.foo, ['one\ntwo', [11, 0, 0, 3]]);
+      before(()=>{
+        api.method();
+      });
+
+      test("valid RichText", ()=>{
+        //[
+        // Valid RichText
+        Book.defineFields({
+          content: {type: 'text', richText: true}
+        });
+
+        const book = Book.build({content: RichText.fromHtml(Dom.h([{b: "once"}, "\nupon"]))});
+
+        assert(book.$isValid());
+        assert.equals(book.content, ['once\nupon', [11, 0, 0, 4]]);
+
+        book.content = ['invalid', [22, -1]];
+        refute(book.$isValid());
+        assert.equals(book[error$].content,[['invalid_html']]);
+        //]
       });
 
       test("valid text", ()=>{
-        const doc = {changes: {foo: "just\ntext"}, foo: "just\ntext"};
+        //[
+        // valid text (string; not array)
+        Book.defineFields({
+          content: {type: 'text', richText: true}
+        });
 
-        sut.validators('richText')(doc, 'foo');
-        assert.same(doc[error$], undefined);
-        assert.equals(v.args, undefined);
-        assert.equals(doc.foo, 'just\ntext');
+        const book = Book.build({content: "just\ntext"});
+
+        assert(book.$isValid());
+        assert.equals(book.content, 'just\ntext');
+        //]
       });
 
       test("no Markup", ()=>{
-        const doc = {foo: v.rt = [['one', 'two'], null]};
+        //[
+        // Valid RichText
+        Book.defineFields({
+          content: {type: 'text', richText: true}
+        });
 
-        sut.validators('richText')(doc, 'foo');
-        assert.same(doc[error$], undefined);
-        assert.equals(doc.foo, 'one\ntwo');
+        const book = Book.build({content: [['one', 'two'], null]});
+
+        assert(book.$isValid());
+        assert.equals(book.content, 'one\ntwo'); // converts array to plain text
+        //]
       });
 
       test("bad but no changes", ()=>{
-        const doc = {foo: [123, [3]], changes: {other: true}};
+        //[
+        // only checks changes
+         Book.defineFields({
+          content: {type: 'text', richText: true}
+        });
 
-        sut.validators('richText')(doc, 'foo');
-        refute(doc[error$]);
-        assert.same(v.args, undefined);
+        const book = Book.build();
+        book.attributes.content = [['one', 'two'], [-1, -1]];
+        assert(book.$isValid());
+        //]
       });
 
-      test("bad change", ()=>{
-        const doc = {foo: 123, changes: {foo:  [[3]]}};
+      test("invalid change", ()=>{
+        //[
+        // invalid markup
+        Book.defineFields({
+          content: {type: 'text', richText: true}
+        });
 
-        v.rt = [11, 2];
+        const book = Book.build({content: [11, 2]});
 
-        sut.validators('richText')(doc, 'foo');
-        assert.equals(doc[error$]['foo'],[['invalid_html']]);
+        refute(book.$isValid());
+        assert.equals(book[error$].content,[['invalid_html']]);
+        //]
       });
-
 
       test("filtering with markup", ()=>{
-        const foo = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}));
-        const doc = {foo: foo, changes: {foo:  foo}};
+        //[
+        // filter html to expected format
+        Book.defineFields({
+          content: {type: 'text', richText: 'filter'}
+        });
 
-        sut.validators('richText')(doc, 'foo', 'filter');
-        refute(doc[error$]);
-        assert.equals(doc.changes.foo, ['a\nb', [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]]);
-        assert.same(doc.foo, doc.changes.foo);
+        const book = Book.build({content: RichText.fromHtml(Dom.h({
+          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: "text-align:right;"}))});
+
+        assert.equals(book.content, ['a\nb', [7, 0, 1, 1, 0, 1, 20, 0, 0, 20, 1, 0]]);
+
+        assert(book.$isValid());
+
+        assert.equals(book.content, ['a\nb', [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]]);
+        assert.equals(Dom.htmlToJson(RichText.toHtml(book.content[0], book.content[1])), [{
+          ol: [
+            {li: {style: "text-align: right;", div: 'a'}},
+            {li: {style: "text-align: right;", div: 'b'}}
+          ]}]);
+        //]
       });
 
       test("filtering without markup", ()=>{
-        const foo = ['bold', null];
-        const doc = {foo: foo, changes: {foo:  foo}};
+        //[
+        // filter no markup
+        Book.defineFields({
+          content: {type: 'text', richText: 'filter'}
+        });
 
-        sut.validators('richText')(doc, 'foo', 'filter');
-        refute(doc[error$]);
-        assert.equals(doc.foo, 'bold');
+        const book = Book.build({content: ['bold', null]});
+
+        assert(book.$isValid());
+        assert.equals(book.content, 'bold');
+        //]
       });
     });
 
     group("richTextMarkup", ()=>{
-      test("valid", ()=>{
-        v.rt = [];
-        const doc = {changes: {foo: v.rt[0] = "one\ntwo"}, foo: v.rt[0], fooMarkup:  v.rt[1] = [3, 0, 0, 3]};
+      /**
+       * Validate field (suffixed with `'Markup'`) contains rich text markup. The corresponding
+       * plain text should be in adjacent field named without suffix. An error is set for field
+       * (with `'HTML'` suffix instead of `'Markup'` suffix) to `'invalid_html'` if invalid.
+       *
+       * @param options use `'filter'` to remove any invalid markup.
+       **/
 
-        sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert.same(doc[error$], undefined);
-        assert.equals(v.args, [v.rt[0], v.rt[1]]);
+      before(()=>{
+        api.method();
+      });
+
+      test("valid", ()=>{
+        //[
+        // Valid
+        Book.defineFields({
+          content: {type: 'text'},
+          contentMarkup: {type: 'text', richTextMarkup: true},
+        });
+
+        const rt = RichText.fromHtml(Dom.h([{b: "once"}, "\nupon"]));
+
+        const book = Book.build({content: rt[0], contentMarkup: rt[1]});
+
+        assert(book.$isValid());
+        assert.equals(book.content, 'once\nupon');
+        assert.equals(book.contentMarkup, [11, 0, 0, 4]);
+
+        book.contentMarkup = [22, -1];
+        refute(book.$isValid());
+        assert.equals(book[error$].contentHTML, [['invalid_html']]);
+        //]
       });
 
       test("filtering", ()=>{
-        const markup = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}))[1];
-        const doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
+        //[
+        // filter html to expected format
+        Book.defineFields({
+          content: {type: 'text'},
+          contentMarkup: {type: 'text', richTextMarkup: 'filter'},
+        });
 
-        sut.validators('richTextMarkup')(doc, 'fooMarkup', 'filter');
-        refute(doc[error$]);
-        assert.equals(doc.foo, 'a\nb');
-        assert.equals(doc.fooMarkup, [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]);
+        const rt = RichText.fromHtml(Dom.h({
+          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: "text-align:right;"}));
+
+        const book = Book.build({content: rt[0], contentMarkup: rt[1]});
+
+        assert(book.$isValid());
+
+        assert.equals(book.content, 'a\nb');
+
+        assert.equals(book.contentMarkup, [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]);
+        assert.equals(Dom.htmlToJson(RichText.toHtml(book.content, book.contentMarkup)), [{
+          ol: [
+            {li: {style: "text-align: right;", div: 'a'}},
+            {li: {style: "text-align: right;", div: 'b'}}
+          ]}]);
+        //]
       });
 
-
       test("bad but no changes", ()=>{
-        const doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};
+        //[
+        // only checks changes
+        Book.defineFields({
+          content: {type: 'text'},
+          contentMarkup: {type: 'text', richTextMarkup: true},
+        });
 
-        sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        refute(doc[error$]);
-        assert.same(v.args, undefined);
+        const book = Book.build();
+        book.attributes.content = ['one', 'two'];
+        book.attributes.contentMarkup = [-1, -1];
+        assert(book.$isValid());
+        //]
       });
 
       test("bad change", ()=>{
-        const doc = {foo: 123, changes: {fooMarkup:  [[3]]}, fooMarkup: 1122};
+        //[
+        // only checks changes
+        Book.defineFields({
+          content: {type: 'text'},
+          contentMarkup: {type: 'text', richTextMarkup: true},
+        });
 
-        sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert.equals(doc[error$]['fooHTML'],[['invalid_html']]);
-        assert.equals(v.args, [123, 1122]);
-      });
+        const book = Book.build({content: ['one', 'two'], contentMarkup: null});
+        refute(book.$isValid());
+        assert.equals(book[error$].contentHTML, [['invalid_html']]);
 
-      test("invalid code", ()=>{
-        const doc = {changes: {foo: "one\ntwo"}, foo: 1234, fooMarkup:  [-1, 0, 0, 3]};
+        book.content = 'one\ntwo';
+        book.contentMarkup = book.attributes.contentMarkup;
+        book.attributes.contentMarkup = [1, 0, 0, -3];
 
-        sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert(doc[error$]);
-        assert.equals(doc[error$]['fooHTML'],[['invalid_html']]);
-        assert.equals(v.args, [1234, [-1, 0, 0, 3]]);
+        refute(book.$isValid());
+        assert.equals(book[error$].contentHTML, [['invalid_html']]);
+        //]
       });
     });
   });

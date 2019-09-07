@@ -67,7 +67,7 @@ define((require, exports, module)=>{
       if (dbIdField !== undefined) {
         this[dbIdField] = dbBroker.dbId;
       }
-      if(attributes != null && attributes._id !== undefined) {
+      if(attributes != null && attributes._id !== void 0) {
         // existing record
         this.attributes = attributes;
         this.changes = changes;
@@ -187,7 +187,7 @@ define((require, exports, module)=>{
       registerObserveId(this);
       registerObserveField(this);
 
-      fields && this.defineFields(fields);
+      fields != null && this.defineFields(fields);
 
       return this;
     }
@@ -198,14 +198,14 @@ define((require, exports, module)=>{
       let $fields = this.$fields;
       if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
       for(const field in fields) {
-        let options = fields[field];
-        if (! options.type) options = {type: options};
-        const func = typeMap[options.type];
-        func && func(this, field, options);
+        let _options = fields[field];
+        const options = (typeof _options === 'string') ? {type: _options} : _options;
+        const func = TYPE_MAP[options.type];
+        func !== void 0 && func(this, field, options);
         setUpValidators(this, field, options);
 
-        if (options['default'] !== undefined) this._defaults[field] = options['default'];
-        if (! options.not_a_real_field) {
+        if (options.default !== void 0) this._defaults[field] = options.default;
+        if (! options.pseudo_field) {
           $fields[field] = options;
           if (options.accessor !== false) defineField(proto,field, options.accessor);
         }
@@ -323,7 +323,7 @@ define((require, exports, module)=>{
           for(const vTor in validators) {
             const args = validators[vTor];
             const options = args[1];
-            args[0](
+            args[0].call(Val,
               this, field,
               typeof options === 'function' ? options.call(this, field, args[2]) : options,
               args[2]);
@@ -517,7 +517,7 @@ define((require, exports, module)=>{
     if (value === null) value = undefined;
     if (value === doc.attributes[field]) {
       if (hasOwn(changes, field)) {
-        if (value === undefined && doc.constructor._defaults[field] !== undefined)
+        if (value === void 0 && doc.constructor._defaults[field] !== void 0)
           changes[field] = deepCopy(doc.constructor._defaults[field]);
         else
           delete doc.changes[field];
@@ -581,26 +581,27 @@ define((require, exports, module)=>{
   const getValidators =
         (model, field)=> model._fieldValidators[field] || (model._fieldValidators[field] = {});
 
-  const typeMap = {
+  const TYPE_MAP = {
     belongs_to_dbId(model, field, options) {
-      options.not_a_real_field = true;
+      options.pseudo_field = true;
       if (model.$dbIdField)
         throw new Error("belongs_to_dbId already defined!");
       model.$dbIdField = field;
       options.accessor = {set() {}};
-      typeMap.belongs_to.call(this, model, field, options);}
-    ,
+      TYPE_MAP.belongs_to.call(this, model, field, options);
+    },
+
     belongs_to(model, field, options) {
-      if (options.accessor === undefined) {
+      if (options.accessor === void 0) {
         const setv = setValue(field);
         options.accessor = {
           get: getValue(field),
           set(value) {
-            return setv.call(this, value || undefined);
+            return setv.call(this, value || void 0);
           },
         };
       }
-      const name = field.replace(/_id/,'');
+      const name = field.replace(/_id$/, '');
       let bt = options.model, btName;
       if (! bt) {
         btName = options.modelName || util.capitalize(name);
@@ -615,7 +616,7 @@ define((require, exports, module)=>{
     },
 
     user_id_on_create(model, field, options) {
-      typeMap.belongs_to.call(this, model, field, options);
+      TYPE_MAP.belongs_to.call(this, model, field, options);
       model.userIds = model.userIds || {};
       model.userIds[field] = 'create';
     },

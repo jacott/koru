@@ -5,7 +5,7 @@ define((require, exports, module)=>{
 
   const {error$} = require('koru/symbols');
 
-  const sut = require('./inclusion-validator').bind(validation);
+  const sut = require('./inclusion-validator').inclusion.bind(validation);
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("allow null", ()=>{

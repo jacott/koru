@@ -2,7 +2,7 @@ define((require, exports, module)=>{
   'use strict';
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
-  const sut             = require('./required-validator').bind(validation);
+  const sut             = require('./required-validator').required.bind(validation);
 
   const {error$} = require('koru/symbols');
 

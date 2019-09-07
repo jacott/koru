@@ -23,6 +23,7 @@ define((require)=>{
 
       const val = doc[field];
 
+
       if (typeof val === 'string')
         return;
 
@@ -43,7 +44,7 @@ define((require)=>{
         return;
       }
 
-      return this.addError(doc, field, 'invalid_html');
+      return this.addErrorIfNone(doc, field, 'invalid_html');
     },
 
     richTextMarkup(doc, field, options) {

@@ -9,7 +9,7 @@ isServer && define((require, exports, module)=>{
    * rules defined in Rails namely:
    *
    * |HTTP Verb|Path           |Controller#Action|Used for                                   |
-   * |---------|----           |-----------------|--------                                   |
+   * |:--------|:---           |:----------------|:-------                                   |
    * |GET      |/books         |Books#index      |display a list of all books                |
    * |GET      |/books/new     |Books#new        |return an HTML form for creating a new book|
    * |POST     |/books         |Books#create     |create a new book                          |

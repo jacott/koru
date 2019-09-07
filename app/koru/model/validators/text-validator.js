@@ -1,21 +1,27 @@
 define((require)=>{
   'use strict';
+  /**
+   * Text validation and conversion.
+   **/
   const UtilDate        = require('koru/util-date');
 
   const compiled$ = Symbol();
 
   const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
+
+
   return {
-    normalize(doc,field, options) {
+    normalize(doc, field, options) {
       const val = doc[field];
-      if (! val) return;
-
-      if (options === 'downcase') {
-        doc[field] = val.toLowerCase();
-
-      } else if (options === 'upcase') {
-        doc[field] = val.toUpperCase();
+      if (val !== '' && val != null &&
+          (options === 'downcase' || options == 'upcase')) {
+        if (typeof val !== 'string') {
+          this.addErrorIfNone(doc, field, 'not_a_string');
+        } else {
+          const conv = options === 'upcase' ? val.toUpperCase() : val.toLowerCase();
+          if (conv !== val) doc[field] = conv;
+        }
       }
     },
 
@@ -48,7 +54,7 @@ define((require)=>{
       if (! (val && val.constructor === Date && val.getDate() === val.getDate())) {
         if (typeof val !== 'string' ||
             (val = UtilDate.parse(val)) && val.getDate() !== val.getDate())
-          return this.addError(doc,field,'not_a_date');
+          return this.addErrorIfNone(doc,field,'not_a_date');
       }
 
       doc[field] = val;
@@ -68,7 +74,7 @@ define((require)=>{
         if (typeof val === 'string' && +val === +val)
           val = +val;
         else
-          return this.addError(doc,field,'not_a_number');
+          return this.addErrorIfNone(doc,field,'not_a_number');
       }
 
       if (options != null) {
@@ -78,42 +84,35 @@ define((require)=>{
             if (options.integer === 'convert')
               val = rnd;
             else
-              return void this.addError(doc, field, 'not_an_integer');
+              return void this.addErrorIfNone(doc, field, 'not_an_integer');
           }
         }
         if (typeof options === 'object') {
-          if (options[compiled$] === undefined) {
+          if (options[compiled$] === void 0) {
             const tests = options[compiled$] = [];
-            if (options['<='] !== undefined) {
-              const exp = options['<='];
-              tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
-            } else if (options.$lte !== undefined) {
-              const exp = options.$lte;
-              tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
+            {
+              let exp = options['<='];
+              if (exp === void 0) exp = options.$lte;
+              if (exp !== void 0)
+                tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
             }
-
-            if (options['>='] !== undefined) {
-              const exp = options['>='];
-              tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
-            } else if (options.$gte !== undefined) {
-              const exp = options.$gte;
-              tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
+            {
+              let exp = options['>='];
+              if (exp === void 0) exp = options.$gte;
+              if (exp !== void 0)
+                tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
             }
-
-            if (options['<'] !== undefined) {
-              const exp = options['<'];
-              tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
-            } else if (options.$lt !== undefined) {
-              const exp = options.$lt;
-              tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
+            {
+              let exp = options['<'];
+              if (exp === void 0) exp = options.$lt;
+              if (exp !== void 0)
+                tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
             }
-
-            if (options['>'] !== undefined) {
-              const exp = options['>'];
-              tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
-            } else if (options.$gt !== undefined) {
-              const exp = options.$gt;
-              tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
+            {
+              let exp = options['>'];
+              if (exp === void 0) exp = options.$gt;
+              if (exp !== void 0)
+                tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
             }
           }
           const tests = options[compiled$];
@@ -128,7 +127,8 @@ define((require)=>{
     },
 
     boolean(doc, field, boolType) {
-      let val = doc[field];
+      const orig = doc[field];
+      let val = orig;
 
       if (val != null) {
         if (typeof val === 'string') {
@@ -143,13 +143,12 @@ define((require)=>{
           }
         }
 
-
-        if (! val && boolType === 'trueOnly')
-          doc[field] = undefined;
-        else if (val === false || val === true)
-          doc[field] = val;
-        else
-          this.addError(doc,field,'not_a_boolean');
+        if (val === false && boolType === 'trueOnly') {
+          doc[field] = void 0;
+        } else if (val === false || val === true) {
+          if (val !== orig) doc[field] = val;
+        } else
+          this.addErrorIfNone(doc, field, 'not_a_boolean');
       }
     },
 
@@ -158,7 +157,7 @@ define((require)=>{
 
       if (val != null) {
         if (typeof val !== 'string')
-          this.addError(doc,field,'not_a_string');
+          this.addErrorIfNone(doc, field, 'not_a_string');
         else {
           val = val.trim();
           if (! val) {
@@ -167,7 +166,7 @@ define((require)=>{
               val = null;
               break;
             case 'toUndefined':
-              val = undefined;
+              val = void 0;
               break;
             }
           }

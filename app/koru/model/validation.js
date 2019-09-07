@@ -178,7 +178,7 @@ define((require)=>{
     validateField(doc, field, spec) {
       for(const name in spec) {
         const validator = validators[name];
-        validator && validator(doc, field, spec[name]);
+        validator && validator.call(this, doc, field, spec[name]);
       }
 
       if (doc[error$] !== undefined) return false;
@@ -294,17 +294,17 @@ define((require)=>{
       for (const regName in map) {
         const item = map[regName];
         if (typeof item === 'function') {
-          validators[regName] = item.bind(this);
+          validators[regName] = item;
           registered.push(regName);
         } else {
           for(const regName in item) {
-            validators[regName] = item[regName].bind(this);
+            validators[regName] = item[regName];
             registered.push(regName);
           }
         }
       }
 
-      koru.onunload(module, ()=>{
+      module.onUnload(()=>{
         registered.forEach(key =>{delete validators[key]});
       });
     },
@@ -316,6 +316,12 @@ define((require)=>{
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
+    },
+
+    addErrorIfNone: (doc, field, ...args)=>{
+      const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$];
+      if (errors[field] === void 0)
+        errors[field] = [args];
     },
 
     transferErrors: (field, from, to)=>{

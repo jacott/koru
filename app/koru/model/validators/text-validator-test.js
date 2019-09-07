@@ -1,102 +1,190 @@
 define((require, exports, module)=>{
   'use strict';
-  const TH = require('koru/test-helper');
+  /**
+   * Text validators and convertors.
+   *
+   * Enable with {#../../validation.register;(module, TextValidator)} which is conventionally done
+   * in `app/models/model.js`
+   **/
+  const Val             = require('koru/model/validation');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const ValidatorHelper = require('./validator-helper');
 
   const {error$} = require('koru/symbols');
 
-  const sut = require('../validation');
+  const TextValidator   = require('./text-validator');
 
-  sut.register(module, {required: require('./text-validator')});
+  class Book extends ValidatorHelper.ModelStub {
+  }
+  Book.registerValidator(TextValidator);
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+
     group("normalize", ()=>{
+      /**
+       * Ensure text is in a normalized form
+       * @param options `"upcase"` to convert field to upper case. `"downcase"` to convert field to
+       * lower case. Other values are ignored.
+       **/
+
+      before(()=>{
+        api.method();
+      });
+
       test("downcase", ()=>{
-        const doc = {name: 'mixedCase'};
+        //[
+        Book.defineFields({
+          title: {type: 'text', normalize: 'downcase'}
+        });
+        const book = Book.build({title: 'Animal Farm'});
 
-        sut.validators('normalize')(doc,'name', 'downcase');
+        assert(book.$isValid());
 
-        refute(doc[error$]);
-
-        assert.same(doc.name, 'mixedcase');
-
-        sut.validators('normalize')(doc,'noName', 'downcase');
-
-        refute(doc[error$]);
-
-        assert.equals(doc, {name: 'mixedcase'});
+        assert.same(book.title, 'animal farm');
+        //]
       });
 
       test("upcase", ()=>{
-        const doc = {name: 'mixedCase'};
+        //[
+        Book.defineFields({
+          title: {type: 'text', normalize: 'upcase'}
+        });
+        const book = Book.build({title: 'Animal Farm'});
+        assert(book.$isValid());
 
-        sut.validators('normalize')(doc,'name', 'upcase');
+        assert.same(book.title, 'ANIMAL FARM');
+        //]
+      });
 
-        refute(doc[error$]);
+      test("asserts string", ()=>{
+        //[
+        Book.defineFields({
+          title: {type: 'text', normalize: 'upcase'}
+        });
+        const book = Book.build({title: 12345});
 
-        assert.same(doc.name, 'MIXEDCASE');
+        refute(book.$isValid());
+        assert.same(book.title, 12345);
+        assert.equals(book[error$].title,[['not_a_string']]);
 
-        sut.validators('normalize')(doc,'noName', 'upcase');
-
-        refute(doc[error$]);
-
-        assert.equals(doc, {name: 'MIXEDCASE'});
+        book.title = null;
+        assert(book.$isValid());
+        //]
       });
     });
 
+    test("multi validators", ()=>{
+      Book.defineFields({
+        title: {type: 'text', normalize: 'upcase', trim: true}
+      });
+      const book = Book.build({title: " hello "});
+      assert(book.$isValid());
+
+      assert.same(book.title, "HELLO");
+
+      book.title = 123;
+      refute(book.$isValid());
+      assert.equals(book[error$].title,[['not_a_string']]);
+    });
+
     group("boolean", ()=>{
+      /**
+       * Ensure field is a boolean. Strings of trimmed lower case `'true'`, `'on'`, `'1'` and `'t'`
+       * are converted to `true`. Strings of trimmed lower case `'false'`, `'off'`, `'0'` and `'f'`
+       * are converted to `false`. If converted value is not of type `boolean`, `undefined` or
+       * `null` a `'not_a_boolean'` error is added.
+
+       * @param options use `"trueOnly"` to convert field to `undefined` if not `true`.
+       **/
+
+      before(()=>{
+        api.method();
+      });
+
       test("trueOnly", ()=>{
-        let doc = {isSet: false};
+        //[
+        // trueOnly
+        Book.defineFields({
+          inPrint: {type: 'boolean', boolean: 'trueOnly'}
+        });
+        const book = Book.build({inPrint: false});
 
-        sut.validators('boolean')(doc,'isSet', 'trueOnly');
-        refute(doc[error$]);
+        assert(book.$isValid());
+        assert.same(book.inPrint, void 0);
 
-        assert.same(doc.isSet, undefined);
+        book.inPrint = true;
 
-        doc = {isSet: true};
-
-        sut.validators('boolean')(doc,'isSet', 'trueOnly');
-        refute(doc[error$]);
-
-        assert.same(doc.isSet, true);
+        assert(book.$isValid());
+        assert.same(book.inPrint, true);
+        //]
       });
 
       test("set true", ()=>{
-        ['trUe  ', 'T', ' 1', 'on'].forEach(val =>{
-          const doc = {isSet: val};
-          sut.validators('boolean')(doc,'isSet');
-          refute(doc[error$]);
-
-          assert.same(doc.isSet, true, 'for val "'+val+'"');
+        //[
+        // accepted true values
+        Book.defineFields({
+          inPrint: {type: 'boolean', boolean: true}
         });
+        const book = Book.build();
+        for (const val of ['trUe  ', 'T', ' 1', 'on', true]) {
+          book.inPrint = val;
+
+          assert(book.$isValid());
+          assert.isTrue(book.inPrint);
+        }
+        //]
       });
 
       test("set false", ()=>{
-        [' FALSE  ', 'f', ' 0', 'off'].forEach(val =>{
-          const doc = {isSet: val};
-          sut.validators('boolean')(doc,'isSet');
-          refute(doc[error$]);
-
-          assert.same(doc.isSet, false, 'for val "'+val+'"');
+        //[
+        // accepted false values
+        Book.defineFields({
+          inPrint: {type: 'boolean', boolean: true}
         });
-      });
+        const book = Book.build();
+        for (const val of [' FALSE  ', 'f', ' 0', 'off', false]) {
+          book.inPrint = val;
 
-      test("if null", ()=>{
-        const doc = {};
-
-        sut.validators('boolean')(doc,'isSet');
-        refute(doc[error$]);
+          assert(book.$isValid());
+          assert.isFalse(book.inPrint);
+        }
+        //]
       });
 
       test("set invalid", ()=>{
-        [' FALS  ', 'tru', '  '].forEach(val =>{
-          const doc = {isSet: val};
-          sut.validators('boolean')(doc,'isSet');
-          assert(doc[error$]);
-          assert.equals(doc[error$]['isSet'],[['not_a_boolean']]);
-
-          assert.same(doc.isSet, val);
+        //[
+        // invalid values
+        Book.defineFields({
+          inPrint: {type: 'boolean', boolean: true}
         });
+        const book = Book.build();
+        for (const val of [' FALS  ', 'tru', '  ', 0, 1]) {
+          book.inPrint = val;
 
+          refute(book.$isValid());
+          assert.same(book.inPrint, val);
+          assert.equals(book[error$]['inPrint'],[['not_a_boolean']]);
+        }
+        //]
+      });
+
+      test("null, undefined", ()=>{
+        //[
+        // null or undefined
+        Book.defineFields({
+          inPrint: {type: 'boolean', boolean: true}
+        });
+        const book = Book.build({inPrint: null});
+
+        assert(book.$isValid());
+        assert.same(book.inPrint, void 0);
+
+        book.inPrint = void 0;
+
+        assert(book.$isValid());
+        assert.same(book.inPrint, void 0);
+        //]
       });
     });
 
@@ -104,19 +192,19 @@ define((require, exports, module)=>{
       test("valid", ()=>{
         let doc = {startDate: new Date()};
 
-        sut.validators('date')(doc, 'startDate');
+        TextValidator.date.call(Val, doc, 'startDate');
         refute(doc[error$]);
 
         doc = {startDate: '2015-12-31'};
 
-        sut.validators('date')(doc, 'startDate');
+        TextValidator.date.call(Val, doc, 'startDate');
         refute(doc[error$]);
 
         assert.equals(doc.startDate, new Date(2015, 11, 31));
 
         doc = {startDate: '2015-12-31T13:14Z'};
 
-        sut.validators('date')(doc, 'startDate');
+        TextValidator.date.call(Val, doc, 'startDate');
         refute(doc[error$]);
 
         assert.equals(doc.startDate, new Date('2015-12-31T13:14Z'));
@@ -125,7 +213,7 @@ define((require, exports, module)=>{
       test("invalid", ()=>{
         const doc = {startDate: 'abc'};
 
-        sut.validators('date')(doc, 'startDate');
+        TextValidator.date.call(Val, doc, 'startDate');
         assert(doc[error$]);
         assert.equals(doc[error$]['startDate'],[['not_a_date']]);
       });
@@ -135,26 +223,26 @@ define((require, exports, module)=>{
       test("min value", ()=>{
         let doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {$gte: 123});
+        TextValidator.number.call(Val, doc,'order', {$gte: 123});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {$gt: 122});
+        TextValidator.number.call(Val, doc,'order', {$gt: 122});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {'>=': 124});
+        TextValidator.number.call(Val, doc,'order', {'>=': 124});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_less_than', 124]]);
 
         doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {'>': 123});
+        TextValidator.number.call(Val, doc,'order', {'>': 123});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['must_be_greater_than', 123]]);
       });
 
       test("negative", ()=>{
         const doc = {order: -4};
-        sut.validators('number')(doc,'order', {integer: true, $gte: 0, $lt: 999});
+        TextValidator.number.call(Val, doc,'order', {integer: true, $gte: 0, $lt: 999});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_less_than', 0]]);
       });
@@ -162,19 +250,19 @@ define((require, exports, module)=>{
       test("max value", ()=>{
         let doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {$lte: 123});
+        TextValidator.number.call(Val, doc,'order', {$lte: 123});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {$lt: 124});
+        TextValidator.number.call(Val, doc,'order', {$lt: 124});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {'<=': 122});
+        TextValidator.number.call(Val, doc,'order', {'<=': 122});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_greater_than', 122]]);
 
         doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {'<': 123});
+        TextValidator.number.call(Val, doc,'order', {'<': 123});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['must_be_less_than', 123]]);
       });
@@ -182,21 +270,21 @@ define((require, exports, module)=>{
       test("integer", ()=>{
         const doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {integer: true});
+        TextValidator.number.call(Val, doc,'order', {integer: true});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', 'integer');
+        TextValidator.number.call(Val, doc,'order', 'integer');
         refute(doc[error$]);
 
         doc.order = 123.65;
 
-        sut.validators('number')(doc,'order', {integer: 'convert'});
+        TextValidator.number.call(Val, doc,'order', {integer: 'convert'});
         refute(doc[error$]);
         assert.same(doc.order, 124);
 
         doc.order = 123.65;
 
-        sut.validators('number')(doc,'order', {integer: true});
+        TextValidator.number.call(Val, doc,'order', {integer: true});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['not_an_integer']]);
       });
@@ -204,18 +292,18 @@ define((require, exports, module)=>{
       test("valid", ()=>{
         const doc = {order: 123};
 
-        sut.validators('number')(doc,'order');
+        TextValidator.number.call(Val, doc,'order');
         refute(doc[error$]);
 
         doc.order = 0;
-        sut.validators('number')(doc,'order');
+        TextValidator.number.call(Val, doc,'order');
         refute(doc[error$]);
       });
 
       test("string as number", ()=>{
          const doc = {order: '0xabc'};
 
-        sut.validators('number')(doc,'order');
+        TextValidator.number.call(Val, doc,'order');
         refute(doc[error$]);
 
         assert.same(doc.order,0xabc);
@@ -224,7 +312,7 @@ define((require, exports, module)=>{
       test("empty", ()=>{
          const doc = {order: ''};
 
-        sut.validators('number')(doc,'order');
+        TextValidator.number.call(Val, doc,'order');
         refute(doc[error$]);
 
         assert.same(doc.order, null);
@@ -233,7 +321,7 @@ define((require, exports, module)=>{
       test("invalid", ()=>{
         const doc = {order: 'abc'};
 
-        sut.validators('number')(doc,'order');
+        TextValidator.number.call(Val, doc,'order');
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['not_a_number']]);
       });
@@ -243,7 +331,7 @@ define((require, exports, module)=>{
       test("invalid", ()=>{
         const doc = {name: 123};
 
-        sut.validators('trim')(doc,'name');
+        TextValidator.trim.call(Val, doc,'name');
         assert(doc[error$]);
         assert.equals(doc[error$]['name'],[['not_a_string']]);
       });
@@ -252,7 +340,7 @@ define((require, exports, module)=>{
 
         const doc = {name: '  '};
 
-        sut.validators('trim')(doc,'name', 'toNull');
+        TextValidator.trim.call(Val, doc,'name', 'toNull');
 
         refute(doc[error$]);
         assert.same(doc.name, null);
@@ -263,17 +351,17 @@ define((require, exports, module)=>{
 
         const doc = {name: '  '};
 
-        sut.validators('trim')(doc,'name', 'toUndefined');
+        TextValidator.trim.call(Val, doc,'name', 'toUndefined');
 
         refute(doc[error$]);
-        assert.same(doc.name, undefined);
+        assert.same(doc.name, void 0);
 
       });
 
       test("trims", ()=>{
         const doc = {name: '  in  the middle  '};
 
-        sut.validators('trim')(doc,'name');
+        TextValidator.trim.call(Val, doc,'name');
         refute(doc[error$]);
         assert.same(doc.name, 'in  the middle');
       });
@@ -286,7 +374,7 @@ define((require, exports, module)=>{
 
         for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
-          sut.validators('color')(doc,'color', 'alpha');
+          TextValidator.color.call(Val, doc,'color', 'alpha');
           refute.msg('should be valid: '+item)(doc[error$]);
         }
       });
@@ -297,7 +385,7 @@ define((require, exports, module)=>{
 
         for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
-          sut.validators('color')(doc,'color');
+          TextValidator.color.call(Val, doc,'color');
           refute.msg('should be valid: '+item)(doc[error$]);
           assert.same(doc.color, item.slice(0, 7));
 
@@ -311,7 +399,7 @@ define((require, exports, module)=>{
         for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           doc[error$] = {};
-          sut.validators('color')(doc,'color');
+          TextValidator.color.call(Val, doc,'color');
 
           assert.equals(doc[error$]['color'],[['is_invalid']]);
         }
@@ -324,7 +412,7 @@ define((require, exports, module)=>{
         for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           doc[error$] = {};
-          sut.validators('color')(doc,'color');
+          TextValidator.color.call(Val, doc,'color');
 
           assert.equals(doc[error$]['color'],[['is_invalid']]);
         }

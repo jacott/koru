@@ -1,5 +1,12 @@
 define((require, exports, module)=>{
   'use strict';
+  /**
+   * Utilities to help validate models.
+   **/
+  const InclusionValidator = require('koru/model/validators/inclusion-validator');
+  const RequiredValidator = require('koru/model/validators/required-validator');
+  const TextValidator   = require('koru/model/validators/text-validator');
+  const api             = require('koru/test/api');
   const koru            = require('../main');
   const match           = require('../match');
   const util            = require('../util');
@@ -8,7 +15,7 @@ define((require, exports, module)=>{
 
   const {error$} = require('koru/symbols');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const Val   = require('./validation');
 
@@ -17,6 +24,10 @@ define((require, exports, module)=>{
   let v = {};
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.module({subjectName: 'Val'});
+    });
+
     beforeEach(()=>{
       TH.noInfo();
       v.myModule = new Module(module.ctx, 'mymodule');
@@ -287,40 +298,61 @@ define((require, exports, module)=>{
       });
     });
 
+    test("register", ()=>{
+      /**
+       * Register one or more collections of validators. This is conventionally done in
+       * `app/models/model.js`
+
+       * @param {object} map a collection of validation functions or a collection of collection of
+       * validation functions.
+       **/
+      api.method();
+      const module = new require.module.constructor();
+      module.id = 'models/model';
+      //[
+      stub(module, 'onUnload');
+      Val.register(module, {TextValidator, RequiredValidator});
+      Val.register(module, InclusionValidator);
+
+      assert.isFunction(Val.validators('normalize'));
+      assert.isFunction(Val.validators('inclusion'));
+      assert.isFunction(Val.validators('required'));
+
+      module.onUnload.yieldAll();
+
+      assert.same(Val.validators('normalize'), void 0);
+      assert.same(Val.validators('inclusion'), void 0);
+      assert.same(Val.validators('required'), void 0);
+      //]
+    });
+
+
+
     test("validators", ()=>{
-      const fooStub = function () {
-        v.Val = this;
-      };
+      /**
+       * Return a function that runs the validators with a given name. Called by BaseModel
+       **/
+      const module = new require.module.constructor();
+      module.id = 'models/model';
+      stub(module, 'onUnload');
+      onEnd(()=>{module.onUnload.yieldAll()});
+
+      const fooStub = stub();
       const barStub = {
-        bar1() {v.bar1 = this},
-        bar2() {},
+        bar1: stub(),
+        bar2: stub(),
       };
 
       const myunload = stub(koru, 'onunload').withArgs('mymod');
 
-      Val.register('mymod', {fooVal: fooStub, bar: barStub});
+      Val.register(module, {fooStub, barStub});
 
-      let func = Val.validators('fooVal');
+      assert.same(Val.validators('fooStub'), fooStub);
+      assert.same(Val.validators('bar1'), barStub.bar1);
 
-      func();
+      Val.deregister('fooStub');
 
-      assert.same(v.Val, Val);
-
-      Val.deregister('fooVal');
-
-      refute(Val.validators('fooVal'));
-
-      assert.called(myunload);
-
-      func = Val.validators('bar1');
-
-      func();
-
-      assert.same(v.bar1, Val);
-
-      myunload.yield();
-
-      refute(Val.validators('bar1'));
+      assert.same(Val.validators('fooStub'), void 0);
     });
 
     test("validateField", ()=>{

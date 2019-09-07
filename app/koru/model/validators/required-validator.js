@@ -1,5 +1,5 @@
-define(()=>{
-  return function (doc, field, reqType) {
+define({
+  required(doc, field, reqType) {
     let value = doc[field];
 
     switch (reqType) {
@@ -14,5 +14,5 @@ define(()=>{
 
     if (value == null)
       this.addError(doc,field,'is_required');
-  };
+  }
 });
