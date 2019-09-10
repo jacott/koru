@@ -1,33 +1,65 @@
 define((require, exports, module)=>{
   'use strict';
+  /**
+   * Validate the length of an object.
+   *
+   * Enable with {#../../validation.register;(module, LengthValidator)} which is conventionally done
+   * in `app/models/model.js`
+   **/
+  const ValidatorHelper = require('koru/model/validators/validator-helper');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
   const validation      = require('../validation');
 
   const {error$} = require('koru/symbols');
 
-  const sut = require('./length-validator');
+  const LengthValidator = require('./length-validator');
 
-  TH.testCase(module, ({test})=>{
-    test("too long", ()=>{
-      const doc = {name: '123'};
-      sut.maxLength.call(validation, doc,'name', 2);
+  class Book extends ValidatorHelper.ModelStub {
+  }
+  Book.registerValidator(LengthValidator);
 
-      assert(doc[error$]);
-      assert.equals(doc[error$]['name'],[["too_long", 2]]);
-    });
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    group("maxLength", ()=>{
+      /**
+       * Ensure field is not greater than length (if changed)/
+       * @param len the maximum length of the field
+       **/
 
-    test("missing", ()=>{
-      const doc = {name: ''};
-      sut.maxLength.call(validation, doc,'name', 2);
+      before(()=>{
+        api.method();
+      });
 
-      refute(doc[error$]);
-    });
+      test("too long", ()=>{
+        //[
+        Book.defineFields({
+          title: {type: 'text', maxLength: 10}
+        });
+        const book = Book.build({title: 'Animal Farm'});
 
-    test("not too long", ()=>{
-      const doc = {name: '123'};
-      sut.maxLength.call(validation, doc,'name', 3);
+        refute(book.$isValid());
+        assert.equals(book[error$].title, [["too_long", 10]]);
+        //]
+      });
 
-      refute(doc[error$]);
+      test("missing", ()=>{
+         Book.defineFields({
+          title: {type: 'text', maxLength: 10}
+        });
+        const book = Book.build();
+        book.attributes.title = 'Animal Farm';
+
+        assert(book.$isValid());
+      });
+
+      test("not too long", ()=>{
+        Book.defineFields({
+          title: {type: 'text', maxLength: 20}
+        });
+        const book = Book.build({title: 'Animal Farm'});
+
+        assert(book.$isValid());
+      });
     });
   });
 });

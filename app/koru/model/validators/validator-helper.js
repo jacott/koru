@@ -63,10 +63,7 @@ define((require, exports, module)=>{
           const validator = validators[name];
           if (validator !== void 0) {
             const options = fieldOps[name];
-            validator.call(
-              Val, this, field,
-              typeof options === 'function' ? options.call(this, field, fieldOps) : options,
-              fieldOps);
+            validator.call(Val, this, field, options, fieldOps[name]);
           }
         }
       }

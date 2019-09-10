@@ -1,15 +1,15 @@
 define((require, exports, module)=>{
   'use strict';
-  const TH         = require('koru/test-helper');
-  const Model      = require('../main');
-  const Query      = require('../query');
-  const validation = require('../validation');
+  const Val             = require('koru/model/validation');
+  const TH              = require('koru/test-helper');
+  const Model           = require('../main');
+  const Query           = require('../query');
 
   const {stub, spy, onEnd, intercept} = TH;
 
   const {error$, original$} = require('koru/symbols');
 
-  const sut        = require('./associated-validator').bind(validation);
+  const {associated} = require('koru/model/validators/associated-validator');
 
   let v = {};
 
@@ -27,14 +27,14 @@ define((require, exports, module)=>{
       const foo_ids = ["xyz", "def", "abc"],
             doc = {foo_ids: foo_ids, attributes: {}};
 
-      const forEach = stub(Query.prototype, 'forEach', function (func) {
+      const forEach = stub(Query.prototype, 'forEach', func =>{
         func({_id: "abc"});
         func({_id: "xyz"});
       });
       const where = stubWhere();
       const fields = spy(Query.prototype, 'fields');
 
-      sut(doc,'foo_ids', {filter: true});
+      associated.call(Val, doc,'foo_ids', {filter: true});
       refute(doc[error$]);
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, ["abc", "xyz"]);
@@ -53,7 +53,7 @@ define((require, exports, module)=>{
 
       const forEach = intercept(Query.prototype, 'forEach');
 
-      sut(doc,'foo_ids', {filter: true});
+      associated.call(Val, doc,'foo_ids', {filter: true});
       refute(doc[error$]);
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, []);
@@ -61,7 +61,7 @@ define((require, exports, module)=>{
 
     test("none", ()=>{
       const doc = {};
-      sut(doc,'foo_ids', true);
+      associated.call(Val, doc,'foo_ids', true);
 
       refute(doc[error$]);
     });
@@ -73,7 +73,7 @@ define((require, exports, module)=>{
         return 0;
       });
       const doc = {foo_ids: ["xyz"], attributes: {}};
-      sut(doc,'foo_ids', true);
+      associated.call(Val, doc,'foo_ids', true);
 
       assert(doc[error$]);
       assert.equals(doc[error$]['foo_ids'],[["not_found"]]);
@@ -86,7 +86,7 @@ define((require, exports, module)=>{
         attributes: {foo_ids: ["bef", "foo", "xyz"]},
       };
 
-      sut(doc,'foo_ids', {changesOnly: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true});
 
       refute(doc[error$]);
 
@@ -100,16 +100,16 @@ define((require, exports, module)=>{
 
       doc.changes.foo_ids = ["can", "def", "bef", "xyz", "abc"];
 
-      sut(doc,'foo_ids', {changesOnly: true, filter: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true, filter: true});
 
       refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ["abc", "bef", "can", "xyz"]);
 
-      sut(doc,'foo_ids', {changesOnly: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true});
       refute(doc[error$]);
 
       doc.changes.foo_ids = ["can", "def", "bef", "xyz", "abc", 'new'];
-      sut(doc,'foo_ids', {changesOnly: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true});
 
       assert(doc[error$]);
 
@@ -118,7 +118,7 @@ define((require, exports, module)=>{
       doc.changes.foo_ids = ['M', 'E'];
       doc.attributes.foo_ids = ['M'];
 
-      sut(doc,'foo_ids', {changesOnly: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true});
       refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ['E', 'M']);
 
@@ -127,7 +127,7 @@ define((require, exports, module)=>{
       doc.changes.foo_ids = ['ra', 'rq', 'A', 'B', 'ra', 'A'];
       doc.attributes.foo_ids = ['ra'];
 
-      sut(doc,'foo_ids', {changesOnly: true});
+      associated.call(Val, doc,'foo_ids', {changesOnly: true});
       refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ['A', 'B', 'ra', 'rq']);
     });
@@ -149,7 +149,7 @@ define((require, exports, module)=>{
           get foo_ids() {return this.changes.foo_ids},
         };
 
-        sut(doc,'foo_ids', {});
+        associated.call(Val, doc,'foo_ids', {});
 
         assert.equals(doc.changes.foo_ids, ["a", "a", "b", "e", "e", "f"]);
         assert.equals(doc[error$], {foo_ids: [['duplicates']]});
@@ -168,13 +168,13 @@ define((require, exports, module)=>{
           get foo_ids() {return this.changes.foo_ids},
         };
 
-        sut(doc,'foo_ids', {changesOnly: true, filter: true});
+        associated.call(Val, doc,'foo_ids', {changesOnly: true, filter: true});
         refute(doc[error$]);
 
         // don't filter out old ids
         assert.equals(doc.changes.foo_ids, ["a", "b", "e", "f"]);
 
-        sut(doc,'foo_ids', {filter: true});
+        associated.call(Val, doc,'foo_ids', {filter: true});
         refute(doc[error$]);
 
         // filter out old ids
@@ -184,7 +184,7 @@ define((require, exports, module)=>{
 
     test("wrong type", ()=>{
       const doc = {foo_ids: "abc", attributes: {}};
-      sut(doc,'foo_ids', true);
+      associated.call(Val, doc,'foo_ids', true);
 
       assert(doc[error$]);
       assert.equals(doc[error$]['foo_ids'],[["is_invalid"]]);
@@ -198,7 +198,7 @@ define((require, exports, module)=>{
         return {count: stub().returns(2)};
       };
 
-      sut(doc,'foo_ids', {finder: fooFinder});
+      associated.call(Val, doc,'foo_ids', {finder: fooFinder});
 
       assert.equals(v.values, v.foo_ids);
       refute(doc[error$]);
@@ -214,7 +214,7 @@ define((require, exports, module)=>{
         attributes: {},
       };
 
-      sut(doc,'foo_ids', true);
+      associated.call(Val, doc,'foo_ids', true);
 
       assert.equals(v.values, v.foo_ids);
       refute(doc[error$]);
@@ -227,7 +227,7 @@ define((require, exports, module)=>{
       const doc = {bar_ids: bar_ids, attributes: {}};
       const where = stubWhere();
 
-      sut(doc,'bar_ids', {modelName: 'Foo'});
+      associated.call(Val, doc,'bar_ids', {modelName: 'Foo'});
       refute(doc[error$]);
 
       let query = count.firstCall.thisValue;
@@ -235,7 +235,7 @@ define((require, exports, module)=>{
       assert.calledWithExactly(where, '_id', ["x", "y"]);
       assert.same(query.model, Model.Foo);
 
-      sut(doc,'bar_ids', 'Foo');
+      associated.call(Val, doc,'bar_ids', 'Foo');
       query = count.getCall(1).thisValue;
       assert.same(query.model, Model.Foo);
       assert.calledTwice(count);
@@ -251,7 +251,7 @@ define((require, exports, module)=>{
 
       const where = stubWhere();
 
-      sut(doc,'foo_id', true);
+      associated.call(Val, doc,'foo_id', true);
       refute(doc[error$]);
 
       const query = count.firstCall.thisValue;
@@ -271,13 +271,13 @@ define((require, exports, module)=>{
 
       const where = stubWhere();
 
-      sut(doc,'foo_id', {changesOnly: true});
+      associated.call(Val, doc,'foo_id', {changesOnly: true});
       refute(doc[error$]);
       refute.called(count);
 
       doc.changes = {foo_id: doc.foo_id = 'x'};
 
-      sut(doc,'foo_id', {changesOnly: true});
+      associated.call(Val, doc,'foo_id', {changesOnly: true});
       assert.equals(doc[error$], {foo_id: [['not_found']]});
 
       count.returns(1);
@@ -296,7 +296,7 @@ define((require, exports, module)=>{
 
       const where = stubWhere();
 
-      sut(doc,'foo_ids', true);
+      associated.call(Val, doc,'foo_ids', true);
       refute(doc[error$]);
 
       const query = count.firstCall.thisValue;
@@ -312,7 +312,7 @@ define((require, exports, module)=>{
         const count = stub(Query.prototype, 'count').returns(1);
         const doc = {foos, [original$]: undefined};
 
-        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
         assert.equals(doc[error$], {foos: [['not_found']]});
       });
 
@@ -321,7 +321,7 @@ define((require, exports, module)=>{
 
         const doc = {foos, [original$]: {foos}};
 
-        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
         refute(doc[error$]);
       });
 
@@ -333,7 +333,7 @@ define((require, exports, module)=>{
 
         const where = stubWhere();
 
-        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
         refute(doc[error$]);
 
         const query = count.firstCall.thisValue;

@@ -389,24 +389,6 @@ define((require, exports, module)=>{
         assert.same(Book.findBy('foo', 'bar').attributes, doc.attributes);
       });
 
-      test("validator passing function", ()=>{
-        const {Book} = v;
-        Book.defineFields({baz: {type: 'text', required(field, options) {
-          assert.same(this, doc);
-          assert.same(field, 'baz');
-          assert.same(options.type, 'text');
-          return v.answer;
-        }}});
-
-        const doc = Book.build({baz: ''});
-
-        v.answer = false;
-        assert(doc.$isValid());
-
-        v.answer = true;
-        refute(doc.$isValid());
-      });
-
       test("$withChanges", ()=>{
         /**
          * Return a doc representing this doc with the supplied changes

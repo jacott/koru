@@ -1,5 +1,5 @@
-define(()=>{
-  return function (doc, field, validator) {
-    validator && validator.call(doc, field);
-  };
+define({
+  validate(doc, field, validator) {
+    doc.$hasChanged(field) && validator.call(doc, field);
+  },
 });

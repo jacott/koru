@@ -12,7 +12,7 @@ define((require)=>{
     }
   };
 
-  return function (doc,field, options={}) {
+  return {unique(doc,field, options={}) {
     const val = doc[field];
     const query = doc.constructor.query;
     query.where(field, val);
@@ -38,5 +38,5 @@ define((require)=>{
 
     if (query.count(1) !== 0)
       this.addError(doc,field,'not_unique');
-  };
+  }};
 });

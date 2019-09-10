@@ -12,7 +12,7 @@ define((require)=>{
     return ans;
   };
 
-  return function (doc, field, options) {
+  return {associated(doc, field, options) {
     const origInDoc = original$ in doc;
     let value = doc[field];
     if (
@@ -130,5 +130,5 @@ define((require)=>{
       }
 
     }
-  };
+  }};
 });

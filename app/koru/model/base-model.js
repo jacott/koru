@@ -322,11 +322,7 @@ define((require, exports, module)=>{
           const validators = fVTors[field];
           for(const vTor in validators) {
             const args = validators[vTor];
-            const options = args[1];
-            args[0].call(Val,
-              this, field,
-              typeof options === 'function' ? options.call(this, field, args[2]) : options,
-              args[2]);
+            args[0].call(Val, this, field, args[1], args[2]);
           }
         }
       }

@@ -1,14 +1,14 @@
 define((require, exports, module)=>{
   'use strict';
+  const Val             = require('koru/model/validation');
   const TH              = require('koru/test-helper');
   const Query           = require('../query');
-  const validation      = require('../validation');
 
   const {stub, spy, onEnd} = TH;
 
   const {error$} = require('koru/symbols');
 
-  const sut        = require('./unique-validator').bind(validation);
+  const {unique} = require('koru/model/validators/unique-validator');
 
   let v = {};
 
@@ -28,7 +28,7 @@ define((require, exports, module)=>{
     test("scope", ()=>{
       stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.org = 'abc';
-      sut(v.doc,'name', {scope: 'org'});
+      unique.call(Val, v.doc,'name', {scope: 'org'});
 
       assert(v.doc[error$]);
       assert.equals(v.doc[error$]['name'],[['not_unique']]);
@@ -43,7 +43,7 @@ define((require, exports, module)=>{
       v.doc.org = 'abc';
       v.doc.foo = ['bar'];
 
-      sut(v.doc,'name', {scope: {org: 'org', fuz: {$ne: 'foo'}}});
+      unique.call(Val, v.doc,'name', {scope: {org: 'org', fuz: {$ne: 'foo'}}});
 
       assert(v.doc[error$]);
 
@@ -64,7 +64,7 @@ define((require, exports, module)=>{
         query.where(field+'x', 123);
       }
 
-      sut(v.doc,'name', {scope: scopeFunc});
+      unique.call(Val, v.doc,'name', {scope: scopeFunc});
 
       assert(v.doc[error$]);
 
@@ -76,7 +76,7 @@ define((require, exports, module)=>{
       stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.bar = 'baz';
       v.doc.org = 'abc';
-      sut(v.doc,'name', {scope: ['bar', 'org']});
+      unique.call(Val, v.doc,'name', {scope: ['bar', 'org']});
 
       assert(v.doc[error$]);
       assert.equals(v.doc[error$]['name'],[['not_unique']]);
@@ -87,7 +87,7 @@ define((require, exports, module)=>{
 
     test("no duplicate", ()=>{
       stub(v.query, 'count').withArgs(1).returns(0);
-      sut(v.doc,'name');
+      unique.call(Val, v.doc,'name');
 
       refute(v.doc[error$]);
 
@@ -97,7 +97,7 @@ define((require, exports, module)=>{
 
     test("duplicate", ()=>{
       stub(v.query, 'count').withArgs(1).returns(1);
-      sut(v.doc,'name');
+      unique.call(Val, v.doc,'name');
 
       assert(v.doc[error$]);
       assert.equals(v.doc[error$]['name'],[['not_unique']]);
@@ -109,7 +109,7 @@ define((require, exports, module)=>{
     test("new record", ()=>{
       v.doc.$isNewRecord = () => true;
       stub(v.query, 'count').withArgs(1).returns(1);
-      sut(v.doc,'name');
+      unique.call(Val, v.doc,'name');
 
       assert(v.doc[error$]);
       assert.equals(v.doc[error$]['name'],[['not_unique']]);

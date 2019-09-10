@@ -13,6 +13,8 @@ define((require)=>{
 
   return {
     normalize(doc, field, options) {
+      if (! doc.$hasChanged(field)) return;
+
       const val = doc[field];
       if (val !== '' && val != null &&
           (options === 'downcase' || options == 'upcase')) {
