@@ -28,7 +28,7 @@ define((require, exports, module)=>{
         if (typeof module === 'string' || module.create) {
           proto = name;
           name = module;
-          module = null;
+          module = void 0;
         }
         switch(typeof name) {
         case 'string':

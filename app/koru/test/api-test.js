@@ -25,6 +25,7 @@ define((require, exports, module)=>{
   const APIModule = ctx.modules['koru/test/api'];
   const TestModule = ctx.modules['koru/test/api-test'];
 
+  const Module = module.constructor;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let API, v = {};
@@ -1033,10 +1034,10 @@ assert.same(Color.colors.red, '#f00');`,
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
-      assert.equals(API.resolveObject({id: 'myModule',
-                                       __proto__: module.constructor.prototype}),
+      const myModule = new Module(void 0, 'myModule');
+      assert.equals(API.resolveObject(myModule),
                     ['Oi', '{Module:myModule}', 'Module']);
-      class MyExt extends module.constructor {}
+      class MyExt extends Module {}
       assert.equals(API.resolveObject(MyExt),
                     ['Os', 'MyExt', 'Module']);
 

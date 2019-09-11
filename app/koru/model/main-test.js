@@ -279,7 +279,8 @@ define((require, exports, module)=>{
        * @see BaseModel.define
        */
       const onUnload = stub();
-      const module = {id: '/foo/test-model', onUnload};
+      const module = new Module(void 0, '/foo/test-model');
+      module.onUnload = onUnload;
       const TestModel = Model.define(module, {t1: 123});
       assert.same(Model.TestModel, TestModel);
       assert.same(Model.TestModel._module, module);

@@ -30,7 +30,7 @@ define((require, exports, module)=>{
 
     beforeEach(()=>{
       TH.noInfo();
-      v.myModule = new Module(module.ctx, 'mymodule');
+      v.myModule = new Module(void 0, 'mymodule');
       v.myModule.onUnload = onEnd;
     });
 
@@ -334,8 +334,7 @@ define((require, exports, module)=>{
        **/
       const module = new require.module.constructor();
       module.id = 'models/model';
-      stub(module, 'onUnload');
-      onEnd(()=>{module.onUnload.yieldAll()});
+      module.onUnload = onEnd;
 
       const fooStub = stub();
       const barStub = {

@@ -7,6 +7,8 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./main');
 
+  const Module = module.constructor;
+
   const onEnd$ = Symbol(),
         extactTest$ = Symbol(), currentTest$ = Symbol(),
         reportStubs$ = Symbol(), level$ = Symbol(),
@@ -479,7 +481,8 @@ define((require, exports, module)=>{
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
       const tc = TH.Core.currentTestCase;
       if (pseudoModule !== void 0) {
-        subjectModule = new module.constructor(ctx, toId(tc));
+        subjectModule = new Module(void 0, toId(tc));
+        subjectModule.ctx = ctx;
         subjectModule.exports = pseudoModule;
       } else
         subjectModule = subjectModule || ctx.modules[toId(tc)];
@@ -1032,7 +1035,7 @@ define((require, exports, module)=>{
   API._resolveFuncs = new Map([
     [TH.MockModule, resolveModule],
 
-    [module.constructor, resolveModule],
+    [Module, resolveModule],
 
     [Array, (type, value) => {
       if (type === 'Oi') {

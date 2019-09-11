@@ -15,10 +15,17 @@ define((require, exports, module)=>{
 
   const {inspect$, error$} = require('koru/symbols');
 
+  const Module = module.constructor;
 
   const {stub, spy, onEnd, util, intercept, match: m} = TH;
 
   const BaseModel = require('./base-model');
+
+  const newBookModule = ()=>{
+    const bm = new Module(void 0, 'book');
+    module.onUnload = ()=>{};
+    return bm;
+  };
 
   let v = {};
 
@@ -52,12 +59,10 @@ define((require, exports, module)=>{
        **/
       api.method();
 
-      const module = new require.module.constructor();
-      module.id = 'book';
+      const module = newBookModule();
       //[
       class Book extends BaseModel {
       }
-
       Book.define({module, fields: {
         title: 'text',
         pages: {type: 'number', number: {'>': 0}}
@@ -122,8 +127,7 @@ define((require, exports, module)=>{
        **/
       api.method();
 
-      const module = new require.module.constructor();
-      module.id = 'book';
+      const module = newBookModule();
       //[
       class Book extends BaseModel {
       }

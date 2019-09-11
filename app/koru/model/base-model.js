@@ -169,7 +169,7 @@ define((require, exports, module)=>{
         throw new Error("Model requires a name");
       if (ModelMap[name])
         throw new Error(`Model '${name}' already defined`);
-      if (module) {
+      if (module !== void 0) {
         this._module = module;
         module.onUnload(()=> ModelMap._destroyModel(name));
       }

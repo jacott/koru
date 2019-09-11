@@ -12,6 +12,8 @@ define((require, exports, module)=>{
   const TH   = require('./test-helper');
   const util = require('./util');
 
+  const Module = module.constructor;
+
   const {stub, spy, onEnd} = TH;
 
   const koru = require('./main');
@@ -60,7 +62,7 @@ define((require, exports, module)=>{
       koru.onunload(myModule, callback);
       assert.calledWith(myModule.onUnload, callback.stop);
       //]
-      const onUnload = stub(module.constructor.prototype, 'onUnload');
+      const onUnload = stub(Module.prototype, 'onUnload');
       const func = stub();
       koru.onunload('koru/main-test', func);
       assert.calledWith(onUnload, func);

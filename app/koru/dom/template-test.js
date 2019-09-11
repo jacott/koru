@@ -11,6 +11,8 @@ isClient && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
+  const Module = module.constructor;
+
   const {stub, spy, onEnd, match} = TH;
 
   const {ctx$} = require('koru/symbols');
@@ -613,7 +615,7 @@ isClient && define((require, exports, module)=>{
          **/
         api.method('newTemplate');
         const myMod = {id: 'myMod', onUnload: stub(),
-                       __proto__: module.constructor.prototype};
+                       __proto__: Module.prototype};
         assert.same(DomTemplate.newTemplate(myMod, {
           name: "Foo", nodes: [{name: "div"}]
         }), Dom.Foo);
