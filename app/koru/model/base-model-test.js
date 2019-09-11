@@ -20,17 +20,16 @@ define((require, exports, module)=>{
 
   const BaseModel = require('./base-model');
 
-  Val.register(module, {
-    required: require('./validators/required-validator'),
-    text: require('koru/model/validators/text-validator'),
-  });
-
   let v = {};
-
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module();
+
+      Val.register({onUnload: onEnd}, {
+        required: require('./validators/required-validator'),
+        text: require('koru/model/validators/text-validator'),
+      });
     });
 
     afterEach(()=>{

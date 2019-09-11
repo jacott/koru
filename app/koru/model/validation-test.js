@@ -31,6 +31,7 @@ define((require, exports, module)=>{
     beforeEach(()=>{
       TH.noInfo();
       v.myModule = new Module(module.ctx, 'mymodule');
+      v.myModule.onUnload = onEnd;
     });
 
     afterEach(()=>{
@@ -200,7 +201,6 @@ define((require, exports, module)=>{
       Val.register(v.myModule, {valAbc(doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
-      onEnd(()=>{Val.register(v.myModule)});
 
       assert.exception(()=>{
         Val.assertCheck({name: 'abc'}, Val.matchFields({name: {type: 'string', valAbc: true}}));
@@ -361,7 +361,6 @@ define((require, exports, module)=>{
         doc[field] += x;
         doc[error$] = errors;
       }});
-      onEnd(()=>{Val.register(v.myModule)});
       const doc = {age: 10};
 
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
@@ -420,7 +419,6 @@ define((require, exports, module)=>{
         if (doc[field] % x !== 0)
           this.addError(doc, field, 'is_invalid');
       }});
-      onEnd(()=>{Val.register(v.myModule)});
 
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
       let doc = {foo: 4};
