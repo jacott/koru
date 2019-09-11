@@ -1,7 +1,7 @@
 define((require)=>{
   'use strict';
+  const ModelMap        = require('koru/model/map');
   const util            = require('koru/util');
-  const Model           = require('../main');
   const Query           = require('../query');
 
   const {original$} = require('koru/symbols');
@@ -12,20 +12,11 @@ define((require)=>{
     return ans;
   };
 
-  return {associated(doc, field, options) {
-    const origInDoc = original$ in doc;
+  return {associated(doc, field, options, {type, changesOnly, model}) {
     let value = doc[field];
-    if (
-      options.changesOnly && (
-        origInDoc
-          ? doc[original$] !== undefined && doc[original$][field] === value
-          : ! (field in doc.changes))) return;
-
-
     if (value == null) return;
 
-    const fieldOpts = doc.constructor.$fields && doc.constructor.$fields[field];
-    const belongs_to = fieldOpts && fieldOpts.type === 'belongs_to';
+    const belongs_to = type === 'belongs_to';
 
     if (belongs_to ? typeof value !== 'string' : ! Array.isArray(value))
       return this.addError(doc,field,'is_invalid');
@@ -33,51 +24,49 @@ define((require)=>{
     if (belongs_to)
       value = [value];
 
-    if (value.length === 0) return;
+    if (value.length == 0) return;
 
-    let modelName, finder, filter, scopeName;
+    let finder, filter, scopeName;
     switch (typeof options) {
     case 'object':
-      modelName = options.model ? options.model.modelName : options.modelName;
       finder = options.finder;
       filter = options.filter;
       break;
-    case 'string':
-      modelName = options;
-      break;
-    }
-    if (belongs_to && ! modelName) {
-      modelName = fieldOpts.model && fieldOpts.model.modelName;
+    default:
+      if (options !== true)
+        throw new Error("invalid associated value");
     }
 
-    if (! modelName) {
+    if (! model) {
       scopeName = util.sansId(field);
-      modelName = util.capitalize(scopeName);
+      model = ModelMap[util.capitalize(scopeName)];
     } else {
-      scopeName = util.uncapitalize(modelName);
+      scopeName = util.uncapitalize(model.modelName);
     }
 
     finder = finder ||
       doc[scopeName+'Find'] ||
-      (values => new Query(Model[modelName]).where('_id', values));
+      (values => model.where('_id', values));
 
-    const orig = origInDoc ? doc[original$] : doc.attributes;
+    const orig = (original$ in doc) ? doc[original$] : doc.attributes;
     const oValue = orig === undefined ? undefined : orig[field];
     if (! belongs_to &&
-        options.changesOnly && Array.isArray(oValue) && oValue.length != 0 &&
+        changesOnly && Array.isArray(oValue) && oValue.length != 0 &&
         value.length != 0) {
 
       oValue.sort();
       value.sort();
+
       const newIds = [];
       let ki = 0;
       const ol = oValue.length, nl = value.length;
       let ni = 0, nv = value[0];
       for(let i = 0; i < ol; ++i) {
         const ov = oValue[i];
-        while (nv < ov && ++ni < nl) {
+        while (nv < ov && ++ni <= nl) {
           if(newIds.length == 0 || newIds[newIds.length-1] !== nv)
             newIds.push(nv);
+          if (ni == nl) break;
           nv = value[ni];
         }
         if (nv === ov) {
@@ -86,7 +75,6 @@ define((require)=>{
           value[ki++] = ov;
         }
       }
-
 
       for (let i = ni; i < nl; ++i) newIds.push(value[i]);
 

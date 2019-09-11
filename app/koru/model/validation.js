@@ -178,7 +178,7 @@ define((require)=>{
     validateField(doc, field, spec) {
       for(const name in spec) {
         const validator = validators[name];
-        validator && validator.call(this, doc, field, spec[name]);
+        validator && validator.call(this, doc, field, spec[name], spec);
       }
 
       if (doc[error$] !== undefined) return false;

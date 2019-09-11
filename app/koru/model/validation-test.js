@@ -356,13 +356,17 @@ define((require, exports, module)=>{
 
     test("validateField", ()=>{
       let errors = 'set';
-      Val.register(v.myModule, {addIt(doc, field, x) {
+      let fieldOpts;
+      Val.register(v.myModule, {addIt(doc, field, x, _fieldOpts) {
+        fieldOpts = _fieldOpts;
         doc[field] += x;
         doc[error$] = errors;
       }});
       const doc = {age: 10};
 
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
+      assert.equals(fieldOpts, {type: 'number', addIt: 5});
+
 
       assert.same(doc[error$], 'set');
       assert.same(doc.age, 15);

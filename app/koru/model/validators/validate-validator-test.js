@@ -76,11 +76,6 @@ define((require, exports, module)=>{
         assert.equals(book[error$].ISBN, [['is_invalid']]);
         assert.equals(book.ISBN, '222-3-16-148410-0');
         //]
-
-        // only checks if changed
-        book.ISBN = void 0;
-        book.attributes.ISBN = '222-3-16-148410-0';
-        assert(book.$isValid());
       });
     });
   });

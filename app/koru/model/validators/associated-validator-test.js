@@ -1,350 +1,334 @@
 define((require, exports, module)=>{
   'use strict';
-  const Val             = require('koru/model/validation');
+  /**
+   * Validate the association between two model documents.
+   *
+   * Enable with {#../../validation.register;(module, AssociatedValidator)} which is conventionally
+   * done in `app/models/model.js`
+   **/
+  const ValidatorHelper = require('koru/model/validators/validator-helper');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
   const Model           = require('../main');
   const Query           = require('../query');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, stubProperty} = TH;
 
   const {error$, original$} = require('koru/symbols');
 
-  const {associated} = require('koru/model/validators/associated-validator');
+  const AssociatedValidator = require('koru/model/validators/associated-validator');
 
-  let v = {};
+  class Book extends ValidatorHelper.ModelStub {
+  }
+  Book.modelName = 'Book';
+  class Author extends ValidatorHelper.ModelStub {
+  }
+  Author.modelName = 'Author';
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      Model.Foo = {modelName: 'Foo'};
-    });
+  Book.registerValidator(AssociatedValidator);
+  Author.registerValidator(AssociatedValidator);
 
-    afterEach(()=>{
-      delete Model.Foo;
-      v = {};
-    });
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    group("associated", ()=>{
+      /**
+       * Ensure field contains the id of another model document given certain constraints.
+       *
+       * {{topic:duplicates not allowed}}
+       *
 
-    test("filter", ()=>{
-      const foo_ids = ["xyz", "def", "abc"],
-            doc = {foo_ids: foo_ids, attributes: {}};
+       * @param options `true` is the same as an empty object (`{}`). The following properties are
+       * supported:
+       *
+       * * {{topic:filter}}
+       * * {{topic:finder}} {{topic:finder default}}
+       *
 
-      const forEach = stub(Query.prototype, 'forEach', func =>{
-        func({_id: "abc"});
-        func({_id: "xyz"});
-      });
-      const where = stubWhere();
-      const fields = spy(Query.prototype, 'fields');
+       * @param type {{topic:belongs_to}}
+       *
+       * Otherwise the field is expected to be an array of ids
+       * {{example:not_found:0}}
 
-      associated.call(Val, doc,'foo_ids', {filter: true});
-      refute(doc[error$]);
-      assert.same(doc.foo_ids, foo_ids);
-      assert.equals(doc.foo_ids, ["abc", "xyz"]);
+       * @param changesOnly {{topic:changesOnly}}
 
-      assert.called(forEach);
-      assert.same(forEach.firstCall.thisValue, v.query);
+       * @param model {{topic:model}}
+       **/
 
-      assert.calledWithExactly(where, '_id', ["xyz", "def", "abc"]);
-      assert.calledWithExactly(fields, '_id');
-      assert.same(fields.firstCall.thisValue, v.query);
-    });
-
-    test("empty filter", ()=>{
-      const foo_ids = ["abc", "def", "xyz"],
-            doc = {foo_ids: foo_ids, attributes: {}};
-
-      const forEach = intercept(Query.prototype, 'forEach');
-
-      associated.call(Val, doc,'foo_ids', {filter: true});
-      refute(doc[error$]);
-      assert.same(doc.foo_ids, foo_ids);
-      assert.equals(doc.foo_ids, []);
-    });
-
-    test("none", ()=>{
-      const doc = {};
-      associated.call(Val, doc,'foo_ids', true);
-
-      refute(doc[error$]);
-    });
-
-    test("not found", ()=>{
-      stub(Query.prototype, 'count', function () {
-        assert.equals(this.wheres, undefined);
-        assert.same(this.model, Model.Foo);
-        return 0;
-      });
-      const doc = {foo_ids: ["xyz"], attributes: {}};
-      associated.call(Val, doc,'foo_ids', true);
-
-      assert(doc[error$]);
-      assert.equals(doc[error$]['foo_ids'],[["not_found"]]);
-    });
-
-    test("changes only", ()=>{
-      const doc = {
-        get foo_ids() {return this.changes.foo_ids},
-        changes: {},
-        attributes: {foo_ids: ["bef", "foo", "xyz"]},
-      };
-
-      associated.call(Val, doc,'foo_ids', {changesOnly: true});
-
-      refute(doc[error$]);
-
-      let count = 2;
-
-      intercept(Query.prototype, 'count', ()=>count);
-      intercept(Query.prototype, 'forEach', func=>{
-        func({_id: "abc"});
-        func({_id: "can"});
+      before(()=>{
+        api.method();
+        stubProperty(Model, 'Book', {value: Book});
+        stubProperty(Model, 'Author', {value: Author});
       });
 
-      doc.changes.foo_ids = ["can", "def", "bef", "xyz", "abc"];
-
-      associated.call(Val, doc,'foo_ids', {changesOnly: true, filter: true});
-
-      refute(doc[error$]);
-      assert.equals(doc.changes.foo_ids, ["abc", "bef", "can", "xyz"]);
-
-      associated.call(Val, doc,'foo_ids', {changesOnly: true});
-      refute(doc[error$]);
-
-      doc.changes.foo_ids = ["can", "def", "bef", "xyz", "abc", 'new'];
-      associated.call(Val, doc,'foo_ids', {changesOnly: true});
-
-      assert(doc[error$]);
-
-      count = 1;
-      doc[error$] = undefined;
-      doc.changes.foo_ids = ['M', 'E'];
-      doc.attributes.foo_ids = ['M'];
-
-      associated.call(Val, doc,'foo_ids', {changesOnly: true});
-      refute(doc[error$]);
-      assert.equals(doc.changes.foo_ids, ['E', 'M']);
-
-      count = 3;
-      doc[error$] = undefined;
-      doc.changes.foo_ids = ['ra', 'rq', 'A', 'B', 'ra', 'A'];
-      doc.attributes.foo_ids = ['ra'];
-
-      associated.call(Val, doc,'foo_ids', {changesOnly: true});
-      refute(doc[error$]);
-      assert.equals(doc.changes.foo_ids, ['A', 'B', 'ra', 'rq']);
-    });
-
-    group("duplicates are not allowed", ()=>{
-      beforeEach(()=>{
-        /**
-         * Duplicates are not allowed. ids are in ascending order
-         **/
-      });
-
-      test("unfiltered", ()=>{
-        intercept(Query.prototype, 'count', ()=>4);
-
-        const doc = {
-          attributes: {foo_ids: ["b", "d", "a", "c"]},
-          changes: {foo_ids: ["f", "a", "b", "e", "a", "e"]},
-
-          get foo_ids() {return this.changes.foo_ids},
-        };
-
-        associated.call(Val, doc,'foo_ids', {});
-
-        assert.equals(doc.changes.foo_ids, ["a", "a", "b", "e", "e", "f"]);
-        assert.equals(doc[error$], {foo_ids: [['duplicates']]});
-      });
-
-      test("filtered", ()=>{
-        intercept(Query.prototype, 'forEach', func=>{
-          func({_id: 'f'});
-          func({_id: 'e'});
+      const addAuthors = (ids, options)=>{
+        const db = new Set(ids);
+        const npdb = new Set(options && options.unpublished || []);
+        intercept(Query.prototype, 'count', function () {
+          const {_id, published=false} = this._wheres;
+          let count = 0;
+          if (this.model === Author && Array.isArray(_id)) {
+            for (const i of new Set(_id)) if (db.has(i) || (! published && npdb.has(i))) ++count;
+          }
+          return count;
         });
 
-        const doc = {
-          attributes: {foo_ids: ["a", "c", "b", "d"]},
-          changes: {foo_ids: ["f", "a", "b", "e", "a", "e"]},
-
-          get foo_ids() {return this.changes.foo_ids},
-        };
-
-        associated.call(Val, doc,'foo_ids', {changesOnly: true, filter: true});
-        refute(doc[error$]);
-
-        // don't filter out old ids
-        assert.equals(doc.changes.foo_ids, ["a", "b", "e", "f"]);
-
-        associated.call(Val, doc,'foo_ids', {filter: true});
-        refute(doc[error$]);
-
-        // filter out old ids
-        assert.equals(doc.changes.foo_ids, ["e", "f"]);
-      });
-    });
-
-    test("wrong type", ()=>{
-      const doc = {foo_ids: "abc", attributes: {}};
-      associated.call(Val, doc,'foo_ids', true);
-
-      assert(doc[error$]);
-      assert.equals(doc[error$]['foo_ids'],[["is_invalid"]]);
-    });
-
-    test("using scoped finder", ()=>{
-      const doc = {foo_ids: v.foo_ids = ['x', 'y'], attributes: {}};
-
-      function fooFinder(values) {
-        v.values = values;
-        return {count: stub().returns(2)};
+        intercept(Query.prototype, 'forEach', function (callback) {
+          const {_id, published} = this._wheres;
+          if (this.model == Author && Array.isArray(_id) &&
+              util.deepEqual(this._fields, {_id: true})) {
+            for (const i of new Set(_id)) {
+              (db.has(i) || (! published && npdb.has(i))) && callback({_id: i});
+            }
+          }
+        });
       };
 
-      associated.call(Val, doc,'foo_ids', {finder: fooFinder});
+      test("not_found", ()=>{
+        /**
+         * `true` will test that all ids exist in the associated model
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789']);
 
-      assert.equals(v.values, v.foo_ids);
-      refute(doc[error$]);
-    });
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: true}
+        });
+        const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
-    test("using scoped default", ()=>{
-      const doc = {
-        foo_ids: v.foo_ids = ['x', 'y'],
-        fooFind(values) {
-          v.values = values;
-          return {count: stub().returns(2)};
-        },
-        attributes: {},
-      };
-
-      associated.call(Val, doc,'foo_ids', true);
-
-      assert.equals(v.values, v.foo_ids);
-      refute(doc[error$]);
-    });
-
-    test("overriding model name", ()=>{
-      const bar_ids = ['x', 'y'];
-
-      const count = stub(Query.prototype, 'count').returns(2);
-      const doc = {bar_ids: bar_ids, attributes: {}};
-      const where = stubWhere();
-
-      associated.call(Val, doc,'bar_ids', {modelName: 'Foo'});
-      refute(doc[error$]);
-
-      let query = count.firstCall.thisValue;
-      assert.same(query, v.query);
-      assert.calledWithExactly(where, '_id', ["x", "y"]);
-      assert.same(query.model, Model.Foo);
-
-      associated.call(Val, doc,'bar_ids', 'Foo');
-      query = count.getCall(1).thisValue;
-      assert.same(query.model, Model.Foo);
-      assert.calledTwice(count);
-    });
-
-    test("belongs_to", ()=>{
-      const count = stub(Query.prototype, 'count').returns(1);
-      const doc = {
-        foo_id: "x", constructor: {
-          $fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}},
-        attributes: {},
-      };
-
-      const where = stubWhere();
-
-      associated.call(Val, doc,'foo_id', true);
-      refute(doc[error$]);
-
-      const query = count.firstCall.thisValue;
-      assert.same(query, v.query);
-      assert.calledWithExactly(where, '_id', ["x"]);
-      assert.same(query.model, Model.Foo);
-    });
-
-    test("changes_only belongs_to", ()=>{
-      let count = stub(Query.prototype, 'count').returns(0);
-      const doc = {
-        foo_id: "y", constructor: {
-          $fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}},
-        attributes: {foo_id: "y"},
-        changes: {}
-      };
-
-      const where = stubWhere();
-
-      associated.call(Val, doc,'foo_id', {changesOnly: true});
-      refute(doc[error$]);
-      refute.called(count);
-
-      doc.changes = {foo_id: doc.foo_id = 'x'};
-
-      associated.call(Val, doc,'foo_id', {changesOnly: true});
-      assert.equals(doc[error$], {foo_id: [['not_found']]});
-
-      count.returns(1);
-
-      const query = count.lastCall.thisValue;
-      assert.same(query, v.query);
-      assert.calledWithExactly(where, '_id', ["x"]);
-      assert.same(query.model, Model.Foo);
-    });
-
-    test("using model default", ()=>{
-      const foo_ids = ['x', 'y'];
-
-      const count = stub(Query.prototype, 'count').returns(2);
-      const doc = {foo_ids: foo_ids};
-
-      const where = stubWhere();
-
-      associated.call(Val, doc,'foo_ids', true);
-      refute(doc[error$]);
-
-      const query = count.firstCall.thisValue;
-      assert.same(query, v.query);
-      assert.calledWithExactly(where, '_id', ["x", "y"]);
-      assert.same(query.model, Model.Foo);
-    });
-
-    group("using original$", ()=>{
-      test("is undefined", ()=>{
-        const foos = ['x', 'y'];
-
-        const count = stub(Query.prototype, 'count').returns(1);
-        const doc = {foos, [original$]: undefined};
-
-        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
-        assert.equals(doc[error$], {foos: [['not_found']]});
+        refute(book.$isValid());
+        assert.equals(book[error$].author_ids, [['not_found']]);
+        //]
       });
 
-      test("no changes", ()=>{
-        const foos = ['x', 'y'];
+      test("is_invalid", ()=>{
+        //[
+        // is_invalid
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: true}
+        });
+        const book = Book.build({author_ids: 'a123'}); // not an array
 
-        const doc = {foos, [original$]: {foos}};
-
-        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
-        refute(doc[error$]);
+        refute(book.$isValid());
+        assert.equals(book[error$].author_ids, [["is_invalid"]]);
+        //]
       });
 
-      test("changes", ()=>{
-        const foos = ['x', 'y'];
+      //[no-more-examples]
 
-        const count = stub(Query.prototype, 'count').returns(1);
-        const doc = {foos, [original$]: {foos: ['y']}};
+      test("filter", ()=>{
+        /**
+         * `filter` will remove any invalid ids rather than invalidating the document.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789']);
 
-        const where = stubWhere();
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: {filter: true}}
+        });
+        const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
-        associated.call(Val, doc,'foos', {model: Model.Foo, changesOnly: true});
-        refute(doc[error$]);
+        assert(book.$isValid());
+        assert.equals(book.author_ids, ['a123', 'a789']);
+        //]
+      });
 
-        const query = count.firstCall.thisValue;
-        assert.same(query, v.query);
-        assert.calledWithExactly(where, '_id', ["x"]);
-        assert.same(query.model, Model.Foo);
+      test("none", ()=>{
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: true}
+        });
+        const book = Book.build();
+
+        assert(book.$isValid());
+      });
+
+      test("changesOnly", ()=>{
+        /**
+         * When this `fieldOption` is true association only checks for ids which have changed.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789']);
+         Book.defineFields({
+           author_ids: {type: 'has_many', associated: true, changesOnly: true}
+        });
+        const book = Book.build();
+        book.attributes.author_ids = ['a123', 'badId1', 'badId2'];
+        book.author_ids = ['badId1', 'a123', 'a789'];
+
+        assert(book.$isValid()); // new id 'a789' exists
+
+        book.author_ids = ['badId3', 'a123', 'a789'];
+
+        refute(book.$isValid()); // new id 'badId3' not found
+        assert.equals(book[error$].author_ids, [['not_found']]);
+        //]
+      });
+
+      group("duplicates not allowed", ()=>{
+        /**
+         * Duplicates are not allowed. Ids will be arranged in ascending order.
+         *
+         * {{example:0}}
+         *
+         * If `filter` is true duplicates will be removed
+         *
+         * {{example:1}}
+         **/
+        before(()=>{
+          api.topic();
+        });
+
+        test("unfiltered", ()=>{
+          //[
+          addAuthors(['a123', 'a789']);
+          Book.defineFields({
+            author_ids: {type: 'has_many', associated: true}
+          });
+
+          const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
+          refute(book.$isValid());
+          assert.equals(book[error$].author_ids, [['duplicates']]);
+          assert.equals(book.author_ids, ['a123', 'a123', 'a789']);
+          //]
+        });
+
+        test("filtered", ()=>{
+          //[
+          addAuthors(['a123', 'a789']);
+          Book.defineFields({
+            author_ids: {type: 'has_many', associated: {filter: true}}
+          });
+
+          const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
+          assert(book.$isValid());
+          assert.equals(book.author_ids, ['a123', 'a789']);
+          //]
+        });
+
+        test("filtered changesOnly", ()=>{
+          addAuthors(['a123', 'a789']);
+          Book.defineFields({
+            author_ids: {type: 'has_many', associated: {filter: true}, changesOnly: true}
+          });
+
+          const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
+          book.attributes.author_ids = ['bad1'];
+
+          assert(book.$isValid());
+          assert.equals(book.author_ids, ['a123', 'a789']);
+        });
+      });
+
+      test("finder", ()=>{
+        /**
+         * `finder` is a function that is called with the document as `this` and the ids to check as
+         * the first argument.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789'], {unpublished: ['a456']});
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: {finder(values) {
+            return Author.where('published', this.published).where('_id', values);
+          }}},
+          published: {type: 'boolean'},
+        });
+
+        const book = Book.build({author_ids: ['a123', 'a456']});
+        assert(book.$isValid());
+
+        const book2 = Book.build({author_ids: ['a123', 'a456'], published: true});
+        refute(book2.$isValid());
+        //]
+      });
+
+      test("finder default", ()=>{
+        /**
+         * If the document has a prototype method named `<field-name-sans/_ids?/>Find` then it will
+         * be used to scope the query unless `finder` is present.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789'], {unpublished: ['a456']});
+
+        function authorFind(values) {
+          return Author.where('published', this.published).where('_id', values);
+        }
+
+        Book.defineFields({
+          author_ids: {type: 'has_many', associated: true},
+          published: {type: 'boolean'},
+        });
+
+        const book = Book.build({author_ids: ['a123', 'a456']});
+        assert(book.$isValid());
+        book.authorFind = authorFind;
+        assert(book.$isValid());
+
+        const book2 = Book.build({author_ids: ['a123', 'a456'], published: true});
+        assert(book2.$isValid());
+        book2.authorFind = authorFind;
+        refute(book2.$isValid());
+        //]
+      });
+
+      test("model", ()=>{
+        /**
+         * A `model` will override the associated model.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123', 'a789']);
+
+        Book.defineFields({
+          authors: {type: 'has_many', associated: true, model: Author}
+        });
+        const book = Book.build({authors: ['a123']});
+
+        assert(book.$isValid());
+
+        const book2 = Book.build({authors: ['a456']});
+        refute(book2.$isValid());
+        //]
+      });
+
+      test("belongs_to", ()=>{
+        /**
+         * When the field `type` is `'belongs_to'` the field value must be a string containing the
+         * id of an association document.
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        addAuthors(['a123']);
+
+        Book.defineFields({
+          author_id: {type: 'belongs_to', associated: true}
+        });
+        const book = Book.build({author_id: 'wrongId'});
+
+        refute(book.$isValid());
+        assert.equals(book[error$].author_id, [['not_found']]);
+
+        book.author_id = 'a123';
+        assert(book.$isValid());
+        //]
       });
     });
   });
-
-  function stubWhere() {
-    return stub(Query.prototype, 'where', function () {return v.query = this});
-  }
 });

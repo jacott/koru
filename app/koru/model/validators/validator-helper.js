@@ -1,11 +1,10 @@
 define((require, exports, module)=>{
   const BaseModel       = require('koru/model/base-model');
-  const Val             = require('koru/model/validation');
   const util            = require('koru/util');
 
   const {error$, inspect$} = require('koru/symbols');
 
-  const fields$ = Symbol(), validator$ = Symbol();
+  const validator$ = Symbol();
 
   class ModelStub extends BaseModel {
     static registerValidator(validator) {
@@ -14,8 +13,17 @@ define((require, exports, module)=>{
 
     static defineFields(fields) {
       const proto = this.prototype;
-      this[fields$] = fields;
+      this.$fields = fields;
+      const vtors = this._fieldValidators = {};
       for (const field in fields) {
+        const opts = fields[field];
+        const vf = vtors[field] = {};
+        for (const val in opts) {
+          const valFunc = this[validator$][val];
+          if (valFunc !== undefined) {
+            vf[val]=[valFunc, opts[val], opts];
+          }
+        }
         Object.defineProperty(proto, field, {
           configurable: true,
           get() {
@@ -46,28 +54,10 @@ define((require, exports, module)=>{
 
     [inspect$]() {
       let arg = '';
-      for (const name in this.constructor[fields$]) {
+      for (const name in this.constructor.$fields) {
         arg = this[name];
       }
       return `Model.${this.constructor.modelName}("${arg}")`;
-    }
-
-
-    $isValid() {
-      this[error$] = void 0;
-      const fields = this.constructor[fields$];
-      const validators = this.constructor[validator$];
-      for (const field in fields) {
-        const fieldOps = fields[field];
-        for (const name in fieldOps) {
-          const validator = validators[name];
-          if (validator !== void 0) {
-            const options = fieldOps[name];
-            validator.call(Val, this, field, options, fieldOps[name]);
-          }
-        }
-      }
-      return this[error$] === void 0;
     }
   }
 

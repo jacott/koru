@@ -8,12 +8,15 @@ define((require, exports, module)=>{
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
+  const RequiredValidator = require('koru/model/validators/required-validator');
+  const TextValidator   = require('koru/model/validators/text-validator');
+  const ValidatorHelper = require('koru/model/validators/validator-helper');
   const session         = require('koru/session');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
   const Val             = require('./validation');
 
-  const {inspect$, error$} = require('koru/symbols');
+  const {inspect$, error$, original$} = require('koru/symbols');
 
   const Module = module.constructor;
 
@@ -34,8 +37,8 @@ define((require, exports, module)=>{
       api.module();
 
       Val.register({onUnload: onEnd}, {
-        required: require('./validators/required-validator'),
-        text: require('koru/model/validators/text-validator'),
+        RequiredValidator,
+        TextValidator,
       });
     });
 
@@ -116,13 +119,14 @@ define((require, exports, module)=>{
        * |pseudo_field |The field does not have accessors and is not set in `<Model>.$fields` property |
        * |accessor |Use `accessor.get` and `accessor.set` for this field.<br>An accessor of `false` means no accessors |
        * |readOnly |Saving a change to the field should not be allowed|
+       * |changesOnly |{{topic:changesOnly}}|
+       * |model |An associated model for the field|
+       *
        * Types and validators may also make use of other specific options.
        *
        * The field `_id` is added by default with a type of `id`. It can be given an option of
        * `auto` to specify that the DB will generate an id for this field if none is supplied.
        *
-
-
        * @returns the model
        **/
       api.method();
@@ -148,6 +152,58 @@ define((require, exports, module)=>{
       assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
       //]
 
+    });
+
+    group("validation", ()=>{
+      class Book extends ValidatorHelper.ModelStub {
+      }
+      Book.modelName = 'Book';
+
+      Book.registerValidator(TextValidator);
+
+      test("changesOnly", ()=>{
+        /**
+         * Only changes to the field are validated
+         *
+         * {{example:0}}
+         **/
+        api.topic();
+        //[
+        Book.defineFields({
+          pages: {type: 'number', number: {'>': 0}, changesOnly: true}
+        });
+        const book = Book.build();
+        book.attributes.pages = -1;
+
+        assert(book.$isValid()); // wrong but no change
+
+        book.pages = 'alsoWrong';
+        refute(book.$isValid()); // wrong and changed
+        assert.equals(book[error$], {pages: [['not_a_number']]});
+
+        book.pages = 2;
+        assert(book.$isValid()); // changed and okay
+        //]
+      });
+
+      test("changesOnly original$", ()=>{
+        Book.defineFields({
+          pages: {type: 'number', number: {'>': 0}, changesOnly: true}
+        });
+        const book = new Book();
+        book.attributes.pages = -1;
+
+        // original$ exists
+        book[original$] = void 0;
+        refute(book.$isValid());
+
+        book[original$] = {pages: -2};
+        book.pages = 'alsoWrong';
+        refute(book.$isValid()); // wrong and changed
+
+        book.pages = -2;
+        assert(book.$isValid()); // wrong but no change
+      });
     });
 
     group("with Model", ()=>{

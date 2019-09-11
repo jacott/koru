@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   const registerObserveId = require('./register-observe-id');
 
   const {hasOwn, deepCopy, createDictionary, moduleName} = util;
-  const {private$, inspect$, error$} = require('koru/symbols');
+  const {private$, inspect$, error$, original$} = require('koru/symbols');
 
   const cache$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
 
@@ -317,12 +317,20 @@ define((require, exports, module)=>{
         Changes.setOriginal(this.changes, origChanges);
       }
 
+
       if(fVTors !== undefined) {
         for(const field in fVTors) {
           const validators = fVTors[field];
-          for(const vTor in validators) {
-            const args = validators[vTor];
-            args[0].call(Val, this, field, args[1], args[2]);
+          if (validators !== void 0) {
+            const value = this[field];
+            for(const vTor in validators) {
+              const args = validators[vTor];
+              if (! args[2].changesOnly || (
+                (original$ in this)
+                  ? this[original$] === void 0 || this[original$][field] !== value
+                  : this.$hasChanged(field)))
+                args[0].call(Val, this, field, args[1], args[2]);
+            }
           }
         }
       }
@@ -620,13 +628,9 @@ define((require, exports, module)=>{
     has_many(model, field, options) {
       let bt = options.model, name;
       if (! bt) {
-        name = options.modelName ||
-          (options.associated &&
-           (typeof options.associated === 'string' ?
-            options.associated : options.associated.modelName)) ||
-          util.capitalize(util.sansId(field));
-
+        const name = options.modelName || util.capitalize(util.sansId(field));
         bt = ModelMap[name];
+        options.model = bt;
       }
       mapFieldType(model, field, bt, name);
     },

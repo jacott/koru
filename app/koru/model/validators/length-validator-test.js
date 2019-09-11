@@ -22,7 +22,8 @@ define((require, exports, module)=>{
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
     group("maxLength", ()=>{
       /**
-       * Ensure field is not greater than length (if changed)/
+       * Ensure field is not greater than length.
+
        * @param len the maximum length of the field
        **/
 
@@ -47,7 +48,6 @@ define((require, exports, module)=>{
           title: {type: 'text', maxLength: 10}
         });
         const book = Book.build();
-        book.attributes.title = 'Animal Farm';
 
         assert(book.$isValid());
       });

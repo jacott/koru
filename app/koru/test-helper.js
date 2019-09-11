@@ -118,7 +118,7 @@ define((require)=>{
   ga.add('validators', {
     assert(validators, expected) {
       if (validators == null)
-        assert.fail("Could not find field");
+        assert.fail("Could not find field", 1);
       this.actual = validators;
       this.expected = expected;
       if (Object.keys(expected).length !== Object.keys(validators).length) {
@@ -139,6 +139,25 @@ define((require)=>{
 
     assertMessage: "Expected {i$actual} to match {i$expected}. For {i$key}",
     refuteMessage: "Did not expect {i0} to match {i1}"
+  });
+
+  ga.add('defineFields', {
+    assert(model, expected) {
+      for (const field in expected) {
+        const validators = model.$fields[field];
+        if (validators == null)
+          assert.fail("Could not find field "+field, 1);
+        this.field = field;
+
+        if (deepEqual(this.actual = validators,
+                      this.expected = expected[field], this, 'diff') !== this._asserting)
+          return ! this._asserting;
+      }
+      return true;
+    },
+
+    assertMessage: "Expected {$field} to match{$diff}",
+    refuteMessage: "Did not expect {i1} to match {i2}"
   });
 
 
