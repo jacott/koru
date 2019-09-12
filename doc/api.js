@@ -1,29 +1,25 @@
-(function () {
-  var activePages = document.getElementsByClassName('jsdoc-active-page');
-  var activeNavs = document.getElementsByClassName('jsdoc-nav-active-page');
+'use strict';
 
-  var searchArea = document.getElementById('search');
-  var searchInput = searchArea.querySelector('[name=search]');
+{
+  const activePages = document.getElementsByClassName('jsdoc-active-page');
+  const activeNavs = document.getElementsByClassName('jsdoc-nav-active-page');
 
-  var index = document.getElementById('jsdoc-index');
-  var main = document.querySelector('body>section>main');
-  var pageContent = document.getElementsByClassName('page-content')[0];
-  var pages = pageContent.childNodes;
+  const searchArea = document.getElementById('search');
+  const searchInput = searchArea.querySelector('[name=search]');
 
-  var results = document.createElement('div');
+  const index = document.getElementById('jsdoc-index');
+  const main = document.querySelector('body>section>main');
+  const pageContent = document.getElementsByClassName('page-content')[0];
+  const pages = pageContent.childNodes;
+
+  const results = document.createElement('div');
   results.id = 'Results';
   results.tabIndex = 1;
-  results.addEventListener('click', function (event) {
-    results.remove();
-  }, true);
+  results.addEventListener('click', event =>{results.remove()}, true);
 
-  window.addEventListener('keydown', keyListener, true);
-  searchArea.addEventListener('mousedown', focusSearch, true);
-  searchArea.addEventListener('input', search, true);
+  const selectedSearchResults = document.getElementsByClassName('search-result-selected');
 
-  var selectedSearchResults = document.getElementsByClassName('search-result-selected');
-
-  function keyListener(event) {
+  const keyListener = event =>{
     switch(event.which) {
     case 191:
       if (event.target !== searchInput)
@@ -65,56 +61,56 @@
       return;
     }
     event.preventDefault();
-  }
+  };
 
-  function focusSearch(event) {
+  const focusSearch = event =>{
     searchInput.select();
     event.preventDefault();
-  }
+  };
 
-  function search(event) {
+  const search = event =>{
     searchPage(searchInput.value.trim());
-  }
+  };
 
-  function findId(elm) {
+  const findId = elm =>{
     while(elm && elm.nodeType === 1) {
       if (elm.id) return elm.id;
       elm = elm.parentNode;
     }
     return '';
-  }
+  };
 
-  function searchPage(query) {
+  const searchPage = query =>{
     while(results.firstChild) results.firstChild.remove();
 
     if (query === '') return;
 
-    var len = pages.length;
-    var count = 0;
+    const len = pages.length;
+    let count = 0;
 
-    var mcs = query.toLowerCase() != query;
+    const mcs = query.toLowerCase() != query;
 
-    var parts = query.split(/\s+/);
-    var p0 = parts[0];
+    const parts = query.split(/\s+/);
+    const p0 = parts[0];
 
     loops:
-    for(var i = 0; i < len; ++i) {
-      var page = pages[i];
+    for(let i = 0; i < len; ++i) {
+      const page = pages[i];
       if (page.nodeType !== 1) continue;
-      var topics = page.getElementsByClassName('searchable');
+      const topics = page.getElementsByClassName('searchable');
       for(let k = 0; k < topics.length; ++k) {
-        var topic = topics[k];
-        var text = topic.textContent;
-        var idx = mcs ? text.indexOf(p0) : text.toLowerCase().indexOf(p0);
+        const topic = topics[k];
+        const text = topic.textContent;
+        const idx = mcs ? text.indexOf(p0) : text.toLowerCase().indexOf(p0);
         if (idx !== -1) {
-          var a = document.createElement('a');
-          var id = findId(topic);
+          const a = document.createElement('a');
+          const id = findId(topic);
           a.setAttribute('href', '#'+id);
-          var mod = document.createElement('span');
+          const mod = document.createElement('span');
           mod.textContent = id;
           a.appendChild(mod);
 
-          var ts = document.createElement('span');
+          let ts = document.createElement('span');
           ts.textContent = text.slice(0, idx);
           a.appendChild(ts);
 
@@ -131,11 +127,11 @@
         }
       }
     }
-    var lines = results.childNodes;
+    const lines = results.childNodes;
     for(let i = 1; i < parts.length; ++i) {
-      var part = parts[i];
+      const part = parts[i];
       for(let k = lines.length-1; k >= 0; --k) {
-        var nodes = lines[k].childNodes;
+        const nodes = lines[k].childNodes;
         if (mcs
             ? (nodes[1].textContent.indexOf(part) === -1 &&
                nodes[3].textContent.indexOf(part) === -1)
@@ -147,11 +143,11 @@
     results.firstChild !== null &&
       results.firstChild.classList.add('search-result-selected');
     main.insertBefore(results, main.firstChild);
-  }
+  };
 
-  function highlightPage() {
-    var id = window.location.hash.slice(1);
-    var target = document.getElementById(id);
+  const highlightPage = ()=>{
+    const id = window.location.hash.slice(1);
+    const target = document.getElementById(id);
 
     while (activePages.length > 0)
       activePages[0].classList.remove('jsdoc-active-page');
@@ -163,31 +159,37 @@
       return;
 
     target.classList.add('jsdoc-active-page');
-    var module = searchUpFor('jsdoc-module', target);
+    const module = searchUpFor('jsdoc-module', target);
     if (module != null) {
       module.classList.add('jsdoc-active-page');
       if (module.classList.contains('jsdoc-innerSubject'))
         module.previousSibling.classList.add('jsdoc-active-page');
     }
-    target.scrollIntoView(true);
 
-    var nav = index.querySelector('[href="#'+id+'"]');
+    const nav = index.querySelector('[href="#'+id+'"]');
     if (nav) {
-      var navmod = nav;
+      let navmod = nav;
       while (navmod = searchUpFor('jsdoc-nav-module', navmod.parentNode))
         navmod.classList.add('jsdoc-nav-active-page');
-    }
-  }
 
-  function searchUpFor(className, node) {
+      nav.scrollIntoView(true);
+    }
+
+    target.scrollIntoView(true);
+    if (document.activeElement !== target) target.focus();
+  };
+
+  const searchUpFor = (className, node)=>{
     for(; node && node.nodeType === document.ELEMENT_NODE; node = node.parentNode) {
       if (node.tagName === className || node.classList.contains(className))
         return node;
     }
-  }
+  };
 
+  window.addEventListener('keydown', keyListener, true);
   window.addEventListener('hashchange', highlightPage);
-
   window.addEventListener("load", highlightPage);
 
-})();
+  searchArea.addEventListener('mousedown', focusSearch, true);
+  searchArea.addEventListener('input', search, true);
+}

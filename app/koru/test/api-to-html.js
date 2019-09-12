@@ -152,6 +152,7 @@ define((require)=>{
 
       pages.appendChild(Dom.h({
         id,
+        tabindex: -1,
         '$data-env': env(api),
         class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
         section: [
@@ -444,7 +445,7 @@ define((require)=>{
         })
       ]},
     ]};
-    return section(api, {$name: 'constructor', section: [
+    return section(api, {tabindex: -1, $name: 'constructor', section: [
       {class: "searchable", h1: defToHtml(sig)},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
@@ -525,7 +526,8 @@ define((require)=>{
       const params = buildParams(api, args, argMap);
 
       return section(api, {
-        '$data-env': env(method),
+        'data-env': env(method),
+        tabindex: -1,
         $name: (type === 'proto' ? '#'+name : name), section: [
           {class: "searchable", h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : (
             sigPrefix ? [sigPrefix, defToHtml(sig)] : defToHtml(sig))},

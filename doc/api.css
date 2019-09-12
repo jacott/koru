@@ -273,6 +273,7 @@ pre {
   margin: 0;
   padding: 20px;
   border-left: solid 5px transparent;
+  outline: none;
 }
 
 .jsdoc-module-section>:first-child {
