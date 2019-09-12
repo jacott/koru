@@ -10,7 +10,8 @@ define((require, exports, module)=>{
 
    *
    * Examples can be verbatim from the test method by surrounding the example between `//[` and
-   * `//]` comments.
+   * `//]` comments. The special comment `//[no-more-examples]` will discard any further examples in
+   * this scope (useful with {#koru/test/test-case;;group tests} and {#.topic;s}).
    **/
   const TH              = require('koru/test-helper');
   const Core            = require('koru/test/core');
@@ -284,6 +285,52 @@ assert.same(Color.colors.red, '#f00');`,
           body: `return Color.define('green', '#0f0')`, calls: [[['green', '#0f0'], '#0f0']]
         }]
       });
+    });
+
+    test("no-more-examples no examples", ()=>{
+      //[no-more-examples]
+      const fooBar = {
+        fnord(a) {return a*2}
+      };
+      API.module({subjectModule: {id: 'myMod', exports: fooBar},
+                  subjectName: 'fooBar'});
+      API.method('fnord');
+
+      //[
+      assert.same(fooBar.fnord(5), 10);
+      assert.same(fooBar.fnord(-1), -2);
+      //]
+
+      API.done();
+
+      assert.equals(API.instance.methods.fnord.calls, [{
+        body: void 0,
+        calls: [m.any, m.any]
+      }]);
+    });
+
+    test("no-more-examples one example", ()=>{
+      const fooBar = {
+        fnord(a) {return a*2}
+      };
+      API.module({subjectModule: {id: 'myMod', exports: fooBar},
+                  subjectName: 'fooBar'});
+      API.method('fnord');
+
+      //[
+      assert.same(fooBar.fnord(5), 10);
+      //]
+      //[no-more-examples]
+      //[
+      assert.same(fooBar.fnord(-1), -2);
+      //]
+
+      API.done();
+
+      assert.equals(API.instance.methods.fnord.calls, [{
+        body: 'assert.same(fooBar.fnord(5), 10);\n',
+        calls: [m.any, m.any]
+      }]);
     });
 
     group("multi tests on a subject", ()=>{

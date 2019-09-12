@@ -249,16 +249,18 @@ define((require, exports, module)=>{
     let calls = details.calls.slice(details[callLength$]);
     details.calls.length = Math.min(details[callLength$] || 0, details.calls.length);
 
-    body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
-    if (details.calls.length !== 0 && ! isNew) {
-      const last = details.calls[details.calls.length-1];
-      details.calls.length -= 1;
-      if (last.body !== void 0) {
-        body = last.body + body;
-      }
-      if (last.calls.length != 0) {
-        calls.length != 0 && last.calls.push(...calls);
+    if (! isNew || body !== void 0) {
+      body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
+      if (details.calls.length !== 0 && ! isNew) {
+        const last = details.calls[details.calls.length-1];
+        details.calls.length -= 1;
+        if (last.body !== void 0) {
+          body = last.body + body;
+        }
+        if (last.calls.length != 0) {
+          calls.length != 0 && last.calls.push(...calls);
           calls = last.calls;
+        }
       }
     }
     details.calls.push({body, calls});
@@ -292,10 +294,18 @@ define((require, exports, module)=>{
       if (currentTest === undefined) return;
     }
 
-    const raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
+    let raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
+    const noExamplesIdx = raw.indexOf("//[no-more-examples]");
+    if (noExamplesIdx != -1) {
+      raw = raw.slice(0, noExamplesIdx).trim();
+    }
+
     const re = /\/\/\[([\s\S]+?)\/\/\]/g;
     let m = re.exec(raw);
-    if (m == null) return;
+    if (m == null) {
+      noExamplesIdx != -1 && addBody(details);
+      return;
+    }
 
     let body = '', isNew = true;
     while (m !== null) {

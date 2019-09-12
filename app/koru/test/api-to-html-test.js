@@ -49,6 +49,38 @@ m1 intro
 
     });
 
+    test("no-more-examples", ()=>{
+      const json = {
+        'my/mod': {
+          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          methods: {
+            m1: {
+              sig: 'm1(options)',
+              intro: `m1 intro`,
+              "calls": [
+                {
+                  // missing body
+                  "calls": [[[
+                    ["O", "Model.Book()"]
+                  ]]]
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      const html = apiToHtml('Foo', json, sourceHtml);
+      const result = Dom.htmlToJson(Dom.textToHtml(html).getElementsByClassName('jsdoc-arg')[0]).tr;
+
+      assert.equals(result, [
+        {td: 'options'},
+        {td: {href: m(/mozilla/), target: m.string, a: ['object']}},
+        {class: 'jsdoc-info', td: {}}
+      ]);
+
+    });
+
     test("properties", ()=>{
       const json = {
         'my/mod': {

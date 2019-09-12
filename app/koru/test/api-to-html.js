@@ -439,7 +439,7 @@ define((require)=>{
               return Dom.h({div: codeToHtml(newSig(subject.name, call[0]))});;
           } else {
             bodyExample = true;
-            return Dom.h({div: codeToHtml(call.body)});
+            return call.body && Dom.h({div: codeToHtml(call.body)});
           }
         })
       ]},
@@ -513,7 +513,8 @@ define((require)=>{
               ];
             } else {
               bodyExample = true;
-              return {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)};
+              return call.body && {
+                class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)};
             }
           }),
         ]}
