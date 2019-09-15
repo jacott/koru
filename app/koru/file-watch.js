@@ -4,9 +4,9 @@ const Path = require('path');
 
 define((require, exports, module)=>{
   'use strict';
-  const fst     = require('./fs-tools');
-  const koru    = require('./main');
-  const session = require('./session/base');
+  const fst             = require('./fs-tools');
+  const koru            = require('./main');
+  const session         = require('./session/base');
 
   const {runFiber, appDir: top} = koru;
 
@@ -34,9 +34,9 @@ define((require, exports, module)=>{
       runFiber(() => {
         if (! /^\w/.test(filename)) return;
         let path = manage(dirs, dir, filename, top);
-        if (path === undefined) return;
+        if (path === void 0) return;
 
-        const m = /\.(\w+)$/.exec(path);
+        const m = /\.(.+)$/.exec(path);
         const handler = m && exports.listeners[m[1]];
 
         path = path.slice(top.length);
@@ -56,15 +56,15 @@ define((require, exports, module)=>{
   const manage = (dirs, dir, filename, top)=>{
     const path = dir+'/'+filename;
     const st = fst.stat(path);
-    if (st !== undefined) {
+    if (st !== void 0) {
       if (st.isDirectory()) {
-        dirs[filename] = watch(path, top);
+        if (dirs[filename] === void 0) dirs[filename] = watch(path, top);
         return;
       }
     } else {
-      const watcher = dir[filename];
+      const watcher = dirs[filename];
       if (watcher) {
-        delete dir[filename];
+        delete dirs[filename];
         watcher.close();
       }
     }
