@@ -8,9 +8,10 @@ define((require, exports, module)=>{
    *
    * ```js
    * define((require, exports, module)=>{
+   *   'use strict';
    *   const TH = require('test-helper'); // prefix test-helper with path to helper
    *
-   *   const {stub, spy, onEnd, util} = TH;
+   *   const {stub, spy, util} = TH;
    *
    *   const MyModule  = require('./my-module');
    *
@@ -22,7 +23,7 @@ define((require, exports, module)=>{
    *     });
    *
    *     test("foo", ()=>{
-   *       assert.equals(MyModule.foo, "bar");
+   *       assert.equals(MyModule.foo(), "bar");
    *     });
    *
    *
@@ -191,7 +192,7 @@ define((require, exports, module)=>{
       assert.calledWith(util.setProperty, foo, 'bar');
     });
 
-    test("onEnd", ()=>{
+    test("after", ()=>{
       /**
        * Run `callback` after the test/test-case has completed.
        *
@@ -209,9 +210,9 @@ define((require, exports, module)=>{
         },
       };
       const listener = Library.onAdd();
-      TH.onEnd(listener);
+      TH.after(listener);
 
-      TH.onEnd(()=> {Library.removeAllBooks()});
+      TH.after(()=> {Library.removeAllBooks()});
       //]
       assert(true); // onEnd not easily verifiable
     });

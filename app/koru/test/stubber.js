@@ -81,7 +81,7 @@ define((require)=>{
       const {firstCall} = this;
       const callArgs = this.firstCall === undefined ? undefined : firstCall.args;
       if (callArgs === undefined)
-        throw new Error("Can't yield; stub with callback has not been called");
+        assert.fail("Can't yield; stub with callback has not been called", 1);
 
       return yieldCall(callArgs, args);
     }
@@ -89,7 +89,7 @@ define((require)=>{
     yieldAndReset(...args) {
       const callArgs = this.firstCall === undefined ? undefined : this.firstCall.args;
       if (callArgs === undefined)
-        throw new Error("Can't yield; stub has not been called");
+        assert.fail("Can't yield; stub has not been called", 1);
       this.reset();
       return yieldCall(callArgs, args);
     }
@@ -97,7 +97,7 @@ define((require)=>{
     yieldAll(...args) {
       const {calls} = this;
       if (calls === undefined)
-        throw new Error("Can't yield; stub has not been called");
+        assert.fail("Can't yield; stub has not been called", 1);
       const {length} = calls;
       for(let i = 0; i < length; ++i) {
         calls[i].yield(...args);
@@ -261,7 +261,7 @@ define((require)=>{
         return arg.apply(null, callArgs);
       }
     }
-    throw new Error("Can't yield; no function in arguments");
+    assert.fail("Can't yield; no function in arguments", 1);
   };
 
   const notifyListeners = (proxy, call, args) => {

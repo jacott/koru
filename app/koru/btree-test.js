@@ -807,22 +807,24 @@ r  110
   });
 
   const assertTree = (tree, exp='')=>{
-    try {
-      tree._assertValid();
-    } catch(ex) {
-      if (ex.displayError) {
-        assert.elideFromStack(false, ex.displayError(n => n));
-      } else {
-        throw ex;
+    assert.elide(()=>{
+      try {
+        tree._assertValid();
+      } catch(ex) {
+        if (ex.displayError) {
+          assert(false, ex.displayError(n => n));
+        } else {
+          throw ex;
+        }
       }
-    }
-    const act = tree._display().trim();
-    assert.elideFromStack(act === exp.trim(), `got
+      const act = tree._display().trim();
+      assert(act === exp.trim(), `got
 ${act}
 
 but expected
 ${exp}
 `);
+    });
   };
 
   const insertNodes = (tree, list)=>{list.forEach(k => tree.add(k))};

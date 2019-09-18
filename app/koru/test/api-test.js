@@ -18,7 +18,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const MainAPI         = require('./api');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const {inspect$} = require('koru/symbols');
 
@@ -407,12 +407,12 @@ assert.same(Color.colors.red, '#f00');`,
             mode: 'running',
             name: "library test "+name+".",
             body,
-            onEnd: stub(),
+            after: stub(),
           };
           body();
         } finally {
           Core.test = orig;
-          if (mockTest.onEnd.called) mockTest.onEnd.yield();
+          if (mockTest.after.called) mockTest.after.yield();
         }
       };
 

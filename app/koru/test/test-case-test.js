@@ -173,12 +173,27 @@ after
       });
     });
 
-    group("onEnd", ()=>{
+    group("onEnd", ()=>{ // deprated use after
       let onEndFinish;
       test("stop func", ()=>{
         onEndFinish = undefined;
         onEnd({stop() {--onEndFinish}});
         onEnd([()=>{--onEndFinish}, {stop: ()=>{--onEndFinish}}]);
+        onEndFinish = 3;
+        assert(true);
+      });
+
+      test("stop finished", ()=>{
+        assert.same(onEndFinish, 0);
+      });
+    });
+
+    group("after in func", ()=>{
+      let onEndFinish;
+      test("stop func", ()=>{
+        onEndFinish = undefined;
+        after({stop() {--onEndFinish}});
+        after([()=>{--onEndFinish}, {stop: ()=>{--onEndFinish}}]);
         onEndFinish = 3;
         assert(true);
       });

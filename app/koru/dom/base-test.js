@@ -81,7 +81,7 @@ define((require, exports, module)=>{
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
 
       const assertConvert = json => {
-        assert.elideFromStack.equals(Dom.htmlToJson(Dom.h(json)), json);
+        assert.elide(()=>{assert.equals(Dom.htmlToJson(Dom.h(json)), json)});
       };
 
       assertConvert({div: 'simple'});

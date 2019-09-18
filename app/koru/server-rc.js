@@ -177,7 +177,7 @@ define((require, exports, module)=>{
       try {
         _testHandle(this, msg);
       } catch(ex) {
-        koru.error(ex.stack);
+        koru.unhandledException(ex);
       }
     }
 

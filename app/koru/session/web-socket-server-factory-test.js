@@ -187,12 +187,14 @@ define((require, exports, module)=>{
       beforeEach(()=>{
         v.sess = sut(v.mockSess);
         v.assertSent = (args) => {
-          assert.elideFromStack.calledOnceWith(v.ws.send, TH.match(arg => {
-            v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
-            assert.equals(v.msg, args);
+          assert.elide(()=>{
+            assert.calledOnceWith(v.ws.send, m(arg => {
+              v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
+              assert.equals(v.msg, args);
 
-            return arg[0] === 88;
-          }, args));
+              return arg[0] === 88;
+            }, args));
+          });
           v.ws.send.reset();
         };
       });
@@ -221,7 +223,7 @@ define((require, exports, module)=>{
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent([
             '', 'h123',
-            TH.match(dict=>v.dict=dict),
+            m(dict=>v.dict=dict),
             '0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0']);
 
           assert.equals(Array.from(v.dict), [
@@ -284,7 +286,7 @@ define((require, exports, module)=>{
           refute.called(util.compareVersion);
           assert.called(compareVersion);
 
-          v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
+          v.assertSent(['v1.2.3', 'h456', m.any, m.string]);
         });
 
         test("force-reload", ()=>{
@@ -301,7 +303,7 @@ define((require, exports, module)=>{
         test("compareVersion", ()=>{
           /** client < server **/
           v.sess.onConnection(v.ws, v.ws[isTest].request);
-          v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
+          v.assertSent(['v1.2.3', 'h456', m.any, m.string]);
 
           /** client > server **/
           v.sess.version = 'v1.2.1';
@@ -311,19 +313,19 @@ define((require, exports, module)=>{
           /** client == server **/
           v.sess.version = 'v1.2.2';
           v.sess.onConnection(v.ws, v.ws[isTest].request);
-          v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
+          v.assertSent(['', 'h456', m.any, m.string]);
         });
 
         test("no version,hash", ()=>{
           v.ws[isTest].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
           v.sess.onConnection(v.ws, v.ws[isTest].request);
-          v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
+          v.assertSent(['', 'h456', m.any, m.string]);
         });
 
         test("old version but good hash", ()=>{
           v.sess.versionHash = 'h123';
           v.sess.onConnection(v.ws, v.ws[isTest].request);
-          v.assertSent(['', 'h123', TH.match.any, TH.match.string]);
+          v.assertSent(['', 'h123', m.any, m.string]);
         });
       });    });
 

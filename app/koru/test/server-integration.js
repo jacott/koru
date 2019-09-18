@@ -35,9 +35,9 @@ define((require)=>{
           const cm = clientMessage;
           clientMessage = null;
           if (cm[0] === 'ok')
-            assert.elideFromStack.same(cm[1][0], when);
+            assert.elide(()=>{assert.same(cm[1][0], when)});
           else
-            assert.fail(cm[1]);
+            assert.fail(cm[1], 1);
 
           if (func) {
             const response = func.apply(this, cm[1]);

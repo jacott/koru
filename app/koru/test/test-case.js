@@ -208,7 +208,7 @@ define((require, exports, module)=>{
       this.mode = 'init';
     }
 
-    onEnd(func) {
+    after(func) {
       const tc = currentTC || this.tc;
       (isOnce
        ? once(tc).after.addFront(func)
@@ -218,19 +218,19 @@ define((require, exports, module)=>{
 
     spy(...args) {
       const spy = stubber.spy.apply(stubber, args);
-      this.onEnd(restorSpy(spy));
+      this.after(restorSpy(spy));
       return spy;
     }
 
     stub(...args) {
       const spy = stubber.stub.apply(stubber, args);
-      this.onEnd(restorSpy(spy));
+      this.after(restorSpy(spy));
       return spy;
     }
 
     intercept(...args) {
       const spy = stubber.intercept.apply(stubber, args);
-      this.onEnd(restorSpy(spy));
+      this.after(restorSpy(spy));
       return spy;
     }
 
@@ -261,6 +261,8 @@ define((require, exports, module)=>{
     get moduleId() {return this.topTC.moduleId;}
   };
 
+  Test.prototype.onEnd = Test.prototype.after;
+
   let skipped = false;
 
   const expandTestCase = (tc, skipped=false)=>{
@@ -277,7 +279,13 @@ define((require, exports, module)=>{
     beforeEach: body => currentTC.beforeEach(body),
     afterEach: body => currentTC.afterEach(body),
     before: body => currentTC.before(body),
-    after: body => currentTC.after(body),
+    after: body =>{
+      const {test} = Core;
+      if (test === void 0)
+         currentTC.after(body);
+      else
+        test.after(body);
+    },
 
     test: (name, body)=> currentTC.addTest(name, body, skipped),
 
@@ -321,7 +329,7 @@ define((require, exports, module)=>{
             break;
           default:
             if (! name.startsWith("test ")) {
-              assert.fail('misnamed test '+currentTC.fullName(name));
+              assert.fail('misnamed test '+currentTC.fullName(name), 1);
             }
             builder.test(name.slice(5), value);
           }
@@ -335,8 +343,7 @@ define((require, exports, module)=>{
   builder.it = builder.test;
   builder.describe = builder.group;
 
-  const doneFunc = (test, runNext)=>{
-    const {assertCount} = Core;
+  const doneFunc = (test, runNext, assertCount)=>{
     const done = ex =>{
       done[isDone$] = true;
 
@@ -398,7 +405,7 @@ define((require, exports, module)=>{
         newTest.mode = 'running';
         try {
           if (newTest.body.length === 1) {
-            const done = doneFunc(newTest, _runNext);
+            const done = doneFunc(newTest, _runNext, Core.assertCount);
             const ans = newTest.body(done);
             if (ans !== void 0)
               failed(newTest, ans);

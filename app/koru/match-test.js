@@ -23,7 +23,7 @@ define((require, exports, module)=>{
       assert.msg("failed")(false);
     }
     catch(ex) {aMsg = ex;}
-    assert.elideFromStack.same(aMsg, msg);
+    assert.elide(()=>{assert.same(aMsg, msg)});
   };
 
   const docProp = (name, info=`match any ${name}`)=>{

@@ -773,21 +773,22 @@ isClient && define((require, exports, module)=>{
   });
 
   const assertVisible = (list, shown, hidden=[]) => {
-    let bad = 0, elm;
-    let exp = n => n;
+    assert.elide(()=>{
+      let bad = 0, elm;
+      let exp = n => n;
 
-    const {container} = list[private$];
+      const {container} = list[private$];
 
-    const check = n => (
-      bad = n,
-      elm = list.elm(v[`b${n}`]),
-      exp(elm) && (elm == null || elm.parentNode == container)
-    );
-    assert.elideFromStack(shown.every(check), `doc b${bad} not shown`);
-    exp = n => ! n;
-    assert.elideFromStack(hidden.every(check), `doc b${bad} not hidden`);
-    assert.elideFromStack.equals(Array.from(list.entries).map(
-      n => +n.title.slice(1)), shown.concat(hidden));
-
+      const check = n => (
+        bad = n,
+        elm = list.elm(v[`b${n}`]),
+        exp(elm) && (elm == null || elm.parentNode == container)
+      );
+      assert(shown.every(check), `doc b${bad} not shown`);
+      exp = n => ! n;
+      assert(hidden.every(check), `doc b${bad} not hidden`);
+      assert.equals(Array.from(list.entries).map(
+        n => +n.title.slice(1)), shown.concat(hidden));
+    });
   };
 });

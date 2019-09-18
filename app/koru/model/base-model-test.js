@@ -32,7 +32,7 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module();
 
@@ -617,11 +617,11 @@ define((require, exports, module)=>{
         let Publisher;
         beforeEach(()=>{
           Publisher = Model.define('Publisher').defineFields({name: 'text'});
-          onEnd(function () {Model._destroyModel('Publisher', 'drop')});
+          after(()=>{Model._destroyModel('Publisher', 'drop')});
         });
 
         afterEach(()=>{
-          Model._destroyModel('Publisher', 'drop');
+//          Model._destroyModel('Publisher', 'drop');
         });
 
         test("belongs_to_dbId", ()=>{

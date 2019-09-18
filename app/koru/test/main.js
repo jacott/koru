@@ -14,13 +14,13 @@ define((require, exports, module)=>{
   const origAfTimeout = Core._origAfTimeout = koru.afTimeout;
 
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
-  const onEnd = callback => Core.test.onEnd(callback);
+  const after = callback => Core.test.after(callback);
   const stub = (...args)=>Core.test.stub(...args);
   const spy = (...args)=>Core.test.spy(...args);
 
   const intercept = (...args)=>{
     const spy = stubber.intercept(...args);
-    Core.test.onEnd(restorSpy(spy));
+    Core.test.after(restorSpy(spy));
     return spy;
   };
 
@@ -36,7 +36,7 @@ define((require, exports, module)=>{
         delete object[prop];
     };
 
-    Core.test.onEnd(restore);
+    Core.test.after(restore);
 
     return restore;
   };
@@ -181,7 +181,8 @@ define((require, exports, module)=>{
     match,
     MockModule,
     stubProperty,
-    onEnd,
+    after,
+    onEnd: after,
     spy,
     stub,
     intercept,

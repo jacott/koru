@@ -399,9 +399,11 @@ define((require, exports, module)=>{
     html.innerHTML = text;
     const rt = sut.fromHtml(html);
 
-    assert.elideFromStack.msg(()=> rt)
-      .equals(TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML)
-              .replace(/\&quot;/g, "'"), expect);
+    assert.elide(()=>{
+      assert.msg(()=> rt).equals(
+        TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML)
+          .replace(/\&quot;/g, "'"), expect);
+    });
   };
 
   const assertBothConvert = (text, expect)=>{

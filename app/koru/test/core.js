@@ -1,6 +1,7 @@
 define((require)=>{
   'use strict';
   const format          = require('koru/format');
+  const stacktrace      = require('koru/stacktrace');
   const util            = require('koru/util');
 
   const {private$} = require('koru/symbols');
@@ -14,18 +15,10 @@ define((require)=>{
   class AssertionError extends Error {
     constructor(message, elidePoint=0) {
       super(message);
-      const {stack} = this;
-      if (elidePoint != 0) {
-        let idx = stack.indexOf("\n    at ");
-        if (idx != -1) {
-          const el = stack.slice(0, idx);
-          for (; idx != -1 && elidePoint != 0; --elidePoint) {
-            idx = stack.indexOf("\n", idx+8);
-          }
-          if (idx != -1)
-            this.stack = el + stack.slice(idx);
-        }
-      }
+      if (typeof elidePoint === 'number')
+        stacktrace.elideFrames(this, elidePoint);
+      else
+        stacktrace.replaceStack(this, elidePoint);
     }
 
     get name() {return 'AssertionError'}
@@ -34,28 +27,8 @@ define((require)=>{
 
   let elidePoint = null;
 
-  const fail = (message, elidePoint=null) =>{
-    message = message ? message.toString() : 'no message';
-    let ex;
-    if (elidePoint !== null) {
-      if (typeof elidePoint === 'number' && elidePoint > 0)
-        throw new AssertionError(message, elidePoint+1);
-      const {stack} = elidePoint;
-      if (typeof stack != 'string') throw new AssertionError(message);
-
-      ex = elidePoint;
-      ex.message = message;
-
-      let idx = 0;
-      for(let i = 0; idx != -1 && i < 3; ++i) {
-        idx = stack.indexOf("\n", idx+1);
-      }
-      if (idx != -1)
-        ex.stack = message+stack.slice(idx);
-      throw ex;
-    } else {
-      throw new AssertionError(message);
-    }
+  const fail = (message="failed", elidePoint=0) =>{
+    throw new AssertionError(message, elidePoint+1);
   };
 
   const assert = (truth, msg)=>{
@@ -76,13 +49,22 @@ define((require)=>{
   };
 
   assert.fail = fail;
+  assert.elide = (body, adjust=0)=>{
+    try {
+      return body();
+    } catch(ex) {
+      if (ex.name === 'AssertionError')
+        assert.fail(ex.message, adjust+2);
+      throw ex;
+    }
+  };
 
   const refute = (truth, msg)=>{
     Core.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
   function getElideFromStack() {
-    elidePoint = elidePoint || new AssertionError('');
+    elidePoint = elidePoint || new AssertionError('', 1);
     return this;
   }
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});

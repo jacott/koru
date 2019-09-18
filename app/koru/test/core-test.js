@@ -4,10 +4,12 @@ define((require, exports, module)=>{
    * The heart of the test framework.
    **/
   const match           = require('koru/match');
+  const Stacktrace      = require('koru/stacktrace');
+  const stacktrace      = require('koru/stacktrace');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, util, match: m} = TH;
 
   const Core = require('./core');
 
@@ -51,17 +53,38 @@ because of its widespread use.
 
          * @param message the message for the error
 
-         * @param elidePoint the number of stack frames to elide
+         * @param elidePoint if a `number` the number of stack frames to elide otherwise will show
+         * `elidePoint`'s normalized stack instead. See {#koru/util.extractError} and {#koru/stacktrace}
          **/
-        const AssertionError = aeApi.class();
+        aeApi.protoProperty('customStack', {
+          info: `The normalized stack trace with the elided frames and message`});
+        let {AssertionError} = Core;
         //[
-        const err = new AssertionError("I failed");
-        assert(err instanceof Error);
-        assert.same(err.message, "I failed");
+        const inner1 = ()=>{inner2()};
+        const inner2 = ()=>{inner3()};
+        const inner3 = ()=>{
+          const err = new AssertionError("I failed");
+          assert(err instanceof Error);
+          assert.same(err.message, "I failed");
+          assert.equals(Stacktrace.normalize(err), [
+            m(/    at .*inner3.* \(koru\/test\/core-test.js:\d+:\d+\)/),
+            m(/    at .*inner2.* \(koru\/test\/core-test.js:\d+:\d+\)/),
+            m(/    at .*inner1.* \(koru\/test\/core-test.js:\d+:\d+\)/),
+            m(/    at .* \(koru\/test\/core-test.js:\d+:\d+\)/),
+          ]);
 
-        const err2 = new AssertionError("I have a shortened stack", 2);
-        assert(err instanceof Error);
+          const err2 = new AssertionError("I have a shortened customStack", 2);
+          assert.equals(Stacktrace.normalize(err).slice(2), Stacktrace.normalize(err2));
+
+          const err3 = (()=> new AssertionError("I use another stack", err2))();
+          assert.same(Stacktrace.normalize(err3), Stacktrace.normalize(err2));
+        };
+        inner1();
         //]
+        AssertionError = aeApi.class();
+        const a1 = new AssertionError("message");
+        const a2 = new AssertionError("message", 1);
+        const a3 = new AssertionError("message", a1);
       });
     });
 
@@ -73,15 +96,70 @@ because of its widespread use.
 
        * @param elidePoint the number of stack frames to elide
        **/
+      //[
+      let ex;
+      const inner1 = ()=>{inner2()};
+      const inner2 = ()=>{
+        try {
+          assert.fail("I failed", 1);
+        } catch(e) {
+          ex = e;
+        }
+      };
+
+      inner1();
+
+      assert.instanceof(ex, Core.AssertionError);
+      assert.same(ex.message, "I failed");
+      assert.equals(Stacktrace.normalize(ex), [
+        m(/^    at.*inner1.*core-test.js/),
+        m(/^    at.*core-test.js/),
+      ]);
+      //]
       api.customIntercept(assert, {name: 'fail', sig: 'assert.'});
+      assert.exception(()=>{assert.fail()});
+      assert.exception(()=>{assert.fail("test1")});
+      assert.exception(()=>{assert.fail("test2", 1)});
+    });
+
+    test("elide", ()=>{
+      /**
+       * Elide stack starting from caller
+       *
+       * @param body the elided body to excute
+
+       * @param adjust the number of additional stack frames to elide.
+       **/
+      //[
+      const inner = ()=>{
+        assert.fail("I failed");
+      };
+
       let ex;
       try {
-        assert.fail("I failed", 1);
+        (()=>{
+          assert.elide(()=>{
+            inner();
+          }, 1);
+        })();
       } catch(e) {
         ex = e;
       }
       assert.instanceof(ex, Core.AssertionError);
       assert.same(ex.message, "I failed");
+      assert.equals(ex.customStack, new Core.AssertionError("I failed", 1).customStack);
+
+      //]
+      // api trace here because intercept will interfere with stack trace
+      api.customIntercept(assert, {name: 'elide', sig: 'assert.'});
+      try {
+        assert.elide(()=>{inner()});
+      } catch (ex) {
+      }
+      try {
+        assert.elide(()=>{inner()}, 1);
+      } catch (ex) {
+      }
     });
 
     test("assert", ()=>{

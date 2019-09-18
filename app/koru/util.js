@@ -2,7 +2,7 @@
 define((require)=>{
   'use strict';
   const match           = require('./match');
-  const stacktrace      = require('./stacktrace');
+  const Stacktrace      = require('./stacktrace');
   const util            = require('./util-base');
 
   const {withId$} = require('koru/symbols');
@@ -437,10 +437,13 @@ define((require)=>{
     },
 
     extractError(ex) {
-      const st = stacktrace(ex);
-      return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
+      const st = Stacktrace.normalize(ex);
+      if (st) {
+        if (st.length != 0) st[0] = "    at -"+st[0].slice(6);
+        return ex.toString() + "\n" + st.join("\n");
+      } else
+        return util.inspect(ex);
     },
-    stacktrace,
 
     slice(list, from, to) {
       return slice.call(list, from, to);

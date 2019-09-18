@@ -106,15 +106,15 @@ define((require, exports, module)=>{
     return trigger;
     function trigger(node, arg1, arg2) {
       let value = arg1;
-      if (typeof node === 'string') {
+      if (typeof node === 'string') assert.elide(()=>{
         const func1 = function () {node = this};
         if (arg2 === undefined) {
-          assert.elideFromStack.dom(node, func1);
+          assert.dom(node, func1);
         } else {
           value = arg2;
-          assert.elideFromStack.dom(node, arg1, func1);
+          assert.dom(node, arg1, func1);
         }
-      }
+      });
       func(node, value);
       TH.trigger(node, eventName);
       return this;
@@ -152,12 +152,12 @@ define((require, exports, module)=>{
 
     setColor(node, value) {
       TH.click(node);
-      assert.elideFromStack.dom(document.body, () => {
+      assert.elide(()=>{assert.dom(document.body, () => {
         assert.dom('#ColorPicker', () => {
           TH.input('input[name=hex]', value);
           TH.click('[name=apply]');
         });
-      });
+      });});
       return this;
     },
 
@@ -214,12 +214,15 @@ define((require, exports, module)=>{
     }),
 
     trigger(node, event, args) {
-      if (typeof node === 'string') {
-        assert.elideFromStack.dom(node, node =>{Dom.triggerEvent(node, event, args)});
-      } else {
-        assert.elideFromStack.msg('node not found')(node);
-        return Dom.triggerEvent(node, event, args);
-      }
+      assert.elide(()=>{
+        if (typeof node === 'string') {
+          assert.dom(node, node =>{Dom.triggerEvent(node, event, args)});
+        } else {
+          assert.msg('node not found')(node);
+          return Dom.triggerEvent(node, event, args);
+        }
+      });
+      return this;
     },
 
     buildEvent: Dom.buildEvent,
@@ -233,29 +236,34 @@ define((require, exports, module)=>{
     },
 
     click(node, arg1) {
-      if (typeof node === 'string') {
-        assert.elideFromStack.dom(node, arg1, function () {TH.click(this)});
-      } else {
-        if (node.click)
-          node.click(); // supported by form controls cross-browser; most native way
-        else
-          TH.trigger(node, 'click');
-      }
+      assert.elide(()=>{
+        if (typeof node === 'string') {
+          assert.dom(node, arg1, elm =>{TH.click(elm)});
+        } else {
+          if (node.click)
+            node.click(); // supported by form controls cross-browser; most native way
+          else
+            TH.trigger(node, 'click');
+        }
+      });
       return this;
     },
 
     pointerDownUp(node, args={pointerId: 1}) {
-      if (typeof node === 'string') {
-        if (typeof args === 'string') {
-          assert.elideFromStack.dom(node, args, elm=>{node = elm});
-          TH.trigger(node, 'pointerdown');
-          TH.trigger(node, 'pointerup');
-          return;
+      assert.elide(()=>{
+        if (typeof node === 'string') {
+          if (typeof args === 'string') {
+            assert.dom(node, args, elm=>{node = elm});
+            TH.trigger(node, 'pointerdown');
+            TH.trigger(node, 'pointerup');
+            return;
+          }
+          assert.dom(node, elm=>{node = elm});
         }
-        assert.elideFromStack.dom(node, elm=>{node = elm});
-      }
-      TH.trigger(node, 'pointerdown', args);
-      TH.trigger(node, 'pointerup', args);
+        TH.trigger(node, 'pointerdown', args);
+        TH.trigger(node, 'pointerup', args);
+      });
+      return this;
     },
 
     setRange(startContainer, startOffset, endContainer, endOffset) {
@@ -265,7 +273,7 @@ define((require, exports, module)=>{
           startOffset = 0;
           endOffset = startContainer.nodeType === document.TEXT_NODE
             ? startContainer.nodeValue.length : startContainer.childNodes.length;
-        }else
+        } else
           endOffset = startOffset;
       }
       const range = document.createRange();
@@ -280,8 +288,7 @@ define((require, exports, module)=>{
       const menu = Dom('body>.glassPane>#SelectMenu') ||
             (TH.click(node), Dom('body>.glassPane>#SelectMenu'));
       if (! menu)
-        assert.elideFromStack(false, "Can't find #SelectMenu");
-      const pre = TH.Core.__elidePoint;
+        assert.fail("Can't find #SelectMenu", 1);
       switch(typeof value) {
       case 'string':
       case 'number':
@@ -289,9 +296,8 @@ define((require, exports, module)=>{
         value = m(arg => arg._id === id, {toString() {return `id of '${id}'`}});
         break;
       }
-      assert.elideFromStack.dom(menu, function () {
+      assert.elide(()=>{assert.dom(menu, ()=>{
         assert.dom('li', {data: value}, li => {
-          TH.Core.__elidePoint = pre;
           switch (typeof func) {
           case 'function':
             if (func.call(li, li)) TH.click(li);
@@ -308,7 +314,7 @@ define((require, exports, module)=>{
             TH.click(li);
           }
         });
-      });
+      });});
       return this;
     },
 

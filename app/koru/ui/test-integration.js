@@ -28,8 +28,10 @@ define((require)=>{
   const send = msg =>{
     if (typeof msg === 'string')
       msg = [msg];
-    assert.elideFromStack(Array.isArray(msg) && typeof msg[0] == 'string', "invalid server message");
-    assert.elideFromStack.msg('may only send one wait message to server').isFalse(syncMsg);
+    assert.elide(()=>{
+      assert(Array.isArray(msg) && typeof msg[0] == 'string', "invalid server message");
+      assert.msg('may only send one wait message to server').isFalse(syncMsg);
+    });
     syncMsg = msg[0];
     session.sendBinary('i', ['ok', msg]);
 

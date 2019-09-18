@@ -586,7 +586,8 @@ define((require, exports, module)=>{
        * to `obj`, or where a property of that name already existed in `obj`, the property in `obj`
        * has been replaced with the property from `properties`
        **/
-      api.method('mergeInclude');
+      api.method();
+      //[
       const obj = {a: 1, c: 2};
       const ans = util.mergeInclude(obj, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true});
       assert.equals(ans, {a: 1, c: 3, d: 4});
@@ -594,6 +595,31 @@ define((require, exports, module)=>{
 
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
                     {a: 1, c: 3, d: 4});
+      //]
+    });
+
+    test("extractError", ()=>{
+      /**
+       * Extract the error message and normalized stack trace from an exception.
+       *
+       * See {#koru/stacktrace}
+       **/
+      api.method();
+      //[
+      const inner1 = ()=> inner2();
+      const inner2 = ()=> {
+        return new Error("Testing 123");
+      };
+      const ex = inner1();
+
+      assert.equals(util.extractError(ex).split('\n'), [
+        'Error: Testing 123',
+        // the "at - " is to distinguish the first frame for editors
+        m(/    at - inner2 \(koru\/util-test.js:\d+:16\)/),
+        m(/    at inner1 \(koru\/util-test.js:\d+:27\)/),
+        m(/    at .* \(koru\/util-test.js:\d+:18\)/),
+      ]);
+      //]
     });
 
     test("extractKeys", ()=>{

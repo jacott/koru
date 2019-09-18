@@ -39,7 +39,7 @@ define((require, exports, module)=>{
         callbacks.forEach(cb => cb());
       };
       onEnd.callbacks = [];
-      TH.onEnd(onEnd);
+      TH.after(onEnd);
     }
     let {target} = api;
     if (target !== void 0) {

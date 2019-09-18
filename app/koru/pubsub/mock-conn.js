@@ -38,29 +38,28 @@ define((require, exports, module)=>{
     assertAdded(doc) {
       const ans = [doc.constructor.modelName, doc.attributes];
       let msg;
-      if (!this.findCall("A", ans, r =>{msg = r}))
-        assert.elideFromStack(
-          false, "Expected " + util.inspect(ans) + " to be added. Found:\n   " +msg);
+      if (! this.findCall("A", ans, r =>{msg = r}))
+        assert.fail("Expected " + util.inspect(ans) + " to be added. Found:\n   " +msg, 1);
     }
 
     refuteAdded(doc) {
-      const ans = [doc.constructor.modelName, m.any, m.any];
-      this.findCall("A", ans) && assert.elideFromStack(
-        false, "Did not expect "+util.inspect(ans) + " to be added");
+      const ans = [doc.constructor.modelName, doc.attributes];
+      this.findCall("A", ans) && assert.fail(
+        "Did not expect "+util.inspect(ans) + " to be added", 1);
     }
 
     assertChange({doc, changes}) {
       const ans = [doc.constructor.modelName, doc._id, changes];
       let msg;
       if (!this.findCall("C", ans, r =>{msg = r}))
-        assert.elideFromStack(
-          false, "Expected " + util.inspect(ans) + " to be changed. Found:\n   " +msg);
+        assert.fail(
+          "Expected " + util.inspect(ans) + " to be changed. Found:\n   " +msg, 1);
     }
 
     refuteChange({doc, changes}) {
-      const ans = [doc.constructor.modelName, m.any, m.any];
-      this.findCall("C", ans) && assert.elideFromStack(
-        false, "Did not expect "+util.inspect(ans) + " to be changed");
+      const ans = [doc.constructor.modelName, doc._id, changes];
+      this.findCall("C", ans) && assert.fail(
+        "Did not expect "+util.inspect(ans) + " to be changed", 1);
     }
   }
 
