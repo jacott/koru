@@ -61,6 +61,7 @@ isServer && define((require, exports, module)=>{
         assert.same(future.wait(), conn2);
       } finally {
         Date.now.restore();
+        util.thread.date = void 0;
       }
     });
 

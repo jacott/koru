@@ -439,7 +439,10 @@ define((require)=>{
     extractError(ex) {
       const st = Stacktrace.normalize(ex);
       if (st) {
-        if (st.length != 0) st[0] = "    at -"+st[0].slice(6);
+        if (st.length != 0) {
+          if (st[0][7] !== '-')
+            st[0] = "    at -"+st[0].slice(6);
+        }
         return ex.toString() + "\n" + st.join("\n");
       } else
         return util.inspect(ex);
@@ -1000,6 +1003,7 @@ define((require)=>{
         return func();
       } finally {
         thread.date = dates.pop();
+        if (dates.length == 0) thread.dates = void 0;
       }
     },
 

@@ -22,7 +22,7 @@ define((require, exports, module)=>{
 
     after(()=>{
       Model._destroyModel('TestModel', 'drop');
-      util.thread.date = null;
+      util.thread.date = void 0;
       v = {};
     });
 
@@ -163,6 +163,7 @@ define((require, exports, module)=>{
       const fin1 = stub();
 
       const now = util.thread.date = Date.now();
+      after(()=>{util.thread.date = void 0});
 
       sut._clearLastTime();
 
