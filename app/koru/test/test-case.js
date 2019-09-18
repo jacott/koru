@@ -9,18 +9,15 @@ define((require, exports, module)=>{
   const timeout$ = Symbol(), isDone$ = Symbol(),
         after$ = Symbol(), once$ = Symbol(), temp$ = Symbol(), before$ = Symbol();
 
+  const {Fiber} = util;
+
   const MAX_TIME = 2000;
 
-  const asyncNext = func => {koru.runFiber(func)};
+  let isOnce = false;
+  let currentTC, tests;
+  let lastTest, currTest, nextTest, common, nextFunc;
+  let nt = 0, assertCount = 0;
 
-  let currentTC, isOnce = false, tests;
-
-  const failed = (test, ex)=>{
-    if (ex === 'abortTests') throw ex;
-    test.success = false;
-    test.errors = [
-      (ex instanceof Error) ? util.extractError(ex) : 'Unexpected return value: '+util.inspect(ex)];
-  };
 
   const checkAssertionCount = (test, assertCount)=>{
     if (assertCount !== Core.assertCount) {
@@ -343,116 +340,139 @@ define((require, exports, module)=>{
   builder.it = builder.test;
   builder.describe = builder.group;
 
-  const doneFunc = (test, runNext, assertCount)=>{
-    const done = ex =>{
-      done[isDone$] = true;
+  const testStart = ()=>{
+    currTest.mode = 'before';
+    const ans = Core.runCallBacks('testStart', currTest);
+    nextFunc = setup;
+    return ans === void 0 ? setup() : ans;
+  };
 
-      const to = done[timeout$];
-      to === void 0 || clearTimeout(to);
+  const setup = ()=>{
+    const ans = runSetups(currTest.tc, common);
+    nextFunc = runTest;
+    return ans === void 0 ? runTest() : ans;
+  };
 
-      if (ex)
-        failed(test, ex);
-      else
-        checkAssertionCount(test, assertCount);
-
-      to === void 0 || asyncNext(runNext);
+  const runDone = ()=> new Promise((resolve, reject)=>{
+    let isDone = false, doneTimeout = 0;
+    const done = err =>{
+      isDone = true;
+      if (done.maxTime != 0) {
+        clearTimeout(doneTimeout);
+        err === void 0 ? resolve() : reject(err);
+      }
     };
     done.maxTime = MAX_TIME;
+    try {
+      const ans = currTest.body(done);
+      if (! isDone) {
+        if (ans !== void 0)
+          reject("wrongReturn");
+      } else {
+        doneTimeout = setTimeout(()=>{done.maxTime = 0;reject("timeout")}, done.maxTime);
+      }
+    } catch(err) {
+      reject(err);
+    }
+  });
 
-    return done;
+  const waitAsync = promise => new Promise((resolve, reject)=>{
+    let doneTimeout = 0;
+    promise.then(()=>{
+      clearTimeout(doneTimeout);
+      resolve();
+    }, err =>{
+      clearTimeout(doneTimeout);
+      reject(err);
+    });
+    doneTimeout = setTimeout(()=>{reject("timeout")}, MAX_TIME);
+  });
+
+  const runTest = ()=>{
+    nextFunc = tearDown;
+    currTest.mode = 'running';
+    assertCount = Core.assertCount;
+    if (currTest.body.length === 1) {
+      return runDone();
+    } else {
+      const ans = currTest.body();
+      if (ans === void 0) {
+        return tearDown();
+      } else {
+        if (typeof ans.then !== 'function')
+          throw "wrongReturn";
+        return waitAsync(ans);
+      }
+    }
   };
 
-  class TimeoutError extends Error {
-    constructor() {
-      super('Timed out!');
-      this.test = Core.test;
-    }
-
-    toString() {
-      const {name, line} = this.test.location;
-      return this.message+"\n    at - "+
-        `test (${name}.js:${line}:1)`;
-    }
-  }
-
-  const setDoneTimeout = (done)=>{
-    done[timeout$] = setTimeout(
-      ()=>{done(new TimeoutError())}, done.maxTime);
+  const tearDown = ()=>{
+    common = commonTC(currTest, nextTest);
+    nextFunc = testEnd;
+    currTest.errors === void 0 && checkAssertionCount(currTest, assertCount);
+    currTest.mode = 'after';
+    const ans = runTearDowns(currTest.tc, common);
+    if (ans === void 0)
+      testEnd();
+    else
+      ans.then(testEnd);
   };
 
+  const testEnd = ()=>{
+    nextFunc = testStart;
+    Core.runCallBacks('testEnd', currTest);
+  };
+
+  const handleError = (err)=>{
+    Core.test.success = false;
+    if (err === 'abortTests') throw err;
+    Core.test.errors = [
+      (err instanceof Error) ? util.extractError(err) : (
+        err === "timeout" ? "Test timed out" : (
+          err === "wrongReturn" ? "Unexpected test return value" : err.toString()))];
+  };
+
+  const _runNext = ()=>{
+    while(true) {
+      if (nextFunc === testStart) {
+        if (nt == tests.length) {
+          Core.lastTest = Core.test = tests = void 0;
+          Core.runCallBacks('end');
+          return;
+        }
+        Core.lastTest = lastTest = currTest;
+        currTest = Core.test = tests[nt];
+        tests[nt++] = null;
+        nextTest = nt < tests.length ? tests[nt] : void 0;
+      }
+      try {
+        const ans = nextFunc();
+        if (ans !== void 0) {
+          ans.catch(handleError).then(runNext);
+          if (isServer) {
+            Fiber.yield();
+          } else
+            return;
+        }
+      } catch(err) {
+        handleError(err);
+        if (currTest.mode !== 'running')
+          Core.abort(err);
+      }
+    }
+  };
+
+  let currentFiber;
+  const runNext = isServer ? ()=>{currentFiber.run()} : _runNext;
 
   Core.start = (testCases, runNextWrapper)=>{
     tests = [];
-    Core.test = void 0;
-    Core.lastTest = void 0;
-    let _runNext, nt = 0;
-    let lastTest;
+    nt = assertCount = 0;
+    Core.test = Core.lastTest = void 0;
+    lastTest = currTest = nextTest = common = nextFunc = void 0;
+    nextFunc = testStart;
 
-    const runTest = (oldTest, newTest)=>{
-      const common = commonTC(oldTest, newTest);
-      if (oldTest !== void 0) {
-        oldTest.mode = 'after';
-        runTearDowns(oldTest.tc, common);
-        Core.runCallBacks('testEnd', oldTest);
-      }
-      if (newTest === void 0) {
-        Core.lastTest = Core.test = tests = void 0;
-        Core.runCallBacks('end');
-      } else {
-        newTest.mode = 'before';
-        Core.runCallBacks('testStart', newTest);
-        runSetups(newTest.tc, common);
-        newTest.mode = 'running';
-        try {
-          if (newTest.body.length === 1) {
-            const done = doneFunc(newTest, _runNext, Core.assertCount);
-            const ans = newTest.body(done);
-            if (ans !== void 0)
-              failed(newTest, ans);
-            else {
-              if (done[isDone$]) return;
-              setDoneTimeout(done);
-              return true;
-            }
-          } else {
-            const {assertCount} = Core;
-            const ans = newTest.body();
-            if (ans === void 0) {
-              checkAssertionCount(newTest, assertCount);
-            } else {
-              if (typeof ans.then === 'function') {
-                const done = doneFunc(newTest, _runNext);
-                setDoneTimeout(done);
-                ans.then(()=>{done()}, done);
-                return true;
-              }
-              failed(newTest, ans);
-            }
-          }
-        } catch(ex) {
-          failed(newTest, ex);
-        }
-      }
-    };
-
-    const runNext = ()=>{
-      while(true) {
-        lastTest = Core.lastTest = Core.test;
-        if (nt == tlen) {
-          runTest(lastTest);
-          return;
-        }
-        Core.test = tests[nt];
-        tests[nt++] = null;
-        try {
-          if (runTest(lastTest, Core.test)) return;
-        } catch(ex) {
-          if (currentTC !== void 0)
-            ex.message = `While running test case ${currentTC.fullName()}:\n${ex.message}`;
-          throw ex;
-        }
-      }
-    };
+    if (isServer) currentFiber = Fiber.current;
 
     for(let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
@@ -464,28 +484,9 @@ define((require, exports, module)=>{
       testCases[i] = null;
     }
 
-    const tlen = tests.length;
-
-    if (runNextWrapper) {
-      runNextWrapper(()=>{
-        Core.runCallBacks('start');
-        _runNext = ()=>{runNextWrapper(runNext)};
-        _runNext();
-      });
-    } else {
-      Core.runCallBacks('start');
-      _runNext = ()=>{
-        try {
-          runNext();
-        } catch(ex) {
-          Core.abort(ex);
-        }
-      };
-      _runNext();
-    }
-
+    Core.runCallBacks('start');
+    _runNext();
   };
-
 
   return TestCase;
 });
