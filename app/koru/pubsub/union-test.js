@@ -170,7 +170,8 @@ isServer && define((require, exports, module)=>{
     });
 
     test("addSub partitions based on discreteLastSubscribed", ()=>{
-      let now = +new Date(2019, 1, 1);
+      let now = +new Date(2019, 1, 1); intercept(util, 'dateNow', ()=>now);
+
       now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
       const conn1 = conn;
       const conn2 = ConnTH.mockConnection("conn2");
@@ -715,7 +716,8 @@ isServer && define((require, exports, module)=>{
     });
 
     test("addSub adds to running partition", ()=>{
-      let now = +new Date(2019, 1, 1);
+      let now = +new Date(2019, 1, 1); intercept(util, 'dateNow', ()=>now);
+
       now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
       const conn1 = conn;
       const conn2 = ConnTH.mockConnection("conn2");

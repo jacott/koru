@@ -369,8 +369,9 @@ isServer && define((require, exports, module)=>{
        * The subscriptions last successful subscription time in ms
        **/
       api.protoProperty();
-      const sub = new Publication({lastSubscribed: +new Date(2019, 0, 4, 9, 10, 11, 123)});
-      assert.equals(new Date(sub.lastSubscribed), new Date(2019, 0, 4, 9, 10, 11, 123));
+      const thirtyDaysAgo = Date.now() - 30*util.DAY;
+      const sub = new Publication({lastSubscribed: thirtyDaysAgo});
+      assert.equals(new Date(sub.lastSubscribed), new Date(thirtyDaysAgo));
     });
 
     test("lastSubscribedInterval", ()=>{

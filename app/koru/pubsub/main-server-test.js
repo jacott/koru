@@ -58,7 +58,8 @@ define((require, exports, module)=>{
         //]
 
         const args = [{shelf: 'mathematics'}];
-        const lastSubscribed = new Date(2019, 0, 1, 20, 22, 34);
+        const thirtyDaysAgo = Date.now() - 30*util.DAY;
+        const lastSubscribed = new Date(thirtyDaysAgo);
 
         //[
         // Step 3 receive connect request from client
@@ -66,7 +67,7 @@ define((require, exports, module)=>{
         const sub = new LibraryPub({id: 's123', conn, lastSubscribed});
         sub.init(...args);
         // after init, server informs client of success and updates lastSubscribed
-        // ['s123', 1, 200, new Date(2019, 0, 2, 13, 34, 21)]
+        // ['s123', 1, 200, new Date(thirtyDaysAgo)]
         //]
 
         //[
