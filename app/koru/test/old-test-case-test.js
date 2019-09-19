@@ -26,9 +26,7 @@ define((require, exports, module)=>{
 
       "Inner tc": {
         setUpOnce() {
-          this.onEnd(() => {
-            v.state += ' onEnd';
-          });
+          this.onEnd(()=>{v.state += ' onEnd'});
           v.state = 'setup';
           ++v.count;
           v.eachCount = 0;
@@ -47,7 +45,7 @@ define((require, exports, module)=>{
         setUp() {
           v.eachSetup = true;
           v.eachCount += 2;
-          this.onEnd(() => v.eachCount--);
+          this.onEnd(()=>{v.eachCount--});
         },
 
         "test one"() {

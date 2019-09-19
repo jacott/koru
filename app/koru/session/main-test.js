@@ -48,7 +48,7 @@ define((require, exports, module)=>{
       refute(Session.isRpc("Book.update"));
       Session.defineRpc('Book.update', func);//]
 
-      onEnd(() => delete Session._rpcs['Book.update']);
+      onEnd(()=>{delete Session._rpcs['Book.update']});
       //[#
       assert.same(Session._rpcs['Book.update'], func);
       refute(Session.isRpcGet("Book.update"));
@@ -65,7 +65,7 @@ define((require, exports, module)=>{
       refute(Session.isRpc(func));
       Session.defineRpcGet('Book.list', func);
 
-      onEnd(() => delete Session._rpcs['Book.list']);
+      onEnd(()=>{delete Session._rpcs['Book.list']});
 
       assert.same(Session._rpcs['Book.list'], func);
       assert(Session.isRpcGet('Book.list'));

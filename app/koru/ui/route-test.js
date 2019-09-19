@@ -574,7 +574,7 @@ isClient && define((require, exports, module)=>{
       };
 
       Route.root.routeVar = 'foo';
-      onEnd(() => Route.root.routeVar = null);
+      onEnd(()=>{Route.root.routeVar = null});
       intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = stub());
       intercept(Route.root, 'onBaseExit', v.rootBaseExit = stub());
 
@@ -709,7 +709,7 @@ isClient && define((require, exports, module)=>{
     test("private page", ()=>{
       const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
-      onEnd(() => Route.SignInPage = origSigninPage);
+      onEnd(()=>{Route.SignInPage = origSigninPage});
       stub(Route, 'replacePage');
       koru.userId.restore();
 
@@ -725,7 +725,7 @@ isClient && define((require, exports, module)=>{
     test("public page", ()=>{
       const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
-      onEnd(() => Route.SignInPage = origSigninPage);
+      onEnd(()=>{Route.SignInPage = origSigninPage});
       stub(Route, 'replacePage');
       koru.userId.restore();
 
@@ -794,7 +794,7 @@ isClient && define((require, exports, module)=>{
 
     test("addTemplate", ()=>{
       Route.pageParent.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
-      onEnd(() => {Route.pageParent = document.body});
+      onEnd(()=>{{Route.pageParent = document.body}});
       const Baz = {
         name: 'Baz',
         parent: v.FooBar,

@@ -313,10 +313,10 @@ define((require, exports, module)=>{
       });
 
       test("intercept", ()=>{
-        onEnd(() => userAccount.interceptChangePassword = null);
+        onEnd(()=>{userAccount.interceptChangePassword = null});
         userAccount.interceptChangePassword = stub();
 
-         v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);

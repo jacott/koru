@@ -63,7 +63,7 @@ isClient && define((require, exports, module)=>{
         fooList: stub(),
       });
 
-      onEnd(() => delete Dom._helpers.fooList);
+      onEnd(()=>{delete Dom._helpers.fooList});
 
       v.Each.$render({});
 
