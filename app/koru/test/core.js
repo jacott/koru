@@ -220,6 +220,7 @@ define((require)=>{
 
     match,
     deepEqual,
+    reload: false,
   };
   Core._init();
 

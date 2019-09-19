@@ -235,12 +235,48 @@ after
       });
     });
 
+    let counter = 0;
     group("async", ()=>{
-      let asyncFinish;
+      let asyncFinish = false, later = 0;
 
-      test("async start", async ()=>{
+      before(async ()=>{
+        await new Promise((resolve, reject)=>{setTimeout(()=>{
+          counter = 2;
+          resolve();
+        }, 0);});
+      });
+
+      beforeEach(async ()=>{
+        await new Promise((resolve)=>{setTimeout(()=>{
+          counter += 3;
+          resolve();
+        }, 0);});
+      });
+
+      afterEach(async ()=>{
+        await new Promise((resolve)=>{setTimeout(()=>{
+          counter -= 3;
+          resolve();
+        }, 0);});
+      });
+
+      after(async ()=>{
+        await new Promise((resolve, reject)=>{setTimeout(()=>{
+          try {
+            assert.equals(TH.test && TH.test.mode, 'after');
+            counter -= 2;
+            resolve();
+          } catch(err) {
+            reject(err);
+          }
+        }, 0);});
+      });
+
+      test("start", async ()=>{
+        assert.equals(counter, 5);
+
         asyncFinish = false;
-        let later = 4;
+        later = 4;
         const p = new Promise((resolve)=>{
           setTimeout(()=>{resolve(later)}, 0);
         });
@@ -250,9 +286,14 @@ after
         asyncFinish = true;
       });
 
-      test("async finished", ()=>{
+      test("finished", ()=>{
+        assert.equals(counter, 5);
         assert.isTrue(asyncFinish);
       });
+    });
+
+    test("async setup and teardown", ()=>{
+      assert.equals(counter, 0);
     });
   });
 });

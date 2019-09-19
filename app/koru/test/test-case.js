@@ -17,7 +17,15 @@ define((require, exports, module)=>{
   let currentTC, tests;
   let lastTest, currTest, nextTest, common, nextFunc;
   let nt = 0, assertCount = 0;
+  let currentFiber;
+  let asyncTimeout = 0;
 
+  const assertIsPromise = (p, f) =>{(p == null || typeof p.then !== 'function') && notPromise(f)};
+
+  const notPromise = (f)=>{
+    assert.fail(`Expected return of undefined or a Promise ${Core.test.mode}:
+${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
+  };
 
   const checkAssertionCount = (test, assertCount)=>{
     if (assertCount !== Core.assertCount) {
@@ -34,9 +42,50 @@ define((require, exports, module)=>{
     }
   };
 
-  const runCallbacks = (list)=>{
+  const runListAndAsyncCallbacks = async (value, i, list, node)=>{
     const {test} = Core;
+    for(; i >=0 ; --i) {
+      const func = value[i];
+      if (typeof func === 'function') {
+        await func.call(test);
+      } else {
+        func.stop();
+      }
+    }
+    await runAsyncCallbacks(list, node);
+  };
+
+
+  const runAsyncCallbacks = async (list, node) =>{
+    const {test} = Core;
+    let prev = node;
+
+    for (node = node.next; node !== void 0; node = node.next) {
+      if (node[temp$] === true)
+        list.removeNode(node, prev);
+      else
+        prev = node;
+      const {value} = node;
+      if (typeof value === 'function') {
+        await value.call(test);
+      } else if (Array.isArray(value)) {
+        for(let i = value.length-1; i >=0 ; --i) {
+          const func = value[i];
+          if (typeof func === 'function') {
+            await func.call(test);
+          } else {
+            func.stop();
+          }
+        }
+      } else {
+        value.stop();
+      }
+    }
+  };
+
+  const runCallbacks = (list)=>{
     if (list === void 0) return;
+    const {test} = Core;
     let prev;
     for (let node = list.front; node !== void 0; node = node.next) {
       if (node[temp$] === true)
@@ -45,12 +94,22 @@ define((require, exports, module)=>{
         prev = node;
       const {value} = node;
       if (typeof value === 'function') {
-        value.call(test);
+        const promise = value.call(test);
+        if (promise !== void 0) {
+          assertIsPromise(promise, value);
+          return node.next === void 0 ? promise
+            : promise.then(()=>{runAsyncCallbacks(list, node)});
+        }
       } else if (Array.isArray(value)) {
         for(let i = value.length-1; i >=0 ; --i) {
           const func = value[i];
           if (typeof func === 'function') {
-            func.call(test);
+            const promise = func.call(test);
+            if (promise !== void 0) {
+              assertIsPromise(promise, func);
+              return i > 0
+                ? promise.then(()=>{runListAndAsyncCallbacks(value, i-1, list, node)}) : promise;
+            }
           } else {
             func.stop();
           }
@@ -64,7 +123,7 @@ define((require, exports, module)=>{
   const runOnceCallbacks = (list)=>{
     try {
       isOnce = true;
-      runCallbacks(list);
+      return runCallbacks(list);
     } finally {
       isOnce = false;
     }
@@ -77,18 +136,43 @@ define((require, exports, module)=>{
     const sameTC = tc === common;
     const once = tc[once$];
 
-    runCallbacks(tc[after$]);
+    const promise = runCallbacks(tc[after$]);
+
+    if (promise !== void 0) {
+      return promise.then(async ()=>{
+        if (sameTC) {
+          if (once !== void 0) return;
+        }
+        if (once !== void 0) {
+          await runOnceCallbacks(once.after);
+        }
+        const pTc = tc.tc;
+        if (pTc === void 0) {
+          common === void 0 && reset(tc);
+        } else
+          await runTearDowns(pTc, sameTC ? pTc : common);
+      });
+    }
 
     if (sameTC) {
       if (once !== void 0) return;
-    } else {
-      once === void 0 || runOnceCallbacks(once.after);
+    } else if (once !== void 0) {
+      const promise = runOnceCallbacks(once.after);
+      if (promise !== void 0) {
+        return promise.then(()=>{
+          const pTc = tc.tc;
+          if (pTc === void 0) {
+            common === void 0 && reset(tc);
+          } else
+            return runTearDowns(pTc, sameTC ? pTc : common);
+        });
+      }
     }
-    const p = tc.tc;
-    if (p === void 0) {
+    const pTc = tc.tc;
+    if (pTc === void 0) {
       common === void 0 && reset(tc);
     } else
-      runTearDowns(p, sameTC ? p : common);
+      return runTearDowns(pTc, sameTC ? pTc : common);
   };
 
   const runSetups = (tc, common)=>{
@@ -98,14 +182,26 @@ define((require, exports, module)=>{
     const sameTC = tc === common;
     const once = tc[once$];
 
-
     if (! sameTC || once === void 0) {
-      const p = tc.tc;
-      runSetups(p, sameTC ? p : common);
+      const pTc = tc.tc;
+      const promise = runSetups(pTc, sameTC ? pTc : common);
+      if (promise !== void 0) {
+        return promise.then(async ()=>{
+          currentTC = tc;
+          if (once !== void 0)
+            await runOnceCallbacks(once.before);
+          await runCallbacks(tc[before$]);
+        });
+      }
       currentTC = tc;
-      once === void 0 || runOnceCallbacks(once.before);
+      if (once !== void 0) {
+        const promise = runOnceCallbacks(once.before);
+        if (promise !== void 0) {
+          return promise.then(()=>runCallbacks(tc[before$]));
+        }
+      }
     }
-    runCallbacks(tc[before$]);
+    return runCallbacks(tc[before$]);
   };
 
   const commonTC = (ot, nt)=>{
@@ -342,68 +438,37 @@ define((require, exports, module)=>{
 
   const testStart = ()=>{
     currTest.mode = 'before';
-    const ans = Core.runCallBacks('testStart', currTest);
+    const promise = Core.runCallBacks('testStart', currTest);
     nextFunc = setup;
-    return ans === void 0 ? setup() : ans;
+    return promise === void 0 ? setup() : promise;
   };
 
   const setup = ()=>{
-    const ans = runSetups(currTest.tc, common);
+    const promise = runSetups(currTest.tc, common);
     nextFunc = runTest;
-    return ans === void 0 ? runTest() : ans;
+    return promise === void 0 ? runTest() : promise;
   };
 
-  const runDone = ()=> new Promise((resolve, reject)=>{
-    let isDone = false, doneTimeout = 0;
+  const runDone = ()=>{
+    let isDone = false, resolve, reject;
     const done = err =>{
       isDone = true;
-      if (done.maxTime != 0) {
-        clearTimeout(doneTimeout);
+      if (resolve !== void 0) {
         err === void 0 ? resolve() : reject(err);
       }
     };
-    done.maxTime = MAX_TIME;
-    try {
-      const ans = currTest.body(done);
-      if (! isDone) {
-        if (ans !== void 0)
-          reject("wrongReturn");
-      } else {
-        doneTimeout = setTimeout(()=>{done.maxTime = 0;reject("timeout")}, done.maxTime);
-      }
-    } catch(err) {
-      reject(err);
-    }
-  });
-
-  const waitAsync = promise => new Promise((resolve, reject)=>{
-    let doneTimeout = 0;
-    promise.then(()=>{
-      clearTimeout(doneTimeout);
-      resolve();
-    }, err =>{
-      clearTimeout(doneTimeout);
-      reject(err);
-    });
-    doneTimeout = setTimeout(()=>{reject("timeout")}, MAX_TIME);
-  });
+    currTest.body(done);
+    if (isDone) return;
+    return new Promise((res, rej)=>{resolve = res; reject = rej});
+  };
 
   const runTest = ()=>{
     nextFunc = tearDown;
     currTest.mode = 'running';
     assertCount = Core.assertCount;
-    if (currTest.body.length === 1) {
-      return runDone();
-    } else {
-      const ans = currTest.body();
-      if (ans === void 0) {
-        return tearDown();
-      } else {
-        if (typeof ans.then !== 'function')
-          throw "wrongReturn";
-        return waitAsync(ans);
-      }
-    }
+    const promise = currTest.body.length === 1
+          ? runDone() : currTest.body();
+    return promise == void 0 ? tearDown() : promise;
   };
 
   const tearDown = ()=>{
@@ -411,29 +476,54 @@ define((require, exports, module)=>{
     nextFunc = testEnd;
     currTest.errors === void 0 && checkAssertionCount(currTest, assertCount);
     currTest.mode = 'after';
-    const ans = runTearDowns(currTest.tc, common);
-    if (ans === void 0)
-      testEnd();
-    else
-      ans.then(testEnd);
+    const promise = runTearDowns(currTest.tc, common);
+    return promise === void 0 ? testEnd() : promise;
   };
 
   const testEnd = ()=>{
     nextFunc = testStart;
-    Core.runCallBacks('testEnd', currTest);
+    return Core.runCallBacks('testEnd', currTest);
+  };
+
+  const handleAsyncError = (err)=>{
+    asyncTimeout == 0 || clearTimeout(asyncTimeout);
+    if (handleError(err))
+      runNext();
+    else if (isServer)
+      currentFiber.run('abort');
   };
 
   const handleError = (err)=>{
     Core.test.success = false;
-    if (err === 'abortTests') throw err;
-    Core.test.errors = [
-      (err instanceof Error) ? util.extractError(err) : (
+    if (err === 'abortTests') return void Core.abort(err);
+    const msg = (err instanceof Error) ? util.extractError(err) : (
         err === "timeout" ? "Test timed out" : (
-          err === "wrongReturn" ? "Unexpected test return value" : err.toString()))];
+          err === "wrongReturn" ? "Unexpected return value" : err.toString()));
+    Core.test.errors = [msg];
+    if (Core.test.mode !== 'running')
+      Core.abort(typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err);
+    else return true;
+  };
+
+  const timeExpired = ()=>{
+    asyncTimeout = 0;
+    handleError("timeout");
+    runNext();
+  };
+
+
+  const runAsyncNext = ()=>{
+    if (asyncTimeout != 0) {
+      clearTimeout(asyncTimeout);
+      asyncTimeout = 0;
+    }
+
+    runNext();
   };
 
   const _runNext = ()=>{
     while(true) {
+      if (Core.reload) return;
       if (nextFunc === testStart) {
         if (nt == tests.length) {
           Core.lastTest = Core.test = tests = void 0;
@@ -446,24 +536,25 @@ define((require, exports, module)=>{
         nextTest = nt < tests.length ? tests[nt] : void 0;
       }
       try {
-        const ans = nextFunc();
-        if (ans !== void 0) {
-          ans.catch(handleError).then(runNext);
+        const promise = nextFunc();
+        if (promise !== void 0) {
+          assertIsPromise(promise);
+          asyncTimeout = setTimeout(timeExpired, MAX_TIME);
+          promise.then(runAsyncNext, handleAsyncError);
           if (isServer) {
-            Fiber.yield();
+            if (Fiber.yield() !== 'continue')
+              return;
           } else
             return;
         }
       } catch(err) {
-        handleError(err);
-        if (currTest.mode !== 'running')
-          Core.abort(err);
+        if (! handleError(err))
+          return;
       }
     }
   };
 
-  let currentFiber;
-  const runNext = isServer ? ()=>{currentFiber.run()} : _runNext;
+  const runNext = isServer ? ()=>{currentFiber.run('continue')} : _runNext;
 
   Core.start = (testCases, runNextWrapper)=>{
     tests = [];

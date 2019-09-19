@@ -243,7 +243,6 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
         `\n     at - ${fn}.js:${line}`);
     Main.testHandle('F', Core.testCount + 1);
     Main.Core.reload = true;
-    throw ex;
   };
 
   Core.worstTCS = ()=> Core.testCases
