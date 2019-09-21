@@ -237,7 +237,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
   Core.abort = ex => {
     const {name, location: {name: fn, line}} = Core.test;
     Main.logHandle(
-      'E', koru.util.extractError(ex) +
+      'E', (typeof ex === 'string' ? ex : koru.util.extractError(ex)) +
         "\n\n**** Tests aborted! *****\n" +
         name +
         `\n     at - ${fn}.js:${line}`);
