@@ -11,18 +11,14 @@ const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../packa
 
 const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
-let loadded = false;
-
-
-const load = (command)=> function () {
+const load = (command)=> function (...args) {
   this.koruVersion = koruPackage.version;
   this.koruPackage = koruPackage;
   program = null;
-  require('../lib/'+command).apply(this, arguments);
+  require('../lib/'+command).apply(this, args);
 };
 
-switch (match ? match[1] : process.argv[2]) {
-
+switch (match != null ? match[1] : process.argv[2]) {
 case 'generate': case 'g':
   load('generate')(program);
   break;
@@ -30,6 +26,13 @@ case 'generate': case 'g':
 case 'db-':
   load('db-commands')(program);
   break;
+
+case void 0:
+  process.argv[2] = 'help';
+case '-h': case '--help': case 'help':
+  const p = program;
+  load('db-commands')(program, 'help');
+  program = p;
 
 default:
   program
@@ -59,11 +62,10 @@ default:
 
   program.parse(process.argv);
 
-  if (program) {
+  if (program !== null) {
     if (program.rawArgs.length > 2) {
       console.error("Unexpected command: ", program.rawArgs[2]);
       process.exit(1);
     }
-    load('db-commands')(program);
   }
 }
