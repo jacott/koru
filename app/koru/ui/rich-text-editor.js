@@ -715,9 +715,7 @@ define((require, exports, module)=>{
         elm = elm.parentNode;
       const ctx = Dom.ctx(elm);
       const input = ctx.inputElm;
-      input.setAttribute('contenteditable', 'false');
       input.textContent = '';
-      input.setAttribute('contenteditable', 'true');
       Dom.remove(ctx.selectItem);
     },
 

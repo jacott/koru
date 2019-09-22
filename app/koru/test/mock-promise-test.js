@@ -34,7 +34,8 @@ define((require, exports, module)=>{
        **/
       api.method('_poll');
 
-      //[// How to stub a Promise
+      //[
+      // How to stub a Promise
       TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
       let done = false;
       Promise.resolve(true).then(v => done = v);

@@ -11,7 +11,7 @@ define((require, exports, module)=>{
    *   'use strict';
    *   const TH = require('test-helper'); // prefix test-helper with path to helper
    *
-   *   const {stub, spy, util} = TH;
+   *   const {stub, spy, util, match: m} = TH;
    *
    *   const MyModule  = require('./my-module');
    *
@@ -69,7 +69,8 @@ define((require, exports, module)=>{
        * * `group(name, body)` - adds a sub `TestCase` named `name`. `body` is again called with
        * this list of properties: (before, after, beforeEach, afterEach, group, test).
 
-       * * `test(name, body)` - adds a Test named `name`. `body` is called when the test is run.
+       * * `test(name, body)` - adds a {#koru/test/test-case::Test;;Test} named `name`. `body` is
+       * called when the test is run.
        *
        *   If the `body` has a `done` argument then the test will be asynchronous and done should be
        *   called with no argument on success and with a error on failure.
@@ -90,11 +91,15 @@ define((require, exports, module)=>{
     });
 
     test("properties", ()=>{
-      api.property('test', {info: 'the current test that is running'});
+      api.property('test', {info: 'The current test that is running'});
       assert.equals(TH.test.name, 'koru/test-helper test properties.');
 
-      api.property('util', {info: 'a convenience reference to {#koru/util}'});
+      api.property('util', {info: 'A convenience reference to {#koru/util}'});
       assert.same(TH.util, util);
+
+      api.property('match', {info: `A copy of the {#koru/match} module for using with tests.
+This is normally assigned to \`m\` because it is use so often.  The reason it is a copy is so that
+the main match module can be stubbed without interfering with test asserts`});
     });
 
     group("MockModule", ()=>{
@@ -197,6 +202,8 @@ define((require, exports, module)=>{
        * Run `callback` after the test/test-case has completed.
        *
        * @param callback the function to run or an object with a `stop` function to run.
+
+       * @alias onEnd [deprecated]
        **/
       api.method();
       //[

@@ -1,14 +1,23 @@
 define((require)=>{
   'use strict';
-  const util = require('koru/util');
+  const util            = require('koru/util');
 
   return (obj={})=>{
     let queue = null;
     let afHandle = 0;
 
-    util.merge(obj, {
-      nextFrame(func) {
-        if (! queue) {
+    const execOne = func=>{func()};
+
+    const run = ()=>{
+      const q = queue;
+      queue = null;
+      afHandle = 0;
+      q.forEach(execOne);
+    };
+
+    Object.assign(obj, {
+      nextFrame: (func)=>{
+        if (queue === null) {
           queue = [func];
           afHandle = window.requestAnimationFrame(run);
         } else {
@@ -16,32 +25,21 @@ define((require)=>{
         }
       },
 
-      flushNextFrame() {
+      flushNextFrame: ()=>{
         if (afHandle == 0) return;
         window.cancelAnimationFrame(afHandle);
         run();
       },
 
-      cancelNextFrame() {
+      cancelNextFrame: ()=>{
         if (afHandle == 0) return;
         window.cancelAnimationFrame(afHandle);
         queue = null;
         afHandle = 0;
       },
 
-      isPendingNextFrame() {
-        return queue != null;
-      },
+      isPendingNextFrame: ()=> queue !== null,
     });
-
-    function run() {
-      const q = queue;
-      queue = null;
-      afHandle = 0;
-      util.forEach(q, execOne);
-    }
-
-    const execOne = func=>{func()};
 
     return obj;
   };

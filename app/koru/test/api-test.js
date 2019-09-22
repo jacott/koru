@@ -347,7 +347,7 @@ assert.same(Color.colors.red, '#f00');`,
         ]);
       });
 
-      test("test 1", ()=>{
+      test("bar 1", ()=>{
         API.method('bar');
 
         //[
@@ -358,7 +358,7 @@ assert.same(Color.colors.red, '#f00');`,
         assert(result = API.instance.methods.bar);
       });
 
-      test("test 2", ()=>{
+      test("bar 2", ()=>{
         API.method('bar');
 
         //[
@@ -642,9 +642,9 @@ assert.same(Color.colors.red, '#f00');`,
         /**
          * The number of pages in the book
          **/
-        const testCase = (opts)=>{for (const i in opts) opts[i]()};
+        const test = (opts)=>{for (const i in opts) opts[i]()};
         //[
-        testCase({"test pageCount"() {
+        test({"pageCount"() {
           /**
            * The number of pages in the book
            **/

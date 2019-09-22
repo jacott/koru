@@ -312,7 +312,8 @@ define((require)=>{
       div.appendChild(ans);
     },
     alias: (api, row, argMap, div)=>{
-      const container = div[alias$] || (div[alias$] = Dom.h({class: "jsdoc-alias", h1: ["Aliases"]}));
+      const container = div[alias$] || (div[alias$] = Dom.h({
+        class: "jsdoc-alias", section: {h1: ["Aliases"]}}));
       row = row.slice(6);
       const idx = row.indexOf(' ');
       const name = row.slice(0, idx == -1 ? void 0 : idx);

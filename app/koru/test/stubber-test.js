@@ -1,8 +1,9 @@
 define((require, exports, module)=>{
   'use strict';
   /**
-   * Spies and Stubs are functions which record the call arguments, this value and return of each
-   * call made to them. They can intercept calls to Object getter, setter and function properties.
+   * Spies and Stubs are functions which record the call arguments, the `this` value and the return
+   * of each call made to them. They can intercept calls to Object getter, setter and function
+   * properties.
    *
    * Spies will just record the interaction whereas Stubs will replace the call with a custom
    * function.
@@ -10,7 +11,9 @@ define((require, exports, module)=>{
    * A Spy is an instance of a Stub.
    *
    * Stubs are usually called from tests using the specialized version in {#koru/test/main}. The
-   * test versions will auto restore after the test or testCase has completed.
+   * test versions will auto restore after the {#koru/test/test-case::Test;;Test} or
+   * {#koru/test/test-case} has completed.
+
    * ```js
 const {stub, spy, intercept} = TH;
    * ```
