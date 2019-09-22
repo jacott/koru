@@ -51,13 +51,21 @@ default:
 
   program
     .command('test')
-    .usage('[--isolated] [--port=number] [-s] [-c] [testModule] [testNamePrefix]')
+    .usage('[--isolated] [--config filename.js] [--port=number] [-s] [-c] [testModule] [testNamePrefix]')
     .option('--isolated', 'Start up server and headless browser to run the tests')
+    .option('--config <filename>', 'Customize the settings before running tests. Use --config=help for help')
     .option('--port <number>', 'Start up server on specified port '+
             '(defaults to env KORU_PORT or; 3001 for isolated; otherwise 3000)')
     .option('-s, --server', 'Only run server tests')
     .option('-c, --client', 'Only run client tests')
-    .description('run tests. Unless --isolated is used the tests expect the server and browser to already be started and connected')
+    .description(`run tests. Unless --isolated is used the tests expect the server and browser to already be started and connected.
+
+The following ENV variables override the defaults:
+
+KORU_PORT node server listen port. Defaults to 3001.
+KORU_BROWSER the browser to run. Defaults to google-browser.
+KORU_BROWSER_DEBUGGING_PORT remote-debugging-port for browser. Defaults to 9222.
+ `)
     .action(load('test'));
 
   program.parse(process.argv);
