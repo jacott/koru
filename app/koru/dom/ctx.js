@@ -262,7 +262,7 @@ define((require)=>{
           autoUpdateChange(this);
         }
       }
-      const activeElement = document.activeElement;
+      const {activeElement} = document;
       const prevCtx = currentCtx;
       const prevElm = currentElement;
       currentCtx = this;
@@ -289,8 +289,10 @@ define((require)=>{
         currentElement = prevElm;
         currentCtx = prevCtx;
       }
-      activeElement && document.activeElement !== activeElement &&
+      const nae = document.activeElement;
+      if (nae !== activeElement && (nae === null || nae === document.body) && activeElement !== null) {
         activeElement.focus();
+      }
     }
 
     updateElement(elm) {

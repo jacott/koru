@@ -49,6 +49,7 @@ define((require)=>{
       }
       const onChange = makeOnChange(this);
       const pv = this[private$] = {
+        locked: false,
         template, container,
         query,
         limit,
@@ -123,6 +124,7 @@ define((require)=>{
     }={}) {
       const pv = this[private$];
       const {sym$} = pv;
+      if (pv.locked) throw new Error('Illegal recursive changeOptions call');
 
       if (query !== undefined) {
         stopObserver(pv);
@@ -147,26 +149,31 @@ define((require)=>{
         pv.observer = pv.query.onChange == null ? null : pv.query.onChange(pv.onChange);
       }
 
-      pv.query && pv.query.forEach(doc => {
-        const node = doc[sym$];
+      try {
+        pv.locked = true;
+        pv.query && pv.query.forEach(doc => {
+          const node = doc[sym$];
 
-        if (node == null)
-          addRow(pv, doc);
-        else {
-          doc[doc$] = undefined;
-          oldTree.deleteNode(node);
-          node.value = pv.compareKeys === addOrderKeys ?
-            addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
-          newTree.addNode(node);
-          updateAllTags && myCtx(node[elm$]).updateAllTags();
-          insertElm(pv, node);
+          if (node == null)
+            addRow(pv, doc);
+          else {
+            doc[doc$] = undefined;
+            oldTree.deleteNode(node);
+            node.value = pv.compareKeys === addOrderKeys ?
+              addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
+            newTree.addNode(node);
+            updateAllTags && myCtx(node[elm$]).updateAllTags();
+            insertElm(pv, node);
+          }
+        });
+
+        for (const node of oldTree.nodes()) {
+          if (node[elm$] == null) break;
+          delete node[doc$][sym$];
+          removeElm(pv, node, true);
         }
-      });
-
-      for (const node of oldTree.nodes()) {
-        if (node[elm$] == null) break;
-        delete node[doc$][sym$];
-        removeElm(pv, node, true);
+      } finally {
+        pv.locked = false;
       }
     }
 
