@@ -22,7 +22,7 @@ define((require, exports, module)=>{
 
   Test.session = session;
 
-  Test.testHandle = (cmd, msg)=>{session.send('T', cmd+msg)};
+  Test.testHandle = (cmd, msg='')=>{session.send('T', cmd+msg)};
 
   Test.logHandle = (type, msg)=>{
     if (type === 'ERROR')

@@ -82,6 +82,7 @@ define((require, exports, module)=>{
       if (testMode !== 'none') {
         if (testMode !== 'server' && testExec.client !== null && clientCount) {
           const apt = pendingClientTests;
+          if (testClientCount == 0) testClientCount = 1;
           pendingClientTests = [];
           for (const key in clients) {
             const cs = clients[key], {conns} = cs;
@@ -239,8 +240,8 @@ define((require, exports, module)=>{
                  cs.results[1] !== cs.results[2] ? '1' : '0'));
 
             if (--testClientCount === 0) {
+              testExec.client = null;
               if (testExec.server) {
-                testExec.client = null;
                 testWhenReady();
                 return;
               }
