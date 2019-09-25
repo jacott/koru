@@ -8,13 +8,13 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const login           = require('./client-login');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const userAccount = require('./main');
 
   let v = null;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v = {};
       v.oldUserId = util.thread.userId;
@@ -215,7 +215,7 @@ define((require, exports, module)=>{
     });
 
     test("setSessionPersistence", ()=>{
-      onEnd(() => {
+      after(() => {
         userAccount.stop();
         userAccount[isTest].storage = localStorage;
       });

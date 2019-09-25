@@ -3,11 +3,11 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('../dom');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./modal');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       TH.domTearDown();
     });
@@ -67,7 +67,7 @@ isClient && define((require, exports, module)=>{
       const page = Dom.h({div: popup, class: 'page'});
       Dom.setCtx(page);
 
-      onEnd(()=>{TH.pointerDownUp(popup)});
+      after(()=>{TH.pointerDownUp(popup)});
 
       sut.append('below', {container: page, origin: document.body});
       assert.dom('.popup');
@@ -118,7 +118,7 @@ isClient && define((require, exports, module)=>{
       const ctx = Dom.setCtx(container);
       spy(ctx, 'onDestroy');
 
-      onEnd(()=>{TH.pointerDownUp(container)});
+      after(()=>{TH.pointerDownUp(container)});
 
       const options = sut.appendBelow({
         container: container,
@@ -168,7 +168,7 @@ isClient && define((require, exports, module)=>{
       });
       const keydown = stub();
       document.body.addEventListener('keydown', keydown);
-      onEnd(()=>{document.body.removeEventListener('keydown', keydown)});
+      after(()=>{document.body.removeEventListener('keydown', keydown)});
       assert.dom('body', function () {
         assert.dom('>.glassPane:nth-last-child(3)>.popup0', function () {
           assert.cssNear(this, 'left', ibox.left);

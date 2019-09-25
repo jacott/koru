@@ -26,13 +26,13 @@ isServer && define((require, exports, module)=>{
   const fst             = require('./fs-tools');
   const IdleCheck       = require('./idle-check').singleton;
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const {Future} = util;
 
   const webServer = require('./web-server');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     let v = {};
     beforeEach(()=>{
       v.future = new Future();
@@ -92,7 +92,7 @@ isServer && define((require, exports, module)=>{
         refute.called(IdleCheck.dec);
         IdleCheck.waitIdle(()=>{v.res.end('success')});
       });
-      onEnd(()=>{webServer.deregisterHandler('foox')});
+      after(()=>{webServer.deregisterHandler('foox')});
 
       v.req.url = '/foox/bar';
       spy(IdleCheck, 'inc');
@@ -111,7 +111,7 @@ isServer && define((require, exports, module)=>{
       stub(fst, 'mkdir');
       const foo = stub();
       Compilers.set('foo', foo);
-      onEnd(()=>{Compilers.set('foo', undefined)});
+      after(()=>{Compilers.set('foo', undefined)});
 
       v.req.url = '/koru/.build/web-server-test.foo.bar';
 
@@ -179,7 +179,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("DEFAULT handler", ()=>{
-      onEnd(_=>{webServer.deregisterHandler('DEFAULT')});
+      after(_=>{webServer.deregisterHandler('DEFAULT')});
       webServer.registerHandler('DEFAULT', v.stub = stub());
 
       v.req.url = '/foo/bar';
@@ -196,7 +196,7 @@ isServer && define((require, exports, module)=>{
         v.req.called = true;
         throw new Error("Foo");
       });
-      onEnd(()=>{webServer.deregisterHandler('foo')});
+      after(()=>{webServer.deregisterHandler('foo')});
 
       v.req.url = '/foo/bar';
 

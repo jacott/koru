@@ -13,13 +13,13 @@ define((require, exports, module)=>{
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./client-rpc-base');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach( ()=>{
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
@@ -278,7 +278,7 @@ define((require, exports, module)=>{
     });
 
     test("onChange rpc",  ()=>{
-      onEnd(v.state.pending.onChange(v.ob = stub()));
+      after(v.state.pending.onChange(v.ob = stub()));
 
       assert.same(v.state.pendingCount(), 0);
 

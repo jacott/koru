@@ -10,7 +10,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, util, intercept} = TH;
 
   const ConnTH = require('koru/session/conn-th-server');
 
@@ -31,7 +31,7 @@ define((require, exports, module)=>{
       Library.pubName = 'Library';
 
       const sub1 = conn.onSubscribe("sub1", 1, 'Library');
-      onEnd(() => {ConnTH.stopAllSubs(conn)});
+      after(() => {ConnTH.stopAllSubs(conn)});
 
       assert.same(sub1.conn, conn);
       //]

@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   const SRP             = require('koru/srp/srp');
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const userAccount = require('./main');
 
@@ -313,7 +313,7 @@ define((require, exports, module)=>{
       });
 
       test("intercept", ()=>{
-        onEnd(()=>{userAccount.interceptChangePassword = null});
+        after(()=>{userAccount.interceptChangePassword = null});
         userAccount.interceptChangePassword = stub();
 
         v.lu.$update('srp', SRP.generateVerifier('secret'));

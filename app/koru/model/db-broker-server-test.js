@@ -13,7 +13,7 @@ isServer && define((require, exports, module)=>{
   const TH              = require('./test-helper');
   const Val             = require('./validation');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./db-broker');
   const dbBroker = sut;
@@ -35,14 +35,14 @@ isServer && define((require, exports, module)=>{
   };
 
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       api.module({subjectName: 'dbBroker'});
       TH.noInfo();
       v.TestModel = Model.define('TestModel');
       v.TestModel.defineFields({name: 'text'});
       v.defDb = Driver.defaultDb;
-      onEnd(revertTodefault);
+      after(revertTodefault);
       v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
       v.altDb.query('CREATE SCHEMA ALT');
 

@@ -5,7 +5,7 @@ isClient && define((require, exports, module)=>{
   const TH   = require('koru/ui/test-helper');
   const util = require('koru/util');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const sut  = require('./zoom-drag');
 
@@ -13,7 +13,7 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.target = Dom.h({
         $style: 'position:absolute;top:51px;left:17px;width:400px;height:100px;'});
@@ -31,7 +31,7 @@ isClient && define((require, exports, module)=>{
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123+17, clientY: 45+51});
-      onEnd(sut.start({
+      after(sut.start({
         event,
         target,
         onComplete(zoomDrag, {click}) {
@@ -54,7 +54,7 @@ isClient && define((require, exports, module)=>{
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123, clientY: 45});
-      onEnd(sut.start({
+      after(sut.start({
         event,
         target,
         onComplete(zoomDrag, {click}) {v.click = click}
@@ -73,7 +73,7 @@ isClient && define((require, exports, module)=>{
       const event = new window.PointerEvent('pointerdown', {
         pointerId: 1, clientX: 123, clientY: 145});
       const onChange = stub();
-      onEnd(sut.start({
+      after(sut.start({
         event,
         target,
         onChange,
@@ -122,7 +122,7 @@ isClient && define((require, exports, module)=>{
         const event = new window.WheelEvent('wheel', {
           deltaY: -79.5, clientX: 117, clientY: 155});
         v.start = (opts={}) => {
-          onEnd(sut.start(Object.assign({
+          after(sut.start(Object.assign({
             event, target: v.target,
             updateDelay: 200,
             onChange: v.onChange = stub(),
@@ -234,7 +234,7 @@ isClient && define((require, exports, module)=>{
                   {clientX: 100+17, clientY: 155+51}]
       });
       const onChange = stub();
-      onEnd(sut.start({
+      after(sut.start({
         event,
         target,
         onChange,
@@ -282,7 +282,7 @@ isClient && define((require, exports, module)=>{
         touches: [{clientX: 123+17, clientY: 45+51}]
       });
       const onChange = stub();
-      onEnd(sut.start({event, target, onChange}));
+      after(sut.start({event, target, onChange}));
 
       assert.calledWith(Dom.stopEvent, event);
 
@@ -303,7 +303,7 @@ isClient && define((require, exports, module)=>{
         pointerId: 1, clientX: 123+17, clientY: 45+51
       });
       const onChange = stub();
-      onEnd(sut.start({
+      after(sut.start({
         event,
         target,
         onChange,

@@ -12,12 +12,12 @@ define((require, exports, module)=>{
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const sut = require('./web-socket-sender-factory');
 
   let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach( ()=>{
       const base = new SessionBase('foo');
       stub(base, 'provide');
@@ -82,7 +82,7 @@ define((require, exports, module)=>{
     });
 
     test("heartbeat adjust time", ()=>{
-      onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+      after(_=>{util.adjustTime(-util.timeAdjust)});
 
       let kFunc;
       assert.calledWith(v.sess.provide, 'K', TH.match(f => kFunc = f));
@@ -91,7 +91,7 @@ define((require, exports, module)=>{
       intercept(Date, 'now', ()=>now);
 
       v.sess.connect();
-      onEnd(v.ws.onclose);
+      after(v.ws.onclose);
 
       v.ws.send = stub();
 
@@ -199,7 +199,7 @@ define((require, exports, module)=>{
 
       assert.equals(v.sess._broadcastFuncs, {foo: TH.match.func, bar: TH.match.func});
 
-      onEnd(function () {
+      after(function () {
         v.sess.deregisterBroadcast("foo");
         v.sess.deregisterBroadcast("bar");
       });

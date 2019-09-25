@@ -15,7 +15,7 @@ isServer && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
+  const {stub, spy, util, intercept, stubProperty, match: m} = TH;
 
   const Union = require('./union');
 
@@ -201,7 +201,7 @@ isServer && define((require, exports, module)=>{
         }
       }
       const union = new MyUnion();
-      onEnd(()=>{union.future.isResolved() || union.future.return()});
+      after(()=>{union.future.isResolved() || union.future.return()});
 
       const newSub = (id, conn, lastSubscribed)=>{
         const sub = new Publication({id, conn, lastSubscribed});
@@ -303,7 +303,7 @@ isServer && define((require, exports, module)=>{
         }
       }
       const union = new MyUnion();
-      onEnd(()=>{union.future.isResolved() || union.future.return()});
+      after(()=>{union.future.isResolved() || union.future.return()});
 
       const newSub = (id, conn, token)=>{
         const sub = new Publication({id, conn});
@@ -691,7 +691,7 @@ isServer && define((require, exports, module)=>{
         }
       }
       const union = new MyUnion();
-      onEnd(()=>{union.future.isResolved() || union.future.return()});
+      after(()=>{union.future.isResolved() || union.future.return()});
 
       const sub = new Publication({id: 'sub1', conn});
       koru.runFiber(()=>{
@@ -747,7 +747,7 @@ isServer && define((require, exports, module)=>{
         }
       }
       const union = new MyUnion();
-      onEnd(()=>{union.future.isResolved() || union.future.return()});
+      after(()=>{union.future.isResolved() || union.future.return()});
 
       const newSub = (id, conn, lastSubscribed)=>{
         const sub = new Publication({id, conn, lastSubscribed});

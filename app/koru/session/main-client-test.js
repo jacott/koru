@@ -9,11 +9,11 @@ define((require, exports, module)=>{
 
   const sessionClientFactory = require('./main-client');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   let v = {}, sessState = null;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       sessState = stateFactory();
       v.sess = sessionClientFactory({
@@ -37,7 +37,7 @@ define((require, exports, module)=>{
     });
 
     test("initial KORU_APP_VERSION", ()=>{
-      onEnd(() => window.KORU_APP_VERSION=void 0);
+      after(() => window.KORU_APP_VERSION=void 0);
 
       window.KORU_APP_VERSION = "v1,hash";
 

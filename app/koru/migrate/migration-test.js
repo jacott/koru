@@ -4,13 +4,13 @@ isServer && define((require, exports, module)=>{
   const DBDriver        = require('koru/pg/driver');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const Migration = require('./migration');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.client = DBDriver.defaultDb;
       v.sut = new Migration(v.client);
@@ -23,7 +23,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("create", ()=>{
-      onEnd(()=>{delete ModelMap.TestTable});
+      after(()=>{delete ModelMap.TestTable});
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = mig =>{
         mig.createTable('TestTable', {
@@ -94,7 +94,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("field strings for create", ()=>{
-      onEnd(()=>{delete ModelMap.TestTable});
+      after(()=>{delete ModelMap.TestTable});
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig =>{
         spy(v.sut._client, 'query');
         mig.createTable({
@@ -155,7 +155,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("addIndex", ()=>{
-      onEnd(()=>{delete ModelMap.TestTable});
+      after(()=>{delete ModelMap.TestTable});
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
 
       v.sut.addMigration(
@@ -201,7 +201,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("addColumns by object", ()=>{
-      onEnd(()=>{delete ModelMap.TestTable});
+      after(()=>{delete ModelMap.TestTable});
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
 
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
@@ -225,7 +225,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("addColumns by arguments", ()=>{
-      onEnd(()=>{delete ModelMap.TestTable});
+      after(()=>{delete ModelMap.TestTable});
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
@@ -248,7 +248,7 @@ isServer && define((require, exports, module)=>{
     });
 
     test("reversible", ()=>{
-      onEnd(()=>{
+      after(()=>{
         delete ModelMap.Foo;
         delete ModelMap.Bar;
       });

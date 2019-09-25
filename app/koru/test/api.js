@@ -485,7 +485,7 @@ define((require, exports, module)=>{
 
     static reportStubs() {
       this[reportStubs$] = true;
-      TH.onEnd(()=>{this[reportStubs$] = false});
+      TH.after(()=>{this[reportStubs$] = false});
     }
 
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
@@ -506,7 +506,7 @@ define((require, exports, module)=>{
 
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
-        TH.onEnd(()=>{this._instance = null});
+        TH.after(()=>{this._instance = null});
 
         this._mapSubject(subject, subjectModule);
         this._moduleMap.set(
@@ -820,7 +820,7 @@ define((require, exports, module)=>{
       const {calls} = target;
 
       target.calls = undefined;
-      TH.onEnd(()=>{target.calls = calls});
+      TH.after(()=>{target.calls = calls});
     }
 
     [inspect$]() {

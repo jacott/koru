@@ -20,7 +20,7 @@ define((require, exports, module)=>{
 
   const Module = module.constructor;
 
-  const {stub, spy, onEnd, util, intercept, match: m} = TH;
+  const {stub, spy, util, intercept, match: m} = TH;
 
   const BaseModel = require('./base-model');
 
@@ -36,7 +36,7 @@ define((require, exports, module)=>{
     before(()=>{
       api.module();
 
-      Val.register({onUnload: onEnd}, {
+      Val.register({onUnload: after}, {
         RequiredValidator,
         TextValidator,
       });
@@ -289,7 +289,7 @@ define((require, exports, module)=>{
 
         //[
         const observer = stub();
-        onEnd(Book.onChange(observer));
+        after(Book.onChange(observer));
 
         const Oasis = Book.create({_id: 'm123', name: 'Oasis', pages: 425});
         const matchOasis = m.field('_id', Oasis._id);
@@ -717,7 +717,7 @@ define((require, exports, module)=>{
       test("user_id_on_create", ()=>{
         const {Book} = v;
         v.User = Model.define('User');
-        onEnd(function () {
+        after(function () {
           Model._destroyModel('User', 'drop');
         });
         Book.defineFields({user_id: 'user_id_on_create'});
@@ -756,7 +756,7 @@ define((require, exports, module)=>{
               b = new Book(),
               c = new OtherClass();
 
-        onEnd(function () {Model._destroyModel('OtherClass', 'drop')});
+        after(function () {Model._destroyModel('OtherClass', 'drop')});
 
         refute.isTrue(a.$equals(b));
 

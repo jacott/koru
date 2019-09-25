@@ -74,7 +74,7 @@ define((require, exports, module)=>{
   const cacheConn = (conn)=>{
     if (cache.sendEncoded !== conn.sendEncoded || cache.lastCall !== conn.sendEncoded.lastCall) {
       if (cache.sendEncoded === null) {
-        TH.onEnd(clearCache);
+        TH.after(clearCache);
       }
       cache.sendEncoded = conn.sendEncoded; cache.lastCall = conn.sendEncoded.lastCall;
       cache.calls = [];

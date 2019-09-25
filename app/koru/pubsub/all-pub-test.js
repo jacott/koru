@@ -23,7 +23,7 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, intercept, match: m, stubProperty} = TH;
+  const {stub, spy, intercept, match: m, stubProperty} = TH;
 
   const AllPub = require('./all-pub');
 
@@ -45,7 +45,7 @@ isServer && define((require, exports, module)=>{
     test("requireUserId", ()=>{
       api.property('requireUserId', {info: 'require user to be signed in'});
       TH.noInfo();
-      onEnd(()=>{MyAllPub.pubName = void 0});
+      after(()=>{MyAllPub.pubName = void 0});
       //[
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All";
@@ -99,7 +99,7 @@ isServer && define((require, exports, module)=>{
       //]
       MyAllPub.pubName = "All";
 
-      onEnd(()=>{MyAllPub.pubName = void 0});
+      after(()=>{MyAllPub.pubName = void 0});
 
       const future = new util.Future;
 
@@ -164,13 +164,13 @@ isServer && define((require, exports, module)=>{
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All"; // register publication All
       //]
-      onEnd(()=>{MyAllPub.pubName = void 0});
+      after(()=>{MyAllPub.pubName = void 0});
       //[#
       MyAllPub.excludeModel("AuditLog", "ErrorLog");
 
       const sub = conn.onSubscribe("s123", 1, "All");
       //]
-      onEnd(()=>{sub && sub.stop()});
+      after(()=>{sub && sub.stop()});
       assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
       refute.called(ModelMap.NotAModel.onChange);
       //[#
@@ -215,7 +215,7 @@ isServer && define((require, exports, module)=>{
       class MyAllPub extends AllPub {}
       MyAllPub.pubName = "All"; // register publication All
       //]
-      onEnd(()=>{MyAllPub.pubName = void 0});
+      after(()=>{MyAllPub.pubName = void 0});
       //[#
       MyAllPub.includeModel("UserLogin", "Author");
 
@@ -224,7 +224,7 @@ isServer && define((require, exports, module)=>{
 
       const sub = conn.onSubscribe("s123", 1, "All");
       //]
-      onEnd(()=>{sub && sub.stop()});
+      after(()=>{sub && sub.stop()});
       assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
       //[#
       mc.refuteAdded(book);

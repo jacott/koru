@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const Query           = require('./query');
   const TH              = require('./test-db-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let TestModel, foo;
@@ -102,7 +102,7 @@ define((require, exports, module)=>{
         ++count;
       };
 
-      onEnd(TestModel.onChange(onChange));
+      after(TestModel.onChange(onChange));
       const doc1 = TestModel.create({name: 'doc1'});
 
       assert.same(count, 1);

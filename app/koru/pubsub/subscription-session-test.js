@@ -23,7 +23,7 @@ isClient && define((require, exports, module)=>{
 
   const {private$, inspect$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, stubProperty, match: m, intercept} = TH;
+  const {stub, spy, stubProperty, match: m, intercept} = TH;
 
   const SubscriptionSession = require('./subscription-session');
 
@@ -164,7 +164,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("change userId", ()=>{
-      onEnd(()=>{util.thread.userId = void 0});
+      after(()=>{util.thread.userId = void 0});
       login.setUserId(Session, "user123"); // no userId change
       const sub = new Library(1, Session);
       const sub2 = new Library(2, Session);
@@ -199,7 +199,7 @@ isClient && define((require, exports, module)=>{
       const ss = SubscriptionSession.get(Session);
       let count = 0;
       stub(ss, 'filterDoc', ()=>{TransQueue.isInTransaction() && ++count});
-      onEnd(()=>{
+      after(()=>{
         delete ModelMap.Foo;
         delete ModelMap.Bar;
       });
@@ -238,7 +238,7 @@ isClient && define((require, exports, module)=>{
         const sam = Foo.findById(Foo._insertAttrs({_id: 'sam'}));
         const sue = Foo.findById(Foo._insertAttrs({_id: 'sue'}));
         const onChange = stub();
-        onEnd(Foo.onChange(onChange));
+        after(Foo.onChange(onChange));
         const has = {bob: true, sam: false};
         ss.match.register('Foo', doc => has[doc._id]);
 
@@ -306,7 +306,7 @@ isClient && define((require, exports, module)=>{
         const sue = Foo.findById(Foo._insertAttrs({_id: 'f444', name: 'sue', age: 5}));
 
         const onChange = stub();
-        onEnd(Foo.onChange(onChange));
+        after(Foo.onChange(onChange));
 
         sendMsg('C', 'Foo', 'f222', {age: 3});
 
@@ -336,7 +336,7 @@ isClient && define((require, exports, module)=>{
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
 
         let flag;
-        onEnd(Foo.onChange(dc => {
+        after(Foo.onChange(dc => {
           flag = dc.flag;
         }));
 

@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
   const {htmlToJson: htj, h} = Dom;
 
   const sut = require('./dom-nav');
@@ -180,7 +180,7 @@ isClient && define((require, exports, module)=>{
         test("empty Div", ()=>{
           const div = h({});
           inputElm.appendChild(div);
-          onEnd(()=>{div.remove()});
+          after(()=>{div.remove()});
 
           range.setStart(div, 0);
           sut.normRange(range);

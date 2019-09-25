@@ -5,11 +5,11 @@ isClient && define((require, exports, module)=>{
   const sut             = require('./key-map');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, stubProperty} = TH;
+  const {stub, spy, stubProperty} = TH;
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach( ()=>{
       v.km = sut({
         foo: ["X", v.foo = stub()],
@@ -169,7 +169,7 @@ isClient && define((require, exports, module)=>{
       const elm = Dom.h({button: ''});
       document.body.appendChild(elm);
       elm.addEventListener('keydown', v.stub = stub());
-      onEnd(()=>{elm.removeEventListener('keydown', v.stub)});
+      after(()=>{elm.removeEventListener('keydown', v.stub)});
 
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown(elm, 'W', {shiftKey: true});

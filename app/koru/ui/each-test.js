@@ -7,7 +7,7 @@ isClient && define((require, exports, module)=>{
   const TH      = require('../model/test-helper');
   const util    = require('../util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
   const {endMarker$} = require('koru/symbols');
   const $ = Dom.current;
 
@@ -15,7 +15,7 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.Each = Dom.newTemplate(util.deepCopy(eachTpl));
 
@@ -63,7 +63,7 @@ isClient && define((require, exports, module)=>{
         fooList: stub(),
       });
 
-      onEnd(()=>{delete Dom._helpers.fooList});
+      after(()=>{delete Dom._helpers.fooList});
 
       v.Each.$render({});
 
@@ -205,7 +205,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("helper returns query", ()=>{
-      onEnd(_=>{Ctx._currentCtx = null});
+      after(_=>{Ctx._currentCtx = null});
       Ctx._currentCtx = new Ctx(v.Each);
 
       const container = Dom.h({div: [""]});

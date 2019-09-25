@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const ModelMap        = require('koru/model/map');
   const TH              = require('koru/test-helper');
 
-  const {stub, onEnd} = TH;
+  const {stub, after} = TH;
 
   const noIndex = makeSubject({});
 
@@ -67,7 +67,7 @@ define((require, exports, module)=>{
         this.models[name] = ModelMap[name] = model;
       }
 
-      onEnd(()=>{
+      after(()=>{
         for (const name of models) {
           const orig = this.origModels[name];
           if (orig === void 0)

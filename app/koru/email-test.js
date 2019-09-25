@@ -7,12 +7,12 @@ isServer && define((require, exports, module)=>{
   const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
   const nodeUtil        = requirejs.nodeRequire('util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const Email = require('./email');
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.origTransport = Email._transport;
     });
@@ -59,7 +59,7 @@ isServer && define((require, exports, module)=>{
     test("initPool to url", ()=>{
       assert.same(Email.SmtpPool, SmtpPool);
 
-      onEnd(()=>{Email.SmtpPool = SmtpPool});
+      after(()=>{Email.SmtpPool = SmtpPool});
 
       Email.SmtpPool = (...args)=>{
         v.smtpPollArgs = args.slice();

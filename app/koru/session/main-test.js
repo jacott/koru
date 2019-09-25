@@ -8,9 +8,9 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const Session         = require('./main');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, before, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module({subjectName: 'Session'});
     });
@@ -48,7 +48,7 @@ define((require, exports, module)=>{
       refute(Session.isRpc("Book.update"));
       Session.defineRpc('Book.update', func);//]
 
-      onEnd(()=>{delete Session._rpcs['Book.update']});
+      after(()=>{delete Session._rpcs['Book.update']});
       //[#
       assert.same(Session._rpcs['Book.update'], func);
       refute(Session.isRpcGet("Book.update"));
@@ -65,7 +65,7 @@ define((require, exports, module)=>{
       refute(Session.isRpc(func));
       Session.defineRpcGet('Book.list', func);
 
-      onEnd(()=>{delete Session._rpcs['Book.list']});
+      after(()=>{delete Session._rpcs['Book.list']});
 
       assert.same(Session._rpcs['Book.list'], func);
       assert(Session.isRpcGet('Book.list'));

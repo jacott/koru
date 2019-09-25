@@ -24,7 +24,7 @@ define((require)=>{
 
     static stubPromise() {
       top.Promise = MockPromise;
-      TH.test.onEnd(()=>{
+      TH.test.after(()=>{
         MockPromise.restore();
         MockPromise._stop();
       });
@@ -37,7 +37,7 @@ define((require)=>{
     static restoreForTest() {
       const current = top.Promise;
       MockPromise.restore();
-      TH.test.onEnd(()=>{top.Promise = current});
+      TH.test.after(()=>{top.Promise = current});
     }
 
     static resolve(value) {

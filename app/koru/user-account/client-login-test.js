@@ -2,7 +2,7 @@ define((require, exports, module)=>{
   const Session         = require('koru/session').constructor;
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const ClientLogin = require('./client-login');
 
@@ -10,10 +10,10 @@ define((require, exports, module)=>{
     test("setUserId", ()=>{
       const session = new Session('test');
       const oc = stub();
-      onEnd(()=>{
+      after(()=>{
         util.thread.userId = void 0;
       });
-      onEnd(ClientLogin.onChange(session, oc));
+      after(ClientLogin.onChange(session, oc));
 
       session.DEFAULT_USER_ID = 'public';
       ClientLogin.setUserId(session, null);

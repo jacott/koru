@@ -11,7 +11,7 @@ isClient && define((require, exports, module)=>{
   const RichText        = require('./rich-text');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
   const htj = Dom.htmlToJson;
 
   const sut               = require('./rich-text-editor');
@@ -29,7 +29,7 @@ isClient && define((require, exports, module)=>{
     TH.trigger(document, 'selectionchange');
   };
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let tpl;
     before(()=>{
       tpl = Dom.newTemplate(RichTextEditorTpl);
@@ -195,7 +195,7 @@ isClient && define((require, exports, module)=>{
           this.appendChild(Dom.h({pre: ["one\ntwo"]}));
           sut.languageList = null;
           const elm = v.selectCode().startContainer;
-          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
+          after(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         assert.called(langs);
@@ -214,7 +214,7 @@ isClient && define((require, exports, module)=>{
           sut.languageList = [['c', 'C'], ['ruby', 'Ruby']];
           const elm = v.selectCode().startContainer;
           TH.keydown(elm, 'L', {ctrlKey: true});
-          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
+          after(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         const highlight = stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
@@ -347,7 +347,7 @@ isClient && define((require, exports, module)=>{
           undo.recordNow();
 
           const cmStub = stub();
-          onEnd(ctx.caretMoved.onChange(cmStub));
+          after(ctx.caretMoved.onChange(cmStub));
 
           assert.same(ctx.mode.type, 'code');
 
@@ -419,7 +419,7 @@ isClient && define((require, exports, module)=>{
           this.appendChild(Dom.h({div: "after"}));
           assert.dom('pre+div', 'after');
           TH.keydown(elm, 'H', {ctrlKey: true, shiftKey: true});
-          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
+          after(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
@@ -912,7 +912,7 @@ isClient && define((require, exports, module)=>{
           if (text === 'https://real/link')
             return Dom.h({a: 'my link', $href: 'http://foo'});
         };
-        onEnd(()=>{sut.handleHyperLink = null});
+        after(()=>{sut.handleHyperLink = null});
         v.event.clipboardData = {
           types: ['text/plain'],
           getData: stub().withArgs('text/plain').returns(

@@ -3,12 +3,12 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const stateFactory    = require('./state').constructor;
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   let sessState;
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       sessState = new stateFactory();
     });
@@ -20,7 +20,7 @@ define((require, exports, module)=>{
 
     test("pending", ()=>{
       assert.same(sessState.pendingCount(), 0);
-      onEnd(sessState.pending.onChange(v.change = stub()));
+      after(sessState.pending.onChange(v.change = stub()));
 
       sessState.incPending();
       assert.calledOnce(v.change);
@@ -64,7 +64,7 @@ define((require, exports, module)=>{
 
       sessState.onConnect('10', v.conn10_1 = stub());
 
-      onEnd(sessState.onChange(v.onChange = stub()));
+      after(sessState.onChange(v.onChange = stub()));
 
       sessState.connected(v.conn = {});
 
@@ -85,7 +85,7 @@ define((require, exports, module)=>{
     });
 
     test("pause", ()=>{
-      onEnd(sessState.onChange(v.onChange = stub()));
+      after(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
 
@@ -98,7 +98,7 @@ define((require, exports, module)=>{
     });
 
     test("retry startup", ()=>{
-      onEnd(sessState.onChange(v.onChange = stub()));
+      after(sessState.onChange(v.onChange = stub()));
 
       sessState.retry(4404, 'not found');
       sessState.retry(4403, 'forbidden');
@@ -110,7 +110,7 @@ define((require, exports, module)=>{
 
 
     test("retry ready", ()=>{
-      onEnd(sessState.onChange(v.onChange = stub()));
+      after(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
 

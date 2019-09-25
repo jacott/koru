@@ -9,12 +9,12 @@ isClient && define((require, exports, module)=>{
   const TH          = require('koru/test-helper');
   const api         = require('koru/test/api');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const CssLoader   = require('./loader');
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.session = new SessionBase('loader');
     });
@@ -59,7 +59,7 @@ isClient && define((require, exports, module)=>{
           done(ex);
         }
       });
-      onEnd(()=>{TH.session.unprovide('S')});
+      after(()=>{TH.session.unprovide('S')});
       loader.loadAll('koru/css');
     });
 
@@ -108,7 +108,7 @@ isClient && define((require, exports, module)=>{
       v.links = [];
 
       const origCallback = loader.callback;
-      onEnd(()=>{loader.callback = origCallback});
+      after(()=>{loader.callback = origCallback});
       loader.callback = onload;
 
       provide.yield("Lkoru/css/loader-test.css koru/css/less-compiler-test.less");

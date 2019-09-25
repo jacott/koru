@@ -3,12 +3,12 @@ define((require, exports, module)=>{
   const TH              = require('koru/model/test-db-helper');
   const Factory         = require('test/factory');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const $$reqModel$$;
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       TH.startTransaction();
     });

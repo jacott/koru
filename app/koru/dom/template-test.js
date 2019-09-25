@@ -13,7 +13,7 @@ isClient && define((require, exports, module)=>{
 
   const Module = module.constructor;
 
-  const {stub, spy, onEnd, match} = TH;
+  const {stub, spy, match} = TH;
 
   const {ctx$} = require('koru/symbols');
 
@@ -21,7 +21,7 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       delete Dom.Foo;
       Dom.removeChildren(document.body);
@@ -539,7 +539,7 @@ isClient && define((require, exports, module)=>{
 
       assert.dom('body>div', function () {
         const top = this;
-        onEnd(()=>{Dom.remove(top)});
+        after(()=>{Dom.remove(top)});
         spy(top, 'addEventListener');
         Dom.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
@@ -1186,7 +1186,7 @@ isClient && define((require, exports, module)=>{
         _test_age() {return "global age"},
       });
 
-      onEnd(()=>{Dom._helpers._test_name = Dom._helpers._test_age = null});
+      after(()=>{Dom._helpers._test_name = Dom._helpers._test_age = null});
 
       const data = {name: 'sally'};
 

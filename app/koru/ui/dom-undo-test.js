@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util, match: m} = TH;
+  const {stub, spy, util, match: m} = TH;
 
   const DomUndo = require('./dom-undo');
 
@@ -27,7 +27,7 @@ isClient && define((require, exports, module)=>{
     test("no change", ()=>{
       const undo = new DomUndo(input);
       const changed = stub();
-      onEnd(undo.onChange(changed));
+      after(undo.onChange(changed));
 
       const tn = document.createTextNode("hello");
       input.appendChild(tn);
@@ -65,7 +65,7 @@ isClient && define((require, exports, module)=>{
     test("pause, unpause, onChange", ()=>{
       const undo = new DomUndo(input);
       const change = stub();
-      onEnd(undo.onChange(change));
+      after(undo.onChange(change));
 
       undo.recordNow();
 

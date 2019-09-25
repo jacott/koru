@@ -4,14 +4,14 @@ isClient && define((require, exports, module)=>{
   const Each            = require('./each');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut  = require('./select-menu');
   const $ = Dom.current;
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./select-menu-test'));
 
@@ -253,9 +253,7 @@ isClient && define((require, exports, module)=>{
 
           v.search = this;
           v.search.addEventListener('keydown', v.inputel = stub());
-          onEnd(function () {
-            v.search.removeEventListener('keydown', v.inputel);
-          });
+          after(()=>{v.search.removeEventListener('keydown', v.inputel)});
           TH.input(v.search, 'one');
           const ev = keydown(101 /* e */);
           assert.called(v.inputel);

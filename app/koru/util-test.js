@@ -8,12 +8,12 @@ define((require, exports, module)=>{
   const match  = require('./match');
   const TH     = require('koru/test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const util  = require('./util');
 
   let v = {};
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module({subjectName: 'util'});
     });
@@ -1367,7 +1367,7 @@ define((require, exports, module)=>{
     test("adjustTime", ()=>{
       util.adjustTime(-util.timeAdjust);
       stub(Date, 'now').returns(12345);
-      onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+      after(_=>{util.adjustTime(-util.timeAdjust)});
       assert.same(util.timeAdjust, 0);
       assert.same(util.timeUncertainty, 0);
 

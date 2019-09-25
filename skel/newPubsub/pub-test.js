@@ -5,14 +5,14 @@ define((require, exports, module)=>{
   const ConnTH          = require('koru/session/conn-th-server');
   const Factory         = require('test/factory');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const $$modelName$$ = require('models/$$modelModule$$');
   const $$publishName$$Pub = require('pubsub/$$fileName$$-pub');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let conn;
     beforeEach(()=>{
       TH.startTransaction();

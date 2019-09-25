@@ -17,7 +17,7 @@ isServer && define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
+  const {stub, spy, util, intercept, stubProperty, match: m} = TH;
 
   const Publication = require('./publication');
 
@@ -384,7 +384,7 @@ isServer && define((require, exports, module)=>{
        **/
       api.property();
       assert.same(Publication.lastSubscribedInterval, 5*60*1000);
-      onEnd(()=>{Publication.lastSubscribedInterval = 5*60*1000});
+      after(()=>{Publication.lastSubscribedInterval = 5*60*1000});
 
       Publication.lastSubscribedInterval = 10*60*1000;
       assert.same(Publication.lastSubscribedInterval, 10*60*1000);
@@ -435,7 +435,7 @@ isServer && define((require, exports, module)=>{
       /**
        * The default behavior is to do nothing. Override this if an userId change needs to be handled.
        **/
-      onEnd(()=>{util.thread.userId = void 0});
+      after(()=>{util.thread.userId = void 0});
       api.protoMethod();
       //[
       class Library extends Publication {

@@ -12,7 +12,7 @@ isServer && define((require, exports, module)=>{
 
   const {private$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, util, intercept} = TH;
 
   const MQFactory = require('./mq-factory');
 
@@ -59,7 +59,7 @@ isServer && define((require, exports, module)=>{
 
       const doSomethingWith = stub();
 
-      onEnd(()=>{mqFactory.deregisterQueue('bar')});
+      after(()=>{mqFactory.deregisterQueue('bar')});
 
       //[
       mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}});
@@ -185,7 +185,7 @@ isServer && define((require, exports, module)=>{
 
         mqFactory.registerQueue({module, name: 'foo', action(args) {v.foo = [dbBroker.db, args]}});
         mqFactory.registerQueue({module, name: 'bar', action(args) {v.bar = [dbBroker.db, args]}});
-        onEnd(()=>{mqFactory.deregisterQueue('bar')});
+        after(()=>{mqFactory.deregisterQueue('bar')});
 
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout').returns(123);
@@ -482,7 +482,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         assert.calledOnce(koru.setTimeout);
 
-        onEnd(()=>{mqFactory.deregisterQueue('bar')});
+        after(()=>{mqFactory.deregisterQueue('bar')});
         mqFactory.registerQueue({name: 'bar', action: v.action, retryInterval: -1});
 
         mqFactory.getQueue('bar').add({message: [4,5,6]});

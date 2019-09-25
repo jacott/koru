@@ -19,7 +19,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, match: m, intercept} = TH;
+  const {stub, spy, match: m, intercept} = TH;
 
   const Random = require('./random');
 
@@ -65,7 +65,7 @@ define((require, exports, module)=>{
        **/
       api.method();
 
-      onEnd(() => {util.thread.random = null});
+      after(() => {util.thread.random = null});
       //[
       intercept(Random.global, 'id', ()=>'aGlobalId');
       assert.same(Random.id(), "aGlobalId");
@@ -82,7 +82,7 @@ define((require, exports, module)=>{
        **/
       api.method();
 
-      onEnd(() => {util.thread.random = null});
+      after(() => {util.thread.random = null});
       //[
       intercept(Random.global, 'hexString', (n)=>'f007ba11c4a2'.slice(0,n));
       assert.same(Random.hexString(8), "f007ba11");

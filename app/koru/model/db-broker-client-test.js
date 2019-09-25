@@ -8,11 +8,11 @@ define((require, exports, module)=>{
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const dbBroker = require('./db-broker');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       api.module({subjectName: 'dbBroker'});
     });
@@ -25,7 +25,7 @@ define((require, exports, module)=>{
     });
 
     test("changing defaultDbId, mainDbId", ()=>{
-      onEnd(() => dbBroker.setDefaultDbId('default'));
+      after(() => dbBroker.setDefaultDbId('default'));
       assert.same(dbBroker.dbId, 'default');
       dbBroker.setMainDbId('bar');
       assert.same(dbBroker.dbId, 'bar');

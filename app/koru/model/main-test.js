@@ -10,14 +10,14 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util, match: m, matchModel: mModel} = TH;
+  const {stub, spy, util, match: m, matchModel: mModel} = TH;
   const Module = module.constructor;
 
   const Model    = require('./main');
 
   let v = {};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module({subjectName: 'Model'});
     });
@@ -75,21 +75,21 @@ define((require, exports, module)=>{
             args.push(util.merge({}, partials));
           (v.obs[type] = v.obs[type] || []).push(args);
         };
-        onEnd(v.Book.beforeCreate(obCalled));
-        onEnd(v.Book.beforeUpdate(obCalled));
-        onEnd(v.Book.beforeSave(obCalled));
-        onEnd(v.Book.afterLocalChange(({type, doc, undo})=>{
+        after(v.Book.beforeCreate(obCalled));
+        after(v.Book.beforeUpdate(obCalled));
+        after(v.Book.beforeSave(obCalled));
+        after(v.Book.afterLocalChange(({type, doc, undo})=>{
           (v.obs.afterLocalChange = v.obs.afterLocalChange || [])
             .push([type, Object.assign({}, doc.attributes), undo]);
         }));
-        onEnd(v.Book.whenFinally((doc, ex)=>{
+        after(v.Book.whenFinally((doc, ex)=>{
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
         }));
       });
 
       test("remove calls", ()=>{
-        onEnd(v.Book.onChange(v.onChange = stub()));
-        onEnd(v.Book.afterLocalChange(v.afterLocalChange = stub()));
+        after(v.Book.onChange(v.onChange = stub()));
+        after(v.Book.afterLocalChange(v.afterLocalChange = stub()));
 
         v.tc.$onThis.remove();
 
@@ -101,7 +101,7 @@ define((require, exports, module)=>{
       });
 
       test("update calls", ()=>{
-        onEnd(v.Book.onChange(({type, doc, undo})=>{
+        after(v.Book.onChange(({type, doc, undo})=>{
           refute(v.docAttrs);
           v.docAttrs = Object.assign({}, doc.attributes);
           v.docChanges = Object.assign({}, undo);
@@ -123,7 +123,7 @@ define((require, exports, module)=>{
       });
 
       test("create calls", ()=>{
-        onEnd(v.Book.onChange(v.onChange = stub()).stop);
+        after(v.Book.onChange(v.onChange = stub()).stop);
 
         v.tc = v.Book.create({name: 'foo'});
         assert.calledOnceWith(v.onChange, DocChange.add(m(doc => doc.attributes === v.tc.attributes)));
@@ -137,7 +137,7 @@ define((require, exports, module)=>{
       });
 
       test("create exception", ()=>{
-        onEnd(v.Book.beforeCreate(()=>{throw v.ex = new Error("tex")}));
+        after(v.Book.beforeCreate(()=>{throw v.ex = new Error("tex")}));
 
         assert.exception(()=>{
           v.tc = v.Book.create({name: 'foo'});
@@ -147,7 +147,7 @@ define((require, exports, module)=>{
       });
 
       test("update exception", ()=>{
-        onEnd(v.Book.beforeUpdate(()=>{throw v.ex = new Error("tex")}));
+        after(v.Book.beforeUpdate(()=>{throw v.ex = new Error("tex")}));
 
         assert.exception(()=>{
           v.tc.name = 'bar';

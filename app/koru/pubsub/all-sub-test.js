@@ -16,11 +16,11 @@ isClient && define((require, exports, module)=>{
   const State           = require('koru/session/state').constructor;
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, intercept, stubProperty} = TH;
+  const {stub, spy, intercept, stubProperty} = TH;
 
   const AllSub = require('./all-sub');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       AllSub.resetModelList();
       SubscriptionSession.unload(Session);
@@ -56,7 +56,7 @@ isClient && define((require, exports, module)=>{
       class Book extends Model.BaseModel {
       }
       Book.define({name: 'Book'});
-      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      after(()=>{Model._destroyModel('Book', 'drop')});
 
       const b1 = Book.create('');
 
@@ -70,7 +70,7 @@ isClient && define((require, exports, module)=>{
       class Book extends Model.BaseModel {
       }
       Book.define({name: 'Book'});
-      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      after(()=>{Model._destroyModel('Book', 'drop')});
 
       const b1 = Book.create('');
 
@@ -124,7 +124,7 @@ isClient && define((require, exports, module)=>{
       MyAllSub.excludeModel("AuditLog", "ErrorLog");
 
       const sub = MyAllSub.subscribe();//]
-      onEnd(()=>{sub.stop()});//[#
+      after(()=>{sub.stop()});//[#
 
       assert(sub._matches.Book);
       assert(sub._matches.Author);
@@ -163,7 +163,7 @@ isClient && define((require, exports, module)=>{
         'Author', 'UserLogin']);
 
       const sub = MyAllSub.subscribe();//]
-      onEnd(()=>{sub.stop()});//[#
+      after(()=>{sub.stop()});//[#
 
       refute(sub._matches.Book);
       assert(sub._matches.Author);

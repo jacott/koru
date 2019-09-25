@@ -10,13 +10,13 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const sut = require('./web-socket-server-factory');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.ws = TH.mockWs();
       v.mockSess = new SessionBase({});
@@ -333,7 +333,7 @@ define((require, exports, module)=>{
       const sess = sut(v.mockSess);
       stub(sess, 'sendAll');
       const {ctx} = requirejs.module;
-      onEnd(() => {delete ctx.modules.foo});
+      after(() => {delete ctx.modules.foo});
       ctx.modules.foo = {unload: stub()};
 
       sess.versionHash = '1234';

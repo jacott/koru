@@ -9,7 +9,7 @@ define((require, exports, module)=>{
   const Model           = require('./main');
   const TH              = require('./test-db-helper');
 
-  const {stub, spy, onEnd, intercept, match: m, matchModel: mModel} = TH;
+  const {stub, spy, intercept, match: m, matchModel: mModel} = TH;
 
   const Query = require('./query');
 
@@ -624,7 +624,7 @@ define((require, exports, module)=>{
         TestModel.defineFields({foo: 'object'});
 
         const handle = TestModel.onChange(v.ob = stub());
-        onEnd(() => handle.stop());
+        after(() => handle.stop());
         const st = new Query(TestModel).onId(v.foo._id);
 
         st.update("$partial", {foo: [
@@ -735,7 +735,7 @@ define((require, exports, module)=>{
 
       test("addItems, removeItems", ()=>{
         TestModel.defineFields({cogs: 'text[]'});
-        onEnd(TestModel.onChange(v.onChange = stub()));
+        after(TestModel.onChange(v.onChange = stub()));
 
         TestModel.query.onId(v.foo._id).addItems('cogs', ['a']);
         assert.equals(v.foo.$reload().cogs, ['a']);
@@ -862,7 +862,7 @@ define((require, exports, module)=>{
          * @return contains a stop method to stop observering
          **/
         api.method('onAnyChange');
-        onEnd(Query.onAnyChange(v.onAnyChange = stub()));
+        after(Query.onAnyChange(v.onAnyChange = stub()));
 
         const ondra = TestModel.create({_id: 'm123', name: 'Ondra', age: 21, gender: 'm'});
         const matchOndra = m.field('_id', ondra._id);

@@ -5,13 +5,13 @@ isClient && define((require, exports, module)=>{
   const util            = require('../util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   require('./complete-list');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.CompleteList = Dom.newTemplate(util.deepCopy(completeListTpl));
     });
@@ -82,7 +82,7 @@ isClient && define((require, exports, module)=>{
 
         const inpCallback = stub();
         v.inp.addEventListener('keydown', inpCallback);
-        onEnd(()=>{v.inp.removeEventListener('keydown', inpCallback)});
+        after(()=>{v.inp.removeEventListener('keydown', inpCallback)});
 
         TH.trigger(v.inp, 'keydown', {which: 13});
 

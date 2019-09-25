@@ -9,7 +9,7 @@ isClient && define((require, exports, module)=>{
   const RichTextEditor  = require('./rich-text-editor');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./rich-text-editor-toolbar');
 
@@ -21,7 +21,7 @@ isClient && define((require, exports, module)=>{
     TH.trigger(document, 'selectionchange');
   };
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
@@ -137,7 +137,7 @@ isClient && define((require, exports, module)=>{
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
 
       const cmStub = stub();
-      onEnd(ctx.caretMoved.onChange(cmStub));
+      after(ctx.caretMoved.onChange(cmStub));
 
       inputElm.appendChild(bElm);
       ctx.undo.recordNow();

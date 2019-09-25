@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('./main');
 
-  const {stub, spy, onEnd, util, stubProperty, match: m} = TH;
+  const {stub, spy, util, stubProperty, match: m} = TH;
 
   let v = {};
 
@@ -31,7 +31,7 @@ define((require, exports, module)=>{
         msg('before');
       });
 
-      before(()=>{msg('b2', 1); onEnd(()=>{msg('b2-oe-'+TH.Core.currentTestCase.name)})});
+      before(()=>{msg('b2', 1); after(()=>{msg('b2-oe-'+TH.Core.currentTestCase.name)})});
 
       after(()=>{
         msg('after');
@@ -76,7 +76,7 @@ after
 
       beforeEach(()=>{
         assert.equals(TH.Core.currentTestCase.name, 'nested groups');
-        onEnd(()=>{msg('beforeEach-oe-'+TH.Core.currentTestCase.name)});
+        after(()=>{msg('beforeEach-oe-'+TH.Core.currentTestCase.name)});
         msg('beforeEach', 1);});
 
       afterEach(()=>{msg('afterEach', -1)});
@@ -90,7 +90,7 @@ after
           assert.equals(TH.Core.currentTestCase.name, 'g2');
 
           msg('g2-be2', 1);
-          onEnd(()=>{msg('g2-be2-oe-'+TH.Core.currentTestCase.name)});
+          after(()=>{msg('g2-be2-oe-'+TH.Core.currentTestCase.name)});
         });
 
         after(()=>{msg('g2-after')});
@@ -177,8 +177,8 @@ after
       let onEndFinish;
       test("stop func", ()=>{
         onEndFinish = undefined;
-        onEnd({stop() {--onEndFinish}});
-        onEnd([()=>{--onEndFinish}, {stop: ()=>{--onEndFinish}}]);
+        after({stop() {--onEndFinish}});
+        after([()=>{--onEndFinish}, {stop: ()=>{--onEndFinish}}]);
         onEndFinish = 3;
         assert(true);
       });

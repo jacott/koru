@@ -12,7 +12,7 @@ define((require, exports, module)=>{
   const Query           = require('./query');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, matchModel: mm, match: m} = TH;
+  const {stub, spy, matchModel: mm, match: m} = TH;
 
   const {private$, stopGap$} = require('koru/symbols');
 
@@ -20,7 +20,7 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       dbBroker.setMainDbId('foo');
       v.TestModel = Model.define('TestModel').defineFields({
@@ -79,7 +79,7 @@ define((require, exports, module)=>{
       dbBroker.withDB('foo2', () => v.TestModel.create({age: 3}));
 
       const ocDB = [];
-      onEnd(v.TestModel.onAnyChange(({undo}) => {
+      after(v.TestModel.onAnyChange(({undo}) => {
         ocDB.push(dbBroker.dbId, undo);
       }).stop);
 
@@ -111,8 +111,8 @@ define((require, exports, module)=>{
     group("publishes from server should not call afterLocalChange", ()=>{
       let afterLocalChange, onChange;
       beforeEach(()=>{
-        onEnd(v.TestModel.onChange(onChange = stub()));
-        onEnd(v.TestModel.afterLocalChange(afterLocalChange = stub()));
+        after(v.TestModel.onChange(onChange = stub()));
+        after(v.TestModel.afterLocalChange(afterLocalChange = stub()));
       });
 
       test("insertFromServer", ()=>{
@@ -149,7 +149,7 @@ define((require, exports, module)=>{
       sessState.incPending();
 
       const onChange = stub();
-      onEnd(v.TestModel.onChange(onChange));
+      after(v.TestModel.onChange(onChange));
 
       Query.insertFromServer(v.TestModel, {_id: 'foo2', name: 'foo2'});
       const doc = v.TestModel.findById('foo2');
@@ -229,7 +229,7 @@ define((require, exports, module)=>{
     test("insertFromServer doc already exists.", ()=>{
       const {_id, age} = v.foo;
       v.foo.attributes.iShouldGo = 123;
-      onEnd(v.TestModel.onChange(v.onChange = stub()));
+      after(v.TestModel.onChange(v.onChange = stub()));
       Query.insertFromServer(v.TestModel, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
@@ -250,7 +250,7 @@ define((require, exports, module)=>{
       v.foo.attributes.iShouldGo = 123;
       sessState.incPending();
       const onChange = stub();
-      onEnd(v.TestModel.onChange(onChange));
+      after(v.TestModel.onChange(onChange));
       Query.insertFromServer(v.TestModel, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
@@ -325,7 +325,7 @@ define((require, exports, module)=>{
         foo.$updatePartial('name', ['$append', '.two']);
 
         const oc = [];
-        onEnd(TestModel.onChange(dc =>{oc.push(dc.clone())}));
+        after(TestModel.onChange(dc =>{oc.push(dc.clone())}));
 
         TestModel.serverQuery.onId(foo._id).updatePartial('name', ['$append', '.one']);
         TestModel.serverQuery.onId(foo._id).updatePartial('name', ['$append', '.three']);
@@ -357,7 +357,7 @@ define((require, exports, module)=>{
         const foo2 = TestModel.create({name: 'foo2'});
 
         const oc = [];
-        onEnd(TestModel.onChange(dc =>{oc.push(dc.clone())}));
+        after(TestModel.onChange(dc =>{oc.push(dc.clone())}));
 
         v.TestModel.serverQuery.onId(foo._id).update('name', 'foo1-new');
 
@@ -389,8 +389,8 @@ define((require, exports, module)=>{
         assert.equals(tmchanges[v.foo._id][0].age, 5);
 
         const onAnyChange = [], onChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
 
         sessState.decPending();
 
@@ -434,8 +434,8 @@ define((require, exports, module)=>{
 
       test("matching update", ()=>{
         const onAnyChange = [], onChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
 
         v.TestModel.query.update({age: 7, name: 'baz'});
         assert.equals(onChange, [DocChange.change(v.foo, {age: 5, name: 'foo'})]);
@@ -457,7 +457,7 @@ define((require, exports, module)=>{
 
       test("nested structures", ()=>{
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc => onChange.push(dc.clone())));
+        after(v.TestModel.onChange(dc => onChange.push(dc.clone())));
 
         v.TestModel.query.update({$partial: {nested: ["0.arg.0", 'f']}});
 
@@ -489,7 +489,7 @@ define((require, exports, module)=>{
         const bar = v.TestModel.create({name: 'bar'});
 
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc => onChange.push(dc.clone())));
+        after(v.TestModel.onChange(dc => onChange.push(dc.clone())));
         sessState.decPending();
 
         assert.equals(onChange, [DocChange.delete(bar, 'simComplete')]);
@@ -498,7 +498,7 @@ define((require, exports, module)=>{
       test("matching add ", ()=>{
         const bar = v.TestModel.create({name: 'baz', age: 7});
         const onChange = stub();
-        onEnd(v.TestModel.onChange(onChange));
+        after(v.TestModel.onChange(onChange));
         Query.insertFromServer(v.TestModel, {_id: bar._id, age: 7, name: 'baz'});
 
         sessState.decPending();
@@ -512,7 +512,7 @@ define((require, exports, module)=>{
       test("add where server fields same", ()=>{
         const bar = v.TestModel.create({name: 'bar', age: 5});
         const onAnyChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
         Query.insertFromServer(v.TestModel, {_id: bar._id, name: 'bar', age: 5});
 
@@ -534,7 +534,7 @@ define((require, exports, module)=>{
       test("add where server fields differ", ()=>{
         const bar = v.TestModel.create({name: 'bar', age: 5});
         const onAnyChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
         Query.insertFromServer(v.TestModel, {_id: bar._id, name: 'sam'});
 
@@ -551,14 +551,14 @@ define((require, exports, module)=>{
 
       test("matching remove ", ()=>{
         const onAnyChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
         v.TestModel.query.onId(v.foo._id).remove();
 
         assert.equals(onAnyChange, [DocChange.delete(v.foo, undefined)]);
         onAnyChange.length = 0;
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
 
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
@@ -575,7 +575,7 @@ define((require, exports, module)=>{
 
       test("sim add, client remove, server remove", ()=>{
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
 
         const simAdd = new v.TestModel({_id: 'sa123', name: 'simAdd', age: 3});
         Query.insert(simAdd);
@@ -590,7 +590,7 @@ define((require, exports, module)=>{
         assert.same(onChange.length, 0);
 
         const onAnyChange = [];
-        onEnd(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
+        after(Query.onAnyChange(dc =>{onAnyChange.push(dc.clone())}));
 
         sessState.decPending();
 
@@ -606,7 +606,7 @@ define((require, exports, module)=>{
         v.TestModel.serverQuery.onId(v.foo._id).update({name: 'sam'});
 
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
 
         sessState.decPending();
 
@@ -621,7 +621,7 @@ define((require, exports, module)=>{
       test("server removed changed doc", ()=>{
         v.TestModel.query.onId(v.foo._id).update({name: 'Mary'});
         const onChange = [];
-        onEnd(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
+        after(v.TestModel.onChange(dc =>{onChange.push(dc.clone())}));
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
         assert(v.TestModel.exists(v.foo._id));
@@ -636,14 +636,14 @@ define((require, exports, module)=>{
       });
 
       test("server removed non existant", ()=>{
-        onEnd(v.TestModel.onChange(v.changed = stub()));
+        after(v.TestModel.onChange(v.changed = stub()));
         v.TestModel.onId('noDoc').fromServer().remove();
 
         refute.called(v.changed);
       });
 
       test("server removed pending but not changed", ()=>{
-        onEnd(v.TestModel.onChange(v.changed = stub()));
+        after(v.TestModel.onChange(v.changed = stub()));
         v.TestModel.onId(v.foo._id).fromServer().remove();
 
         assert.calledWith(v.changed, DocChange.delete(v.foo, 'serverUpdate'));
@@ -658,7 +658,7 @@ define((require, exports, module)=>{
 
         api.method('notify');
         stub(Model._support, 'callAfterLocalChange');
-        onEnd([
+        after([
           Query.onAnyChange(v.onAnyChange = stub()),
           v.TestModel._indexUpdate.onChange(v.indexUpdate = stub()),
           v.TestModel.onChange(v.oc = stub()),

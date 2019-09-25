@@ -11,7 +11,7 @@ define((require, exports, module)=>{
   const TransQueue      = require('./trans-queue');
   const Val             = require('./validation');
 
-  const {stub, spy, onEnd, match: m, matchModel: mm} = TH;
+  const {stub, spy, match: m, matchModel: mm} = TH;
   const {Future}   = util;
 
   const Model = require('./main');
@@ -137,8 +137,8 @@ define((require, exports, module)=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
-      onEnd(TestModel.onChange(v.onChange = stub()));
-      onEnd(TestModel.beforeSave(v.beforeSave = stub()));
+      after(TestModel.onChange(v.onChange = stub()));
+      after(TestModel.beforeSave(v.beforeSave = stub()));
 
       v.doc.$save();
       TestModel.query.onId(v.doc._id).update({});

@@ -9,13 +9,13 @@ isClient && define((require, exports, module)=>{
   const koru            = require('../main');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const Route = require('./route');
 
   let v;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v = {
         root: Route.root,
@@ -330,7 +330,7 @@ isClient && define((require, exports, module)=>{
         const orig = Dom.setTitle;
         Dom.setTitle = stub();
         const onChange = Route.onChange(v.routeChanged = stub());
-        onEnd(()=>{
+        after(()=>{
           Dom.setTitle = orig;
           onChange.stop();
         });
@@ -574,7 +574,7 @@ isClient && define((require, exports, module)=>{
       };
 
       Route.root.routeVar = 'foo';
-      onEnd(()=>{Route.root.routeVar = null});
+      after(()=>{Route.root.routeVar = null});
       intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = stub());
       intercept(Route.root, 'onBaseExit', v.rootBaseExit = stub());
 
@@ -709,7 +709,7 @@ isClient && define((require, exports, module)=>{
     test("private page", ()=>{
       const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
-      onEnd(()=>{Route.SignInPage = origSigninPage});
+      after(()=>{Route.SignInPage = origSigninPage});
       stub(Route, 'replacePage');
       koru.userId.restore();
 
@@ -725,7 +725,7 @@ isClient && define((require, exports, module)=>{
     test("public page", ()=>{
       const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
-      onEnd(()=>{Route.SignInPage = origSigninPage});
+      after(()=>{Route.SignInPage = origSigninPage});
       stub(Route, 'replacePage');
       koru.userId.restore();
 
@@ -794,7 +794,7 @@ isClient && define((require, exports, module)=>{
 
     test("addTemplate", ()=>{
       Route.pageParent.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
-      onEnd(()=>{{Route.pageParent = document.body}});
+      after(()=>{{Route.pageParent = document.body}});
       const Baz = {
         name: 'Baz',
         parent: v.FooBar,

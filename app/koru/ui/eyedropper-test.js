@@ -5,11 +5,11 @@ isClient && define((require, exports, module)=>{
   const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util, match: m, intercept} = TH;
+  const {stub, spy, util, match: m, intercept} = TH;
 
   const sut  = require('./eyedropper');
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       sut.options = null;
       TH.domTearDown();
@@ -125,7 +125,7 @@ isClient && define((require, exports, module)=>{
       const bbox = span.getBoundingClientRect();
       let resolve;
       const mo = new window.MutationObserver(() =>{resolve()});
-      onEnd(()=>{mo.disconnect()});
+      after(()=>{mo.disconnect()});
       mo.observe(document.body, {childList: true});
       let menuPromise = new Promise(r =>{resolve = r});
 

@@ -17,7 +17,7 @@ isClient && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const QueryIDB = require('./query-idb');
   const {IDBKeyRange} = window;
@@ -25,7 +25,7 @@ isClient && define((require, exports, module)=>{
   let v = null;
 
   if (!QueryIDB.canIUse()) {
-    TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
       test("not supported", ()=>{
         koru.info("Browser not supported");
         refute(QueryIDB.canIUse());
@@ -34,7 +34,7 @@ isClient && define((require, exports, module)=>{
     return;
   }
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v = {};
       v.idb = new mockIndexedDB(1);
@@ -173,14 +173,14 @@ isClient && define((require, exports, module)=>{
 
       test("simulated add, update", async ()=>{
         session.state.incPending();
-        onEnd(()=>{session.state.pendingCount() == 1 && session.state.decPending()});
+        after(()=>{session.state.pendingCount() == 1 && session.state.decPending()});
 
         await v.db.whenReady();
         //[
         {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
-          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)));
+          after(v.TestModel.onChange(v.db.queueChange.bind(v.db)));
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.fIgnore = v.TestModel.createStopGap({
             _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
@@ -212,13 +212,13 @@ isClient && define((require, exports, module)=>{
 
       test("simulated remove", async ()=>{
         session.state.incPending();
-        onEnd(_=> {session.state.decPending()});
+        after(_=> {session.state.decPending()});
 
         //[
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
-          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+          after(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           Query.insertFromServer(v.TestModel, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.f1 = v.TestModel.findById('foo123');
         }
@@ -243,7 +243,7 @@ isClient && define((require, exports, module)=>{
         await v.db.whenReady(); {
           v.foo = v.idb._dbs.foo;
           assert.same(v.foo._version, 2);
-          onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+          after(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.fIgnore = v.TestModel.createStopGap({
             _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
@@ -286,7 +286,7 @@ isClient && define((require, exports, module)=>{
 
         onChange = ()=>{
           called = false;
-          onEnd(v.TestModel.onChange(dc => {
+          after(v.TestModel.onChange(dc => {
             v.db.queueChange(dc);
             called = true;
           }));
@@ -303,7 +303,7 @@ isClient && define((require, exports, module)=>{
         v.db.whenReady().then(()=>{
           v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
           session.state.incPending();
-          onEnd(_=> {session.state.decPending()});
+          after(_=> {session.state.decPending()});
         });
         TH.startTransaction();
       });
@@ -447,7 +447,7 @@ isClient && define((require, exports, module)=>{
         await v.db.whenReady();
         session.state.incPending();
         onChange();
-        onEnd(_=> {session.state.decPending()});
+        after(_=> {session.state.decPending()});
 
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
@@ -630,7 +630,7 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel");
       }});
       await v.db.whenReady().then(() =>{
-        onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+        after(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
         v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       });
       const doc = await v.db.whenReady().then(()=> v.db.get("TestModel", "foo123"));
@@ -648,7 +648,7 @@ isClient && define((require, exports, module)=>{
         db.createObjectStore("TestModel");
       }});
       await v.db.whenReady();
-      onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+      after(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
       TransQueue.transaction(() => {
         v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
         v.f2 = v.TestModel.create({_id: 'foo124', name: 'foo2', age: 10, gender: 'f'});

@@ -20,7 +20,7 @@ isClient && define((require, exports, module)=>{
 
   const {private$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, util, intercept, stubProperty, match: m} = TH;
+  const {stub, spy, util, intercept, stubProperty, match: m} = TH;
 
   const Subscription = require('./subscription');
 
@@ -316,7 +316,7 @@ isClient && define((require, exports, module)=>{
         name: 'Book',
         fields: {title: 'text', pageCount: 'number'}
       });
-      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      after(()=>{Model._destroyModel('Book', 'drop')});
       const simDocs = {
         doc1: ['del'],
         doc2: ['del'],
@@ -331,7 +331,7 @@ isClient && define((require, exports, module)=>{
         return doc === doc2;
       });
       //]
-      onEnd(()=>{mr.delete()});
+      after(()=>{mr.delete()});
 
       //[#
       class Library extends Subscription {
@@ -492,7 +492,7 @@ isClient && define((require, exports, module)=>{
       class Book extends BaseModel {
       }
       Book.define({name: 'Book'});
-      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      after(()=>{Model._destroyModel('Book', 'drop')});
       intercept(Session, 'reconnected', ()=>{
         Session.state._onConnect['10-subscribe2']();
       });
@@ -541,7 +541,7 @@ isClient && define((require, exports, module)=>{
       class Book extends BaseModel {
       }
       Book.define({name: 'Book'});
-      onEnd(()=>{Model._destroyModel('Book', 'drop')});
+      after(()=>{Model._destroyModel('Book', 'drop')});
 
       //[
       const {markForRemove} = Subscription;
@@ -557,7 +557,7 @@ isClient && define((require, exports, module)=>{
        * Override this method to change the default behavior of doing nothing when the user id
        * changes.
        **/
-      onEnd(()=>{util.thread.userId = void 0});
+      after(()=>{util.thread.userId = void 0});
       api.protoMethod();
       class Library extends Subscription {
       }
