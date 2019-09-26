@@ -61,8 +61,7 @@ define((require)=>{
         func.call();
       } catch(e) {error = e;}
       if (error) {
-        if (error.error === 403 && error.reason === "Access denied") {
-          this.details = error.details;
+        if (error.error === 403) {
           return true;
         }
 

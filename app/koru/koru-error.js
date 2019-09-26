@@ -3,12 +3,11 @@ define((require)=>{
   const util            = require('koru/util');
 
   class KoruError extends Error {
-    constructor(error, reason, details) {
+    constructor(error, reason) {
       super(typeof reason === 'string' ?
             `${reason} [${error}]` : `${util.inspect(reason)} [${error}]`);
       this.error = error;
       this.reason = reason;
-      this.details = details;
     }
 
     get name() {return 'KoruError'}

@@ -54,11 +54,17 @@ define((require, exports, module)=>{
     });
 
     test("addError", ()=>{
+      /**
+       * Add an error to an object; usually a {#../base-model;;model} document.
+       **/
+      api.method();
+      //[
       const doc = {};
       Val.addError(doc, 'foo', 'is_too_big', 400);
       Val.addError(doc, 'foo', 'is_wrong_color', 'red');
 
       assert.equals(doc[error$], {foo: [['is_too_big', 400], ['is_wrong_color', 'red']]});
+      //]
     });
 
     test("transferErrors", ()=>{
@@ -285,7 +291,7 @@ define((require, exports, module)=>{
 
       assert.exception(()=>{
         Val.ensure(match.number, 2, "b");
-      }, {error: 403, details: 'expected match.number'});
+      }, {error: 403, reason: 'Access denied - expected match.number'});
     });
 
     test("ensureDate", ()=>{

@@ -35,21 +35,6 @@ define((require, exports, module)=>{
       assert.same(isServer, typeof process !== 'undefined');
     });
 
-    test("KoruError", ()=>{
-      const error = new koru.Error(500, 'the reason', 'the detail');
-      assert.same(error.name, 'KoruError');
-      assert.same(error.message, 'the reason [500]');
-
-      assert.same(error.error, 500);
-      assert.equals(error.reason, 'the reason');
-      assert.equals(error.details, 'the detail');
-
-      const err2 = new koru.Error(400, {name: [['is_invalid']]});
-      assert.same(err2.message, `{name: [['is_invalid']]} [400]`);
-
-      assert.equals(err2.reason, {name: [['is_invalid']]});
-    });
-
     test("onunload", ()=>{
       /**
        * A wrapper around `module#onUnload`. see https://www.npmjs.com/package/yaajs

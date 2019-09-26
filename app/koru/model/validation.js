@@ -349,8 +349,9 @@ define((require)=>{
     },
   };
 
-  const accessDenied = (details='', nolog)=>{
-    const error = new koru.Error(403, "Access denied", details);
+  const accessDenied = (details, nolog)=>{
+    const reason = "Access denied";
+    const error = new koru.Error(403, details === void 0 ? reason : reason + " - " + details);
 
     if (! nolog && ! util.thread.suppressAccessDenied)
       koru.info(`Access denied: user ${koru.userId()}: ${details}`,
