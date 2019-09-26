@@ -14,13 +14,14 @@ isServer && define((require, exports, module)=>{
        * Compile a SQLStatement
        **/
       const SQLStatement = api.class();
-
+      //[
       const statment = new SQLStatement(
         `SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`);
 
       assert.equals(Driver.defaultDb.query(statment, {foo: 10, bar: 5})[0], {a: 15, b: '100'});
 
       assert.equals(Driver.defaultDb.query(new SQLStatement('select 1 as a'))[0], {a: 1});
+      //]
     });
 
     test("convertArgs", ()=>{
@@ -66,12 +67,13 @@ isServer && define((require, exports, module)=>{
        * Clone this SQLStatement.
        **/
       api.protoMethod();
-
+      //[
       const s1 = new SQLStatement(`SELECT {$foo}::int`);
       const s2 = s1.clone();
       s2.convertArgs({foo: 1}, [1, 2]);
       assert.equals(s1.text, 'SELECT $1::int');
       assert.equals(s2.text, 'SELECT $3::int');
+      //]
     });
 
     test("append", ()=>{

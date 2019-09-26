@@ -165,8 +165,11 @@ isServer && define((require, exports, module)=>{
          * @param timeout max time for query in ms. Defaults to 20s.
 
          * @param timeoutMessage Defaults to "Query took too long to run";
+
+         * @throws koru.Error `{error: 504, timeoutMessage}`
          **/
         api.protoMethod();
+        //[
         try {
           assert.same(pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'])[0].a, 'ab');
 
@@ -178,6 +181,7 @@ isServer && define((require, exports, module)=>{
           if (e.error !== 504) throw e;
           assert.same(e.reason, 'My message');
         }
+        //]
       });
     });
 
