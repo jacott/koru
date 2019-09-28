@@ -50,70 +50,74 @@ define((require)=>{
 
 
   class BaseBuilder {
-    constructor(options={}, default_opts={}) {
-      this.options = options;
-      this.default_opts = default_opts;
+    constructor(attributes={}, defaults={}) {
+      this.attributes = attributes;
+      this.defaults = defaults;
     }
 
     addField(field, value) {
-      if (! hasOwn(this.options, field)) {
+      if (! hasOwn(this.attributes, field)) {
         switch(typeof value) {
         case 'undefined': break;
         case 'function':
-          this.default_opts[field] = value();
+          this.defaults[field] = value();
           break;
         default:
-          this.default_opts[field] = value;
+          this.defaults[field] = value;
         }
       }
       return this;
     }
 
     field(field) {
-      return (hasOwn(this.options, field) ? this.options : this.default_opts)[field];
+      return (hasOwn(this.attributes, field) ? this.attributes : this.defaults)[field];
     }
 
-    attributes() {
+    makeAttributes() {
       const result = {};
-      const addAttributes = attrs =>{
-        for(const key in attrs) {
-          const value = attrs[key];
+      const addAttributes = attributes =>{
+        for(const key in attributes) {
+          const value = attributes[key];
           if (value !== undefined)
             result[key] = value;
         }
       };
-      addAttributes(this.default_opts);
-      addAttributes(this.options);
+      addAttributes(this.defaults);
+      addAttributes(this.attributes);
       return result;
-    }
-
-    field(name) {
-      if (name in this.options) return this.options[name];
-      return this.default_opts[name];
     }
   }
 
+  const SAVE = 1, FORCE_SAVE = 2;
+
   class Builder extends BaseBuilder {
-    constructor(modelName, options, default_opts={}) {
-      super(options, {});
+    constructor(modelName, attributes, defaults={}) {
+      super(attributes, {});
       this.model = Model[modelName];
+      this._useSave = 0;
       if (! this.model) throw new Error('Model: "'+modelName+'" not found');
-      Object.assign(this.default_opts, this.model._defaults, default_opts);
+      Object.assign(this.defaults, this.model._defaults, defaults);
     }
 
     addRef(ref, doc) {
       const refId = `${ref}_id`;
-      if (! hasOwn(this.options, refId)) {
+      if (! hasOwn(this.attributes, refId)) {
         const model = this.model.fieldTypeMap[refId];
         if (! model) throw new Error(
           `model not found for reference: ${refId} in model ${this.model.modelName}`);
         const {modelName} = model;
         if (typeof doc === 'function')
           doc = doc(this);
-        doc = doc ||
-          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
-          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
-        this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
+        if (doc === void 0) {
+          doc = last[ref] || last[util.uncapitalize(modelName)];
+        }
+        if (doc == null) {
+          const func = Factory['create'+util.capitalize(ref)] || Factory['create'+modelName];
+          if (func === void 0)
+            throw new Error("can't find factory create for "+modelName);
+          doc = func();
+        }
+        this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
       }
       return this;
     }
@@ -122,13 +126,13 @@ define((require)=>{
       return this.addField(field || 'name', generateName(prefix || this.model.modelName));
     }
 
-    canSave(value) {
-      this._canSave = value;
+    useSave(value) {
+      this._useSave = value === 'force' ? FORCE_SAVE : (value ? SAVE : 0);
       return this;
     }
 
     insert() {
-      const id = this.model._insertAttrs(this.attributes());
+      const id = this.model._insertAttrs(this.makeAttributes());
       const doc = this.model.findById(id);
       if (doc == null)
         throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
@@ -142,22 +146,21 @@ define((require)=>{
 
     build() {
       const doc = new this.model();
-      Object.assign(doc.changes, this.attributes());
+      Object.assign(doc.changes, this.makeAttributes());
       return doc;
     }
 
     create() {
       let doc;
-      if (this._canSave) {
+      if (this._useSave != 0) {
         doc = this.model.build({});
-        doc.changes = this.attributes();
-        if (this._canSave === 'force')
+        doc.changes = this.makeAttributes();
+        if (this._useSave == FORCE_SAVE)
           doc.$save('force');
         else
           doc.$$save();
       } else
         doc = this.insert();
-
 
       this._afterCreate && this._afterCreate.call(this, doc);
       return doc;
@@ -267,10 +270,10 @@ define((require)=>{
       return this;
     },
 
-    defines(defines) {
-      for(const key in defines) {
-        this['build'+key] = buildFunc(key, defines[key]);
-        this['create'+key] = createFunc(key, defines[key]);
+    defines(models) {
+      for(const key in models) {
+        this['build'+key] = buildFunc(key, models[key]);
+        this['create'+key] = createFunc(key, models[key]);
       }
       return this;
     },
@@ -279,36 +282,36 @@ define((require)=>{
     Builder,
   };
 
-  const buildFunc = (key, def)=> (...traitsAndOptions)=>{
+  const buildFunc = (key, def)=> (...traitsAndAttributes)=>{
     checkDb();
     return def.call(
-      Factory, buildOptions(key, traitsAndOptions)).build();
+      Factory, buildAttributes(key, traitsAndAttributes)).build();
   };
 
-  const createFunc = (key, def)=> (...traitsAndOptions)=>{
+  const createFunc = (key, def)=> (...traitsAndAttributes)=>{
     checkDb();
     const result =
-            def.call(Factory, buildOptions(key, traitsAndOptions)).create();
+            def.call(Factory, buildAttributes(key, traitsAndAttributes)).create();
 
-    if (postCreate[key])
-      return postCreate[key](result, key, traitsAndOptions);
+    if (postCreate[key] !== void 0)
+      return postCreate[key](result, key, traitsAndAttributes);
     else
       return last[key.substring(0,1).toLowerCase()+key.substring(1)] = result;
   };
 
-  const buildOptions = (key, args)=>{
-    const options = {}, keyTraits = traits[key] || {};
+  const buildAttributes = (key, args)=>{
+    const attributes = {}, keyTraits = traits[key] || {};
     for(let i=0; i < args.length;++i) {
       if (typeof args[i] === 'string') {
         const trait = keyTraits[args[i]];
         if (!trait) throw new Error('unknown trait "'+ args[i] +'" for ' + key);
-        Object.assign(options, typeof trait === 'function' ?
-                      trait.call(keyTraits, options, args, i) : trait);
+        Object.assign(attributes, typeof trait === 'function' ?
+                      trait.call(keyTraits, attributes, args, i) : trait);
       } else if(args[i]) {
-        Object.assign(options, args[i]);
+        Object.assign(attributes, args[i]);
       }
     }
-    return options;
+    return attributes;
   };
 
   return Factory;

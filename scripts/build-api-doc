@@ -6,7 +6,12 @@ branch=test
 
 rm -f doc/api-*.json
 
-export KORUAPI=1
+if [[ $1 = "--nodoc" ]]; then
+    shift
+else
+    export KORUAPI=1
+fi
+
 export KORU_PORT=3001
 
 $NODE ./bin/koru test --isolated "$@"
