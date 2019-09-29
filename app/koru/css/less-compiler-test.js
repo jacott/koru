@@ -7,6 +7,7 @@ isServer && define((require, exports, module)=>{
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("compiling", ()=>{
+      fst.mkdir_p(module.toUrl("./.build"));
       compiler.compile("less", module.toUrl("./less-compiler-test.less"), module.toUrl("./.build/less-compiler-test.less.css"));
 
       const output = fst.readFile(module.toUrl("./.build/less-compiler-test.less.css"));
