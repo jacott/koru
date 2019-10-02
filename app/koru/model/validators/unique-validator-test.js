@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const Query           = require('../query');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const {error$} = require('koru/symbols');
 

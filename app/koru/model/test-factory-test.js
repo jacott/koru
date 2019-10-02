@@ -253,7 +253,7 @@ define((require, exports, module)=>{
         /**
          * Determine if the normal Model save code should be run.
 
-         * @param value `false` is for the (default) method of by passing the model validation and
+         * @param value `false` is for the (default) method of bypassing the model validation and
          * inserting document directly into the DB. `true` is for using {#../base-model.$$save} and
          * `"force"` is for using {#../base-model.$save;('force')}
          **/

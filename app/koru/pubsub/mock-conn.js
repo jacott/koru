@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   class MockConn {
     constructor(conn, gDict=session.globalDict) {

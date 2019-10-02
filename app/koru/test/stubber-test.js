@@ -23,7 +23,7 @@ const {stub, spy, intercept} = TH;
   const util            = require('koru/util');
   const TH              = require('../test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const stubber = require('./stubber');
 

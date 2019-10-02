@@ -14,7 +14,7 @@ define((require, exports, module)=>{
 
   const Module = module.constructor;
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const koru = require('./main');
 

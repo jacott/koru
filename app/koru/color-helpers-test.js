@@ -3,7 +3,7 @@ define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const sut  = require('./color-helpers');
   let v = {};

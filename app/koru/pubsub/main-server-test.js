@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
 
   return ({TH, module}) =>{
-    const {stub, spy, onEnd, util, match: m} = TH;
+    const {stub, spy, util, match: m} = TH;
 
     TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
       let conn, gDict;

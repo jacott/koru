@@ -17,7 +17,7 @@ isServer && define((require, exports, module)=>{
 
   const crypto      = requirejs.nodeRequire('crypto');
 
-  const {stub, spy, onEnd, intercept, match: m, stubProperty} = TH;
+  const {stub, spy, intercept, match: m, stubProperty} = TH;
 
   const session = new (baseSession.constructor)('testServerConnection');
 

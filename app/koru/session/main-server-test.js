@@ -7,7 +7,7 @@ isServer && define((require, exports, module)=>{
   const serverSession   = require('./main-server');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m, stubProperty} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const Session = require('./main');
   let v = {};

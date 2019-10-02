@@ -8,7 +8,7 @@ isClient && define((require, exports, module)=>{
 
   const {error$} = require('koru/symbols');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./in-place-form');
 

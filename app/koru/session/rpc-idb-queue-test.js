@@ -16,7 +16,7 @@ isClient && define((require, exports, module)=>{
   const api           = require('koru/test/api');
   const MockPromise   = require('koru/test/mock-promise');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut  = require('./rpc-idb-queue');
 

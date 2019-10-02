@@ -13,7 +13,7 @@ isServer && define((require, exports, module)=>{
   const util            = require('../util');
   const SQLStatement    = require('./sql-statement');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const API = api;
 

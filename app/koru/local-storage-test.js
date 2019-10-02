@@ -6,7 +6,7 @@ isClient && define((require, exports, module)=>{
    **/
   const TH   = require('koru/ui/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut  = require('./local-storage');
 

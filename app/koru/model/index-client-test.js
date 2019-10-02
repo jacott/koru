@@ -7,7 +7,7 @@ define((require, exports, module)=>{
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   let v = {};
 

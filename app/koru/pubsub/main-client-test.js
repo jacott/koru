@@ -6,7 +6,7 @@ define((require)=>{
   const api             = require('koru/test/api');
 
   return ({TH, module}) =>{
-    const {stub, spy, onEnd, util} = TH;
+    const {stub, spy, util} = TH;
 
     TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
       before(()=>{

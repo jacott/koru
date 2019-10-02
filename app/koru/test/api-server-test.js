@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const API             = require('./api');
   const TH              = require('./main');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const ctx = module.ctx;
 

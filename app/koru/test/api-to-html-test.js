@@ -9,7 +9,7 @@ isServer && define((require, exports, module)=>{
 
   const apiToHtml = require('./api-to-html');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const sourceHtml = Dom.h({div: [{'$data-api': 'header'},
                                   {'$data-api': 'links'},

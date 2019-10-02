@@ -2,7 +2,7 @@ isClient && define((require, exports, module)=>{
   'use strict';
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const nextFrame = require('./next-frame');
 

@@ -5,7 +5,7 @@ isServer && define((require, exports, module)=>{
   const ServerPages     = require('koru/server-pages/main');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const sut = require('./markdown-helper');
 

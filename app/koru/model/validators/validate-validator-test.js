@@ -14,7 +14,7 @@ define((require, exports, module)=>{
 
   const {error$} = require('koru/symbols');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const ValidateValidator = require('./validate-validator');
 

@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const {ctx$, private$, endMarker$} = require('koru/symbols');
 

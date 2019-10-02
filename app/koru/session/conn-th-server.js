@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const decodeMessage = (msg, conn)=> message.decodeMessage(
     msg.subarray(1), conn._session.globalDict);

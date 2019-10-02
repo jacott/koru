@@ -10,7 +10,7 @@ isClient && define((require, exports, module)=>{
   const util            = require('koru/util');
   const Dom             = require('../dom');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const {private$, ctx$} = require('koru/symbols');
 

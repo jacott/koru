@@ -6,7 +6,7 @@ isClient && define((require, exports, module)=>{
   const Route           = require('./route');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const {error$} = require('koru/symbols');
 

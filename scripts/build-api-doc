@@ -7,6 +7,7 @@ branch=test
 rm -f doc/api-*.json
 
 if [[ $1 = "--nodoc" ]]; then
+    unset KORUAPI
     shift
 else
     export KORUAPI=1
@@ -15,6 +16,9 @@ fi
 export KORU_PORT=3001
 
 $NODE ./bin/koru test --isolated "$@"
+if [[ $KORUAPI != 1 ]]; then
+    exit 0
+fi
 
 name=$(pwd -P)/doc/api.html
 cd app

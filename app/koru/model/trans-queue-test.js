@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const TransQueue = require('./trans-queue');
   const sut = TransQueue;

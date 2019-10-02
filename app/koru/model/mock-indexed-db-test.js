@@ -4,7 +4,7 @@ isClient && define((require, exports, module)=>{
   const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m, stubProperty} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const sut = require('./mock-indexed-db');
   const {IDBKeyRange} = window;

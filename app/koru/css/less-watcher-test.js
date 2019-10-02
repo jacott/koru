@@ -10,7 +10,7 @@ isServer && define((require, exports, module)=>{
   const fs              = requirejs.nodeRequire('fs');
   const Path            = requirejs.nodeRequire('path');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut             = require('./less-watcher');
 

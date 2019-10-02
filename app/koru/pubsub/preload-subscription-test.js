@@ -17,7 +17,7 @@ isClient && define((require, exports, module)=>{
 
   const {IDBKeyRange} = window;
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const PreloadSubscription = require('./preload-subscription');
 

@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m, intercept} = TH;
+  const {stub, spy, match: m, intercept} = TH;
 
   const koru     = require('./main');
   let v = {};

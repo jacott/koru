@@ -4,7 +4,7 @@ isServer && define((require, exports, module)=>{
   const koru            = require('./main');
   const Future          = requirejs.nodeRequire('fibers/future');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const Queue           = require('./queue');
 

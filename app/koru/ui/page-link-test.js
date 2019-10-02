@@ -5,7 +5,7 @@ isClient && define((require, exports, module)=>{
   const Route           = require('./route');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   require('./page-link');
 

@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const Dom             = require('../dom');
   const koru            = require('../main');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const Markdown = require('./markdown');
 

@@ -13,7 +13,7 @@ isServer && define((require, exports, module)=>{
 
   const {Future} = util;
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const WebServerFactory = require('./web-server-factory');
   let v = {};

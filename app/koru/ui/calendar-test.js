@@ -6,7 +6,7 @@ isClient && define((require, exports, module)=>{
   const Each            = require('./each');
   const TH              = require('./test-helper');
 
-  const {stub, onEnd, spy} = TH;
+  const {stub, spy} = TH;
 
   const $ = Dom.current;
 

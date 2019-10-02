@@ -7,7 +7,7 @@ isServer && define((require, exports, module)=>{
   const util            = require('koru/util');
   const zlib            = requirejs.nodeRequire('zlib');
 
-  const {stub, spy, onEnd, intercept, match} = TH;
+  const {stub, spy, intercept, match} = TH;
 
   const sut  = require('./http-util');
 

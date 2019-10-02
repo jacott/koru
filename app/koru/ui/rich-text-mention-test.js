@@ -7,7 +7,7 @@ isClient && define((require, exports, module)=>{
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const {insert} = RichTextEditor;
 

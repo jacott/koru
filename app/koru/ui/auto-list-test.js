@@ -12,7 +12,7 @@ isClient && define((require, exports, module)=>{
   const TH              = require('koru/model/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
   const {endMarker$, private$} = require('koru/symbols');
 
   const AutoList = require('./auto-list');

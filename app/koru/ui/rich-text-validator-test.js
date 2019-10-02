@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const RichText        = require('./rich-text');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const {error$} = require('koru/symbols');
 

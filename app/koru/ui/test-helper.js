@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const BaseTH          = require('../test-helper');
   const Route           = require('./route');
 
-  const {stub, spy, util, onEnd, Core, match: m} = BaseTH;
+  const {stub, spy, util, Core, match: m} = BaseTH;
 
   Route._orig_history = Route.history;
   Route.history = {

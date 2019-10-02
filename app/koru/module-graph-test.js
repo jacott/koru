@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const sut = require('./module-graph');
 

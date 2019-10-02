@@ -4,7 +4,7 @@ isServer && define((require, exports, module)=>{
   const TH     = require('./test-helper');
   const util   = require('./util');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const Future = requirejs.nodeRequire('fibers/future');
 

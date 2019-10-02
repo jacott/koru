@@ -4,7 +4,7 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const SQLStatement = require('./sql-statement');
 

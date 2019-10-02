@@ -3,7 +3,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const koru = require('./main');
 

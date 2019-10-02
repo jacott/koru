@@ -4,7 +4,7 @@ isClient && define((require, exports, module)=>{
 
   const sut = require('./slider');
 
-  const {stub, onEnd} = TH;
+  const {stub} = TH;
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{

@@ -3,7 +3,7 @@ define((require, exports, module)=>{
   const HtmlDoc         = require('koru/dom/html-doc');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const uColor = require('./util-color');
 

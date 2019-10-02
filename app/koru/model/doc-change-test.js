@@ -25,7 +25,7 @@ define((require, exports, module)=>{
 
   const {inspect$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const DocChange = require('./doc-change');
 

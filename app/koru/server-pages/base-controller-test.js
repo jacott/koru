@@ -15,7 +15,7 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, stubProperty, intercept} = TH;
+  const {stub, spy, stubProperty, intercept} = TH;
 
   const BaseController = require('./base-controller');
 

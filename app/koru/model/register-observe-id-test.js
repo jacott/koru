@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const dbBroker        = require('./db-broker');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const Model = require('./main');
   let v= {};

@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const dbBroker   = require('./db-broker');
   const TH         = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const Model    = require('./main');
 

@@ -4,7 +4,7 @@ isClient && define((require, exports, module)=>{
   const PlainText       = require('koru/ui/plain-text');
   const TH              = require('koru/ui/test-helper');
 
-  const {stub, spy, onEnd, util, match: m, stubProperty, intercept} = TH;
+  const {stub, spy, util, match: m, stubProperty, intercept} = TH;
 
   const CharacterCounter = require('./character-counter');
 

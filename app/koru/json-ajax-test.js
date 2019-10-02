@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, intercept} = TH;
 
   const sut = require('./json-ajax');
 

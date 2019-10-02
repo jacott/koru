@@ -5,10 +5,9 @@ isServer && define((require, exports, module)=>{
   const Mutex           = require('koru/mutex');
   const TH              = require('./test-helper');
 
-  const {SourceMapGenerator} = requirejs.nodeRequire('source-map');
-  const {SourceMapConsumer} = requirejs.nodeRequire('source-map');
+  const {SourceMapGenerator, SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const StackErrorConvert = require('./stack-error-convert');
 

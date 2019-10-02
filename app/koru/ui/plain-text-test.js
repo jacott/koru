@@ -4,7 +4,7 @@ isClient && define((require, exports, module)=>{
   const koru            = require('../main');
   const TH              = require('../ui/test-helper');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const sut = require('./plain-text');
 

@@ -13,7 +13,7 @@ isServer && define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const Fiber           = requirejs.nodeRequire('fibers');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
 
   const Mutex = require('./mutex');
 

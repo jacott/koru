@@ -15,7 +15,7 @@ define((require, exports, module)=>{
 
   const {error$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, match: m} = TH;
+  const {stub, spy, match: m} = TH;
 
   const Val   = require('./validation');
 
@@ -23,7 +23,7 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     before(()=>{
       api.module({subjectName: 'Val'});
     });
@@ -31,7 +31,7 @@ define((require, exports, module)=>{
     beforeEach(()=>{
       TH.noInfo();
       v.myModule = new Module(void 0, 'mymodule');
-      v.myModule.onUnload = onEnd;
+      v.myModule.onUnload = after;
     });
 
     afterEach(()=>{
@@ -340,7 +340,7 @@ define((require, exports, module)=>{
        **/
       const module = new require.module.constructor();
       module.id = 'models/model';
-      module.onUnload = onEnd;
+      module.onUnload = after;
 
       const fooStub = stub();
       const barStub = {

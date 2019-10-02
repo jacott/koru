@@ -69,7 +69,7 @@ isServer && define((require, exports, module)=>{
 
   const path            = requirejs.nodeRequire('path');
 
-  const {stub, spy, onEnd, util, intercept} = TH;
+  const {stub, spy, util, intercept} = TH;
 
   const sut = require('./main');
 

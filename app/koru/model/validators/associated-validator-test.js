@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   const Model           = require('../main');
   const Query           = require('../query');
 
-  const {stub, spy, onEnd, intercept, stubProperty} = TH;
+  const {stub, spy, intercept, stubProperty} = TH;
 
   const {error$, original$} = require('koru/symbols');
 

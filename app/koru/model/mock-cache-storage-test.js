@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, util} = TH;
   const {Request} = window;
 
   const sut  = require('./mock-cache-storage');

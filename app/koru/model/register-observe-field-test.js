@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd, intercept, matchModel: mm, match: m} = TH;
+  const {stub, spy, intercept, matchModel: mm, match: m} = TH;
 
   let v = {};
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{

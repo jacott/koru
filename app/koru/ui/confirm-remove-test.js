@@ -3,7 +3,7 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('../dom');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy} = TH;
 
   const sut = require('./confirm-remove');
 
