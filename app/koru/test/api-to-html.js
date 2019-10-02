@@ -419,13 +419,18 @@ define((require)=>{
       const destMod = mod && api.top && api.top[mod];
       if (destMod)
         mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
-      text = isReplace ? method : `${mod}${type||''}${method}`;
+      text = isReplace ? method : `${idToText(mod)}${type||''}${method}`;
     } else {
       href = api.id+href;
       text = method;
     }
 
-    return {class: 'jsdoc-link', a: idToText(text), $href: '#'+href};
+    const link = document.createElement('a');
+    link.classList.add('jsdoc-link');
+    link.setAttribute('href', '#'+href);
+    link.innerHTML = text;
+
+    return link;
   };
 
   const buildConstructor = (api, subject, {sig, intro, calls}, requireLine)=>{
@@ -831,7 +836,7 @@ define((require)=>{
     mdRenderer.link = (href, title, text)=>{
       switch (href) {
       case '#jsdoc-tag':
-        return Dom.h(execInlineTag(api, text)).outerHTML;
+        return execInlineTag(api, text).outerHTML;
       default:
         const a = {a: text, $href: href};
         if (title) a.$title = title;

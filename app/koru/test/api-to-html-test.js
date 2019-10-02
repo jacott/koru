@@ -341,7 +341,7 @@ m1 intro
            * {#my/mod#protoMethod} {#.thisModMethod}
            * {##thisModeProtoMethod}
            * {#../../thing}
-           * {#../../thing;.append}
+           * {#../../thing;.append("this")}
            * {#../../thing;;replace}
            * {#./child}
            **/
@@ -382,7 +382,7 @@ m1 intro
               {a: ['Thing'], class: 'jsdoc-link',
                href: '#this/thing'},
               '\n',
-              {a: ['Thing.append'], class: 'jsdoc-link',
+              {a: ['Thing.append("this")'], class: 'jsdoc-link',
                href: '#this/thing'},
               '\n',
               {a: ['replace'], class: 'jsdoc-link',
