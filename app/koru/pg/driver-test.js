@@ -404,6 +404,8 @@ isServer && define((require, exports, module)=>{
       assert.equals(v.foo.count({story: {$regex: "cow$"}}), 1);
       assert.equals(v.foo.count({story: {$regex: "how", $options: "i"}}), 1);
       assert.equals(v.foo.count({story: {$options: "i", $regex: "how"}}), 1);
+      assert.equals(v.foo.count({story: {$regex: /how/i}}), 1);
+      assert.equals(v.foo.count({story: {$regex: /how/}}), 0);
     });
 
     group("find", ()=>{

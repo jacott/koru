@@ -34,6 +34,12 @@ define((require, exports, module)=>{
 
   let defaultDb = null;
 
+  const regexToText = (re)=>{
+    const text = re.toString();
+    const idx = text.lastIndexOf("/");
+    return [text.slice(1, idx-1), text.slice(idx+1)];
+  };
+
   const closeDefaultDb = ()=>{
     defaultDb && defaultDb.end();
     defaultDb = null;
@@ -740,8 +746,11 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
                     case '$options':
                       if (regex) break;
                       regex = value.$regex;
-                      const options = value.$options;
-                      result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
+                      let options = value.$options;
+                      if (regex.constructor === RegExp)
+                        [regex, options] = regexToText(regex);
+                      result.push(qkey + (
+                        options !== void 0 && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
                       whereValues.push(regex);
                       continue;
                     case '$ne': case '!=': {
