@@ -87,6 +87,14 @@ define((require, exports, module)=>{
       assert.equals(TestModel.where('age', [5, 6]).map(d => d.age).sort(), [5]);
     });
 
+    test("$regexp", ()=>{
+      api.protoMethod('where');
+      assert.equals(TestModel.where('name', {$regex: "fo+$"}).map(d => d.name).sort(), ['foo']);
+      assert.equals(TestModel.where('name', {$regex: "FO", $options: 'i'})
+                    .map(d => d.name).sort(), ['foo']);
+      assert.equals(TestModel.where('name', {$regex: /R$/i}).map(d => d.name).sort(), ['bar']);
+    });
+
     test("simple addUniqueIndex", ()=>{
       const idx = TestModel.addUniqueIndex('name');
 

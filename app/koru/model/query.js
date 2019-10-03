@@ -10,7 +10,7 @@ define((require)=>{
 
   const {compare, deepEqual} = util;
 
-  const notifyAC$ = Symbol(), matches$ = Symbol(), func$ = Symbol(),
+  const notifyAC$ = Symbol(), exprCache$ = Symbol(), matches$ = Symbol(), func$ = Symbol(),
         compare$ = Symbol(), compareKeys$ = Symbol(),
         onChange$ = Symbol();
 
@@ -88,7 +88,13 @@ define((require)=>{
       if (type === 'text')
         return doc => compare(doc[param], expected) <= 0;
       return doc => doc[param] <= expected;
-    }
+    },
+    $regex(param, obj, key, type) {
+      const value = obj.$regex;
+      const re = typeof value === 'string' ? new RegExp(value, obj.$options) : value;
+
+      return doc => re.test(doc[param]);
+    },
   };
 
   EXPRS['!='] = EXPRS.$ne;
