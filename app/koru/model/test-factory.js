@@ -88,13 +88,11 @@ define((require)=>{
     }
   }
 
-  const SAVE = 1, FORCE_SAVE = 2;
-
   class Builder extends BaseBuilder {
     constructor(modelName, attributes, defaults={}) {
       super(attributes, {});
       this.model = Model[modelName];
-      this._useSave = 0;
+      this._useSave = '';
       if (! this.model) throw new Error('Model: "'+modelName+'" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
     }
@@ -127,7 +125,7 @@ define((require)=>{
     }
 
     useSave(value) {
-      this._useSave = value === 'force' ? FORCE_SAVE : (value ? SAVE : 0);
+      this._useSave = value === 'force' ? value : (value ? "assert" : '');
       return this;
     }
 
@@ -152,13 +150,10 @@ define((require)=>{
 
     create() {
       let doc;
-      if (this._useSave != 0) {
+      if (this._useSave !== '') {
         doc = this.model.build({});
         doc.changes = this.makeAttributes();
-        if (this._useSave == FORCE_SAVE)
-          doc.$save('force');
-        else
-          doc.$$save();
+        doc.$save(this._useSave);
       } else
         doc = this.insert();
 

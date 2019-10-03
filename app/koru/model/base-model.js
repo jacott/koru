@@ -15,7 +15,7 @@ define((require, exports, module)=>{
   const {hasOwn, deepCopy, createDictionary, moduleName} = util;
   const {private$, inspect$, error$, original$} = require('koru/symbols');
 
-  const cache$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
+  const cache$ = Symbol(), inspectField$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
 
   const savePartial = (doc, args, force)=>{
     const $partial = {};
@@ -164,7 +164,7 @@ define((require, exports, module)=>{
      * Model extension methods
      */
 
-    static define({module, name=moduleName(module), fields}) {
+    static define({module, inspectField='name', name=moduleName(module), fields}) {
       if (! name)
         throw new Error("Model requires a name");
       if (ModelMap[name])
@@ -173,6 +173,8 @@ define((require, exports, module)=>{
         this._module = module;
         module.onUnload(()=> ModelMap._destroyModel(name));
       }
+
+      this[inspectField$] = inspectField;
 
       ModelMap[name] = this;
 
@@ -272,14 +274,16 @@ define((require, exports, module)=>{
     get _errors() {return this[error$]}
 
     [inspect$]() {
-      const arg2 = ('name' in this) ? `, "${this.name}"` : '';
-      return `Model.${this.constructor.modelName}("${this._id}"${arg2})`;
+      const type = this.constructor;
+      const name = this[type[inspectField$]];
+      const arg2 = name === void 0 ? '' : `, "${name}"`;
+      return `Model.${type.modelName}("${this._id}"${arg2})`;
     }
 
-    $save(force) {
-      const callback = force && force.callback;
+    $save(mode) {
+      const callback = mode && mode.callback;
 
-      switch(force) {
+      switch(mode) {
       case 'assert': this.$assertValid(); break;
       case 'force': this.$isValid(); break;
       default:

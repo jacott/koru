@@ -254,8 +254,9 @@ define((require, exports, module)=>{
          * Determine if the normal Model save code should be run.
 
          * @param value `false` is for the (default) method of bypassing the model validation and
-         * inserting document directly into the DB. `true` is for using {#../base-model.$$save} and
-         * `"force"` is for using {#../base-model.$save;("force")}
+         * inserting document directly into the DB. `true` or `"assert"` is for using
+         * {#../base-model#$save;("assert")} and `"force"` is for using
+         * {#../base-model#$save;("force")}
          **/
         api.protoMethod();
 
