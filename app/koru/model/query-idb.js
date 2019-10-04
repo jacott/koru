@@ -102,7 +102,7 @@ define((require)=>{
       };
       req.onerror = req.onblocked = event => {
         this[busyQueue$] = undefined;
-        error(this, event, reject);
+        error(this, event);
       };
       req.onsuccess = event => {
         const idb = this[iDB$] = event.target.result;

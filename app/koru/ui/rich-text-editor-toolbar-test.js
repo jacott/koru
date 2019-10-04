@@ -163,7 +163,6 @@ isClient && define((require, exports, module)=>{
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), null);
 
-      TH.setRange(bElm.firstChild, 1);
       bElm.textContent = 'bald';
       ctx.undo.recordNow();
       TH.trigger(document, 'selectionchange');
