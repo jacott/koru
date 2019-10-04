@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+user_data_dir=$(realpath -e $(dirname $0)/../tmp)/test-browser
+
+exec ${KORU_BROWSER:-google-chrome} \
+      --disable-translate --disable-extensions \
+      --disable-background-networking --safebrowsing-disable-auto-update \
+      --disable-sync --metrics-recording-only --disable-default-apps \
+      --mute-audio --no-first-run \
+      --window-size=1220,1024 \
+      --incognito \
+      --remote-debugging-port=9222 \
+      --user-data-dir="$user_data_dir" \
+      "$@" \
+      "http://localhost:${KORU_PORT:-3000}/"
+
+#      --disable-setuid-sandbox \
+#      --no-sandbox \
