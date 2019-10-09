@@ -28,7 +28,6 @@ define((require)=>{
   const zero = '000000000';
   const ab = new ArrayBuffer(4);
   const dv = new DataView(ab);
-  const iu8 = new Uint8Array(ab);
   const u32 = new Uint32Array(ab);
 
   const core_sha256 = (

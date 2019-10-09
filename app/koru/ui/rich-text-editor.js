@@ -35,7 +35,7 @@ define((require, exports, module)=>{
   const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
 
   const commandify = (func, cmd)=>{
-    switch(typeof func) {
+    switch (typeof func) {
     case 'function':
       return func;
     case 'boolean':

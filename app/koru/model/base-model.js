@@ -536,7 +536,6 @@ define((require, exports, module)=>{
       changes[field] = value;
       typeof doc._setChanges === 'function' && doc._setChanges(field, value);
     }
-    return value;
   };
 
   BaseModel.getField = getField;
@@ -570,7 +569,7 @@ define((require, exports, module)=>{
   };
 
   const getValue = field => function () {return getField(this, field)};
-  const setValue = field => function (value) {return setField(this, field, value)};
+  const setValue = field => function (value) {setField(this, field, value)};
 
   const setUpValidators = (model, field, options)=>{
     const validators = getValidators(model, field);
@@ -601,12 +600,9 @@ define((require, exports, module)=>{
 
     belongs_to(model, field, options) {
       if (options.accessor === void 0) {
-        const setv = setValue(field);
         options.accessor = {
           get: getValue(field),
-          set(value) {
-            return setv.call(this, value || void 0);
-          },
+          set(value) {setField(this, field, value || void 0)},
         };
       }
       const name = field.replace(/_id$/, '');
