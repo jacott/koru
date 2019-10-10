@@ -10,7 +10,7 @@ define((require, exports, module)=>{
 
   const {stub, spy, match: m} = TH;
 
-  const userAccount = require('./main');
+  const UserAccount = require('./main');
 
   let v = null;
 
@@ -29,59 +29,30 @@ define((require, exports, module)=>{
       login.wait(session);
     });
 
-    test("secureCall", ()=>{
-      assert.isTrue(session.isRpcGet('SRPBegin'));
-      userAccount.secureCall('fooBar', 'email@vimaly.com',
-                             'secret', [1, 2], v.callback = stub());
-
-      assert.calledWithExactly(
-        session.rpc, 'SRPBegin',
-        m(request =>{
-          v.request = request;
-          assert.same(request.email, 'email@vimaly.com');
-          return ('A' in request);
-        }),
-        m(callback => v.sutCallback = callback)
-      );
-
-      const verifier = SRP.generateVerifier('secret');
-      const srp = new SRP.Server(verifier);
-      const challenge = srp.issueChallenge({A: v.request.A});
-
-      session.rpc.reset();
-      v.sutCallback(null, challenge);
-
-      assert.calledWith(session.rpc, 'fooBar', m((response)=>{
-        assert.equals(response.payload, [1, 2]);
-
-        if (response.M === srp.M) {
-          session.rpc.yield(null, {
-            HAMK: srp.HAMK,
-          });
-          return true;
-        }
-      }));
-    });
-
-    group("changePassword", ()=>{
+    group("srp", ()=>{
       beforeEach(()=>{
-        userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = stub());
+        UserAccount.mode = "srp";
+      });
+
+      afterEach(()=>{
+        UserAccount.mode = "default";
+      });
+
+      test("secureCall", ()=>{
+        assert.isTrue(session.isRpcGet('SRPBegin'));
+        UserAccount.secureCall('fooBar', 'email@vimaly.com',
+                               'secret', [1, 2], v.callback = stub());
 
         assert.calledWithExactly(
           session.rpc, 'SRPBegin',
           m(request =>{
             v.request = request;
-            assert.same(request.email, 'foo@bar.co');
+            assert.same(request.email, 'email@vimaly.com');
             return ('A' in request);
-
           }),
-          m(callback => (v.sutCallback = callback, true))
+          m(callback => v.sutCallback = callback)
         );
 
-      });
-
-      test("success", ()=>{
-        assert.isTrue(session.isRpcGet('SRPChangePassword'));
         const verifier = SRP.generateVerifier('secret');
         const srp = new SRP.Server(verifier);
         const challenge = srp.issueChallenge({A: v.request.A});
@@ -89,8 +60,9 @@ define((require, exports, module)=>{
         session.rpc.reset();
         v.sutCallback(null, challenge);
 
-        assert.calledWith(session.rpc, 'SRPChangePassword', m(response =>{
-          assert(SRP.checkPassword('new pw', response.newPassword));
+        assert.calledWith(session.rpc, 'fooBar', m((response)=>{
+          assert.equals(response.payload, [1, 2]);
+
           if (response.M === srp.M) {
             session.rpc.yield(null, {
               HAMK: srp.HAMK,
@@ -98,136 +70,232 @@ define((require, exports, module)=>{
             return true;
           }
         }));
-
-        assert.calledWithExactly(v.callback);
       });
 
-      test("failure", ()=>{
-        const verifier = SRP.generateVerifier('bad');
-        const srp = new SRP.Server(verifier);
-        const challenge = srp.issueChallenge({A: v.request.A});
+      group("changePassword", ()=>{
+        beforeEach(()=>{
+          UserAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = stub());
 
-        session.rpc.reset();
-        v.sutCallback(null, challenge);
+          assert.calledWithExactly(
+            session.rpc, 'SRPBegin',
+            m(request =>{
+              v.request = request;
+              assert.same(request.email, 'foo@bar.co');
+              return ('A' in request);
 
-        assert.calledWith(session.rpc, 'SRPChangePassword', m(response =>{
-          session.rpc.yield(null, {
-            HAMK: srp.HAMK,
-          });
-          return true;
-        }));
+            }),
+            m(callback => (v.sutCallback = callback, true))
+          );
 
-        assert.calledWithExactly(v.callback, 'failure');
-      });
-    });
+        });
 
-    group("loginWithPassword", ()=>{
-      beforeEach(()=>{
-        userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = stub());
+        test("success", ()=>{
+          assert.isTrue(session.isRpcGet('SRPChangePassword'));
+          const verifier = SRP.generateVerifier('secret');
+          const srp = new SRP.Server(verifier);
+          const challenge = srp.issueChallenge({A: v.request.A});
 
-        assert.calledWithExactly(
-          session.rpc, 'SRPBegin',
-          m(request =>{
-            v.request = request;
-            assert.same(request.email, 'foo@bar.co');
-            return ('A' in request);
+          session.rpc.reset();
+          v.sutCallback(null, challenge);
 
-          }),
-          m(callback =>{
-            v.sutCallback = callback;
+          assert.calledWith(session.rpc, 'SRPChangePassword', m(response =>{
+            assert(SRP.checkPassword('new pw', response.newPassword));
+            if (response.M === srp.M) {
+              session.rpc.yield(null, {
+                HAMK: srp.HAMK,
+              });
+              return true;
+            }
+          }));
+
+          assert.calledWithExactly(v.callback);
+        });
+
+        test("failure", ()=>{
+          const verifier = SRP.generateVerifier('bad');
+          const srp = new SRP.Server(verifier);
+          const challenge = srp.issueChallenge({A: v.request.A});
+
+          session.rpc.reset();
+          v.sutCallback(null, challenge);
+
+          assert.calledWith(session.rpc, 'SRPChangePassword', m(response =>{
+            session.rpc.yield(null, {
+              HAMK: srp.HAMK,
+            });
             return true;
-          })
-        );
+          }));
+
+          assert.calledWithExactly(v.callback, 'failure');
+        });
       });
 
-      test("success", ()=>{
-        const verifier = SRP.generateVerifier('secret');
-        const srp = new SRP.Server(verifier);
-        const challenge = srp.issueChallenge({A: v.request.A});
+      group("loginWithPassword", ()=>{
+        beforeEach(()=>{
+          UserAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = stub());
 
-        assert.isTrue(session.isRpcGet('SRPLogin'));
-        session.rpc.reset();
-        v.sutCallback(null, challenge);
+          assert.calledWithExactly(
+            session.rpc, 'SRPBegin',
+            m(request =>{
+              v.request = request;
+              assert.same(request.email, 'foo@bar.co');
+              return ('A' in request);
 
-        assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
-          if (response.M === srp.M) {
+            }),
+            m(callback =>{
+              v.sutCallback = callback;
+              return true;
+            })
+          );
+        });
+
+        test("success", ()=>{
+          const verifier = SRP.generateVerifier('secret');
+          const srp = new SRP.Server(verifier);
+          const challenge = srp.issueChallenge({A: v.request.A});
+
+          assert.isTrue(session.isRpcGet('SRPLogin'));
+          session.rpc.reset();
+          v.sutCallback(null, challenge);
+
+          assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
+            if (response.M === srp.M) {
+              session.rpc.yield(null, {
+                userId: 'uid123',
+                HAMK: srp.HAMK,
+                loginToken: 'tokenId|token123',
+              });
+              return true;
+            }
+          }));
+
+
+          assert.calledWithExactly(v.callback);
+          assert.same(util.thread.userId, 'uid123');
+          assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
+          assert.same(UserAccount.token, 'tokenId|token123');
+        });
+
+        test("bad username", ()=>{
+          v.sutCallback('Xfailure');
+
+          assert.calledWith(v.callback, 'Xfailure');
+
+          refute.calledWith(session.rpc, 'SRPLogin');
+        });
+
+        test("bad password", ()=>{
+          const orig = util.thread.userId;
+          const verifier = SRP.generateVerifier('bad');
+          const srp = new SRP.Server(verifier);
+          const challenge = srp.issueChallenge({A: v.request.A});
+
+          session.rpc.reset();
+          v.sutCallback(null, challenge);
+
+          assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
             session.rpc.yield(null, {
               userId: 'uid123',
               HAMK: srp.HAMK,
-              loginToken: 'tokenId|token123',
             });
             return true;
-          }
-        }));
+          }));
 
+          assert.calledWithExactly(v.callback, 'failure');
+          assert.same(util.thread.userId, orig);
+        });
 
-        assert.calledWithExactly(v.callback);
-        assert.same(util.thread.userId, 'uid123');
-        assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
-        assert.same(userAccount.token, 'tokenId|token123');
+        test("bad final response", ()=>{
+          const orig = util.thread.userId;
+          const verifier = SRP.generateVerifier('secret');
+          const srp = new SRP.Server(verifier);
+          const challenge = srp.issueChallenge({A: v.request.A});
+
+          session.rpc.reset();
+          v.sutCallback(null, challenge);
+
+          assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
+            return response.M === srp.M;
+          }));
+          session.rpc.yield('failure');
+
+          assert.calledWithExactly(v.callback, 'failure');
+        });
       });
 
-      test("bad username", ()=>{
-        v.sutCallback('Xfailure');
+      test("resetPassword", ()=>{
+        assert.isTrue(session.isRpcGet('resetPassword'));
+        UserAccount.resetPassword('the key', 'new password', v.callback = stub());
+        assert.calledWith(session.rpc, 'resetPassword', 'the key',
+                          m(hash =>  SRP.checkPassword('new password', hash)),
+                          v.callback);
+      });
+    });
 
-        assert.calledWith(v.callback, 'Xfailure');
-
-        refute.calledWith(session.rpc, 'SRPLogin');
+    test("mode change", ()=>{
+      after(()=>{
+        UserAccount.mode = "default";
       });
 
-      test("bad password", ()=>{
-        const orig = util.thread.userId;
-        const verifier = SRP.generateVerifier('bad');
-        const srp = new SRP.Server(verifier);
-        const challenge = srp.issueChallenge({A: v.request.A});
+      assert.equals(UserAccount.mode, 'plain');
 
-        session.rpc.reset();
-        v.sutCallback(null, challenge);
+      UserAccount.mode = 'srp';
+      assert.equals(UserAccount.mode, 'srp');
 
-        assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
-          session.rpc.yield(null, {
-            userId: 'uid123',
-            HAMK: srp.HAMK,
-          });
-          return true;
-        }));
+      assert.exception(()=>{
+        UserAccount.mode = 'wrong';
+      }, {message: 'invalid UserAccount mode'});
 
-        assert.calledWithExactly(v.callback, 'failure');
-        assert.same(util.thread.userId, orig);
+      UserAccount.mode = 'default';
+      assert.equals(UserAccount.mode, 'plain');
+    });
+
+    group("plain", ()=>{
+      const assertRemote = (name, ...args)=>{
+        const callback = stub();
+        const remoteName = 'UserAccount.'+name;
+        UserAccount[name](...args, callback);
+        assert.elide(()=>{
+          assert.calledWith(session.rpc, remoteName, ...args, callback);
+          assert.msg("should defineRpcGet")(session.isRpcGet(remoteName));
+        });
+      };
+
+      test("loginWithPassword", ()=>{
+        assertRemote('loginWithPassword', 'foo@bar.co', 'secret');
       });
 
-      test("bad final response", ()=>{
-        const orig = util.thread.userId;
-        const verifier = SRP.generateVerifier('secret');
-        const srp = new SRP.Server(verifier);
-        const challenge = srp.issueChallenge({A: v.request.A});
+      test("changePassword", ()=>{
+        assertRemote('changePassword', 'foo@bar.co', 'secret', 'new pw');
+      });
 
-        session.rpc.reset();
-        v.sutCallback(null, challenge);
+      test("resetPassword", ()=>{
+        const callback = stub();
+        const args = ['the key', 'new password'];
+        UserAccount.resetPassword(...args, callback);
+        assert.calledWith(session.rpc, 'resetPassword', ...args, callback);
+        assert.msg("should defineRpcGet")(session.isRpcGet('resetPassword'));
+      });
 
-        assert.calledWith(session.rpc, 'SRPLogin', m(response =>{
-          return response.M === srp.M;
-        }));
-        session.rpc.yield('failure');
-
-        assert.calledWithExactly(v.callback, 'failure');
+      test("secureCall", ()=>{
+        assertRemote('secureCall', 'foobar', 'foo@bar.co', 'secret', [1, 2, 3]);
       });
     });
 
     test("setSessionPersistence", ()=>{
       after(() => {
-        userAccount.stop();
-        userAccount[isTest].storage = localStorage;
+        UserAccount.stop();
+        UserAccount[isTest].storage = localStorage;
       });
-      assert.same(userAccount[isTest].storage, localStorage);
+      assert.same(UserAccount[isTest].storage, localStorage);
       const myStorage = {
         getItem: stub().returns('my token'),
         removeItem: stub(),
       };
-      userAccount[isTest].storage = myStorage;
-      assert.same(userAccount[isTest].storage, myStorage);
+      UserAccount[isTest].storage = myStorage;
+      assert.same(UserAccount[isTest].storage, myStorage);
       stub(session, 'send');
-      userAccount.logout();
+      UserAccount.logout();
       assert.calledWith(myStorage.removeItem, 'koru.loginToken');
       assert.calledWith(session.send, 'VXmy token');
     });
@@ -236,27 +304,19 @@ define((require, exports, module)=>{
       beforeEach(()=>{
         session.state._state = 'ready';
         stub(session, 'send');
-        userAccount.init();
+        UserAccount.init();
       });
 
       afterEach(()=>{
-        userAccount.stop();
-      });
-
-      test("resetPassword", ()=>{
-        assert.isTrue(session.isRpcGet('resetPassword'));
-        userAccount.resetPassword('the key', 'new password', v.callback = stub());
-        assert.calledWith(session.rpc, 'resetPassword', 'the key',
-                          m(hash =>  SRP.checkPassword('new password', hash)),
-                          v.callback);
+        UserAccount.stop();
       });
 
       test("logout ", ()=>{
         util.thread.userId = 'userId456';
-        userAccount.token = 'abc|def';
+        UserAccount.token = 'abc|def';
         assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
 
-        userAccount.logout();
+        UserAccount.logout();
         assert.calledWith(session.send, 'VX' + 'abc|def');
 
         session._onMessage(session, 'VS');
@@ -267,19 +327,19 @@ define((require, exports, module)=>{
 
       test("logoutOtherClients", ()=>{
         localStorage.setItem('koru.loginToken', 'abc|def');
-        userAccount.logoutOtherClients();
+        UserAccount.logoutOtherClients();
         assert.calledWith(session.send, 'VO' + 'abc|def');
 
         assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
       });
 
       test("sending login token", ()=>{
-        assert.same(session.state._onConnect['05-login'], userAccount[isTest].onConnect);
+        assert.same(session.state._onConnect['05-login'], UserAccount[isTest].onConnect);
 
         refute.calledWith(session.send, 'VL');
 
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount[isTest].onConnect(session);
+        UserAccount[isTest].onConnect(session);
 
         assert.same(login.getState(session), 'wait');
 
@@ -309,14 +369,14 @@ define((require, exports, module)=>{
       test("no loginToken onConnect", ()=>{
         stub(login, 'ready');
 
-        userAccount[isTest].onConnect();
+        UserAccount[isTest].onConnect();
 
         assert.called(login.ready);
       });
 
       test("login failure", ()=>{
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount[isTest].onConnect(session);
+        UserAccount[isTest].onConnect(session);
 
         session._onMessage(session, 'VF');
 

@@ -8,6 +8,7 @@ define((require, exports, module)=>{
   const session         = require('koru/session');
   const SRP             = require('koru/srp/srp');
   const util            = require('koru/util');
+  const crypto          = requirejs.nodeRequire('crypto');
 
   let emailConfig;
 
@@ -75,6 +76,17 @@ define((require, exports, module)=>{
                             'must be of type function(userId, resetToken)');
   };
 
+  const makeScrypt = (password, salt=crypto.randomBytes(16))=>{
+    const future = new util.Future;
+    crypto.scrypt(password, salt, 64,
+                  void 0, (err, key)=>{
+                    if (err) future.throw(err);
+                    else future.return(key);
+                  });
+    const key = future.wait().toString('hex');
+    return {type: 'scrypt', salt: salt.toString('hex'), key};
+  };
+
   const UserAccount = {
     init() {
       session.provide('V', onMessage);
@@ -92,51 +104,80 @@ define((require, exports, module)=>{
 
     resetPassword(token, passwordHash) {
       Val.ensureString(token);
-      Val.assertCheck(passwordHash, VERIFIER_SPEC);
       const parts = token.split('-');
       const lu = UserLogin.findById(parts[0]);
+      let srp;
+      if (lu !== void 0) {
+        if (lu.srp !== void 0 && lu.srp.type === 'scrypt') {
+          srp = makeScrypt(passwordHash);
+        } else {
+          Val.assertCheck(srp = passwordHash, VERIFIER_SPEC);
+        }
 
-      if (lu && lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
-        lu.srp = passwordHash;
-        lu.resetToken = lu.resetTokenExpire = void 0;
-        const loginToken = lu.makeToken();
-        lu.$$save();
-        return [lu, loginToken];
+        if (lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
+          lu.srp = srp;
+          lu.resetToken = lu.resetTokenExpire = void 0;
+          const loginToken = lu.makeToken();
+          lu.$$save();
+          return [lu, loginToken];
+        }
       }
       throw new koru.Error(404, 'Expired or invalid reset request');
     },
 
     verifyClearPassword(email, password) {
       const doc = UserLogin.findBy('email', email);
-      if (doc === void 0) return;
+      if (doc === void 0 || doc.srp === void 0) return;
 
-      const C = new SRP.Client(password);
-      const S = new SRP.Server(doc.srp);
+      if (doc.srp.type === 'scrypt') {
+        try {
+          assertScryptPassword(doc, password);
+        } catch(err) {
+          if (err.error == 403)
+            return;
+          throw err;
+        }
 
-      const request = C.startExchange();
-      const challenge = S.issueChallenge(request);
-      const response = C.respondToChallenge(challenge);
+      } else {
+        const C = new SRP.Client(password);
+        const S = new SRP.Server(doc.srp);
 
-      if (S.M === response.M) {
-        const token = doc.makeToken();
-        doc.$$save();
-        return [doc, token];
+        const request = C.startExchange();
+        const challenge = S.issueChallenge(request);
+        const response = C.respondToChallenge(challenge);
+
+        if (S.M !== response.M) {
+          return;
+        }
       }
+      const token = doc.makeToken();
+      doc.$$save();
+      return [doc, token];
+
     },
 
     verifyToken(emailOrId, token) {
-      const doc = emailOrId.indexOf('@') === -1 ? UserLogin.findById(emailOrId)
-              : UserLogin.findBy('email', emailOrId);
+      const doc = emailOrId.indexOf('@') === -1
+            ? UserLogin.findById(emailOrId)
+            : UserLogin.findBy('email', emailOrId);
       if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0)
         return doc;
     },
 
     createUserLogin(attrs) {
+      let srp;
+      const {scrypt} = attrs;
+      if (scrypt) {
+        srp = makeScrypt(attrs.password);
+      } else {
+        srp = attrs.password && SRP.generateVerifier(attrs.password);
+      }
+
       return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
-        srp: attrs.password && SRP.generateVerifier(attrs.password),
+        srp,
       });
     },
 
@@ -206,6 +247,53 @@ define((require, exports, module)=>{
       }
     },
   };
+
+  const assertScryptPassword = (doc, password)=>{
+    if (doc === void 0 || doc.srp == null ||
+        doc.srp.type !== 'scrypt')
+      throw new koru.Error(403, 'failure');
+
+    if (makeScrypt(password, doc.srp.salt).key !== doc.srp.key)
+      throw new koru.Error(403, "Invalid password");
+  };
+
+  session.defineRpc('UserAccount.changePassword', changePassword);
+
+  function changePassword(email, oldPassword, newPassword) {
+    const doc = UserLogin.findBy('email', email);
+    assertScryptPassword(doc, oldPassword);
+
+    doc.$update('srp', makeScrypt(newPassword));
+  }
+
+  session.defineRpc('UserAccount.loginWithPassword', loginWithPassword);
+
+  function loginWithPassword(email, password) {
+    const doc = UserLogin.findBy('email', email);
+    assertScryptPassword(doc, password);
+
+    const token = doc.makeToken();
+    doc.$$save();
+
+    return {
+      userId: this.userId = doc.userId,
+      loginToken: doc._id + '|' + token,
+    };
+  }
+
+  session.defineRpc('UserAccount.secureCall', secureCall);
+
+  function secureCall(method, email, password, args) {
+    const doc = UserLogin.findBy('email', email);
+    assertScryptPassword(doc, password);
+
+    try {
+      this.secure = doc;
+      return this._session.rpc(method, ...args);
+    } finally {
+      this.secure = void 0;
+    }
+  }
 
   session.defineRpc('SRPBegin', SRPBegin);
 

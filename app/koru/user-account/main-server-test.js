@@ -11,9 +11,11 @@ define((require, exports, module)=>{
   const session         = require('koru/session');
   const TH              = require('koru/session/test-helper');
   const SRP             = require('koru/srp/srp');
+  const util            = require('koru/util');
+
   const crypto          = requirejs.nodeRequire('crypto');
 
-  const {stub, spy, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m, stubProperty} = TH;
 
   const userAccount = require('./main');
 
@@ -35,8 +37,13 @@ define((require, exports, module)=>{
       stub(crypto, 'randomBytes', (num, cb) => {
         if (cb) {
           cb(null, {toString: stub().withArgs('base64').returns('crypto64Id')});
-        } else
-          return new Uint8Array(num);
+        } else {
+          const ary = Buffer.alloc(num);
+          for(let i = 0; i < ary.length; ++i) {
+            ary[i] = i;
+          }
+          return ary;
+        }
       });
     });
 
@@ -60,6 +67,135 @@ define((require, exports, module)=>{
 
       assert.between(ans.resetTokenExpire, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
       assert.equals(ans.resetToken, 'randid=r2');
+    });
+
+    group("scrypt", ()=>{
+      let derivedKey = void 0;
+      const myScript = (password, salt, len, opts, callback)=>{
+        assert.same(len, 64);
+        assert.same(opts, void 0);
+        callback(null, Buffer.from(derivedKey(password, salt), 'hex'));
+      };
+
+      test("loginWithPassword", ()=>{
+        const scrypt = stub(crypto, 'scrypt', myScript);
+
+        const {conn, lu} = v;
+
+        derivedKey = (password, salt)=>{
+          if (password === 'secret' && salt.toString('hex') === '001122')
+            return '44332211';
+          else
+            return '00990011';
+        };
+
+        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+
+        assert.exception(()=>{
+          let result = session._rpcs['UserAccount.loginWithPassword'].call(
+            conn, lu.email, 'wrong password');
+        }, {error: 403, reason: 'Invalid password'});
+
+        const result = session._rpcs['UserAccount.loginWithPassword'].call(conn, 'foo@bar.co', 'secret');
+
+        assert.equals(result, {userId: 'uid111', loginToken: lu._id+'|1234567890abcdefg'});
+
+        assert.same(conn.userId, 'uid111');
+
+        lu.$reload();
+
+        assert.equals(lu.tokens['1234567890abcdefg'], m.number);
+      });
+
+      test("changePassword", ()=>{
+        const scrypt = stub(crypto, 'scrypt', myScript);
+
+        const {conn, lu} = v;
+
+        derivedKey = (password, salt)=>{
+          if (password === 'old password' && salt.toString('hex') === '001122')
+            return '44332211';
+          else if (password === 'new password' && salt.toString('hex') !== '001122')
+            return '77665544';
+          else
+            return '00990011';
+        };
+
+        assert.exception(()=>{ // not scrypt
+          let result = session._rpcs['UserAccount.changePassword'].call(
+            conn, lu.email, 'old password', 'new password');
+        }, {error: 403, reason: 'failure'});
+
+        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+
+        assert.exception(()=>{
+          let result = session._rpcs['UserAccount.changePassword'].call(
+            conn, lu.email, 'old passwordx', 'new password');
+        }, {error: 403, reason: 'Invalid password'});
+
+        assert.exception(()=>{
+          let result = session._rpcs['UserAccount.changePassword'].call(
+            conn, lu.email+'x', 'old password', 'new password');
+        }, {error: 403, reason: 'failure'});
+
+        let result = session._rpcs['UserAccount.changePassword'].call(
+          conn, lu.email, 'old password', 'new password');
+
+        assert.same(result, void 0);
+
+        lu.$reload();
+
+        assert.equals(lu.srp, {type: 'scrypt', salt: m.string, key: '77665544'});
+      });
+
+      test("secureCall", ()=>{
+        const {conn, lu} = v;
+        const scrypt = stub(crypto, 'scrypt', myScript);
+
+        derivedKey = (password, salt)=>{
+          if (password === 'secret' && salt.toString('hex') === '001122')
+            return '44332211';
+          else
+            return '00990011';
+        };
+
+        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+
+        assert.exception(()=>{
+          session._rpcs['UserAccount.secureCall'].call(
+            conn, 'foobar', lu.email, 'wrongSecret', [1,2,3]);
+        }, {error: 403, reason: 'Invalid password'});
+
+        stub(session, 'rpc').withArgs('foobar', 1, 2, 3).invokes(c => {
+          assert.same(conn.secure, lu);
+          return 'foobar success';
+        });
+        let result = session._rpcs['UserAccount.secureCall'].call(
+          conn, 'foobar', lu.email, 'secret', [1,2,3]);
+        assert.same(result, 'foobar success');
+        assert.same(conn.secure, void 0);
+      });
+
+      test("verifyClearPassword", ()=>{
+        const {conn, lu} = v;
+        const scrypt = stub(crypto, 'scrypt', myScript);
+
+        derivedKey = (password, salt)=>{
+          if (password === 'secret' && salt.toString('hex') === '001122')
+            return '44332211';
+          else
+            return '00990011';
+        };
+
+        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+
+        assert.same(userAccount.verifyClearPassword(lu.email, 'bad'), void 0);
+
+        const docToken = userAccount.verifyClearPassword(lu.email, 'secret');
+        assert.same(docToken[0], lu);
+
+        assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
+      });
     });
 
     group("sendResetPasswordEmail", ()=>{
@@ -102,7 +238,7 @@ define((require, exports, module)=>{
       assert.same(Model.UserLogin.modelName, "UserLogin");
     });
 
-    test("createUserLogin", ()=>{
+    test("createUserLogin srp (default)", ()=>{
       const generateVerifier = spy(SRP, 'generateVerifier');
       const lu = userAccount.createUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
@@ -110,6 +246,36 @@ define((require, exports, module)=>{
       assert.calledWith(generateVerifier, 'test pw');
 
       assert.equals(lu.$reload().srp, generateVerifier.firstCall.returnValue);
+      assert.same(lu.email, 'alice@vimaly.com');
+      assert.same(lu.userId, 'uid1');
+      assert.equals(lu.tokens, {});
+    });
+
+    test("createUserLogin scrypt", ()=>{
+      crypto.randomBytes.restore();
+      const randomBytes = spy(crypto, 'randomBytes').withArgs(16);
+      const lu = userAccount.createUserLogin({
+        email: 'alice@vimaly.com', userId: "uid1", password: 'test pw', scrypt: true});
+
+      assert.calledOnceWith(randomBytes, 16);
+
+      const salt = randomBytes.firstCall.returnValue;
+
+      const future = new util.Future;
+      crypto.scrypt('test pw', salt, 64,
+                    void 0, (err, key)=>{
+                      if (err) future.throw(err);
+                      else future.return(key);
+                    });
+      const key = future.wait().toString('hex');
+
+      assert.same(salt.length, 16);
+      assert.same(key.length, 128);
+
+      assert.equals(lu.$reload().srp, {
+        type: 'scrypt',
+        salt: salt.toString('hex'),
+        key});
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
@@ -247,6 +413,26 @@ define((require, exports, module)=>{
     });
 
     group("resetPassword", ()=>{
+      test("scrypt", ()=>{
+        const {lu, conn} = v;
+
+        lu.$update('srp', {type: 'scrypt'});
+
+        assert.exception(()=>{
+          session._rpcs.resetPassword.call(conn, 'token', 'password');
+        }, {error: 404, reason: 'Expired or invalid reset request'});
+
+        lu.resetToken = 'secretToken';
+        lu.resetTokenExpire = Date.now() + 2000;
+        lu.$$save();
+
+        session._rpcs.resetPassword.call(v.conn, v.lu._id+'-secretToken', 'new password');
+
+        v.lu.$reload();
+        assert.equals(v.lu.srp, {type: 'scrypt', salt: '000102030405060708090a0b0c0d0e0f',
+                                 key: m(/^3c3f.*b9$/)});
+      });
+
       test("invalid resetToken", ()=>{
         assert.exception(()=>{
           session._rpcs.resetPassword.call(v.conn, 'token', {identity: 'abc123'});
@@ -281,7 +467,7 @@ define((require, exports, module)=>{
           identity: 'string', salt: 'string', verifier: 'string' });
 
         assert.same(v.conn.userId, v.lu.userId);
-        assert.same(v.conn.loginToken, '11111111111111111');
+        assert.same(v.conn.loginToken, '1234567890abcdefg');
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
         assert.calledWith(v.ws.send, m(data =>{

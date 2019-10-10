@@ -23,13 +23,13 @@ define((require)=>{
 
     [inspect$]() {return 'SessionBase('+this._id+')'}
 
-    defineRpc(name, func) {
+    defineRpc(name, func=()=>{}) {
       this._rpcs[name] = func;
       func[rpcType$] = 'update';
       return this;
     }
 
-    defineRpcGet(name, func) {
+    defineRpcGet(name, func=()=>{}) {
       this._rpcs[name] = func;
       func[rpcType$] = 'get';
       return this;

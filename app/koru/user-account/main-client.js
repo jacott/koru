@@ -18,7 +18,21 @@ define((require, exports, module)=>{
     }
   };
 
+  session.defineRpcGet('UserAccount.loginWithPassword');
+  session.defineRpcGet('UserAccount.changePassword');
+  session.defineRpcGet('UserAccount.secureCall');
+
+  const DEFAULT_MODE = 'plain';
+  let mode = DEFAULT_MODE;
+  const MODES = {srp: 'srp', plain: 'plain', default: DEFAULT_MODE};
+
   const UserAccount = {
+    get mode() {return mode},
+    set mode(value) {
+      const nm = MODES[value];
+      if (nm === void 0) throw new Error("invalid UserAccount mode");
+      mode = nm;
+    },
     get token() {return storage.getItem('koru.loginToken')},
     set token(value) {
       return value ? storage.setItem('koru.loginToken', value) :
@@ -52,10 +66,10 @@ define((require, exports, module)=>{
       session.state.stopOnConnect('05-login');
     },
 
-    state: null,
-
     loginWithPassword(email, password, callback) {
-      SRPCall(
+      if (mode === 'plain')
+        session.rpc('UserAccount.loginWithPassword', email, password, callback);
+      else SRPCall(
         'SRPLogin', email, password, callback,
         ()=>{},
         (err, result)=>{
@@ -67,15 +81,18 @@ define((require, exports, module)=>{
     },
 
     changePassword(email, oldPassword, newPassword, callback) {
-      SRPCall(
+      if (mode === 'plain')
+        session.rpc('UserAccount.changePassword', email, oldPassword, newPassword, callback);
+      else SRPCall(
         'SRPChangePassword', email, oldPassword, callback,
         response =>{response.newPassword = SRP.generateVerifier(newPassword)},
         ()=>{callback()}
       );
     },
 
-    resetPassword(key, secret, callback) {
-      session.rpc('resetPassword', key, SRP.generateVerifier(secret), callback);
+    resetPassword(key, newPassword, callback) {
+      session.rpc('resetPassword', key, mode === 'plain'
+                  ? newPassword : SRP.generateVerifier(newPassword), callback);
     },
 
     logout() {
@@ -88,7 +105,10 @@ define((require, exports, module)=>{
     },
 
     secureCall(method, email, password, payload, callback) {
-      SRPCall(method, email, password, callback, response =>{response.payload = payload});
+      if (mode === 'plain')
+        session.rpc('UserAccount.secureCall', method, email, password, payload, callback);
+      else
+        SRPCall(method, email, password, callback, response =>{response.payload = payload});
     },
   };
 
@@ -98,10 +118,10 @@ define((require, exports, module)=>{
     onConnect,
   };
 
-  session.defineRpcGet('resetPassword', ()=>{});
-  session.defineRpcGet('SRPBegin', ()=>{});
-  session.defineRpcGet('SRPLogin', ()=>{});
-  session.defineRpcGet('SRPChangePassword', ()=>{});
+  session.defineRpcGet('resetPassword');
+  session.defineRpcGet('SRPBegin');
+  session.defineRpcGet('SRPLogin');
+  session.defineRpcGet('SRPChangePassword');
 
   function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
     const srp = new SRP.Client(password);
