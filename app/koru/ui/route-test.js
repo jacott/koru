@@ -95,7 +95,7 @@ isClient && define((require, exports, module)=>{
           onExit: stub(),
         };
 
-        Route.root.addBase(v.Baz, 'bazId');
+        Route.root.addBase(v.Baz, {routeVar: 'bazId'});
         v.Baz.route.addTemplate(v.RootBar);
       });
 
@@ -793,8 +793,8 @@ isClient && define((require, exports, module)=>{
     });
 
     test("addTemplate", ()=>{
-      Route.pageParent.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
       after(()=>{{Route.pageParent = document.body}});
+
       const Baz = {
         name: 'Baz',
         parent: v.FooBar,
@@ -803,6 +803,8 @@ isClient && define((require, exports, module)=>{
           return Dom.h({div: arg, id: "Baz"});
         },
       };
+
+      document.body.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
 
       Route.root.addTemplate(v.FooBar);
       Route.root.addTemplate(Baz, {data() {return 'fooData'}});

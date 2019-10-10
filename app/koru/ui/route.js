@@ -8,6 +8,8 @@ define((require, exports, module)=>{
 
   const {hasOwn} = util;
 
+  const Module = module.constructor;
+
   const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
   let inGotoPage = 0;
   let currentPage = null;
@@ -34,12 +36,12 @@ define((require, exports, module)=>{
         break;
     }
 
-    for(index = 0;index < diff; ++index) {
+    for(index = 0; index < diff; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
     }
 
-    for(;index <= exitLen; ++index) {
+    for(; index <= exitLen; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
     }
@@ -115,9 +117,9 @@ define((require, exports, module)=>{
 
   const onEntryFunc = (options)=> {
     const autoOnEntry = (page, pageRoute)=>{
-      let parent, data;
+      let parent = null, data;
 
-      if (options) {
+      if (options !== void 0) {
         if (typeof options.data ==='function') {
           data = options.data.call(page, page, pageRoute);
         } else {
@@ -132,11 +134,10 @@ define((require, exports, module)=>{
 
         if (route && route.template) {
           parent = document.getElementById(route.template.name);
-          if (parent)
+          if (parent !== null)
             parent = parent.getElementsByClassName('body')[0] || parent;
         }
-        (parent || Route.pageParent || (Route.pageParent = document.body))
-          .appendChild(page._renderedPage);
+        (parent === null ? Route.pageParent : parent).appendChild(page._renderedPage);
       }
       if (options.focus) {
         Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
@@ -152,9 +153,8 @@ define((require, exports, module)=>{
   }
   autoOnExit.isAuto = true;
 
-  function addCommon(route, module, template, options) {
-    if (module) koru.onunload(module, ()=>{route.removeTemplate(template, options)});
-    options = options || {};
+  function addCommon(route, module, template, options={}) {
+    if (module !== void 0) module.onUnload(()=>{route.removeTemplate(template, options)});
     let {path} = options;
     if (path == null) path = templatePath(template);
     if (route.routes.path)
@@ -171,19 +171,11 @@ define((require, exports, module)=>{
   }
 
   class Route {
-    constructor(path, template, parent, options) {
-      if (typeof options === 'string') {
-        this.routeVar = options;
-        options = {};
-      } else {
-        const routeVar = options && options.routeVar;
-        if (routeVar) this.routeVar = routeVar;
-      }
-
+    constructor(path, template, parent, options={}) {
+      this.routeVar = options.routeVar;
       this.path = path || '';
       this.template = template;
-      this.parent = options !== undefined && hasOwn(options, 'parent')
-        ? options.parent : parent;
+      this.parent = ('parent' in options) ? options.parent : parent;
       this.routes = {};
 
       util.reverseMerge(this, options);
@@ -436,7 +428,7 @@ define((require, exports, module)=>{
       let newPage = root.defaultPage;
       for(let i = 0; i < parts.length; ++i) {
         const part = parts[i];
-        if (! part) continue;
+        if (part === '') continue;
         newPage = (page.routes && page.routes[part]);
         if (! newPage) {
           newPage = page.defaultPage;
@@ -483,12 +475,11 @@ define((require, exports, module)=>{
       return result;
     }
 
-
     addTemplate(module, template, options) {
-      if (module && ! ('exports' in module)) {
+      if (module !== void 0 && ! (module instanceof Module) ) {
         options = template;
         template = module;
-        module = null;
+        module = void 0;
       }
       options = addCommon(this, module, template, options);
 
@@ -500,8 +491,7 @@ define((require, exports, module)=>{
     }
 
     removeTemplate(template, options) {
-      let path = options && options.path;
-      if (path == null) path = templatePath(template);
+      const path = (options && options.path) || templatePath(template);
       this.routes[path] = null;
       if (template.onEntry != null && template.onEntry.isAuto)
         template.onEntry = null;
@@ -510,10 +500,10 @@ define((require, exports, module)=>{
     }
 
     addDialog(module, template, options) {
-      if (module && ! module.exports) {
+      if (module !== void 0 && ! (module instanceof Module) ) {
         options = template;
         template = module;
-        module = null;
+        module = void 0;
       }
       options = addCommon(this, module, template, options);
 
@@ -565,7 +555,7 @@ define((require, exports, module)=>{
     }
   };
 
-  Route.pageParent = null;
+  Route.pageParent = document.body;
 
   makeSubject(Route);
 
