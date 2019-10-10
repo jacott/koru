@@ -1492,6 +1492,17 @@ define((require, exports, module)=>{
         {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
     });
 
+    test("toHex", ()=>{
+      /**
+       * Convert a byte array to a hex string
+
+       **/
+      api.method();
+      //[
+      assert.equals(util.toHex(new Uint8Array([3, 6, 8, 129, 255])), '03060881ff');
+      //]
+    });
+
     test("withId", ()=>{
       /**
        * Associate `object` with `_id`.

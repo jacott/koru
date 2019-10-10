@@ -1074,6 +1074,15 @@ define((require)=>{
       return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
     },
 
+    toHex: array =>{
+      let hex = '';
+      for(let i = 0; i < array.length; ++i) {
+        const s = array[i].toString(16);
+        hex += s.length == 1 ? '0'+s : s;
+      }
+      return hex;
+    },
+
     withId(object, _id, key=withId$) {
       const assoc = object[key] || (object[key] = Object.create(object));
       if (assoc._id !== _id) assoc._id = _id;
