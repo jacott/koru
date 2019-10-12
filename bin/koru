@@ -6,6 +6,7 @@ let program = require('commander');
 
 global.isServer = true;
 global.isClient = false;
+global.isTest = false;
 
 const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
 
