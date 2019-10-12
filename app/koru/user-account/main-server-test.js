@@ -568,7 +568,7 @@ define((require, exports, module)=>{
 
     group("login with token", ()=>{
       beforeEach(()=>{
-        userAccount.init();
+        userAccount.start();
       });
 
       afterEach(()=>{

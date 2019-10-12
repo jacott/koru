@@ -87,14 +87,14 @@ define((require, exports, module)=>{
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
+  const stop = ()=>{session.unprovide('V')};
+
   const UserAccount = {
-    init() {
+    start() {
       session.provide('V', onMessage);
     },
 
-    stop() {
-      session.unprovide('V');
-    },
+    stop,
 
     UserLogin,
     /**
@@ -166,8 +166,7 @@ define((require, exports, module)=>{
 
     createUserLogin(attrs) {
       let srp;
-      const {scrypt} = attrs;
-      if (scrypt) {
+      if (attrs.scrypt) {
         srp = makeScrypt(attrs.password);
       } else {
         srp = attrs.password && SRP.generateVerifier(attrs.password);
@@ -253,7 +252,7 @@ define((require, exports, module)=>{
         doc.srp.type !== 'scrypt')
       throw new koru.Error(403, 'failure');
 
-    if (makeScrypt(password, doc.srp.salt).key !== doc.srp.key)
+    if (makeScrypt(password, Buffer.from(doc.srp.salt, 'hex')).key !== doc.srp.key)
       throw new koru.Error(403, "Invalid password");
   };
 
@@ -388,6 +387,8 @@ define((require, exports, module)=>{
       }
     }}
   }
+
+  module.onUnload(stop);
 
   return UserAccount;
 });

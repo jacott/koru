@@ -8,7 +8,7 @@ define((require, exports, module)=>{
   const util            = require('../util');
   const login           = require('./client-login');
 
-  const {stub, spy, match: m} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const UserAccount = require('./main');
 
@@ -170,7 +170,7 @@ define((require, exports, module)=>{
           }));
 
 
-          assert.calledWithExactly(v.callback);
+          assert.calledWithExactly(v.callback, null);
           assert.same(util.thread.userId, 'uid123');
           assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
           assert.same(UserAccount.token, 'tokenId|token123');
@@ -256,13 +256,27 @@ define((require, exports, module)=>{
         const remoteName = 'UserAccount.'+name;
         UserAccount[name](...args, callback);
         assert.elide(()=>{
-          assert.calledWith(session.rpc, remoteName, ...args, callback);
+          assert.calledWith(session.rpc, remoteName, ...args, m.func);
           assert.msg("should defineRpcGet")(session.isRpcGet(remoteName));
         });
+        return callback;
       };
 
       test("loginWithPassword", ()=>{
-        assertRemote('loginWithPassword', 'foo@bar.co', 'secret');
+        const callback = assertRemote('loginWithPassword', 'foo@bar.co', 'secret');
+        refute.called(callback);
+        const get = stub(), set = stub();
+        stubProperty(UserAccount, 'token', {get, set});
+        stub(login, 'setUserId');
+
+        session.rpc.yield("error");
+        assert.calledWith(callback, "error");
+        callback.reset();
+        refute.called(set);
+        session.rpc.yield(null, {loginToken: "loginToken", userId: "userId"});
+        assert.calledWith(callback, null);
+        assert.calledWith(set, "loginToken");
+        assert.calledWith(login.setUserId, session, 'userId');
       });
 
       test("changePassword", ()=>{
@@ -304,7 +318,7 @@ define((require, exports, module)=>{
       beforeEach(()=>{
         session.state._state = 'ready';
         stub(session, 'send');
-        UserAccount.init();
+        UserAccount.start();
       });
 
       afterEach(()=>{

@@ -1,9 +1,9 @@
 define((require, exports, module)=>{
   'use strict';
-  const localStorage    = require('../local-storage');
-  const koru            = require('../main');
-  const session         = require('../session/client-rpc');
-  const SRP             = require('../srp/srp');
+  const koru            = require('koru');
+  const localStorage    = require('koru/local-storage');
+  const session         = require('koru/session/client-rpc');
+  const SRP             = require('koru/srp/srp');
   const login           = require('./client-login');
 
   let storage = localStorage;
@@ -23,8 +23,39 @@ define((require, exports, module)=>{
   session.defineRpcGet('UserAccount.secureCall');
 
   const DEFAULT_MODE = 'plain';
-  let mode = DEFAULT_MODE;
   const MODES = {srp: 'srp', plain: 'plain', default: DEFAULT_MODE};
+  let mode = DEFAULT_MODE;
+
+  const stop = ()=>{
+    session.unprovide('V');
+    session.state.stopOnConnect('05-login');
+  };
+
+  const SRPCall = (method, email, password,  callback, modifyResponse, responseFunc)=>{
+    const srp = new SRP.Client(password);
+    const request = srp.startExchange();
+    request.email = email;
+    session.rpc('SRPBegin', request, (err, result)=>{
+      if (err != null) {
+        if (callback !== void 0)
+          callback(err);
+        else
+          koru.error("Authentication error: " + err);
+        return;
+      }
+      const response = srp.respondToChallenge(result);
+      modifyResponse(response);
+      session.rpc(method, response, (err, result)=>{
+        if (responseFunc === void 0) {
+          callback !== void 0 && callback(err, result);
+
+        } else if (! err && srp.verifyConfirmation({HAMK: result.HAMK})) {
+          responseFunc(err, result);
+        } else
+          callback !== void 0 && callback(err || 'failure');
+      });
+    });
+  };
 
   const UserAccount = {
     get mode() {return mode},
@@ -38,7 +69,7 @@ define((require, exports, module)=>{
       return value ? storage.setItem('koru.loginToken', value) :
         storage.removeItem('koru.loginToken');
     },
-    init() {
+    start() {
       session.provide('V', function (data) {
         switch(data[0]) {
         case 'T':
@@ -61,22 +92,22 @@ define((require, exports, module)=>{
       session.state.onConnect('05-login', onConnect);
     },
 
-    stop() {
-      session.unprovide('V');
-      session.state.stopOnConnect('05-login');
-    },
+    stop,
 
     loginWithPassword(email, password, callback) {
+      const cbwrapper = (err, result)=>{
+        if (! err) {
+          UserAccount.token = result.loginToken;
+          login.setUserId(session, result.userId);
+        }
+        callback(err);
+      };
       if (mode === 'plain')
-        session.rpc('UserAccount.loginWithPassword', email, password, callback);
+        session.rpc('UserAccount.loginWithPassword', email, password, cbwrapper);
       else SRPCall(
         'SRPLogin', email, password, callback,
         ()=>{},
-        (err, result)=>{
-          UserAccount.token = result.loginToken;
-          login.setUserId(session, result.userId);
-          callback();
-        }
+        cbwrapper
       );
     },
 
@@ -123,33 +154,7 @@ define((require, exports, module)=>{
   session.defineRpcGet('SRPLogin');
   session.defineRpcGet('SRPChangePassword');
 
-  function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
-    const srp = new SRP.Client(password);
-    const request = srp.startExchange();
-    request.email = email;
-    session.rpc('SRPBegin', request, (err, result)=>{
-      if (err) {
-        if (callback)
-          callback(err);
-        else
-          koru.error("Authentication error: " + err);
-        return;
-      }
-      const response = srp.respondToChallenge(result);
-      modifyResponse(response);
-      session.rpc(method, response, (err, result)=>{
-        if (! responseFunc) {
-          callback && callback(err, result);
-
-        } else if (! err && srp.verifyConfirmation({HAMK: result.HAMK})) {
-          responseFunc && responseFunc(err, result);
-        } else
-          callback && callback(err || 'failure');
-      });
-    });
-  }
-
-  koru.onunload(module, ()=>{UserAccount.stop()});
+  module.onUnload(stop);
 
   return UserAccount;
 });
