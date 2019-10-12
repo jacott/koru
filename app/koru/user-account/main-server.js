@@ -87,7 +87,10 @@ define((require, exports, module)=>{
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
-  const stop = ()=>{session.unprovide('V')};
+  const stop = ()=>{
+    emailConfig = void 0;
+    session.unprovide('V');
+  };
 
   const UserAccount = {
     start() {

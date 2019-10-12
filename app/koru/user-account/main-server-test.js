@@ -17,7 +17,7 @@ define((require, exports, module)=>{
 
   const {stub, spy, intercept, match: m, stubProperty} = TH;
 
-  const userAccount = require('./main');
+  const UserAccount = require('./main');
 
   let v = {};
 
@@ -30,7 +30,7 @@ define((require, exports, module)=>{
     beforeEach(()=>{
       v.ws = TH.mockWs();
       v.conn = TH.sessionConnect(v.ws);
-      v.lu = userAccount.model.create({
+      v.lu = UserAccount.UserLogin.create({
         userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
@@ -50,7 +50,7 @@ define((require, exports, module)=>{
     afterEach(()=>{
       Val.assertCheck.reset();
       Val.ensureString.reset();
-      userAccount.model.docs.remove({});
+      UserAccount.model.docs.remove({});
       intercept(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
@@ -62,7 +62,7 @@ define((require, exports, module)=>{
         .onCall(0).returns('randid=')
         .onCall(1).returns('r2');
 
-      const ans = userAccount.makeResetPasswordKey({_id: 'uid111'});
+      const ans = UserAccount.makeResetPasswordKey({_id: 'uid111'});
       assert.equals(ans.attributes, v.lu.$reload().attributes);
 
       assert.between(ans.resetTokenExpire, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
@@ -189,19 +189,19 @@ define((require, exports, module)=>{
 
         lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
 
-        assert.same(userAccount.verifyClearPassword(lu.email, 'bad'), void 0);
+        assert.same(UserAccount.verifyClearPassword(lu.email, 'bad'), void 0);
 
-        const docToken = userAccount.verifyClearPassword(lu.email, 'secret');
+        const docToken = UserAccount.verifyClearPassword(lu.email, 'secret');
         assert.same(docToken[0], lu);
 
-        assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
+        assert(UserAccount.verifyToken('foo@bar.co', docToken[1]));
       });
     });
 
     group("sendResetPasswordEmail", ()=>{
       beforeEach(()=>{
         stub(Email, 'send');
-        v.userAccountConfig = koru.config.userAccount;
+        v.UserAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
           emailConfig: {
             sendResetPasswordEmailText(user, token) {
@@ -215,11 +215,11 @@ define((require, exports, module)=>{
       });
 
       afterEach(()=>{
-        koru.config.userAccount = v.userAccountConfig;
+        koru.config.userAccount = v.UserAccountConfig;
       });
 
       test("send", ()=>{
-        userAccount.sendResetPasswordEmail({_id: 'uid111'});
+        UserAccount.sendResetPasswordEmail({_id: 'uid111'});
 
         const tokenExp =  v.lu.$reload().resetTokenExpire;
 
@@ -240,7 +240,7 @@ define((require, exports, module)=>{
 
     test("createUserLogin srp (default)", ()=>{
       const generateVerifier = spy(SRP, 'generateVerifier');
-      const lu = userAccount.createUserLogin({
+      const lu = UserAccount.createUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
 
       assert.calledWith(generateVerifier, 'test pw');
@@ -254,7 +254,7 @@ define((require, exports, module)=>{
     test("createUserLogin scrypt", ()=>{
       crypto.randomBytes.restore();
       const randomBytes = spy(crypto, 'randomBytes').withArgs(16);
-      const lu = userAccount.createUserLogin({
+      const lu = UserAccount.createUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", password: 'test pw', scrypt: true});
 
       assert.calledOnceWith(randomBytes, 16);
@@ -282,7 +282,7 @@ define((require, exports, module)=>{
     });
 
     test("updateOrCreateUserLogin", ()=>{
-      let lu = userAccount.updateOrCreateUserLogin({
+      let lu = UserAccount.updateOrCreateUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
 
       assert.equals(lu.$reload().srp, 'test srp');
@@ -290,14 +290,14 @@ define((require, exports, module)=>{
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
 
-      lu = userAccount.updateOrCreateUserLogin({
+      lu = UserAccount.updateOrCreateUserLogin({
         email: 'bob@vimaly.com', userId: "uid1", srp: 'new srp'});
 
       assert.equals(lu.$reload().srp, 'new srp');
       assert.same(lu.email, 'bob@vimaly.com');
       assert.same(lu.userId, 'uid1');
 
-      lu = userAccount.updateOrCreateUserLogin({email: 'bob@vimaly.comm', userId: "uid1"});
+      lu = UserAccount.updateOrCreateUserLogin({email: 'bob@vimaly.comm', userId: "uid1"});
 
       assert.equals(lu.$reload().srp, 'new srp');
       assert.same(lu.email, 'bob@vimaly.comm');
@@ -329,19 +329,19 @@ define((require, exports, module)=>{
 
     test("verifyClearPassword", ()=>{
       v.lu.$update('srp', SRP.generateVerifier('secret'));
-      let docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
+      let docToken = UserAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
-      assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
-      docToken = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
+      assert(UserAccount.verifyToken('foo@bar.co', docToken[1]));
+      docToken = UserAccount.verifyClearPassword('foo@bar.co', 'secretx');
       assert.same(docToken, undefined);
     });
 
     test("verifyToken", ()=>{
-      let doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
+      let doc = UserAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
       assert.equals(doc && doc._id, v.lu._id);
-      doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
+      doc = UserAccount.verifyToken('foo@bar.co', 'exp'); // bad token
       assert.same(doc, undefined);
-      doc = userAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
+      doc = UserAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
       assert.equals(doc && doc._id, v.lu._id);
     });
 
@@ -355,12 +355,12 @@ define((require, exports, module)=>{
       test("direct calling", ()=>{
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         const storage = {};
-        let result = userAccount.SRPBegin(storage, v.request);
+        let result = UserAccount.SRPBegin(storage, v.request);
 
         assert.equals(storage, {
           $srp: m.any, $srpUserAccount: m.field('_id', v.lu._id)});
         const response = v.srp.respondToChallenge(result);
-        result = userAccount.SRPLogin(storage, response);
+        result = UserAccount.SRPLogin(storage, response);
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
         assert.same(result.userId, 'uid111');
       });
@@ -444,7 +444,7 @@ define((require, exports, module)=>{
       });
 
       test("expired token", ()=>{
-        assert.equals(userAccount.model.$fields.resetTokenExpire, {type: 'bigint'});
+        assert.equals(UserAccount.model.$fields.resetTokenExpire, {type: 'bigint'});
 
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() -5;
@@ -456,7 +456,7 @@ define((require, exports, module)=>{
       });
 
       test("success", ()=>{
-        spy(userAccount, 'resetPassword');
+        spy(UserAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
         v.lu.$$save();
@@ -479,7 +479,7 @@ define((require, exports, module)=>{
 
         }));
         assert.same(v.lu._id, v.docId);
-        assert.equals(userAccount.resetPassword.firstCall.returnValue, [
+        assert.equals(UserAccount.resetPassword.firstCall.returnValue, [
           m.field('_id', v.lu._id), v.token]);
         assert.between(v.lu.tokens[v.token],
                        Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
@@ -499,8 +499,8 @@ define((require, exports, module)=>{
       });
 
       test("intercept", ()=>{
-        after(()=>{userAccount.interceptChangePassword = null});
-        userAccount.interceptChangePassword = stub();
+        after(()=>{UserAccount.interceptChangePassword = null});
+        UserAccount.interceptChangePassword = stub();
 
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
@@ -513,7 +513,7 @@ define((require, exports, module)=>{
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
-        assert.calledWith(userAccount.interceptChangePassword, m.field('_id', v.lu._id),
+        assert.calledWith(UserAccount.interceptChangePassword, m.field('_id', v.lu._id),
                           response.newPassword);
 
         v.lu.$reload();
@@ -568,11 +568,11 @@ define((require, exports, module)=>{
 
     group("login with token", ()=>{
       beforeEach(()=>{
-        userAccount.start();
+        UserAccount.start();
       });
 
       afterEach(()=>{
-        userAccount.stop();
+        UserAccount.stop();
         intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
@@ -581,7 +581,7 @@ define((require, exports, module)=>{
       });
 
       test("logout with token", ()=>{
-        spy(userAccount, 'logout');
+        spy(UserAccount, 'logout');
         v.conn.userId = 'uid111';
         v.conn.sessAuth = 'sessauth';
 
@@ -592,7 +592,7 @@ define((require, exports, module)=>{
 
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
-        assert.calledWith(userAccount.logout, v.lu._id, 'abc');
+        assert.calledWith(UserAccount.logout, v.lu._id, 'abc');
       });
 
       test("logout without token", ()=>{
@@ -606,7 +606,7 @@ define((require, exports, module)=>{
       });
 
       test("logoutOtherClients", ()=>{
-        spy(userAccount, 'logoutOtherClients');
+        spy(UserAccount, 'logoutOtherClients');
         v.ws2 = TH.mockWs();
         v.ws3 = TH.mockWs();
         v.ws4 = TH.mockWs();
@@ -633,7 +633,7 @@ define((require, exports, module)=>{
 
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
 
-        assert.calledWith(userAccount.logoutOtherClients, v.lu._id, 'abc');
+        assert.calledWith(UserAccount.logoutOtherClients, v.lu._id, 'abc');
       });
 
       test("when not logged in logoutOtherClients does nothing", ()=>{
