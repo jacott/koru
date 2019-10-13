@@ -57,7 +57,7 @@ define((require, exports, module)=>{
     fields: {
       userId: 'text',
       email: 'text',
-      srp: 'object',
+      password: 'object',
       tokens: 'object',
       resetToken: 'text',
       resetTokenExpire: 'bigint',
@@ -105,20 +105,19 @@ define((require, exports, module)=>{
      **/
     model: UserLogin,
 
-    resetPassword(token, passwordHash) {
+    resetPassword(token, password) {
       Val.ensureString(token);
       const parts = token.split('-');
       const lu = UserLogin.findById(parts[0]);
-      let srp;
       if (lu !== void 0) {
-        if (lu.srp !== void 0 && lu.srp.type === 'scrypt') {
-          srp = makeScrypt(passwordHash);
+        if (lu.password !== void 0 && lu.password.type === 'scrypt') {
+          password = makeScrypt(password);
         } else {
-          Val.assertCheck(srp = passwordHash, VERIFIER_SPEC);
+          Val.assertCheck(password, VERIFIER_SPEC);
         }
 
         if (lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
-          lu.srp = srp;
+          lu.password = password;
           lu.resetToken = lu.resetTokenExpire = void 0;
           const loginToken = lu.makeToken();
           lu.$$save();
@@ -130,9 +129,9 @@ define((require, exports, module)=>{
 
     verifyClearPassword(email, password) {
       const doc = UserLogin.findBy('email', email);
-      if (doc === void 0 || doc.srp === void 0) return;
+      if (doc === void 0 || doc.password === void 0) return;
 
-      if (doc.srp.type === 'scrypt') {
+      if (doc.password.type === 'scrypt') {
         try {
           assertScryptPassword(doc, password);
         } catch(err) {
@@ -143,7 +142,7 @@ define((require, exports, module)=>{
 
       } else {
         const C = new SRP.Client(password);
-        const S = new SRP.Server(doc.srp);
+        const S = new SRP.Server(doc.password);
 
         const request = C.startExchange();
         const challenge = S.issueChallenge(request);
@@ -168,18 +167,18 @@ define((require, exports, module)=>{
     },
 
     createUserLogin(attrs) {
-      let srp;
+      let password;
       if (attrs.scrypt) {
-        srp = makeScrypt(attrs.password);
+        password = makeScrypt(attrs.password);
       } else {
-        srp = attrs.password && SRP.generateVerifier(attrs.password);
+        password = attrs.password && SRP.generateVerifier(attrs.password);
       }
 
       return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
-        srp,
+        password,
       });
     },
 
@@ -212,13 +211,13 @@ define((require, exports, module)=>{
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
-        srp: attrs.srp,
+        password: attrs.password,
       });;
 
       const update = {};
 
       if (attrs.email) update.email = attrs.email;
-      if (attrs.srp) update.srp = attrs.srp;
+      if (attrs.password) update.password = attrs.password;
       util.isObjEmpty(update) || lu.$update(update);
       return lu;
     },
@@ -251,11 +250,11 @@ define((require, exports, module)=>{
   };
 
   const assertScryptPassword = (doc, password)=>{
-    if (doc === void 0 || doc.srp == null ||
-        doc.srp.type !== 'scrypt')
+    if (doc === void 0 || doc.password == null ||
+        doc.password.type !== 'scrypt')
       throw new koru.Error(403, 'failure');
 
-    if (makeScrypt(password, Buffer.from(doc.srp.salt, 'hex')).key !== doc.srp.key)
+    if (makeScrypt(password, Buffer.from(doc.password.salt, 'hex')).key !== doc.password.key)
       throw new koru.Error(403, "Invalid password");
   };
 
@@ -265,7 +264,7 @@ define((require, exports, module)=>{
     const doc = UserLogin.findBy('email', email);
     assertScryptPassword(doc, oldPassword);
 
-    doc.$update('srp', makeScrypt(newPassword));
+    doc.$update('password', makeScrypt(newPassword));
   }
 
   session.defineRpc('UserAccount.loginWithPassword', loginWithPassword);
@@ -301,8 +300,8 @@ define((require, exports, module)=>{
 
   function SRPBegin(request) {
     const doc = UserLogin.findBy('email', request.email);
-    if (doc === void 0 || doc.srp == null) throw new koru.Error(403, 'failure');
-    const srp = new SRP.Server(doc.srp);
+    if (doc === void 0 || doc.password == null) throw new koru.Error(403, 'failure');
+    const srp = new SRP.Server(doc.password);
     this.$srp = srp;
     this.$srpUserAccount = doc;
     return srp.issueChallenge({A: request.A});
@@ -337,7 +336,7 @@ define((require, exports, module)=>{
     if (UserAccount.interceptChangePassword)
       UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
     else
-      this.$srpUserAccount.$update({srp: response.newPassword});
+      this.$srpUserAccount.$update({password: response.newPassword});
 
     const result = {
       HAMK: this.$srp && this.$srp.HAMK,

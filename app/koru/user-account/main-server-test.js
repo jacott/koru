@@ -31,7 +31,7 @@ define((require, exports, module)=>{
       v.ws = TH.mockWs();
       v.conn = TH.sessionConnect(v.ws);
       v.lu = UserAccount.UserLogin.create({
-        userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
+        userId: 'uid111', password: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
       stub(crypto, 'randomBytes', (num, cb) => {
@@ -89,7 +89,7 @@ define((require, exports, module)=>{
             return '00990011';
         };
 
-        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+        lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
         assert.exception(()=>{
           let result = session._rpcs['UserAccount.loginWithPassword'].call(
@@ -126,7 +126,7 @@ define((require, exports, module)=>{
             conn, lu.email, 'old password', 'new password');
         }, {error: 403, reason: 'failure'});
 
-        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+        lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
         assert.exception(()=>{
           let result = session._rpcs['UserAccount.changePassword'].call(
@@ -145,7 +145,7 @@ define((require, exports, module)=>{
 
         lu.$reload();
 
-        assert.equals(lu.srp, {type: 'scrypt', salt: m.string, key: '77665544'});
+        assert.equals(lu.password, {type: 'scrypt', salt: m.string, key: '77665544'});
       });
 
       test("secureCall", ()=>{
@@ -159,7 +159,7 @@ define((require, exports, module)=>{
             return '00990011';
         };
 
-        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+        lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
         assert.exception(()=>{
           session._rpcs['UserAccount.secureCall'].call(
@@ -187,7 +187,7 @@ define((require, exports, module)=>{
             return '00990011';
         };
 
-        lu.$update('srp', {type: 'scrypt', salt: '001122', key: '44332211'});
+        lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
         assert.same(UserAccount.verifyClearPassword(lu.email, 'bad'), void 0);
 
@@ -245,7 +245,7 @@ define((require, exports, module)=>{
 
       assert.calledWith(generateVerifier, 'test pw');
 
-      assert.equals(lu.$reload().srp, generateVerifier.firstCall.returnValue);
+      assert.equals(lu.$reload().password, generateVerifier.firstCall.returnValue);
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
@@ -272,7 +272,7 @@ define((require, exports, module)=>{
       assert.same(salt.length, 16);
       assert.same(key.length, 128);
 
-      assert.equals(lu.$reload().srp, {
+      assert.equals(lu.$reload().password, {
         type: 'scrypt',
         salt: salt.toString('hex'),
         key});
@@ -283,23 +283,23 @@ define((require, exports, module)=>{
 
     test("updateOrCreateUserLogin", ()=>{
       let lu = UserAccount.updateOrCreateUserLogin({
-        email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
+        email: 'alice@vimaly.com', userId: "uid1", password: 'test srp'});
 
-      assert.equals(lu.$reload().srp, 'test srp');
+      assert.equals(lu.$reload().password, 'test srp');
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
 
       lu = UserAccount.updateOrCreateUserLogin({
-        email: 'bob@vimaly.com', userId: "uid1", srp: 'new srp'});
+        email: 'bob@vimaly.com', userId: "uid1", password: 'new srp'});
 
-      assert.equals(lu.$reload().srp, 'new srp');
+      assert.equals(lu.$reload().password, 'new srp');
       assert.same(lu.email, 'bob@vimaly.com');
       assert.same(lu.userId, 'uid1');
 
       lu = UserAccount.updateOrCreateUserLogin({email: 'bob@vimaly.comm', userId: "uid1"});
 
-      assert.equals(lu.$reload().srp, 'new srp');
+      assert.equals(lu.$reload().password, 'new srp');
       assert.same(lu.email, 'bob@vimaly.comm');
       assert.same(lu.userId, 'uid1');
     });
@@ -328,7 +328,7 @@ define((require, exports, module)=>{
     });
 
     test("verifyClearPassword", ()=>{
-      v.lu.$update('srp', SRP.generateVerifier('secret'));
+      v.lu.$update('password', SRP.generateVerifier('secret'));
       let docToken = UserAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
       assert(UserAccount.verifyToken('foo@bar.co', docToken[1]));
@@ -353,7 +353,7 @@ define((require, exports, module)=>{
       });
 
       test("direct calling", ()=>{
-        v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('password', SRP.generateVerifier('secret'));
         const storage = {};
         let result = UserAccount.SRPBegin(storage, v.request);
 
@@ -366,7 +366,7 @@ define((require, exports, module)=>{
       });
 
       test("success", ()=>{
-        v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('password', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
@@ -405,7 +405,7 @@ define((require, exports, module)=>{
       });
 
       test("null srp", ()=>{
-        v.lu.$update('srp', null);
+        v.lu.$update('password', null);
         assert.exception(()=>{
           session._rpcs.SRPBegin.call(v.conn, v.request);
         }, {error: 403, reason: 'failure'});
@@ -416,7 +416,7 @@ define((require, exports, module)=>{
       test("scrypt", ()=>{
         const {lu, conn} = v;
 
-        lu.$update('srp', {type: 'scrypt'});
+        lu.$update('password', {type: 'scrypt'});
 
         assert.exception(()=>{
           session._rpcs.resetPassword.call(conn, 'token', 'password');
@@ -429,7 +429,7 @@ define((require, exports, module)=>{
         session._rpcs.resetPassword.call(v.conn, v.lu._id+'-secretToken', 'new password');
 
         v.lu.$reload();
-        assert.equals(v.lu.srp, {type: 'scrypt', salt: '000102030405060708090a0b0c0d0e0f',
+        assert.equals(v.lu.password, {type: 'scrypt', salt: '000102030405060708090a0b0c0d0e0f',
                                  key: m(/^3c3f.*b9$/)});
       });
 
@@ -469,7 +469,7 @@ define((require, exports, module)=>{
         assert.same(v.conn.userId, v.lu.userId);
         assert.same(v.conn.loginToken, '1234567890abcdefg');
         v.lu.$reload();
-        assert.equals(v.lu.srp, {identity: 'abc123'});
+        assert.equals(v.lu.password, {identity: 'abc123'});
         assert.calledWith(v.ws.send, m(data =>{
           if (typeof data !== 'string') return false;
 
@@ -502,7 +502,7 @@ define((require, exports, module)=>{
         after(()=>{UserAccount.interceptChangePassword = null});
         UserAccount.interceptChangePassword = stub();
 
-        v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('password', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
@@ -517,11 +517,11 @@ define((require, exports, module)=>{
                           response.newPassword);
 
         v.lu.$reload();
-        refute.equals(response.newPassword, v.lu.srp);
+        refute.equals(response.newPassword, v.lu.password);
       });
 
       test("success", ()=>{
-        v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('password', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
@@ -534,7 +534,7 @@ define((require, exports, module)=>{
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
         v.lu.$reload();
-        assert.equals(response.newPassword, v.lu.srp);
+        assert.equals(response.newPassword, v.lu.password);
       });
 
       test("wrong password", ()=>{
@@ -547,11 +547,11 @@ define((require, exports, module)=>{
           session._rpcs.SRPChangePassword.call(v.conn, response);
         });
 
-        assert.same('wrong', v.lu.$reload().srp);
+        assert.same('wrong', v.lu.$reload().password);
       });
 
       test("bad newPassword", ()=>{
-        v.lu.$update('srp', SRP.generateVerifier('secret'));
+        v.lu.$update('password', SRP.generateVerifier('secret'));
         const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
@@ -562,7 +562,7 @@ define((require, exports, module)=>{
           session._rpcs.SRPChangePassword.call(v.conn, response);
         }, {error: 400});
 
-        assert(SRP.checkPassword('secret', v.lu.$reload().srp));
+        assert(SRP.checkPassword('secret', v.lu.$reload().password));
       });
     });
 
