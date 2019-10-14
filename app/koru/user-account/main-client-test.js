@@ -1,11 +1,11 @@
 define((require, exports, module)=>{
   'use strict';
-  const localStorage    = require('../local-storage');
-  const koru            = require('../main');
-  const session         = require('../session');
-  const SRP             = require('../srp/srp');
-  const TH              = require('../test-helper');
-  const util            = require('../util');
+  const koru            = require('koru');
+  const SRP             = require('koru/crypto/srp');
+  const localStorage    = require('koru/local-storage');
+  const session         = require('koru/session');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
   const login           = require('./client-login');
 
   const {stub, spy, match: m, stubProperty} = TH;

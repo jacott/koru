@@ -12,7 +12,7 @@ define((require, exports, module)=>{
    * If a CSRNG is not available on the client then some random like tokens will be used to seed a
    * PRNG instead.
    *
-   * The PRNG uses {#koru/srp/acc-sha256} to generate the sequence.
+   * The PRNG uses {#koru/crypto/acc-sha256} to generate the sequence.
    *
    **/
   const api             = require('koru/test/api');

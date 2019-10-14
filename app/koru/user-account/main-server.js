@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const Val             = require('koru/model/validation');
   const Random          = require('koru/random').global;
   const session         = require('koru/session');
-  const SRP             = require('koru/srp/srp');
+  const SRP             = require('koru/crypto/srp');
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
 

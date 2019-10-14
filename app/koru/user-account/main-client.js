@@ -3,7 +3,7 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const localStorage    = require('koru/local-storage');
   const session         = require('koru/session/client-rpc');
-  const SRP             = require('koru/srp/srp');
+  const SRP             = require('koru/crypto/srp');
   const login           = require('./client-login');
 
   let storage = localStorage;

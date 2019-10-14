@@ -1,6 +1,6 @@
 define((require)=>{
   'use strict';
-  const AccSha256       = require('koru/srp/acc-sha256');
+  const AccSha256       = require('koru/crypto/acc-sha256');
   const util            = require('koru/util');
 
   const nodeCrypto = isServer ? requirejs.nodeRequire('crypto') : undefined;

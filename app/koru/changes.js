@@ -2,7 +2,7 @@ define((require, exports, module)=>{
   'use strict';
   const koru   = require('koru');
   const md5sum = require('koru/md5sum');
-  const sha256 = require('koru/srp/sha256');
+  const sha256 = require('koru/crypto/sha256');
   const util   = require('koru/util');
 
   const {original$} = require('koru/symbols');
