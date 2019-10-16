@@ -172,7 +172,7 @@
       while (navmod = searchUpFor('jsdoc-nav-module', navmod.parentNode))
         navmod.classList.add('jsdoc-nav-active-page');
 
-      nav.scrollIntoView(true);
+      nav.scrollIntoView({block: 'center'});
     }
 
     target.scrollIntoView(true);

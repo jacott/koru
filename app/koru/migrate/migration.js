@@ -12,7 +12,7 @@ define((require, exports, module)=>{
 
   const actions$ = Symbol();
 
-  class MigrationControl {
+  class Commander {
     constructor() {
       this[actions$] = [];
     }
@@ -29,8 +29,8 @@ define((require, exports, module)=>{
       this[actions$].push({action: createTable, args});
     }
 
-    reversible(options) {
-      this[actions$].push({action: reversible, args: options});
+    reversible({add, revert, resetTables}) {
+      this[actions$].push({action: reversible, args: {add, revert, resetTables}});
     }
 
     addColumns(tableName, ...args) {
@@ -57,7 +57,7 @@ define((require, exports, module)=>{
 
       client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
       if (indexes) {
-        indexes.forEach(args=>{addIndex(true, client, {tableName: name, args})});
+        for (const args of indexes) addIndex(true, client, {tableName: name, args});
       }
     } else {
       client.query(`DROP TABLE IF EXISTS "${name}"`);
@@ -144,12 +144,12 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
       this._client = client;
     }
 
-    addMigration(name, options) {
-      this._doMigration(true, name, options);
+    addMigration(name, callback) {
+      this._doMigration(true, name, callback);
     }
 
-    revertMigration(name, options) {
-      this._doMigration(false, name, options);
+    revertMigration(name, callback) {
+      this._doMigration(false, name, callback);
     }
 
     recordAllMigrations(dirPath) {
@@ -167,7 +167,7 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
     }
 
     migrateTo(dirPath, pos, verbose) {
-      if (! pos) throw new Error("Please specifiy where to migrate to");
+      if (! dirPath || ! pos) throw new Error("Please specifiy where to migrate to");
       const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
 
       const migrations = this._getMigrations();
@@ -202,13 +202,13 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
       return this._migrations;
     }
 
-    _doMigration(add, name, change) {
+    _doMigration(add, name, callback) {
       const client = this._client;
       client.transaction(tx => {
         if (this.migrationExists(name) === add) return;
 
-        const mc = new MigrationControl();
-        change(mc);
+        const mc = new Commander();
+        callback(mc);
         if (add) {
           mc[actions$].forEach(({action, args}) => {action(add, client, args)});
           client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
@@ -220,6 +220,10 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
         }
       });
     }
+  }
+
+  if (isTest) {
+    Migration[isTest] = {Commander};
   }
 
   return Migration;
