@@ -110,38 +110,6 @@ define((require, exports, module)=>{
     [inspect$]() {return `Module("${this.id}")`}
   }
 
-  module.ctx.onError = (err, mod)=>{
-    if (err.onload) {
-      const {ctx} = mod;
-      const stack = Object.keys(koru.fetchDependants(mod)).map(id =>{
-        if (id === mod.id) return '';
-        return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
-      }).join('\n');
-      Main.logHandle("ERROR", koru.util.extractError({
-        toString() {
-          return "failed to load module: " + mod.id + '\nwith dependancies:\n';
-        },
-        stack: stack,
-      }));
-      return;
-    }
-    const errEvent = err.event;
-
-    if (err.name !== 'SyntaxError' && errEvent && errEvent.filename) {
-      Main.logHandle('ERROR', koru.util.extractError({
-        toString() {
-          const uer = errEvent && errEvent.error;
-          return uer ? uer.toString() : err.toString();
-        },
-        stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
-      }));
-      return;
-    }
-
-    const m = /^([\S]*)([\s\S]*?)    at.*vm.js:/.exec(err.stack);
-    Main.logHandle('ERROR', m !== null ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
-  };
-
   const warnFullPageReload = ()=>{
     Main.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   };

@@ -1,14 +1,9 @@
 define((require, exports, module)=>{
   'use strict';
+  const util            = require('koru/util');
   const {extractError, inspect} = require('koru/util');
   const koru            = require('./main');
   const session         = require('./session/main');
-
-  const logError = err =>{
-    err = extractError(err);
-    session.send('E', err);
-    koru.error(err);
-  };
 
   const errorListener = ev =>{
     if (ev.filename) {
@@ -34,7 +29,6 @@ define((require, exports, module)=>{
                    (type === '\x44EBUG' ? inspect(args, 7) : args.join(' ')));
   };
 
-  module.ctx.onError = logError;
   window.addEventListener('error', errorListener);
 
   koru.onunload(module, 'reload');

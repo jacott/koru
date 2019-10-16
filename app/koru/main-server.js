@@ -101,12 +101,5 @@ define((require, exports, module)=>{
      * _afTimeout is used by client session; do not override in tests
      **/
     koru._afTimeout = koru.afTimeout;
-
-
-    module.ctx.onError = (error, mod)=>{
-      koru.error(util.extractError(error) + "\nerror loading: " + mod.id +
-                 '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
-      throw error;
-    };
   };
 });
