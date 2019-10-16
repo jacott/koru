@@ -35,10 +35,9 @@ define((require, exports, module)=>{
         let fn = error.filename || path;
         if (fn === 'input') fn = path;
         if (fn[0] === '/') fn = fn.slice(1);
-        koru.error(koru.util.extractError({
-          toString: ()=> "Less compiler error: " + error.message,
-          stack: "\tat "+ fn + ':' + error.line + ':' + (error.column + 1),
-        })+"\n");
+        koru.error(`Less compiler error: ${error.message}
+\tat ${fn}:${error.line}:${error.column + 1}
+`);
         future.return(null);
       } else {
         postcss.process(output.css, {from: undefined}).then(result => {

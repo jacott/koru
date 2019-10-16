@@ -310,6 +310,7 @@ define((require)=>{
     open(name, newVersion) {
       const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0, this));
       const oldVersion = this._version;
+      this._version = newVersion;
       return {
         result: db,
         set onupgradeneeded(func) {
@@ -346,9 +347,7 @@ define((require)=>{
       const {_pending} = this;
       if (_pending !== null) {
         this._pending = null;
-        for (const func of _pending) {
-          func();
-        }
+        for (const func of _pending) func();
       }
     }
 

@@ -324,7 +324,7 @@ define((require, exports, module)=>{
 
     static setTitle(title) {
       currentTitle = document.title =
-        (Dom.setTitle && Dom.setTitle(title)) || title;
+        (Dom.setTitle !== void 0 && Dom.setTitle(title)) || title;
     }
 
     static pushCurrent() {

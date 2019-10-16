@@ -87,13 +87,19 @@ define((require, exports, module)=>{
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
+  let running = false;
+
   const stop = ()=>{
+    if (! running) return;
+    running = false;
     emailConfig = void 0;
     session.unprovide('V');
   };
 
   const UserAccount = {
     start() {
+      if (running) return;
+      running = true;
       session.provide('V', onMessage);
     },
 

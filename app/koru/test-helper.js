@@ -36,6 +36,10 @@ define((require)=>{
         callback: TH.stub((err)=>{err ? reject(err) : resolve()}),
       };
     },
+
+    async awaitLoop(n) {
+      for(let i = 0; i < n; ++i) await null;
+    }
   }, Test);
 
   const ga = Core.assertions;

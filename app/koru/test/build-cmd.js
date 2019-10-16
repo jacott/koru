@@ -18,8 +18,14 @@ define((require, exports, module)=>{
       const cTests = type !== 'server' ? [] : null;
       const sTests = type !== 'client' ? [] : null;
 
+      const pushPath = (path)=>{
+        cTests !== null && !path.match(/\bserver\b/i) && cTests.push(path);
+        sTests !== null && !path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
+      };
+
+
       const findAll = (dir, exDirs) =>{
-                const dirPath = Path.join(topDir, dir);
+        const dirPath = Path.join(topDir, dir);
         const filenames = readdir(dirPath).wait().filter(fn => (
           (exDirs === undefined || exDirs[fn] === undefined) &&
             (fn.endsWith("-test.js") || ! fn.endsWith(".js"))));
@@ -31,9 +37,7 @@ define((require, exports, module)=>{
           if (stats[i].get().isDirectory()) {
             findAll(Path.join(dir, filenames[i]));
           } else if (filenames[i].endsWith("-test.js")) {
-            const path = Path.join(dir,filenames[i].slice(0,-3));
-            cTests && !path.match(/\bserver\b/i) && cTests.push(path);
-            sTests && !path.match(/\bclient\b/i) && sTests.push(path);
+            pushPath(Path.join(dir,filenames[i].slice(0,-3)));
           }
         }
       };
@@ -53,9 +57,7 @@ define((require, exports, module)=>{
       } else {
         // one
         const idx = pattern.indexOf(' ');
-        const path = (idx === -1 ? pattern : pattern.slice(0, idx))+'-test';
-        cTests === null || cTests.push(path);
-        sTests === null || sTests.push(path);
+        pushPath((idx === -1 ? pattern : pattern.slice(0, idx))+'-test');
       }
 
       type = 'none';

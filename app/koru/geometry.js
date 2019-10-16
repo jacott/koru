@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define(()=>{
   'use strict';
   const IGR = 2/(Math.sqrt(5) + 1) ;
 

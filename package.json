@@ -7,6 +7,7 @@
     "url": "git://github.com/jacott/koru.git"
   },
   "scripts": {
+    "start": "scripts/start-dev",
     "install": "scripts/npm-install",
     "test": "scripts/build-api-doc"
   },
@@ -49,5 +50,5 @@
   "engines": {
     "node": ">=12.3"
   },
-  "version": "0.31.1"
+  "version": "0.32.0"
 }

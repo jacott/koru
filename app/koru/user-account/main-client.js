@@ -70,6 +70,8 @@ define((require, exports, module)=>{
         storage.removeItem('koru.loginToken');
     },
     start() {
+      if (session._commands.V !== void 0)
+        return;
       session.provide('V', function (data) {
         switch(data[0]) {
         case 'T':
