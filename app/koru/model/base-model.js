@@ -628,7 +628,7 @@ define((require, exports, module)=>{
     has_many(model, field, options) {
       let bt = options.model, name;
       if (! bt) {
-        const name = options.modelName || util.capitalize(util.sansId(field));
+        name = options.modelName || util.capitalize(util.sansId(field));
         bt = ModelMap[name];
         options.model = bt;
       }
