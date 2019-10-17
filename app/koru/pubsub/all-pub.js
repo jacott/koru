@@ -63,12 +63,10 @@ define((require, exports, module)=>{
     }
 
     static resetConfig() {
-      this.testDoc = null;
       this.requireUserId = false;
       super.resetModelList();
     }
   }
-  AllPub.module = module;
   AllPub.resetConfig();
   AllPub.Union = AllUnion;
   AllPub.union = void 0;
