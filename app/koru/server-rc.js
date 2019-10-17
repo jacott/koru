@@ -24,8 +24,9 @@ define((require, exports, module)=>{
 
     const logHandle = msg =>{
       const {connection} = util.thread;
-      const key = connection == null ? 'Server' : connection.engine;
-      console.log('INFO ' + key + ' ' + msg);
+      const key = connection === void 0 ? 'Server' : connection.engine;
+      if (connection !== void 0) msg = connection.sessId + ': ' + msg;
+      console.log(key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
       } catch(ex) {} // ignore
@@ -45,12 +46,13 @@ define((require, exports, module)=>{
     const continueIntercept = (arg)=>{if (future) future.return(arg)};
 
     koru.logger = (type, ...args)=>{
-      if (type === '\x44EBUG')
-        logHandle(type+ ': '+util.inspect(args, 7));
-      else
+      if (type === 'D')
+        logHandle('D> '+util.inspect(args, 7));
+      else if (type === 'C')
         logHandle(args.join(' '));
+      else
+        logHandle(type+'> '+args.join(' '));
     };
-    const oldLogHandle = session.provide('L', logHandle);
     const oldTestHandle = session.provide('T', testHandle);
 
     koru._INTERCEPT = intercept;
@@ -117,7 +119,6 @@ define((require, exports, module)=>{
     };
 
     ws.on('close', ()=>{
-      session.provide('L', oldLogHandle);
       session.provide('T', oldTestHandle);
     });
     ws.on('message', (data, flags)=>{

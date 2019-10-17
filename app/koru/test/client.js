@@ -10,15 +10,19 @@ define((require, exports, module)=>{
   const Module = module.constructor;
   const session = require('koru/session/main-client')(SessionBase, sessState);
 
-  {
-    const {serviceWorker} = navigator;
-    if (serviceWorker != null && serviceWorker.controller != null) {
-      serviceWorker.register(serviceWorker.controller.scriptURL).then(reg => {
-        reg.unregister().then(koru.reload);
-      });
-      return;
+  if (koru.unregisterServiceWorker()) return;
+
+  koru.logger = (type, ...args)=>{
+    if (type === 'E') {
+      console.error(...args);
+      session.send('E', args.join(' '));
+    } else {
+      console.log(...args);
+      session.send("L", type+ "> " + (
+        type === 'D' ? util.inspect(args, 7) :
+          args.join(' ')));
     }
-  }
+  };
 
   Test.session = session;
 
@@ -29,16 +33,6 @@ define((require, exports, module)=>{
       session.send('E', msg);
     else
       session.send('L', type + ': ' + msg);
-  };
-
-  koru.logger = (type, ...args)=>{
-    console.log.apply(console, args);
-    if (type === 'ERROR')
-      session.send('E', args.join(' '));
-    else
-      session.send("L", type+ ": " + (
-        type === '\x44EBUG' ? util.inspect(args, 7) :
-          args.join(' ')));
   };
 
   let ls;

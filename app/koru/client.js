@@ -7,26 +7,37 @@ define((require, exports, module)=>{
 
   const errorListener = ev =>{
     if (ev.filename) {
-      koru.logger('ERROR', extractError({
-        toString() {
-          return ev.error;
-        },
-        stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
-      }));
-      if (ev.error.name === 'SyntaxError')
+      if (ev.error.name === 'SyntaxError') {
+        koru.logger('E', ev.error +
+                    "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno);
         return;
+      }
     }
     if (ev.error)
-      koru.logger('ERROR', extractError(ev.error));
+      koru.logger('E', extractError(ev.error));
   };
 
   koru.logger = (type, ...args)=>{
-    console.log(...args);
-    if (type === 'ERROR')
+    if (type === 'E') {
+      console.error(...args);
       session.send('E', args.join(' '));
-    else
-      session.send("L", type+ ": " +
-                   (type === '\x44EBUG' ? inspect(args, 7) : args.join(' ')));
+    } else {
+      console.log(...args);
+      session.send("L", type+ "> " + (
+        type === 'D' ? util.inspect(args, 7) :
+          args.join(' ')));
+    }
+  };
+
+  koru.unregisterServiceWorker = ()=>{
+    const {serviceWorker} = navigator;
+    if (serviceWorker != null && serviceWorker.controller != null) {
+      serviceWorker.register(serviceWorker.controller.scriptURL).then(reg => {
+        reg.unregister().then(koru.reload);
+      });
+      return true;
+    }
+    return false;
   };
 
   window.addEventListener('error', errorListener);

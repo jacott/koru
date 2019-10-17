@@ -68,7 +68,7 @@ define((require)=>{
         data = new Uint8Array(data);
         type = String.fromCharCode(data[0]);
         obj = message.decodeMessage(data.subarray(1), this.globalDict);
-        debug_msg && koru.logger(
+        debug_msg && koru.logger('D',
           `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
       }
 

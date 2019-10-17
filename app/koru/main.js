@@ -32,13 +32,15 @@ define((require, exports, module)=>{
   };
 
   const logDebug = (...args)=>{
-    koru.logger('\x44EBUG', ...args);
+    koru.logger('D', ...args);
     return args.length == 0 ? void 0 : args[args.length-1];
   };
 
   logDebug.inspect = (...args)=>{
-    koru.logger('\x44EBUG ', args.map(o => util.inspect(o)).join(', '));
+    koru.logger('D', args.map(o => util.inspect(o)).join(', '));
   };
+
+  const Module = module.constructor;
 
   const koru = {
     onunload,
@@ -47,7 +49,8 @@ define((require, exports, module)=>{
 
     unload: (id)=>{
       const mod = module.ctx.modules[id];
-      mod && mod.unload();
+      if (mod !== void 0 && mod.state === Module.READY)
+        mod.unload();
     },
 
     config: module.config(),
@@ -69,9 +72,9 @@ define((require, exports, module)=>{
 
     "\x64ebug": logDebug,
 
-    info: (...args)=>{koru.logger('INFO', args.join(' '))},
+    info: (...args)=>{koru.logger('I', args.join(' '))},
 
-    error: (...args)=>{koru.logger('ERROR', args.join(' '))},
+    error: (...args)=>{koru.logger('E', args.join(' '))},
 
     unhandledException: ex =>{koru.error(util.extractError(ex))},
 

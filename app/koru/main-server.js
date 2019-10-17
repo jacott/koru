@@ -37,6 +37,19 @@ define((require, exports, module)=>{
       appDir: koru.config.appDir || module.toUrl('').slice(0,-1),
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
 
+      logger: (type, ...args)=>{
+        if (type === 'D') {
+          console.log('D> '+util.inspect(args));
+        } else if (type === 'C') {
+          const {connection} = util.thread;
+          console.log((connection === void 0
+                       ? '' : connection.engine + ' ' + connection.sessId + ": ")+
+                      args[0]);
+        } else {
+          console.log(type+'> '+args.join(' '));
+        }
+      },
+
       afTimeout(func, duration) {
         let cancel = 0;
         if (duration > TWENTY_DAYS) {

@@ -218,8 +218,8 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     .map(a => a && a.name+': '+a.duration);
 
   koru.logger = (type, ...args)=>{
-    console.log.apply(console, args);
-    Main.logHandle(type, (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
+    console.log(...args);
+    Main.logHandle(type, (type === 'D' ? util.inspect(args, 7) : args.join(' ')));
   };
 
   Core.onEnd(endRun);
