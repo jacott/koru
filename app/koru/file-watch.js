@@ -10,7 +10,7 @@ define((require, exports, module)=>{
 
   const {runFiber, appDir: top} = koru;
 
-  exports.listeners = {
+  const listeners = {
     js: (type, path, top)=>{
       if (path.slice(-8) !== '.html.js')
         session.unload(path.slice(0, - 3));
@@ -23,10 +23,6 @@ define((require, exports, module)=>{
 
   const defaultUnloader = (path)=>{session.unload(path)};
 
-  exports.watch = (dir, top)=>{
-    watch(Path.resolve(dir), Path.resolve(top)+'/');
-  };
-
   const watch = (dir, top)=>{
     const dirs = Object.create(null);
 
@@ -37,7 +33,7 @@ define((require, exports, module)=>{
         if (path === void 0) return;
 
         const m = /\.(.+)$/.exec(path);
-        const handler = m && exports.listeners[m[1]];
+        const handler = m && listeners[m[1]];
 
         path = path.slice(top.length);
 
@@ -74,4 +70,10 @@ define((require, exports, module)=>{
   koru.onunload(module, 'reload');
 
   runFiber(()=>{watch(top, top+'/')});
+
+  return {
+    listeners,
+
+    watch: (dir, top)=>{watch(Path.resolve(dir), Path.resolve(top)+'/')},
+  };
 });
