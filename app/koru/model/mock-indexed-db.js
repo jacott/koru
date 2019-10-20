@@ -310,7 +310,6 @@ define((require)=>{
     open(name, newVersion) {
       const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0, this));
       const oldVersion = this._version;
-      this._version = newVersion;
       return {
         result: db,
         set onupgradeneeded(func) {
