@@ -578,7 +578,7 @@ isClient && define((require, exports, module)=>{
       intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = stub());
       intercept(Route.root, 'onBaseExit', v.rootBaseExit = stub());
 
-      Route.root.addBase(Baz, {parent: null});
+      Route.root.addBase(Baz, {parent: void 0});
 
       Baz.route.addTemplate(BazBar);
 
@@ -620,12 +620,52 @@ isClient && define((require, exports, module)=>{
 
     });
 
+    test("addBase defaults", ()=>{
+      const tpl1 = Dom.newTemplate({
+        name: 'Test.Tpl1',
+        nodes: [{
+          name: 'div', children: [
+            {name: 'div', attrs: [['=', 'id', 'anchor1']]}
+          ]
+        }]
+      });
+
+      const tpl2 = Dom.newTemplate({
+        name: 'Test.Tpl2',
+        nodes: [{
+          name: 'div', children: [
+            {name: 'div', attrs: [['=', 'id', 'anchor2']]}
+          ]
+        }],
+      });
+
+      const tpl3 = Dom.newTemplate({
+        name: 'Test.Tpl3',
+        nodes: [{name: 'div', children: ["template 1"]}],
+      });
+
+      const base1 = Route.root.addBase(module, tpl1, {
+        get childAnchor() {
+          return document.getElementById('anchor1');
+        }
+      });
+      const base2 = base1.addBase(module, tpl2, {
+        get childAnchor() {
+          return document.getElementById('anchor2');
+        }
+      });
+      base2.addTemplate(tpl3);
+
+      Route.gotoPage(tpl3);
+
+      assert.dom('#anchor1>div>#anchor2>div', 'template 1');
+    });
+
     test("addBase and addAlias", ()=>{
       const Baz = {
         name: 'Baz',
         onBaseEntry: stub(),
         onBaseExit: stub(),
-        $path: 'bazpath',
       };
 
       const Fnord = {
@@ -651,7 +691,7 @@ isClient && define((require, exports, module)=>{
       Route.root.addTemplate(RootBar);
 
       /** test route options */
-      Route.root.addBase(Baz, {foo: 123});
+      Route.root.addBase(Baz, {foo: 123, path: 'bazpath'});
       assert.same(Baz.route.foo, 123);
 
       Baz.route.addBase(Fnord);
@@ -793,7 +833,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("addTemplate", ()=>{
-      after(()=>{{Route.pageParent = document.body}});
+      after(()=>{{Route.childAnchor = document.body}});
 
       const Baz = {
         name: 'Baz',
@@ -804,7 +844,7 @@ isClient && define((require, exports, module)=>{
         },
       };
 
-      document.body.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
+      document.body.appendChild(Route.childAnchor = Dom.h({id: 'the-pageParent'}));
 
       Route.root.addTemplate(v.FooBar);
       Route.root.addTemplate(Baz, {data() {return 'fooData'}});

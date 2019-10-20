@@ -92,7 +92,7 @@ define((require, exports, module)=>{
     if (routeVar)
       path += '/' + routeVar;
 
-    if (! route.parent) return path;
+    if (route.parent === void 0) return path;
     return routePath(route.parent, pageRoute)+'/'+path;
   };
 
@@ -111,38 +111,23 @@ define((require, exports, module)=>{
     return path;
   };
 
-  const templatePath = (template)=>{
-    return util.dasherize(template.name);
-  };
+  const templatePath = (template)=> util.dasherize(template.name);
 
   const onEntryFunc = (options)=> {
     const autoOnEntry = (page, pageRoute)=>{
-      let parent = null, data;
-
-      if (options !== void 0) {
-        if (typeof options.data ==='function') {
-          data = options.data.call(page, page, pageRoute);
-        } else {
-          data = options.data;
-        }
-      }
-      page._renderedPage = page.$autoRender(data||{});
-      if (options.insertPage) {
+      page._renderedPage = page.$autoRender((typeof options.data ==='function'
+                                             ? options.data.call(page, page, pageRoute)
+                                             : options.data) || {});
+      if (options.insertPage !== void 0) {
         options.insertPage(page._renderedPage);
       } else {
-        const {route} = page;
-
-        if (route && route.template) {
-          parent = document.getElementById(route.template.name);
-          if (parent !== null)
-            parent = parent.getElementsByClassName('body')[0] || parent;
-        }
-        (parent === null ? Route.pageParent : parent).appendChild(page._renderedPage);
+        myAnchor(page.route).appendChild(page._renderedPage);
       }
       if (options.focus) {
         Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
       }
-      options.afterRendered && options.afterRendered.call(page, page._renderedPage, pageRoute);
+      options.afterRendered !== void 0
+        && options.afterRendered.call(page, page._renderedPage, pageRoute);
     };
     autoOnEntry.isAuto = true;
     return autoOnEntry;
@@ -155,10 +140,9 @@ define((require, exports, module)=>{
 
   function addCommon(route, module, template, options={}) {
     if (module !== void 0) module.onUnload(()=>{route.removeTemplate(template, options)});
-    let {path} = options;
-    if (path == null) path = templatePath(template);
-    if (route.routes.path)
-      throw new Error(`Path already exists! ${path} for template ${this.path}`);
+    const path = options.path === void 0 ? templatePath(template) : options.path;
+    if (route.routes.path !== void 0)
+      throw new Error(`Path already exists! ${path} for template '${this.path}'`);
     route.routes[path] = template;
     template.route = route;
     template.subPath = path;
@@ -171,9 +155,9 @@ define((require, exports, module)=>{
   }
 
   class Route {
-    constructor(path, template, parent, options={}) {
+    constructor(path='', template, parent, options={}) {
       this.routeVar = options.routeVar;
-      this.path = path || '';
+      this.path = path;
       this.template = template;
       this.parent = ('parent' in options) ? options.parent : parent;
       this.routes = {};
@@ -490,8 +474,8 @@ define((require, exports, module)=>{
         template.onExit = autoOnExit;
     }
 
-    removeTemplate(template, options) {
-      const path = (options && options.path) || templatePath(template);
+    removeTemplate(template, options={}) {
+      const path = options.path === void 0 ? templatePath(template) : options.path;
       this.routes[path] = null;
       if (template.onEntry != null && template.onEntry.isAuto)
         template.onEntry = null;
@@ -527,46 +511,57 @@ define((require, exports, module)=>{
         }
       }
 
-      const path = template.$path || (template.$path = templatePath(template));
+      if (options === void 0) options = {};
 
-      if (template.route)
+      const path = options.path === void 0 ? templatePath(template) : options.path;
+
+      if (template.route !== void 0)
         throw new Error(template.name + ' is already a route base');
-      if (this.routes.path)
-        throw new Error(`Path already exists! ${path} for template ${this.path}`);
 
       return template.route = this.routes[path] = new Route(path, template, this, options);
     }
 
     removeBase(template) {
-      template.route = null;
-      this.routes[template.$path] = null;
+      template.route = void 0;
     }
 
-    onBaseExit(page, location) {
+    onBaseExit(page, pageRoute) {
       const template = this.template;
-      const onBaseExit = template && template.onBaseExit;
-      onBaseExit && onBaseExit.call(template, page, location);
+      if (template !== void 0) {
+        (template.onBaseExit || defaultOnBaseExit).call(template, page, pageRoute);
+      }
     }
 
-    onBaseEntry(page, location, callback) {
+    onBaseEntry(page, pageRoute, callback) {
       const template = this.template;
-      const onBaseEntry = template && template.onBaseEntry;
-      onBaseEntry && onBaseEntry.call(template, page, location, callback);
+      if (template !== void 0) {
+        (template.onBaseEntry || defaultOnBaseEntry).call(template, page, pageRoute, callback);
+      }
     }
   };
 
-  Route.pageParent = document.body;
+  const myAnchor = (route)=> (route && route.childAnchor) || Route.childAnchor;
+
+  function defaultOnBaseExit(page, pageRoute) {
+    Dom.remove(this._renderedPage || document.getElementById(this.name));
+  }
+
+  function defaultOnBaseEntry(page, pageRoute, callback) {
+    myAnchor(this.route.parent).appendChild(this.$autoRender());
+    callback !== void 0 && callback();
+  }
 
   makeSubject(Route);
 
   Route.title = document.title;
-
   Route.history = window.history;
 
   Object.assign(Route, {
     root: new Route(),
     pathname,
   });
+
+  Route.childAnchor = document.body;
 
   return Route;
 });
