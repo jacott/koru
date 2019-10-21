@@ -39,15 +39,16 @@ define((require, exports, module)=>{
       const wsConnection = {};
       mySession.newWs = stub().returns(wsConnection);
 
-      mySession.connect();
+      mySession.start();
 
       assert.called(mySession.newWs);
       assert.same(wsConnection.binaryType, 'arraybuffer');
       //]
+      assert.same(mySession.connect, mySession.start);
     });
 
     test("onerror", ()=>{
-      v.sess.connect();
+      v.sess.start();
       assert.same(v.ws.onerror, v.ws.onclose);
     });
 
@@ -61,7 +62,7 @@ define((require, exports, module)=>{
     });
 
     test("pause", ()=>{
-      v.sess.connect();
+      v.sess.start();
       v.ws.close = stub();
 
       v.sess.onStop(v.c1 = stub());
@@ -76,7 +77,7 @@ define((require, exports, module)=>{
       refute.called(v.sess.state.retry);
       assert.same(v.sess.state._state, 'paused');
 
-      v.sess.connect();
+      v.sess.start();
 
       assert.same(v.sess.state._state, 'startup');
     });
@@ -90,7 +91,7 @@ define((require, exports, module)=>{
       let now = Date.now();
       intercept(Date, 'now', ()=>now);
 
-      v.sess.connect();
+      v.sess.start();
       after(v.ws.onclose);
 
       v.ws.send = stub();
@@ -230,7 +231,7 @@ define((require, exports, module)=>{
 
     group("open connection", ()=>{
       beforeEach(()=>{
-        v.sess.connect();
+        v.sess.start();
         v.sess.ws.close = stub();
         v.sendBinary = stub(v.sess, 'sendBinary');
       });

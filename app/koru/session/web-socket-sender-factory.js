@@ -154,7 +154,8 @@ define((require)=>{
           waitSends.push([type, util.deepCopy(msg)]);
       },
 
-      connect,
+      connect: start,
+      start,
 
       stop() {
         sessState.close();
@@ -185,10 +186,10 @@ define((require)=>{
       }
     }
 
-    function connect() {
+    function start() {
       let heartbeatTO = null;
 
-      if (session.ws) return;
+      if (session.ws != null) return;
       sessState._state = 'startup';
       stopReconnTimeout();
       const ws = session.ws = session.newWs();
@@ -258,7 +259,7 @@ define((require)=>{
         if (sessState.isClosed() || sessState.isPaused())
           return;
 
-        reconnTimeout = koru._afTimeout(connect, session[retryCount$]*500);
+        reconnTimeout = koru._afTimeout(start, session[retryCount$]*500);
 
         sessState.retry(event.code, event.reason);
       };
