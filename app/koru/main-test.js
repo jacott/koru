@@ -45,7 +45,7 @@ define((require, exports, module)=>{
       const myModule = {id: 'myModule', onUnload: stub()};
       const callback = {stop() {}};
       koru.onunload(myModule, callback);
-      assert.calledWith(myModule.onUnload, callback.stop);
+      assert.calledWith(myModule.onUnload, callback);
       //]
       const onUnload = stub(Module.prototype, 'onUnload');
       const func = stub();

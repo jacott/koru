@@ -15,7 +15,7 @@ define((require, exports, module)=>{
             module.ctx.modules[moduleOrId] : moduleOrId;
     if (subm == null)
       throw new Error('module not found! '+ moduleOrId);
-    subm.onUnload(typeof callback === 'function' ? callback : callback.stop);
+    subm.onUnload(callback);
   };
 
   const fetchDependants = (mod, result)=>{
