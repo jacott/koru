@@ -341,8 +341,9 @@ define((require, exports, module)=>{
 
       test("logoutOtherClients", ()=>{
         localStorage.setItem('koru.loginToken', 'abc|def');
-        UserAccount.logoutOtherClients();
-        assert.calledWith(session.send, 'VO' + 'abc|def');
+        const callback = stub();
+        UserAccount.logoutOtherClients(callback);
+        assert.calledWith(session.rpc, 'logoutOtherClients', 'abc|def', callback);
 
         assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
       });

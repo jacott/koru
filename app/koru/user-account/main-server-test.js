@@ -620,7 +620,19 @@ define((require, exports, module)=>{
         v.conn3.userId = 'uid111';
         v.connOther.userId = 'uid444';
 
-        session._commands.V.call(v.conn, 'O' + v.lu._id+'|abc');
+        session._rpcs['logoutOtherClients'].call(
+          v.conn, v.lu._id+'|abcx');
+
+        session._rpcs['logoutOtherClients'].call(
+          v.conn, v.lu._id+'x|abc');
+
+
+        assert.equals(v.conn2.userId, 'uid111');
+        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', 'def', 'exp']);
+
+
+        session._rpcs['logoutOtherClients'].call(
+          v.conn, v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
         assert.same(v.conn2.userId, void 0);

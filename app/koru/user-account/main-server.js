@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   let emailConfig;
 
   const getToken = data =>{
-    data = data.slice(1).toString();
+    data = data.toString();
     if (data.match(/^[\d\w]+\|[\d\w]+$/))
       return data.split('|');
     return [];
@@ -246,11 +246,13 @@ define((require, exports, module)=>{
 
     logoutOtherClients(_id, token) {
       const lu = UserLogin.findById(_id);
-      if (lu) {
+      if (lu !== void 0) {
         const mod = {};
-        if (lu.tokens[token])
+        if (lu.tokens[token] !== void 0) {
           mod[token] = lu.tokens[token];
-        UserLogin.where({_id: lu._id}).update('tokens', mod);
+          UserLogin.where({_id: lu._id}).update('tokens', mod);
+          return lu;
+        }
       }
     },
   };
@@ -360,13 +362,28 @@ define((require, exports, module)=>{
     this.loginToken = result[1];
   });
 
+  session.defineRpc('logoutOtherClients', function (data) {
+    if (this.userId === this._session.DEFAULT_USER_ID) return;
+    const [_id, token] = getToken(data);
+    if (token !== void 0 && UserAccount.logoutOtherClients(_id, token)) {
+      const conns = session.conns;
+      for (let sessId in conns) {
+        if (sessId === this.sessId) continue;
+        const curr = conns[sessId];
+
+        if (curr.userId === this.userId)
+          curr.userId = void 0;
+      }
+    }
+  });
+
   function onMessage(data) {
     const conn = this;
     const cmd = data[0];
     let token;
     switch(cmd) {
     case 'L': {
-      const [_id, token] = getToken(data);
+      const [_id, token] = getToken(data.slice(1));
       const lu = _id && UserLogin.findById(_id);
 
       if (lu && lu.unexpiredTokens()[token]) {
@@ -377,23 +394,11 @@ define((require, exports, module)=>{
       }
     } break;
     case 'X': { // logout me
-      const [_id, token] = getToken(data);
+      const [_id, token] = getToken(data.slice(1));
       token && UserAccount.logout(_id, token);
       conn.userId = void 0; // will send a VS + VC. See server-connection
     } break;
-    case 'O': {// logoutOtherClients
-      if (conn.userId === conn._session.DEFAULT_USER_ID) return;
-      const [_id, token] = getToken(data);
-      token && UserAccount.logoutOtherClients(_id, token);
-      const conns = session.conns;
-      for (let sessId in conns) {
-        if (sessId === conn.sessId) continue;
-        const curr = conns[sessId];
-
-        if (curr.userId === conn.userId)
-          curr.userId = void 0;
-      }
-    }}
+    }
   }
 
   module.onUnload(stop);

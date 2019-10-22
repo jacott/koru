@@ -78,9 +78,9 @@ define((require, exports, module)=>{
           UserAccount.token = data.slice(1).toString();
           break;
         case 'S':
-          const [userId, crypto] = data.slice(1).toString().split(':');
+          const [userId, hash] = data.slice(1).toString().split(':');
           login.setUserId(this, userId);
-          this.sessAuth = crypto;
+          this.sessAuth = hash;
           break;
         case 'F':
           login.failed(this);
@@ -133,8 +133,8 @@ define((require, exports, module)=>{
       UserAccount.token = null;
     },
 
-    logoutOtherClients() {
-      session.send('VO'+UserAccount.token);
+    logoutOtherClients(callback) {
+      session.rpc('logoutOtherClients', UserAccount.token, callback);
     },
 
     secureCall(method, email, password, payload, callback) {
