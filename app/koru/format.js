@@ -1,6 +1,7 @@
 define((require)=>{
   'use strict';
-  const util = require('./util');
+  const ResourceString  = require('koru/resource-string');
+  const util            = require('./util');
 
   function format(fmt, ...args) {
     if (typeof fmt === 'string')
@@ -122,8 +123,34 @@ define((require)=>{
 
   const escaped = chr => escapes[chr];
 
+  const findString = (lang, text)=>{
+    const lrs = ResourceString[lang];
+    const ans = lrs && lrs[text];
+    if (ans !== void 0) return ans;
+    if (lang !== 'en') {
+      const ans = ResourceString.en[text];
+      if (ans !== void 0) return ans;
+    }
+    return text;
+  };
+
+
   format.compile = compile;
   format.escape = escape;
+
+  format.translate = (text, lang='en')=>{
+    if (typeof text === 'string') {
+      const idx = text.indexOf(':');
+      if (idx != -1) {
+        return format(findString(lang, text.slice(0, idx)), text.slice(idx+1).split(':'));
+      }
+      return findString(lang, text);
+    }
+    if (text.constructor === Array) {
+      return format(findString(lang, text[0]), text.slice(1));
+    }
+    return text;
+  };
 
   return format;
 });

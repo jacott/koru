@@ -1,6 +1,9 @@
 define((require, exports, module)=>{
   'use strict';
-  const TH     = require('koru/test-helper');
+  const ResourceString  = require('koru/resource-string');
+  const TH              = require('koru/test-helper');
+
+  const {stub, spy, onEnd, stubProperty} = TH;
 
   const format = require('./format');
 
@@ -82,6 +85,26 @@ define((require, exports, module)=>{
         assert.equals(format("{f0,.2z}", -4), '-4');
         assert.equals(format("{f0,.2z}", -4.55555), '-4.56');
       });
+    });
+
+    test("translate", ()=>{
+      stubProperty(ResourceString, 'no', {value: {
+        is_invalid: 'er ikke gyldig',
+      }});
+
+      stubProperty(ResourceString, 'de', {value: {
+        cant_be_less_than: 'darf nicht kleiner als {0} sein'
+      }});
+
+      assert.same(format.translate('is_invalid'), 'is not valid');
+
+      assert.same(format.translate('is_invalid', 'no'), 'er ikke gyldig');
+
+      assert.same(format.translate('cant_be_less_than:5', 'de'), 'darf nicht kleiner als 5 sein');
+
+      assert.same(format.translate(['cant_be_less_than', 20], 'de'), 'darf nicht kleiner als 20 sein');
+
+      assert.same(format.translate(['cant_be_less_than', 20], 'zu'), "can't be less than 20");
     });
   });
 });
