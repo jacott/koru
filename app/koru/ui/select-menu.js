@@ -73,6 +73,7 @@ define((require, exports, module)=>{
       ctx.focusRange = Dom.getRange();
 
       Modal.append(pos, {
+        align: options.align,
         container: menu,
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
         keydownHandler: keydownHandler,

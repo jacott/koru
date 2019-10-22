@@ -764,20 +764,46 @@ define((require, exports, module)=>{
       assert.same(v.st2.stop.firstCall.thisValue, v.st2);
     });
 
-    test("reposition", ()=>{
+    group("reposition", ()=>{
       /**
        * Align element with an origin
        **/
       // See SelectMenu for more testing
-      api.method();
-      const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
-      document.body.appendChild(popup);
 
-      Dom.reposition('above', {popup, boundingClientRect: {left: 50, top: 100}});
+      beforeEach(()=>{
+        api.method();
+      });
 
-      const rect = popup.getBoundingClientRect();
+      test("above", ()=>{
+        //[
+        const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
+        document.body.appendChild(popup);
 
-      assert.near(util.extractKeys(rect, ['left', 'top']), {left: 50, top: 90});
+        // default align is left
+        Dom.reposition('above', {popup, boundingClientRect: {left: 50, top: 100, right: 90}});
+
+        const rect = popup.getBoundingClientRect();
+
+        assert.near(util.extractKeys(rect, ['left', 'top']), {left: 50, top: 90});
+        //]
+      });
+
+      test("above", ()=>{
+        //[
+        const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
+        document.body.appendChild(popup);
+
+        // set align right
+        Dom.reposition('above', {
+          align: 'right',
+          popup, boundingClientRect: {left: 50, top: 100, right: 120}
+        });
+
+        const rect = popup.getBoundingClientRect();
+
+        assert.near(util.extractKeys(rect, ['right', 'top']), {right: 120, top: 90});
+        //]
+      });
     });
   });
 });

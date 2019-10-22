@@ -550,10 +550,16 @@ define((require)=>{
     },
 
     reposition: (pos='below', options)=>{
-      const height = window.innerHeight;
+      const height = window.innerHeight, width = window.innerWidth;
       const ps = options.popup.style;
       const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
-      ps.setProperty('left', bbox.left + 'px');
+      switch(options.align) {
+      case 'right':
+        ps.setProperty('right', (width - bbox.right) + 'px');
+        break;
+      default:
+        ps.setProperty('left', bbox.left + 'px');
+      }
       switch (pos) {
       case 'above':
         ps.removeProperty('top');

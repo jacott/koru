@@ -21,6 +21,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('#TestSelectMenu [name=select]', function () {
           this.focus();
           sut.popup(this, {
+            align: v.align,
             customize() {
               $.element.style.position = 'absolute';
               customize && customize.call(this);
@@ -324,6 +325,18 @@ isClient && define((require, exports, module)=>{
           assert.same(this.style.top, '');
           assert.cssNear(this, 'bottom', window.innerHeight - bbox.top, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
+        });
+      });
+
+      test("align right", ()=>{
+        v.testSelectMenu.style.position = 'absolute';
+        v.testSelectMenu.style.right = '70px';
+        v.align = 'right';
+        v.popup(null);
+        assert.dom('body>.glassPane>#SelectMenu', function () {
+          const bbox = v.button.getBoundingClientRect();
+          assert.same(this.style.left, '');
+          assert.cssNear(this, 'right', window.innerWidth - bbox.right, 2, 'px');
         });
       });
 
