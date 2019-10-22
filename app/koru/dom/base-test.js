@@ -229,5 +229,41 @@ define((require, exports, module)=>{
       refute(Dom.toggleClass(elm, 'bar'));
       refute(Dom.hasClass(elm, 'bar'));
     });
+
+    if(isServer) return;
+    // Client only tests
+
+    test("makeMenustartCallback", ()=>{
+      /**
+       * Creates a function suitable for event listeners wanting to open a menu.
+       **/
+      api.method();
+      //[
+      const button = Dom.h({button: 'menu start'});
+      document.body.appendChild(button);
+      let count = 0;
+      const menuStart = Dom.makeMenustartCallback((event, type)=>{
+        if (type === 'menustart') {
+          ++count;
+        }
+      });
+      button.addEventListener('pointerdown', menuStart);
+      button.addEventListener('click', menuStart);
+
+      // using mouse
+      Dom.triggerEvent(button, 'pointerdown');
+      assert.same(count, 1);
+      Dom.triggerEvent(button, 'click');
+      assert.same(count, 1);
+
+      // using touch
+      count = 0;
+      Dom.triggerEvent(button, 'pointerdown', {pointerType: 'touch'});
+      assert.same(count, 0);
+
+      Dom.triggerEvent(button, 'click', {pointerType: 'touch'});
+      assert.same(count, 1);
+      //]
+    });
   });
 });

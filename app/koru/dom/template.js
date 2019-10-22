@@ -138,6 +138,8 @@ define((require)=>{
     return false;
   };
 
+  const menustart = Dom.makeMenustartCallback(onEvent);
+
   const nativeOff = (parent, eventType, selector, func)=>{
     const events = parent[ctx$] && parent[ctx$].__events;
 
@@ -547,20 +549,6 @@ ${ex.message}`});
     eventTypes[selector||':TOP'] = func;
   };
 
-  let lastTouch;
-
-  const menustart = event =>{
-    if (lastTouch && event.type === "click") {
-      if (lastTouch !== 1)
-        return;
-      lastTouch = true;
-    }
-    if (event.type === "click" || event.pointerType !== 'touch') {
-      onEvent(event, 'menustart');
-    } else {
-      lastTouch = 1;
-    }
-  };
 
   const lookupTemplate = DomTemplate.lookupTemplate = (tpl, name)=>{
     const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);

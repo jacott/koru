@@ -234,6 +234,24 @@ define((require)=>{
         koru.unhandledException(ex);
       }
     },
+
+    makeMenustartCallback: (callback)=>{
+      let lastTouch = 2;
+
+      return event =>{
+        if (lastTouch != 0 && event.type === "click") {
+          if (lastTouch != 1)
+            return;
+          lastTouch = 2;
+        }
+        if (event.type === "click" || event.pointerType !== 'touch') {
+          callback(event, 'menustart');
+          lastTouch = 2;
+        } else {
+          lastTouch = 1;
+        }
+      };
+    },
   });
 
   return Dom;
