@@ -236,7 +236,7 @@ define((require)=>{
         const name = attr[1], value = attr[2];
         if (typeof value === 'string') {
           if (name === 'xlink:href')
-            elm.setAttributeNS('http://www.w3.org/1999/xlink', 'href', value);
+            elm.setAttributeNS(Dom.XLINKNS, 'href', value);
           else
             elm.setAttribute(name, value);
 

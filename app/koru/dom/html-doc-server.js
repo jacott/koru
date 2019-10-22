@@ -623,7 +623,9 @@ define((require, exports, module)=>{
       });
     });
 
-  module.onUnload(() => global.document = null);
+  module.onUnload(()=>{
+    Object.defineProperty(global, 'document', {configurable: true, value: void 0});
+  });
 
   return Document;
 });

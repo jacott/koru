@@ -35,6 +35,7 @@ define((require)=>{
 
   const SVGNS = Dom.SVGNS = "http://www.w3.org/2000/svg";
   const XHTMLNS = Dom.XHTMLNS = "http://www.w3.org/1999/xhtml";
+  Dom.XLINKNS = "http://www.w3.org/1999/xlink";
 
   const HTML_IGNORE = {id: true, xmlns: true};
 

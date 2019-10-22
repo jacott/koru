@@ -25,7 +25,8 @@ define((require, exports, module)=>{
     switch(event.which) {
     case 13: // enter
       const sel = details.container.getElementsByClassName('selected')[0];
-      if (sel && ! Dom.hasClass(sel, 'hide')) select(details.ctx, sel, event);
+      if (sel !== null && ! sel.classList.contains('hide'))
+        select(details.ctx, sel, event);
       break;
     case 38: // up
       nextElm = ()=>{nSel = nSel.previousElementSibling};
@@ -43,9 +44,10 @@ define((require, exports, module)=>{
       const mElm = details.container.firstChild;
       curr = mElm.getElementsByClassName('selected')[0];
       for (nSel = firstElm(); nSel; nextElm()) {
-        if (Dom.hasClass(nSel, 'hide') || Dom.hasClass(nSel, 'disabled')) continue;
-        Dom.removeClass(curr, 'selected');
-        Dom.addClass(nSel, 'selected');
+        const cl = nSel.classList;
+        if (cl.contains('hide') || cl.contains('disabled')) continue;
+        curr !== void 0 && curr.classList.remove('selected');
+        cl.add('selected');
         Dom.ensureInView(nSel);
         break;
       }
@@ -132,7 +134,7 @@ define((require, exports, module)=>{
   Tpl.List.$helpers({
     items() {
       const {list} = this;
-      if (list != null) return util.map(list, (row, index)=>{
+      if (list !== void 0) return list.map(row =>{
         if (typeof row === 'string')
           return {parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}};
         else
@@ -145,29 +147,29 @@ define((require, exports, module)=>{
     name() {
       const ctx = Tpl.$ctx();
       const elm = $.element;
-      const selected = ctx.selected;
-      const decorator = ctx.data.decorator;
+      const {selected} = ctx;
+      const {decorator} = ctx.data;
 
-      const parent = this.parent;
-      if (parent) {
+      const {parent} = this;
+      if (parent !== void 0) {
         for (let key in parent) {
           const li = elm.parentNode;
           if (key === 'class') {
             const classes = parent.class;
             if (typeof classes === 'string')
-              Dom.addClass(li, classes);
+              li.classList.add(classes);
             else
-              Dom.addClasses(li, classes);
+              li.classList.add(...classes);
           } else {
             li.setAttribute(key, parent[key]);
           }
         }
       }
 
-      const id = this.id != null ? this.id : this._id;
-      if (selected && selected[id])
-        Dom.addClass(elm.parentNode, 'selected');
-      decorator && decorator(this, elm);
+      const id = this.id !== void 0 ? this.id : this._id;
+      if (selected !== void 0 && selected[id])
+        elm.parentNode.classList.add('selected');
+      decorator !== void 0 && decorator(this, elm);
       return this.name;
     },
   });
@@ -175,8 +177,8 @@ define((require, exports, module)=>{
   Tpl.List.$events({
     'pointerover .ui-ul>li:not(.selected):not(.disabled)'(event) {
       const curr = event.currentTarget.getElementsByClassName('selected')[0];
-      Dom.removeClass(curr, 'selected');
-      Dom.addClass(this, 'selected');
+      curr !== void 0 && curr.classList.remove('selected');
+      this.classList.add('selected');
     },
 
     'click .ui-ul>li:not(.disabled)'(event) {
@@ -229,7 +231,7 @@ define((require, exports, module)=>{
       const func = options.search;
       const searchRe = searchRegExp(this.value);
       util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), li => {
-        Dom.setClass('hide', ! func(searchRe, $.data(li)), li);
+        li.classList.toggle('hide', ! func(searchRe, $.data(li)));
       });
       options.searchDone && options.searchDone(this, event.currentTarget.parentNode);
     },

@@ -276,7 +276,7 @@ define((require)=>{
           const name = node[1];
           if (name != null && currentElement.getAttribute(name) !== value) {
             if (name === 'xlink:href')
-              currentElement.setAttributeNS('http://www.w3.org/1999/xlink', 'href', value);
+              currentElement.setAttributeNS(Dom.XLINKNS, 'href', value);
             else
               currentElement.setAttribute(name, value);
           }
