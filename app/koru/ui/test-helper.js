@@ -130,7 +130,7 @@ define((require, exports, module)=>{
       Dom.removeChildren(document.body);
       document.body.removeAttribute('class');
       document.body.removeAttribute('style');
-      Dom.Test = null;
+      Dom.tpl.Test = null;
     },
 
     stubAfTimeout() {

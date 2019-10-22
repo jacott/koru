@@ -18,7 +18,7 @@ isClient && define((require, exports, module)=>{
 
     afterEach(()=>{
       TH.domTearDown();
-      delete Dom.Foo;
+      delete Dom.tpl.Foo;
       v = {};
     });
 
@@ -57,7 +57,7 @@ isClient && define((require, exports, module)=>{
         TH.click(this);
       });
 
-      assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {append: "1234", fooId: 'foo123'});
+      assert.calledWith(Route.gotoPath, Dom.tpl.Foo.Bar, {append: "1234", fooId: 'foo123'});
     });
 
     test("search", ()=>{
@@ -71,7 +71,7 @@ isClient && define((require, exports, module)=>{
         TH.click(this);
       });
 
-      assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {search: "?foo=bar"});
+      assert.calledWith(Route.gotoPath, Dom.tpl.Foo.Bar, {search: "?foo=bar"});
     });
 
     test("template", ()=>{
@@ -85,7 +85,7 @@ isClient && define((require, exports, module)=>{
         TH.click(this);
       });
 
-      assert.calledWith(Route.gotoPage, Dom.Foo.Bar);
+      assert.calledWith(Route.gotoPage, Dom.tpl.Foo.Bar);
     });
   });
 });

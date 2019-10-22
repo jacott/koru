@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
+  const DomTemplate     = require('koru/dom/template');
   const AutoList        = require('koru/ui/auto-list');
   const Dom             = require('../dom');
   const Query           = require('../model/query');
@@ -50,8 +51,8 @@ define((require, exports, module)=>{
 
       if (template == null) {
         const ctpl = $.template;
-        template = Dom.lookupTemplate.call(ctpl, templateName) ||
-          Dom.lookupTemplate(templateName);
+        template = DomTemplate.lookupTemplate(ctpl, templateName) ||
+          DomTemplate.lookupTemplate(Dom.tpl, templateName);
         if (template == null) throw new Error(
           `template "${templateName}" not found in template "${ctpl.name}"`);
       }

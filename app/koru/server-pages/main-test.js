@@ -143,8 +143,8 @@ isServer && define((require, exports, module)=>{
       });
 
       afterEach(()=>{
-        delete Dom.Foo;
-        delete Dom.TestPage1;
+        delete Dom.tpl.Foo;
+        delete Dom.tpl.TestPage1;
       });
 
       test("less helper", ()=>{

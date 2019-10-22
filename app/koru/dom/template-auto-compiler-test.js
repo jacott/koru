@@ -9,16 +9,16 @@ isClient && define((require, exports, module)=>{
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
       Dom.removeChildren(document.body);
-      Dom.Test = undefined;
+      Dom.tpl.Test = undefined;
     });
 
     test("rendering html template", ()=>{
-      refute(Dom.Test);
+      refute(Dom.tpl.Test);
 
       Dom.newTemplate(testTpl);
-      assert(Dom.Test.Foo);
+      assert(Dom.tpl.Test.Foo);
 
-      Dom.Test.Foo.$helpers({
+      Dom.tpl.Test.Foo.$helpers({
         classes() {
           return 'e1 e2';
         },
@@ -32,7 +32,7 @@ isClient && define((require, exports, module)=>{
         },
       });
 
-      Dom.Test.Foo.Bar.$helpers({
+      Dom.tpl.Test.Foo.Bar.$helpers({
         korulet() {
           return 'barId';
         },
@@ -40,7 +40,7 @@ isClient && define((require, exports, module)=>{
         fox() {return 'FOX'},
       });
 
-      const elm = Dom.Test.Foo.$autoRender({
+      const elm = Dom.tpl.Test.Foo.$autoRender({
         helperName(opts) {return opts.foo+'Adam'},
         arg: {has: {parts: 'success'}}});
 

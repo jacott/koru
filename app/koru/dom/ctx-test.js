@@ -24,7 +24,7 @@ isClient && define((require, exports, module)=>{
     });
 
     afterEach(()=>{
-      delete Dom.Foo;
+      delete Dom.tpl.Foo;
       Dom.removeChildren(document.body);
       v = {};
     });
@@ -76,7 +76,7 @@ isClient && define((require, exports, module)=>{
         }
 
         const doc = new Custom();
-        const foo = Dom.Foo.$render({child: doc});
+        const foo = Dom.tpl.Foo.$render({child: doc});
         const ctx = Dom.myCtx(foo);
 
         const removed = stub();
@@ -118,7 +118,7 @@ isClient && define((require, exports, module)=>{
         });
 
         test("remove", ()=>{
-          const foo = Dom.Foo.$render();
+          const foo = Dom.tpl.Foo.$render();
           const ctx = Dom.myCtx(foo);
           spy(ctx, 'updateAllTags');
 
@@ -220,7 +220,7 @@ isClient && define((require, exports, module)=>{
             children:[['', "testMe"]],
           }],
         });
-        Dom.Foo.$helpers({
+        Dom.tpl.Foo.$helpers({
           testMe() {
             assert.same(this, Ctx.current.data());
             assert.same(this, v.x);
@@ -249,7 +249,7 @@ isClient && define((require, exports, module)=>{
 
         v.isElement = false;
 
-        const foo = Dom.Foo.$render(v.x = {x: 1});
+        const foo = Dom.tpl.Foo.$render(v.x = {x: 1});
 
         assert.same(v.testHelper, 12);
         assert.same(v.dataValue, null);
@@ -285,7 +285,7 @@ isClient && define((require, exports, module)=>{
         },
       });
 
-      document.body.appendChild(v.elm = Dom.Foo.$render({}));
+      document.body.appendChild(v.elm = Dom.tpl.Foo.$render({}));
 
       stub(document.body, 'addEventListener');
       stub(document.body, 'removeEventListener');
@@ -296,11 +296,11 @@ isClient && define((require, exports, module)=>{
         arg => v.animationEndFunc = arg), true);
 
       // Element removed
-      document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
+      document.body.appendChild(v.elm2 = Dom.tpl.Foo.$render({}));
       Dom.myCtx(v.elm2).onAnimationEnd(v.stub2 = stub());
 
       // Set twice
-      document.body.appendChild(v.elm3 = Dom.Foo.$render({name: 'bar'}));
+      document.body.appendChild(v.elm3 = Dom.tpl.Foo.$render({name: 'bar'}));
 
       const ctx = Dom.myCtx(v.elm3);
       ctx.onAnimationEnd(v.stub3old = stub());
@@ -310,7 +310,7 @@ isClient && define((require, exports, module)=>{
 
 
       // Cancelled before called
-      document.body.appendChild(v.elm4 = Dom.Foo.$render({}));
+      document.body.appendChild(v.elm4 = Dom.tpl.Foo.$render({}));
       Dom.myCtx(v.elm4).onAnimationEnd(v.stub4 = stub());
       Dom.myCtx(v.elm4).onAnimationEnd('cancel');
 

@@ -5,6 +5,8 @@ define((require)=>{
   const util            = require('koru/util');
   const Dom             = require('./base');
 
+  const root = Dom.tpl = {};
+
   const {hasOwn, mergeNoEnum, forEach, createDictionary} = util;
   const {SVGNS, XHTMLNS} = Dom;
 
@@ -188,7 +190,7 @@ define((require)=>{
   const fetchTemplate = (template, name, rest)=>{
     let result;
     if (name[0] === '/') {
-      result = Dom[name.slice(1)];
+      result = root[name.slice(1)];
     } else {
       if (name === ".") return template;
       if (name === "..") return template.parent;
@@ -198,7 +200,7 @@ define((require)=>{
         template = template.parent;
         if (name === '.') return template;
         if (name === '..') return template.parent;
-        result = (template || Dom)[name];
+        result = (template || root)[name];
       }
     }
     if (rest) for(let i = 0; i < rest.length; ++i) {
@@ -349,7 +351,7 @@ define((require)=>{
   class DomTemplate {
     constructor(name, parent, blueprint) {
       this.name = name;
-      this.parent = parent !== Dom ? parent : null;
+      this.parent = parent !== root ? parent : null;
       this._events = [];
       this.nodes = undefined;
       blueprint && initBlueprint(this, blueprint);
@@ -359,13 +361,13 @@ define((require)=>{
 
     static newTemplate(module, blueprint) {
       if (arguments.length === 1)
-        return addTemplates(Dom, module);
+        return addTemplates(root, module);
 
 
-      const tpl = addTemplates(Dom, blueprint);
+      const tpl = addTemplates(root, blueprint);
       tpl.$module = module;
       koru.onunload(module, ()=>{
-        (tpl.parent || Dom)[tpl.name] = undefined;
+        (tpl.parent || root)[tpl.name] = undefined;
         for (const name in tpl) {
           const sub = tpl[name];
           if (sub && sub.$module && sub instanceof DomTemplate) {
@@ -448,7 +450,7 @@ ${ex.message}`});
     }
 
     get $fullname() {
-      return (this.parent ? this.parent.$fullname + "." : "") + this.name;
+      return (this.parent === null ? "" : this.parent.$fullname + ".") + this.name;
     }
 
     $helpers(properties) {
@@ -504,8 +506,8 @@ ${ex.message}`});
       return "DomTemplate(" + this.$fullname +")";
     }
 
-    $contains(subTemplate) {
-      while (subTemplate) {
+    $contains(subTemplate=null) {
+      while (subTemplate !== null) {
         if (this === subTemplate)
           return true;
         subTemplate = subTemplate.parent;

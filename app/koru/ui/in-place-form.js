@@ -67,7 +67,7 @@ define((require)=>{
         doc[name] = this.value;
       }
 
-      return Dom.Form.field(doc, name, fieldOptions, this);
+      return Dom.tpl.Form.field(doc, name, fieldOptions, this);
     },
 
     deleteButton() {
@@ -223,7 +223,7 @@ define((require)=>{
       }
       if (doc[error$] !== undefined) {
         Dom.removeClass(form, 'submitting');
-        Dom.Form.renderErrors(doc, form);
+        Dom.tpl.Form.renderErrors(doc, form);
       } else {
         widget == null || widget.close(form);
       }

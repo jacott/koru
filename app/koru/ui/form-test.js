@@ -23,7 +23,7 @@ isClient && define((require, exports, module)=>{
 
     afterEach(()=>{
       Dom.removeChildren(document.body);
-      Dom.Test = undefined;
+      Dom.tpl.Test = undefined;
       v = {};
     });
 
@@ -299,16 +299,16 @@ isClient && define((require, exports, module)=>{
             '</div></div></div>'
         ));
         v.func = stub();
-        Dom.Form.modalize(document.querySelector('.bar'), v.func);
+        Dom.tpl.Form.modalize(document.querySelector('.bar'), v.func);
       });
 
       afterEach(()=>{
-        Dom.Form.cancelModalize('all');
+        Dom.tpl.Form.cancelModalize('all');
       });
 
       group("addChangeFields", ()=>{
         beforeEach(()=>{
-          Dom.TestData = v.Form.TestData;
+          Dom.tpl.TestData = v.Form.TestData;
           v.doc = {
             myData: {
               foo: 'x', fooField: 'ff1',
@@ -324,14 +324,14 @@ isClient && define((require, exports, module)=>{
         });
 
         afterEach(()=>{
-          delete Dom.TestData;
+          delete Dom.tpl.TestData;
         });
 
         test("defaults", ()=>{
           v.save.onCall(0).returns(false).onCall(1).returns(true);
-          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+          Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
                                 undo: v.onChange = stub()});
-          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           refute.called(v.onChange);
           TH.change('[name=fooField]', 'nv');
@@ -340,10 +340,10 @@ isClient && define((require, exports, module)=>{
 
         test("string update", ()=>{
           v.doc.myUpdate = stub().returns({fooField: [['is_invalid']]});
-          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+          Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
                                 update: 'myUpdate',
                                 undo: v.onChange = stub()});
-          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(v.doc.myUpdate, 'fooField', 'bad', v.onChange);
           assert.dom('[name=fooField].error+.errorMsg', 'is not valid');
@@ -351,10 +351,10 @@ isClient && define((require, exports, module)=>{
 
         test("function update", ()=>{
           const myUpdate = stub().returns({fooField: [['is_invalid']]});
-          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+          Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
                                 update: myUpdate,
                                 undo: v.onChange = stub()});
-          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(myUpdate, v.doc, 'fooField', 'bad', v.onChange);
         });
@@ -377,7 +377,7 @@ isClient && define((require, exports, module)=>{
 
         // testing replacement
 
-        Dom.Form.modalize('.foo', v.func2 = stub());
+        Dom.tpl.Form.modalize('.foo', v.func2 = stub());
 
         v.func.reset();
 
@@ -386,7 +386,7 @@ isClient && define((require, exports, module)=>{
         refute.called(v.func);
         assert.called(v.func2);
 
-        assert.same(Dom.Form.cancelModalize(), document.querySelector('.bar'));
+        assert.same(Dom.tpl.Form.cancelModalize(), document.querySelector('.bar'));
 
         refute.called(removeEventListener);
 
@@ -397,7 +397,7 @@ isClient && define((require, exports, module)=>{
         assert.called(v.func);
         refute.called(v.func2);
 
-        assert.same(Dom.Form.cancelModalize(), null);
+        assert.same(Dom.tpl.Form.cancelModalize(), null);
 
         assert.called(removeEventListener);
       });
@@ -426,7 +426,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("PlainTextEditor", ()=>{
-      document.body.appendChild(Dom.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
+      document.body.appendChild(Dom.tpl.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
 
       assert.dom('#TestPlainTextEditor>label', function () {
         assert.dom('span.name', 'Name');
@@ -441,14 +441,14 @@ isClient && define((require, exports, module)=>{
     });
 
     test("RichTextEditor", ()=>{
-      Dom.Test.Form.TestRichTextEditor.$helpers({
+      Dom.tpl.Test.Form.TestRichTextEditor.$helpers({
         testFormMentions() {
           return {
             mentions: {'@': 'testMentions'},
           };
         },
       });
-      document.body.appendChild(Dom.Test.Form.TestRichTextEditor.$autoRender({name: Dom.h([{b: 'foo'}, '\nbar'])}));
+      document.body.appendChild(Dom.tpl.Test.Form.TestRichTextEditor.$autoRender({name: Dom.h([{b: 'foo'}, '\nbar'])}));
 
       assert.dom('#TestRichTextEditor>label', function () {
         assert.dom('span.name', 'Name');
@@ -471,7 +471,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("format", ()=>{
-      document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
+      document.body.appendChild(Dom.tpl.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
 
       assert.dom('body>div', function () {
         assert.same(this.id, 'FOO_fuz_bar');

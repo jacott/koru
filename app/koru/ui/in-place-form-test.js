@@ -26,7 +26,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("defaults", ()=>{
-      const sut = Dom.InPlaceForm.$render({doc: {}});
+      const sut = Dom.tpl.InPlaceForm.$render({doc: {}});
 
       assert.dom(sut, ()=>{
         assert.dom('input[type=text][name=name]', input =>{
@@ -39,18 +39,18 @@ isClient && define((require, exports, module)=>{
     });
 
     test("options", ()=>{
-      stub(Dom.Form, 'field');
+      stub(Dom.tpl.Form, 'field');
       sut._helpers.field.call(v.opts = {
         'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
         name: 'theName', type: 'foo',
         notthis: 'not this'});
 
-      assert.calledWith(Dom.Form.field, {theName: '123'}, 'theName',
+      assert.calledWith(Dom.tpl.Form.field, {theName: '123'}, 'theName',
                         {type: 'foo', me: 'html me'}, v.opts);
     });
 
     test("no doc", ()=>{
-      const sut = Dom.InPlaceForm.$render({value: "foo"});
+      const sut = Dom.tpl.InPlaceForm.$render({value: "foo"});
 
       assert.dom(sut, ()=>{
         assert.dom('input[type=text][name=name]', input =>{
@@ -63,7 +63,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("render", ()=>{
-      const sut = Dom.InPlaceForm.$render({
+      const sut = Dom.tpl.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
         name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
 
@@ -141,7 +141,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("apply event", ()=>{
-      const widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
+      const widget = Dom.tpl.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
@@ -156,15 +156,15 @@ isClient && define((require, exports, module)=>{
 
       assert.same(v.arg, 'new text');
 
-      spy(Dom.InPlaceForm, '$detachEvents');
+      spy(Dom.tpl.InPlaceForm, '$detachEvents');
 
       Dom.remove(widget.element);
 
-      assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
+      assert.calledWith(Dom.tpl.InPlaceForm.$detachEvents, widget.element);
     });
 
     test("ctrl or meta+enter event", ()=>{
-      const widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
+      const widget = Dom.tpl.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
@@ -188,15 +188,15 @@ isClient && define((require, exports, module)=>{
 
 
 
-      spy(Dom.InPlaceForm, '$detachEvents');
+      spy(Dom.tpl.InPlaceForm, '$detachEvents');
 
       Dom.remove(widget.element);
 
-      assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
+      assert.calledWith(Dom.tpl.InPlaceForm.$detachEvents, widget.element);
     });
 
     test("enterSubmits", ()=>{
-      const widget = Dom.InPlaceForm.newWidget({
+      const widget = Dom.tpl.InPlaceForm.newWidget({
         doc: {name: 'abc'},
         enterSubmits: true,
       });
@@ -217,7 +217,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("delete event", ()=>{
-      const widget = Dom.InPlaceForm.newWidget({
+      const widget = Dom.tpl.InPlaceForm.newWidget({
         doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
 
       widget.onDelete(function () {
@@ -244,13 +244,13 @@ isClient && define((require, exports, module)=>{
 
       assert.same(v.arg, true);
 
-      spy(Dom.InPlaceForm, '$detachEvents');
+      spy(Dom.tpl.InPlaceForm, '$detachEvents');
     });
 
     test("swap cancel", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      const widget = Dom.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm);
 
       assert.same(widget.swap, v.elm);
 
@@ -271,7 +271,7 @@ isClient && define((require, exports, module)=>{
     test("swap escape", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      const widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
+      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
 
       assert.same(widget.swap, v.elm);
 
@@ -295,7 +295,7 @@ isClient && define((require, exports, module)=>{
     test("swap close", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      const widget = Dom.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm);
       widget.close();
 
       assert.dom(v.parent, ()=>{

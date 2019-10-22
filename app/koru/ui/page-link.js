@@ -1,7 +1,6 @@
 define((require)=>{
   'use strict';
-  const Dom    = require('../dom');
-  const util   = require('../util');
+  const Dom    = require('koru/dom');
   const Dialog = require('./dialog');
   const Form   = require('./form');
   const Route  = require('./route');
@@ -55,7 +54,7 @@ define((require)=>{
   });
 
   Dom.registerHelpers({
-    pageLink: Dom.Form.pageLink = options => Tpl.$autoRender(options),
+    pageLink: Dom.tpl.Form.pageLink = options => Tpl.$autoRender(options),
   });
 
   return Tpl;

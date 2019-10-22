@@ -63,7 +63,7 @@ define((require)=>{
     },
   });
 
-  Dom.Form.$extend({
+  Dom.tpl.Form.$extend({
     completeList(options) {
       close();
       if (! options.completeList) return;

@@ -15,7 +15,7 @@ define((require)=>{
 
     newTemplate: DomTemplate.newTemplate,
 
-    lookupTemplate(name) {return DomTemplate.lookupTemplate(this, name)},
+    lookupTemplate(name) {return DomTemplate.lookupTemplate(this.tpl, name)},
   });
 
   return Dom;

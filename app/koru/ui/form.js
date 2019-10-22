@@ -108,7 +108,7 @@ define((require)=>{
     const fieldSpec = doc.classMethods.$fields[field];
     const alpha = fieldSpec ? fieldSpec.color === 'alpha' : false;
 
-    Dom.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: result => {
+    Dom.tpl.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: result => {
       if (result) {
         saveChange(doc, field, result, options);
       }

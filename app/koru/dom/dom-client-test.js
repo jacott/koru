@@ -23,7 +23,7 @@ define((require, exports, module)=>{
       Dom.flushNextFrame();
       document.body.removeAttribute('class');
       Dom.removeChildren(document.body);
-      delete Dom.Foo;
+      delete Dom.tpl.Foo;
       v = {};
       Ctx[private$].currentElement = null;
     });
@@ -615,7 +615,7 @@ define((require, exports, module)=>{
           {name: 'span'},
         ]
       }]});
-      Dom.Foo.$events({
+      Dom.tpl.Foo.$events({
         'pointerdown span'(event) {
           Dom.onPointerUp(e2 =>{
             v.ctx = Dom.current.ctx;
@@ -624,13 +624,13 @@ define((require, exports, module)=>{
         },
       });
 
-      document.body.appendChild(Dom.Foo.$autoRender({}));
+      document.body.appendChild(Dom.tpl.Foo.$autoRender({}));
 
       assert.dom('div>span', span =>{
         Dom.triggerEvent(span, 'pointerdown');
         Dom.triggerEvent(span, 'pointerup');
 
-        assert.same(v.ctx, Dom.Foo.$ctx(span));
+        assert.same(v.ctx, Dom.tpl.Foo.$ctx(span));
         assert.same(v.target, span);
 
         v.ctx = null;
@@ -656,7 +656,7 @@ define((require, exports, module)=>{
         ]
       }]});
 
-      assert.dom(Dom.Foo.$render({foo: 123.45}), elm => {
+      assert.dom(Dom.tpl.Foo.$render({foo: 123.45}), elm => {
         assert.same(elm.textContent, "123.450");
         Dom.ctx(elm).updateAllTags({foo: 423.45750001});
         assert.same(elm.textContent, "423.458");
@@ -672,7 +672,7 @@ define((require, exports, module)=>{
         ]
       }]});
 
-      assert.dom(Dom.Foo.$render({}), elm => {
+      assert.dom(Dom.tpl.Foo.$render({}), elm => {
         const comment = elm.firstChild;
         assert.equals(comment.nodeType, document.COMMENT_NODE);
         assert.equals(comment.data, 'foo');

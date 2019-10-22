@@ -35,7 +35,7 @@ isClient && define((require, exports, module)=>{
 
     afterEach(()=>{
       Dom.removeChildren(document.body);
-      Dom.Test = undefined;
+      Dom.tpl.Test = undefined;
       v = {};
     });
 

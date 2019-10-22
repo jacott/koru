@@ -43,7 +43,7 @@ isClient && define((require, exports, module)=>{
       Route._onGotoPath = v.onGotoPath;
 
       Route._reset();
-      Dom.Test = undefined;
+      Dom.tpl.Test = undefined;
       Dom.removeChildren(document.body);
       v = undefined;
     });

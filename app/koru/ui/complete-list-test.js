@@ -24,7 +24,7 @@ isClient && define((require, exports, module)=>{
     test("rendering", ()=>{
       assert.dom(v.CompleteList.$autoRender({}), function () {
         assert.dom('[name=name]', function () {
-          Dom.Form.completeList({
+          Dom.tpl.Form.completeList({
             input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
         });
       });
@@ -33,7 +33,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('li', 'def');
       });
       assert.dom(v.input, function () {
-        Dom.Form.completeList({input: this, completeList: [{name: 'foo'}]});
+        Dom.tpl.Form.completeList({input: this, completeList: [{name: 'foo'}]});
       });
       refute.dom('li', 'abc');
       assert.dom('body>ul.complete', function () {
@@ -41,7 +41,7 @@ isClient && define((require, exports, module)=>{
       });
 
       assert.dom(v.input, function () {
-        Dom.Form.completeList({input: this});
+        Dom.tpl.Form.completeList({input: this});
       });
       refute.dom('.complete');
     });
@@ -50,7 +50,7 @@ isClient && define((require, exports, module)=>{
       beforeEach(()=>{
         document.body.appendChild(v.CompleteList.$autoRender({}));
         assert.dom('[name=name]', function () {
-          Dom.Form.completeList({
+          Dom.tpl.Form.completeList({
             input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}],
             callback: v.callback = stub()});
         });
@@ -68,7 +68,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(v.callback, v.list[0]);
 
         assert.dom('[name=name]', {value: ''}, function () {
-          Dom.Form.completeList({input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}]});
+          Dom.tpl.Form.completeList({input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}]});
         });
         assert.dom('li', 'abc', function () {
           TH.trigger(this, 'pointerdown');
@@ -118,13 +118,13 @@ isClient && define((require, exports, module)=>{
     test("blur", ()=>{
       document.body.appendChild(v.CompleteList.$autoRender({}));
       assert.dom('[name=name]', function () {
-        Dom.Form.completeList({input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
+        Dom.tpl.Form.completeList({input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
         TH.trigger(this, 'blur');
       });
       refute.dom('ul');
 
       assert.dom('[name=name]', function () {
-        Dom.Form.completeList({
+        Dom.tpl.Form.completeList({
           noBlur: true, input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
         TH.trigger(this, 'blur');
       });
