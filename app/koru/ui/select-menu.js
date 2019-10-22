@@ -25,7 +25,7 @@ define((require, exports, module)=>{
     switch(event.which) {
     case 13: // enter
       const sel = details.container.getElementsByClassName('selected')[0];
-      if (sel !== null && ! sel.classList.contains('hide'))
+      if (sel !== void 0 && ! sel.classList.contains('hide'))
         select(details.ctx, sel, event);
       break;
     case 38: // up
@@ -45,7 +45,7 @@ define((require, exports, module)=>{
       curr = mElm.getElementsByClassName('selected')[0];
       for (nSel = firstElm(); nSel; nextElm()) {
         const cl = nSel.classList;
-        if (cl.contains('hide') || cl.contains('disabled')) continue;
+        if (cl.contains('hide') || cl.contains('disabled') || cl.contains('sep')) continue;
         curr !== void 0 && curr.classList.remove('selected');
         cl.add('selected');
         Dom.ensureInView(nSel);
@@ -76,9 +76,9 @@ define((require, exports, module)=>{
         align: options.align,
         container: menu,
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
-        keydownHandler: keydownHandler,
+        keydownHandler,
       });
-      Dom.dontFocus || options.noFocus || Dom.focus(menu);
+      Dom.dontFocus || options.noFocus || Dom.focus(menu.firstChild);
       return menu.firstChild;
     },
 
@@ -190,15 +190,9 @@ define((require, exports, module)=>{
 
   Tpl.List.$extend({
     $created(ctx, elm) {
-      const pd = ()=>{
-        document.removeEventListener('pointerdown', pd, true);
-        elm.removeEventListener('pointerup', pu, true);
-        elm.removeEventListener('pointermove', pm, true);
-      };
       let moved = false;
       const pu = event => {
         Dom.stopEvent(event);
-        pd();
         if (! moved) return;
         const li = event.target.closest('.ui-ul>li:not(.disabled)');
         if (li != null) {
@@ -218,10 +212,12 @@ define((require, exports, module)=>{
         }
       };
 
-      document.addEventListener('pointerdown', pd, true);
       elm.addEventListener('pointerup', pu, true);
       elm.addEventListener('pointermove', pm, true);
-      ctx.onDestroy(pd);
+      ctx.onDestroy(()=>{
+        elm.removeEventListener('pointerup', pu, true);
+        elm.removeEventListener('pointermove', pm, true);
+      });
     },
   });
 

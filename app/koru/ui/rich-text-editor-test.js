@@ -1122,7 +1122,7 @@ isClient && define((require, exports, module)=>{
           TH.input('[name=link]', 'bar');
         });
 
-        TH.pointerDownUp('.glassPane');
+        TH.click('.glassPane');
 
         refute.dom('.glassPane');
 

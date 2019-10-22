@@ -385,9 +385,9 @@ isClient && define((require, exports, module)=>{
       });
 
       test("content", ()=>{
-        assert.dom('#SelectMenu ul.ui-ul', function () {
+        assert.dom('#SelectMenu ul[tabindex="0"].ui-ul', function () {
           refute.dom('input');
-          assert.dom('li[touch-action=auto]', 'One');
+          assert.dom('li[tabindex="-1"][touch-action=auto]', 'One');
           assert.dom('li', 'Two');
         });
       });
@@ -440,27 +440,10 @@ isClient && define((require, exports, module)=>{
 
         });
         assert.dom('#SelectMenu');
-        TH.trigger(document.body, 'pointerdown');
+        TH.trigger(document.body, 'click');
         assert.dom('#SelectMenu');
-        TH.trigger('body>.glassPane', 'pointerdown');
+        TH.trigger('body>.glassPane', 'click');
         refute.dom('#SelectMenu');
-      });
-
-      test("pointercancel", ()=>{
-        assert.dom(document.body, function () {
-          assert.dom('#SelectMenu>ul', function () {
-            assert.dom('li:first-child', function () {
-              spy(Dom, 'stopEvent');
-              TH.trigger(this, 'pointerdown');
-              TH.trigger(this, 'pointercancel');
-              TH.trigger(this, 'pointerup');
-              refute.called(Dom.stopEvent);
-              assert.same(v.elm, undefined);
-            });
-
-          });
-          assert.dom('#SelectMenu');
-        });
       });
 
       test("autoClose", ()=>{
@@ -504,7 +487,7 @@ isClient && define((require, exports, module)=>{
 
       test("clicking off list closes list", ()=>{
         assert.dom('#TestSelectMenu>br');
-        TH.trigger('body>.glassPane', 'pointerdown');
+        TH.trigger('body>.glassPane', 'click');
         refute.dom('#SelectMenu');
       });
 

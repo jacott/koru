@@ -9,6 +9,8 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
+  const {stub, spy, after} = TH;
+
   const Dom = require('koru/dom');
 
   let v = {};
@@ -254,7 +256,7 @@ define((require, exports, module)=>{
       Dom.triggerEvent(button, 'pointerdown');
       assert.same(count, 1);
       Dom.triggerEvent(button, 'click');
-      assert.same(count, 1);
+      assert.same(count, 2);
 
       // using touch
       count = 0;
@@ -264,6 +266,16 @@ define((require, exports, module)=>{
       Dom.triggerEvent(button, 'click', {pointerType: 'touch'});
       assert.same(count, 1);
       //]
+
+      // click without pointerdown
+      const callback = stub();
+      const ms = Dom.makeMenustartCallback(callback);
+
+      ms({type: 'click'});
+      assert.called(callback);
+
+      ms({type: 'click'});
+      assert.calledTwice(callback);
     });
   });
 });

@@ -461,7 +461,7 @@ define((require)=>{
   });
 
   Tpl.SelectMenu.$events({
-    'pointerdown'(event) {
+    'menustart'(event) {
       Dom.stopEvent();
 
       const data = $.ctx.data;

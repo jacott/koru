@@ -71,17 +71,10 @@ isClient && define((require, exports, module)=>{
 
       sut.append('below', {container: page, origin: document.body});
       assert.dom('.popup');
-      TH.trigger(popup, 'touchstart');
-      TH.trigger(popup, 'pointerdown');
+      TH.trigger(popup, 'click');
       assert.dom('.page');
 
-      TH.trigger(page, 'pointerdown');
-      refute.dom('.page');
-
-      Dom.setCtx(page);
-      sut.append('below', {container: page, origin: document.body});
-      assert.dom('.popup');
-      TH.trigger(page, 'touchstart');
+      TH.trigger(page, 'click');
       refute.dom('.page');
     });
 

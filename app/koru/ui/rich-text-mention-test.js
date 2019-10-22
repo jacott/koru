@@ -99,7 +99,7 @@ isClient && define((require, exports, module)=>{
           TH.input(input, 'g');
         });
         assert.isTrue(inputCtx.undo.paused);
-        TH.pointerDownUp('.glassPane');
+        TH.click('.glassPane');
         assert.isFalse(inputCtx.undo.paused);
         assert.same(document.activeElement, v.input);
         assert.rangeEquals(undefined, v.range.startContainer, v.range.startOffset);
@@ -306,7 +306,7 @@ isClient && define((require, exports, module)=>{
 
         assert.dom('.rtMention');
 
-        TH.pointerDownUp('.glassPane');
+        TH.click('.glassPane');
 
         refute.dom('.rtMention');
 

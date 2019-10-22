@@ -64,14 +64,14 @@ define((require)=>{
           options.popup = options.popup.nextElementSibling;
       }
       const callback = event =>{
-        Dom.contains(options.popup, event.target) ||
+        if (! Dom.contains(options.popup, event.target)) {
+          Dom.stopEvent(event);
           Dom.remove(options.container);
+        }
       };
-      options.container.addEventListener('pointerdown', callback, true);
-      options.container.addEventListener('touchstart', callback, true);
+      options.container.addEventListener('click', callback, true);
       options.ctx.onDestroy(()=>{
-        options.container.removeEventListener('pointerdown', callback, true);
-        options.container.removeEventListener('touchstart', callback, true);
+        options.container.removeEventListener('click', callback, true);
         if (options === topModal) {
           topModal = topModal.prev;
           if (topModal == null) {

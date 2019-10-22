@@ -232,7 +232,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('.startTab:first-child');
         assert.dom('.endTab:last-child');
         assert(Modal.topModal.handleTab);
-        TH.pointerDownUp(elm.parentNode);
+        TH.click(elm.parentNode);
         assert.dom('input', {value: '/link.html'});
       });
 

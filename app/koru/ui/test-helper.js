@@ -284,9 +284,8 @@ define((require, exports, module)=>{
     },
 
     selectMenu(node, value, func) {
-      TH.trigger(node, 'pointerdown');
-      const menu = Dom('body>.glassPane>#SelectMenu') ||
-            (TH.click(node), Dom('body>.glassPane>#SelectMenu'));
+      TH.click(node);
+      const menu = Dom('body>.glassPane>#SelectMenu');
       if (! menu)
         assert.fail("Can't find #SelectMenu", 1);
       switch(typeof value) {

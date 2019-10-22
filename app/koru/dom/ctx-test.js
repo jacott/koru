@@ -229,8 +229,6 @@ isClient && define((require, exports, module)=>{
       Dom.triggerEvent(button, 'pointerdown');
       assert.called(callback);
       Dom.triggerEvent(button, 'click');
-      assert.calledOnce(callback);
-      Dom.triggerEvent(button, 'click');
       assert.calledTwice(callback);
 
       // mouseover

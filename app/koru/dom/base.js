@@ -235,20 +235,21 @@ define((require)=>{
       }
     },
 
-    makeMenustartCallback: (callback)=>{
-      let lastTouch = 2;
-
+    makeMenustartCallback: (callback)=> {
+      let pointerdown = false;
       return event =>{
-        if (lastTouch != 0 && event.type === "click") {
-          if (lastTouch != 1)
-            return;
-          lastTouch = 2;
-        }
-        if (event.type === "click" || event.pointerType !== 'touch') {
+        if (event.type === "pointerdown") {
+          if (event.pointerType !== 'touch') {
+            pointerdown = false;
+            callback(event, 'menustart');
+          } else {
+            pointerdown = true;
+          }
+        } else if (event.pointerType !== 'touch' || pointerdown) {
+          pointerdown = false;
           callback(event, 'menustart');
-          lastTouch = 2;
         } else {
-          lastTouch = 1;
+          pointerdown = false;
         }
       };
     },
