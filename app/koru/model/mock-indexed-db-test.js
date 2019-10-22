@@ -47,6 +47,34 @@ isClient && define((require, exports, module)=>{
       assert.called(onsuccess);
     });
 
+    test("onupgradeneeded", ()=>{
+      v.idb = new sut(1);
+      const req = v.idb.open('foo', 2);
+      req.onupgradeneeded = event =>{
+        const objectStore = event.target.result.createObjectStore('userCache', {keyPath: "url"});
+        objectStore.createIndex("timestamp", "timestamp", {unique: false});
+      };
+      let db;
+      req.onsuccess = event =>{
+        db = event.target.result;
+      };
+      MockPromise._poll();
+
+      assert(db._store.userCache);
+
+      const req2 = v.idb.open('foo', 2);
+      req2.onupgradeneeded = event =>{
+        assert.fail("Should not need upgrading");
+      };
+      let db2;
+      req.onsuccess = event =>{
+        db2 = event.target.result;
+      };
+      MockPromise._poll();
+
+      assert.same(db, db2);
+    });
+
     group("objectStore", ()=>{
       beforeEach(()=>{
         v.idb = new sut(1);

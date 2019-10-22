@@ -29,6 +29,7 @@ define((require)=>{
     constructor(name, version, mockdb) {
       this._store = {};
       this._mockdb = mockdb;
+      this._version = mockdb._version;
     }
 
     _addPending(func) {
@@ -309,7 +310,7 @@ define((require)=>{
 
     open(name, newVersion) {
       const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0, this));
-      const oldVersion = this._version;
+      const oldVersion = db._version;
       return {
         result: db,
         set onupgradeneeded(func) {
