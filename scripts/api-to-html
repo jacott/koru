@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-branch="test"
-. `dirname "$0"`/../config/environ.sh
+. "${0%/*}"/../config/environ.sh test
 
 cd app
-exec ${NODE} --es_staging ../lib/api-to-html.js $branch "$@"
+execNode ../lib/api-to-html.js test "$@"

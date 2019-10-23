@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
-cd `dirname "$0"`/..
+cd "${0%/*}"/..
 
+rm -rf package-node.test node_modules build
 rm -rf $(find app -type d -name '.build')

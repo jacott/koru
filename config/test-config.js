@@ -1,19 +1,21 @@
 const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
 
+const {APP_DB, KORU_PORT, KORUAPI, KORUTEST_DBDRIVER="pg"} = process.env;
+
 exports.server = cfg => {
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
     "koru/config": {
-      DBDriver: "koru/"+(process.env['KORUTEST_DBDRIVER'] || "pg")+"/driver",
+      DBDriver: "koru/"+KORUTEST_DBDRIVER+"/driver",
     },
     "koru/pg/driver": {
-      url: "host=/var/run/postgresql dbname=korutest",
+      url: "host=/var/run/postgresql dbname="+APP_DB,
       autoSchema: true,
     },
 
     "koru/web-server": {
-      port: process.env.KORU_PORT || 3000,
+      port: KORU_PORT,
       defaultPage: 'test/index.html',
     },
   });
@@ -25,7 +27,7 @@ exports.server = cfg => {
 };
 
 exports.common = cfg => {
-  const record = !! process.env.KORUAPI;
+  const record = !! KORUAPI;
   cfg.set('requirejs.recordExports', record);
   cfg.set('requirejs.config.koru/test/api.record', record);
 };

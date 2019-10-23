@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-user_data_dir=$(realpath -e $(dirname $0)/../tmp)/test-browser
+user_data_dir=$(readlink -fm "$0/../../tmp")/test-browser
 
 exec ${KORU_BROWSER:-google-chrome} \
       --disable-translate --disable-extensions \

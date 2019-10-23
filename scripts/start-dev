@@ -1,17 +1,8 @@
 #!/bin/bash
 set -e
 
-. `dirname "$0"`/../config/environ.sh
-
-if test -e tmp/package-lock.json && ${NODE} -v | cat - package-lock.json package.json| diff -q - tmp/package-lock.json >/dev/null;then
-    echo 'node_modules okay'
-else
-    echo 'npm install...'
-    rm -rf node_modules build
-    npm i
-    ${NODE} -v | cat - package-lock.json package.json >tmp/package-lock.json
-fi
+. "${0%/*}"/../config/environ.sh $1
 
 cd app
-echo -e "starting ${branch}...\c"
-exec ${NODE} --es_staging ../lib/koru.js "$@"
+echo -e "Starting ${APP_ENV}...\c"
+exec_node ../lib/koru.js "$@"

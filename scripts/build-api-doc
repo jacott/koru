@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-branch=test
-. `dirname "$0"`/../config/environ.sh
+. "${0%/*}"/../config/environ.sh test
 
 rm -f doc/api-*.json
 
@@ -15,7 +14,7 @@ fi
 
 export KORU_PORT=3001
 
-$NODE ./bin/koru test --isolated "$@"
+node ./bin/koru test --isolated "$@"
 if [[ $KORUAPI != 1 ]]; then
     exit 0
 fi
@@ -23,5 +22,5 @@ fi
 name=$(pwd -P)/doc/api.html
 cd app
 echo "building html..."
-${NODE} --es_staging ../lib/api-to-html.js $branch
+node --es_staging ../lib/api-to-html.js test
 echo "ready - file://$name"
