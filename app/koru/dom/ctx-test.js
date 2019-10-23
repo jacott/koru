@@ -203,6 +203,51 @@ isClient && define((require, exports, module)=>{
       assert.same(ctx.parentCtx, pCtx);
     });
 
+    test("addEventListener", ()=>{
+      /**
+       * This is like the `Node#addEventListener` except that it will call
+       * `Node#removeEventListener` when the `ctx` is destroyed. Also handle the koru event type
+       * `'menustart'`.
+       **/
+      api.protoMethod();
+      //[
+      const ctx = new Ctx();
+      const button = Dom.h({button: [], type: 'button'});
+      Dom.setCtx(button, ctx);
+      const callback = stub(), callback2 = stub(), opts = {capture: true};
+      ctx.addEventListener(button, 'menustart', callback, opts);
+      ctx.addEventListener(button, 'mouseover', callback2);
+
+      // touch
+      Dom.triggerEvent(button, 'pointerdown', {pointerType: 'touch'});
+      refute.called(callback);
+      Dom.triggerEvent(button, 'click', {pointerType: 'touch'});
+      assert.calledOnce(callback);
+
+      // mouse
+      callback.reset();
+      Dom.triggerEvent(button, 'pointerdown');
+      assert.called(callback);
+      Dom.triggerEvent(button, 'click');
+      assert.calledOnce(callback);
+      Dom.triggerEvent(button, 'click');
+      assert.calledTwice(callback);
+
+      // mouseover
+      Dom.triggerEvent(button, 'mouseover');
+      assert.called(callback2);
+
+      // destroy
+      Dom.destroyData(button);
+      callback.reset();
+      Dom.triggerEvent(button, 'pointerdown');
+      refute.called(callback);
+
+      Dom.triggerEvent(button, 'mouseover');
+      assert.calledOnce(callback2);
+      //]
+    });
+
     group("Ctx.current", ()=>{
       /**
        * Hello world

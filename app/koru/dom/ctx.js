@@ -372,6 +372,21 @@ define((require)=>{
       }
     }
 
+    addEventListener(elm, type, callback, opts) {
+      if (type === 'menustart') {
+        const wrapper = Dom.makeMenustartCallback(callback);
+        elm.addEventListener('pointerdown', wrapper, opts);
+        elm.addEventListener('click', wrapper, opts);
+        this.onDestroy(()=>{
+          elm.removeEventListener('pointerdown', wrapper, opts);
+          elm.removeEventListener('click', wrapper, opts);
+        });
+      } else {
+        elm.addEventListener(type, callback, opts);
+        this.onDestroy(()=>{elm.removeEventListener(type, callback, opts)});
+      }
+    }
+
     static get _currentCtx() {return currentCtx}
     static set _currentCtx(value) {currentCtx = value}
 
