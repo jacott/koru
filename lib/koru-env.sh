@@ -35,7 +35,7 @@ case "$APP_ENV" in
 esac
 
 export KORU_MODULE="$KORU_HOME/node_modules/koru"
-export KORU_NODE_OPTIONS=""
+export KORU_NODE_OPTIONS="--no-wasm-code-gc"
 export KORU_LOG_DIR=${KORU_LOG_DIR-tmp}
 
 [[ -e config/${APP_ENV}.sh ]] && . config/${APP_ENV}.sh
