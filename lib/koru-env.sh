@@ -9,7 +9,7 @@ function abort {
 cd $KORU_HOME
 [[ -e .koru ]] || abort ".koru file missing from project top level"
 
-APP_ENV=${1-demo}
+export KORU_ENV=${1-demo}
 
 export NODE=${NODE-`type -p node`}
 
@@ -19,7 +19,7 @@ else
     PKG_LOCK=package-lock.json
 fi
 
-case "$APP_ENV" in
+case "$KORU_ENV" in
     "demo" | "test")
         [[ -d tmp ]] || mkdir tmp
         if [[ -e package-node.test && -e node_modules ]] && ${NODE} -v |
@@ -38,12 +38,12 @@ export KORU_MODULE="$KORU_HOME/node_modules/koru"
 export KORU_NODE_OPTIONS="--no-wasm-code-gc"
 export KORU_LOG_DIR=${KORU_LOG_DIR-tmp}
 
-[[ -e config/${APP_ENV}.sh ]] && . config/${APP_ENV}.sh
+[[ -e config/${KORU_ENV}.sh ]] && . config/${KORU_ENV}.sh
 
 export KORU_PORT=${KORU_PORT-3000}
 export NODE_PATH="${NODE%/*}"
 export NPM=$NODE_PATH/npm
-export APP_DB=${APP_DB-${APP_NAME}${APP_ENV}}
+export KORU_DB=${KORU_DB-${KORU_APP_NAME}${KORU_ENV}}
 
 if [[ ! -d "$KORU_LOG_DIR" ]];then
     echo "no log dir: $KORU_LOG_DIR"

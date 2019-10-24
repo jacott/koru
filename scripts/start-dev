@@ -4,5 +4,5 @@ set -e
 . "${0%/*}"/../config/environ.sh $1
 
 cd app
-echo -e "Starting ${APP_ENV}...\c"
+echo -e "Starting ${KORU_ENV}...\c"
 exec_node ../lib/koru.js "$@"

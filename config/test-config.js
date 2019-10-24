@@ -1,7 +1,7 @@
 const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
 
-const {APP_DB, KORU_PORT, KORUAPI, KORUTEST_DBDRIVER="pg"} = process.env;
+const {KORU_DB, KORU_PORT, KORUAPI, KORUTEST_DBDRIVER="pg"} = process.env;
 
 exports.server = cfg => {
   cfg.set('requirejs.baseUrl', appDir);
@@ -10,7 +10,7 @@ exports.server = cfg => {
       DBDriver: "koru/"+KORUTEST_DBDRIVER+"/driver",
     },
     "koru/pg/driver": {
-      url: "host=/var/run/postgresql dbname="+APP_DB,
+      url: "host=/var/run/postgresql dbname="+KORU_DB,
       autoSchema: true,
     },
 
