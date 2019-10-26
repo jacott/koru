@@ -4,4 +4,4 @@ set -e
 . "${0%/*}"/../config/environ.sh test
 
 cd app
-execNode ../lib/api-to-html.js test "$@"
+exec_node ../lib/api-to-html.js test "$@"

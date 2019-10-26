@@ -85,8 +85,10 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
 
     test("await", ()=>{
       assertMarkup(async ()=>{
+        // lead comment
         let x = await 123;
       }, `
+~cs#// lead comment#
 ~kd#let# ~nv#x# = ~k#await# ~m#123#;`);
     });
 

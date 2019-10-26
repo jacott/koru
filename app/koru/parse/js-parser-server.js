@@ -7,6 +7,8 @@ define((require)=> JsPaser => {
 
   const n2c = (node, code)=> code.slice(node.start.pos, node.end.endpos);
 
+  const ASYNC_WRAPPER_START = "async ()=>{";
+
   JsPaser.HL_MAP = {
     string: 's',
     number: 'm',
@@ -33,7 +35,7 @@ define((require)=> JsPaser => {
     } catch(ex) {
       if (/Unexpected await identifier inside strict mode/.test(ex.message)) {
         try {
-          codeIn = "async ()=>{"+codeIn+"}";
+          codeIn = ASYNC_WRAPPER_START+codeIn+"}";
           ast = terser.parse(codeIn, parseOpts);
           wrapper = true;
         } catch(_) {
@@ -399,7 +401,7 @@ define((require)=> JsPaser => {
       ast.walk(new terser.TreeWalker((node) => {
         if (node.TYPE === 'Arrow') {
           const {body} = node;
-          srcPos = body[0].start.pos;
+          srcPos = ASYNC_WRAPPER_START.length;
           expr(body);
           catchup(body[body.length-1].end.endpos);
           return true;
