@@ -148,7 +148,7 @@ after
           abstract() {
             /**
              * The Test facilitator responsible for running an individual test. Use
-             * {#koru/test-helper}.test to access it. It can also be accessed from
+             * {#koru/test-helper;.test} to access it. It can also be accessed from
              * `koru._TEST_.test`.
              *
              * Most methods are for internal purposes and are not documented here. But the name is

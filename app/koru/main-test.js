@@ -37,7 +37,7 @@ define((require, exports, module)=>{
 
     test("onunload", ()=>{
       /**
-       * A wrapper around `module#onUnload`. see https://www.npmjs.com/package/yaajs
+       * A wrapper around `module#onUnload`. see [yaajs](https://www.npmjs.com/package/yaajs)
        **/
       api.method();
 
