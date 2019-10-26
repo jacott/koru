@@ -1,7 +1,14 @@
 isClient && define((require, exports, module)=>{
   'use strict';
+  /**
+   * A Mock version of [CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage)
+   *
+   * ## Limitations
+   * `match` only supports strictly checking the url.
+   **/
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
   const MockPromise     = require('koru/test/mock-promise');
-  const TH              = require('./test-helper');
 
   const {stub, spy, util} = TH;
   const {Request} = window;
@@ -12,15 +19,27 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
   TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    before(()=>{
-      MockPromise.stubPromise();
-    });
     beforeEach(()=>{
+      MockPromise.stubPromise();
       v.caches = new sut();
     });
 
     afterEach(()=>{
       v = {};
+    });
+
+    test("constructor", async ()=>{
+      /**
+       * Create an instance suitable for replacing `window.caches`
+       **/
+      MockPromise.restore();
+
+      const {Request} = window;
+      const MockCacheStorage = api.class();
+      //[
+      const caches = new MockCacheStorage;
+      refute(await caches.match(new Request('/index.js')));
+      //]
     });
 
     test("open", ()=>{

@@ -21,11 +21,19 @@ define((require)=>{
     }
 
     match(req) {
+      if (typeof req === 'string') req = new window.Request(req);
       const v = this._btree.find({url: req.url});
       return Promise.resolve(v && v.response);
     }
 
+    _syncMatch(req) {
+      if (typeof req === 'string') req = new window.Request(req);
+      const v = this._btree.find({url: req.url});
+      return v && v.response;
+    }
+
     delete(req) {
+      if (typeof req === 'string') req = new window.Request(req);
       const v = this._btree.delete({url: req.url});
       return Promise.resolve(!!v);
     }
@@ -43,7 +51,7 @@ define((require)=>{
     match(req) {
       let ans;
       for (const name in this._caches) {
-        ans = this._caches[name].match(req);
+        ans = this._caches[name]._syncMatch(req);
         if (ans !== undefined) break;
       }
       return Promise.resolve(ans);
