@@ -79,7 +79,7 @@ define((require)=>{
 
     thisElm(doc) {
       const node = doc[this[private$].sym$];
-      return node == null ? null : node[elm$];
+      return node === void 0 ? void 0 : node[elm$];
     }
 
     elm(doc, force) {
@@ -87,7 +87,7 @@ define((require)=>{
       const pv = this[private$];
       const {entries, sym$} = pv;
       const node = doc[sym$] || entries.findNode(doc);
-      if (node == null) return null;
+      if (node === void 0) return null;
 
       const elm = node[elm$];
 
@@ -154,7 +154,7 @@ define((require)=>{
         pv.query && pv.query.forEach(doc => {
           const node = doc[sym$];
 
-          if (node == null)
+          if (node === void 0)
             addRow(pv, doc);
           else {
             doc[doc$] = undefined;
@@ -187,7 +187,7 @@ define((require)=>{
         removeRow(pv, doc);
       } else {
         const node = doc[sym$] || pv.entries.findNode(doc);
-        if (node == null) {
+        if (node === void 0) {
           action = 'added';
           addRow(pv, doc);
         } else {
@@ -316,7 +316,7 @@ define((require)=>{
   const removeRow = (pv, doc)=>{
     const {sym$} = pv;
     const node = doc[sym$] || pv.entries.findNode(doc);
-    if (node !== null) {
+    if (node !== void 0) {
       cleanupDoc(pv, node[doc$]);
       checkLimitBeforeRemove(pv, node);
       pv.entries.deleteNode(node);

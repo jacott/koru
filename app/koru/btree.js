@@ -41,7 +41,7 @@ define((require)=>{
     }
     if (tree.unique) {
       const cn = insertUnique(tree.root, tree.compare, node.value, node);
-      if (cn !== undefined) return cn;
+      if (cn !== void 0) return cn;
     } else
       insert(tree.root, tree.compare, node.value, node);
     ++tree[size$];
@@ -66,7 +66,7 @@ define((require)=>{
 
     find(value) {
       const node = this.findNode(value);
-      return node == null ? undefined : node.value;
+      return node === void 0 ? void 0 : node.value;
     }
 
     add(value) {
@@ -86,7 +86,7 @@ define((require)=>{
 
     deleteNode(n) {
       let {root} = this;
-      if (n === null) return null;
+      if (n === void 0) return void 0;
 
       --this[size$];
       let p = n[up$];
@@ -263,7 +263,7 @@ define((require)=>{
       const {compare} = this;
       if (direction == 1) {
         let node, nn;
-        if (from === undefined)
+        if (from === void 0)
           node = this.firstNode;
         else {
           node = this.nodeFrom(from);
@@ -273,7 +273,7 @@ define((require)=>{
         }
         for (; node != null; node = nn) {
           nn = nextNode(node);
-          if (to !== undefined) {
+          if (to !== void 0) {
             const res = compare(to, node.value);
             if (excludeTo ? res <= 0 : res < 0) return;
           }
@@ -282,7 +282,7 @@ define((require)=>{
 
       } else if (direction == -1) {
         let node, nn;
-        if (from === undefined)
+        if (from === void 0)
           node = this.lastNode;
         else {
           node =this.nodeTo(from);
@@ -292,7 +292,7 @@ define((require)=>{
         }
         for (; node != null; node = nn) {
           nn = previousNode(node);
-          if (to !== undefined) {
+          if (to !== void 0) {
             const res = compare(to, node.value);
             if (excludeTo ? res >= 0 : res > 0) return;
           }
@@ -302,7 +302,7 @@ define((require)=>{
     }
 
     *values(opts) {
-      if (opts === undefined)
+      if (opts === void 0)
         yield *this[Symbol.iterator]();
       else
         for (const node of this.nodes(opts)) yield node.value;
@@ -425,7 +425,7 @@ define((require)=>{
       if (cmp === 0) return n;
       n = cmp < 0 ? n[left$] : n[right$];
     }
-    return null;
+    return void 0;
   };
 
   const ic1 = n =>{

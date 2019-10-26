@@ -14,6 +14,39 @@ define((require, exports, module)=>{
   const {left$, right$, up$, red$} = BTree[isTest];
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("constructor", ()=>{
+      /**
+       * Create an instance of BTree.
+
+       * @param compare Function to test order of two keys (like `Array#sort`) defaults to
+       * <br> `(a, b) => a == b ? 0 : a < b ? -1 : 1`
+
+       * @param unique if `true` do not add entry if {##add} called with key already in tree;
+       **/
+      const BTree = api.class();
+      //[
+      const simple = new BTree();
+      simple.add(5); simple.add(5); simple.add(1);
+      assert.equals(Array.from(simple), [1, 5, 5]);
+
+      const compCompare = (a, b)=> {
+        if (a === b) return 0;
+        const ans = a.k1 - b.k1;
+        return ans == 0 ? a.k2 - b.k2 : ans;
+      };
+
+      const composite = new BTree(compCompare, true);
+      composite.add({k1: 4, k2: 5, name: '45'});
+      composite.add({k1: 4, k2: 3, name: '43'});
+      assert.same(
+        composite.add({k1: 4, k2: 3, name: 'rep'}).value.name,
+        '43');
+
+      assert.equals(Array.from(composite).map(v => v.name), ['43', '45']);
+      //]
+    });
+
+
     test("cursor handles deletes", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
@@ -37,7 +70,7 @@ r  5 *
     });
 
     test("unique tree", ()=>{
-      const tree = new BTree(undefined, true);
+      const tree = new BTree(void 0, true);
       tree.add(5);
       tree.add(5);
       tree.add(4);
@@ -224,25 +257,35 @@ r            1000
     test("find", ()=>{
       /**
        * Find a value in the tree.
+
+       * @param value find entry with same keys as `value`
+
+       * @return {undefined|object} `undefined` if not found otherwise the value {##add;ed} to the
+       * tree
        **/
       api.protoMethod();
-
       //[
       const tree = new BTree();
       insertNodes(tree, [100, 200, 50, 150, 250]);
 
       assert.same(tree.find(50), 50);
-      assert.same(tree.find(49), undefined);
+      assert.same(tree.find(49), void 0);
       assert.same(tree.find(150), 150);
       //]
 
-      assert.same(tree.find(120), undefined);
-      assert.same(tree.find(300), undefined);
+      assert.same(tree.find(120), void 0);
+      assert.same(tree.find(300), void 0);
     });
 
     test("findNode", ()=>{
       /**
-       * Find a `node` in the tree.
+       * Find a `node` in the tree that matches `value`. Be careful with the node; don't insert it
+       * into another tree or change its keys; call {##deleteNode} first.
+
+       * @param value contains the keys to find.
+
+       * @return {undefined|object} `undefined` if `node` can't be found otherwise the matching
+       * `node`.
        **/
       api.protoMethod();
 
@@ -251,12 +294,12 @@ r            1000
       insertNodes(tree, [100, 200, 50, 150, 250]);
 
       assert.same(tree.findNode(50).value, 50);
-      assert.same(tree.findNode(49), null);
+      assert.same(tree.findNode(49), void 0);
       assert.same(tree.findNode(150).value, 150);
       //]
 
-      assert.same(tree.findNode(120), null);
-      assert.same(tree.findNode(300), null);
+      assert.same(tree.findNode(120), void 0);
+      assert.same(tree.findNode(300), void 0);
     });
 
     test("insert balancing case 1,2,3", ()=>{
@@ -760,7 +803,7 @@ l    10
 r    70
 r  100
 `);
-        assert.same(tree.delete(80), null);
+        assert.same(tree.delete(80), void 0);
         assert.same(tree.size, 5);
       });
 
