@@ -13,7 +13,8 @@ define(['require', 'koru/util-base'], (require, util)=>{
   const stackHasMessage = isServer || new Error("abc").stack.slice(7, 10) === "abc";
 
   const normalizedStack = (ex, elidePoint=0)=>{
-    const stackString = stackHasMessage ? (ex.stack||'').slice(ex.toString().length) : ex.stack;
+    const stackString = ex.userStack || (
+      stackHasMessage ? (ex.stack||'').slice(ex.toString().length) : ex.stack);
     if (typeof stackString !== 'string') return null;
 
     const lines = stackString.split('\n'),

@@ -5,18 +5,6 @@ define((require, exports, module)=>{
   const koru            = require('./main');
   const session         = require('./session/main');
 
-  const errorListener = ev =>{
-    if (ev.filename) {
-      if (ev.error.name === 'SyntaxError') {
-        koru.logger('E', ev.error +
-                    "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno);
-        return;
-      }
-    }
-    if (ev.error)
-      koru.logger('E', extractError(ev.error));
-  };
-
   koru.logger = (type, ...args)=>{
     if (type === 'E') {
       console.error(...args);
@@ -39,8 +27,6 @@ define((require, exports, module)=>{
     }
     return false;
   };
-
-  window.addEventListener('error', errorListener);
 
   koru.onunload(module, 'reload');
 

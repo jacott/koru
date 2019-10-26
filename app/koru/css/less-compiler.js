@@ -36,7 +36,7 @@ define((require, exports, module)=>{
         if (fn === 'input') fn = path;
         if (fn[0] === '/') fn = fn.slice(1);
         koru.error(`Less compiler error: ${error.message}
-\tat ${fn}:${error.line}:${error.column + 1}
+    at - ${fn}:${error.line}:${error.column + 1}
 `);
         future.return(null);
       } else {

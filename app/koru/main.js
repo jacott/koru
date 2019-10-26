@@ -117,7 +117,7 @@ define((require, exports, module)=>{
         const {ctx} = mod;
         const stack = Object.keys(koru.fetchDependants(mod)).map(id =>{
           if (id === mod.id) return '';
-          return "   at " + id + '.js:1:1';
+          const ans = "    at " + id + '.js:1:1';
         }).join('\n');
         koru.error(`ERROR: failed to load module: ${mod.id}
 with dependancies:
@@ -127,12 +127,14 @@ ${stack}
         const errEvent = err.event;
 
         if (err.name !== 'SyntaxError' && errEvent && errEvent.filename) {
-          const uer = errEvent && errEvent.error;
-          koru.error(`ERROR: ${uer ? uer.toString() : err.toString()}` +
-                     "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno);
+          const uer = errEvent && errEvent.error || err;
+          koru.error(util.extractError({
+            toString: () => err.toString(),
+            userStack: "    at "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
+          }));
         } else {
           const m = /^([\S]*)([\s\S]*?)    at.*vm.js:/.exec(err.stack);
-          koru.error(m !== null ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
+          koru.error(m !== null ? `\n\tat - ${m[1]}\n${m[2]}` : util.extractError(err));
         }
       }
     };
