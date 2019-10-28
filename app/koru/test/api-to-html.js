@@ -3,7 +3,7 @@ define((require)=>{
   const marked = requirejs.nodeRequire('marked');
   const koru            = require('koru');
   const Dom             = require('koru/dom');
-  const htmlDoc         = require('koru/dom/html-doc');
+  const Document        = require('koru/dom/html-doc');
   const jsParser        = require('koru/parse/js-parser');
   const util            = require('koru/util');
 
@@ -263,12 +263,16 @@ define((require)=>{
     },
   };
 
+  const WebAPI = 'Web/API/';
+
   const CORE_TYPES = {
     Array: true,
     ArrayBuffer: true,
     Boolean: true,
     Date: true,
-    Element: 'Web/API/',
+    Element: WebAPI,
+    HTMLDocument: WebAPI,
+    HTMLCollection: WebAPI,
     Error: true,
     EvalError: true,
     Generator: true,

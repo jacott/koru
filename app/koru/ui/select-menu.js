@@ -1,9 +1,10 @@
 define((require, exports, module)=>{
   'use strict';
-  const Dom             = require('../dom');
-  const util            = require('../util');
-  require('./each');
-  const Modal           = require('./modal');
+  const Dom             = require('koru/dom');
+  const Each            = require('koru/ui/each');
+  const ListSelector    = require('koru/ui/list-selector');
+  const Modal           = require('koru/ui/modal');
+  const util            = require('koru/util');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./select-menu'));
   const $ = Dom.current;
@@ -20,45 +21,6 @@ define((require, exports, module)=>{
     }
   };
 
-  const keydownHandler = (event, details)=>{
-    let nextElm, firstElm, curr, nSel;
-    switch(event.which) {
-    case 13: // enter
-      const sel = details.container.getElementsByClassName('selected')[0];
-      if (sel !== void 0 && ! sel.classList.contains('hide'))
-        select(details.ctx, sel, event);
-      break;
-    case 38: // up
-      nextElm = ()=>{nSel = nSel.previousElementSibling};
-      firstElm = ()=>{
-        if (curr)
-          return curr.previousElementSibling;
-        const lis = mElm.getElementsByTagName('li');
-        return lis[lis.length - 1];
-      };
-      // fall through
-    case 40: // down
-      if (nextElm === undefined) nextElm = ()=>{nSel = nSel.nextElementSibling};
-      if (firstElm === undefined)
-        firstElm = () => curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0];
-      const mElm = details.container.firstChild;
-      curr = mElm.getElementsByClassName('selected')[0];
-      for (nSel = firstElm(); nSel; nextElm()) {
-        const cl = nSel.classList;
-        if (cl.contains('hide') || cl.contains('disabled') || cl.contains('sep')) continue;
-        curr !== void 0 && curr.classList.remove('selected');
-        cl.add('selected');
-        Dom.ensureInView(nSel);
-        break;
-      }
-      break;
-    default:
-      return; // don't stop event
-    }
-
-    Dom.stopEvent(event);
-  };
-
   const searchRegExp = value => new RegExp(
     ".*"+util.regexEscape(value||"").replace(/\s+/g, '.*') + ".*", "i");
 
@@ -66,8 +28,14 @@ define((require, exports, module)=>{
     popup(elm, options, pos) {
       const elmCtx = Dom.ctx(elm);
       const menu = Tpl.$autoRender(options);
-      options.rendered && options.rendered(menu.firstElementChild);
       const ctx = Dom.myCtx(menu);
+      ListSelector.attach({
+        ul: menu.querySelector('ul.ui-ul'),
+        ctx,
+        keydownElm: document,
+        onClick: (elm, event)=>{select(ctx, elm, event)},
+      });
+      options.rendered && options.rendered(menu.firstElementChild);
       elmCtx && Dom.destroyMeWith(menu, elmCtx);
       ctx.focusElm = document.activeElement;
       ctx.focusRange = Dom.getRange();
@@ -76,7 +44,6 @@ define((require, exports, module)=>{
         align: options.align,
         container: menu,
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
-        keydownHandler,
       });
       Dom.dontFocus || options.noFocus || Dom.focus(menu.firstChild);
       return menu.firstChild;
@@ -175,19 +142,6 @@ define((require, exports, module)=>{
     },
   });
 
-  Tpl.List.$events({
-    'pointerover .ui-ul>li:not(.selected):not(.disabled)'(event) {
-      const curr = event.currentTarget.getElementsByClassName('selected')[0];
-      curr !== void 0 && curr.classList.remove('selected');
-      this.classList.add('selected');
-    },
-
-    'click .ui-ul>li:not(.disabled)'(event) {
-      Dom.stopEvent();
-      select($.ctx.parentCtx, this, event);
-    },
-  });
-
   Tpl.List.$extend({
     $created(ctx, elm) {
       let moved = false;
@@ -223,7 +177,6 @@ define((require, exports, module)=>{
 
   Tpl.Search.$events({
     'input input'(event) {
-      Dom.stopEvent();
       const options = $.ctx.data;
       const func = options.search;
       const searchRe = searchRegExp(this.value);

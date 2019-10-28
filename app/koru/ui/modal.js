@@ -32,15 +32,13 @@ define((require)=>{
       break;
     }
 
-    if (topModal.keydownHandler)
-      topModal.keydownHandler(event, topModal);
-    else if (! Dom.contains(topModal.container, event.target)) {
+    if (! Dom.contains(topModal.container, event.target)) {
       Dom.stopEvent(event);
     }
   };
 
   const retKeydownCallback = (event)=>{
-    if (event.which !==9) {
+    if (event.which !== 9) {
       event.stopImmediatePropagation();
     }
   };

@@ -30,7 +30,7 @@ define((require, exports, module)=>{
     const key = util.Fiber.current || global;
     const doc = key[doc$];
     if (doc == null) {
-      const doc = new Document;
+      const doc = new HTMLDocument;
       key[doc$] = doc;
       return doc;
     }
@@ -305,7 +305,7 @@ define((require, exports, module)=>{
     return new (SPECIAL_TYPE[tag]||HTMLElement)(tag);
   };
 
-  class Document extends Element {
+  class HTMLDocument extends Element {
     constructor() {
       super(DOCUMENT_NODE);
       this.appendChild(this.body = createHTMLElement('body'));
@@ -332,7 +332,7 @@ define((require, exports, module)=>{
     createComment(data) {return new CommentNode(data)}
   }
 
-  Object.assign(Document.prototype, {
+  Object.assign(HTMLDocument.prototype, {
     ELEMENT_NODE,
     TEXT_NODE,
     COMMENT_NODE,
@@ -627,5 +627,5 @@ define((require, exports, module)=>{
     Object.defineProperty(global, 'document', {configurable: true, value: void 0});
   });
 
-  return Document;
+  return HTMLDocument;
 });

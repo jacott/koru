@@ -1,1 +1,1 @@
-define(()=> window.document.constructor);
+define(() => Document);

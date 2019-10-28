@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   'use strict';
   const koru            = require('koru');
+  const HTMLDocument    = require('koru/dom/html-doc');
   const moduleGraph     = require('koru/module-graph');
   const jsParser        = require('koru/parse/js-parser');
   const {stubName$}     = require('koru/symbols');
@@ -996,6 +997,7 @@ define((require, exports, module)=>{
     Boolean,
     Date,
     Element,
+    HTMLDocument,
     Error,
     EvalError,
     Generator,
@@ -1026,6 +1028,10 @@ define((require, exports, module)=>{
     WeakMap,
     WeakSet,
   ]);
+
+  if (isClient) {
+    API._coreTypes.add(HTMLCollection);
+  }
 
   API._coreDisplay = new Map([
     [Promise, 'Promise()'],

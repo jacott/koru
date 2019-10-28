@@ -500,6 +500,7 @@ isClient && define((require, exports, module)=>{
               assert.same(v.elm, undefined);
               TH.keydown(40);
               TH.keydown(38);
+              assert(Dom('li.selected'));
               TH.keydown(this, 13);
               refute.className(v.elm, 'disabled');
             });
