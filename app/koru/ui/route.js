@@ -258,7 +258,6 @@ define((require, exports, module)=>{
             title = Route.title;
             pageRoute = {};
           } else {
-            page = page.Index || page;
             href = Route.pageRouteToHref(page.onEntry && page.onEntry(page, pageRoute) || pageRoute);
             title = page.title || Route.title;
           }

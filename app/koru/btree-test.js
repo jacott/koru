@@ -19,7 +19,10 @@ define((require, exports, module)=>{
        * Create an instance of BTree.
 
        * @param compare Function to test order of two keys (like `Array#sort`) defaults to
-       * <br> `(a, b) => a == b ? 0 : a < b ? -1 : 1`
+
+       * ```js
+       * (a, b) => a == b ? 0 : a < b ? -1 : 1
+       * ```
 
        * @param unique if `true` do not add entry if {##add} called with key already in tree;
        **/
