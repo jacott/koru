@@ -12,7 +12,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, util} = TH;
+  const {stub, spy, util, stubProperty} = TH;
 
   const SvgIcons = require('./svg-icons');
 
@@ -68,6 +68,35 @@ define((require, exports, module)=>{
       assert.same(svg.querySelector('use').getAttributeNS(Dom.XLINKNS, 'href'),
                   '#icon-close-outline');
       //]
+    });
+
+    test("helper svgIcon", ()=>{
+      /**
+       * `{{svgIcon "name" attributes...}}` inserts an svg into an html document. The icon is only built
+       * once.
+       *
+       * ### Example
+       * ```html
+       * <button>{{svgIcon "person_add" class="addUser"}}<span>Add user</span></button>
+       * ```
+
+       * @param name the name of the icon to use (See {#.use})
+
+       * @param attributes name/value pairs to set as attributes on the svg
+       **/
+      api.customIntercept(Dom._helpers, {name: 'svgIcon', sig: 'DomHelper:'});
+
+      let isElement = false;
+      const current = {
+        isElement: ()=> isElement,
+      };
+      stubProperty(Dom, 'current', {value: current});
+
+      document.body.appendChild(Dom._helpers.svgIcon("close", {class: "svgClose"}));
+      assert.dom('svg.svgClose', svg =>{
+        refute.className(svg, 'icon');
+        assert.same(svg.querySelector('use').getAttributeNS(Dom.XLINKNS, 'href'), '#icon-close');
+      });
     });
   });
 });
