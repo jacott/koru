@@ -4,14 +4,25 @@ isServer && define((require, exports, module)=>{
   const util            = require('koru/util');
   const fs              = requirejs.nodeRequire('fs');
 
-  const sut  = require('./template-compiler');
+  const TemplateCompiler  = require('./template-compiler');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("no template", ()=>{
+      const json = JSON.parse(TemplateCompiler.toJavascript("<div>hello</div>", "a/b/c/hello.html"));
+
+      assert.equals(json, {
+        name: "Hello",
+        nodes: [
+          {name: 'div', attrs: [], children: ['hello']}
+        ],
+      });
+    });
+
     test("extends", ()=>{
       const fn = module.toUrl('./template-compiler-test.html');
       const code = fs.readFileSync(fn).toString();
 
-      const json = JSON.parse(sut.toJavascript(code));
+      const json = JSON.parse(TemplateCompiler.toJavascript(code));
 
       assert.equals(json, {
         name: 'Test.Foo',

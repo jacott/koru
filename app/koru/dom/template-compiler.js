@@ -1,12 +1,12 @@
-const Path = require('path');
-const htmlparser = requirejs.nodeRequire("htmlparser2");
-
 define((require)=>{
   'use strict';
   const Compilers       = require('koru/compilers');
   const htmlEncode      = require('koru/dom/html-encode');
-  const fst             = require('../fs-tools');
+  const fst             = require('koru/fs-tools');
+  const HTMLParser      = require('koru/parse/html-parser');
+  const util            = require('koru/util');
 
+  const {HTMLParseError} = HTMLParser;
   const {unescapeHTML} = htmlEncode;
   const IGNORE = {xmlns: true};
 
@@ -18,16 +18,16 @@ define((require)=>{
     }
   }
 
-  const Compiler = {
+  const TemplateCompiler = {
     toJavascript: (code, filename)=>{
       let template;
       let result = '';
       try {
-        const parser = new htmlparser.Parser({
-          onopentag(name, attrs){
+        HTMLParser.parse(code, {
+          onopentag(name, attrs, code, spos, epos) {
             if (template === undefined && name !== 'template') {
               template = new Template(undefined, {
-                name: Path.basename(filename).replace(/\..*$/,'').split('-')
+                name: filename.replace(/^.*\//, '').replace(/\..*$/,'').split('-')
                   .map(n => n ? n[0].toUpperCase() + n.slice(1) : '').join('')
               });
 
@@ -35,21 +35,18 @@ define((require)=>{
             if (name === 'template') {
               name = attrs.name;
               if (! name)
-                throw new CompilerError(
-                  "Template name is missing", filename, parser.startIndex);
+                throw ["Template name is missing", spos];
               if (! name.match(/^([A-Z]\w*\.?)+$/))
-                throw new CompilerError(
-                  `Template name must match the format: Foo(.Bar)* ${name}`,
-                  filename, parser.startIndex);
+                throw [`Template name must match the format: Foo(.Bar)* ${name}`, spos];
               template = new Template(template, attrs);
 
             } else {
-              template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex),
+              template.addNode(name, code.slice(spos+2+name.length, epos-1),
                                attrs.xmlns);
             }
           },
-          ontext(text){
-            template.addText(unescapeHTML(text.replace(/(?:^\s+|\s+$)/g, ' ')));
+          ontext(code, si, ei){
+            template.addText(unescapeHTML(code.slice(si, ei).replace(/(?:^\s+|\s+$)/g, ' ')));
           },
           onclosetag(name){
             if (name === 'template') {
@@ -60,16 +57,16 @@ define((require)=>{
               template.endNode();
             }
           }
-        }, {lowerCaseTags: false, lowerCaseAttributeNames: false});
-        parser.write(code);
-        parser.end();
+        });
         if (template === undefined) {
-          throw new CompilerError("Content missing", filename, parser.startIndex);
+          throw ["Content missing", filename, 0];
         }
         result += template.toString();
         return result;
-      } catch (e) {
-        throw e;
+      } catch (err) {
+        if (err.constructor !== Array) throw err;
+        const lc = util.indexTolineColumn(code, err[1]);
+        throw new HTMLParseError(err[0], filename, lc[0], lc[1]);
       }
     }
   };
@@ -114,6 +111,7 @@ define((require)=>{
   };
 
   const extractAttrs = (attrs)=>{
+
     const tokens = [];
     const result = [];
     tokenizeWithQuotes(attrs, tokens);
@@ -272,10 +270,10 @@ define((require)=>{
 
   Compilers.set('html', (type, path, outPath)=>{
     const html = fst.readFile(path).toString();
-    const js = Compiler.toJavascript(html, path);
+    const js = TemplateCompiler.toJavascript(html, path);
 
     fst.writeFile(outPath, "define("+ js + ")");
   });
 
-  return Compiler;
+  return TemplateCompiler;
 });

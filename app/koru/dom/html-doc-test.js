@@ -302,9 +302,16 @@ define((require, exports, module)=>{
       assert.sameHtml(util.map(top.childNodes, n=>n.tagName).join(''), 'IX1X2X3X4X5B');
     });
 
+    test("raw text", ()=>{
+      const elm = document.createElement('div');
+      const exp = elm.innerHTML = `<script>(1 < 2)</script>`;
+
+      assert.equals(elm.innerHTML, exp);
+    });
+
     test("innerHTML", ()=>{
       const elm = document.createElement('div');
-      const exp = elm.innerHTML = `<div id="top123" class="un deux trois">
+      const exp = elm.innerHTML = `<div id="top&quot;<123>" class="un deux trois">
 hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo>
 <style>
 body>div {
@@ -316,9 +323,15 @@ if (i < 5) error("bad i");
 </script>
 </div>`;
 
-      assert.same(elm.firstChild.id, "top123");
+      assert.same(elm.firstChild.id, "top\"<123>");
       assert.same(elm.firstChild.firstChild.textContent, '\nhello <world>');
-      assert.same(elm.innerHTML, exp.replace(/&#62/, '&gt'));
+      assert.equals(elm.innerHTML, exp.replace(/&#62/, '&gt'));
+    });
+
+    test("innerHTML invalid paragraphs", ()=>{
+      const div = document.createElement('div');
+      div.innerHTML = `<p>start<pre>middle</pre>end</p>\n`;
+      assert.equals(div.outerHTML, '<div><p>start</p><pre>middle</pre>end<p></p>\n</div>');
     });
 
     test("HTML entities", ()=>{

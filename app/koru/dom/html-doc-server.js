@@ -2,13 +2,13 @@ define((require, exports, module)=>{
   'use strict';
   const Dom             = require('koru/dom/base');
   const htmlEncode      = require('koru/dom/html-encode');
+  const HTMLParser      = require('koru/parse/html-parser');
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
 
   const {inspect$} = require('koru/symbols');
 
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
-  const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
   const {hasOwn} = util;
   const {SVGNS} = Dom;
@@ -91,6 +91,7 @@ define((require, exports, module)=>{
   };
 
   const insertNodes = (from, toNode, pos)=>{
+    if (from.length == 0) return;
     const to = toNode.childNodes;
     let mlen = to.length - pos;
 
@@ -246,27 +247,27 @@ define((require, exports, module)=>{
     set innerHTML(code) {
       let node = this;
       node.childNodes = [];
-      const parser = new htmlparser.Parser({
+      HTMLParser.parse(code, {
         onopentag(name, attrs){
           const elm = createHTMLElement(name);
           node.appendChild(elm);
-          for(const attr in attrs)
-            elm.setAttribute(attr, attrs[attr]);
+          for(const attr in attrs) {
+            const v = attrs[attr];
+            elm.setAttribute(attr, v === true ? attr : unescapeHTML(attrs[attr]));
+          }
 
           node = elm;
         },
-        ontext(text) {
-          node.appendChild(new TextNode(unescapeHTML(text)));
+        ontext(code, spos, epos) {
+          node.appendChild(new TextNode(unescapeHTML(code.slice(spos, epos))));
         },
-        oncomment(text) {
-          node.appendChild(new CommentNode(unescapeHTML(text)));
+        oncomment(code, spos, epos) {
+          node.appendChild(new CommentNode(code.slice(spos+4, epos-3)));
         },
         onclosetag(name){
           node = node.parentNode;
         }
       });
-      parser.write(code);
-      parser.end();
     }
 
     set textContent(value) {this.childNodes = [new TextNode(value)]}
@@ -387,7 +388,7 @@ define((require, exports, module)=>{
       } else {
         const oa = [tn];
         for(const attr in attrs) {
-          oa.push(attr+'="'+attrs[attr]+'"');
+          oa.push(attr+'="'+attrs[attr].replace(/"/g, '&quot;')+'"');
         }
         cssText && oa.push('style="'+cssText+'"');
         open = oa.join(' ');
