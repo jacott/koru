@@ -1532,5 +1532,23 @@ define((require, exports, module)=>{
       assert.same(util.withId(jane, 456).likes, jane.likes);
       //]
     });
+
+    test("indexTolineColumn", ()=>{
+      /**
+       * Convert `index` of `text` to a line number and a column number.
+
+       * @returns item 0 is the line number (starting from 1) and item 1 is the column number
+       * (starting from 0)
+       **/
+      api.method();
+      //[
+      const text = "line 1\nline 2\nline 3";
+
+      assert.equals(util.indexTolineColumn(text, 0), [1, 0]);
+      assert.equals(util.indexTolineColumn(text, 4), [1, 4]);
+      assert.equals(util.indexTolineColumn(text, 10), [2, 3]);
+      assert.equals(util.indexTolineColumn(text, text.length), [3, 6]);
+      //]
+    });
   });
 });

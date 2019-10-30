@@ -1088,6 +1088,19 @@ define((require)=>{
       if (assoc._id !== _id) assoc._id = _id;
       return assoc;
     },
+
+    indexTolineColumn: (text, index)=>{
+      let line = 1, i = 0;
+      const {length} = text;
+      while (true) {
+        const n = text.indexOf('\n', i);
+        if (n == -1 || n > index) {
+          return [line, index - i];
+        }
+        ++line;
+        i = n+1;
+      }
+    },
   });
 
   return util;
