@@ -4,6 +4,7 @@ define((require)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const Document        = require('koru/dom/html-doc');
+  const HTMLUtil        = require('koru/parse/html-util');
   const jsParser        = require('koru/parse/js-parser');
   const util            = require('koru/util');
 
@@ -259,6 +260,8 @@ define((require)=>{
       switch(lang) {
       case 'js': case 'javascript':
         return jsParser.highlight(jsParser.indent(code)).outerHTML;
+      case 'html':
+        return HTMLUtil.highlight(code).outerHTML;
       }
     },
   };
@@ -854,7 +857,7 @@ define((require)=>{
       mdOptions
     );
 
-    div.innerHTML = md.replace(/\{\{.*?\}\}/g, (m)=>{
+    const raw = div.innerHTML = md.replace(/\{\{.*?\}\}/g, (m)=>{
       if (m[2] === '{')
         return m.slice(1);
       const [cmd, ...args] = m.slice(2,-2).split(':');

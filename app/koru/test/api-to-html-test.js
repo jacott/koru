@@ -562,6 +562,50 @@ m1 intro
             '\n'
           ]});
       });
+
+      test("highlight js", ()=>{
+        const abstract = ()=>{
+          /**
+           * ```js
+           * alert("hello");
+           * ```
+           **/
+        };
+        const div = apiToHtml.jsdocToHtml(
+          {id: 'this/module'},
+          api._docComment(abstract),
+          {}
+        );
+
+        assert.equals(Dom.htmlToJson(div), {
+          div: [{pre: {class: 'language-js', code: {
+            class: 'highlight',
+            div: [{class: 'nx', span: 'alert'}, '(', {class: 's', span: '"hello"'}, ');']
+          }}}, "\n"]});
+      });
+
+      test("highlight html", ()=>{
+        const abstract = ()=>{
+          /**
+           * ```html
+           * <span id="s1">hello</span>
+           * ```
+           **/
+        };
+        const div = apiToHtml.jsdocToHtml(
+          {id: 'this/module'},
+          api._docComment(abstract),
+          {}
+        );
+
+        assert.equals(Dom.htmlToJson(div), {
+          div: [{pre: {class: 'language-html', code: {
+            class: 'highlight',
+            div: ['<', {class: 'nf', span: 'span'}, ' ',
+                  {class: 'nv', span: 'id'}, '=', {class: 's', span: '"s1"'},
+                  '>hello</', {class: 'nf', span: 'span'}, '>']
+          }}}, "\n"]});
+      });
     });
   });
 });
