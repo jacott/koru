@@ -119,7 +119,7 @@ define((require)=>{
 
     const badKey = key =>{
       if (hint) {
-        hint[hintField] = `at key = ${util.qstr(key)}${hint[hintField]||''}`;
+        hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField]||''}`;
         setHint();
       }
       return false;

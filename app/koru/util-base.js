@@ -1,17 +1,16 @@
 define((require, exports, module)=>{
   'use strict';
   const {hasOwnProperty} = Object.prototype;
-  const qstr = s => JSON.stringify(s).slice(1, -1);
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
+
+  const qstr = s => /[\x00-\x1f'\\]/.test(s)
+        ? JSON.stringify(s) : "'"+s+"'";
+
   const qlabel = id => {
     if (LABEL_RE.test(id)) return id;
-    if (id === '') return '""';
-    if (id.indexOf("\\") === -1) {
-      if (id.indexOf('"') === -1) return `"${id}"`;
-      if (id.indexOf("'") === -1) return `'${id}'`;
-    }
-    return JSON.stringify(id);
+    return qstr(id);
   };
+
 
   const {inspect$} = require('koru/symbols');
 
@@ -65,11 +64,11 @@ define((require, exports, module)=>{
             (isSimple ? "}" : "})");
         }
         for(let key in o) {
-          return (`{${key}: ${o[key]}, ...more}`);
+          return (`{...more}`);
         }
         return '{}';
       } case 'string':
-        return `'${qstr(o)}'`;
+        return qstr(o);
       default:
         return o.toString();
       }
