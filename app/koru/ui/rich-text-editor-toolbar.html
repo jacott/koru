@@ -1,6 +1,6 @@
 <template name="RichTextEditorToolbar">
   <div class="rtToolbar" data-mode="{{mode}}">
-    <button tabindex="-1" name="more"></button>
+    <button tabindex="-1" name="more" {{title "Expand or collapse toolbar"}}></button>
     <span>
       <button name="undo" tabindex="-1" disabled="disabled" {{title "Undo"}}></button>
       <button name="redo" tabindex="-1" disabled="disabled" {{title "Redo"}}></button>

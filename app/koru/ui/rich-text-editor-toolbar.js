@@ -106,12 +106,12 @@ define((require, exports, module)=>{
 
     title: title =>{
       const elm = $.element;
-      if (elm.getAttribute('title')) return;
-
-      const action = elm.getAttribute('name');
+      if (elm.getAttribute('title') !== null) return;
 
       elm.setAttribute('title', RichTextEditor.title(
-        title, action, elm.parentNode.className||'standard'));
+        title,
+        elm.getAttribute('name'),
+        elm.parentNode.classList.contains('code') ? 'code' : 'standard'));
     },
 
     mentions: ()=>{

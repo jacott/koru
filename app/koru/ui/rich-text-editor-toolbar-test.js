@@ -344,7 +344,6 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-
       test("set fontName", ()=>{
         RichText.mapFontNames({poster: 'foo font'});
         TH.pointerDownUp('.rtToolbar [name=fontName].select.text');
