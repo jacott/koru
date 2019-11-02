@@ -65,7 +65,12 @@ define((require, exports, module)=>{
       };
 
       const pointerover = event =>{
-        const {target} = event;
+        let {target} = event;
+        const pn = target.parentNode;
+        if (pn !== ul) {
+          target = Dom.closestChildOf(target, ul);
+          if (target === null) return;
+        }
         if (target.parentNode === ul) {
           const cl = target.classList;
           if (! noSelect(cl)) {

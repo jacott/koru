@@ -111,7 +111,7 @@ define((require, exports, module)=>{
         TH.keydown(document, 38); // up
         assert.dom('.selected', 'three'); // select from bottom of list
 
-        TH.trigger(ul.firstChild, 'pointerover');
+        TH.trigger(ul.firstChild.firstChild, 'pointerover');
         assert.calledWith(onHover, ul.firstChild, m(e => e.type === 'pointerover'));
       });
       //]
