@@ -426,6 +426,7 @@ isClient && define((require, exports, module)=>{
 
       refute.called(v.FooBar.onEntry);
       assert.calledWith(RootBar.onEntry, RootBar, {foo: 123, pathname: '/root-bar'});
+      assert.calledWith(Route.history.replaceState, 0, null, '/#root-bar');
     });
 
     test("abortPage outside of gotoPage", ()=>{

@@ -115,8 +115,8 @@ define((require, exports, module)=>{
 
   const onEntryFunc = (options)=> {
     const autoOnEntry = (page, pageRoute)=>{
-      page._renderedPage = page.$autoRender((typeof options.data ==='function'
-                                             ? options.data.call(page, page, pageRoute)
+      page._renderedPage = page.$autoRender((typeof options.data === 'function'
+                                             ? options.data(page, pageRoute)
                                              : options.data) || {});
       if (options.insertPage !== void 0) {
         options.insertPage(page._renderedPage);
@@ -153,6 +153,23 @@ define((require, exports, module)=>{
 
     return options;
   }
+
+  class AbortPage {
+    constructor(location, args) {
+      this.location = location;
+      this.args = args;
+    }
+  }
+
+  const handleAbortPage = (self, err)=>{
+    if (err.constructor === AbortPage) {
+      pageState = 'pushState';
+      err.location && self.replacePath(err.location, ...err.args);
+      return;
+    }
+    koru.unhandledException(err);
+    throw err;
+  };
 
   class Route {
     constructor(path='', template, parent, options={}) {
@@ -195,7 +212,7 @@ define((require, exports, module)=>{
 
     static abortPage(location, ...args) {
       if (inGotoPage) {
-        throw {location, args, abortPage: true};
+        throw new AbortPage(location, args);
       }
 
       return this.replacePath(location, ...args);
@@ -208,7 +225,7 @@ define((require, exports, module)=>{
 
     static replacePage(page, pageRoute) {
       const orig = pageState;
-      pageState = pageState && 'replaceState';
+      pageState = pageState === null ? null : 'replaceState';
       try {
         return this.gotoPage(page, pageRoute);
       } finally {
@@ -240,13 +257,8 @@ define((require, exports, module)=>{
         try {
           page.onEntry(page, pageRoute);
         }
-        catch(ex) {
-          if (ex.abortPage) {
-            ex.location && this.replacePath(ex.location, ...ex.args);
-            return;
-          }
-          koru.unhandledException(ex);
-          throw ex;
+        catch(err) {
+          handleAbortPage(this, err);
         }
 
       } else try {
@@ -278,15 +290,10 @@ define((require, exports, module)=>{
         }
 
 
-      }
-      catch(ex) {
-        if (ex.abortPage) {
-          ex.location && this.replacePath(ex.location, ...ex.args);
-          return;
-        }
-        throw ex;
-      }
-      finally {
+      } catch(err) {
+        handleAbortPage(this, err);
+
+      } finally {
         --inGotoPage;
         Route.loadingArgs = null;
         currentPageRoute = pageRoute;
@@ -294,7 +301,7 @@ define((require, exports, module)=>{
     }
 
     static recordHistory(page, href) {
-      if (! Route.history || ! pageState || (page && page.noPageHistory))
+      if (! Route.history || pageState === null || (page && page.noPageHistory))
         return;
       let cmd = 'replaceState';
       if (pageState !== cmd && currentHref !== href) {
@@ -356,7 +363,7 @@ define((require, exports, module)=>{
       }
     }
 
-    static overrideHistory(state, body) {
+    static overrideHistory(state=null, body) {
       const orig = pageState;
       pageState = state;
       try {
@@ -368,7 +375,7 @@ define((require, exports, module)=>{
 
     static replacePath(...args) {
       const orig = pageState;
-      pageState = pageState && 'replaceState';
+      pageState = pageState === null ? null : 'replaceState';
       try {
         return this.gotoPath(...args);
       } finally {
