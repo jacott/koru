@@ -142,7 +142,10 @@ define((require)=>{
     if (typeof text === 'string') {
       const idx = text.indexOf(':');
       if (idx != -1) {
-        return format(findString(lang, text.slice(0, idx)), text.slice(idx+1).split(':'));
+        const sym = text.slice(0, idx);
+        const tpl = findString(lang, sym);
+        if (tpl !== sym)
+          return format(tpl, text.slice(idx+1).split(':'));
       }
       return findString(lang, text);
     }

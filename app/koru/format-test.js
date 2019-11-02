@@ -105,6 +105,10 @@ define((require, exports, module)=>{
       assert.same(format.translate(['cant_be_less_than', 20], 'de'), 'darf nicht kleiner als 20 sein');
 
       assert.same(format.translate(['cant_be_less_than', 20], 'zu'), "can't be less than 20");
+
+      assert.same(format.translate('no translation:123', 'zu'), "no translation:123");
+
+
     });
   });
 });
