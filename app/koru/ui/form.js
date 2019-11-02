@@ -310,8 +310,8 @@ define((require)=>{
               otherMsgs && otherMsgs.push([field,msg]);
           }
         }
-        if (otherMsgs.length > 0) {
-          koru.unexpectedError && koru.unexpectedError('Save invalid', JSON.stringify(otherMsgs));
+        if (otherMsgs.length > 0 && koru.unexpectedError !== void 0) {
+          koru.unexpectedError('Save invalid', JSON.stringify(otherMsgs));
         }
 
         focus && focus.focus();

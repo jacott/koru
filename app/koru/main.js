@@ -82,7 +82,7 @@ define((require, exports, module)=>{
 
     globalCallback: (err, result)=>{
       if (err)
-        koru.globalErrorCatch ? koru.globalErrorCatch(err) : koru.error(err);
+        koru.globalErrorCatch === void 0 ? koru.error(err) : koru.globalErrorCatch(err);
     },
 
     userId: ()=> util.thread.userId,
