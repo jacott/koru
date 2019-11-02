@@ -425,19 +425,61 @@ define((require, exports, module)=>{
                   '[contenteditable="true"],button,a');
     });
 
-    test("$getClosest", ()=>{
-      document.body.appendChild(Dom.textToHtml('<div><div class="foo"><div class="bar">'+
-                                         '<button type="button" id="sp"></button>'+
-                                         '</div></div></div>'));
+    test("getClosest", ()=>{
+      /**
+       * search up for element that matches selector
+
+       * @param elm the element to start from. Text elements start from their parent node.
+
+       * @parent selector a CSS selector pattern
+       **/
+      api.method();
+      //[
+      const div = Dom.h({});
+      div.innerHTML = `
+<div class="foo">
+  <div class="bar">
+    <button type="button" id="sp">text</button>
+  </div>
+</div>`;
+      document.body.appendChild(div);
+      const button = document.getElementById('sp');
+
+      const foobar = Dom('.foo>.bar');
+
+      assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
+      assert.same(Dom.getClosest(foobar, '.foo>.bar'), foobar);
+      assert.same(Dom.getClosest(button.firstChild, '.foo'), foobar.parentNode);
+      //]
+    });
+
+    test("getClosestCtx", ()=>{
+      /**
+       * search up for element that matches selector
+
+       * @param elm the element to start from. Text elements start from their parent node.
+
+       * @parent selector a CSS selector pattern
+       **/
+      api.method();
+      //[
+      const div = Dom.h({});
+      div.innerHTML = `
+<div class="foo">
+  <div class="bar">
+    <button type="button" id="sp">text</button>
+  </div>
+</div>`;
+      const ctx = Dom.setCtx(div);
+      document.body.appendChild(div);
 
       const button = document.getElementById('sp');
 
-      const foobar = document.querySelector('.foo>.bar');
+      const foobar = Dom('.foo>.bar');
+      const foobarCtx = Dom.setCtx(foobar);
 
-      stub(Dom, 'ctx').withArgs(foobar).returns('the ctx');
-
-      assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
-      assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
+      assert.same(Dom.getClosestCtx(button, '.foo>.bar'), foobarCtx);
+      assert.same(Dom.getClosestCtx(button, '.foo'), ctx);
     });
 
     group("hideAndRemove", ()=>{

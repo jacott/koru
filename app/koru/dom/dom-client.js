@@ -267,7 +267,7 @@ define((require)=>{
     },
 
     getClosest: (elm=null, selector)=>{
-      if (elm !== null)
+      if (elm !== null && elm.nodeType !== document.ELEMENT_NODE)
         elm = elm.parentNode;
       return elm && elm.closest(selector);
     },
