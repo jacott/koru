@@ -139,12 +139,16 @@ isClient && define((require, exports, module)=>{
         v.button = this;
       });
       sut.popup(v.button, {
-        list: v.list = [[1, 'One'], 'sep me', [2, 'Two'], {id: 3, name: 'Three', parent: {class: 'foo', 'data-id': 'fuzz'}}],
+        list: v.list = [
+          [1, 'One'], 'sep me', [2, 'Two'],
+          {id: 3, name: 'Three', parent: {class: 'foo', 'data-id': 'fuzz'}},
+          {id: 4, name: Dom.h({b: 'Four'}), icon: 'close'}],
       });
 
       assert.dom('.glassPane', function () {
         assert.dom('li.sep.me');
         assert.dom('li.foo[data-id=fuzz]', 'Three');
+        assert.dom('li[icon=close]>b', 'Four');
       });
     });
 

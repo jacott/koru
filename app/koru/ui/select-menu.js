@@ -118,10 +118,11 @@ define((require, exports, module)=>{
       const {selected} = ctx;
       const {decorator} = ctx.data;
 
-      const {parent} = this;
-      if (parent !== void 0) {
+      const li = elm.parentNode;
+
+      if (this.parent !== void 0) {
+        const {parent} = this;
         for (let key in parent) {
-          const li = elm.parentNode;
           if (key === 'class') {
             const classes = parent.class;
             if (typeof classes === 'string')
@@ -132,6 +133,9 @@ define((require, exports, module)=>{
             li.setAttribute(key, parent[key]);
           }
         }
+      }
+      if (this.icon !== void 0) {
+        li.setAttribute('icon', this.icon);
       }
 
       const id = this.id !== void 0 ? this.id : this._id;
