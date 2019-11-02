@@ -4,7 +4,6 @@ define((require, exports, module)=>{
 
   const SvgElm = Dom.h({
     svg: [],
-    viewBox: '0 0 24 24',
     class: 'icon',
   }, Dom.SVGNS);
 
@@ -32,6 +31,14 @@ define((require, exports, module)=>{
 
   return {
     use,
+
+    add: (id, symbol) =>{
+      if (! (symbol instanceof globalThis.SVGElement))
+        symbol = Dom.h({symbol, viewBox: "0 0 24 24"}, Dom.SVGNS);
+
+      symbol.setAttribute('id', "icon-"+id);
+      document.querySelector('#SVGIcons>defs').appendChild(symbol);
+    },
 
     selectMenuDecorator: ({icon}, elm)=>{
       if (icon === void 0) return;

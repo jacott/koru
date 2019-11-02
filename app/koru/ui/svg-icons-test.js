@@ -14,7 +14,7 @@ define((require, exports, module)=>{
 
   const {stub, spy, util, stubProperty} = TH;
 
-  const SvgIcons = require('./svg-icons');
+  const SVGIcons = require('./svg-icons');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
@@ -35,18 +35,48 @@ define((require, exports, module)=>{
       document.body.appendChild(Dom.h({
         style: 'display:hidden',
         svg: {defs: {
-          path: [], id:"icon-hamburger-menu",
-          d: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
+          id: "icon-hamburger-menu", viewBox: "0 0 24 24",
+          symbol: {
+            path: [],
+            d: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
+          }
         }}
       }));
-      const svg = SvgIcons.use('hamburger-menu');
+      const svg = SVGIcons.use('hamburger-menu');
       assert(svg.classList.contains("icon"));
 
       assert.same(svg.namespaceURI, Dom.SVGNS);
-      assert.same(svg.getAttribute('viewBox'), '0 0 24 24');
 
       const use = svg.querySelector('use');
       assert.same(use.getAttributeNS(Dom.XLINKNS, 'href'), '#icon-hamburger-menu');
+      //]
+    });
+
+    test("add", ()=>{
+      /**
+       * Add an svg to the asset library under id `"icon-"+id`.
+       *
+       * Note: all icons should be drawn for use with a viewBox of "0 0 24 24"
+
+       * @param id the id of the icon. It will be prefixed with `"icon-"`.
+
+       * @param symbol An `SVGSymbolElement` or an object to pass to {#koru/dom.html} as the
+       * contents of a symbol. `id` will be set on the symbol.
+       **/
+      api.method();
+      //[
+      document.body.appendChild(Dom.h({
+        id: "SVGIcons",
+        style: 'display:hidden',
+        svg: {defs: []}
+      }));
+      const d = "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z";
+      SVGIcons.add("hamburger-menu", {path: [], d});
+
+      assert.dom('#SVGIcons>defs>symbol#icon-hamburger-menu', sym =>{
+        assert.same(sym.getAttribute('viewBox'), "0 0 24 24");
+        assert.dom('path[d="'+d+'"]');
+      });
       //]
     });
 
@@ -62,7 +92,7 @@ define((require, exports, module)=>{
       const li = Dom.h({li: [name]});
       const item = {id: 'close', name: 'Close', icon: 'close-outline'};
 
-      SvgIcons.selectMenuDecorator(item, name);
+      SVGIcons.selectMenuDecorator(item, name);
 
       const svg = name.previousSibling;
       assert.same(svg.querySelector('use').getAttributeNS(Dom.XLINKNS, 'href'),
