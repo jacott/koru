@@ -395,19 +395,27 @@ define((require, exports, module)=>{
       });
     });
 
-    test("searchUpFor", ()=>{
-      const top = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
-                           '<button type="button" id="sp">Hello</button></div></div></div>');
+    test("closestChildOf", ()=>{
+      /**
+       * Search up `parent`'s child which is `elm` or a ancestor of `elm`.
 
-      assert.isNull(Dom.searchUpFor(
-        top.querySelector('button').firstChild, elm => elm === top, 'bar'));
-      assert.same(Dom.searchUpFor(
-        top.querySelector('button').firstChild, elm => Dom.hasClass(elm, 'bar'), 'bar'
-      ), top.firstChild.firstChild);
+       * @param elm the node to start the search from
 
-      assert.same(Dom.searchUpFor(
-        top.querySelector('button').firstChild, elm => Dom.hasClass(elm, 'bar')
-      ), top.firstChild.firstChild);
+       * @param parent the parent of the node being looked for.
+
+       * @returns `null` if `elm` is not a descendant of `parent`
+       **/
+      api.method();
+      //[
+      const child = document.createTextNode('child'), otherChild = Dom.h({});
+      const topChild = Dom.h({div: {div: child}});
+      const parent = Dom.h({div: topChild});
+      const tree = Dom.h({div: [parent, {div: {div: otherChild}}]});
+
+      assert.same(Dom.closestChildOf(child, parent), topChild);
+      assert.same(Dom.closestChildOf(otherChild, parent), null);
+      assert.same(Dom.closestChildOf(topChild, parent), topChild);
+      //]
     });
 
 

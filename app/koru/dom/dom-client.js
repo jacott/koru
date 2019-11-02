@@ -257,8 +257,17 @@ define((require)=>{
       return result;
     },
 
+    closestChildOf: (elm=null, parent)=>{
+      while(elm !== null) {
+        const p = elm.parentNode;
+        if (p === parent) return elm;
+        elm = p;
+      }
+      return null;
+    },
+
     getClosest: (elm=null, selector)=>{
-      if (elm !== null && elm.nodeType !== document.ELEMENT_NODE)
+      if (elm !== null)
         elm = elm.parentNode;
       return elm && elm.closest(selector);
     },
@@ -267,19 +276,10 @@ define((require)=>{
       return Dom.ctx(Dom.getClosest(elm, selector));
     },
 
-    searchUpFor(elm=null, func, stopClass) {
-      if (elm === null) return null;
-      while(elm !== null && elm.nodeType !== DOCUMENT_NODE) {
-        if (func(elm)) return elm;
-        if (stopClass && Dom.hasClass(elm, stopClass)) return null;
-        elm = elm.parentNode;
-      }
-      return null;
-    },
-
     getUpDownByClass: (elm=null, upClass, downClass)=>{
-      elm = elm && elm.closest(`.${upClass}`);
-      return elm && elm.getElementsByClassName(downClass)[0];
+      if (elm === null) return;
+      elm = elm.closest(`.${upClass}`);
+      if (elm !== null) return elm.getElementsByClassName(downClass)[0];
     },
 
     matches: (elm, selector)=> matches.call(elm, selector),
