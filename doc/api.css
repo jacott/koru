@@ -1,5 +1,5 @@
-html, body {
-  font-family: system-ui, 'Roboto', sans-serif;
+html, body, input {
+  font-family: system-ui, -apple-system, arial, sans-serif, emoji;
   margin: 0;
   padding: 0;
 }

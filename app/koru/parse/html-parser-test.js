@@ -309,25 +309,6 @@ id
 
     });
 
-    test("//highlight", ()=>{
-      /**
-       * Syntax highlight some html code FIXME move to different module
-       **/
-      api.method();
-      //[
-      const parsed = HTMLParser.highlight(`
-<div id="top">
-  <input name="email">
-</div>
-`);
-
-      assert.equals(Dom.htmlToJson(parsed), {
-        div: [
-        ]
-      });
-      //]
-    });
-
     test("tag types", ()=>{
       assert.equals(BLOCK_TAGS, HTMLParser.BLOCK_TAGS);
       assert.equals(NO_NEST, HTMLParser[isTest].NO_NEST);
