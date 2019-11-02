@@ -254,7 +254,7 @@ define((require)=>{
   };
 
   const addTemplates = (parent, blueprint)=>{
-    let name = blueprint.name;
+    let {name} = blueprint;
     if (name.match(/\./)) {
       const names = name.split('.');
       name = names.pop();

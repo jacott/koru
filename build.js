@@ -9,7 +9,7 @@
   include: 'requireLib',
 //  optimize: 'none',
 
-  stubModules: ['koru/dom/template-compiler'],
+  stubModules: ['koru/dom/template-compiler-server'],
 
   name: "build-client",
   out: "build/index.js",

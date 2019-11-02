@@ -1,8 +1,6 @@
 define((require)=>{
   'use strict';
-  const Compilers       = require('koru/compilers');
   const htmlEncode      = require('koru/dom/html-encode');
-  const fst             = require('koru/fs-tools');
   const HTMLParser      = require('koru/parse/html-parser');
   const util            = require('koru/util');
 
@@ -21,7 +19,6 @@ define((require)=>{
   const TemplateCompiler = {
     toJavascript: (code, filename)=>{
       let template;
-      let result = '';
       try {
         HTMLParser.parse(code, {
           onopentag(name, attrs, code, spos, epos) {
@@ -46,6 +43,7 @@ define((require)=>{
             }
           },
           ontext(code, si, ei){
+            template !== void 0 &&
             template.addText(unescapeHTML(code.slice(si, ei).replace(/(?:^\s+|\s+$)/g, ' ')));
           },
           onclosetag(name){
@@ -61,8 +59,7 @@ define((require)=>{
         if (template === undefined) {
           throw ["Content missing", filename, 0];
         }
-        result += template.toString();
-        return result;
+        return template;
       } catch (err) {
         if (err.constructor !== Array) throw err;
         const lc = util.indexTolineColumn(code, err[1]);
@@ -267,13 +264,6 @@ define((require)=>{
       return this;
     }
   }
-
-  Compilers.set('html', (type, path, outPath)=>{
-    const html = fst.readFile(path).toString();
-    const js = TemplateCompiler.toJavascript(html, path);
-
-    fst.writeFile(outPath, "define("+ js + ")");
-  });
 
   return TemplateCompiler;
 });

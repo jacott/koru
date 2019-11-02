@@ -1,10 +1,11 @@
 define((require, exports, module)=>{
   'use strict';
-  const cssCompiler     = require('./css/less-compiler');
-  const templateCompiler = require('./dom/template-compiler');
-  const koru            = require('./main');
-  const session         = require('./session/main');
+  const koru            = require('koru');
+  const CSSCompiler     = require('koru/css/less-compiler');
+  const TemplateCompiler = require('koru/dom/template-compiler-server');
+  const session         = require('koru/session');
 
-  koru.onunload(module, 'reload');
+  module.onUnload(koru.reload);
+
   return koru;
 });
