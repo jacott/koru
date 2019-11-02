@@ -347,7 +347,7 @@ isClient && define((require, exports, module)=>{
 
       test("set fontName", ()=>{
         RichText.mapFontNames({poster: 'foo font'});
-        TH.pointerDownUp('.rtToolbar [name=fontName]');
+        TH.pointerDownUp('.rtToolbar [name=fontName].select.text');
 
         assert.dom('.glassPane', function () {
           assert.dom('li>font[face="whiteboard"]', 'Whiteboard');
@@ -388,7 +388,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("set fontSize", ()=>{
-        TH.pointerDownUp('.rtToolbar [name=fontSize]');
+        TH.pointerDownUp('.rtToolbar [name=fontSize].select');
 
         assert.dom('.glassPane', function () {
           TH.click('li>font[size="4"]', 'Large');
@@ -404,7 +404,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("set textAlign", ()=>{
-        TH.pointerDownUp('.rtToolbar [name=textAlign]');
+        TH.pointerDownUp('.rtToolbar [name=textAlign].select');
 
         assert.dom('.glassPane .rtTextAlign', function () {
           assert.dom('li>[name=justifyLeft]');
@@ -423,7 +423,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("set fontColor", ()=>{
-        TH.pointerDownUp('.rtToolbar [name=fontColor]');
+        TH.pointerDownUp('.rtToolbar [name=fontColor].select');
 
         assert.dom('#ColorPicker', function () {
           TH.input('[name=hex]', '00ff00');
@@ -438,7 +438,7 @@ isClient && define((require, exports, module)=>{
       });
 
       test("format misc", ()=>{
-        TH.pointerDownUp('.rtToolbar [name=formatText]', 'Normal text');
+        TH.pointerDownUp('.rtToolbar [name=formatText].select', 'Normal text');
 
         assert.dom('.glassPane .rtFormatText', ()=>{
           assert.dom('li>[title="Normal [alt-ctrl-0]"]');
