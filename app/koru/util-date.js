@@ -6,7 +6,44 @@ define((require)=>{
   const AVG_YEAR = 365.25*DAY;
   const AVG_MONTH = AVG_YEAR/12;
 
-  const MONTH_NAMES = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+  const LANGS = {};
+
+  let currentLang;
+  const shortMonthName = (month)=>{
+    const months = LANGS[currentLang];
+    if (months !== void 0) return months[month];
+
+    // build month names for language
+    const df = Intl.DateTimeFormat(currentLang || void 0, {month: 'short'});
+    const date = new Date(2010, 0, 1);
+    const list = [];
+    for(let i = 0; i < 12; ++i) {
+      date.setMonth(i);
+      list.push(df.format(date));
+    }
+    LANGS[currentLang] = list;
+    return list[month];
+  };
+
+  let relTimeLang = null, relTimeFormat;
+
+  const polyfillReltime = Intl.RelativeTimeFormat && ! isTest ? void 0 : {
+    format: (delta, unit)=>{
+      if (delta == 0) return 'this '+unit;
+      if (delta != 1 && delta != -1)
+        unit = unit+'s';
+      return delta < 0
+        ? `${-delta} ${unit} ago` : `in ${delta} ${unit}`;
+    }
+  };
+
+  const getRelativeTimeFormat = Intl.RelativeTimeFormat
+        ? ((lang)=> relTimeLang === lang
+           ? relTimeFormat
+           : (relTimeFormat = new Intl.RelativeTimeFormat(lang, {
+             numeric: "auto", style: "long"
+           })))
+        : (() => polyfillReltime);
 
   const SPLITTER = /(\[.+?\]|D{1,2}|M{2,3}|Y{2,4}|h{1,2}|m{1,2}|s{1,3}|a)/;
 
@@ -20,7 +57,7 @@ define((require)=>{
     s: ()=> ''+tmpDate.getSeconds(),
     ss: ()=> twoDigits(tmpDate.getSeconds()),
     MM: ()=> twoDigits(tmpDate.getMonth()+1),
-    MMM: ()=> ''+MONTH_NAMES[tmpDate.getMonth()],
+    MMM: ()=> ''+shortMonthName(tmpDate.getMonth()),
     YYYY: ()=> ''+tmpDate.getFullYear(),
     YY: ()=> (''+tmpDate.getYear()).slice(-2),
     h: ()=> {
@@ -41,9 +78,40 @@ define((require)=>{
     a: ()=> tmpDate.getHours() < 12 ? 'am' : 'pm',
   };
 
+  const compileStringFormat = (format, lang='')=>{
+    const parts = format.split(SPLITTER);
+    const len = parts.length;
+    for(let i = 0; i < len; ++i) {
+      const p = parts[i];
+      const token = TOKENS[p];
+      if (token !== undefined) parts[i] = token;
+      else if (p[0] === '[') {
+        parts[i] = p.slice(1,-1);
+      }
+    }
+
+    return date =>{
+      currentLang = lang;
+      tmpDate.setTime(+date);
+      let ans = '';
+      for(let i = 0; i < len; ++i) {
+        const part = parts[i];
+        ans+= typeof part === 'string' ? part : part();
+      }
+      return ans;
+    };
+  };
+
+  const compileIntlFormat = (format, lang)=>{
+    const intl = Intl.DateTimeFormat(lang, format);
+    return date => intl.format(date);
+  };
+
   const uDate = {
     MIN, HOUR, DAY,
     AVG_MONTH, AVG_YEAR,
+
+    locale: lang => Intl.DateTimeFormat(lang).resolvedOptions().locale,
 
     parse: dateStr =>{
       const ts = Date.parse(dateStr);
@@ -112,49 +180,30 @@ define((require)=>{
       return new Date(+ans - ans.getDay()*DAY);
     },
 
-    format: (d, format) => uDate.compileFormat(format)(d),
+    format: (d, format, lang) => uDate.compileFormat(format, lang)(d),
 
-    relative: (delta)=>{
-      if (delta < 0) delta = -delta;
-      if (delta < 45000) return 'a few seconds';
+    relative: (delta, minTime=60000, lang)=>{
+      const rt = getRelativeTimeFormat(lang);
+      const abs = delta < 0 ? -delta : delta;
+      if (minTime < 60000 && abs < 60000) return rt.format(Math.round(delta/1000), "second");
 
-      if (delta < 90000) return 'a minute';
-      if (delta < 44.5*MIN) return `${Math.round(delta/MIN)} minutes`;
+      if (minTime < 60*MIN && abs < 60*MIN) return rt.format(Math.round(delta/MIN), "minute");
 
-      if (delta < 90*MIN) return 'an hour';
-      if (delta < 22.5*HOUR) return `${Math.round(delta/HOUR)} hours`;
+      if (minTime < 24*HOUR && abs < 24*HOUR) return rt.format(Math.round(delta/HOUR), "hour");
 
-      if (delta < 36*HOUR) return 'a day';
-      if (delta < 26.5*DAY) return `${Math.round(delta/DAY)} days`;
+      if (minTime < 30*DAY && abs < 30*DAY) return rt.format(Math.round(delta/DAY), "day");
 
-      if (delta < 46*DAY) return 'a month';
-      if (delta < 320*DAY) return `${Math.round(delta/AVG_MONTH)} months`;
+      if (minTime < 540*DAY && abs < 540*DAY) return rt.format(Math.round(delta/AVG_MONTH), "month");
 
-      if (delta < 548*DAY) return 'a year';
-      return `${Math.round(delta/AVG_YEAR)} years`;
+      return rt.format(Math.round(delta/AVG_YEAR), "year");
+
     },
-    compileFormat: (format)=>{
-      const parts = format.split(SPLITTER);
-      const len = parts.length;
-      for(let i = 0; i < len; ++i) {
-        const p = parts[i];
-        const token = TOKENS[p];
-        if (token !== undefined) parts[i] = token;
-        else if (p[0] === '[') {
-          parts[i] = p.slice(1,-1);
-        }
-      }
+    compileFormat: (format, lang)=> typeof format === 'string'
+      ? compileStringFormat(format, lang) : compileIntlFormat(format, lang),
+  };
 
-      return date => {
-        tmpDate.setTime(+date);
-        let ans = '';
-        for(let i = 0; i < len; ++i) {
-          const part = parts[i];
-          ans+= typeof part === 'string' ? part : part();
-        }
-        return ans;
-      };
-    },
+  if (isTest) uDate[isTest] = {
+    polyfillReltime,
   };
 
   return uDate;

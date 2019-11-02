@@ -62,7 +62,7 @@ define((require, exports, module)=>{
 
     test("format", ()=>{
       const d = new Date(2017, 0, 4, 14, 3, 12);
-      const format = uDate.compileFormat('D MMM YYYY h:mma');
+      const format = uDate.compileFormat('D MMM YYYY h:mma', 'en');
       assert.same(format(d), '4 Jan 2017 2:03pm');
       assert.same(format(12*HOUR + +d), '5 Jan 2017 2:03am');
 
@@ -74,31 +74,53 @@ define((require, exports, module)=>{
       d.setSeconds(9);
       assert.same( uDate.format(d, `ss`), `09`);
       assert.same( uDate.format(d, `s`), `9`);
+
+      assert.same(uDate.format(d, 'MMM'), Intl.DateTimeFormat(void 0, {month: 'short'}).format(d));
     });
 
-    test("from", ()=>{
-      assert.same(uDate.relative(0), 'a few seconds');
-      assert.same(uDate.relative(44999), 'a few seconds');
-      assert.same(uDate.relative(45000), 'a minute');
-      assert.same(uDate.relative(89999), 'a minute');
-      assert.same(uDate.relative(90000), '2 minutes');
-      assert.same(uDate.relative(44.5*MIN-1), '44 minutes');
-      assert.same(uDate.relative(44.5*MIN), 'an hour');
-      assert.same(uDate.relative(90*MIN-1), 'an hour');
-      assert.same(uDate.relative(90*MIN), '2 hours');
-      assert.same(uDate.relative(22.5*HOUR-1), '22 hours');
-      assert.same(uDate.relative(22.5*HOUR), 'a day');
-      assert.same(uDate.relative(36*HOUR-1), 'a day');
-      assert.same(uDate.relative(36*HOUR), '2 days');
-      assert.same(uDate.relative(26.5*DAY-1), '26 days');
-      assert.same(uDate.relative(26.5*DAY), 'a month');
-      assert.same(uDate.relative(45*DAY), 'a month');
-      assert.same(uDate.relative(46*DAY), '2 months');
-      assert.same(uDate.relative(319*DAY), '10 months');
-      assert.same(uDate.relative(320*DAY), 'a year');
-      assert.same(uDate.relative(548*DAY-1), 'a year');
-      assert.same(uDate.relative(548*DAY), '2 years');
-      assert.same(uDate.relative(5000*DAY), '14 years');
+    test("Intl format", ()=>{
+      const d = new Date(2017, 0, 4, 14, 3, 12);
+      const format = uDate.compileFormat({weekday: 'long'}, 'en');
+      assert.same(format(d), 'Wednesday');
+
+      if (isClient) {
+        assert.same( uDate.format(d, {}, 'de'), `4.1.2017`);
+        assert.same( uDate.format(d, {}, 'en-us'), `1/4/2017`);
+      }
+      assert.same( uDate.format(d, {}), Intl.DateTimeFormat().format(d));
+    });
+
+    test("relTime", ()=>{
+      const {polyfillReltime} =  uDate[isTest];
+
+      assert.same(polyfillReltime.format(36, 'hour'), 'in 36 hours');
+      assert.same(polyfillReltime.format(-36, 'hour'), '36 hours ago');
+      assert.same(polyfillReltime.format(0, 'hour'), 'this hour');
+      assert.same(polyfillReltime.format(1, 'hour'), 'in 1 hour');
+      assert.same(polyfillReltime.format(-1, 'hour'), '1 hour ago');
+
+
+      assert.same(uDate.relative(0, 0), 'now');
+      assert.same(uDate.relative(20000, 10000), 'in 20 seconds');
+      assert.same(uDate.relative(0, 0), 'now');
+      assert.same(uDate.relative(45000), 'in 1 minute');
+      assert.same(uDate.relative(-45000), '1 minute ago');
+      assert.same(uDate.relative(61*MIN), 'in 1 hour');
+      assert.same(uDate.relative(90*MIN), 'in 2 hours');
+      assert.same(uDate.relative(24*HOUR), 'tomorrow');
+      assert.same(uDate.relative(48*HOUR), 'in 2 days');
+      assert.same(uDate.relative(26*DAY), 'in 26 days');
+      assert.same(uDate.relative(46*DAY), 'in 2 months');
+      assert.same(uDate.relative(-319*DAY), '10 months ago');
+      assert.same(uDate.relative(530*DAY), 'in 17 months');
+      assert.same(uDate.relative(548*DAY), 'in 2 years');
+      assert.same(uDate.relative(5000*DAY), 'in 14 years');
+      assert.same(uDate.relative(-5000*DAY), '14 years ago');
+
+
+      const thismin = uDate.relative(0) === 'this minute' ? 'this minute' : 'in 0 minutes';
+      assert.same(uDate.relative(0), thismin);
+      assert.same(uDate.relative(29000), thismin);
     });
   });
 });
