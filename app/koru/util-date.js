@@ -8,6 +8,13 @@ define((require)=>{
 
   const LANGS = {};
 
+  let defaultLang = isClient ?  void 0 : (()=>{
+    const LANG = process.env.LC_ALL || process.env.LC_TIME;
+    return LANG
+      ? LANG.replace(/[.:].*$/, '').replace(/_/, '-')
+      : void 0;
+  })();
+
   let currentLang;
   const shortMonthName = (month)=>{
     const months = LANGS[currentLang];
@@ -76,6 +83,7 @@ define((require)=>{
       return (min < 10 ? '0' : '')+min;
     },
     a: ()=> tmpDate.getHours() < 12 ? 'am' : 'pm',
+    A: ()=> tmpDate.getHours() < 12 ? 'AM' : 'PM',
   };
 
   const compileStringFormat = (format, lang='')=>{
@@ -108,14 +116,14 @@ define((require)=>{
   };
 
   const uDate = {
+    SEC: 1000,
     MIN, HOUR, DAY,
     AVG_MONTH, AVG_YEAR,
-
-    locale: lang => Intl.DateTimeFormat(lang).resolvedOptions().locale,
 
     parse: dateStr =>{
       const ts = Date.parse(dateStr);
       const utc = Date.parse(dateStr+'Z') || Date.parse(dateStr+'T00:00:00Z');
+
       if (ts !== utc)
         return new Date(ts);
 
@@ -124,9 +132,15 @@ define((require)=>{
       return uDate.shiftToLocale(tmpDate);
     },
 
-    shiftToLocale: dt => new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(),
-                                  dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(),
-                                  dt.getUTCMilliseconds()),
+    shiftToLocale: date => new Date(
+      date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
+      date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds(),
+      date.getUTCMilliseconds()),
+
+    shiftToUTC: date => new Date(Date.UTC(
+      date.getFullYear(), date.getMonth(), date.getDate(),
+      date.getHours(), date.getMinutes(), date.getSeconds(),
+      date.getMilliseconds())),
 
     atUTCHour: (date, hour)=>{
       const orig = +date;
@@ -152,9 +166,9 @@ define((require)=>{
       return new Date( (orig > ans ? 7*DAY : 0) + ans);
     },
 
-    toDiscrete: (date, mod)=>{
+    toDiscrete: (date, unit)=>{
       const ans = new Date(date);
-      switch(mod) {
+      switch(unit) {
       case DAY:
         ans.setHours(0);
       case HOUR:
@@ -165,7 +179,7 @@ define((require)=>{
         ans.setMilliseconds(0);
         return ans;
       default:
-        throw new Error('unknown modulus');
+        throw new Error('unknown unit');
       }
     },
 
@@ -180,9 +194,9 @@ define((require)=>{
       return new Date(+ans - ans.getDay()*DAY);
     },
 
-    format: (d, format, lang) => uDate.compileFormat(format, lang)(d),
+    format: (date, format, lang=defaultLang) => uDate.compileFormat(format, lang)(date),
 
-    relative: (delta, minTime=60000, lang)=>{
+    relative: (delta, minTime=60000, lang=defaultLang)=>{
       const rt = getRelativeTimeFormat(lang);
       const abs = delta < 0 ? -delta : delta;
       if (minTime < 60000 && abs < 60000) return rt.format(Math.round(delta/1000), "second");
@@ -198,12 +212,22 @@ define((require)=>{
       return rt.format(Math.round(delta/AVG_YEAR), "year");
 
     },
-    compileFormat: (format, lang)=> typeof format === 'string'
+    defaultLang,
+
+    compileFormat: (format, lang=defaultLang)=> typeof format === 'string'
       ? compileStringFormat(format, lang) : compileIntlFormat(format, lang),
   };
 
+  if (uDate.defaultLang === void 0)
+    uDate.defaultLang = Intl.DateTimeFormat().resolvedOptions().locale;
+
   if (isTest) uDate[isTest] = {
     polyfillReltime,
+    get defaultLang() {return defaultLang},
+    set defaultLang(v) {
+      defaultLang = v;
+      uDate.defaultLang = v || Intl.DateTimeFormat().resolvedOptions().locale;
+    },
   };
 
   return uDate;
