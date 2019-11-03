@@ -38,6 +38,10 @@ export KORU_MODULE="$KORU_HOME/node_modules/koru"
 export KORU_NODE_OPTIONS="--no-wasm-code-gc"
 export KORU_LOG_DIR=${KORU_LOG_DIR-tmp}
 
+if [[ $KORU_ENV = check ]]; then
+    return
+fi
+
 [[ -e config/${KORU_ENV}.sh ]] && . config/${KORU_ENV}.sh
 
 export KORU_PORT=${KORU_PORT-3000}
