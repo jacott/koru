@@ -1,5 +1,8 @@
 isClient && define((require, exports, module)=>{
   'use strict';
+  /**
+   * Manage a undo/redo list of changes to a [Node](mdn:/API/Node)
+   **/
   const Dom             = require('koru/dom');
   const TH              = require('./test-helper');
 

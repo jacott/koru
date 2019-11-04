@@ -547,13 +547,15 @@ define((require, exports, module)=>{
     attrs() {
       const elm = $.element;
       const {options} = this;
+      const {ctx} = $;
+      ctx.undo.disconnect(false);
       for (let id in options) {
         if (optionKeys[id] || id[0] === '$') continue;
-        (id === 'placeholder' ?
-         $.ctx.inputElm : elm)
+        (id === 'placeholder' ? ctx.inputElm : elm)
           .setAttribute(id, options[id]);
       }
       Dom.addClass(elm, 'richTextEditor');
+      ctx.undo.reconnect();
     },
   });
 
@@ -714,9 +716,12 @@ define((require, exports, module)=>{
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
       const ctx = Dom.ctx(elm);
+      ctx.undo.disconnect();
       const input = ctx.inputElm;
       input.textContent = '';
       Dom.remove(ctx.selectItem);
+      ctx.undo.reconnect();
+      notify(ctx, 'force', {});
     },
 
     moveLeft: (editor, mark)=>{

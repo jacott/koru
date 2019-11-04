@@ -279,9 +279,12 @@ define((require)=>{
       }
     }
 
-    disconnect() {
+    disconnect(clear=true) {
       this[mo$].disconnect();
-      this[undos$].clear(); this[redos$].clear();
+      if (clear) {
+        this[undos$].clear(); this[redos$].clear();
+      }
+      notify(this);
     }
 
     reconnect() {

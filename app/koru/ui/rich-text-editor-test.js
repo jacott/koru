@@ -4,6 +4,7 @@ isClient && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
   const DomNav          = require('koru/ui/dom-nav');
+  const DomUndo         = require('koru/ui/dom-undo');
   const util            = require('koru/util');
   const session         = require('../session/client-rpc');
   const KeyMap          = require('./key-map');
@@ -59,7 +60,13 @@ isClient && define((require, exports, module)=>{
     });
 
     test("undo/redo", ()=>{
-      document.body.appendChild(tpl.$autoRender({content: Dom.h('hello')}));
+      const disconnect = spy(DomUndo.prototype, 'disconnect');
+
+      document.body.appendChild(tpl.$autoRender({
+        content: Dom.h('hello')
+      }));
+
+      assert.calledOnceWith(disconnect, false);
 
       const rte = Dom('.richTextEditor'), input = rte.firstChild;
 
@@ -67,6 +74,8 @@ isClient && define((require, exports, module)=>{
 
       undo.recordNow();
       undo.undo();
+
+      assert.same(input.getAttribute('placeholder'), 'placeholder');
 
       const hello = input.firstChild;
       const ins = (elm)=>{input.insertBefore(elm, hello)};
@@ -90,6 +99,13 @@ isClient && define((require, exports, module)=>{
 
       TH.keydown(input, 'Y', {ctrlKey: true});
       assert.equals(htj(input).div, [{b: "11"}, {i: "22"}, 'hello']);
+
+      undo.recordNow();
+      assert.same(undo.undos.length, 2);
+
+      sut.clear(rte);
+      undo.recordNow();
+      assert.same(undo.undos.length, 0);
     });
 
     test("get/set value", ()=>{
