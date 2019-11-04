@@ -11,6 +11,8 @@ define((require)=>{
 
   const TH = koru.util.reverseMerge({
     login: (id, func)=>{
+      if (typeof id === 'object' && id !== null)
+        id = id._id;
       if (func === void 0) {
         TH.stubProperty(util.thread, 'userId', {value: id});
         return;
