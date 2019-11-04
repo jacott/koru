@@ -195,7 +195,7 @@ define((require)=>{
       if (name === ".") return template;
       if (name === "..") return template.parent;
       result = template[name];
-      while (! result && name.slice(0,3) === '../' && template !== undefined) {
+      while (! result && name.startsWith('../') && template !== undefined) {
         name = name.slice(3);
         template = template.parent;
         if (name === '.') return template;

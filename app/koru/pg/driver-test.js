@@ -299,6 +299,11 @@ isServer && define((require, exports, module)=>{
       v.foo.insert({_id: '123', widget: [{id: "1", value: 200}, {id: "5", value: 500}, {id: "2", value: 100}]});
       v.foo.insert({_id: '234', widget: [{id: "1", value: 100}, {id: "4", value: 400}, {id: "3", value: 200}]});
 
+      const values = [];
+      const where = v.foo.where({widget: {$elemMatch: {id: "1", value: {$in: [50, 10]}}}}, values);
+      assert.equals(where, `jsonb_typeof("widget") = 'array' AND EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) where "id"=$1 AND "value" = ANY($2))`);
+      assert.equals(values, ['1', '{50,10}']);
+
       assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: {$in: null}}}}), 0);
       assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: {$in: [100, 200]}}}}), 2);
       assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: {$in: [100, 300]}}}}), 1);

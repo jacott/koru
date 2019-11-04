@@ -1083,7 +1083,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         return 'timestamp with time zone';
       for (let key in value) {
         let type;
-        if (key.slice(0,1) === '$')
+        if (key[0] === '$')
           type = toBaseType(value[key]);
         if (type && type.slice(-2) === '[]')
           return type.slice(0, -2);

@@ -121,7 +121,7 @@ define((require)=>{
       const data = html.outerHTML;
       this.renderContent({
         data, contentType: 'text/html',
-        prefix: data.slice(0,2) === '<!' ? undefined : HEADER,
+        prefix: data.startsWith('<!') ? undefined : HEADER,
         eTag: this.eTag});
     }
 
