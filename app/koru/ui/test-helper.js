@@ -177,9 +177,8 @@ define((require, exports, module)=>{
 
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
 
-      const pressEvent = document.createEvent ("KeyboardEvent");
+      const pressEvent = document.createEvent("KeyboardEvent");
       //https://developer.mozilla.org/en/DOM/event.initKeyEvent
-
 
       if ('initKeyboardEvent' in pressEvent) {
         if (Dom.vendorPrefix === 'ms')
@@ -196,9 +195,9 @@ define((require, exports, module)=>{
 
       } else {
         // firefox
-        pressEvent.initKeyEvent ("keypress", true, true, window,
-                                 has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
-                                 keycode, keycode);
+        pressEvent.initKeyEvent("keypress", true, true, window,
+                                has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
+                                keycode, keycode);
       }
       dispatchEvent(elm, pressEvent);
       return this;

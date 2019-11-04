@@ -172,7 +172,7 @@ define((require, exports, module)=>{
        * Make a function that converts a date to text given a specified format.
 
        * @param format If an `object` then uses
-       * [Intl.DateTimeFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat)
+       * [Intl.DateTimeFormat](#mdn:/Global_Objects/DateTimeFormat)
 
        *
        * if a `string` can contain the following mnemonics:

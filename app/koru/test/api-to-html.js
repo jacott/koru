@@ -10,7 +10,10 @@ define((require)=>{
 
   const {private$} = require('koru/symbols');
 
-  const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(), node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
+  const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(),
+        node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
+
+  const MDNDOC_URL = 'https://developer.mozilla.org/en-US/docs/';
 
   const noContent = (tag)=> opts =>{
     const attrs = {[tag]: ''};
@@ -760,7 +763,7 @@ define((require)=>{
 
     const ct = CORE_TYPES[cType] || type === 'any-type';
     if (ct)
-      return 'https://developer.mozilla.org/en-US/docs/'+
+      return MDNDOC_URL+
       (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct) +
       (type === 'any-type' ? '' : ct === true || ct.endsWith('/') ? cType : '');
     return '#'+type;
@@ -845,6 +848,15 @@ define((require)=>{
       case '#jsdoc-tag':
         return execInlineTag(api, text).outerHTML;
       default:
+        if (href.startsWith("#mdn:/")) {
+          href = href.slice(6);
+          if (href.startsWith("Global_Objects/"))
+            href = MDNDOC_URL + "Web/JavaScript/Reference/" + href;
+          else if (href.startsWith("API/"))
+            href = MDNDOC_URL + "Web/" + href;
+          else
+            href = MDNDOC_URL + href;
+        }
         const a = {a: text, $href: href};
         if (title) a.$title = title;
         return Dom.h(targetExternal(a)).outerHTML;

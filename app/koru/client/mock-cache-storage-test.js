@@ -1,7 +1,7 @@
 isClient && define((require, exports, module)=>{
   'use strict';
   /**
-   * A Mock version of [CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage)
+   * A Mock version of [CacheStorage](#mdn:/API/CacheStorage)
    *
    * ## Limitations
    * `match` only supports strictly checking the url.

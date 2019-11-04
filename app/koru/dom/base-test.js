@@ -1,8 +1,7 @@
 define((require, exports, module)=>{
   'use strict';
   /**
-   * Utilities for interacting with the
-   * [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)
+   * Utilities for interacting with the [Document Object Model](#mdn:/API/Document_Object_Model)
    *
    **/
   const TH              = require('koru/test-helper');

@@ -54,7 +54,7 @@ define((require, exports, module)=>{
       /**
        * Returns a list of all elements which have `className`.
        *
-       * See [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)
+       * See [Element.getElementsByClassName()](#mdn:/API/Element/getElementsByClassName)
        **/
 
       const html = Dom.h({div: [
@@ -110,7 +110,7 @@ define((require, exports, module)=>{
       /**
        * Replace the `oldChild` with the `newChild`
        *
-       * See [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)
+       * See [Node.replaceChild](#mdn:/API/Node/replaceChild)
        **/
       const parent = Dom.h({div: [
         {id: 'd1'},

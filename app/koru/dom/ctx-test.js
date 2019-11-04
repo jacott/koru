@@ -2,7 +2,7 @@ isClient && define((require, exports, module)=>{
   'use strict';
   /**
    * Ctx (Context) is used to track
-   * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
+   * [DOM elements](#mdn:/API/Node)
    **/
   const DocChange       = require('koru/model/doc-change');
   const TH              = require('koru/test-helper');

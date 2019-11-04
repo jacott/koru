@@ -5,9 +5,7 @@ define((require, exports, module)=>{
    * promises until {#._poll} called rather than waiting for native
    * event loop.
    *
-   * see
-   * [Promise](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise)
-   * for API
+   * See [Promise](#mdn:/Global_Objects/Promise) for API
    **/
   const api = require('koru/test/api');
   const TH  = require('./main');

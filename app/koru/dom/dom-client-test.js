@@ -135,7 +135,7 @@ define((require, exports, module)=>{
     test("getBoundingClientRect", ()=>{
       /**
        * Get the
-       * [boundingClientRect](https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect)
+       * [boundingClientRect](#mdn:/API/Element/getBoundingClientRect)
        * for different types of objects namely: `Range` and `Element`. For a collapsed range the result
        * is calculated around caret position otherwise the object's `getBoundingClientRect` is
        * used. Also if an existing client rect can be passed it will be returned.
