@@ -103,7 +103,7 @@ define((require)=>{
         meCtx && Dom.destroyMeWith(
           me, destroyMeWith.nodeType !== undefined ? Dom.ctx(destroyMeWith) : destroyMeWith);
       }
-      return Dom.reposition(pos, options);
+      Dom.reposition(pos, options);
     },
 
     get topModal() {return topModal},

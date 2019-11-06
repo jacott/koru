@@ -553,11 +553,9 @@ define((require)=>{
       const height = window.innerHeight, width = window.innerWidth;
       const ps = options.popup.style;
       const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
-      switch(options.align) {
-      case 'right':
+      if (options.align === 'right') {
         ps.setProperty('right', (width - bbox.right) + 'px');
-        break;
-      default:
+      } else {
         ps.setProperty('left', bbox.left + 'px');
       }
       switch (pos) {
@@ -594,12 +592,19 @@ define((require)=>{
             ps.removeProperty('top');
           }
         }
+        break;
       }
-      if (pos !== 'on') {
-        const width = window.innerWidth;
-        if (ppos.right > width) {
-          ps.setProperty('right', '0');
-          ps.removeProperty('left');
+      if (ppos.left < 0) {
+        if (options.align === 'right') {
+          ps.setProperty('right', (width - bbox.right + ppos.left) + 'px');
+        } else {
+          ps.setProperty('left', (bbox.left - ppos.left) + 'px');
+        }
+      } else if (ppos.right > width) {
+        if (options.align === 'right') {
+          ps.setProperty('right', (ppos.right - bbox.right) + 'px');
+        } else {
+          ps.setProperty('left', (bbox.left + width - ppos.right) + 'px');
         }
       }
     },

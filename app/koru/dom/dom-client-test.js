@@ -187,6 +187,39 @@ define((require, exports, module)=>{
         left: r2.right, top: 50, width: 0, height: 19}, 2);
     });
 
+    test("setCtx", ()=>{
+      /**
+       * Attach a {#koru/dom/ctx} to an [Element](#mdn:/API/Element)
+
+       * @param elm the element to attache the `ctx` to.
+
+       * @param ctx the context to attach. By default will create a new `ctx` with no template and a
+       * parent ctx of the element.
+
+       * @returns the ctx attached
+       **/
+      api.method();
+      //[
+      const elm1 = Dom.h({});
+      const ctx1 = Dom.setCtx(elm1);
+
+      const elm3 = Dom.h({});
+
+      const elm2 = Dom.h({div: elm3});
+      const ctx2 = Dom.setCtx(elm2, new Ctx(null, ctx1));
+
+      const ctx3 = Dom.setCtx(elm3);
+
+      assert.same(ctx1.firstElement, elm1);
+      assert.same(ctx1.template, null);
+
+      assert.same(ctx2.firstElement, elm2);
+      assert.same(ctx2.parentCtx, ctx1);
+
+      assert.same(ctx3.parentCtx, ctx2);
+      //]
+    });
+
     test("supports passive", ()=>{
       assert.isTrue(Dom.supportsPassiveEvents === true || Dom.supportsPassiveEvents === false);
     });
@@ -838,9 +871,11 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("above", ()=>{
+      test("align right", ()=>{
         //[
-        const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
+        const popup = Dom.h({
+          class: 'popup',
+          style: 'position:absolute;width:80px;height:10px'});
         document.body.appendChild(popup);
 
         // set align right
@@ -853,6 +888,47 @@ define((require, exports, module)=>{
 
         assert.near(util.extractKeys(rect, ['right', 'top']), {right: 120, top: 90});
         //]
+      });
+
+      test("align out of range", ()=>{
+        const style = 'position:absolute;width:80px;height:10px';
+        const popup = Dom.h({class: 'popup'});
+        document.body.appendChild(popup);
+        const winWidth = window.innerWidth;
+
+
+        // align right
+        popup.style.cssText = style+";margin-right:-400px";
+        Dom.reposition('above', {
+          align: 'right',
+          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth}
+        });
+        assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
+                    {right: winWidth, top: 90});
+
+        popup.style.cssText = style+";margin-right:40px";
+        Dom.reposition('above', {
+          align: 'right',
+          popup, boundingClientRect: {left: 100, top: 100, right: 100}
+        });
+        assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
+                    {left: 0, top: 90});
+
+
+        // align left
+        popup.style.cssText = style+";margin-left:-40px";
+        Dom.reposition('above', {
+          popup, boundingClientRect: {left: 10, top: 100, right: 60}
+        });
+        assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
+                    {left: 0, top: 90});
+
+        popup.style.cssText = style+";margin-left:40px";
+        Dom.reposition('above', {
+          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth}
+        });
+        assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
+                    {right: winWidth, top: 90});
       });
     });
   });
