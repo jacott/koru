@@ -600,7 +600,8 @@ define((require, exports, module)=>{
 
     test("extractError", ()=>{
       /**
-       * Extract the error message and normalized stack trace from an exception.
+       * Extract the error message and normalized stack trace from an exception. If the error has a
+       * property called `toStringPrefix` it will prefix the error message
        *
        * See {#koru/stacktrace}
        **/
@@ -610,16 +611,20 @@ define((require, exports, module)=>{
       const inner2 = ()=> {
         return new Error("Testing 123");
       };
-      const ex = inner1();
+      const err = inner1();
 
-      assert.equals(util.extractError(ex).split('\n'), [
+      err.toStringPrefix = "A string to prefix the message\n";
+
+      assert.equals(util.extractError(err).split('\n'), [
+        "A string to prefix the message",
         'Error: Testing 123',
         // the "at - " is to distinguish the first frame for editors
         m(/    at - inner2 \(koru\/util-test.js:\d+:16\)/),
         m(/    at inner1 \(koru\/util-test.js:\d+:27\)/),
-        m(/    at .* \(koru\/util-test.js:\d+:18\)/),
+        m(/    at .* \(koru\/util-test.js:\d+:19\)/),
       ]);
       //]
+
     });
 
     test("extractKeys", ()=>{

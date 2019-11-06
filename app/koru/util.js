@@ -436,16 +436,16 @@ define((require)=>{
       return true;
     },
 
-    extractError(ex) {
-      const st = Stacktrace.normalize(ex);
+    extractError(err) {
+      const st = Stacktrace.normalize(err);
       if (st) {
         if (st.length != 0) {
           if (st[0][7] !== '-')
             st[0] = "    at -"+st[0].slice(6);
         }
-        return ex.toString() + "\n" + st.join("\n");
+        return (err.toStringPrefix || '') + err.toString() + "\n" + st.join("\n");
       } else
-        return util.inspect(ex);
+        return util.inspect(err);
     },
 
     slice(list, from, to) {

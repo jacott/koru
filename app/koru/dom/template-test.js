@@ -1000,7 +1000,7 @@ isClient && define((require, exports, module)=>{
         } catch (ex) {
           v.ex = ex;
         }
-        assert.equals(v.ex.toString(), 'while rendering: Foo\nbang');
+        assert.equals(v.ex.toStringPrefix, 'while rendering: Foo\n');
 
         assert.calledWith(Dom.destroyData, match(elm => elm.tagName === 'DIV'));
       });

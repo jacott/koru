@@ -435,15 +435,13 @@ define((require)=>{
         this.$created && this.$created(ctx, frag);
         ctx.data == null || ctx.updateAllTags(ctx.data);
         return frag;
-      } catch(ex) {
+      } catch(err) {
         try {
-          Object.defineProperty(ex, 'toString', {
-            value: () => `while rendering: ${this.$fullname}
-${ex.message}`});
+          err.toStringPrefix = `while rendering: ${this.$fullname}\n`;
           // clean up what we can
           Dom.destroyData(frag);
         } catch(ex2) {}
-        throw ex;
+        throw err;
       } finally {
         Ctx._currentCtx = prevCtx;
       }
