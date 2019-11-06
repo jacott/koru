@@ -49,7 +49,8 @@ define((require, exports, module)=>{
        * Create a model change representing an add.
        **/
       api.method();
-
+      api.protoProperty('isAdd', {info: `Is this change a {#.add}`});
+      //[
       const doc = new Book({_id: 'book1', title: 'Animal Farm'});
 
       const change = DocChange.add(doc, 'serverUpdate');
@@ -62,6 +63,7 @@ define((require, exports, module)=>{
       assert.same(change.doc, doc);
       assert.same(change.undo, 'del');
       assert.same(change.flag, 'serverUpdate');
+      //]
     });
 
     test("delete", ()=>{
@@ -69,6 +71,7 @@ define((require, exports, module)=>{
        * Create a model change representing a delete.
        **/
       api.method();
+      api.protoProperty('isDelete', {info: `Is this change from a {#.delete}`});
 
       const doc = new Book({_id: 'book1', title: 'Animal Farm'});
 
@@ -89,6 +92,7 @@ define((require, exports, module)=>{
        * Create a model change representing a change.
        **/
       api.method();
+      api.protoProperty('isChange', {info: `Is this change from a {#.change`});
 
       const doc = new Book({_id: 'book1', title: 'Animal Farm'});
 
