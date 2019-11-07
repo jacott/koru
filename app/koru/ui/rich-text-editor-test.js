@@ -591,7 +591,7 @@ isClient && define((require, exports, module)=>{
         sut.$ctx(this).mode.actions.fontSize({target: this.firstChild});
       });
 
-      assert.dom('.glassPane', function () {
+      assert.dom('.glassPane>.fontSize', function () {
         assert.dom('li>font[size="6"]', 'XX large');
         TH.click('li>font[size="2"]', 'Small');
       });
@@ -1033,9 +1033,12 @@ isClient && define((require, exports, module)=>{
 
         TH.keydown('.input', "K", {ctrlKey: true});
 
-        assert.dom('.rtLink', function () {
+        assert.dom('#RTELink>.rtLink.below', function () {
           assert.dom('.startTab:first-child');
-          assert.dom('.endTab:last-child');
+          assert.dom('.endTab:nth-last-child(2)');
+          assert.dom('.caretPointer:last-child', cp =>{
+            assert.cssNear(this, 'left', v.pos.left);
+          });
           assert(Modal.topModal.handleTab);
           assert.cssNear(this, 'top', v.pos.bottom);
           assert.cssNear(this, 'left', v.pos.left);
@@ -1068,7 +1071,7 @@ isClient && define((require, exports, module)=>{
 
         TH.keydown('.input', "K", {metaKey: true});
 
-        assert.dom('.rtLink', function () {
+        assert.dom('.rtLink.below', function () {
           assert.cssNear(this, 'top', v.pos.bottom);
           assert.cssNear(this, 'left', v.pos.left);
 
@@ -1148,6 +1151,26 @@ isClient && define((require, exports, module)=>{
         });
       });
 
+      test("no room below", ()=>{
+        const selm = document.createElement('style');
+        after(()=>{selm.remove()});
+        document.head.appendChild(selm);
+        const {sheet} = selm;
+        sheet.insertRule(`body>.glassPane {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+}`);
+        sheet.insertRule(`body>.glassPane>.rtLink {position: absolute}`);
+
+        const rte = Dom('#TestRichTextEditor');
+        rte.style.cssText = "position:absolute;bottom:0";
+        TH.setRange(rte.querySelector('b').firstChild);
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        assert.dom('#RTELink>.rtLink:not(.below)');
+      });
     });
   });
 });

@@ -147,25 +147,19 @@ define((require, exports, module)=>{
     ['justifyFull', 'Justify'],
   ];
 
+  for (const row of TEXT_ALIGN_LIST)
+    row[1] = Dom.h({span: [], name: row[0],
+                    title: RichTextEditor.title(row[1], row[0], 'standard')});
+
   const FORMAT_TEXT_LIST = [
     ['heading0', 'Normal'],
   ];
 
-  {
-    for(let i = 1; i < 7; ++i) {
-      FORMAT_TEXT_LIST.push(['heading'+i, 'Heading '+i]);
-    }
+  for(let i = 1; i < 7; ++i) FORMAT_TEXT_LIST.push(['heading'+i, 'Heading '+i]);
 
-    TEXT_ALIGN_LIST.forEach(row =>{
-      row[1] = Dom.h({button: [], $name: row[0],
-                      title: RichTextEditor.title(row[1], row[0], 'standard')});
-    });
-
-    FORMAT_TEXT_LIST.forEach(row =>{
-      row[1] = Dom.h({button: [row[1]],
-                      title: RichTextEditor.title(row[1], row[0], 'standard')});
-    });
-  }
+  for (const row of FORMAT_TEXT_LIST)
+    row[1] = Dom.h({span: [row[1]],
+                    title: RichTextEditor.title(row[1], row[0], 'standard')});
 
   Tpl.$events({
     'pointerdown'() {Dom.stopEvent()},

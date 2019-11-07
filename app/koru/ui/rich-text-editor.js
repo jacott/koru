@@ -221,7 +221,7 @@ define((require, exports, module)=>{
         }});
     },
     fontSize: (event)=>{
-      chooseFromMenu(event, {list: FONT_SIZE_LIST}, (ctx, id)=>{
+      chooseFromMenu(event, {list: FONT_SIZE_LIST, classes: "fontSize"}, (ctx, id)=>{
         execCommand('fontSize', +id);
         if (Dom.getRange().collapsed)
           return {fontSize: id};
@@ -294,11 +294,18 @@ define((require, exports, module)=>{
         inputCtx: inputCtx,
         inputElm: inputCtx.inputElm,
       });
+      const caretPos = Dom.getBoundingClientRect(range);
       Modal.appendBelow({
         container: dialog,
         handleTab: true,
-        boundingClientRect: Dom.getBoundingClientRect(range),
+        boundingClientRect: caretPos,
       });
+      const rtLink = dialog.firstChild;
+      const rtPos = rtLink.getBoundingClientRect();
+      const caretPointerStyle  = rtLink.lastChild.style;
+      rtLink.classList.toggle('below', !! rtLink.style.getPropertyValue('top'));
+      caretPointerStyle.setProperty('left', (caretPos.left-rtPos.left)+'px');
+
       dialog.querySelector('[name=link]').focus();
     },
     mention: (event)=>{

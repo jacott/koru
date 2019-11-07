@@ -230,7 +230,7 @@ isClient && define((require, exports, module)=>{
 
       assert.dom('.rtLink', elm =>{
         assert.dom('.startTab:first-child');
-        assert.dom('.endTab:last-child');
+        assert.dom('.endTab:nth-last-child(2)');
         assert(Modal.topModal.handleTab);
         TH.click(elm.parentNode);
         assert.dom('input', {value: '/link.html'});
@@ -406,7 +406,7 @@ isClient && define((require, exports, module)=>{
         TH.pointerDownUp('.rtToolbar [name=textAlign].select');
 
         assert.dom('.glassPane .rtTextAlign', function () {
-          assert.dom('li>[name=justifyLeft]');
+          assert.dom('li>span[name=justifyLeft]');
           assert.dom('li>[name=justifyCenter]', function () {
             assert.same(this.getAttribute('title'), 'Center [ctrl-shift-E]');
           });
@@ -441,7 +441,7 @@ isClient && define((require, exports, module)=>{
 
         assert.dom('.glassPane .rtFormatText', ()=>{
           assert.dom('li>[title="Normal [alt-ctrl-0]"]');
-          assert.dom('li>[title="Heading 1 [alt-ctrl-1]"]');
+          assert.dom('li>span[title="Heading 1 [alt-ctrl-1]"]');
           assert.dom('li>[title="Heading 2 [alt-ctrl-2]"]');
           TH.click('li>[title="Heading 6 [alt-ctrl-6]"]');
         });
