@@ -8,12 +8,13 @@ define((require)=>{
 
   const LANGS = {};
 
-  let defaultLang = isClient ?  void 0 : (()=>{
+  const origLang = isClient ?  navigator.language : (()=>{
     const LANG = process.env.LC_ALL || process.env.LC_TIME;
     return LANG
       ? LANG.replace(/[.:].*$/, '').replace(/_/, '-')
-      : void 0;
+      : Intl.DateTimeFormat().resolvedOptions().locale;
   })();
+  let defaultLang = origLang;
 
   let currentLang;
   const shortMonthName = (month)=>{
@@ -47,7 +48,7 @@ define((require)=>{
   const getRelativeTimeFormat = Intl.RelativeTimeFormat
         ? ((lang)=> relTimeLang === lang
            ? relTimeFormat
-           : (relTimeFormat = new Intl.RelativeTimeFormat(lang, {
+           : ((relTimeLang = lang), relTimeFormat = new Intl.RelativeTimeFormat(lang, {
              numeric: "auto", style: "long"
            })))
         : (() => polyfillReltime);
@@ -212,21 +213,21 @@ define((require)=>{
       return rt.format(Math.round(delta/AVG_YEAR), "year");
 
     },
-    defaultLang,
+
+    get defaultLang() {return defaultLang},
+    set defaultLang(v) {
+      defaultLang = v || origLang;
+    },
 
     compileFormat: (format, lang=defaultLang)=> typeof format === 'string'
       ? compileStringFormat(format, lang) : compileIntlFormat(format, lang),
   };
 
-  if (uDate.defaultLang === void 0)
-    uDate.defaultLang = Intl.DateTimeFormat().resolvedOptions().locale;
-
   if (isTest) uDate[isTest] = {
     polyfillReltime,
-    get defaultLang() {return defaultLang},
-    set defaultLang(v) {
-      defaultLang = v;
-      uDate.defaultLang = v || Intl.DateTimeFormat().resolvedOptions().locale;
+    reset: ()=>{
+      defaultLang = origLang;
+      relTimeFormat = relTimeLang = void 0;
     },
   };
 

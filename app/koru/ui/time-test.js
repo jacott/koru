@@ -23,10 +23,10 @@ define((require, exports, module)=>{
         uDate[isTest].defaultLang = 'en-US';
       }
 
-      const origTZ = Time.getTZ();
+      const origTZ = Time.TZ;
       if (origTZ !== "UTC") {
-        after(()=>{Time.setTZ(origTZ)});
-        Time.setTZ("UTC");
+        after(()=>{Time.TZ = origTZ});
+        Time.TZ = "UTC";
       }
     });
 
@@ -45,13 +45,30 @@ define((require, exports, module)=>{
 
        * @param date the date to print
        **/
+      api.property(Time, 'TZ', {intro: ()=>{
+        /**
+         * Set the timezone which the time will be displayed relative to
+         **/
+      }});
       api.method();
       let now = 1534527890000; intercept(util, 'dateNow', ()=>now);
+      const origTZ = Time.TZ;
+      after(()=>{
+        uDate[isTest].reset();
+        Time.TZ = origTZ;
+      });
       //[
       assert.equals(Time.relTime(util.dateNow() - 20*60*60*1000),
                     'Aug 16, 2018 9:44 PM; 20 hours ago');
 
       assert.same(Time.relTime(Date.UTC(2014, 3, 4, 6, 5)), 'Apr 4, 2014 6:05 AM');
+
+      uDate.defaultLang = 'fr';
+      assert.same(Time.relTime(util.dateNow() + 120*1000), '17 août 2018 17:46; dans 2 minutes');
+
+      Time.TZ = 'America/Chicago';
+      uDate.defaultLang = 'en-US';
+      assert.same(Time.relTime(util.dateNow() + 120*1000), 'Aug 17, 2018 12:46 PM; in 2 minutes');
       //]
     });
 

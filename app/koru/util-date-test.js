@@ -6,7 +6,7 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, stubProperty} = TH;
+  const {stub, spy, stubProperty, match: m} = TH;
 
   const uDate = require('./util-date');
 
@@ -15,19 +15,20 @@ define((require, exports, module)=>{
   const DAY = 24*HOUR;
 
   const isUTC = new Date().getTimezoneOffset() == 0;
-  const LANG = (isClient ? void 0 : (()=>{
+  const LANG = (isClient ? navigator.language : (()=>{
     const LANG = process.env.LC_ALL || process.env.LC_TIME;
     return LANG
       ? LANG.replace(/[.:].*$/, '').replace(/_/, '-')
-      : void 0;
-  })()) || Intl.DateTimeFormat().resolvedOptions().locale;
+      : Intl.DateTimeFormat().resolvedOptions().locale;
+  })());
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     test("defaultLang", ()=>{
       /**
-       * The default locale language for the browser or nodejs.  On nodejs the env variables
-       * `LC_ALL` and `LC_TIME` will override the LANG default.
+       * The default locale language. On the browser it is `navigator.language`. On the server it is
+       * env `LC_ALL` `LC_TIME` or the default for `Intl.DateTimeFormat().resolvedOptions().locale`
        **/
+
       api.property();
 
       assert.same(uDate.defaultLang, LANG);
@@ -317,6 +318,17 @@ define((require, exports, module)=>{
       assert.same(uDate.relative(0), thismin);
       assert.same(uDate.relative(29000), thismin);
       //]
+
+      after(uDate[isTest].reset);
+      stub(Intl, 'RelativeTimeFormat').invokes(c => ({
+        lang: c.args[0],
+        format(d) {return d+" in "+this.lang}
+      }));
+      assert.same(uDate.relative(20000, 10000, 'fr'), '20 in fr');
+      assert.same(uDate.relative(10000, 10000, 'fr'), '10 in fr');
+      assert.same(uDate.relative(5000, 10000), '5 in '+uDate.defaultLang);
+      assert.same(uDate.relative(20000, 10000, uDate.defaultLang), '20 in en-US');
+      assert.calledTwice(Intl.RelativeTimeFormat);
     });
   });
 });

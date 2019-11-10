@@ -7,13 +7,19 @@ define((require, exports, module)=>{
 
   const dateOpts = {year: 'numeric', month: 'short', day: 'numeric'};
   const timeOpts = {timeStyle: 'short'};
-  let dtf = Intl.DateTimeFormat(void 0, dateOpts), tf = Intl.DateTimeFormat(void 0, timeOpts);
-
-  let tz;
+  let dtf, tf, tz;
+  let lang;
 
   const fromNow = date => uDate.relative(+date - util.dateNow());
 
+  const reset = ()=>{
+    lang = uDate.defaultLang;
+    dtf = Intl.DateTimeFormat(lang, dateOpts);
+    tf = Intl.DateTimeFormat(lang, timeOpts);
+  };
+
   const relTime = time =>{
+    if (lang !== uDate.defaultLang) reset();
     time = +time;
     const now = util.dateNow();
     const result = dtf.format(time)+" "+tf.format(time);
@@ -48,18 +54,18 @@ define((require, exports, module)=>{
       koru.clearTimeout(dynTimerId);
     },
 
-    getTZ: ()=>{
+    get TZ() {
       if (tz === void 0) {
+        if (lang !== uDate.defaultLang) reset();
         tz = dtf.resolvedOptions().timeZone;
       }
       return tz;
     },
 
-    setTZ: (v)=>{
+    set TZ(v) {
       tz = void 0;
       dateOpts.timeZone = timeOpts.timeZone = v;
-      dtf = Intl.DateTimeFormat(uDate.defaultLang, dateOpts);
-      tf = Intl.DateTimeFormat(uDate.defaultLang, timeOpts);
+      reset();
     },
   };
 
