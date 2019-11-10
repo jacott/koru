@@ -1,7 +1,9 @@
 isServer && define((require, exports, module)=>{
   'use strict';
+  const HTMLParser      = require('koru/parse/html-parser');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
+
   const fs              = requirejs.nodeRequire('fs');
 
   const TemplateCompiler  = require('./template-compiler');
@@ -71,6 +73,14 @@ isServer && define((require, exports, module)=>{
             }]
         }],
       });
+    });
+
+    test("error", ()=>{
+      assert.exception(()=>{
+        JSON.parse(TemplateCompiler.toJavascript(`<div></section>`, 'error-example.js'));
+      }, {
+        constructor: HTMLParser.HTMLParseError,
+        message: 'Unexpected end tag\n\tat error-example.js:1:5'});
     });
   });
 });

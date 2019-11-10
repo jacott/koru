@@ -17,10 +17,11 @@ define((require)=>{
   }
 
   const TemplateCompiler = {
-    toJavascript: (code, filename)=>{
+    toJavascript: (code, filename='<anonymous>')=>{
       let template;
       try {
         HTMLParser.parse(code, {
+          filename,
           onopentag(name, attrs, code, spos, epos) {
             if (template === undefined && name !== 'template') {
               template = new Template(undefined, {
