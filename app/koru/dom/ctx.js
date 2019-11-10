@@ -6,7 +6,7 @@ define((require)=>{
   const {private$, ctx$, endMarker$} = require('koru/symbols');
   const {onDestroy$} = Symbol(), autoUpdate$ = Symbol(), data$ = Symbol();
 
-  const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
+  const {ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
   const {forEach} = util;

@@ -27,8 +27,6 @@ define((require)=>{
   const matches = document.documentElement[vendorFuncPrefix+'MatchesSelector'] ||
         document.documentElement.matchesSelector;
 
-  const {DOCUMENT_NODE} = document;
-
   require('./next-frame')(Dom);
 
   Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
@@ -111,6 +109,7 @@ define((require)=>{
     }
   };
 
+  Dom.dontFocus = false; // override in app logic
 
   util.merge(Dom, {
     Ctx,

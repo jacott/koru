@@ -12,7 +12,7 @@ define((require)=>{
 
   const {ctx$, inspect$} = require('koru/symbols');
 
-  const {DOCUMENT_NODE, TEXT_NODE} = document;
+  const {TEXT_NODE} = document;
   const dragTouchStart$ = Symbol();
 
   let currentEvent;
