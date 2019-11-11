@@ -72,14 +72,14 @@ define((require)=>{
       const ctx = Dom.ctx(pv.container);
       if (ctx != null) ctx.onDestroy(this);
 
-      query === undefined || query.forEach(doc => {addRow(pv, doc)});
+      query === void 0 || query.forEach(doc => {addRow(pv, doc)});
     }
 
     thisNode(doc) {return doc[this[private$].sym$]}
 
     thisElm(doc) {
       const node = doc[this[private$].sym$];
-      return node === void 0 ? void 0 : node[elm$];
+      return node === void 0 ? null : node[elm$];
     }
 
     elm(doc, force) {
@@ -126,18 +126,18 @@ define((require)=>{
       const {sym$} = pv;
       if (pv.locked) throw new Error('Illegal recursive changeOptions call');
 
-      if (query !== undefined) {
+      if (query !== void 0) {
         stopObserver(pv);
         pv.query = query;
       }
 
-      if (compare === undefined) compare = pv.query.compare || pv.compare;
-      if (compareKeys === undefined)
+      if (compare === void 0) compare = pv.query.compare || pv.compare;
+      if (compareKeys === void 0)
         compareKeys = pv.query.compareKeys || compare.compareKeys || pv.compareKeys;
 
-      if (pv.compare !== undefined) pv.compare = compare;
-      if (pv.compareKeys !== undefined) pv.compareKeys = compareKeys;
-      if (limit !== undefined) pv.limit = limit;
+      if (pv.compare !== void 0) pv.compare = compare;
+      if (pv.compareKeys !== void 0) pv.compareKeys = compareKeys;
+      if (limit !== void 0) pv.limit = limit;
 
       pv.lastVis = null;
       const oldTree = pv.entries;
@@ -145,7 +145,7 @@ define((require)=>{
 
       const newTree = pv.entries = new BTree(pv.compare);
 
-      if (query !== undefined) {
+      if (query !== void 0) {
         pv.observer = pv.query.onChange == null ? null : pv.query.onChange(pv.onChange);
       }
 
@@ -157,7 +157,7 @@ define((require)=>{
           if (node === void 0)
             addRow(pv, doc);
           else {
-            doc[doc$] = undefined;
+            doc[doc$] = void 0;
             oldTree.deleteNode(node);
             node.value = pv.compareKeys === addOrderKeys ?
               addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
@@ -201,7 +201,7 @@ define((require)=>{
           node[elm$] == null || myCtx(node[elm$]).updateAllTags(doc);
         }
       };
-      pv.observeUpdates === undefined || pv.observeUpdates(this, doc, action);
+      pv.observeUpdates === void 0 || pv.observeUpdates(this, doc, action);
     }
 
     get limit() {return this[private$].limit}
@@ -216,7 +216,7 @@ define((require)=>{
 
 
   const makeOnChange = list => ({doc, isDelete}) =>{
-    list.updateEntry(doc, isDelete ? 'remove' : undefined);
+    list.updateEntry(doc, isDelete ? 'remove' : void 0);
   };
 
   const setLimit = (pv, value)=>{
@@ -289,7 +289,7 @@ define((require)=>{
     const nn = entries.nextNode(node);
 
     if (overLimit > 0) {
-      pv.overLimit === undefined || pv.overLimit();
+      pv.overLimit === void 0 || pv.overLimit();
       if (nn === null || nn[elm$] === null)
         return node[elm$] = null;
       const {lastVis} = pv;
