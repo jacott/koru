@@ -28,7 +28,7 @@ case "$KORU_ENV" in
         else
             if [[ ! -v KORU_MODULES_OKAY  ]]; then
                 echo 'npm install...'
-                npm ci
+                PATH=${NODE%/*}:$PATH npm ci
             fi
             ${NODE} -v | cat - ${PKG_LOCK} >package-node.test
         fi;;
