@@ -88,13 +88,13 @@ define((require, exports, module)=>{
   Tpl.$helpers({
     content() {
       const elm = $.element;
-      if (elm.nodeType === document.DOCUMENT_NODE)
+      if (elm.nodeType === document.ELEMENT_NODE)
         Dom.myCtx(elm).updateAllTags();
       else
         return Tpl.List.$autoRender(this);
     },
     search() {
-      if ($.element.nodeType !== document.DOCUMENT_NODE && this.search)
+      if ($.element.nodeType !== document.ELEMENT_NODE && this.search)
         return Tpl.Search.$autoRender(this);
     },
   });

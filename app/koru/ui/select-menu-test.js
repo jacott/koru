@@ -152,6 +152,28 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    test("updating", ()=>{
+      const list = [[1, 'One'], 'sep me', [2, 'Two']];
+      assert.dom('#TestSelectMenu [name=select]', button =>{
+        sut.popup(button, {list, search: true});
+      });
+
+      assert.dom('.glassPane', gp =>{
+        const search = gp.querySelector('.search');
+        assert.dom('.ui-ul', ul =>{
+
+          assert.dom('li:first-child', 'One');
+
+          list[0][1] = 'changed';
+          Dom.ctx(gp).updateAllTags();
+
+          assert.dom('li:first-child', 'changed');
+        });
+
+        assert.same(search, gp.querySelector('.search'));
+      });
+    });
+
     test("selected array data", ()=>{
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
