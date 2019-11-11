@@ -8,7 +8,7 @@ global.isServer = true;
 global.isClient = false;
 global.isTest = false;
 
-const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
+const koruPackage = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')));
 
 const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
@@ -20,6 +20,10 @@ const load = (command)=> function (...args) {
 };
 
 switch (match != null ? match[1] : process.argv[2]) {
+case '--version':
+  console.log(koruPackage.version);
+  process.exit(0);
+
 case 'generate': case 'g':
   load('generate')(program);
   break;
