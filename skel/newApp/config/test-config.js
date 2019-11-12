@@ -1,24 +1,11 @@
 const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
-const {env} = process;
-
-const port = env.KORU_PORT || 3000;
+const {KORU_PORT, KORUAPI} = process.env;
 
 exports.server = cfg =>{
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
-    "koru/config": {
-      DBDriver: "koru/pg/driver",
-    },
-    "koru/pg/driver": {
-      url: `host=/var/run/postgresql dbname=${env.KORU_APP_NAME}test`,
-
-      // auto build database schema from models
-      // autoSchema: false,
-    },
-
     "koru/web-server": {
-      port,
       defaultPage: 'test/index.html',
     },
 
@@ -38,7 +25,7 @@ exports.server = cfg =>{
 
 exports.common = cfg =>{
   // Auto api compiling when tests are run is controlled by env.KORUAPI
-  const record = !! env.KORUAPI;
+  const record = !! KORUAPI;
   cfg.set('requirejs.recordExports', record);
   cfg.set('requirejs.config.koru/test/api.record', record);
 };

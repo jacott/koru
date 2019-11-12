@@ -1,18 +1,21 @@
 #!/bin/bash
 set -e
-test "$2" = "nochdir" || cd `dirname "$0"`/..
 
 export KORU_APP_NAME=$$appName$$
+export KORU_HOME=$(readlink -fm "$0"/../..)
 export TZ=UTC
-export KORU_HOME=$PWD
-export KORU_PORT=${KORU_PORT-3000}
-export KORU_MODULE=$(readlink -f .)/node_modules/koru
-tmpdir=$KORU_HOME/tmp
-branch=${branch-${1-demo}}
-LOG_DIR=${tmpdir}/log
-export KORU_LOG_DIR=$LOG_DIR
-. config/${branch}.sh
-if [ "$2" = "--config" ];then
-    env|grep -e '^KORU_'
-    echo -e "NODE=$NODE\nNPM=$NPM\nNODE_PATH=$NODE_PATH"
-fi
+export LANG="en_US"
+export LANGUAGE="en_US:en"
+export LC_ALL="en_US.UTF-8"
+
+case "$1" in
+    "demo" | "test" | "check")
+        if [[ ! -e $KORU_HOME/node_modules ]]; then
+            npm ic
+            KORU_MODULES_OKAY=1
+        else
+            unset KORU_MODULES_OKAY
+        fi;;
+esac
+
+. $KORU_HOME/node_modules/koru/lib/koru-env.sh "$@"
