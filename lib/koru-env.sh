@@ -36,7 +36,7 @@ esac
 
 export KORU_MODULE="$KORU_HOME/node_modules/koru"
 export KORU_NODE_OPTIONS="--no-wasm-code-gc"
-export KORU_LOG_DIR=${KORU_LOG_DIR-tmp}
+export KORU_LOG_DIR=${KORU_LOG_DIR-$KORU_HOME/tmp}
 
 if [[ $KORU_ENV = check ]]; then
     return
