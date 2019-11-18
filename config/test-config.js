@@ -7,10 +7,10 @@ exports.server = cfg => {
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
     "koru/config": {
-      DBDriver: "koru/"+KORUTEST_DBDRIVER+"/driver",
+      DBDriver: `koru/${KORUTEST_DBDRIVER}/driver`,
     },
     "koru/pg/driver": {
-      url: "host=/var/run/postgresql dbname="+KORU_DB,
+      url: `host=/var/run/postgresql dbname=${KORU_DB} options='-c client_min_messages=ERROR'`,
       autoSchema: true,
     },
 
