@@ -20,6 +20,7 @@ define((require, exports, module)=>{
   const SPECIALS = {
     "index.html": config.indexhtml && [config.indexhtml, '/'],
     "index.js": indexjs,
+    "index.js.map": config.indexjsmap && [config.indexjsmap, '/'],
     "require.js": indexjs,
     "index.css": config.indexcss && [config.indexcss, '/'],
 

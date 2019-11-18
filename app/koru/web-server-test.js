@@ -12,6 +12,8 @@ isServer && define((require, exports, module)=>{
 
    * @config indexjs the file to serve for `/index.js` or `require.js`; defaults to `yaajs.js`
 
+   * @config indexjsmap the file to serve for `/index.js.map`; defaults to `index.js.map`
+
    * @config indexhtml the file to serve for `/index.html`; defaults to `index.html`
 
    * @config indexcss the file to serve for `/index.css`; defaults to `index.css`
