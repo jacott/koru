@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function abort {
+abort() {
     echo $*
     exit 1
 }
@@ -54,11 +54,11 @@ if [[ ! -d "$KORU_LOG_DIR" ]];then
     exit 1
 fi
 
-function exec_node {
+exec_node() {
     exec ${NODE} ${KORU_NODE_OPTIONS} "$@"
 }
 
-function node {
+node() {
     ${NODE} ${KORU_NODE_OPTIONS} "$@"
 }
 
