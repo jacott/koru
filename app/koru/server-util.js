@@ -8,11 +8,11 @@ define((require)=>{
   const sUtil = {
     execFile: (cmd, ...args)=>{
       const future = new Future;
-      const callback = args.length && typeof args[args.length - 1] === 'function' &&
-            args.pop();
+      const callback = args.length && typeof args[args.length - 1] === 'function' ?
+            args.pop() : void 0;
 
       let options = args.length && args[args.length - 1];
-      if (options && typeof options === 'object')
+      if (options !== null && typeof options === 'object')
         args.pop();
       else
         options = {};
@@ -21,7 +21,7 @@ define((require)=>{
         future.return({error, stdout, stderr});
       });
 
-      callback && callback(proc);
+      callback !== void 0 && callback(proc);
 
       return future.wait();
     },
