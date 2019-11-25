@@ -27,7 +27,7 @@ isClient && define((require, exports, module)=>{
       document.body.appendChild(Dom._helpers.pageLink({id: "foo", name: 'baz', value: "foo bar", link: "/foo/bar"}));
 
       assert.dom(document.body, function () {
-        assert.dom('button#foo.link[name=baz]', 'foo bar', function () {
+        assert.dom('button#foo.link[name=baz]>span', 'foo bar', function () {
           refute(this.getAttribute('link'));
           refute(this.getAttribute('value'));
           TH.click(this);
