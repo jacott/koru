@@ -8,8 +8,6 @@ define((require, exports, module)=>{
   const $$modelName$$ = require('models/$$modelModule$$');
   const $$publishName$$Sub = require('publish/$$fileName$$-sub');
 
-  let v = {};
-
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       TH.startTransaction();
@@ -17,7 +15,6 @@ define((require, exports, module)=>{
 
     afterEach(()=>{
       TH.rollbackTransaction();
-      v = {};
     });
 
     test("subscribe", ()=>{

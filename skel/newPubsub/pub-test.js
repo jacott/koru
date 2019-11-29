@@ -10,8 +10,6 @@ define((require, exports, module)=>{
   const $$modelName$$ = require('models/$$modelModule$$');
   const $$publishName$$Pub = require('pubsub/$$fileName$$-pub');
 
-  let v = {};
-
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     let conn;
     beforeEach(()=>{
@@ -22,7 +20,6 @@ define((require, exports, module)=>{
     afterEach(()=>{
       ConnTH.stopAllSubs(conn);
       TH.rollbackTransaction();
-      v = {};
     });
 
     test("publish", ()=>{
@@ -30,10 +27,10 @@ define((require, exports, module)=>{
 
       const sub = conn.onSubscribe('sub1', 1, "$$publishName$$");
 
-      assert.calledWith(v.conn.sendBinary, 'A' ['$$modelName$$', doc1._id, doc1.attributes]);
+      assert.calledWith(conn.sendBinary, 'A' ['$$modelName$$', doc1._id, doc1.attributes]);
 
       const doc2 = Factory.create$$modelName$$();
-      assert.calledWith(v.conn.sendBinary, 'A', ['$$modelName$$', doc2._id, doc2.attributes]);
+      assert.calledWith(conn.sendBinary, 'A', ['$$modelName$$', doc2._id, doc2.attributes]);
     });
   });
 });

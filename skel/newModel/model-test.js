@@ -6,7 +6,6 @@ define((require, exports, module)=>{
   const {stub, spy, util} = TH;
 
   const $$reqModel$$;
-  let v = {};
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
@@ -15,7 +14,12 @@ define((require, exports, module)=>{
 
     afterEach(()=>{
       TH.rollbackTransaction();
-      v = {};
+    });
+
+    test("defineFields", ()=>{
+      assert.defineFields($$modelName$$, {
+        $$modelFields$$,
+      });
     });
 
     test("persistence", ()=>{
