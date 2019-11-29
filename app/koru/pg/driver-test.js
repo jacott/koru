@@ -8,12 +8,12 @@ isServer && define((require, exports, module)=>{
    * http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING)
    *
    **/
-  const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
-  const util            = require('../util');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
   const SQLStatement    = require('./sql-statement');
 
-  const {stub, spy} = TH;
+  const {stub, spy, match: m} = TH;
 
   const API = api;
 
@@ -183,6 +183,19 @@ isServer && define((require, exports, module)=>{
         }
         //]
       });
+    });
+
+    test("Libpq", ()=>{
+      api.property('Libpq', {
+        info: `The underling database [PG interface](https://github.com/jacott/node-pg-libpq)`});
+
+      api.property('config', {info: 'Configuration for the database such as `url`'});
+
+      assert.equals(pg.Libpq.connect, m.func);
+
+      assert.equals(
+        pg.config.url,
+        "host=/var/run/postgresql dbname=korutest options='-c client_min_messages=ERROR'");
     });
 
     test("connection", ()=>{
@@ -795,7 +808,8 @@ isServer && define((require, exports, module)=>{
       test("update", ()=>{
         assert.same(v.foo.update({name: 'abc'}, {name: 'def'}), 2);
 
-        assert.equals(v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
+        assert.equals(
+          v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
         assert.same(v.foo.update({_id: '123'}, {name: 'zzz', age: 7}), 1);
 
         assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz", age: 7}]);

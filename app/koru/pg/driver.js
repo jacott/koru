@@ -1219,6 +1219,10 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
     connect(url, name) {
       return new Client(url, name);
     },
+
+    Libpq,
+
+    get config() {return module.config()}
   };
 
   koru.onunload(module, closeDefaultDb);

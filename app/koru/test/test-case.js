@@ -494,6 +494,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
   const handleError = (err)=>{
+    if (Core.test === void 0) return;
     Core.test.success = false;
     if (err === 'abortTests') return void Core.abort(err);
     const msg = (err instanceof Error) ? util.extractError(err) : (
