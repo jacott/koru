@@ -21,13 +21,12 @@ fi
 
 case "$KORU_ENV" in
     "demo" | "test")
-        [[ -d tmp ]] || mkdir tmp
         if [[ -e package-node.test && -e node_modules ]] && ${NODE} -v |
                    cat - ${PKG_LOCK} | diff -q - package-node.test >/dev/null;then
             :
         else
             if [[ ! -v KORU_MODULES_OKAY  ]]; then
-                echo 'npm install...'
+                echo 'npm clean install...'
                 PATH=${NODE%/*}:$PATH npm ci
             fi
             ${NODE} -v | cat - ${PKG_LOCK} >package-node.test
@@ -36,7 +35,6 @@ esac
 
 export KORU_MODULE="$KORU_HOME/node_modules/koru"
 export KORU_NODE_OPTIONS="--no-wasm-code-gc"
-export KORU_LOG_DIR=${KORU_LOG_DIR-$KORU_HOME/tmp}
 
 if [[ $KORU_ENV = check ]]; then
     return
@@ -48,11 +46,6 @@ export KORU_PORT=${KORU_PORT-3000}
 export NODE_PATH="${NODE%/*}"
 export NPM=$NODE_PATH/npm
 export KORU_DB=${KORU_DB-${KORU_APP_NAME}${KORU_ENV}}
-
-if [[ ! -d "$KORU_LOG_DIR" ]];then
-    echo "no log dir: $KORU_LOG_DIR"
-    exit 1
-fi
 
 exec_node() {
     exec ${NODE} ${KORU_NODE_OPTIONS} "$@"
