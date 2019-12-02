@@ -91,6 +91,7 @@ define((require)=>{
       serviceWorker = void 0;
       this.installed = this.waiting = null;
       this.registration = null;
+      prepareNewVersionPromise = void 0;
     },
 
     installed: null, waiting: null,
@@ -125,11 +126,13 @@ define((require)=>{
 
     prepareNewVersion,
 
-    loadNewVersion() {
+    async loadNewVersion() {
       if (this.registration === null) {
         koru.reload();
         return;
       }
+      if (prepareNewVersionPromise !== void 0)
+        await prepareNewVersionPromise;
       const {installing, waiting, active} = this.registration;
       const sw = waiting || active;
       if (installing != null || sw == null) {

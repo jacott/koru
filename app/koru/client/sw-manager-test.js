@@ -98,6 +98,29 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    test("prepareNewVersion", ()=>{
+      const worker = newWorker('installed');
+      stubProperty(sut, 'registration', {value: {waiting: worker}});
+      worker.postMessage = stub();
+      const onmessage = navigator.serviceWorker.addEventListener.withArgs('message');
+
+      sut.start();
+
+      let done = false;
+      const p = sut.prepareNewVersion('abc123').then(()=>{done = true});
+
+      assert.calledWith(worker.postMessage, {action: 'loadBase', search: '?abc123'});
+
+      Promise._poll();
+
+      refute(done);
+
+      onmessage.yield({data: {action: 'baseLoaded'}});
+      Promise._poll();
+
+      assert(done);
+    });
+
     group("statechange", ()=>{
       beforeEach(()=>{
         stub(koru, 'reload');
@@ -107,6 +130,7 @@ isClient && define((require, exports, module)=>{
         const onUpdateWaiting = stub();
         after(sut.onUpdateWaiting(onUpdateWaiting));
         const updatefound = registration.addEventListener.withArgs('updatefound');
+        const onmessage = navigator.serviceWorker.addEventListener.withArgs('message');
         sut.start();
         const worker = registration.waiting = newWorker('installed');
         Promise._poll();
@@ -116,12 +140,20 @@ isClient && define((require, exports, module)=>{
         worker.postMessage = stub();
         stubProperty(window, 'KORU_APP_VERSION', {
           value: "v1.1.1-52-g80018ec,72a1a01b5fcf2b6ccaa45b11d42904ab"});
-        worker.addEventListener.yieldAndReset();
+        worker.addEventListener.yield();
 
         refute.called(koru.reload);
         refute.called(onUpdateWaiting);
         assert.calledWith(worker.postMessage, {
           action: 'loadBase', search: '?72a1a01b5fcf2b6ccaa45b11d42904ab'});
+
+        worker.addEventListener.yield();
+        assert.calledOnce(worker.postMessage);
+
+        onmessage.yield({data: {action: 'baseLoaded'}});
+
+        worker.addEventListener.yield();
+        assert.calledTwice(worker.postMessage);
       });
 
       test("new worker activated", ()=>{
