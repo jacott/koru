@@ -1,29 +1,15 @@
-const Future = requirejs.nodeRequire('fibers/future');
-const urlModule = require('url');
-const NodeMailer = requirejs.nodeRequire('nodemailer');
-const SmtpStub = requirejs.nodeRequire('nodemailer-stub-transport');
-const nodeUtil = require("util");
-const events = require("events");
-const stream = require('stream');
-
-let SmtpPool = requirejs.nodeRequire('nodemailer-smtp-pool');
-
-function DebugStream() {
-  stream.Writable.call(this, {defaultEncoding: 'utf8'});
-}
-
-nodeUtil.inherits(DebugStream, stream.Writable);
-
-DebugStream.prototype._write = (data, encoding, callback)=>{callback()};
-
-
 define((require)=>{
   'use strict';
   const util            = require('koru/util');
+  const NodeMailer      = requirejs.nodeRequire('nodemailer');
+  const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
+  const urlModule       = requirejs.nodeRequire('url');
+
+  let SmtpPool = requirejs.nodeRequire('nodemailer-smtp-pool');
 
   const Email = {
     send(options) {
-      const future = new Future();
+      const future = new util.Future();
       Email._transport.sendMail(options, future.resolver());
 
       future.wait();
