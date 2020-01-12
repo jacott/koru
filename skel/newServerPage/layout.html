@@ -2,8 +2,10 @@
   <html lang="en">
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>{{title}}</title>
+
+      <script data-main="/client" async src="/index.js?{{versionHash}}" charset="utf-8"></script>
 
       <link rel="manifest" href="/public/manifest.json">
       <link rel="icon" type="image/png" href="/public/icon.png" sizes="512x512">
@@ -28,12 +30,10 @@
         {{content}}
       </main>
 
-      <script data-main="/client" src="/index.js?{{versionHash}}" charset="utf-8"></script>
       {{clientSuffix}}
       <script>
         {{toggleMenu}}
       </script>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" charset="utf-8">
     </body>
   </html>
 </template>

@@ -83,7 +83,11 @@ define((require)=>{
     checkETag() {
       const reqETag = this.request.headers['if-none-match'];
 
-      if (reqETag === undefined || reqETag.replace(/^[^"]*"([^"]*)"[\s\S]*$/, '$1') !== this.eTag)
+      if (reqETag === undefined) return false;
+
+      const {eTag} = this, reqETagIdx = reqETag.indexOf('"')+1;
+
+      if (reqETag.slice(reqETagIdx, eTag.length+reqETagIdx) !== eTag)
         return false;
 
       this[rendered$] = true;

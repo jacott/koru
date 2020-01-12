@@ -178,6 +178,21 @@ define((require, exports, module)=>{
       assert.same(opts.response.statusCode, 304);
     });
 
+    test("modified", ()=>{
+      const {opts} = v;
+      opts.view = {$render(ctl) {
+        return Dom.h({div: ctl.params.id});
+      }};
+      opts.pathParts = [];
+      opts.request.headers['if-none-match'] = '  W/"x'+BaseController.defaultETag + '"\n\n';
+
+      class MyController extends BaseController {
+      }
+      new MyController(opts);
+
+      assert.same(opts.response.statusCode, void 0);
+    });
+
     test("No Content", ()=>{
       const {response} = v.opts;
 
