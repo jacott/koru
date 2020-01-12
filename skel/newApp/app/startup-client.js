@@ -1,28 +1,15 @@
 define((require, exports, module)=>{
   'use strict';
-  const koru            = require('koru');
-  const session         = require('koru/session');
+  const SWManager       = require('koru/client/sw-manager');
+  const Session         = require('koru/session');
+  const KoruStartup     = require('koru/startup-client');
   const UserAccount     = require('koru/user-account');
 
-  const restart = (mod, error)=>{
-    if (error) return;
-    const modId = mod.id;
-    window.requestAnimationFrame(()=>{
-      require(modId, sc =>{sc.start && sc.start()});
-    });
-  };
+  KoruStartup.restartOnUnload(require, module);
 
-  const start = ()=>{
-    UserAccount.start();
-    session.connect();
-  };
-
-  const stop = ()=>{
-    session.stop();
-    UserAccount.stop();
-  };
-
-  module.onUnload(restart);
-
-  return {start, stop};
+  return KoruStartup.startStop(
+    SWManager,
+    UserAccount,
+    Session
+  );
 });

@@ -1,18 +1,15 @@
 define((require, exports, module)=>{
   'use strict';
-  const koru            = require('koru');
   const bootstrap       = require('koru/migrate/bootstrap');
+  const AllPub          = require('koru/pubsub/all-pub');
+  const KoruStartup     = require('koru/startup-server');
   const UserAccount     = require('koru/user-account');
 
-  const restart = (mod, error)=>{
-    if (error) return;
-    koru.setTimeout(() => require(module.id, start => start()));
-  };
-
-  module.onUnload(restart);
+  KoruStartup.restartOnUnload(require, module);
 
   return ()=>{
-    UserAccount.start();
     bootstrap();
+    if (AllPub.pubName === void 0) AllPub.pubName = 'All';
+    UserAccount.start();
   };
 });

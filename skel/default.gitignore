@@ -6,3 +6,4 @@ TAG*
 .build/
 /build/
 /app/test/server-ready.js
+/package-node.test
