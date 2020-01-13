@@ -69,6 +69,8 @@ define((require, exports, module)=>{
         return '{}';
       } case 'string':
         return qstr(o);
+      case 'symbol':
+        return "Symbol('"+o.description+"')";
       default:
         return o.toString();
       }

@@ -26,15 +26,15 @@ define((require, exports, module)=>{
       const {symbol} = TH.match;
       assert.equals(
         util.inspect(sut), '{'+
-          'stubName$: Symbol(stubName$), '+
-          'withId$: Symbol(withId$), '+
-          'ctx$: Symbol(ctx$), '+
-          'endMarker$: Symbol(endMarker$), '+
-          'stopGap$: Symbol(stopGap$), '+
-          'private$: Symbol(private$), '+
-          'inspect$: Symbol(inspect$), '+
-          'error$: Symbol(error$), '+
-          'original$: Symbol(original$)'+
+          "stubName$: Symbol('stubName$'), "+
+          "withId$: Symbol('withId$'), "+
+          "ctx$: Symbol('ctx$'), "+
+          "endMarker$: Symbol('endMarker$'), "+
+          "stopGap$: Symbol('stopGap$'), "+
+          "private$: Symbol('private$'), "+
+          "inspect$: Symbol('inspect$'), "+
+          "error$: Symbol('error$'), "+
+          "original$: Symbol('original$')"+
           '}'
       );
     });

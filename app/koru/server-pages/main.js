@@ -155,7 +155,7 @@ define((require, exports, module)=>{
     }
   }
 
-  koru.onunload(module, 'reload');
+  module.onUnload(koru.reload);
 
   return ServerPages;
 });
