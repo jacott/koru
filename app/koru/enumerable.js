@@ -19,12 +19,38 @@ define(()=>{
       return len;
     }
 
+    every(test) {
+      for (const v of this[iter$])
+        if (! test(v)) return false;
+      return true;
+    }
+
+    some(test) {
+      for (const v of this[iter$])
+        if (test(v)) return true;
+      return false;
+    }
+
+    find(test) {
+      for (const v of this[iter$])
+        if (test(v)) return v;
+    }
+
     map(mapper) {
       const self = this;
       return new Enumerable(function *() {
         for (const v of self[iter$]) {
           const ans = mapper(v);
           if (ans !== undefined) yield ans;
+        }
+      });
+    }
+
+    filter(test) {
+      const self = this;
+      return new Enumerable(function *() {
+        for (const v of self[iter$]) {
+          if (test(v)) yield v;
         }
       });
     }
