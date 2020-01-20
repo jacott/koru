@@ -69,33 +69,6 @@ define((require, exports, module)=>{
       assert.same(ans, "oneSPANtwo2.5threeBIU1");
     });
 
-    test("htmlToJson", ()=>{
-      /**
-       * Convert an `Element` to a plain `object`
-       **/
-
-      const obj = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {li: 'two'}],
-      }, 'data-lang': 'en'};
-
-      api.method('htmlToJson');
-      assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
-
-      const assertConvert = json => {
-        assert.elide(()=>{assert.equals(Dom.htmlToJson(Dom.h(json)), json)});
-      };
-
-      assertConvert({div: 'simple'});
-      assertConvert({});
-      assertConvert({id: 'Spinner', class: 'spinner dark'});
-      assertConvert({ol: [
-        {li: 'one'}, {style: 'width:10px', name: 'li2', li: ['two'], myattr: 'attr3'}]});
-      assertConvert(['one', 'two', 'three']);
-      assertConvert({input: [], name: 'email'});
-      assertConvert({input: ''});
-      assertConvert({div: ['']});
-    });
-
     test("more Dom.h", ()=>{
       assert.sameHtml(
         Dom.h({name: 'bar', id: "s123", section: {span: "Goodbye"}}).outerHTML,
@@ -156,50 +129,6 @@ define((require, exports, module)=>{
       }, {
         foreignObject: {xmlns: 'http://www.w3.org/1999/xhtml', div: 'hello'}
       }]}});
-    });
-
-    test("escapeHTML", ()=>{
-      assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
-    });
-
-    test("html", ()=>{
-      /**
-       * Convert an `object` into a html node.
-       *
-       * The tagName is determined by either its content not being a string or the other keys are
-       * `id`, `class`, `style`, `xmlns` or start with a `$` (the $ is stripped).
-       *
-       * Array is used when multiple children. Comments have a key of `$comment$`. The tagName will
-       * default to "div" if none is given.
-
-       * When a tag is svg, itself and its children will be in the svg namespace (Client only).
-       *
-       * @param body an object to convert to a Dom node
-
-       * @param xmlns use xmlns instead of html
-
-       * @returns A Dom node
-
-       * @alias h
-       **/
-      api.method();
-
-      const body = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
-             {li: {width: 500, svg: [], viewBox: "0 0 100 100"}}],
-      }, 'data-lang': 'en'};
-
-      const ans = util.deepCopy(body);
-      ans.section.ul[3].li.width = '500'; // gets converted back to string
-
-      const section = Dom.html(body);
-      assert.equals(Dom.htmlToJson(section), ans);
-
-      const path = Dom.html({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS);
-      assert(path instanceof (isClient ?  window.SVGPathElement : global.Element));
-
-      const br = Dom.h({br: ''});
-      assert.isNull(br.firstChild);
     });
 
     test("classList", ()=>{
