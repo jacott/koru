@@ -202,12 +202,16 @@ define((require, exports, module)=>{
     });
 
     test("font",  ()=>{
-      sut.mapFontNames({cursive: 'foo-face'});
+      sut.mapFontNames({cursive: "'foo Face', foo-face"});
+
+      assert.equals(sut.fontType("'foo Face', foo-face"), 'cursive');
+      assert.equals(sut.fontType("foo Face, foo-face"), 'cursive');
+
 
       assertBothConvert('<div>one<font color="#ff0000" face="foo-face" size="4">two</font>three</div>',
-                        '<div>one<span style="font-family: foo-face; color: rgb(255, 0, 0); font-size: 1.2em;">two</span>three</div>');
+                        `<div>one<span style="font-family: 'foo Face', foo-face; color: rgb(255, 0, 0); font-size: 1.2em;">two</span>three</div>`);
 
-      assertConvert('<div><span style="font-family: foo-face;">two</span></div>');
+      assertConvert(`<div><span style="font-family: 'foo Face', foo-face;">two</span></div>`);
       assert.equals(sut.fromHtml(Dom.h({div: {font: 'foo', $face: 'foo-face'}})), ['foo', [FONT, 0, 0, 3, 5]]);
       assertBothConvert('<div>one<font color="#ff0000">two</font>three</div>',
                         '<div>one<span style="color: rgb(255, 0, 0);">two</span>three</div>');
@@ -221,7 +225,7 @@ define((require, exports, module)=>{
       assertBothConvert('<div>one<font face="sans-serif">two</font>three</div>',
                         '<div>one<span style="font-family: sans-serif;">two</span>three</div>');
       assertBothConvert('<div><font face="foo-face">two</font></div>',
-                        '<div><span style="font-family: foo-face;">two</span></div>');
+                        `<div><span style="font-family: 'foo Face', foo-face;">two</span></div>`);
     });
 
     test("alignment",  ()=>{

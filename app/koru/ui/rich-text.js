@@ -947,7 +947,7 @@ define((require)=>{
       const idn = +face;
       if (idn !== idn) {
         if (! face) return 'sans-serif';
-        face = face.replace(/['"]/g,'');
+        face = face.replace(/['"\s]/g,'');
         const id = FONT_FACE_TO_ID[face];
         return id === undefined ? face : FONT_ID_TO_STD[+id];
       }
@@ -961,10 +961,7 @@ define((require)=>{
         const face = faces[std];
         FONT_FACE_TO_ID[face] = code;
         FONT_ID_TO_FACE[code] = face;
-        if (face.indexOf(" ") !== -1) {
-          const f2 = face.replace(/ /g, '\\ ');
-          FONT_FACE_TO_ID[f2] = code;
-        }
+        FONT_FACE_TO_ID[face.replace(/['"\s]/g,'')] = code;
       }
     },
 
