@@ -229,11 +229,15 @@ define((require, exports, module)=>{
     loadInitial(encoder, minLastSubscribed) {}
     loadByToken(encoder, token) {}
 
+    encodeUpdate(dc) {
+      return message.encodeMessage(...this.buildUpdate(dc), Session.globalDict);
+    }
+
     sendEncoded(msg) {
       for (const {conn} of this[subs$]) conn.sendEncoded(msg);
     }
 
-    sendEncodedWhenIdle( msg) {
+    sendEncodedWhenIdle(msg) {
       const loadQueue = this[loadQueue$];
       if (loadQueue === null)
         this.sendEncoded(msg);
@@ -243,9 +247,7 @@ define((require, exports, module)=>{
 
     subs() {return this[subs$][Symbol.iterator]()}
 
-    buildUpdate(dc) {
-      return ServerConnection.buildUpdate(dc);
-    }
+    buildUpdate(dc) {return ServerConnection.buildUpdate(dc)}
 
     batchUpdate() {} // overriden during construction
 

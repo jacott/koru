@@ -810,6 +810,36 @@ isServer && define((require, exports, module)=>{
         'donesub4']);
     });
 
+    test("encodeUpdate", ()=>{
+      /**
+       * encode a {#koru/model/doc-change} ready for sending via {##sendEncoded} or
+       * {##sendEncodedWhenIdle}.
+       *
+       * See {#koru/session/server-connection#buildUpdate}
+
+       * @param dc for the document that has been updated
+
+       * @returns an encoded (binary) update command
+       **/
+      api.protoMethod();
+
+      const db = new MockDB(['Book']);
+      const {Book} = db.models;
+
+      const union = new Union();
+
+      //[
+      const sub1 = new Publication({id: 'sub123', conn});
+      union.addSub(sub1);
+      const book1 = Book.create();
+
+      const msg = union.encodeUpdate(DocChange.change(book1, {name: 'old name'}));
+
+      assert.equals(msg[0], 67 /* 'C' */); // is a Change command
+      assert.equals(ConnTH.decodeMessage(msg, conn), ['Book', 'book1', {name: 'Book 1'}]);
+      //]
+    });
+
     test("sendEncoded", ()=>{
       /**
        * Send a pre-encoded {#koru/session/message} to all subscribers. Called by {##batchUpdate}.

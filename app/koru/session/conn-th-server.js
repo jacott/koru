@@ -38,6 +38,8 @@ define((require, exports, module)=>{
       }
     },
 
+    decodeMessage,
+
     decodeEncodedCall: (conn, call)=>({
       type: String.fromCharCode(call.args[0][0]),
       data: decodeMessage(call.args[0], conn)}),
