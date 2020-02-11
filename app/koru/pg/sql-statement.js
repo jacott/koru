@@ -76,6 +76,14 @@ define((require)=>{
       cache.pos = -1;
       return this;
     }
+
+    appendText(text) {
+      const cache = this[cache$];
+      const {parts} = cache;
+      parts[parts.length-1] += text;
+      cache.pos = -1;
+      return this;
+    }
   }
 
   return SQLStatement;

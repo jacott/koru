@@ -1,5 +1,9 @@
 isServer && define((require, exports, module)=>{
   'use strict';
+  /**
+   * A SQL statement with embedded parameters pre compiled to improve efficiency. Not to be confused
+   * with an SQL prepared statement; this is a client side optimization only.
+   **/
   const Driver          = require('koru/pg/driver');
   const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
@@ -11,7 +15,11 @@ isServer && define((require, exports, module)=>{
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     test("constructor", ()=>{
       /**
-       * Compile a SQLStatement
+       * Compile a SQLStatement.
+
+       * @param text a SQL statement with embedded parameters in the form `{$name}` where name will
+       * be replaced by a corresponding key-value object entry.
+
        **/
       const SQLStatement = api.class();
       //[
@@ -84,7 +92,7 @@ isServer && define((require, exports, module)=>{
 
        * @return this statement.
        **/
-
+      api.protoMethod();
       //[
       const s1 = new SQLStatement(`SELECT {$foo}::int`);
       const s2 = new SQLStatement(', {$bar}::int+{$foo}::int');
@@ -103,6 +111,23 @@ isServer && define((require, exports, module)=>{
         assert.equals(s2.append(s1).text, '$1SELECT $2$1$1');
         assert.equals(s1.text, 'SELECT $1$2$2');
       }
+    });
+
+    test("appendText", ()=>{
+      /**
+       * Append text to this SQLStatement. Converts this statement.
+
+       * @param value text to append not proc. Embedded parameters are not processed
+
+       * @return this statement.
+       **/
+      api.protoMethod();
+      //[
+      const s1 = new SQLStatement(`SELECT {$foo}::int`);
+      assert.same(s1.appendText(', 123'), s1);
+
+      assert.equals(s1.text, 'SELECT $1::int, 123');
+      //]
     });
   });
 });
