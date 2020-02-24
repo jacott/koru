@@ -1,6 +1,6 @@
-'use strict';
+(()=>{
+  'use strict';
 
-{
   const activePages = document.getElementsByClassName('jsdoc-active-page');
   const activeNavs = document.getElementsByClassName('jsdoc-nav-active-page');
 
@@ -192,4 +192,4 @@
 
   searchArea.addEventListener('mousedown', focusSearch, true);
   searchArea.addEventListener('input', search, true);
-}
+})();

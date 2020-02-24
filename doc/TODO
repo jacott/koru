@@ -1,9 +1,0 @@
-* Bugs
-** Lock doc by id before update
-   Do in query-server.js. lock waits if already locked.
-
-** SRP is CPU intensive and blocks node;
-   is this true for server logic?
-   consider handing off to worker thread on server
-
--------
