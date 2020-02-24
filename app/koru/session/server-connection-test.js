@@ -70,17 +70,27 @@ isServer && define((require, exports, module)=>{
         spy(IdleCheck, 'inc');
         spy(IdleCheck, 'dec');
         stub(koru, 'error');
-        stub(session, '_onMessage', function (conn) {
-          assert.called(IdleCheck.inc);
-          refute.called(IdleCheck.dec);
-          v.success = true;
-          v.conn.onMessage('t456');
+        let success = false, err;
+        stub(session, '_onMessage', conn =>{
+          if (! success) {
+            try {
+              assert.calledOnce(IdleCheck.inc);
+              refute.called(IdleCheck.dec);
+              v.conn.onMessage('t456');
+            } catch (ex) {
+              err = ex;
+              return;
+            }
+            success = true;
+          }
           throw new Error("I can handle this");
         });
         v.conn.onMessage('t123');
-        assert.called(IdleCheck.inc);
-        assert.called(IdleCheck.dec);
-        assert(v.success);
+        if (err) throw err;
+        assert.calledTwice(IdleCheck.inc);
+        assert.calledTwice(IdleCheck.dec);
+        assert(success);
+
       });
 
       test("thread vars", ()=>{

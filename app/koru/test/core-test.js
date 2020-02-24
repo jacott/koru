@@ -25,7 +25,7 @@ The current \`elidePoint\` in effect (if any) is an \`AssertionError\` used to r
 trace of the actual error. Access can be useful to save and restore in custom assertion methods.
 `});
       api.property('AssertionError', {info: 'the {#::AssertionError} class'});
-      assert.same(Core.__elidePoint, null);
+      assert.same(Core.__elidePoint, void 0);
       assert.elideFromStack.same(Core.__elidePoint.constructor, Core.AssertionError);
       Core.__elidePoint = new Core.AssertionError();
 

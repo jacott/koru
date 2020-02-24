@@ -25,10 +25,10 @@ define((require)=>{
   }
 
 
-  let elidePoint = null;
+  let elidePoint = void 0;
 
   const fail = (message="failed", elidePoint=0) =>{
-    throw new AssertionError(message, elidePoint+1);
+    throw new AssertionError(message, typeof elidePoint === 'number' ? elidePoint+1 : elidePoint);
   };
 
   const assert = (truth, msg)=>{
@@ -36,7 +36,7 @@ define((require)=>{
     let {__msg} = Core;
     const ep = elidePoint;
     Core.__msg = null;
-    elidePoint = null;
+    elidePoint = void 0;
 
     if (truth) return truth;
 
@@ -64,7 +64,7 @@ define((require)=>{
   };
 
   function getElideFromStack() {
-    elidePoint = elidePoint || new AssertionError('', 1);
+    elidePoint = elidePoint || new AssertionError('', 2);
     return this;
   }
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});
