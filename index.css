@@ -1,0 +1,35 @@
+html, body, input {
+  font-family: system-ui, -apple-system, arial, sans-serif, emoji;
+  margin: 0;
+  padding: 10px;
+}
+
+body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-flow: column nowrap;
+  flex-flow: column nowrap;
+  color: #111;
+}
+
+header>nav {
+  padding: 10px;
+}
+
+header>nav>a {
+  display: block;
+  margin-top: 10px;
+}
+
+h1 {
+  color: #666;
+}
