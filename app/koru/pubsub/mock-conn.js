@@ -24,6 +24,8 @@ define((require, exports, module)=>{
     }
 
     findCall(type, exp, cb) {
+      if (this.sendEncoded.callCount == 0)
+        return false;
       for (const call of this.sendEncoded.calls) {
         const msgs = this.decodeMessage(call.args[0]);
         for (const msg of msgs) {
