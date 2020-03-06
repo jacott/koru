@@ -38,7 +38,7 @@ define((require, exports, module)=>{
     static addSub(union, sub, token) {
       const subs = union[subs$];
       subs.head === null && union.initObservers();
-      sub[union[unionSym$]] = union[subs$].add(sub);
+      sub[union[unionSym$]] = subs.add(sub);
 
       let loadQueue = union[loadQueue$];
       let myQueue;
@@ -57,18 +57,20 @@ define((require, exports, module)=>{
       return encoder.encode();
     }
 
-    _loadDocsPart2(msg, node, token) {
+    _loadDocsPart2(msg, node) {
+      const send = String.fromCharCode(msg[0]) !== 'W' || msg.length > 2;
       for(; node !== void 0; node = node.next) {
         const {sub, future} = node.value;
-        if (String.fromCharCode(msg[0]) !== 'W' || msg.length > 2)
-          sub.conn.sendEncoded(msg);
+        send && sub.conn.sendEncoded(msg);
         future !== void 0 && future.return();
       }
 
-      if (this.subs.size != 0) koru.runFiber(()=>{
-        this.loadDocs(this.subs.back.value.sub,
-                      token === void 0 ? this.subs.back.value : token);
-      });
+      if (this.subs.size != 0) {
+        const {value} = this.subs.back;
+        const {future} = value;
+        value.future = void 0;
+        future.return(value);
+      }
 
       const {union} = this;
 
@@ -96,13 +98,18 @@ define((require, exports, module)=>{
     add(sub, lastSubscribed) {
       const time = sub.constructor.discreteLastSubscribed(lastSubscribed);
       if (this.subs.size !== 0) {
+        // loadDocs is running
         const future = new util.Future;
         if (this.discreteLastSubscribed == time &&
             lastSubscribed >= this.minLastSubscribed) {
+          // My loadDocs is running
           this.subs.push({sub, future});
+          future.wait();
+          return;
         } else {
           const waiting = this.waitingSubs.find({time});
           if (waiting !== void 0) {
+            // My loadDocs is queued
             const oldestSub = waiting.queue.back.value;
             if (lastSubscribed < oldestSub.lastSubscribed)
               waiting.queue.addBack({sub, lastSubscribed, future});
@@ -113,9 +120,12 @@ define((require, exports, module)=>{
             waiting.queue.push({sub, lastSubscribed, future});
             this.waitingSubs.add(waiting);
           }
+          const value = future.wait();
+          if (value !== void 0)
+            this.loadDocs(sub, value);
         }
-        future.wait();
       } else {
+        // no loadDocs in progress
         const value = {sub, lastSubscribed, future: void 0};
         this.subs.push(value);
         this.loadDocs(sub, value);
@@ -126,7 +136,7 @@ define((require, exports, module)=>{
       this.discreteLastSubscribed = sub.constructor.discreteLastSubscribed(lastSubscribed);
       this.minLastSubscribed = lastSubscribed;
 
-      const msg = super._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
+      const msg = this._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
 
       this.discreteLastSubscribed = NaN;
 
@@ -138,7 +148,7 @@ define((require, exports, module)=>{
         this.subs = wnode.value.queue;
       }
 
-      super._loadDocsPart2(msg, node);
+      this._loadDocsPart2(msg, node);
     }
   }
 
@@ -151,12 +161,15 @@ define((require, exports, module)=>{
 
     add(sub, token) {
       if (this.subs.size !== 0) {
+        // loadDocs is running
         const future = new util.Future;
         if (this.token === token) {
+          // My loadDocs is running
           this.subs.push({sub, future});
         } else {
           const waiting = this.waitingSubs.get(token);
           if (waiting !== void 0) {
+            // My loadDocs is queued
             waiting.queue.push({sub, future});
           } else {
             const waiting = {token, queue: new LinkedList()};
@@ -164,7 +177,9 @@ define((require, exports, module)=>{
             this.waitingSubs.set(token, waiting);
           }
         }
-        future.wait();
+        const value = future.wait();
+        if (value !== void 0)
+          this.loadDocs(sub, token);
       } else {
         this.subs.push({sub, future: void 0});
         this.loadDocs(sub, token);
@@ -187,7 +202,7 @@ define((require, exports, module)=>{
         break;
       }
 
-      this._loadDocsPart2(msg, node, token);
+      this._loadDocsPart2(msg, node);
     }
   }
 
@@ -201,12 +216,18 @@ define((require, exports, module)=>{
       this[unionSym$] = Symbol();
     }
 
+    hasSub(sub) {
+      return sub[this[unionSym$]] !== void 0;
+    }
+
     addSub(sub, lastSubscribed=sub.lastSubscribed) {
+      if (sub[this[unionSym$]] !== void 0) return;
       this.count++;
       LoadQueue.addSub(this, sub, lastSubscribed);
     }
 
     addSubByToken(sub, token) {
+      if (sub[this[unionSym$]] !== void 0) return;
       this.count++;
       LoadQueueByToken.addSub(this, sub, token);
     }
@@ -245,7 +266,7 @@ define((require, exports, module)=>{
         loadQueue.msgQueue.push(msg);
     }
 
-    subs() {return this[subs$][Symbol.iterator]()}
+    subs() {return this[subs$].values()}
 
     buildUpdate(dc) {return ServerConnection.buildUpdate(dc)}
 
@@ -253,35 +274,26 @@ define((require, exports, module)=>{
 
     buildBatchUpdate() {
       let push = null;
-      let future = null;
 
-      const tidyUp = ()=>{
-        if (future !== null) {
-          future.return();
-          push = future = null;
-        }
-      };
+      const tidyUp = ()=>{push = null};
 
       return dc =>{
         const upd = this.buildUpdate(dc);
         if (upd === void 0) return;
         if (TransQueue.isInTransaction()) {
           if (push === null) {
-            future = new util.Future;
             let msg;
-            koru.runFiber(()=>{
-              const obj = Session.openBatch();
-              push = obj.push;
-              future.wait();
-              msg = obj.encode();
-            });
+            const obj = Session.openBatch();
+            push = obj.push;
+            push(upd);
             TransQueue.onSuccess(()=>{
+              msg = obj.encode();
               tidyUp();
               this.sendEncodedWhenIdle(msg);
             });
             TransQueue.onAbort(tidyUp);
-          }
-          push(upd);
+          } else
+            push(upd);
         } else {
           this.sendEncodedWhenIdle(message.encodeMessage(...upd, Session.globalDict));
         }

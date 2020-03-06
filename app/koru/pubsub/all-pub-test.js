@@ -103,9 +103,9 @@ isServer && define((require, exports, module)=>{
 
       const future = new util.Future;
 
-      const {forEach} = book1.constructor.query;
+      const {forEach} = Book.query;
 
-      book1.constructor.query.forEach = func =>{
+      Book.query.forEach = func =>{
         future.wait();
         forEach(func);
       };
@@ -129,6 +129,7 @@ isServer && define((require, exports, module)=>{
       //]
 
       mc.sendEncoded.reset();
+      sub2.stop();
       const sub3 = conn.onSubscribe('s124', 1, 'All');
 
       mc.assertAdded(book1);

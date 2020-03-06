@@ -5,6 +5,7 @@ isServer && define((require, exports, module)=>{
    *
    **/
   const koru            = require('koru');
+  const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const TransQueue      = require('koru/model/trans-queue');
   const MockConn        = require('koru/pubsub/mock-conn');
@@ -191,20 +192,21 @@ isServer && define((require, exports, module)=>{
       class MyUnion extends Union {
         constructor() {
           super();
-          this.future = new util.Future;
+          this.queryFuture = new util.Future;
         }
         loadInitial(encoder, minLastSubscribed) {
           events.push(`li`, minLastSubscribed);
-          this.future.wait();
+          this.queryFuture.wait();
           Book.query.forEach(doc =>{encoder.addDoc(doc)});
           events.push(`liDone`);
         }
       }
       const union = new MyUnion();
-      after(()=>{union.future.isResolved() || union.future.return()});
+      after(()=>{union.queryFuture.isResolved() || union.queryFuture.return()});
 
       const newSub = (id, conn, lastSubscribed)=>{
         const sub = new Publication({id, conn, lastSubscribed});
+
         koru.runFiber(()=>{
           union.addSub(sub);
           events.push('done'+sub.id);
@@ -214,9 +216,9 @@ isServer && define((require, exports, module)=>{
 
       const completeQuery = ()=>{
         events.push('completeQuery');
-        const future = union.future;
-        union.future = new util.Future;
-        future.return();
+        const {queryFuture} = union;
+        union.queryFuture = new util.Future;
+        queryFuture.return();
       };
 
 
@@ -259,8 +261,8 @@ isServer && define((require, exports, module)=>{
         'completeQuery',
         'liDone',
         'donesub3',
-        'donesub4',
         'li', now - 1 - Publication.lastSubscribedInterval,
+        'donesub4',
 
         'completeQuery',
         'liDone',
@@ -361,8 +363,8 @@ isServer && define((require, exports, module)=>{
         'completeQuery',
         'liDone',
         'donesub4',
-        'donesub3',
         'li', 'token3',
+        'donesub3',
 
         'completeQuery',
         'liDone',
@@ -802,8 +804,8 @@ isServer && define((require, exports, module)=>{
         'completeQuery',
         'liDone',
         'donesub3',
-        'donesub5',
         'li', now - 60000,
+        'donesub5',
 
         'completeQuery',
         'liDone',
