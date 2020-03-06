@@ -58,14 +58,14 @@ isServer && define((require, exports, module)=>{
       });
 
       test("running too long", ()=>{
-        stub(koru, 'error');
+        stub(console, 'error');
 
         assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
         v.func();
 
         assert.equals(v.ex.message, 'Thread timeout [504]');
-        assert.calledWith(koru.error, 'aborted; timed out. dbId: foo1, userId: u123');
+        assert.calledWith(console.error, 'aborted; timed out. dbId: foo1, userId: u123');
       });
 
       test("finish in time", ()=>{

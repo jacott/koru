@@ -36,7 +36,8 @@ define((require)=>{
       this.fibers.set(fiber, Date.now());
       this.maxTime && (fiber[timeout$] = setTimeout(() => {
         const {appThread={}} = fiber;
-        koru.error(`aborted; timed out. dbId: ${appThread.dbId}, userId: ${appThread.userId}`);
+        console.error(
+          `aborted; timed out. dbId: ${appThread.dbId}, userId: ${appThread.userId}`);
         fiber.throwInto(new koru.Error(504, 'Thread timeout'));
       }, this.maxTime));
       return ++this._count;
