@@ -29,8 +29,12 @@ define((require, exports, module)=>{
       const inner1 = ()=>{inner2()};
       const inner2 = ()=>{inner3()};
       const inner3 = ()=>{
-        const err = new Error("I failed");
+        throw new TH.Core.AssertionError("I failed");
+      };
 
+      try {
+        inner1();
+      } catch(err) {
         assert.equals(Stacktrace.normalize(err), [
           m(/    at .*inner3.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
           m(/    at .*inner2.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
@@ -39,8 +43,7 @@ define((require, exports, module)=>{
         ]);
 
         assert.same(Stacktrace.normalize(err), Stacktrace.normalize(err));
-      };
-      inner1();
+      }
       //]
     });
 
@@ -55,15 +58,18 @@ define((require, exports, module)=>{
       const inner1 = ()=>{inner2()};
       const inner2 = ()=>{inner3()};
       const inner3 = ()=>{
-        const err = new Error("I have a shortened customStack");
+        throw new TH.Core.AssertionError("I have a shortened customStack");
+      };
+      try {
+        inner1();
+      } catch(err) {
         Stacktrace.elideFrames(err, 2);
 
         assert.equals(Stacktrace.normalize(err), [
           m(/    at .*inner1.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
           m(/    at .*(Test\.test elideFrames|anonymous).* \(koru\/stacktrace-test.js:\d+:\d+\)/),
         ]);
-      };
-      inner1();
+      }
       //]
     });
 

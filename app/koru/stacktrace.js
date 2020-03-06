@@ -17,11 +17,11 @@ define(['require', 'koru/util-base'], (require, util)=>{
       stackHasMessage ? (ex.stack||'').slice(ex.toString().length) : ex.stack);
     if (typeof stackString !== 'string') return null;
 
-    const lines = stackString.split('\n'),
+    const isTestAssert = isTest && ex.name === 'AssertionError',
+          lines = stackString.split('\n'),
           stack = [];
 
     let parts = null, m = null,
-        notUs = ex.name === 'AssertionError',
         url = '', func = '', line = '', column = '';
 
     if (originRe === null) {
@@ -59,18 +59,17 @@ define(['require', 'koru/util-base'], (require, util)=>{
 
       if (util.FULL_STACK !== true) {
         if (--elidePoint >= 0) continue;
-        if (/(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) &&
-            ! /-test\.js$/.test(url)) {
-          if (/koru\/test\/(?:client|test-case).js$/.test(url)) {
-            if (notUs) break;
-            continue;
-          }
-          if (notUs) continue;
-        } else if (url === 'index.js') {
+        if (url === 'index.js') {
           if (stack.length != 0)
             continue;
-        } else
-          notUs = true;
+        } else if (isTestAssert &&
+                   /(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) &&
+                   ! /-test\.js$/.test(url)) {
+          if (/koru\/test\/(?:client|test-case).js$/.test(url)) {
+            break;
+          }
+          continue;
+        }
       }
 
       func = func.replace(/['"\[\]\(\)\{\}\s]+/g, ' ');

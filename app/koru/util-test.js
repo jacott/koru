@@ -609,7 +609,7 @@ define((require, exports, module)=>{
       //[
       const inner1 = ()=> inner2();
       const inner2 = ()=> {
-        return new Error("Testing 123");
+        return new TH.Core.AssertionError("Testing 123");
       };
       const err = inner1();
 
@@ -617,7 +617,7 @@ define((require, exports, module)=>{
 
       assert.equals(util.extractError(err).split('\n'), [
         "A string to prefix the message",
-        'Error: Testing 123',
+        'AssertionError: Testing 123',
         // the "at - " is to distinguish the first frame for editors
         m(/    at - inner2 \(koru\/util-test.js:\d+:16\)/),
         m(/    at inner1 \(koru\/util-test.js:\d+:27\)/),
