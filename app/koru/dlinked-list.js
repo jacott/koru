@@ -2,25 +2,30 @@ define(()=>{
   const head$ = Symbol(),
         next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
 
+  const value$ = Symbol();
+
   class Node {
-    constructor(value, prev, next) {
-      this.value = value;
+    constructor(value=null, prev, next) {
+      this[value$] = value;
       this[prev$] = prev;
       this[next$] = next;
     }
 
     delete() {
-      if (this.value === undefined) return;
-      this.value = undefined;
+      if (this[value$] === void 0) return;
+      this[value$] = void 0;
       this[prev$][next$] = this[next$];
       this[next$][prev$] = this[prev$];
     }
+
+    get value() {return this[value$]}
+    set value(v=null) {this[value$] = v}
   }
 
   class DLinkedList {
     constructor(listEmpty) {
       this[head$] = this[tail$] = this;
-      this.listEmpty = listEmpty || undefined;
+      this.listEmpty = listEmpty || void 0;
     }
     set [next$](value) {
       this[head$] = value;
@@ -29,14 +34,14 @@ define(()=>{
       this[tail$] = value;
       if (value === this) {
         const {listEmpty} = this;
-        listEmpty === undefined || listEmpty();
+        listEmpty === void 0 || listEmpty();
       }
     }
 
     get head() {return this[head$] === this ? null : this[head$]}
     get tail() {return this[tail$] === this ? null : this[tail$]}
 
-    add(value) {
+    add(value=null) {
       const tail = this[tail$];
       const node = new Node(value, tail, this);
       this[tail$] = node;
@@ -48,7 +53,7 @@ define(()=>{
       return node;
     }
 
-    addFront(value) {
+    addFront(value=null) {
       const head = this[head$];
       const node = new Node(value, this, head);
       this[head$] = node;
@@ -62,14 +67,14 @@ define(()=>{
 
     forEach(callback) {
       for(let node = this[head$]; node !== this; node = node[next$]) {
-        if (node.value !== undefined)
-          callback(node.value);
+        if (node[value$] !== void 0)
+          callback(node[value$]);
       }
     }
 
     *values() {
       for(let node = this[head$]; node !== this; node = node[next$])
-        if (node.value !== undefined) yield(node.value);
+        if (node[value$] !== void 0) yield(node[value$]);
     }
 
     *nodes() {
@@ -82,13 +87,13 @@ define(()=>{
       if (node === this) return;
       while(node !== this) {
         const nn = node[next$];
-        node.value = undefined;
+        node[value$] = void 0;
         node[prev$] = node[next$] = null;
         node = nn;
       }
       this[head$] = this[tail$] = this;
       const {listEmpty} = this;
-      listEmpty === undefined || listEmpty(this.subject);
+      listEmpty === void 0 || listEmpty(this.subject);
     }
   }
 

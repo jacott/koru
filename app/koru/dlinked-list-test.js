@@ -99,6 +99,12 @@ define((require, exports, module)=>{
 
       node1.delete();
       assert.equals(Array.from(subject), [2]);
+
+      subject.add();
+      assert.equals(Array.from(subject), [2, null]);
+
+      node2.value = void 0; // undefined is coerced to null
+      assert.equals(Array.from(subject), [null, null]);
       //]
     });
 
@@ -129,6 +135,9 @@ define((require, exports, module)=>{
 
       node1.delete();
       assert.equals(Array.from(subject), [2]);
+
+      subject.addFront();
+      assert.equals(Array.from(subject), [null, 2]);
       //]
     });
 
