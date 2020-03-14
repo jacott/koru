@@ -87,6 +87,7 @@ define((require, exports, module)=>{
   Publication.delete = deletePublication;
 
   function onSubscribe([id, msgId, name, args, lastSubscribed]) {
+    util.thread.action = 'subscribe '+name;
     const subs = this._subs;
     if (subs == null) return; // we are closed
 

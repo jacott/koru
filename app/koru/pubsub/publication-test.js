@@ -127,6 +127,7 @@ isServer && define((require, exports, module)=>{
       class Library extends Publication {
         init(args) {
           sub = this;
+          assert.same(util.thread.action, 'subscribe Library');
           assert.isTrue(inTrans);
         }
       }
