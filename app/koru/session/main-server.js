@@ -9,12 +9,12 @@ define((require)=>{
     webSocketServerFactory(session);
 
     session.provide('L', data =>{
-      koru.logger('C', data);
+      koru.logger('L', data);
     });
     session.provide('E', data =>{
       if (koru.clientErrorConvert !== undefined)
         data = koru.clientErrorConvert(data);
-      koru.logger('C', data);
+      koru.logger('E', data);
     });
 
     session.connectionIntercept = (newSession, ws, ugr, remoteAddress)=>{
