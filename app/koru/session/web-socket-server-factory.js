@@ -103,9 +103,6 @@ define((require, exports, module)=>{
         conn.sendBinary('X', [
           newVersion, session.versionHash,
           gdict, dictHash]);
-        koru.info(
-          `New conn id:${sessId}, tot:${session.totalSessions}, ver:${clientVersion}, `+
-            `${conn.engine}, ${remoteAddress}:${conn.remotePort}`);
         session.countNotify.notify(conn, true);
         return conn;
       };
@@ -178,7 +175,7 @@ define((require, exports, module)=>{
 
     session.provide('M', function (data) {
       const msgId = data[0];
-      const func = session._rpcs[data[1]];
+      const func = session._rpcs[util.thread.action = data[1]];
       try {
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
