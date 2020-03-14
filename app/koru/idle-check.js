@@ -12,7 +12,7 @@ define((require)=>{
       this._waitIdle = null;
       this.fibers = new Map();
       this.onDec = null;
-      this.maxTime = null;
+      this.alertTime = this.maxTime = null;
     }
 
     get count() {return this._count;}
@@ -34,12 +34,23 @@ define((require)=>{
       if (this.fibers.get(fiber))
         throw new Error('IdleCheck.inc called twice on fiber');
       this.fibers.set(fiber, Date.now());
-      this.maxTime && (fiber[timeout$] = setTimeout(() => {
-        const {appThread={}} = fiber;
-        console.error(
-          `aborted; timed out. dbId: ${appThread.dbId}, userId: ${appThread.userId}`);
-        fiber.throwInto(new koru.Error(504, 'Thread timeout'));
-      }, this.maxTime));
+      if (this.maxTime !== null || this.alertTime !== null) {
+        let func = () => {
+          const {appThread={}} = fiber;
+
+          console.error(
+            `${func === void 0 ? "ABORTED; timed out" : "long running"}. dbId: ${appThread.dbId}, userId: ${appThread.userId} `+
+              (appThread.action || ''));
+          if (func === void 0)
+            fiber.reset();
+          else {
+            this.maxTime && (fiber[timeout$] = setTimeout(func, this.maxTime));
+            func = void 0;
+          }
+        };
+        fiber[timeout$] = setTimeout(func, this.alertTime || this.maxTime);
+        if (this.alertTime === null) func = void 0;
+      }
       return ++this._count;
     }
 

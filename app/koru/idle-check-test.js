@@ -40,9 +40,11 @@ isServer && define((require, exports, module)=>{
       beforeEach(()=>{
         v.idleCheck = new IdleCheck();
         v.idleCheck.maxTime = 1*60*1000;
+        v.idleCheck.alertTime = 500;
         stub(global, 'setTimeout').returns(112233);
         stub(global, 'clearTimeout');
-        v.f2 = Fiber(() => {
+        v.f2 = () => Fiber(() => {
+          util.thread.action = "testAction";
           v.idleCheck.inc();
           try {
             Fiber.yield();
@@ -52,28 +54,41 @@ isServer && define((require, exports, module)=>{
           v.idleCheck.dec();
         });
 
-        v.f2.appThread = {dbId: 'foo1', userId: 'u123'};
-
-        v.f2.run();
       });
 
       test("running too long", ()=>{
+        const thread = v.f2();
+        thread.appThread = {dbId: 'foo1', userId: 'u123'};
+
+        thread.run();
+
         stub(console, 'error');
 
-        assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+        assert.calledOnceWith(global.setTimeout, TH.match(f => v.func = f), 500);
 
         v.func();
 
-        assert.equals(v.ex.message, 'Thread timeout [504]');
-        assert.calledWith(console.error, 'aborted; timed out. dbId: foo1, userId: u123');
+        assert.same(v.ex, void 0);
+        assert.calledWith(console.error, 'long running. dbId: foo1, userId: u123 testAction');
+
+        assert.calledWith(global.setTimeout, v.func, 1*60*1000);
+
+        v.func();
+
+        assert.equals(v.ex.message, 'This Fiber is a zombie');
+        assert.calledWith(console.error, 'ABORTED; timed out. dbId: foo1, userId: u123 testAction');
       });
 
       test("finish in time", ()=>{
+        v.idleCheck.alertTime = null;
+        const thread = v.f2();
+        thread.run();
+
         assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
         refute.called(global.clearTimeout);
 
-        v.f2.run();
+        thread.run();
 
         refute(v.ex);
 
