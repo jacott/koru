@@ -251,9 +251,10 @@ define((require)=>{
         if (heartbeatTO) heartbeatTO();
         session[heatbeatTime$] = heartbeatTO = session.ws = session._queueHeatBeat = null;
         if (event === undefined) return;
-        if (event.code) session[retryCount$] != 0 ||
+        if (event.code && event.code !== 1006 && session[retryCount$] != 0) {
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
                     event.code, new Date());
+        }
         session[retryCount$] = Math.min(4, session[retryCount$]+1);
 
         if (sessState.isClosed() || sessState.isPaused())
