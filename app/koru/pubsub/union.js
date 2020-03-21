@@ -24,6 +24,10 @@ define((require, exports, module)=>{
       this.push(['A', [doc.constructor.modelName, doc.attributes]]);
     }
 
+    chgDoc(doc, changes) {
+      this.push(['C', [doc.constructor.modelName, doc._id, changes]]);
+    }
+
     remDoc(doc, flag) {
       this.push(['R', [doc.constructor.modelName, doc._id, flag]]);
     }

@@ -516,6 +516,9 @@ isServer && define((require, exports, module)=>{
 
        * * `addDoc` is a function to call with a doc to be added to the subscribers.
 
+       * * `chgDoc` is a function to call with a doc and change object (listing the fields that have
+           changed) to be changed to the subscribers.
+
        * * `remDoc` a function to call with a doc (and optional flag) to be removed from the
        * subscribers. The flag is sent to the client as a {#koru/model/doc-change;#flag} which
        * defaults to "serverUpdate". A Useful value is "stopped" which a client persistence manager
@@ -540,27 +543,30 @@ isServer && define((require, exports, module)=>{
       //[
       const book1 = Book.create({updatedAt: new Date(now - 80000)});
       const book2 = Book.create({updatedAt: new Date(now - 40000)});
-      const book3 = Book.create({updatedAt: new Date(now - 50000), state: 'D'});//]
+      const book3 = Book.create({updatedAt: new Date(now - 50000), state: 'D'});
+      const book4 = Book.create({updatedAt: new Date(now - 31000), state: 'C'});//]
       Book.whereNot = stub().returns({forEach: (cb) => {
-        cb(book1); cb(book2);
+        cb(book1); cb(book2); cb(book4);
       }});
       Book.where = stub().returns({forEach: (cb) => {
-        cb(book2); cb(book3);
+        cb(book2); cb(book3); cb(book4);
       }});
       //[#
 
       class MyUnion extends Union {
         loadInitial(encoder, minLastSubscribed) {
           const addDoc = encoder.addDoc.bind(encoder);
+          const chgDoc = encoder.chgDoc.bind(encoder);
           const remDoc = encoder.remDoc.bind(encoder);
           if (minLastSubscribed == 0)
             Book.whereNot({state: 'D'}).forEach(addDoc);
           else {
             Book.where({updatedAt: {$gte: new Date(minLastSubscribed)}}).forEach(doc => {
-              if (doc.state === 'D')
-                remDoc(doc);
-              else
-                addDoc(doc);
+              switch (doc.state) {
+              case 'D': remDoc(doc); break;
+              case 'C': chgDoc(doc, {state: doc.state}); break;
+              default: addDoc(doc);
+              }
             });
           }
         }
@@ -572,7 +578,8 @@ isServer && define((require, exports, module)=>{
 
       assert.equals(mc.decodeLastSend(), [
         ['A', ['Book', book1.attributes]],
-        ['A', ['Book', book2.attributes]]
+        ['A', ['Book', book2.attributes]],
+        ['A', ['Book', book4.attributes]]
       ]);
 
       const lastSubscribed = now - 600000;
@@ -582,6 +589,7 @@ isServer && define((require, exports, module)=>{
       assert.equals(mc2.decodeLastSend(), [
         ['A', ['Book', book2.attributes]],
         ['R', ['Book', 'book3', void 0]],
+        ['C', ['Book', 'book4', {state: 'C'}]],
       ]);
       //]
     });
