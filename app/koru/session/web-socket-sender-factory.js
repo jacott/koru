@@ -73,7 +73,11 @@ define((require)=>{
       for(let i = 0; i < data.length; ++i) {
         try {
           const msg = data[i];
-          this._commands[msg[0]].call(this, msg[1]);
+          const func = this._commands[msg[0]];
+          if (func === void 0) {
+            throw new Error("Invalid command "+msg[0]);
+          }
+          func.call(this, msg[1]);
         } catch(ex) {
           koru.unhandledException(ex);
         }
