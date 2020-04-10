@@ -13,6 +13,9 @@ define((require, exports, module)=>{
   remoteControl.engine = 'Server';
 
   function remoteControl(ws) {
+    ws.on('error', err => {
+      ws.close();
+    });
     const session = this;
     const clients = {};
 
