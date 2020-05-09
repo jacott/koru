@@ -213,7 +213,7 @@ define((require, exports, module)=>{
       const mod = ctx.modules[id];
       if (mod) {
         mod.unload();
-        session.versionHash = 'h'+Date.now();
+        session.versionHash = 'h'+Date.now(); // FIXME why this line
       }
       this.sendAll('U', session.versionHash + ':' + id);
     }

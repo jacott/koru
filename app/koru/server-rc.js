@@ -3,6 +3,7 @@ const vm = require('vm');
 
 define((require, exports, module)=>{
   'use strict';
+  const Intercept       = require('koru/test/intercept');
   const util            = require('koru/util');
   const koru            = require('./main');
   const session         = require('./session');
@@ -22,7 +23,6 @@ define((require, exports, module)=>{
     let lastSent = 0, lastMsg = '';
     let testMode = 'none', testExec = {client: null, server: null};
     let testClientCount = 0, pendingClientTests = [];
-    let future, interceptObj;
     let clientCount = 0;
 
     const logHandle = msg =>{
@@ -35,19 +35,6 @@ define((require, exports, module)=>{
       } catch(ex) {} // ignore
     };
 
-    const intercept = (obj)=>{
-      interceptObj = obj;
-      ws.send('I' + util.extractError(new Error("interrupt")));
-      future = new util.Future;
-      try {
-        return future.wait();
-      } finally {
-        future = null;
-      }
-    };
-
-    const continueIntercept = (arg)=>{if (future) future.return(arg)};
-
     koru.logger = (type, ...args)=>{
       if (type === 'D')
         logHandle('D> '+util.inspect(args, 7));
@@ -57,8 +44,6 @@ define((require, exports, module)=>{
         logHandle(type+'> '+args.join(' '));
     };
     const oldTestHandle = session.provide('T', testHandle);
-
-    koru._INTERCEPT = intercept;
 
     // used by koru/test
     remoteControl.testHandle = testHandle;
@@ -125,13 +110,14 @@ define((require, exports, module)=>{
       session.provide('T', oldTestHandle);
     });
     ws.on('message', (data, flags)=>{
-      const args = data.split('\t');
-      switch(args[0]) {
+      const [cmd] = data.split('\t', 1);
+      switch(cmd) {
       case 'T':
-        testClientCount = +args[3];
+        const [type, pattern, count] = data.slice(cmd.length+1).split('\t', 3);
+        testClientCount = +count;
         koru.runFiber(()=>{
           try {
-            buildCmd.runTests(session, args[1], args[2], (mode, exec)=>{
+            buildCmd.runTests(session, type, pattern, (mode, exec)=>{
               testMode = mode;
               testExec = exec;
               if (mode === 'client')
@@ -150,18 +136,14 @@ define((require, exports, module)=>{
         });
         break;
       case 'I':
-        switch(args[1]) {
-        case 'cont':
-          continueIntercept();
-          break;
-        case 'script':
-          try {
-            vm.createScript(args[2], '\ninput', true);
-            console.log(util.inspect(interceptObj(args[2])));
-          } catch(ex) {
-            console.log(util.extractError(ex));
-          }
-          break;
+        const [cmd2, a1, a2, interceptPrefix] = data.slice(cmd.length+1).split('\t', 4);
+        switch(cmd2) {
+        case 'bp':
+          const id = a1.replace(/^app\//, '');
+          const epos = +a2 - 1;
+          const source = data.slice(a1.length + a2.length + interceptPrefix.length + 8);
+          Intercept.ws = ws;
+          Intercept.breakPoint(id, epos, interceptPrefix, source);
         }
         break;
       }
@@ -187,16 +169,21 @@ define((require, exports, module)=>{
     }
 
     const _testHandle = (conn, msg)=>{
-      if (msg[0] === 'A') {
+      const type = msg[0];
+      if (type === 'A') {
         newConn(conn);
         if (testExec.client !== null && testMode !== 'server') {
           readyForTests(conn);
         }
         return;
       }
+      if (type === 'I') {
+        Intercept.finishIntercept();
+        ws.send(msg);
+        return;
+      }
 
       const {engine} = conn;
-      const type = msg[0];
       msg = msg.slice(1);
 
       const cs = clients[engine];

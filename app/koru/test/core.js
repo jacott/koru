@@ -174,7 +174,7 @@ define((require)=>{
     };
 
     if (typeof actual !== 'object' || typeof expected !== 'object') {
-      if ((actual === undefined || expected === undefined) && actual == expected)
+      if ((actual === void 0 || expected === void 0) && actual == expected)
         return true;
       if (hint) {
         setHint();
@@ -232,14 +232,16 @@ define((require)=>{
 
   const Core = {
     _init() {
+      this.abortMode = void 0;
       this.testCount = this.skipCount = this.assertCount = 0;
     },
-    abort: undefined,
+    abortMode: void 0,
+    abort: void 0,
     get __elidePoint() {return elidePoint},
     set __elidePoint(v) {elidePoint = v},
 
     AssertionError,
-    test: undefined,
+    test: void 0,
 
     assert, refute,
 

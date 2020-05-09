@@ -47,7 +47,7 @@ isClient && define((require, exports, module)=>{
       assert.isTrue(v.click);
 
       assert.equals(v.geom, {
-        scale: 1, midX: 123, midY: near(45), adjustX: 0, adjustY: 0});
+        scale: 1, midX: near(123), midY: near(45), adjustX: 0, adjustY: 0});
     });
 
     test("two pointerdown same id", ()=>{
@@ -293,7 +293,7 @@ isClient && define((require, exports, module)=>{
 
       raf.yieldAll().reset();
       assert.calledWith(onChange, {
-        scale: 1, midX: 123, midY: 45, adjustX: 0, adjustY: 0});
+        scale: 1, midX: near(123), midY: near(45), adjustX: 0, adjustY: 0});
     });
 
     test("pinchZoom", ()=>{
@@ -387,7 +387,7 @@ isClient && define((require, exports, module)=>{
       TH.trigger(target, 'pointermove', {pointerId: 1, clientX: 150+17, clientY: 55+51});
       raf.yieldAll().reset();
       assert.calledWith(onChange, {
-        scale: near(2.174, 0.001), midX: 111.5, midY: near(100), adjustX: 13.5, adjustY: 5});
+        scale: near(2.174, 0.001), midX: near(111.5), midY: near(100), adjustX: 13.5, adjustY: 5});
 
       assert.calledWith(target.setPointerCapture, 1);
 

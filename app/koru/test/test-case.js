@@ -494,16 +494,29 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
   const handleError = (err)=>{
-    if (Core.test === void 0) return;
+    if (Core.test === void 0) return false;
     Core.test.success = false;
-    if (err === 'abortTests') return void Core.abort(err);
+    if (err === 'abortTests') {
+      Core.abort(err);
+      return false;
+    }
     const msg = (err instanceof Error) ? util.extractError(err) : (
         err === "timeout" ? "Test timed out" : (
           err === "wrongReturn" ? "Unexpected return value" : err.toString()));
+    if (Core.test.mode !== 'running') {
+      err = typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err;
+      Core.test.errors = [err];
+      if (Core.test.mode === 'after') {
+        Core.abort(err);
+        return false;
+      } else {
+        Core.testCount++;
+        Core.test.errors = [err];
+        Core.abortMode = 'end';
+      }
+    }
     Core.test.errors = [msg];
-    if (Core.test.mode !== 'running')
-      Core.abort(typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err);
-    else return true;
+    return true;
   };
 
   const timeExpired = ()=>{
@@ -524,7 +537,13 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const _runNext = ()=>{
     while(true) {
-      if (Core.reload) return;
+      if (Core.abortMode !== void 0) {
+        if (Core.abortMode === 'end') {
+          tests.length = nt;
+          nextFunc = (Core.test !== void 0 && Core.test.mode === 'before') ? tearDown : testStart;
+        } else
+          return;
+      }
       if (nextFunc === testStart) {
         if (nt == tests.length) {
           Core.lastTest = Core.test = tests = void 0;
@@ -549,8 +568,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
             return;
         }
       } catch(err) {
-        if (! handleError(err))
-          return;
+        handleError(err);
       }
     }
   };

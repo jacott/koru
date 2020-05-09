@@ -5,6 +5,7 @@ define((require, exports, module)=>{
   const localStorage    = require('koru/local-storage');
   const sessState       = require('koru/session/state').constructor();
   const util            = require('koru/util');
+  const Intercept       = require('./intercept');
   const Test            = require('./main');
 
   const Module = module.constructor;
