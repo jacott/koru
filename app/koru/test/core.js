@@ -100,6 +100,51 @@ define((require)=>{
     };
   };
 
+  const stringifyLine = (a) => JSON.stringify(a).slice(0, -1)+'\\n"';
+
+  const formatStringDiff = (as, bs) => {
+    if (Math.min(as.length, bs.length) < 20)
+      return format("{i0}\n != {i1}", as, bs);
+    const a = as.split("\n").map(stringifyLine), b = bs.split("\n").map(stringifyLine);
+
+    const la = a.length -1, lb = b.length -1;
+    const minl = Math.min(la, lb) + 1;
+
+    let dsl = 0;
+    for(let i = 0; i < minl; ++i) {
+      if (a[i] !== b[i]) {
+        dsl = i;
+        break;
+      }
+    }
+
+    let ans = a.join(" +\n") + "\n != ";
+
+    if (dsl > lb) {
+      return ans + b.join(" +\n") + "\n Is shorter";
+    } else {
+      let del = -1;
+      for(let i = 0; i < minl ; ++i) {
+        if (a[la-i] !== b[lb-i]) {
+          del = i;
+          break;
+        }
+      }
+
+      ans += b.slice(0, dsl + 1).join(" +\n");
+      const a1 = a[dsl], b1 = b[dsl];
+      const len = Math.min(a1.length, b1.length);
+      let s = 0;
+      while(s < len && a1[s] === b1[s]) ++s;
+      ans += "\n" + "-".repeat(s) +"^ here";
+      if (del > 0)
+        return ans + "; the Remainder is the same";
+
+      return ans + b.slice(dsl+1, lb - del + 1).join(" +\n");
+    }
+  };
+
+
   const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL)=>{
     if (is(actual, expected)) {
       return true;
@@ -109,8 +154,11 @@ define((require)=>{
       if (! hint) return false;
       const prev = hint[hintField];
 
-      hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) +
-        (prev ? "\n" + prev : '');
+      hint[hintField] = (prefix || '') + "\n    " +
+        (typeof aobj === 'string' && typeof eobj === 'string' ?
+         formatStringDiff(aobj, eobj) :
+         format("{i0}\n != {i1}", aobj, eobj)
+        ) + (prev ? "\n" + prev : '');
       return false;
     };
 
@@ -129,21 +177,6 @@ define((require)=>{
       if ((actual === undefined || expected === undefined) && actual == expected)
         return true;
       if (hint) {
-        if (typeof actual === 'string' && typeof expected === 'string') {
-          const al = actual.length, el = expected.length;
-          const len = Math.min(al, el);
-          if (len > 20) {
-            let s = 0;
-            while(s < len && actual[s] === expected[s])
-              ++s;
-            let e = -1;
-            while(e + len - s >= 0 && actual[e + al] === expected[e + el])
-              --e;
-            setHint(actual.slice(s, e+1 || undefined), expected.slice(s, e+1 || undefined),
-                    'diff '+JSON.stringify(actual.slice(0, s)).slice(1, -1)
-                    .replace(/./g, '-')+'^');
-          }
-        }
         setHint();
       }
       return false;
