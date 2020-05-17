@@ -141,12 +141,12 @@ define((require, exports, module)=>{
         } else {
           koru.onunload(module, ()=>{webServer.deregisterHandler(key)});
         }
-        if (key in handlers) throw new Error(key + ' already registered as a web-server hander');
+        if (handlers[key] !== void 0) throw new Error(key + ' already registered as a web-server hander');
         handlers[key] = func;
       },
 
       deregisterHandler(key) {
-        delete handlers[key];
+        handlers[key] = void 0;
       },
 
       getHandler(key) {
