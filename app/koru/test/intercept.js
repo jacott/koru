@@ -28,7 +28,6 @@ define((require, exports, module)=>{
       if (locals !== void 0) recurse(locals, map);
       recurse(this, map);
       const cand = Array.from(map.values()).sort((a, b) => a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
-      _koru_.debug(`cand`, cand);
       Intercept.sendCandidates(JSON.stringify(cand));
     }
     Core.abortMode = 'end';
@@ -56,16 +55,15 @@ define((require, exports, module)=>{
         if (vtype === 'function') {
           try {
             sample = JsParser.extractCallSignature(sample);
-            if (sample.startsWith('constructor')) {
-              if (type === 'G')
-                type += 'C';
-              else
-                type = 'C';
-            } else if (sample[0] === '(') {
-              sample = name+sample;
-            }
           } catch (err) {
-            _koru_.debug(`err`, err);
+          }
+          if (sample.startsWith('constructor')) {
+            if (type === 'G')
+              type += 'C';
+            else
+              type = 'C';
+          } else if (sample[0] === '(') {
+            sample = name+sample;
           }
           if (type === 'G')
             type += 'F';

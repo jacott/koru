@@ -29,7 +29,7 @@ define((require, exports, module)=>{
         const source = fooBar.toString();
         const epos = source.indexOf(".")+3;
         Intercept.breakPoint(mod.id, epos, "to", source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_koru_.__INTERCEPT$__]("to").toString();}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to").toString();}');
       });
 
 
@@ -38,7 +38,7 @@ define((require, exports, module)=>{
         const source = fooBar.toString().slice(0, -1);
         const epos = source.length+1;
         Intercept.breakPoint(mod.id, epos, "", source+".}");
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_koru_.__INTERCEPT$__]("")}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko'+'ru_.__INTERCEPT$__]("")}');
       });
 
       test("scope var complete", ()=>{
@@ -64,7 +64,7 @@ define((require, exports, module)=>{
 
         Intercept.breakPoint(mod.id, epos, "a", source);
 
-        const exp = 'globalThis[_koru_.__INTERCEPT$__](\"a\",{fooBar, arguments, ab, abb, abc, ac})';
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"a\",{fooBar, arguments, ab, abb, abc, ac})';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });
