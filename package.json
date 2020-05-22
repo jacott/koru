@@ -27,9 +27,9 @@
     "autoprefixer": "^9.8.0",
     "commander": "^5.1.0",
     "css-selector-parser": "^1.4.1",
-    "fibers": "^4.0.3",
+    "fibers": "^5.0.0",
     "less": "^3.11.1",
-    "marked": "^0.8.2",
+    "marked": "^1.1.0",
     "nodemailer": "^6.4.6",
     "nodemailer-smtp-pool": "^2.8.3",
     "nodemailer-stub-transport": "^1.1.0",
@@ -41,7 +41,7 @@
     "source-map": "^0.7.3",
     "terser": "^4.7.0",
     "ws": "^7.3.0",
-    "yaajs": "^3.3.1"
+    "yaajs": "^3.3.2"
   },
   "devDependencies": {
     "pg-libpq": "^3.1.0"
