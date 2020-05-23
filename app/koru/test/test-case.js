@@ -540,7 +540,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       if (Core.abortMode !== void 0) {
         if (Core.abortMode === 'end') {
           tests.length = nt;
-          nextFunc = (Core.test !== void 0 && Core.test.mode === 'before') ? tearDown : testStart;
+          nextFunc = (Core.test !== void 0 && Core.test.mode !== 'after') ? tearDown : testStart;
         } else
           return;
       }
