@@ -323,6 +323,16 @@ define((require)=>{
                     "string, a number, a function, a boolean or an object");
   };
 
+  ga.add("contains", {
+    assert(actual, text) {
+      return typeof actual === 'string' && actual.indexOf(text) != -1;
+    },
+
+    message: "{0} to contain {1}",
+  });
+
+
+
   ga.match = match;
 
   ga.add("match", {
