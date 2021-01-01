@@ -2,6 +2,7 @@ const Path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const bundleAll = require('../lib/bundle-all');
+const {default: generate} = require('@babel/generator');
 
 const rootDir = process.env.KORU_HOME;
 
@@ -10,8 +11,6 @@ global.isServer = true;
 global.isClient = false;
 
 console.log(`bundling`);
-
-const isCompress = process.argv[3] !== 'quick';
 
 let version = process.env.KORU_APP_VERSION;
 
@@ -29,33 +28,19 @@ bundleAll.bundle({hash}, ({ast, css, compiler})=>{
 
     hash.update(css);
     version = version+","+hash.digest('hex');
+    const vjs = compiler.parse(`window.KORU_APP_VERSION='${version}';`, {sourceFilename: 'version.js'}).program;
+
+    vjs.body.push(...ast.program.body);
+    ast.program.body = vjs.body;
   }
 
   console.log(`minifying`);
 
-  const { code, error, map } = compiler.terser.minify(ast, {
-    compress: isCompress && {
-      dead_code: true,
-      global_defs: {
-        isClient: true,
-        isServer: false,
-        isTest: false,
-      },
-      ecma: 6,
-    },
-    mangle: isCompress,
-    safari10: true,
-    sourceMap: {
-      filename: "index.js",
-      url: "index.js.map"
-    },
-    output: {
-      beautify: ! isCompress,
-      indent_level: isCompress ? 0 : 2,
-      ast: false,
-      code: true,
-      preamble: version ? `window.KORU_APP_VERSION='${version}';` : void 0,
-    }
+  const { code, error, map } = generate(ast, {
+    compact: true,
+    sourceMaps: true,
+    sourceFileName: "index.js",
+    sourceRoot: "index.js.map",
   });
 
   if (error) {
@@ -66,6 +51,5 @@ bundleAll.bundle({hash}, ({ast, css, compiler})=>{
                                          "export KORU_APP_VERSION="+version);
   fs.writeFileSync(Path.join("build", 'index.css'), css);
   fs.writeFileSync(Path.join("build", 'index.js'), code);
-//  fs.writeFileSync(Path.join("build", 'config.js'), configCode);
   fs.writeFileSync(Path.join("build", 'index.js.map'), map);
 });

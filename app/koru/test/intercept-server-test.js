@@ -1,7 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
   const TH              = require('koru/test');
-  const terser          = requirejs.nodeRequire('terser');
 
   const {stub, spy, util} = TH;
 
@@ -64,7 +63,7 @@ define((require, exports, module)=>{
 
         Intercept.breakPoint(mod.id, epos, "a", source);
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"a\",{fooBar, arguments, ab, abb, abc, ac})';
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"a\",{fooBar, ab, abb, abc, ac})';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });

@@ -12,42 +12,22 @@ isServer && define((require, exports, module)=>{
     });
 
     test("extractParams", ()=>{
-      assert.equals(jsParser.extractParams('x() {}'),
-                    []);
+      assert.equals(jsParser.extractParams('({a: {b: c}}, ...args)'), ['{', '{', 'c', '}', '}', 'args']);
 
-      assert.equals(jsParser.extractParams('(...args)'),
-                    ['args']);
+      assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'), ['{', '{', 'd', '}', '}', '{', 'b', 'c', '}', 'rest']);
 
-      assert.equals(jsParser.extractParams('({a: {b: c}}, ...args)'),
-                    ['{', '{', 'c', '}', '}', 'args']);
+      assert.equals(jsParser.extractParams('x() {}'), []);
 
-      assert.equals(jsParser.extractParams('(a, b) => {/*...*/}'),
-                    ['a', 'b']);
+      assert.equals(jsParser.extractParams('(a, b) =>'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('(a, b) => {/*...*/}'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('x(a, b) {return {a: (a + b)}}'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('const x = (a, b) => ({c(d, e) {}})'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('const x = function(a, b) {return {c(d, e) {}}}'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('function x(a, b)'), ['a', 'b']);
+      assert.equals(jsParser.extractParams('function (a, b)'), ['a', 'b']);
 
-      assert.equals(jsParser.extractParams('(a, b) =>'),
-                    ['a', 'b']);
-
-      assert.equals(jsParser.extractParams('x(a, b) {return {a: (a + b)}}'),
-                    ['a', 'b']);
-
-      assert.equals(jsParser.extractParams('const x = (a, b) => ({c(d, e) {}})'),
-                    ['a', 'b']);
-
-      assert.equals(jsParser.extractParams('const x = function(a, b) {return {c(d, e) {}}}'),
-                    ['a', 'b']);
-
-      assert.equals(jsParser.extractParams('function x(a, b)'),
-                    ['a', 'b']);
-
-      assert.equals(jsParser.extractParams('function (a, b)'),
-                    ['a', 'b']);
-
-
-      assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'),
-                    ['{', '{', 'd', '}', '}', '{', 'b', 'c', '}', 'rest']);
+      assert.equals(jsParser.extractParams('(...args)'), ['args']);
     });
-
-
 
     test("nested template string", ()=>{
       const ans = markupBody(()=>{
@@ -60,7 +40,7 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
       assert.equals(ans, `
 ~nx#v#.~na#example#({
   ~nf#b#(~nv#a#~o#=#~s#\`one $\{#~nx#v#.~na#inspect#({
-    ~nf#c#(~nv#d#~o#=#~s#\`two $\{#~s#"\`$\{2}\`"#~o#+#~m#3#~s#} four\`#) {/* \`not here\` */}
+    ~nf#c#(~nv#d#~o#=#~s#\`two $\{#~s#"\`$\{2}\`"#~o#+#~m#3#~s#} four\`#) {~cm#/* \`not here\` */#}
   })~s#}\`#) {~k#return# ~nx#v#.~na#foo#~s#\`bar\`# ~o#||# ~nx#String#.~na#foo#~s#\`1$\{#~m#2#~s#}3\`#}
 });`);
     });
@@ -71,7 +51,7 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
       assertMarkup(()=>{
         let x = (a,b,c)=> a ? b : c;
       }, `
-~kd#let# ~nv#x# = (~nv#a#,~nv#b#,~nv#c#)~o#=&gt;# ~nx#a# ~o#?# ~nx#b# ~o#:# ~nx#c#;`);
+~kd#let# ~nv#x# ~o#=# (~nv#a#,~nv#b#,~nv#c#)~o#=&gt;# ~nx#a# ~o#?# ~nx#b# ~o#:# ~nx#c#;`);
     });
 
     test("async await", ()=>{
@@ -79,8 +59,8 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
         let x = async (a)=> await a();
         let y = async function(a) {};
       }, `
-~kd#let# ~nv#x# = ~k#async# (~nv#a#)~o#=&gt;# ~k#await# ~nx#a#();
-~kd#let# ~nv#y# = ~k#async# ~kd#function#(~nv#a#) {};`);
+~kd#let# ~nv#x# ~o#=# ~k#async# (~nv#a#)~o#=&gt;# ~k#await# ~nx#a#();
+~kd#let# ~nv#y# ~o#=# ~k#async# ~kd#function#(~nv#a#) {};`);
     });
 
     test("await", ()=>{
@@ -89,7 +69,7 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
         let x = await 123;
       }, `
 ~cs#// lead comment#
-~kd#let# ~nv#x# = ~k#await# ~m#123#;`);
+~kd#let# ~nv#x# ~o#=# ~k#await# ~m#123#;`);
     });
 
     test("yield", ()=>{
@@ -100,15 +80,6 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
     });
 
     test("switch", ()=>{
-      /**
-       *
-AST_Switch (expression) "A `switch` statement"
-            AST_SwitchBranch "Base class for `switch` branches" {
-                AST_Default "A `default` switch branch"
-                AST_Case (expression) "A `case` switch branch"
-            }
-
-      **/
       let key;
       assertMarkup(()=>{
         switch(key) {
@@ -133,13 +104,23 @@ AST_Switch (expression) "A `switch` statement"
     });
 
     test("try-catch", ()=>{
-      /**
-         AST_Try (bcatch bfinally) "A `try` statement"
-            AST_Catch (argname) "A `catch` node; only makes sense as part of a `try` statement"
-            AST_Finally "A `finally` node; only makes sense as part of a `try` statement"
+      let state;
+      assertMarkup(()=>{
+        try {
+          state = 1;
+        } catch(ex) {
+          throw new Error(ex.message);
+        }
+      }, `
+~k#try# {
+  ~nx#state# ~o#=# ~m#1#;
+  } ~k#catch#(~nv#ex#) {
+  ~k#throw# ~k#new# ~nx#Error#(~nx#ex#.~na#message#);
+}`);
+    });
 
-          AST_Throw "A `throw` statement"
-      **/
+
+    test("try-catch-finally", ()=>{
       let state;
       assertMarkup(()=>{
         try {
@@ -161,29 +142,12 @@ AST_Switch (expression) "A `switch` statement"
 }`);
     });
 
+    test("async loops", ()=>{
+      assertMarkup(`\nfor await (const i of a) i();\n`,
+                   `\n~k#for# ~k#await# (~kd#const# ~no#i# ~k#of# ~nx#a#) ~nx#i#();`);
+    });
+
     test("loops", ()=>{
-      /**
-       AST_StatementWithBody (body) "Base class for all statements that contain one nested body: `For`, `ForIn`, `Do`, `While`, `With`" {
-            AST_LabeledStatement (label) "Statement with a label"
-            AST_IterationStatement (block_scope) "Internal class.  All loops inherit from it." {
-                AST_DWLoop (condition) "Base class for do/while statements" {
-                    AST_Do "A `do` statement"
-                    AST_While "A `while` statement"
-                }
-                AST_For (init condition step) "A `for` statement"
-                AST_ForIn (init object) "A `for ... in` statement" {
-                    AST_ForOf "A `for ... of` statement"
-                }
-            }
-            AST_If (condition alternative) "A `if` statement"
-        }
-
-        AST_LoopControl (label) "Base class for loop control statements (`break` and `continue`)" {
-                AST_Break "A `break` statement"
-                AST_Continue "A `continue` statement"
-            }
-
-       **/
       assertMarkup(()=>{
         let a = 0;
         do {
@@ -205,14 +169,14 @@ AST_Switch (expression) "A `switch` statement"
           }
         }
       }, `
-~kd#let# ~nv#a# = ~m#0#;
+~kd#let# ~nv#a# ~o#=# ~m#0#;
 ~k#do# {
   ~o#++#~nx#a#;
 } ~k#while#(~nx#a# ~o#&lt;# ~m#10#)
 ~nl#label1#:
 ~k#while#(~nx#a# ~o#&gt;# ~m#0#) {
   ~nx#a#~o#--#;
-  ~k#for#(~kd#let# ~nv#i# = ~m#0#; ~nx#i# ~o#&lt;# ~m#10#; ~o#++#~nx#i#) {
+  ~k#for#(~kd#let# ~nv#i# ~o#=# ~m#0#; ~nx#i# ~o#&lt;# ~m#10#; ~o#++#~nx#i#) {
     ~k#if# (~nx#i# ~o#==# ~m#4#)
     ~k#break# ~nl#label1#;
   }
@@ -226,29 +190,13 @@ AST_Switch (expression) "A `switch` statement"
 }`);
     });
 
+    test("special literals", ()=>{
+      assertMarkup(
+        `\n['1quote', "2quote", \`backquote\`, /regex/, -123, 456n, NaN, Infinity, null, undefined, true, false];\n`,
+        `\n[~s#'1quote'#, ~s#"2quote"#, ~s#\`backquote\`#, ~sr#/regex/#, ~o#-#~m#123#, ~m#456n#, ~m#NaN#, ~m#Infinity#, ~kc#null#, ~kc#undefined#, ~kc#true#, ~kc#false#];`);
+    });
 
-
-
-    test("AST_Constant", ()=>{
-      /*
- AST_Constant "Base class for all constants" {
-        AST_String (value quote) "A string literal"
-        AST_Number (value literal) "A number literal"
-        AST_RegExp (value raw) "A regexp literal"
-        AST_Atom "Base class for atoms" {
-            AST_Null "The `null` atom"
-            AST_NaN "The impossible value"
-            AST_Undefined "The `undefined` value"
-            AST_Hole "A hole in an array"
-            AST_Infinity "The `Infinity` value"
-            AST_Boolean "Base class for booleans" {
-                AST_False "The `false` atom"
-                AST_True "The `true` atom"
-            }
-        }
-    }
-
-      */
+    test("VariableDeclaration", ()=>{
       assertMarkup(()=>{
         const FOO=123;
         let bar=true;
@@ -259,14 +207,14 @@ AST_Switch (expression) "A `switch` statement"
         num = undefined;
         const re = /a[3-6]{1,3}/gi;
       }, `
-~kd#const# ~no#FOO#=~m#123#;
-~kd#let# ~nv#bar#=~kc#true#;
+~kd#const# ~no#FOO#~o#=#~m#123#;
+~kd#let# ~nv#bar#~o#=#~kc#true#;
 ~nx#bar# ~o#=# ~kc#false#;
-~kd#var# ~nv#num# = ~m#Infinity#;
+~kd#var# ~nv#num# ~o#=# ~m#Infinity#;
 ~nx#num# ~o#=# ~m#NaN#;
 ~nx#num# ~o#=# ~kc#null#;
 ~nx#num# ~o#=# ~kc#undefined#;
-~kd#const# ~no#re# = ~sr#/a[3-6]{1,3}/gi#;`);
+~kd#const# ~no#re# ~o#=# ~sr#/a[3-6]{1,3}/gi#;`);
     });
 
 
@@ -303,7 +251,7 @@ AST_Switch (expression) "A `switch` statement"
       };
 
       assert.equals(markupBody(code), `
-~kd#var# ~nv#a# = ~s#'1'# ~o#+# ~m#2#; ~nx#a# ~o#=# ~m#3#;`);
+~kd#var# ~nv#a# ~o#=# ~s#'1'# ~o#+# ~m#2#; ~nx#a# ~o#=# ~m#3#;`);
     });
 
     test("ExpressionStatement", ()=>{
@@ -321,7 +269,7 @@ AST_Switch (expression) "A `switch` statement"
       assert.equals(markupBody(() => {
         var a = (z) => z[1].d;
       }), `
-~kd#var# ~nv#a# = (~nv#z#) ~o#=&gt;# ~nx#z#[~m#1#].~na#d#;`);
+~kd#var# ~nv#a# ~o#=# (~nv#z#) ~o#=&gt;# ~nx#z#[~m#1#].~na#d#;`);
     });
 
     test("ClassDeclaration", ()=>{
@@ -337,6 +285,8 @@ AST_Switch (expression) "A `switch` statement"
         }
 
         class B {
+          async m2() {}
+          static async s2() {}
         }
       }, `
 ~k#class# ~nc#A# ~k#extends# ~nx#v#(~m#5#) {
@@ -350,6 +300,8 @@ AST_Switch (expression) "A `switch` statement"
 }
 
 ~k#class# ~nc#B# {
+  ~k#async# ~nf#m2#() {}
+  ~kt#static# ~k#async# ~nf#s2#() {}
 }`);
 
     });
@@ -360,7 +312,7 @@ AST_Switch (expression) "A `switch` statement"
           static cm() {}
         };
       }), `
-~kd#const# ~no#A# = ~k#class# ~k#extends# ~nx#v#(~m#5#) {
+~kd#const# ~no#A# ~o#=# ~k#class# ~k#extends# ~nx#v#(~m#5#) {
   ~kt#static# ~nf#cm#() {}
 };`);
 
@@ -396,16 +348,17 @@ AST_Switch (expression) "A `switch` statement"
 
     test("Destructuring", ()=>{
       assert.equals(markupBody(() => {
-        var { sh, lhs: { op: b=123 }, rhs: c } = v;
+        var [{ sh, lhs: { op: b=123 }, rhs: c, d: [e, f] }, x] = v, {a2, b2} = v;
       }), `
-~kd#var# { ~nv#sh#, ~na#lhs#: { ~na#op#: ~nv#b#~o#=#~m#123# }, ~na#rhs#: ~nv#c# } = ~nx#v#;`);
+~kd#var# [{ ~nv#sh#, ~na#lhs#: { ~na#op#: ~nv#b#~o#=#~m#123# }, ~na#rhs#: ~nv#c#, ~na#d#: [~nv#e#, ~nv#f#] }, ~nv#x#] ~o#=# ~nx#v#, {~nv#a2#, ~nv#b2#} ~o#=# ~nx#v#;`);
     });
 
     test("ObjectExpression", ()=>{
+      const vv = 1;
       assert.equals(markupBody(() => {
         v = {
           a: 1,
-          v,
+          vv,
           'str ing': null,
           ['a'+v.x]: "z",
           'me th'([a, b]) {},
@@ -416,10 +369,10 @@ AST_Switch (expression) "A `switch` statement"
       }), `
 ~nx#v# ~o#=# {
   ~na#a#: ~m#1#,
-  ~na#v#,
-  ~na#'str ing'#: ~kc#null#,
+  ~na#vv#,
+  ~s#'str ing'#: ~kc#null#,
   [~s#'a'#~o#+#~nx#v#.~na#x#]: ~s#\"z\"#,
-  ~nf#'me th'#([~nv#a#, ~nv#b#]) {},
+  ~s#'me th'#([~nv#a#, ~nv#b#]) {},
   ~k#get# ~nf#v#() {~k#return# ~k#this#.~na#_v#},
   ~k#set# ~nf#v#(~nv#value#) {~k#this#.~na#_v# ~o#=#  ~nx#value#},
   ~na#foo#: ~kd#function#() {}
@@ -452,8 +405,7 @@ AST_Switch (expression) "A `switch` statement"
 
   const assertMarkup = (func, exp)=>{
     const ans = markupBody(func);
-    assert.msg(ans).equals(ans, exp);
-
+    assert.elide(() => {assert.equals(ans, exp)});
   };
 
   const markupBody = func => {

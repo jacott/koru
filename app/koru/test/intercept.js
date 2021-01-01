@@ -2,10 +2,8 @@ define((require, exports, module)=>{
   'use strict';
   const koru            = require('koru');
   const JsParser        = require('koru/parse/js-parser');
-  const Main            = require('koru/test');
+  const Core            = require('koru/test/core');
   const util            = require('koru/util');
-
-  const {Core} = Main;
 
   koru.__INTERCEPT$__ = Symbol();
   Object.prototype[koru.__INTERCEPT$__] = intercept;
@@ -16,7 +14,6 @@ define((require, exports, module)=>{
     static finishIntercept() {
       interceptPrefix = '';
       interceptObj = void 0;
-      Intercept.scope = void 0;
     }
   });
 
@@ -76,7 +73,9 @@ define((require, exports, module)=>{
     return ans;
   };
 
-  Core.onEnd(Intercept.finishIntercept);
+  if (Core.onEnd !== void 0) {
+    Core.onEnd(Intercept.finishIntercept);
+  }
 
   return Intercept;
 });

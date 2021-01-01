@@ -582,8 +582,8 @@ define((require)=>{
     try {
       return jsParser.highlight(codeIn.trim());
     } catch(ex) {
+      koru.info(codeIn);
       throw ex;
-      return document.createTextNode(codeIn);
     }
   };
 

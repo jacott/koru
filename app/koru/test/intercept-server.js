@@ -3,7 +3,9 @@ define((require, exports, module)=>{
 
   const session         = require('koru/session');
   const WebServer       = require('koru/web-server');
-  const terser          = requirejs.nodeRequire('terser');
+
+  const parser          = requirejs.nodeRequire('@babel/parser');
+  const traverse        = requirejs.nodeRequire('@babel/traverse').default;
 
   let initHandler = true, origDefaultHandler, expPath, repSrc;
   const parseOpts = {module: true, bare_returns: true};
@@ -17,6 +19,7 @@ define((require, exports, module)=>{
   };
 
   const parseCode = (spos, interceptPrefix, source) => {
+
     const epos = spos - (/\w/.test(source[spos]) ? 1 : 0);
 
     let rep = '[_ko'+`ru_.__INTERCEPT$__]("${interceptPrefix}"`;
@@ -28,28 +31,22 @@ define((require, exports, module)=>{
       if (/\S/.test(source[i])) break;
     }
 
-    const ast = terser.parse(source, parseOpts);
-    ast.figure_out_scope();
-
+    const nast = parser.parse(source, {});
     const names = {};
 
-    ast.walk(new terser.TreeWalker((node) => {
-      const {scope} = node;
-      if (scope !== void 0) {
-        if (scope.start.pos <= spos && scope.end.endpos >= spos) {
-          for (const name of scope.variables.keys()) {
-            for (const o of scope.variables.get(name).orig) {
-              if (o.start.pos < spos) {
-                names[name] = true;
-                break;
-              }
+    traverse(nast, {
+      enter(path) {
+        const {node} = path;
+        if (
+          node.start <= spos && node.end >= spos) {
+          for (const name in path.scope.bindings) {
+            if (path.scope.bindings[name].identifier.start < spos) {
+              names[name] = true;
             }
           }
         }
       }
-      if (node.start.pos > spos || node.end.endpos < spos)
-        return true;
-    }));
+    });
 
     rep += ",{" + Object.keys(names).join(", ") +"}";
 

@@ -3,9 +3,10 @@ define((require)=> JsPaser => {
   const koru            = require('koru');
   const htmlDoc         = require('koru/dom/html-doc');
   const util            = require('koru/util');
-  const terser          = requirejs.nodeRequire('terser');
 
-  const n2c = (node, code)=> code.slice(node.start.pos, node.end.endpos);
+  const {parse, walk, walkArray} = requirejs.nodeRequire('./js-parse-walker');
+
+  const n2c = (node, code)=>{koru.info(node.type+ ": "+ code.slice(node.start, node.end))};
 
   const ASYNC_WRAPPER_START = "async ()=>{";
 
@@ -16,70 +17,55 @@ define((require)=> JsPaser => {
   };
 
   JsPaser.parse = (codeIn, opts={})=> {
-    try {
-      return terser.parse(codeIn, opts);
-    } catch(ex) {
-      throw new SyntaxError(ex.message+"\n"+codeIn);
-    }
+    return parse(codeIn, opts);
+  };
+
+  const parseOpts = {
+    allowImportExportEverywhere: true, allowAwaitOutsideFunction: true,
+    allowReturnOutsideFunction: true, allowSuperOutsideMethod: true,
+    allowUndeclaredExports: true,
   };
 
   JsPaser.highlight = (codeIn, tag='div')=>{
     if (! codeIn) return;
 
     let srcPos = 0;
+    let identType = 'nx';
 
-    const parseOpts = {module: true, bare_returns: true};
-    let ast, wrapper = false;
-    try {
-      ast = JsPaser.parse(codeIn, parseOpts);
-    } catch(ex) {
-      if (/Unexpected await identifier inside strict mode/.test(ex.message)) {
-        try {
-          codeIn = ASYNC_WRAPPER_START+codeIn+"}";
-          ast = terser.parse(codeIn, parseOpts);
-          wrapper = true;
-        } catch(_) {
-          throw ex;
-        }
-      } else {
-        throw ex;
-      }
-    }
+    const ast = JsPaser.parse(codeIn, parseOpts);
+    const {comments} = ast;
+    let commentIndex = 0;
 
     const div = document.createElement(tag);
     div.className = 'highlight';
 
-    const leadingComments = (node)=>{
-      node.start && addComments(node.start.comments_before);
-    };
-
-    const trailingComments = (node)=>{
-      node.end && addComments(node.end.comments_after);
-    };
-
-    const addComments = (comments)=>{
-      comments.forEach(node => {
-        if (node.pos < srcPos) return;
-        addRange(node.pos, node.endpos,
-              node.type === 'comment2' ? 'cm' : 'cs');
-      });
-    };
-
-    const catchup = pos=>{
-      if (! (srcPos < pos)) return;
-      const text = codeIn.slice(srcPos, pos);
-      srcPos += text.length;
-      div.appendChild(document.createTextNode(text));
-    };
-
-    const addRange = (spos, epos, hl)=>{
-      if (srcPos >spos) return;
-      catchup(spos);
+    const addSpan = (spos, epos, hl)=>{
       const span = document.createElement('span');
       span.className = hl;
       span.textContent = codeIn.slice(spos, epos);
-      srcPos = epos;
       div.appendChild(span);
+      srcPos = epos;
+    };
+
+    const catchup = pos=>{
+      if (srcPos >= pos) return;
+      while (commentIndex < comments.length) {
+        const c = comments[commentIndex];
+        if (c.start > pos) break;
+        if (c.start > srcPos) {
+          div.appendChild(document.createTextNode(codeIn.slice(srcPos, c.start)));
+        }
+        addSpan(c.start, c.end, c.type === 'CommentLine' ? 'cs' : 'cm');
+        ++commentIndex;
+      }
+      div.appendChild(document.createTextNode(codeIn.slice(srcPos, pos)));
+      srcPos = pos;
+    };
+
+    const addRange = (spos, epos, hl)=>{
+      if (srcPos > spos) return;
+      catchup(spos);
+      addSpan(spos, epos, hl);
     };
 
     const addText = (text, start, hl)=>{
@@ -88,330 +74,353 @@ define((require)=> JsPaser => {
     };
 
     const addHl = (node, hl)=>{
-      addRange(node.start.pos, node.end.endpos, hl);
+      addRange(node.start, node.end, hl);
     };
 
     const binaryExpr = (node)=>{
       expr(node.left);
-      addText(node.operator, node.left.end.endpos, 'o');
+      addText(node.operator, node.left.end, 'o');
       expr(node.right);
     };
 
     const expr = node=>{
       if (node == null) return;
-      if (node.walk !== undefined)
-        node.walk(visitor);
-      else if (Array.isArray(node)) {
+      if (Array.isArray(node)) {
         node.forEach(expr);
+      } else {
+        visitor(node);
       }
     };
 
+    const typeExpr = (node, type)=>{
+      const cType = identType;
+      identType = type;
+      expr(node);
+      identType = cType;
+    };
+
     const addAsync = (node)=>{
-      node.async && addText('async', node.start.pos, 'k');
+      node.async && addText('async', node.start, 'k');
     };
 
-    const addType = (node, hl='k')=>{
-      const spos = node.start.pos;
-      addRange(spos, spos + node.TYPE.length, hl);
+    const addParam = (node, hl) => {
+      switch(node.type) {
+      case 'ObjectPattern':
+        for (const p of node.properties) {
+          if (p.shorthand) {
+            addHl(p.key, hl);
+            if (p.value.type === 'AssignmentPattern')
+              typeExpr(p.value, 'nx');
+          } else {
+            typeExpr(p.key, 'na');
+            addParam(p.value, hl);
+          }
+        }
+        break;
+      case 'ArrayPattern':
+        for (const p of node.elements) {
+          addParam(p, hl);
+        }
+        break;
+      case 'VariableDeclarator':
+        addParam(node.id, hl);
+        if (node.init != null) {
+          addText('=', node.id.end, 'o');
+          expr(node.init);
+        }
+        break;
+      default:
+        typeExpr(node, hl);
+      }
     };
 
-    const loopControl = (node)=>{
-      addType(node);
-      expr(node.label);
+    const addParams = (params, hl='nv') => {
+      for (const param of params) {
+        addParam(param, hl);
+      }
     };
 
     const functionExpression = (node)=>{
       addAsync(node);
-      addText('function', node.start.pos, 'kd');
+      addText('function', node.start, 'kd');
       expr(node.name);
       expr(node.argnames);
       expr(node.body);
     };
 
-    const addplain = node => {catchup(node.end.endpos)};
-
-    const definition = (node, descend)=>{
-      addType(node, 'kd');
-      descend();
-    };
-
     const addKey = (node, type='na')=>{
-      let {key} = node;
-      const nev = key === node.value.name;
-      let kw = nev && visitor.parent().TYPE === 'Destructuring'
-          ? 'nv' : type;
+      if (node.key.type === 'Identifier') {
+        addIdent(node.key, 'na');
+      } else {
+        expr(node.key);
+      }
+      return node.shorthand;
+    };
 
-      if (typeof key === 'object') {
-        if (key.TYPE === 'SymbolMethod') {
-          key = key.name;
-          kw = 'nf';
-        } else {
-          expr(key);
-          return nev;
+    const ClassDeclaration = (node)=>{
+        addText('class', node.start, 'k');
+        typeExpr(node.id, 'nc');
+        if (node.superClass) {
+          addText('extends', srcPos, 'k');
+          expr(node.superClass);
         }
-      }
-      if (key === 'constructor') {
-        kw = 'k';
-      }
-      if (node.quote != null) key = `${node.quote}${key}${node.quote}`;
-      addText(key, node.start.pos, kw);
-      return nev;
+        expr(node.body);
     };
 
-    const addKWExpBody = (node)=>{
-      addType(node);
-      expr(node.expression);
-      expr(node.body);
+    const addIdent = (node, hl=identType) => {
+      addHl(node, WELLKNOWN[node.name] || hl);
     };
-
-    const addKWBody = (node)=>{
-      addType(node);
-      expr(node.body);
-    };
-
-    const addStatic = (node)=>{node.static && addText('static', node.start.pos, 'kt')};
 
     const WELLKNOWN = {
       NaN: 'm',
       Infinity: 'm',
       undefined: 'kc',
+      constructor: undefined,
     };
 
     const TYPES = {
-      True: 'kc',
-      False: 'kc',
-      Null: 'kc',
-      Undefined: 'kc',
-      Number: 'm',
-      NaN: 'm',
-      Infinity: 'm',
-      String: 's',
-      RegExp: 'sr',
-      TemplateSegment: 's',
+      BooleanLiteral: 'kc',
+      NullLiteral: 'kc',
+      NumericLiteral: 'm',
+      BigIntLiteral: 'm',
+      StringLiteral: 's',
+      RegExpLiteral: 'sr',
       Super: 'k',
-      This: 'k',
-      SymbolDefClass: 'nc',
-      SymbolFunarg: 'nv',
-      SymbolCatch: 'nv',
-      SymbolConst: 'no',
-      SymbolVar: 'nv',
-      SymbolLet: 'nv',
-      Label: 'nl',
-      LabelRef: 'nl',
-      SymbolRef(node) {
-        addHl(node, WELLKNOWN[node.name] || 'nx');
+      ThisExpression: 'k',
+      SpreadElement(node) {
+        addText('...', node.start, 'k');
+        expr(node.argument);
       },
-      Break: loopControl,
-      Continue: loopControl,
-      SymbolMethod(node) {
-        addText(node.name, srcPos, node.name === 'constructor' ? 'k' : 'nf');
+      MemberExpression(node) {
+        typeExpr(node.object, 'nx');
+        typeExpr(node.property, 'na');
       },
-      Binary: binaryExpr,
-      DefaultAssign: binaryExpr,
-      FunctionDeclaration: functionExpression,
-      Function: functionExpression,
-      Call(node) {
-        expr(node.expression);
-        expr(node.args);
+      ObjectMethod(node) {
+        if (node.kind !== 'method') {
+          addText(node.kind, node.start, 'k');
+        }
+        typeExpr(node.key, 'nf');
+        typeExpr(node.params, 'nv');
+        expr(node.body);
       },
-      Arrow(node) {
+      ClassMethod(node) {
+        if (node.static) {
+          addText('static', node.start, 'kt');
+        }
         addAsync(node);
-        expr(node.argnames);
+        if (node.kind === 'constructor') {
+          addText('constructor', node.start, 'k');
+        } else {
+          typeExpr(node.key, 'nf');
+        }
+        typeExpr(node.params, 'nv');
+        expr(node.body);
+      },
+      AssignmentPattern(node) {
+        typeExpr(node.left, 'nv');
+        addText('=', node.start, 'o');
+        expr(node.right);
+      },
+      AssignmentExpression: binaryExpr,
+      BinaryExpression: binaryExpr,
+
+      TemplateLiteral(node) {
+        let pos = node.start;
+        for (const ex of node.expressions) {
+          addRange(pos, ex.start, 's');
+          expr(ex);
+          pos = ex.end;
+        }
+        addRange(pos, node.end, 's');
+      },
+      BreakStatement(node) {
+        addText('break', node.start, 'k');
+        typeExpr(node.label, 'nl');
+      },
+      ContinueStatement(node) {
+        addText('continue', node.start, 'k');
+        typeExpr(node.label, 'nl');
+      },
+      ReturnStatement(node) {
+        addText('return', node.start, 'k');
+        expr(node.argument);
+      },
+      LogicalExpression: binaryExpr,
+
+      ArrowFunctionExpression(node) {
+        addAsync(node);
+        addParams(node.params);
         addText('=>', srcPos, 'o');
         expr(node.body);
       },
-      Assign(node) {
-        node.left.TYPE === 'SymbolRef' ? addHl(node.left, 'nx') : expr(node.left);
-        addText(node.operator, node.left.end.endpos, 'o');
-        expr(node.right);
+      FunctionExpression(node) {
+        addAsync(node);
+        addText('function', srcPos, 'kd');
+        addParams(node.params);
+        expr(node.body);
       },
-      Conditional(node) {
-        expr(node.condition);
+      ConditionalExpression(node) {
+        expr(node.test);
         addText('?', srcPos, 'o');
         expr(node.consequent);
         addText(':', srcPos, 'o');
-        expr(node.alternative);
+        expr(node.alternate);
       },
-      DefClass(node) {
-        addText('class', node.start.pos, 'k');
-        expr(node.name);
-        if (node.extends) {
-          addText('extends', srcPos, 'k');
-          expr(node.extends);
-        }
-        expr(node.properties);
+      ClassDeclaration,
+      ClassExpression: ClassDeclaration,
+      FunctionDeclaration(node) {
+        addText('function', node.start, 'kd');
+        addHl(node.id, 'nf');
+        addParams(node.params);
         expr(node.body);
       },
-      Defun(node, descend) {
-        addText('function', node.start.pos, 'kd');
-        descend();
-      },
-      SymbolDefun(node) {
-        addText(node.name, node.start.pos, 'nf');
-      },
-      ClassExpression(node) {TYPES.DefClass(node)},
-      Dot(node) {
-        expr(node.expression);
-        addText(node.property, srcPos, 'na');
-      },
-      ConciseMethod(node) {
-        addStatic(node);
-        addKey(node, 'nf');
-        expr(node.value);
-      },
-      ObjectGetter(node) {
-        addStatic(node);
-        addText('get', node.start.pos, 'k');
-        addKey(node, 'nf');
-        expr(node.value);
-      },
-      ObjectSetter(node) {
-        addStatic(node);
-        addText('set', node.start.pos, 'k');
-        addKey(node, 'nf');
-        expr(node.value);
-      },
-      ObjectKeyVal(node) {
+      ObjectProperty(node) {
         const {value} = node;
-        if (value.TYPE === 'DefaultAssign' && value.left.name === node.key) {
-          addText(node.key, node.start.pos, 'nv');
+        if (value.type === 'DefaultAssign' && value.left.name === node.key) {
+          addText(node.key, node.start, 'nv');
           addText('=', srcPos, 'o');
           expr(value.right);
         } else if (!addKey(node)) {
-          if (value.TYPE === 'DefaultAssign' && value.left.TYPE === 'SymbolFunarg') {
-            addText(value.left.name, value.left.start.pos, 'nv');
+          if (value.type === 'DefaultAssign' && value.left.type === 'SymbolFunarg') {
+            addText(value.left.name, value.left.start, 'nv');
             addText('=', srcPos, 'o');
             expr(value.right);
           } else
             expr(value);
         }
       },
-      New(node) {
-        addText('new', node.start.pos, 'k');
-        expr(node.expression);
-        expr(node.args);
-      },
-      Return(node) {
-        addText('return', node.start.pos, 'k');
-        expr(node.value);
-      },
-      Await(node) {
+      AwaitExpression(node) {
         addText('await', srcPos, 'k');
-        expr(node.expression);
+        expr(node.argument);
       },
-      Yield(node) {
+      YieldExpression(node) {
         addText('yield', srcPos, 'k');
-        expr(node.expression);
+        expr(node.argument);
       },
-      Throw(node) {
-        addText('throw', node.start.pos, 'k');
-        expr(node.value);
+      UpdateExpression(node) {
+        if (node.prefix) {
+          addText(node.operator, node.start, 'o');
+          expr(node.argument);
+        } else {
+          expr(node.argument);
+          addText(node.operator, node.start, 'o');
+        }
       },
-      Expansion(node) {
-        addText('...', node.start.pos, 'k');
-        expr(node.expression);
+      UnaryExpression(node) {
+        addText(node.operator, node.start, 'o');
+        expr(node.argument);
       },
-      UnaryPrefix(node) {
-        addText(node.operator, node.start.pos, 'o');
-        expr(node.expression);
+      SwitchStatement(node) {
+        addText('switch', node.start, 'k');
+        expr(node.discriminant);
+        expr(node.cases);
       },
-      UnaryPostfix(node) {
-        expr(node.expression);
-        addText(node.operator, node.start.pos, 'o');
+      SwitchCase(node) {
+        if (node.test !== null) {
+          addText('case', node.start, 'k');
+          expr(node.test);
+        } else {
+          addText('default', node.start, 'k');
+        }
+        expr(node.consequent);
       },
-
-      Switch: addKWExpBody,
-      Case: addKWExpBody,
-      Default: addKWBody,
-
-      Try(node) {
-        addType(node);
+      TryStatement(node) {
+        addText('try', node.start, 'k');
+        expr(node.block);
+        expr(node.handler);
+        if (node.finalizer != null) {
+          addText('finally', srcPos, 'k');
+          expr(node.finalizer);
+        }
+      },
+      ThrowStatement(node) {
+        addText('throw', node.start, 'k');
+        expr(node.argument);
+      },
+      CatchClause(node) {
+        addText('catch', node.start, 'k');
+        addHl(node.param, 'nv');
         expr(node.body);
-        expr(node.bcatch);
-        expr(node.bfinally);
       },
-      Catch(node) {
-        addType(node);
-        expr(node.argname);
-        expr(node.body);
+      NewExpression(node) {
+        addText('new', node.start, 'k');
+        typeExpr(node.callee, 'nx');
+        expr(node.arguments);
       },
-      Finally: addKWBody,
-
-      Do(node) {
-        addType(node);
+      DoWhileStatement(node) {
+        addText('do', node.start, 'k');
         expr(node.body);
         addText('while', srcPos, 'k');
-        expr(node.condition);
+        expr(node.test);
       },
-      While(node) {
-        addType(node);
-        expr(node.condition);
+
+      LabeledStatement(node) {
+        typeExpr(node.label, 'nl');
         expr(node.body);
       },
-      For(node) {
-        addType(node);
-        expr(node.init);
-        expr(node.condition);
-        expr(node.step);
+      WhileStatement(node) {
+        addText('while', node.start, 'k');
+        expr(node.test);
         expr(node.body);
       },
-      ForOf(node) {
-        addText('for', node.start.pos, 'k');
-        expr(node.init);
+      ForOfStatement(node) {
+        addText('for', node.start, 'k');
+        if (node.await) addText('await', srcPos, 'k');
+        expr(node.left);
         addText('of', srcPos, 'k');
-        expr(node.object);
+        expr(node.right);
         expr(node.body);
       },
-      ForIn(node) {
-        addText('for', node.start.pos, 'k');
+      ForStatement(node) {
+        addText('for', node.start, 'k');
         expr(node.init);
-        addText('in', srcPos, 'k');
-        expr(node.object);
+        expr(node.test);
+        expr(node.update);
         expr(node.body);
       },
-      If(node) {
-        addType(node);
-        expr(node.condition);
+      ForInStatement(node) {
+        addText('for', node.start, 'k');
+        expr(node.left);
+        addText('in', srcPos, 'k');
+        expr(node.right);
         expr(node.body);
-        if (node.alternative != null) {
+      },
+      IfStatement(node) {
+        addText('if', node.start, 'k');
+        expr(node.test);
+        expr(node.consequent);
+        if (node.alternate != null) {
           addText('else', srcPos, 'k');
-          expr(node.alternative);
+          expr(node.alternate);
         }
       },
 
-      Var: definition,
-      Const: definition,
-      Let: definition,
+      Identifier(node) {
+        addIdent(node, identType);
+      },
+
+      VariableDeclaration(node) {
+        addText(node.kind, node.start, 'kd');
+
+        addParams(node.declarations, node.kind === 'const' ? 'no' : 'nv');
+      }
     };
 
-    const visitor = new terser.TreeWalker((node, descend) => {
-      leadingComments(node);
-      const hl = TYPES[node.TYPE];
+    const visitor = node =>{
+      const hl = TYPES[node.type];
       switch (typeof hl) {
       case 'string': addHl(node, hl); break;
-      case 'function': hl(node, descend); break;
+      case 'function': hl(node); break;
       default:
-        descend();
+        walk(node, visitor);
       }
-      trailingComments(node);
-      return true;
-    });
 
-    if (wrapper) {
-      ast.walk(new terser.TreeWalker((node) => {
-        if (node.TYPE === 'Arrow') {
-          const {body} = node;
-          srcPos = ASYNC_WRAPPER_START.length;
-          expr(body);
-          catchup(body[body.length-1].end.endpos);
-          return true;
-        }
-      }));
-    } else {
-      ast.walk(visitor);
+      return 2;
+    };
 
-      catchup(codeIn.length);
-    }
+    walk(ast, visitor);
+
+    catchup(codeIn.length);
 
     return div;
   };
@@ -421,7 +430,7 @@ define((require)=> JsPaser => {
       let ex1;
       for (let code of iter) {
         try {
-          return JsPaser.parse(code, {});
+          return JsPaser.parse(code, parseOpts);
         } catch(ex) {
           if (ex.name !== 'SyntaxError')
             throw ex;
@@ -457,30 +466,48 @@ define((require)=> JsPaser => {
       }
       const args = [];
 
-      const visitor = (node) => {
-        switch(node.TYPE) {
-        case 'Arrow':
-        case 'Function':
-          node.argnames.forEach(n => args.push(n.name));
-          return true;
-        case 'Accessor':
-          node.walk(new terser.TreeWalker((node, descend) =>{
-            switch(node.TYPE) {
-            case 'Destructuring':
-              args.push('{');
-              descend();
-              args.push('}');
-              return true;
-            case 'SymbolFunarg':
-              args.push(node.name);
-              return true;
-            }
-          }));
-          return true;
+      const extractItem = (n)=>{extract(n)};
+
+      const extract = (node) => {
+        switch(node.type) {
+        case 'ArrayPattern':
+          args.push('{');
+          walkArray(node.elements, extractItem);
+          args.push('}');
+          return 0;
+        case 'AssignmentPattern':
+          args.push(node.left.name);
+          return 0;
+        case 'Identifier':
+          args.push(node.name);
+          return 0;
+        case 'ObjectProperty':
+          if (node.shorthand) walk(node.key, extract);
+          else {
+            args.push('{');
+            walkArray([node.value], extract);
+            args.push('}');
+          }
+          return 0;
+
+        case 'ObjectPattern':
+          walkArray(node.properties, extract);
+          return 0;
         }
+        return 1;
       };
 
-      ast.walk(new terser.TreeWalker(visitor));
+      const visitor = (node) => {
+        if (node.params != null) {
+          for (const n of node.params) {
+            walk({n}, extract);
+          }
+          return 0;
+        }
+        return 1;
+      };
+
+      walk(ast, visitor);
 
       return args;
     };

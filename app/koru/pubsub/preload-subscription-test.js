@@ -309,10 +309,10 @@ isClient && define((require, exports, module)=>{
             super.serverResponse(err, idb);//[#
           }
         }
-        const sub = BookSub.subscribe('book1');
-        const err = new koru.Error(500, "server error");
-        sub.stop(err);
-        assert.equals(sub.serverResponseArgs, [err, void 0]);
+        const sub2 = BookSub.subscribe('book1');
+        const err2 = new koru.Error(500, "server error");
+        sub2.stop(err2);
+        assert.equals(sub2.serverResponseArgs, [err2, void 0]);
         //]
       }
     });
