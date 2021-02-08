@@ -29,7 +29,7 @@
     "css-selector-parser": "^1.4.1",
     "fibers": "^5.0.0",
     "less": "^3.12.2",
-    "marked": "^1.1.1",
+    "marked": "^2.0.0",
     "nodemailer": "^6.4.11",
     "nodemailer-smtp-pool": "^2.8.3",
     "nodemailer-stub-transport": "^1.1.0",
