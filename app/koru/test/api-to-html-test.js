@@ -314,7 +314,7 @@ m1 intro
                  {class: 'o', span: '='}, ' ',
                  {class: 'k', span: 'class'}, ' ',
                  {class: 'k', span: 'extends'}, ' ',
-                   {class: 'nx', span: 'Publication'}, '.',
+                 {class: 'nx', span: 'Publication'}, '.',
                  {class: 'na', span: 'Union'}, ' {}'
                ]}},
             ' end text',
@@ -578,10 +578,11 @@ m1 intro
         );
 
         assert.equals(Dom.htmlToJson(div), {
-          div: [{pre: {class: 'language-js', code: {
+          div: [{pre: {class: 'language-js', code: [{
             class: 'highlight',
-            div: [{class: 'nx', span: 'alert'}, '(', {class: 's', span: '"hello"'}, ');']
-          }}}, "\n"]});
+            div: [{
+              class: 'nx', span: 'alert'
+            }, '(', {class: 's', span: '\"hello\"'}, ');']}, "\n"]}}, "\n"]});
       });
 
       test("highlight html", ()=>{
@@ -599,12 +600,12 @@ m1 intro
         );
 
         assert.equals(Dom.htmlToJson(div), {
-          div: [{pre: {class: 'language-html', code: {
+          div: [{pre: {class: 'language-html', code: [{
             class: 'highlight',
             div: ['<', {class: 'nf', span: 'span'}, ' ',
                   {class: 'nv', span: 'id'}, '=', {class: 's', span: '"s1"'},
                   '>hello</', {class: 'nf', span: 'span'}, '>']
-          }}}, "\n"]});
+          }, "\n"]}}, "\n"]});
       });
     });
   });

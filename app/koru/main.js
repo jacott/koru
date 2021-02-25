@@ -37,7 +37,7 @@ define((require, exports, module)=>{
   };
 
   logDebug.inspect = (...args)=>{
-    koru.logger('D', args.map(o => util.inspect(o)).join(', '));
+    koru.logger('D', args.map(o => util.inspect(o, 10)).join(', '));
   };
 
   const Module = module.constructor;
