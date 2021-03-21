@@ -151,7 +151,30 @@ define((require, exports, module)=>{
       refute(book.$isValid());
       assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
       //]
+    });
 
+    test("assertFound", ()=>{
+      /**
+       * Assert model instance is found
+
+       * @throws koru.Error 404
+       */
+      api.method();
+
+      const module = newBookModule();
+      //[
+      class Book extends BaseModel {
+      }
+      Book.define({module});
+      assert.exception(() => {
+        Book.assertFound(null);
+      }, {error: 404, message: 'Book Not found [404]'});
+
+      refute.exception(() => {
+        const book = Book.build();
+        Book.assertFound(book);
+      });
+      //]
     });
 
     group("validation", ()=>{
@@ -442,7 +465,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("findBy.", ()=>{
+      test("findBy", ()=>{
         const {Book} = v;
         const doc = Book.create({
           title: 'Pride and Prejudice', pages: ['It is a truth universally acknowledged...']});

@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
+  const koru            = require('koru');
   const Changes         = require('koru/changes');
   const ModelEnv        = require('koru/env!./main');
   const dbBroker        = require('koru/model/db-broker');
@@ -158,6 +159,10 @@ define((require, exports, module)=>{
           delete this._locks[id];
         }
       }
+    }
+
+    static assertFound(doc) {
+      if (doc == null) throw new koru.Error(404, this.name + ' Not found');
     }
 
     /**
