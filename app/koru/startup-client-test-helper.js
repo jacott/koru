@@ -52,27 +52,36 @@ define((require, exports, module)=>{
         mod && mod.unload();
       });
 
-      require(targetId, (s)=>{
-        preInit = false;
-        const KSC = 'koru/startup-client';
-        const ksExp = exps[KSC] || mockRequire();
-        ksExp.restartOnUnload = stub();
-        ksExp.startStop = stub();
-        exp = StartupClientBody(mockRequire, {}, mockModule);
+      try {
+        require(targetId, (s)=>{
+          try {
+            preInit = false;
+            const KSC = 'koru/startup-client';
+            const ksExp = exps[KSC] || mockRequire();
+            ksExp.restartOnUnload = stub();
+            ksExp.startStop = stub();
+            exp = StartupClientBody(mockRequire, {}, mockModule);
 
-        if (! ksExp.restartOnUnload.calledWith(mockRequire, mockModule))
-          reject(new TH.Core.AssertionError(
-            'KoruStartup.restartOnUnload(require, module) not called correctly', 1));
-        else if (! ksExp.startStop.called)
-          reject(new TH.Core.AssertionError('KoruStartup.startStop(...) not called', 1));
-        else if (! ksExp.startStop.calledWith(...startOrder))
-          reject(new TH.Core.AssertionError(
-            'KoruStartup.startStop(<module>, ...) does not match startOrder ', 1));
-        else if (checkExports(reject)) {
-          assert(true);
-          resolve();
-        }
-      });
+            if (! ksExp.restartOnUnload.calledWith(mockRequire, mockModule))
+              reject(new TH.Core.AssertionError(
+                'KoruStartup.restartOnUnload(require, module) not called correctly', 1));
+            else if (! ksExp.startStop.called)
+              reject(new TH.Core.AssertionError('KoruStartup.startStop(...) not called', 1));
+            else if (! ksExp.startStop.calledWith(...startOrder))
+              reject(new TH.Core.AssertionError(
+                'KoruStartup.startStop(<module>, ...) does not match startOrder ', 1));
+            else if (checkExports(reject)) {
+              assert(true);
+              resolve();
+            }
+          } catch(err) {
+            reject(err);
+          }
+        });
+
+      } catch(err) {
+        reject(err);
+      }
 
     });
 
