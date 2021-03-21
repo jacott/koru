@@ -250,10 +250,9 @@ define((require)=>{
     },
 
     mergeOwnDescriptors(dest, source) {
-      const names = Object.getOwnPropertyNames(source);
-      for(let i = names.length - 1; i >= 0 ; --i) {
-        const name = names[i];
-        Object.defineProperty(dest, name, Object.getOwnPropertyDescriptor(source, name));
+      const decs = Object.getOwnPropertyDescriptors(source);
+      for (const name in decs) {
+        Object.defineProperty(dest, name, decs[name]);
       }
       return dest;
     },
