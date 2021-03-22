@@ -28,7 +28,7 @@ define((require, exports, module)=>{
       Intercept.sendCandidates(JSON.stringify(cand));
     }
     Core.abortMode = 'end';
-    return this;
+    throw 'intercept';
   };
 
   const recurse = (obj, ans = new Map()) => {

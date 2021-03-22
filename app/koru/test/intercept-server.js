@@ -57,6 +57,8 @@ define((require, exports, module)=>{
   return Intercept => {
     const {ctx} = module;
 
+    let unloadId;
+
     const {readFileSync, loadModule} = ctx;
 
     class ServerIntercept extends Intercept {
@@ -65,6 +67,10 @@ define((require, exports, module)=>{
           initHandler = true;
           WebServer.deregisterHandler('DEFAULT');
           WebServer.registerHandler('DEFAULT', origDefaultHandler);
+          if (unloadId !== void 0) {
+            session.unload(unloadId);
+            unloadId = void 0;
+          }
         }
         origDefaultHandler = void 0;
         super.finishIntercept();
@@ -96,7 +102,7 @@ define((require, exports, module)=>{
           }
           return readFileSync(path);
         };
-        session.unload(id);
+        session.unload(unloadId = id);
 
         if (initHandler) {
           initHandler = false;
