@@ -930,7 +930,12 @@ isClient && define((require, exports, module)=>{
 
       Route.gotoPath('/anything?abc=123&def=456#hash');
 
-      assert.calledWith(v.FooBar.onEntry, v.FooBar, {pathname: '', search: '?abc=123&def=456', hash: '#hash'});
+      assert.calledWith(v.FooBar.onEntry, v.FooBar, {
+        pathname: '/anything',
+        search: '?abc=123&def=456',
+        hash: '#hash',
+        append: 'anything',
+      });
     });
 
     test("passing object", ()=>{
@@ -938,7 +943,12 @@ isClient && define((require, exports, module)=>{
 
       Route.gotoPath({pathname: '/anything', search: '?abc=123&def=456', hash: '#hash'});
 
-      assert.calledWith(v.FooBar.onEntry, v.FooBar, {pathname: '', search: '?abc=123&def=456', hash: '#hash'});
+      assert.calledWith(v.FooBar.onEntry, v.FooBar,  {
+        pathname: '/anything',
+        search: '?abc=123&def=456',
+        hash: '#hash',
+        append: 'anything',
+      });
     });
   });
 });

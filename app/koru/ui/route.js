@@ -32,18 +32,18 @@ define((require, exports, module)=>{
     for(--exitLen; exitLen >= 0; --exitLen) {
       item = exit[exitLen];
       if (item !== entry[exitLen - diff] ||
-          ((sym = item.routeVar) && oldSymbols[sym] !== pageRoute[sym]))
+          ((sym = item.routeVar) !== void 0 && oldSymbols[sym] !== pageRoute[sym]))
         break;
     }
 
     for(index = 0; index < diff; ++index) {
       const tpl = exit[index];
-      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
+      tpl.onBaseExit?.(page, pageRoute);
     }
 
     for(; index <= exitLen; ++index) {
       const tpl = exit[index];
-      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
+      tpl.onBaseExit?.(page, pageRoute);
     }
 
     currentPage = exit[index];
@@ -63,7 +63,7 @@ define((require, exports, module)=>{
       if (item.async)
         item.onBaseEntry(page, pageRoute, callback);
       else {
-        item.onBaseEntry && item.onBaseEntry(page, pageRoute);
+        item.onBaseEntry?.(page, pageRoute);
         callback();
       }
     };
@@ -72,7 +72,7 @@ define((require, exports, module)=>{
 
   const pathname = (template, pageRoute)=>{
     let path = '';
-    if (template && template.route) {
+    if (template?.route !== void 0) {
       path = routePath(template.route, pageRoute);
       if (template.subPath)
         path += '/'+template.subPath;
@@ -88,7 +88,7 @@ define((require, exports, module)=>{
     if (! route) return '';
 
     let {path} = route;
-    const routeVar = route.routeVar && pageRoute[route.routeVar];
+    const routeVar = route.routeVar !== void 0 && pageRoute[route.routeVar];
     if (routeVar)
       path += '/' + routeVar;
 
@@ -126,8 +126,7 @@ define((require, exports, module)=>{
       if (options.focus) {
         Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
       }
-      options.afterRendered !== void 0
-        && options.afterRendered.call(page, page._renderedPage, pageRoute);
+      options.afterRendered?.call(page, page._renderedPage, pageRoute);
     };
     autoOnEntry.isAuto = true;
     return autoOnEntry;
@@ -164,7 +163,7 @@ define((require, exports, module)=>{
   const handleAbortPage = (self, err)=>{
     if (err.constructor === AbortPage) {
       pageState = 'pushState';
-      err.location && self.replacePath(err.location, ...err.args);
+      err.location !== void 0 && self.replacePath(err.location, ...err.args);
       return;
     }
     koru.unhandledException(err);
@@ -195,8 +194,7 @@ define((require, exports, module)=>{
         let handle;
         const timeout = koru.setTimeout(()=>{
           handle.stop();
-          reject(new Error('Timed out waiting for: ' + (expectPage && expectPage.name) +
-                           ' after ' + duration + 'ms'));
+          reject(new Error(`Timed out waiting for: ${expectPage?.name} after ${duration}ms`));
         }, duration);
         handle = Route.onChange((actualPage, pageRoute, href)=>{
           handle.stop();
@@ -204,8 +202,7 @@ define((require, exports, module)=>{
           if (actualPage === expectPage)
             resolve(actualPage, href);
           else
-            reject(new Error('expected page: ' + (expectPage && expectPage.name) +
-                             ', got: ' + (actualPage && actualPage.name)));
+            reject(new Error(`expected page: ${expectPage?.name}, got: ${actualPage?.name}`));
         });
       });
     }
@@ -234,8 +231,8 @@ define((require, exports, module)=>{
     }
 
     static gotoPage(page, pageRoute) {
-      if (page && ! page.onEntry) {
-        page = (page.route ? page.route.defaultPage : page.defaultPage) || page;
+      if (page != null && page.onEntry === void 0) {
+        page = page?.route?.defaultPage ?? page?.defaultPage ?? page;
       }
 
       pageRoute = util.reverseMerge(pageRoute || {},  currentPageRoute, excludes);
@@ -245,15 +242,15 @@ define((require, exports, module)=>{
 
       Route.loadingArgs = [page, pageRoute];
 
-      if (page && page.routeOptions && ! page.routeOptions.publicPage &&
-          ! koru.userId() && page !== Route.SignInPage) {
+      if (page?.routeOptions !== void 0 && ! page.routeOptions.publicPage &&
+          koru.userId() == null && page !== Route.SignInPage) {
         Route.replacePage(Route.SignInPage, {returnTo: Route.loadingArgs});
         return;
       }
 
       targetPage = page;
 
-      if (page && page.isDialog) {
+      if (page?.isDialog) {
         try {
           page.onEntry(page, pageRoute);
         }
@@ -265,13 +262,13 @@ define((require, exports, module)=>{
         ++inGotoPage;
         const then = ()=>{
           let href, title;
-          if (! page) {
+          if (page == null) {
             href = null;
             title = Route.title;
             pageRoute = {};
           } else {
-            href = Route.pageRouteToHref(page.onEntry && page.onEntry(page, pageRoute) || pageRoute);
-            title = page.title || Route.title;
+            href = Route.pageRouteToHref(page.onEntry?.(page, pageRoute) ?? pageRoute);
+            title = page.title ?? Route.title;
           }
 
           Route.recordHistory(page, href);
@@ -281,8 +278,8 @@ define((require, exports, module)=>{
           Route.notify(page, pageRoute, href);
         };
 
-        if (currentPage) {
-          currentPage.onExit && currentPage.onExit(page, pageRoute);
+        if (currentPage != null) {
+          currentPage.onExit?.(page, pageRoute);
 
           exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
         } else {
@@ -301,7 +298,7 @@ define((require, exports, module)=>{
     }
 
     static recordHistory(page, href) {
-      if (! Route.history || pageState === null || (page && page.noPageHistory))
+      if (pageState === null || page?.noPageHistory)
         return;
       let cmd = 'replaceState';
       if (pageState !== cmd && currentHref !== href) {
@@ -419,33 +416,28 @@ define((require, exports, module)=>{
       for(let i = 0; i < parts.length; ++i) {
         const part = parts[i];
         if (part === '') continue;
-        newPage = (page.routes && page.routes[part]);
-        if (! newPage) {
+        newPage = page?.routes?.[part];
+        if (newPage === void 0) {
           newPage = page.defaultPage;
 
           if (page.routeVar) {
-            if (pageRoute[page.routeVar]) {
-              pageRoute.append = parts.slice(i).join('/');
-              break;
+            if (pageRoute[page.routeVar] === void 0) {
+              pageRoute[page.routeVar] = part;
+              continue;
             }
-            pageRoute[page.routeVar] = part;
-            continue;
           }
 
-        }
-
-        if (! newPage) {
           pageRoute.append = parts.slice(i).join('/');
           break;
         }
         page = newPage;
       }
 
-      if (newPage && newPage === root.defaultPage)
+      if (newPage !== void 0 && newPage === root.defaultPage)
         page = newPage;
 
       if (page === root)
-        throw new Error('Page not found: ' + util.inspect(pageRoute));
+        throw new koru.Error(404, 'Page not found: ' + util.inspect(pageRoute));
 
       this.gotoPage(page, pageRoute);
     }
@@ -453,7 +445,7 @@ define((require, exports, module)=>{
     static searchParams(pageRoute) {
       const result = {};
 
-      const search = pageRoute && pageRoute.search;
+      const search = pageRoute?.search;
       if (! search) return result;
 
 
@@ -483,10 +475,8 @@ define((require, exports, module)=>{
     removeTemplate(template, options={}) {
       const path = options.path === void 0 ? templatePath(template) : options.path;
       this.routes[path] = null;
-      if (template.onEntry != null && template.onEntry.isAuto)
-        template.onEntry = null;
-      if (template.onExit != null && template.onExit.isAuto)
-        template.onExit = null;
+      if (template?.onEntry.isAuto) template.onEntry = null;
+      if (template?.onExit.isAuto) template.onExit = null;
     }
 
     addDialog(module, template, options) {
@@ -546,7 +536,7 @@ define((require, exports, module)=>{
     }
   };
 
-  const myAnchor = (route)=> (route && route.childAnchor) || Route.childAnchor;
+  const myAnchor = (route)=> route?.childAnchor ?? Route.childAnchor;
 
   function defaultOnBaseExit(page, pageRoute) {
     Dom.remove(this._renderedPage || document.getElementById(this.name));
@@ -554,7 +544,7 @@ define((require, exports, module)=>{
 
   function defaultOnBaseEntry(page, pageRoute, callback) {
     myAnchor(this.route.parent).appendChild(this.$autoRender());
-    callback !== void 0 && callback();
+    callback?.();
   }
 
   makeSubject(Route);
