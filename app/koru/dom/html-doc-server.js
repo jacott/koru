@@ -596,7 +596,7 @@ define((require, exports, module)=>{
         const dname = style.slice(0, idx);
         const name = util.camelize(dname);
         let value = style.slice(idx+1).trim();
-        if (/color/.test(dname))
+        if (/color/.test(dname) && value.startsWith('#'))
           value = (value && uColor.toRgbStyle(value)) || '';
         sm[dname] = sm[name] = value;
         sa.push(dname);

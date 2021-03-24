@@ -393,7 +393,7 @@ define((require)=>{
 
     $ctx(origin) {
       if (typeof origin === 'string') origin = document.getElementById(origin);
-      if (! origin)
+      if (origin == null)
         origin = Ctx._currentCtx;
       else if (origin.nodeType)
         origin = Dom.ctx(origin);

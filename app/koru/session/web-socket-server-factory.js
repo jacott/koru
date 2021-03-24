@@ -213,7 +213,7 @@ define((require, exports, module)=>{
       const mod = ctx.modules[id];
       if (mod) {
         mod.unload();
-        session.versionHash = 'h'+Date.now(); // FIXME why this line
+        session.versionHash = 'h'+Date.now(); // tell reconnecting clients codebase has changed
       }
       this.sendAll('U', session.versionHash + ':' + id);
     }

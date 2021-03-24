@@ -138,7 +138,16 @@ define((require, exports, module)=>{
   autoOnExit.isAuto = true;
 
   function addCommon(route, module, template, options={}) {
-    if (module !== void 0) module.onUnload(()=>{route.removeTemplate(template, options)});
+    if (module !== void 0) module.onUnload(()=>{
+      if (currentPage === template) {
+        try {
+          currentPage.onExit?.(currentPage, currentPageRoute);
+        } catch(err) {
+          koru.unhandledException(err);
+        }
+      }
+      route.removeTemplate(template, options);
+    });
     const path = options.path === void 0 ? templatePath(template) : options.path;
     if (route.routes.path !== void 0)
       throw new Error(`Path already exists! ${path} for template '${this.path}'`);
