@@ -92,6 +92,19 @@ define((require, exports, module)=>{
       //]
     });
 
+    test("mapToArray", ()=>{
+      /**
+       * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
+       * value is filtered out of the results
+       **/
+      api.method();
+      //[
+      const mapped = Enumerable.mapToArray({*[Symbol.iterator]() {yield 1; yield 5; yield 3}}, i => i == 5 ? undefined : 2*i);
+      assert.equals(mapped.length, 2);
+      assert.equals(mapped, [2, 6]);
+      //]
+    });
+
     test("map", ()=>{
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the

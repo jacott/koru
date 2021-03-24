@@ -37,9 +37,9 @@ define(()=>{
     }
 
     map(mapper) {
-      const self = this;
+      const iter = this[iter$];
       return new Enumerable(function *() {
-        for (const v of self[iter$]) {
+        for (const v of iter) {
           const ans = mapper(v);
           if (ans !== undefined) yield ans;
         }
@@ -70,13 +70,22 @@ define(()=>{
       }
     }
 
+    get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
+
     static count(to, from=1, step=1) {
       return new Enumerable(function *() {
         for(let i = from; i <= to; i+=step) yield i;
       });
     }
 
-    get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
+    static mapToArray(iter, mapper) {
+      const result = [];
+      for (const item of iter) {
+        const ans = mapper(item);
+        if (ans !== void 0) result.push(ans);
+      }
+      return result;
+    }
 
     static propertyValues(object) {
       return new Enumerable(function *() {
