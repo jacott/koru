@@ -42,10 +42,10 @@ define((require)=>{
     return new Date(now);
   };
 
-  const generateName = (prefix, space)=>{
+  const generateName = (prefix, space=' ')=>{
     checkDb();
     if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
-    return `${prefix}${space == null ? ' ' : space}${++nameGen[prefix]}`;
+    return `${prefix}${space}${++nameGen[prefix]}`;
   };
 
 
@@ -120,8 +120,8 @@ define((require)=>{
       return this;
     }
 
-    genName(field, prefix) {
-      return this.addField(field || 'name', generateName(prefix || this.model.modelName));
+    genName(field='name', prefix=this.model.modelName, space) {
+      return this.addField(field, generateName(prefix, space));
     }
 
     useSave(value) {
