@@ -93,7 +93,9 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       else
         prev = node;
       const {value} = node;
-      if (typeof value === 'function') {
+      if (typeof value.stop === 'function') {
+        value.stop();
+      } else if (typeof value === 'function') {
         const promise = value.call(test);
         if (promise !== void 0) {
           assertIsPromise(promise, value);
@@ -103,19 +105,17 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       } else if (Array.isArray(value)) {
         for(let i = value.length-1; i >=0 ; --i) {
           const func = value[i];
-          if (typeof func === 'function') {
+          if (typeof func.stop === 'function') {
+            func.stop();
+          } else {
             const promise = func.call(test);
             if (promise !== void 0) {
               assertIsPromise(promise, func);
               return i > 0
                 ? promise.then(()=>{runListAndAsyncCallbacks(value, i-1, list, node)}) : promise;
             }
-          } else {
-            func.stop();
           }
         }
-      } else {
-        value.stop();
       }
     }
   };
