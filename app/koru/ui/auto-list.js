@@ -35,8 +35,8 @@ define((require)=>{
       template, container,
       query,
       limit=Infinity,
-      compare=query ? query.compare : compareAddOrder,
-      compareKeys=compare.compareKeys || (query && query.compareKeys),
+      compare=query?.compare ?? compareAddOrder,
+      compareKeys=compare.compareKeys ?? query?.compareKeys,
       observeUpdates,
       overLimit,
       removeElement=Dom.remove,
@@ -64,7 +64,7 @@ define((require)=>{
         onChange,
         entries: new BTree(compare),
         sym$: Symbol(),
-        observer: query && (query.onChange == null ? null : query.onChange(onChange)),
+        observer: query?.onChange?.(onChange),
         lastVis: null,
         globalAddOrder: 0,
       };
@@ -129,14 +129,15 @@ define((require)=>{
       if (query !== void 0) {
         stopObserver(pv);
         pv.query = query;
+
+        if (compare === void 0) compare = pv.query.compare ?? pv.compare;
+        if (compareKeys === void 0)
+          compareKeys = pv.query.compareKeys ?? compare.compareKeys ?? pv.compareKeys;
       }
 
-      if (compare === void 0) compare = pv.query.compare || pv.compare;
-      if (compareKeys === void 0)
-        compareKeys = pv.query.compareKeys || compare.compareKeys || pv.compareKeys;
+      if (compare !== void 0) pv.compare = compare;
+      if (compareKeys !== void 0) pv.compareKeys = compareKeys;
 
-      if (pv.compare !== void 0) pv.compare = compare;
-      if (pv.compareKeys !== void 0) pv.compareKeys = compareKeys;
       if (limit !== void 0) pv.limit = limit;
 
       pv.lastVis = null;
@@ -151,7 +152,7 @@ define((require)=>{
 
       try {
         pv.locked = true;
-        pv.query && pv.query.forEach(doc => {
+        pv.query?.forEach(doc => {
           const node = doc[sym$];
 
           if (node === void 0)
