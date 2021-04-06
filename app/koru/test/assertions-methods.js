@@ -629,14 +629,23 @@ define((require)=>{
             }
 
             if (options.parent) {
-              if (typeof options.parent === 'number') {
+              switch (typeof options.parent) {
+              case 'number': {
                 elm = elm[0];
                 for(let num = options.parent; elm && num > 0;--num) {
                   elm = elm.parentNode;
                 }
-                if (! elm) return false;
+                if (elm == null) return false;
                 selectNode = elm = [elm];
-              } else {
+                break;
+              }
+              case 'string': {
+                elm = elm[0].closest(options.parent);
+                if (elm == null) return false;
+                selectNode = elm = [elm];
+                break;
+              }
+              default: {
                 const pold = selectNode;
                 try {
                   selectNode = [elm[0].parentNode];
@@ -644,6 +653,7 @@ define((require)=>{
                 } finally {
                   selectNode = pold;
                 }
+              }
               }
             }
             break;
