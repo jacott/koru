@@ -20,7 +20,7 @@ define((require, exports, module)=>{
 
   const parseCode = (spos, interceptPrefix, source) => {
 
-    const epos = spos - (/\w/.test(source[spos]) ? 1 : 0);
+    const epos = spos - (/[$\w]/.test(source[spos]) ? 1 : 0);
 
     let rep = '[_ko'+`ru_.__INTERCEPT$__]("${interceptPrefix}"`;
 

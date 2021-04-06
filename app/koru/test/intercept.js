@@ -5,9 +5,6 @@ define((require, exports, module)=>{
   const Core            = require('koru/test/core');
   const util            = require('koru/util');
 
-  koru.__INTERCEPT$__ = Symbol();
-  Object.prototype[koru.__INTERCEPT$__] = intercept;
-
   let interceptObj, interceptPrefix = '';
 
   const Intercept = require('koru/env!./intercept')(class {
@@ -16,6 +13,11 @@ define((require, exports, module)=>{
       interceptObj = void 0;
     }
   });
+
+  const InterceptThrow = {
+    name: 'intercept',
+    toString: () => 'intercept'
+  };
 
   function intercept(prefix, locals) {
     if (interceptObj === void 0) {
@@ -28,8 +30,11 @@ define((require, exports, module)=>{
       Intercept.sendCandidates(JSON.stringify(cand));
     }
     Core.abortMode = 'end';
-    throw 'intercept';
+    throw InterceptThrow;
   };
+
+  koru.__INTERCEPT$__ = Symbol();
+  Object.prototype[koru.__INTERCEPT$__] = intercept;
 
   const recurse = (obj, ans = new Map()) => {
     if (obj == null) return ans;
