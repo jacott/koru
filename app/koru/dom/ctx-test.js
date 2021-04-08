@@ -313,12 +313,36 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    test("Specials", ()=>{
+      const Tpl = Dom.newTemplate({
+        name: "Foo",
+        nodes:[{
+          name: "div",
+          children: [['', "bar", "-123", "this", "null", "true", "false", "8.6", "baz", "-", ..."0123456789".split('')]],
+        }],
+      });
+
+      const data = {baz: "BAZ"};
+
+      let actualArgs;
+      Tpl.$helpers({
+        bar(...args) {
+          actualArgs = args;
+        },
+      });
+
+      Dom.tpl.Foo.$render(data);
+
+      assert.equals(actualArgs, [
+        -123, {baz: 'BAZ'}, null, true, false, 8.6, 'BAZ', '-', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    });
+
     test("onAnimationEnd", ()=>{
       const Tpl = Dom.newTemplate({
         name: "Foo",
         nodes:[{
           name: "div",
-          children:[['', "bar"]],
+          children: [['', "bar"]],
         }],
       });
 

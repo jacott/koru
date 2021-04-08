@@ -15,6 +15,24 @@ define((require)=>{
 
   let animationEndCount = 0;
 
+  const Specials = {
+    this: true,
+    true: true,
+    false: false,
+    null: null,
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 4,
+    5: 5,
+    6: 6,
+    7: 7,
+    8: 8,
+    9: 9,
+    '-': '-',
+  };
+
   const getValue = (data, func, args)=>{
     if (args == null) return;
     if (args.dotted != null) {
@@ -43,14 +61,24 @@ define((require)=>{
     case 'function':
       return func.apply(data, evalArgs(data, args));
     case 'string': {
+      const sp = Specials[func];
+      if (sp !== void 0) {
+        if (func === 'this') return data;
+        return sp;
+      }
+
       switch(func[0]) {
       case '"': return func.slice(1);
       case '.':
         parts = func.split('.');
         func = parts[1];
+      default:
+        if (Specials[func[0]] !== void 0) {
+          const n = Number.parseFloat(func);
+          if (! isNaN(n))
+            return n;
+        }
       }
-
-      if (func === 'this') return data;
 
       let value;
       if (data != null) {
