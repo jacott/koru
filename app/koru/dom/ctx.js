@@ -223,18 +223,22 @@ define((require)=>{
       document.body.removeEventListener('animationend', animationEnd, true);
   }
 
+  const nullStop = ()=>{};
+
   const autoUpdateChange = (ctx)=>{
-    const {data} = ctx;
-    stopAutoUpdate(ctx);
-    ctx.autoUpdate();
+    const handle = ctx[autoUpdate$];
+    handle.stop();
+    handle.subject = ctx.data;
+    const model = ctx.data?.constructor;
+    handle.stop = model == null
+      ? nullStop
+      : (model.observeId?.(ctx.data._id, handle.oc) ?? model.onChange?.(handle.oc))?.stop ?? nullStop;
   };
 
   const stopAutoUpdate = (ctx)=>{
     ctx[autoUpdate$].stop();
-    ctx[autoUpdate$] = undefined;
+    ctx[autoUpdate$] = void 0;
   };
-
-  const nullDataAutoHandle = {stop: ()=>{}};
 
   class Ctx {
     constructor(template, parentCtx, data) {
@@ -249,12 +253,12 @@ define((require)=>{
     set data(value) {
       if (this[data$] !== value) {
         this[data$] = value;
-        this[autoUpdate$] === undefined || autoUpdateChange(this);
+        this[autoUpdate$] === void 0 || autoUpdateChange(this);
       }
     }
 
     _destroyData(elm) {
-      if (this[autoUpdate$] !== undefined) stopAutoUpdate(this);
+      if (this[autoUpdate$] !== void 0) stopAutoUpdate(this);
 
       if (this[onDestroy$] !== undefined) {
         const list = this[onDestroy$];
@@ -286,9 +290,7 @@ define((require)=>{
         data = this[data$];
       else if (data !== this[data$]) {
         this[data$] = data;
-        if (this[autoUpdate$] !== undefined) {
-          autoUpdateChange(this);
-        }
+        this[autoUpdate$] === void 0 || autoUpdateChange(this);
       }
       const {activeElement} = document;
       const prevCtx = currentCtx;
@@ -363,41 +365,23 @@ define((require)=>{
       old !== null && old(this, this.element());
     }
 
-    autoUpdate({subject=this.data, removed}={}) {
-      if (this[autoUpdate$])
-        stopAutoUpdate(this);
-      if (subject == null) {
-        if (subject === this.data) {
-          this[autoUpdate$] = nullDataAutoHandle;
-        }
-        return;
-      }
-      const model = subject.constructor;
-      const handle = model.observeId ? model.observeId(subject._id, ({doc, isDelete})=>{
-        if (isDelete) {
+    autoUpdate(observe) {
+      if (this[autoUpdate$] !== void 0) stopAutoUpdate(this);
+      this[autoUpdate$] = {subject: void 0, stop: nullStop, observe, oc: dc => {
+        const handle = this[autoUpdate$];
+        if (dc.isDelete) {
           handle.stop();
-          removed !== undefined && removed(doc);
         } else {
-          if (subject !== doc) this[data$] = subject = doc;
+          if (handle.subject !== dc.doc) this[data$] = handle.subject = dc.doc;
           this.updateAllTags();
         }
-      }) : model.onChange(({doc, isDelete})=>{
-        if (isDelete) {
-          if (doc === subject) {
-            handle.stop();
-            removed !== undefined && removed(doc);
-          }
-        } else if (doc === subject) {
-          this.updateAllTags();
-        }
-      });
+        handle.observe?.call(this, dc);
+      }};
+      autoUpdateChange(this);
+    }
 
-      if (subject === this.data)
-        return this[autoUpdate$] = handle;
-      else {
-        this.onDestroy(handle.stop);
-        return handle;
-      }
+    stopAutoUpdate() {
+      stopAutoUpdate(this);
     }
 
     addEventListener(elm, type, callback, opts) {

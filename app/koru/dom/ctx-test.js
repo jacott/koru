@@ -4,6 +4,8 @@ isClient && define((require, exports, module)=>{
    * Ctx (Context) is used to track
    * [DOM elements](#mdn:/API/Node)
    **/
+  const TemplateCompiler = require('koru/dom/template-compiler');
+  const makeSubject     = require('koru/make-subject');
   const DocChange       = require('koru/model/doc-change');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -37,21 +39,21 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    const compileTemplate = (text) => Dom.newTemplate(
+      module, JSON.parse(TemplateCompiler.toJavascript(text, "foo.html")));
+
     group("autoUpdate", ()=>{
       /**
        * Update template contents whenever the `ctx.data` contents changes or the `ctx.data` object
        * itself changes.
        *
-       * `ctx.data` (or supplied subject) must have either an `observeId` method or an `onChange`
+       * `ctx.data` must have either an `observeId` method or an `onChange`
        * method in its class otherwise no observation will occur. `observeId` is used in
        * preference to `onChange`. {#koru/model/base-model} is such a class.
        *
-       * @param subject override `ctx.data` as the subject. Custom subjects cannot be auto changed.
-
-       * @param {function} [removed] a function that will be called if the subject is removed.
-
-       * @returns handle with a `stop` method to stop listening for changes. This is automatically
-       * called when the data goes out of scope.
+       * The `observeId` or `onChange` handler will be stopped when the `ctx` is removed.
+       *
+       * @param {function} [observe] a optional function that will be called for each update of the subject.
        **/
 
       before(()=>{
@@ -61,49 +63,57 @@ isClient && define((require, exports, module)=>{
           name: "Foo",
           nodes:[{
             name:"section",
-            children:[['', "child.name"], ['', "_id"]],
+            children:[['', "name"], ['', "_id"]],
           }],
         });
       });
 
       test("options", ()=>{
         //[
+        const stop = stub();
         class Custom {
           static onChange(onChange) {
             this._onChange = onChange;
-            return {stop: stub()};
+            return {stop};
           }
         }
 
         const doc = new Custom();
-        const foo = Dom.tpl.Foo.$render({child: doc});
+        doc.name = 'old name';
+        const foo = Dom.tpl.Foo.$render(doc);
         const ctx = Dom.myCtx(foo);
 
-        const removed = stub();
+        const observer = stub();
 
-        const handle = ctx.autoUpdate({subject: doc, removed});
-
+        ctx.autoUpdate(observer);
         doc.name = "new name";
-        Custom._onChange(DocChange.change(doc, {name: 'old name'})); // change
+        const docChange = DocChange.change(doc, {name: 'old name'});
+        Custom._onChange(docChange); // change
 
         assert.equals(foo.textContent, "new name");
+
+        assert.calledOnceWith(observer, docChange);
+        assert.same(observer.firstCall.thisValue, ctx);
         //]
 
-        refute.called(removed);
-        refute.called(handle.stop);
         spy(ctx, 'updateAllTags');
 
-        Custom._onChange(DocChange.delete(doc)); // remove subject
-        assert.calledWith(removed, doc);
-        assert.called(handle.stop);
+        const docDelete = DocChange.delete(doc);
+
+        refute.called(stop);
+
+        Custom._onChange(docDelete); // remove subject
+
+        assert.calledWith(observer, docDelete);
+        assert.called(stop);
         refute.called(ctx.updateAllTags);
       });
 
       group("observeId", ()=>{
         class MyModel {
-          constructor(id, child) {
+          constructor(id, name) {
             this._id = id;
-            this.child = child;
+            this.name = name;
           }
 
           static observeId(id, onChange) {
@@ -123,20 +133,21 @@ isClient && define((require, exports, module)=>{
           spy(ctx, 'updateAllTags');
 
           ctx.data = new MyModel("id1", {name: 'name 1'});
-          const removed = stub();
-          ctx.autoUpdate({removed});
+          const observer = stub();
+          ctx.autoUpdate(observer);
 
-          MyModel._onChange(DocChange.delete(ctx.data));
+          const docDelete = DocChange.delete(ctx.data);
+          MyModel._onChange(docDelete);
           assert.called(MyModel._handle.stop);
           refute.called(ctx.updateAllTags);
-          assert.calledWith(removed, ctx.data);
+          assert.calledWith(observer, docDelete);
 
           ctx.data = new MyModel("id2", {name: 'x'});
 
           assert.same(MyModel._id, "id2");
           refute.called(ctx.updateAllTags);
 
-          ctx.data.child.name = 'name 2';
+          ctx.data.name = 'name 2';
           MyModel._onChange(DocChange.change(ctx.data, {}));
           assert.same(foo.textContent, 'name 2id2');
 
@@ -180,6 +191,39 @@ isClient && define((require, exports, module)=>{
           assert.called(MyModel._handle.stop);
         });
       });
+    });
+
+    test("stopAutoUpdate", ()=>{
+      /**
+       * Stop an {{#autoUpdate}}
+       */
+      api.protoMethod();
+      //[
+      const Tpl = compileTemplate(`<div>{{name}}</div>`);
+      Tpl.$extend({
+        $created(ctx) {ctx.autoUpdate()}
+      });
+      class Foo {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      makeSubject(Foo);
+
+      const elm = Tpl.$render(new Foo("name1"));
+      const ctx = Dom.myCtx(elm);
+      ctx.data.name = "name2";
+      assert.same(elm.textContent, "name1");
+
+      Foo.notify(DocChange.change(ctx.data, {name: "name1"}));
+      assert.same(elm.textContent, "name2");
+
+      ctx.stopAutoUpdate();
+
+      ctx.data.name = "name3";
+      Foo.notify(DocChange.change(ctx.data, {name: "name2"}));
+      assert.same(elm.textContent, "name2");
+      //]
     });
 
     test("data", ()=>{
