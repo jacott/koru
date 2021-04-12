@@ -16,12 +16,8 @@ define((require, exports, module)=>{
   const Time = require('./time');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
-      if (uDate.defaultLang !== 'en-US') {
-        const origLang = uDate[isTest].defaultLang;
-        after(()=>{uDate[isTest].defaultLang = origLang});
-        uDate[isTest].defaultLang = 'en-US';
-      }
+    beforeEach(()=>{
+      uDate.defaultLang = 'en-US';
 
       const origTZ = Time.TZ;
       if (origTZ !== "UTC") {
@@ -31,6 +27,7 @@ define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      uDate[isTest].reset();
       TH.domTearDown();
     });
 
@@ -109,7 +106,7 @@ define((require, exports, module)=>{
   <li class="dynTime">{{fromNow time2}}</li>
 </ul>`;
 
-      const Tpl = Dom.newTemplate(TemplateCompiler.toJavascript(html, 'DynTimeTest').toHash());
+      const Tpl = Dom.newTemplate(TemplateCompiler.toJavascript(html, 'DynTimeTest').toJson());
 
       document.body.appendChild(Tpl.$autoRender({
         time1: new Date(now +5*60*1000),

@@ -215,8 +215,11 @@ define((require)=>{
     },
 
     get defaultLang() {return defaultLang},
-    set defaultLang(v) {
-      defaultLang = v || origLang;
+    set defaultLang(v=origLang) {
+      if (defaultLang !== v) {
+        defaultLang = v;
+        relTimeFormat = relTimeLang = void 0;
+      }
     },
 
     compileFormat: (format, lang=defaultLang)=> typeof format === 'string'

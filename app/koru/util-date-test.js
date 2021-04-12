@@ -327,7 +327,7 @@ define((require, exports, module)=>{
       assert.same(uDate.relative(20000, 10000, 'fr'), '20 in fr');
       assert.same(uDate.relative(10000, 10000, 'fr'), '10 in fr');
       assert.same(uDate.relative(5000, 10000), '5 in '+uDate.defaultLang);
-      assert.same(uDate.relative(20000, 10000, uDate.defaultLang), '20 in en-US');
+      assert.same(uDate.relative(20000, 10000, uDate.defaultLang), '20 in '+uDate.defaultLang);
       assert.calledTwice(Intl.RelativeTimeFormat);
     });
   });
