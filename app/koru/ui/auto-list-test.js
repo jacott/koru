@@ -27,7 +27,7 @@ isClient && define((require, exports, module)=>{
     const createBooks = (...args)=> args.map(i => createBook(i));
 
     const Row = Dom.newTemplate(TemplateCompiler.toJavascript(
-      `<div>{{title}}</div>`, 'Book').toHash());
+      `<div>{{title}}</div>`, 'Book').toJson());
 
     before(()=>{
       Book.define({

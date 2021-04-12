@@ -40,7 +40,7 @@ isClient && define((require, exports, module)=>{
     });
 
     const compileTemplate = (text) => Dom.newTemplate(
-      module, JSON.parse(TemplateCompiler.toJavascript(text, "foo.html")));
+      module, TemplateCompiler.toJavascript(text, "foo.html").toJson());
 
     group("autoUpdate", ()=>{
       /**
@@ -51,21 +51,16 @@ isClient && define((require, exports, module)=>{
        * method in its class otherwise no observation will occur. `observeId` is used in
        * preference to `onChange`. {#koru/model/base-model} is such a class.
        *
-       * The `observeId` or `onChange` handler will be stopped when the `ctx` is removed.
+       * The `observeId` or `onChange` handler will be stopped when the `ctx` is destroyed.
        *
        * @param {function} [observe] a optional function that will be called for each update of the subject.
        **/
 
       before(()=>{
         api.protoMethod();
-
-        Dom.newTemplate({
-          name: "Foo",
-          nodes:[{
-            name:"section",
-            children:[['', "name"], ['', "_id"]],
-          }],
-        });
+        //[
+        compileTemplate(`<div>{{name}}{{_id}}</div>`);
+        //]
       });
 
       test("options", ()=>{
@@ -124,7 +119,7 @@ isClient && define((require, exports, module)=>{
         }
 
         afterEach(()=>{
-          MyModel._id = MyModel._onChange = MyModel._handle = undefined;
+          MyModel._id = MyModel._onChange = MyModel._handle = void 0;
         });
 
         test("remove", ()=>{
@@ -195,14 +190,10 @@ isClient && define((require, exports, module)=>{
 
     test("stopAutoUpdate", ()=>{
       /**
-       * Stop an {{#autoUpdate}}
+       * Stop an {##autoUpdate}. Note that the autoUpdate will automatically stop when the `ctx` is destroyed.
        */
       api.protoMethod();
-      //[
-      const Tpl = compileTemplate(`<div>{{name}}</div>`);
-      Tpl.$extend({
-        $created(ctx) {ctx.autoUpdate()}
-      });
+
       class Foo {
         constructor(name) {
           this.name = name;
@@ -210,19 +201,18 @@ isClient && define((require, exports, module)=>{
       }
       makeSubject(Foo);
 
+      //[
+      const Tpl = compileTemplate(`<div>{{name}}</div>`);
+
       const elm = Tpl.$render(new Foo("name1"));
       const ctx = Dom.myCtx(elm);
-      ctx.data.name = "name2";
-      assert.same(elm.textContent, "name1");
 
-      Foo.notify(DocChange.change(ctx.data, {name: "name1"}));
-      assert.same(elm.textContent, "name2");
-
+      ctx.autoUpdate();
       ctx.stopAutoUpdate();
 
-      ctx.data.name = "name3";
-      Foo.notify(DocChange.change(ctx.data, {name: "name2"}));
-      assert.same(elm.textContent, "name2");
+      ctx.data.name = "name2";
+      Foo.notify(DocChange.change(ctx.data, {name: "name1"}));
+      assert.same(elm.textContent, "name1");
       //]
     });
 
@@ -295,8 +285,8 @@ isClient && define((require, exports, module)=>{
        * Hello world
        **/
       test("no currentCtx data", ()=>{
-        Ctx._currentCtx = undefined;
-        assert.equals(Ctx.current.data(null), undefined);
+        Ctx._currentCtx = void 0;
+        assert.equals(Ctx.current.data(null), void 0);
       });
 
       test("data", ()=>{
@@ -340,7 +330,7 @@ isClient && define((require, exports, module)=>{
 
         assert.same(v.testHelper, 12);
         assert.same(v.dataValue, null);
-        v.dataValue = undefined;
+        v.dataValue = void 0;
 
 
         assert.same(v.data, data);

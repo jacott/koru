@@ -69,13 +69,13 @@ define((require)=>{
     }
   };
 
-  const nodeToHash = (node)=>{
+  const nodeToJson = (node)=>{
     if (typeof node === 'string' || node.shift)
       return node;
 
     const result =  {name: node.name, attrs: node.attrs, ns: node.ns};
     if (node.children.length)
-      result.children = node.children.map(node => nodeToHash(node));
+      result.children = node.children.map(node => nodeToJson(node));
 
     return result;
   };
@@ -242,16 +242,16 @@ define((require)=>{
     }
 
     toString() {
-      return JSON.stringify(this.toHash());
+      return JSON.stringify(this.toJson());
     }
 
-    toHash() {
+    toJson() {
       const content = Object.assign({}, this.attrs);
       if (this.nested.length)
-        content.nested = this.nested.map(row => row.toHash());
+        content.nested = this.nested.map(row => row.toJson());
 
       if (this.nodes.children.length)
-        content.nodes = this.nodes.children.map(node => nodeToHash(node));
+        content.nodes = this.nodes.children.map(node => nodeToJson(node));
 
       return content;
     }

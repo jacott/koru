@@ -87,7 +87,7 @@ define((require)=>{
           value = _helpers[func];
         } else {
           value = data[func];
-          if (value === undefined) value = null;
+          if (value === void 0) value = null;
         }
       }
       if (parts !== null) {
@@ -96,7 +96,7 @@ define((require)=>{
           value = value[parts[i]];
         }
       }
-      if (value !== undefined) {
+      if (value !== void 0) {
         if (typeof value === 'function')
           return value.apply(data, evalArgs(data, args));
         return value;
@@ -119,7 +119,7 @@ define((require)=>{
 
     let value = getValue(data, node[1], node[2]);
 
-    if (value === undefined || value === currentElement)
+    if (value === void 0 || value === currentElement)
       return;
 
     if (value === null)  {
@@ -129,7 +129,7 @@ define((require)=>{
         value = document.createComment('empty');
 
     } else if (typeof value === 'object' && value.nodeType === DOCUMENT_FRAGMENT_NODE) {
-      if (currentElement[endMarker$] !== undefined) {
+      if (currentElement[endMarker$] !== void 0) {
         Dom.removeInserts(currentElement);
       } else {
         if (currentElement.nodeType !== COMMENT_NODE) {
@@ -168,18 +168,18 @@ define((require)=>{
     if (len === 0) return args;
 
     let output = [];
-    let hash = undefined;
+    let hash = void 0;
 
     for(let i = 0; i < len; ++i) {
       const arg = args[i];
       if (arg != null && typeof arg === 'object' && arg[0] === '=') {
-        if (hash === undefined) hash = {};
+        if (hash === void 0) hash = {};
         hash[arg[1]] = getValue(data, arg[2], []);
       } else {
         output.push(getValue(data, arg, []));
       }
     }
-    if (hash !== undefined) for(const key in hash) {
+    if (hash !== void 0) for(const key in hash) {
       output.push(hash);
       break;
     }
@@ -210,7 +210,7 @@ define((require)=>{
       return currentElement[ctx$].updateAllTags(args);
     }
 
-    if (func.$autoRender !== undefined)
+    if (func.$autoRender !== void 0)
       return func.$autoRender(args);
     else
       return func.call(this, args);
@@ -260,9 +260,9 @@ define((require)=>{
     _destroyData(elm) {
       if (this[autoUpdate$] !== void 0) stopAutoUpdate(this);
 
-      if (this[onDestroy$] !== undefined) {
+      if (this[onDestroy$] !== void 0) {
         const list = this[onDestroy$];
-        this[onDestroy$] = undefined;
+        this[onDestroy$] = void 0;
         for(let i = list.length - 1; i >=0; --i) {
           const row = list[i];
           if (typeof row === 'function')
@@ -271,22 +271,22 @@ define((require)=>{
             row.stop(this, elm);
         }
       }
-      this.destroyed !== undefined && this.destroyed(this, elm);
+      this.destroyed !== void 0 && this.destroyed(this, elm);
       const tpl = this.template;
-      tpl != null && tpl.$destroyed !== undefined && tpl.$destroyed.call(tpl, this, elm);
+      tpl != null && tpl.$destroyed !== void 0 && tpl.$destroyed.call(tpl, this, elm);
     }
 
     onDestroy(obj) {
       if (obj == null) return;
       const list = this[onDestroy$];
-      (list === undefined ? (this[onDestroy$] = []) : list).push(obj);
+      (list === void 0 ? (this[onDestroy$] = []) : list).push(obj);
       return this;
     }
 
     element() {return this.firstElement}
 
     updateAllTags(data) {
-      if (data === undefined)
+      if (data === void 0)
         data = this[data$];
       else if (data !== this[data$]) {
         this[data$] = data;
