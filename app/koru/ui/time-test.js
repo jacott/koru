@@ -96,7 +96,8 @@ define((require, exports, module)=>{
       after(Time.stopDynTime);
 
       //[
-      stub(koru, 'setTimeout').returns(123);
+      const stopTimeout = stub();
+      stub(koru, 'afTimeout').returns(stopTimeout);
       let now = +Date.UTC(2019, 10, 3, 14, 35, 12); intercept(util, 'dateNow', ()=>now);
       Time.startDynTime();
 
@@ -120,12 +121,12 @@ define((require, exports, module)=>{
       assert.equals(li2.textContent, "2 minutes ago");
 
       now += 60*1000;
-      koru.setTimeout.yieldAndReset();
+      koru.afTimeout.yieldAndReset();
       assert.equals(li1.textContent, "Nov 3, 2019 2:40 PM; in 4 minutes");
       assert.equals(li2.textContent, "3 minutes ago");
 
       now += 10*60*1000;
-      koru.setTimeout.yieldAndReset();
+      koru.afTimeout.yieldAndReset();
       assert.equals(li1.textContent, "Nov 3, 2019 2:40 PM; 6 minutes ago");
       assert.equals(li2.textContent, "13 minutes ago");
       //]
@@ -139,11 +140,13 @@ define((require, exports, module)=>{
       after(Time.stopDynTime);
 
       //[
-      stub(koru, 'setTimeout').returns(123); stub(koru, 'clearTimeout');
+      const stopTimeout = stub();
+      stub(koru, 'afTimeout').returns(stopTimeout);
       Time.startDynTime();
-      assert.called(koru.setTimeout);
+      assert.called(koru.afTimeout);
+      refute.called(stopTimeout);
       Time.stopDynTime();
-      assert.calledWith(koru.clearTimeout, 123);
+      assert.calledOnce(stopTimeout);
       //]
     });
   });

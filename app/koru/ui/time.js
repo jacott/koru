@@ -29,7 +29,7 @@ define((require, exports, module)=>{
       return result;
   };
 
-  let dynTimes = null, dynTimerId = 0;
+  let dynTimes = null, stopDynTimer = null;
 
   const dynTimer = ()=>{
     for(let i = 0; i < dynTimes.length; ++i) {
@@ -37,7 +37,7 @@ define((require, exports, module)=>{
       Dom.ctx(time).updateElement(time);
     }
 
-    dynTimerId = koru.setTimeout(dynTimer, 60000);
+    stopDynTimer = koru.afTimeout(dynTimer, 60000);
   };
 
   const Time = {
@@ -50,8 +50,8 @@ define((require, exports, module)=>{
     stopDynTime: ()=>{
       if (dynTimes === null)
         return;
-      dynTimes = null;
-      koru.clearTimeout(dynTimerId);
+      stopDynTimer();
+      dynTimes = stopDynTimer = null;
     },
 
     get TZ() {
