@@ -7,19 +7,19 @@ define((require, exports, module)=>{
     class: 'icon',
   }, Dom.SVGNS);
 
-  const use = (icon)=>{
+  const use = (icon) => Dom.svgUse('#icon-'+icon);
+
+  const createIcon = (icon)=>{
     const svg = SvgElm.cloneNode(false);
     svg.setAttribute('name', icon);
-    const useElm = document.createElementNS(Dom.SVGNS, 'use');
-    useElm.setAttributeNS(Dom.XLINKNS, 'href', '#icon-'+icon);
-    svg.appendChild(useElm);
+    svg.appendChild(use(icon));
     return svg;
   };
 
   Dom.registerHelpers({
     svgIcon: (name, attributes)=>{
       if (! Dom.current.isElement()) {
-        const icon = use(name);
+        const icon = createIcon(name);
         for (const name in attributes) {
           icon.setAttribute(name, attributes[name]);
         }
@@ -31,6 +31,8 @@ define((require, exports, module)=>{
 
   return {
     use,
+
+    createIcon,
 
     add: (id, symbol) =>{
       if (! (symbol instanceof globalThis.SVGElement))
@@ -46,8 +48,7 @@ define((require, exports, module)=>{
       if (fc !== null && fc.tagName === 'SVG')
         return;
 
-      const svg = use(icon);
-      elm.parentNode.insertBefore(svg, elm);
+      elm.parentNode.insertBefore(createIcon(icon), elm);
     }
   };
 });

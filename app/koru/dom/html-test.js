@@ -43,7 +43,7 @@ define((require, exports, module)=>{
        * @alias h
        **/
       api.method();
-
+      //[
       const body = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
              {li: {width: 500, svg: [], viewBox: "0 0 100 100"}}],
@@ -60,13 +60,15 @@ define((require, exports, module)=>{
 
       const br = Html.h({br: ''});
       assert.isNull(br.firstChild);
+      //]
     });
 
     test("htmlToJson", ()=>{
       /**
        * Convert an `Element` to a plain `object`
        **/
-
+      api.method();
+      //[
       const obj = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {li: 'two'}],
       }, 'data-lang': 'en'};
@@ -87,6 +89,20 @@ define((require, exports, module)=>{
       assertConvert({input: [], name: 'email'});
       assertConvert({input: ''});
       assertConvert({div: ['']});
+      //]
+    });
+
+    test("svgUse", ()=>{
+      /**
+       * create an svg use link to a ref
+       */
+      api.method();
+      //[
+      const use = Html.svgUse('#icon-hamburger-menu');
+
+      assert.same(use.namespaceURI, Html.SVGNS);
+      assert.same(use.getAttributeNS(Html.XLINKNS, 'href'), '#icon-hamburger-menu');
+      //]
     });
   });
 });

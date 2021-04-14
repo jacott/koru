@@ -23,6 +23,19 @@ define((require, exports, module)=>{
 
     test("use", ()=>{
       /**
+       * create a svg use element for an icon
+       */
+      api.method();
+      //[
+      const use = SVGIcons.use('hamburger-menu');
+
+      assert.same(use.namespaceURI, Dom.SVGNS);
+      assert.same(use.getAttributeNS(Dom.XLINKNS, 'href'), '#icon-hamburger-menu');
+      //]
+    });
+
+    test("createIcon", ()=>{
+      /**
        * Create an svg element that uses a icon definition.
        *
        * Note: all icons should be drawn for use with a viewBox of "0 0 24 24"
@@ -42,7 +55,7 @@ define((require, exports, module)=>{
           }
         }}
       }));
-      const svg = SVGIcons.use('hamburger-menu');
+      const svg = SVGIcons.createIcon('hamburger-menu');
       assert(svg.classList.contains("icon"));
 
       assert.same(svg.namespaceURI, Dom.SVGNS);

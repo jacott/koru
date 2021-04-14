@@ -414,6 +414,7 @@ define((require, exports, module)=>{
       else
         return this[attributes$][name];
     }
+    getAttributeNS(ns, name) {return this.getAttribute(name)}
 
     get attributes() {
       const ans = [];

@@ -166,6 +166,12 @@ define(()=>{
     }
   };
 
+  const svgUse = (href) => {
+    const useElm = document.createElementNS(SVGNS, 'use');
+    useElm.setAttributeNS(XLINKNS, 'href', href);
+    return useElm;
+  };
+
   return {
     SVGNS, XHTMLNS, XLINKNS,
     CANONICAL_TAG_NAMES,
@@ -186,5 +192,6 @@ define(()=>{
     h: html,
     html,
     htmlToJson,
+    svgUse,
   };
 });
