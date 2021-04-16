@@ -308,7 +308,7 @@ define(require =>{
 
     *[Symbol.iterator]() {
       let node = this.firstNode;
-      while(node != null) {
+      while (node != null) {
         const {value} = node;
         node = nextNode(node);
         yield value;
@@ -317,7 +317,7 @@ define(require =>{
 
     forEach(visitor) {
       let node = this.firstNode;
-      while(node != null) {
+      while (node != null) {
         const {value} = node;
         node = nextNode(node);
         visitor(value);
