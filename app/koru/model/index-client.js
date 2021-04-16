@@ -5,6 +5,8 @@ define((require)=>{
   const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
+  const voidHigh$ = Symbol("voidHigh$");
+
   const {createDictionary} = util;
 
   const {compare, hasOwn} = util;
@@ -82,11 +84,11 @@ define((require)=>{
             for(let i = 0; i < cLen; ++i) {
               const f = compKeys[i];
               const af = a[f], bf = b[f];
-              if ((af === void 0 || bf === void 0) ? af != bf
-                  : af.valueOf() !== bf.valueOf()) {
-                const dir = compMethod[i];
-                if (af === void 0) return -1;
-                if (bf === void 0) return 1;
+              if (af === bf) continue;
+              const dir = compMethod[i];
+              if (af === voidHigh$ || bf === void 0) return 1;
+              if (bf === voidHigh$ || af === void 0) return -1;
+              if (af.valueOf() !== bf.valueOf()) {
                 if (dir < -1 || dir > 1)
                   return compare(af, bf) < 0 ? -dir : dir;
                 return af < bf ? -dir : dir;
@@ -101,12 +103,13 @@ define((require)=>{
       const btCompare = comp;
       const newBTree = ()=> new BTree(btCompare, true);
       const compKeysLen = compKeys.length;
-      const BTValue = doc => {
+      const BTValue = (doc, voidHigh=false) => {
         const ans = {};
         for(let i = 0; i < compKeysLen; ++i) {
           const key = compKeys[i];
           const value = doc[key];
           if (value !== void 0) ans[key] = value;
+          else if (voidHigh) ans[key] = voidHigh$;
         }
         for (const _ in ans) return ans;
       };
@@ -222,9 +225,10 @@ define((require)=>{
 
           if (ret !== void 0 && btCompare !== null) {
             const {
-              from=BTValue(keys), to, direction=1,
+              from=keys, to, direction=1,
               excludeFrom=false, excludeTo=false} = options === void 0 ? {} : options;
-            return ret.values({from, to, direction, excludeFrom, excludeTo});
+
+            return ret.values({from: BTValue(from, ! excludeFrom && direction == -1), to, direction, excludeFrom, excludeTo});
           }
 
           return ret;
