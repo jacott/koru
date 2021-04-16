@@ -40,7 +40,7 @@ define((require, exports, module)=>{
             Val.ensureString(shelf);
             // Send relavent documents to client
             Book.where({shelf})
-              .forEach(doc => conn.added(doc));
+              .forEach(doc => conn.added('Book', doc.attributes));
 
             // Listen for relavent document changes
             this.listeners = [
@@ -78,6 +78,11 @@ define((require, exports, module)=>{
 
         assert.same(LibraryPub.pubName, 'Library');
         assert.calledWith(query.forEach, m.func);
+
+        assert.calledOnce(Book.create);
+
+        query.forEach.yieldAll({attributes: {shelf: 'mathematics', name: "Euclid's Elements"}});
+        assert.calledOnceWith(conn.added, 'Book', {shelf: 'mathematics', name: "Euclid's Elements"});
 
         //[
         // Step 8 close recieved from client

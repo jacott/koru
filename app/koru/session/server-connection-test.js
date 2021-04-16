@@ -24,9 +24,10 @@ isServer && define((require, exports, module)=>{
   const ServerConnection = require('./server-connection');
 
   let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    let conn;
     beforeEach(()=>{
-      v.conn = new ServerConnection(session, v.ws = {
+      conn = v.conn = new ServerConnection(session, v.ws = {
         send: stub(), close: stub(), on: stub(),
       }, {}, 123, v.sessClose = stub());
       stub(v.conn, 'sendBinary');
@@ -150,15 +151,15 @@ isServer && define((require, exports, module)=>{
        **/
       api.protoMethod();
       //[
-      v.conn.sendEncoded("myMessage");
-      assert.calledWith(v.conn.ws.send, 'myMessage', {binary: true});
+      conn.sendEncoded("myMessage");
+      assert.calledWith(conn.ws.send, 'myMessage', {binary: true});
       //]
       const error = new Error("an error");
-      v.conn.ws.send.throws(error);
+      conn.ws.send.throws(error);
 
       stub(koru, 'info');
-      v.conn.sendEncoded("got error");
-      assert.same(v.conn.ws, null);
+      conn.sendEncoded("got error");
+      assert.same(conn.ws, null);
       assert.calledWith(koru.info, 'Websocket exception for connection: 123', error);
     });
 
@@ -172,14 +173,14 @@ isServer && define((require, exports, module)=>{
        **/
       api.protoMethod();
       //[
-      v.conn.send('X', 'FOO');
+      conn.send('X', 'FOO');
       assert.calledWith(v.ws.send, 'XFOO');
       //]
 
       stub(koru, 'info');
       refute.exception(()=>{
-        v.conn.ws.send = stub().throws(v.error = new Error('foo'));
-        v.conn.send('X', 'FOO');
+        conn.ws.send = stub().throws(v.error = new Error('foo'));
+        conn.send('X', 'FOO');
       });
 
       assert.called(v.sessClose);
@@ -187,9 +188,9 @@ isServer && define((require, exports, module)=>{
 
       v.sessClose.reset();
       koru.info.reset();
-      v.conn.ws = null;
+      conn.ws = null;
       refute.exception(()=>{
-        v.conn.send('X', 'FOO');
+        conn.send('X', 'FOO');
       });
 
       refute.called(v.sessClose);
@@ -300,9 +301,9 @@ isServer && define((require, exports, module)=>{
     });
 
     test("when closed sendBinary", ()=>{
-      v.conn.ws = null;
-      v.conn.sendBinary.restore();
-      refute.exception(() => v.conn.sendBinary('M', [1,2,3]));
+      conn.ws = null;
+      conn.sendBinary.restore();
+      refute.exception(() => conn.sendBinary('M', [1,2,3]));
     });
 
     test("set userId and DEFAULT_USER_ID", ()=>{
@@ -399,55 +400,81 @@ isServer && define((require, exports, module)=>{
     });
 
     test("added", ()=>{
-      v.conn.added('Foo', v.attrs = {name: 'bar', age: 5});
+      /**
+       * Send a document added message to client with an optional attribute remove filter
+       */
+      api.protoMethod();
+      //[
+      const book = {_id: 'id123', title: '1984', published: 1948};
+      conn.added('Book', book);
 
-      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', v.attrs]);
+      assert.calledWith(conn.sendBinary, 'A', ['Book', book]);
 
-      v.conn.added('Foo', v.attrs = {name: 'fbar', age: 5}, {age: 1});
+      conn.added('Book', book, {published: true});
 
-      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', {name: 'fbar'}]);
+      assert.calledWith(conn.sendBinary, 'A', ['Book', {_id: 'id123', title: '1984'}]);
+      //]
     });
 
     test("changed", ()=>{
-      v.conn.changed('Foo', '123', v.attrs = {name: 'bar'});
+      /**
+       * Send a document changed message to client with an optional attribute remove filter.
+       */
+      api.protoMethod();
+      //[
+      conn.changed('Book', 'id123', {title: '1984'});
 
-      assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', v.attrs]);
+      assert.calledWith(conn.sendBinary, 'C', ['Book', 'id123', {title: '1984'}]);
 
-      v.conn.changed('Foo', '123', v.attrs = {name: 'fbar', age: 2}, {name: 1});
+      conn.changed('Book', 'id123', {title: '1984', published: 1948}, {published: true});
 
-      assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', {age: 2}]);
+      assert.calledWith(conn.sendBinary, 'C', ['Book', 'id123', {title: '1984'}]);
+      //]
     });
 
-    test("removed", ()=>{
-      v.conn.removed('Foo', '123');
+    group("removed", ()=>{
+      /**
+       * Send a document removed message to client
+       */
+      beforeEach(()=>{
+        api.protoMethod();
+      });
 
-      assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123', void 0]);
-    });
+      test("removed noarg", ()=>{
+        //[
+        conn.removed('Book', 'id123');
 
-    test("removed stopped", ()=>{
-      v.conn.removed('Foo', '123', 'stopped');
+        assert.calledWith(conn.sendBinary, 'R', ['Book', 'id123', void 0]);
+        //]
+      });
 
-      assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123', 'stopped']);
+      test("removed stopped", ()=>{
+        //[
+        conn.removed('Book', 'id123', 'stopped');
+
+        assert.calledWith(conn.sendBinary, 'R', ['Book', 'id123', 'stopped']);
+        //]
+      });
     });
 
     test("closed", ()=>{
-      v.conn.onClose(v.close1 = stub());
-      v.conn.onClose(v.close2 = stub());
-      v.conn._subs.t1 = {stop: v.t1 = stub()};
-      v.conn._subs.t2 = {stop: v.t2 = stub()};
+      conn.onClose(v.close1 = stub());
+      conn.onClose(v.close2 = stub());
+      conn._subs.t1 = {stop: v.t1 = stub()};
+      conn._subs.t2 = {stop: v.t2 = stub()};
 
-      v.conn.close();
+      conn.close();
 
-      assert.calledWith(v.close1, v.conn);
-      assert.calledWith(v.close2, v.conn);
+      assert.calledWith(v.close1, conn);
+      assert.calledWith(v.close2, conn);
 
       assert.called(v.t1);
       assert.called(v.t2);
 
-      assert.isNull(v.conn._subs);
-      assert.isNull(v.conn.ws);
+      assert.isNull(conn._subs);
+      assert.isNull(conn.ws);
 
-      v.conn.close();
+      conn.close();
 
       assert.calledOnce(v.t1);
     });
