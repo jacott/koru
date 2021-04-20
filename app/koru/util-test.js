@@ -175,7 +175,9 @@ define((require, exports, module)=>{
        * @returns a string comprised of the percent form of `fraction`, with the percent symbol, %
        **/
       api.method('pc');
+      //[
       assert.same(util.pc(1.2345678), '123.45678%');
+      //]
     });
 
     test("sansPx", ()=>{
@@ -186,9 +188,11 @@ define((require, exports, module)=>{
        * @returns `value` converted to a number; the suffix 'px' has been removed
        **/
       api.method('sansPx');
+      //[
       assert.same(util.sansPx('123.23px'), 123.23);
       assert.same(util.sansPx(), 0);
       assert.same(util.sansPx(234), 234);
+      //]
     });
 
     test("sansPc", ()=>{
@@ -199,9 +203,11 @@ define((require, exports, module)=>{
        * @returns `value` converted to a number; the suffix '%' has been removed
        **/
       api.method('sansPc');
+      //[
       assert.same(util.sansPc('123.23%'), 123.23);
       assert.same(util.sansPc(), 0);
       assert.same(util.sansPc(234), 234);
+      //]
     });
 
     test("diffString", ()=>{
@@ -251,9 +257,11 @@ define((require, exports, module)=>{
        * in the longer of `oldstr` and `newstr`, that doesn't match the other string
        **/
       api.method('diffStringLength');
+      //[
       assert.equals(util.diffStringLength("h💣elo wor💣ld", "h💣el💣 world"), 7);
       assert.equals(util.diffStringLength("h💣el💣 world", "h💣elo wor💣ld"), 7);
       assert.equals(util.diffStringLength("hello world", "hello world"), 0);
+      //]
     });
 
     test("indexOfRegex", ()=>{
@@ -286,9 +294,11 @@ define((require, exports, module)=>{
        * @returns `true` if `obj` is empty, otherwise `false`
        **/
       api.method('isObjEmpty');
+      //[
       assert.isTrue(util.isObjEmpty());
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));
+      //]
     });
 
     test("hasOnly", ()=>{
@@ -300,11 +310,13 @@ define((require, exports, module)=>{
        * @returns `true` if `obj` has only keys also in `keyMap`, otherwise `false`
        **/
       api.method('hasOnly');
+      //[
       assert.isFalse(util.hasOnly({a: 1}, {b: true}));
       assert.isFalse(util.hasOnly({a: 1, b: 1}, {b: true}));
       assert.isTrue(util.hasOnly({b: 1}, {b: true}));
       assert.isTrue(util.hasOnly({}, {b: true}));
       assert.isTrue(util.hasOnly({b: 1, c: 2}, {b: true, c: false}));
+      //]
     });
 
     test("keyStartsWith", ()=>{
@@ -316,11 +328,12 @@ define((require, exports, module)=>{
        * @returns `true` if a key is found that starts with `str`, otherwise `false`
        **/
       api.method('keyStartsWith');
-
+      //[
       assert.isFalse(util.keyStartsWith(null, 'foo'));
       assert.isFalse(util.keyStartsWith({foz: 1, fizz: 2}, 'foo'));
       assert.isTrue(util.keyStartsWith({faz: true, fooz: undefined, fizz: 2}, 'foo'));
       assert.isTrue(util.keyStartsWith({foo: 1, fizz: 2}, 'foo'));
+      //]
     });
 
     test("firstParam", ()=>{
@@ -399,6 +412,7 @@ define((require, exports, module)=>{
        * @returns the index of `item` if `item` is in `list`, otherwise -1
        **/
       api.method('itemIndex');
+      //[
       const list = ['a', 'b', {one: 'c', two: 'd'}];
 
       assert.same(util.itemIndex(list, 'b'), 1);
@@ -406,6 +420,7 @@ define((require, exports, module)=>{
       assert.same(util.itemIndex(list, {one: 'c', two: 'd'}), 2);
       assert.same(util.itemIndex(list, {two: 'd'}), 2);
       assert.same(util.itemIndex(list, {one: 'e', two: 'd'}), -1);
+      //]
     });
 
     test("removeItem", ()=>{
@@ -420,7 +435,6 @@ define((require, exports, module)=>{
        * @returns {any-type} the removed item, or `undefined` if `list` does not contain `item`
        **/
       api.method('removeItem');
-
       //[
       const foo = [1,2,3];
       assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
@@ -453,7 +467,9 @@ define((require, exports, module)=>{
        * @returns a list made up of the values of the enumerable properties of `map`
        **/
       api.method('values');
+      //[
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
+      //]
     });
 
     test("intersectp", ()=>{
@@ -465,8 +481,10 @@ define((require, exports, module)=>{
        * @returns `true` if `list1` and `list2` have any element in common, otherwise `false`
        **/
       api.method('intersectp');
+      //[
       assert(util.intersectp([1,4],[4,5]));
       refute(util.intersectp([1,2],['a']));
+      //]
     });
 
     test("union", ()=>{
@@ -481,11 +499,13 @@ define((require, exports, module)=>{
        * unique elements in `rest` that are not also in `first`
        **/
       api.method('union');
+      //[
       assert.equals(util.union([1,2,2,3], [3, 4, 4, 5], [3, 6]), [1, 2, 2, 3, 4, 5, 6]);
       assert.equals(util.union([1,2]), [1, 2]);
       assert.equals(util.union([1,2], null), [1, 2]);
       assert.equals(util.union(null, [1,2]), [1, 2]);
       assert.equals(util.union(null, null), []);
+      //]
     });
 
     test("diff", ()=>{
@@ -497,10 +517,13 @@ define((require, exports, module)=>{
        * @returns a list of all the elements of `list1` that are not also elements of `list2`
        **/
       api.method('diff');
+      //[
       assert.equals(util.diff(), []);
+
       assert.equals(util.diff([1, 2]), [1, 2]);
 
       assert.equals(util.diff([1,"2",3, null], ["2",4]), [1, 3, null]);
+      //]
     });
 
     test("symDiff", ()=>{
@@ -637,6 +660,7 @@ define((require, exports, module)=>{
        * @returns an object made up of the properties in `obj` whose keys are named in `keys`
        **/
       api.method('extractKeys');
+      //[
       assert.equals(
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, ['a', 'c', 'e']),
         {a: 4, c: {value: true}}
@@ -645,6 +669,7 @@ define((require, exports, module)=>{
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, c: false, e: null}),
         {a: 4, c: {value: true}}
       );
+      //]
     });
 
     test("extractNotKeys", ()=>{
@@ -658,10 +683,12 @@ define((require, exports, module)=>{
        * @returns an object made up of the properties in `obj` whose keys are not named in `keys`
        **/
       api.method('extractNotKeys');
+      //[
       assert.equals(
         util.extractNotKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true}),
         {b: "abc", c: {value: true}}
       );
+      //]
     });
 
     test("splitKeys", ()=>{
@@ -824,7 +851,6 @@ define((require, exports, module)=>{
        * and the index of that current element
        **/
       api.method('forEach');
-
       //[
       const results = [];
       util.forEach([1,2,3], (val, index) => {results.push(val+"."+index)});
@@ -884,8 +910,10 @@ define((require, exports, module)=>{
        * @returns with its properties named the `list` elements and values of true.
        **/
       api.method();
+      //[
       assert.equals(util.arrayToMap(), {});
       assert.equals(util.arrayToMap(['a', 'b', 'd']), {a: true, b: true, d: true});
+      //]
     });
 
     test("toMap", ()=>{
@@ -893,6 +921,7 @@ define((require, exports, module)=>{
        * convert to a `object`;
        **/
       api.method();
+      //[
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
@@ -910,6 +939,7 @@ define((require, exports, module)=>{
                     {1: "a", bar: "foo"});
       assert.equals(util.toMap('foo', (c, i) => c.foo+i, [{foo: 'a'}, {foo: 'b'}]),
                     {a: "a0", b: "b1"});
+      //]
     });
 
     test("mapLinkedList", ()=>{
@@ -941,6 +971,7 @@ define((require, exports, module)=>{
        * `compare` result.
        **/
       api.method();
+      //[
       assert.same(util.binarySearch([], row => assert(false)), -1);
 
       const list = [1,3,6,8,10,13,15];
@@ -956,6 +987,7 @@ define((require, exports, module)=>{
 
       assert.same(util.binarySearch(list, row => row - 8, -1), 3);
       assert.same(util.binarySearch(list, row => row - 8, 7), 3);
+      //]
     });
 
     test("flatten", ()=>{
@@ -992,11 +1024,12 @@ define((require, exports, module)=>{
        * @return a new object with no prototype
        **/
       api.method('createDictionary');
-
+      //[
       const dict = util.createDictionary();
       assert.same(Object.getPrototypeOf(dict), null);
       assert(util.isObjEmpty(dict));
       assert(dict && typeof dict === 'object');
+      //]
     });
 
     test("shallowCopy", ()=>{
@@ -1520,7 +1553,6 @@ define((require, exports, module)=>{
        * otherwise a new one will be created.
        **/
       api.method('withId');
-
       //[
       const jane = {name: 'Jane', likes: ['Books']};
       const myKey$ = Symbol();
