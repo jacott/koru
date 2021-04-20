@@ -316,6 +316,13 @@ define((require, exports, module)=>{
       return this;
     },
 
+    matchData: (attrs)=> ({data: m(o => {
+      for (const name in attrs) {
+        if (! Core.deepEqual(o[name], attrs[name])) return false;
+      }
+      return true;
+    }, () => util.inspect(attrs))}),
+
     getSimpleBoundingRect: object =>{
       const rect = Dom.getBoundingClientRect(object);
       return rect && {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
