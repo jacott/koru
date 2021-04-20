@@ -238,8 +238,11 @@ define((require)=>{
       if (delta !== undefined) this.delta = delta;
       switch(typeof expected) {
       case 'string':
+        if (typeof actual !== 'string') {
+          actual = ''+actual;
+        }
         const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
-        const actParts = actual === null ? [] : actual.split(/([\d.]+(?:e[+-]\d+)?)/);
+        const actParts = actual?.split(/([\d.]+(?:e[+-]\d+)?)/) ?? [];
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {
