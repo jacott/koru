@@ -2,6 +2,7 @@ define((require)=>{
   'use strict';
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
+  const Observable      = require('koru/observable');
   const TH              = require('koru/test-helper');
   const util            = require('../util');
   const Model           = require('./main');
@@ -157,12 +158,12 @@ define((require)=>{
       } else
         doc = this.insert();
 
-      this._afterCreate && this._afterCreate.call(this, doc);
+      this._afterCreate && this._afterCreate.notify(doc, this);
       return doc;
     }
 
     afterCreate(func) {
-      this._afterCreate = func;
+      (this._afterCreate ?? (this._afterCreate = new Observable)).add(func);
       return this;
     }
   }
