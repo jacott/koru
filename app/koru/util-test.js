@@ -1199,7 +1199,14 @@ define((require, exports, module)=>{
       assert.same(util.compareByName(null, b), -1);
       assert.same(util.compareByName(b, null), 1);
       assert.same(util.compareByName(undefined, null), 0);
+    });
 
+    test("compareNumber", ()=>{
+      api.method();
+      //[
+      const array = [3,5,2,1];
+      assert.equals(array.sort(util.compareNumber), [1, 2, 3, 5]);
+      //]
     });
 
     test("compareByOrder", ()=>{

@@ -885,6 +885,7 @@ define((require)=>{
     sansPc(value) {return sansSuffix(value, 1)},
 
     compare,
+    compareNumber: (a, b) => a - b,
     compareByName,
     compareByOrder,
 
