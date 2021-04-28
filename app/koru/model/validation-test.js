@@ -214,24 +214,43 @@ define((require, exports, module)=>{
     });
 
     test("assertDocChanges", ()=>{
+      /**
+       * Assert doc changes are allowed.
+
+       * @param {BaseModel} doc
+       * @param fieldSpec
+       * @param newFieldSpec
+       */
+      api.method();
+      //[
       spy(Val, 'assertCheck');
       const existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
       Val.assertDocChanges(existing, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, existing.changes, {name: 'string'});
 
+      Val.assertCheck.reset();
       const newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
       Val.assertDocChanges(newDoc, {name: 'string'});
 
       assert.calledWithExactly(
         Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
 
+      Val.assertCheck.reset();
       Val.assertDocChanges(newDoc, {name: 'string'}, {_id: 'any'});
 
       assert.calledWithExactly(
         Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'any'}});
-    });
 
+      TH.noInfo();
+      Val.assertCheck.reset();
+      assert.accessDenied(() => {
+        Val.assertDocChanges(newDoc, {name: 'string'}, null);
+      });
+
+      refute.called(Val.assertCheck);
+      //]
+    });
 
     test("validateName", ()=>{
       assert.equals(Val.validateName(), ['is_required']);

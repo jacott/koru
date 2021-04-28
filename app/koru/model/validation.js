@@ -137,10 +137,11 @@ define((require)=>{
         throw error;
     },
 
-    assertDocChanges(doc, spec, new_spec) {
-      if (doc.$isNewRecord())
-        this.assertCheck(doc.changes, spec, {altSpec : new_spec || ID_SPEC});
-      else
+    assertDocChanges(doc, spec, new_spec=ID_SPEC) {
+      if (doc.$isNewRecord()) {
+        this.allowAccessIf(new_spec !== null);
+        this.assertCheck(doc.changes, spec, {altSpec: new_spec});
+      } else
         this.assertCheck(doc.changes, spec);
     },
 
