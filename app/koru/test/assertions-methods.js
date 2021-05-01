@@ -17,9 +17,7 @@ define((require)=>{
     return tm[0]*1000 + 1e-6 *tm[1];
   }};
 
-  // assert.dom
   let selectNode = null;
-
 
   const delegate = meth =>{
     ga.add(meth, {
@@ -233,7 +231,7 @@ define((require)=>{
     message: "{i0} to be null or undefined"
   });
 
-  ga.add('near', {
+  const nearOpts = {
     assert(actual, expected, delta) {
       if (delta !== undefined) this.delta = delta;
       switch(typeof expected) {
@@ -251,7 +249,7 @@ define((require)=>{
 
             if (! withinDelta(+a, +e, delta)) {
               this.delta = delta;
-              this.va = a; this.ve = `${e} at ${expParts[i-1]}`;
+              this.va = `${actual} at ${a}`; this.ve = `${e}`;
               return false;
             }
           } else {
@@ -281,6 +279,15 @@ define((require)=>{
     },
 
     message: "{$va} to be near {$ve} by delta {$delta}"
+  };
+
+  ga.add('near', nearOpts);
+
+  ga.add('attrNear', {
+    assert(actual, attr, expected, delta) {
+      return nearOpts.assert.call(this, actual.getAttribute(attr), expected, delta);
+    },
+    message: nearOpts.message,
   });
 
   ga.add('between', {
