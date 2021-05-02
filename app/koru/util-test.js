@@ -712,6 +712,37 @@ define((require, exports, module)=>{
       //]
     });
 
+    test("assignOption", ()=>{
+      /**
+       * Assign an option to an object with optional default.
+
+       * @param object set the option on `object`.
+       * @param options the options to select from.
+       * @param name the name of the option to set.
+       * @param def the default to use if `name` not in `options`. If def is a function it will be
+       * called to get the value.
+
+       * @returns the object.
+       */
+      api.method();
+      //[
+      const options = {a: 123, b: 456, e: void 0};
+
+      assert.equals(util.assignOption(void 0, options, 'a'), {a: 123});
+
+      const obj = {a: 1, c: 777};
+      const ao = util.assignOption.bind(null, obj, options);
+      ao('a');
+      ao('c');
+      ao('d', () => 444);
+      ao('d', () => 555);
+      assert.equals(obj, {a: 123, c: 777, d: 444});
+      obj.e = 222;
+      ao('e');
+      assert.equals(obj, {a: 123, c: 777, d: 444, e: void 0});
+      //]
+    });
+
     test("shallowEqual arrays", ()=>{
       assert.isTrue(util.shallowEqual([1, 2, 3], [1, 2, 3]));
       assert.isFalse(util.shallowEqual([1, {}, 3], [1, {}, 3]));

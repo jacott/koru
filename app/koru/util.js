@@ -295,6 +295,15 @@ define((require)=>{
       return {include, exclude};
     },
 
+    assignOption: (obj={}, options, name, def) => {
+      if (options.hasOwnProperty(name)) {
+        obj[name] = options[name];
+      } else if (! obj.hasOwnProperty(name)) {
+        obj[name] = typeof def === 'function' ? def() : def;
+      }
+      return obj;
+    },
+
     forEach(list, visitor) {
       if (! list) return;
       const len = list.length;
