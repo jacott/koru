@@ -23,8 +23,8 @@ define((require, exports, module)=>{
     "index.js.map": config.indexjsmap && [config.indexjsmap, '/'],
     "require.js": indexjs,
     "index.css": config.indexcss && [config.indexcss, '/'],
-
     koru: m => [m[0], koruParent],
+    ...config.extras,
   };
 
   return WebServerFactory(host, port, root, DEFAULT_PAGE, SPECIALS);

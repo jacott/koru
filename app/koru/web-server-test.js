@@ -17,6 +17,8 @@ isServer && define((require, exports, module)=>{
    * @config indexhtml the file to serve for `/index.html`; defaults to `index.html`
 
    * @config indexcss the file to serve for `/index.css`; defaults to `index.css`
+
+   * @config extras any extra root level file mappings in `{[topPath]: [filename, root], ...}` format
    *
    **/
   const Compilers       = require('koru/compilers');
