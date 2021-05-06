@@ -40,7 +40,8 @@ bundleAll.bundle({hash}, ({ast, css, compiler})=>{
     compact: true,
     sourceMaps: true,
     sourceFileName: "index.js",
-    sourceRoot: "index.js.map",
+    sourceRoot: "/",
+    comments: false,
   });
 
   if (error) {
@@ -50,6 +51,6 @@ bundleAll.bundle({hash}, ({ast, css, compiler})=>{
   version !== void 0 && fs.writeFileSync(Path.join("build", 'version.sh'),
                                          "export KORU_APP_VERSION="+version);
   fs.writeFileSync(Path.join("build", 'index.css'), css);
-  fs.writeFileSync(Path.join("build", 'index.js'), code);
-  fs.writeFileSync(Path.join("build", 'index.js.map'), map);
+  fs.writeFileSync(Path.join("build", 'index.js'), code+"\n//# sourceMappingURL=index.js.map");
+  fs.writeFileSync(Path.join("build", 'index.js.map'), JSON.stringify(map));
 });
