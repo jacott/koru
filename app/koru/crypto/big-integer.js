@@ -45,7 +45,7 @@ define(()=>{
 
     class BigInteger {
       constructor(a,b) {
-        this.value = typeof a === 'BigInt'
+        this.value = a instanceof BigInt
           ? a
           : (a == null ? BZero : fromString(a,b));
       }
@@ -592,20 +592,6 @@ define(()=>{
       isEven() { return ((this.t>0)?(this[0]&1):this.s) == 0; }
 
       isNegative() {return this.s < 0}
-
-      // (protected) this^e, e < 2^32, doing sqr and mul with "r" (HAC 14.79)
-      exp(e,z) {
-        if(e > 0xffffffff || e < 1) return BigInteger.ONE;
-        let r = nbi(), r2 = nbi();
-        const g = z.convert(this), i = nbits(e)-1;
-        copyTo(g, r);
-        while(--i >= 0) {
-          z.sqrTo(r,r2);
-          if((e&(1<<i)) > 0) z.mulTo(r2,g,r);
-          else { const t = r; r = r2; r2 = t; }
-        }
-        return z.revert(r);
-      }
 
       // (public) this^e % m (HAC 14.85)
       modPow(e,m) {
