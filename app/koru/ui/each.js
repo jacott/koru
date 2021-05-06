@@ -13,7 +13,7 @@ define((require, exports, module)=>{
   const {COMMENT_NODE} = document;
 
   const each = (startEach, data, args, options={})=>{
-    const {
+    let {
       template: templateName=typeof args === 'string' ? `Each_${args}` : 'Each_row'
     } = options;
     let each = startEach[each$];
@@ -42,11 +42,12 @@ define((require, exports, module)=>{
       pv.templateName = templateName;
       let template = null;
 
+
       if (typeof templateName === 'object') {
         if ('$autoRender' in templateName)
           template = templateName;
         else
-          templateName = templateName.toString();
+          templateName = ''+templateName;
       }
 
       if (template == null) {

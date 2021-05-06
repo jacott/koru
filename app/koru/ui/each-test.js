@@ -222,5 +222,24 @@ isClient && define((require, exports, module)=>{
         });
       });
     });
+
+    test("Dynamic templateName", ()=>{
+      after(_=>{Ctx._currentCtx = null});
+      Ctx._currentCtx = new Ctx(v.Each);
+
+      const container = Dom.h({div: [""]});
+
+      each(
+        container.firstChild, {}, {
+          forEach(body) {body({_id: 1, name: 'Alice'})},
+          compare: util.compareByName
+        }, {template: {toString: () => "Each_fooList"}});
+
+      assert.dom(container, pn =>{
+        assert.dom('li', 'Alice', li =>{
+          assert.same($.data(li)._id, 1);
+        });
+      });
+    });
   });
 });
