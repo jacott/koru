@@ -49,14 +49,6 @@ define((require, exports, module)=>{
       return menu.firstChild;
     },
 
-    close(ctx, elm) {
-      const menu = document.getElementsByClassName('glassPane');
-      if (menu.length == 0) return;
-      menu = menu[menu.length - 1];
-      menu && Dom.remove(menu);
-      return menu;
-    },
-
     nameSearch(regexp, line) {
       return regexp.test(line.name);
     },

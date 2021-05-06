@@ -820,41 +820,6 @@ define((require)=>{
     state.result = oldResult;
   } toMultiInline.inline = true; toMultiInline.muInc = 5;
 
-  function toFont(state) {
-    const oldResult = state.result;
-    oldResult.appendChild(state.result = document.createElement('FONT'));
-    const code = this.offset(-1);
-    if (! Array.isArray(code))
-      code = [code];
-    util.forEach(code, attr =>{
-      if (typeof attr === 'string') {
-        switch(attr[0]) {
-        case '#': case 'r':
-          state.result.setAttribute('color', attr);
-          return;
-        default:
-          if (/^[1-7]$/.test(attr)) {
-            state.result.setAttribute('size', attr);
-            return;
-          }
-          break;
-        }
-      }
-      state.result.setAttribute('face', FONT_ID_TO_FACE[attr] || attr);
-    });
-    this.toChildren(state);
-    state.result = oldResult;
-  } toFont.inline = true; toFont.muInc = 5;
-
-  function toBgColor(state) {
-    const oldResult = state.result;
-    oldResult.appendChild(state.result = document.createElement('SPAN'));
-    const code = this.offset(-1);
-    state.result.style.backgroundColor = code;
-    this.toChildren(state);
-    state.result = oldResult;
-  } toBgColor.inline = true; toBgColor.muInc = 5;
-
   function toLink(state) {
     const oldResult = state.result;
     const link = state.result = document.createElement('A');
