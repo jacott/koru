@@ -78,9 +78,5 @@ define((require, exports, module)=>{
     return ans;
   };
 
-  if (Core.onEnd !== void 0) {
-    Core.onEnd(Intercept.finishIntercept);
-  }
-
   return Intercept;
 });

@@ -2,6 +2,7 @@ define((require)=>{
   'use strict';
   const format          = require('koru/format');
   const stacktrace      = require('koru/stacktrace');
+  const callbacks       = require('koru/test/callbacks');
   const util            = require('koru/util');
 
   const {private$} = require('koru/symbols');
@@ -258,6 +259,8 @@ define((require)=>{
     reload: false,
   };
   Core._init();
+
+  callbacks(Core);
 
   return Core;
 });

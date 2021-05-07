@@ -5,8 +5,8 @@ define((require, exports, module)=>{
   const stubber         = require('koru/test/stubber');
   const util            = require('koru/util');
   require('./assertions-methods');
-  require('./callbacks');
   const Core            = require('./core');
+
   require('./test-case');
 
   const Module = module.constructor;
@@ -210,8 +210,9 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
         "\n\n**** Tests aborted! *****\n" +
         name +
         `\n     at - ${fn}.js:${line}`);
+    Core.abortMode = 'reload';
     Main.testHandle('F', Core.testCount + 1);
-    Main.Core.abortMode = 'reload';
+    Core.runCallBacks('abort', Core.test);
   };
 
   Core.worstTCS = ()=> Core.testCases

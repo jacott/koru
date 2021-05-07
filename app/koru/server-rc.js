@@ -178,7 +178,6 @@ define((require, exports, module)=>{
         return;
       }
       if (type === 'I') {
-        Intercept.finishIntercept();
         ws.send(msg);
         return;
       }
@@ -241,6 +240,7 @@ define((require, exports, module)=>{
         }
         if (testClientCount != 0 || testExec.server) return;
         ws.send('Z');
+        Intercept.finishIntercept();
       }
     };
 

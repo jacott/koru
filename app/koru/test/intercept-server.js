@@ -1,7 +1,8 @@
 define((require, exports, module)=>{
   'use strict';
-
+  const koru            = require('koru');
   const session         = require('koru/session');
+  const Core            = require('koru/test/core');
   const WebServer       = require('koru/web-server');
 
   const parser          = requirejs.nodeRequire('@babel/parser');
@@ -57,19 +58,21 @@ define((require, exports, module)=>{
   return Intercept => {
     const {ctx} = module;
 
-    let unloadId;
+    let unloadId = '';
+    let intercepting = false;
 
     const {readFileSync, loadModule} = ctx;
 
     class ServerIntercept extends Intercept {
       static finishIntercept() {
+        if (expPath === void 0) return;
         if (! initHandler) {
           initHandler = true;
           WebServer.deregisterHandler('DEFAULT');
           WebServer.registerHandler('DEFAULT', origDefaultHandler);
-          if (unloadId !== void 0) {
+          if (unloadId !== '') {
             session.unload(unloadId);
-            unloadId = void 0;
+            unloadId = '';
           }
         }
         origDefaultHandler = void 0;
@@ -85,6 +88,7 @@ define((require, exports, module)=>{
       }
 
       static breakPoint(id, epos, interceptPrefix, source) {
+        intercepting = id;
         expPath = '/'+id+'.js';
         Intercept.interceptObj = void 0;
 
@@ -111,12 +115,28 @@ define((require, exports, module)=>{
           WebServer.registerHandler('DEFAULT', defaultHandler);
         }
       }
+
+      static runComplete() {
+        console.log(`DEBUG runComplete`, intercepting);
+        if (intercepting) {
+          ServerIntercept.finishIntercept();
+          intercepting = false;
+        }
+      }
     }
 
-    if (isTest) ServerIntercept[isTest] = {
-      get repSrc() {return repSrc},
-      parseCode,
-    };
+    if (isTest) {
+      ServerIntercept[isTest] = {
+        get repSrc() {return repSrc},
+        parseCode,
+      };
+
+      Core.onEnd(ServerIntercept.runComplete);
+
+      Core.onAbort(() => {
+        if (intercepting) koru.reload();
+      });
+    }
 
     return ServerIntercept;
   };
