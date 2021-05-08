@@ -48,9 +48,9 @@ define((require, exports, module)=>{
     if (id == null) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
     let doc = this._$docCacheGet(id);
-    if (doc === undefined) {
+    if (doc === void 0) {
       const rec = this.docs.findOne({_id: id});
-      if (rec !== undefined) {
+      if (rec !== void 0) {
         doc = new this(rec);
         this._$docCacheSet(doc);
       }
@@ -109,7 +109,7 @@ define((require, exports, module)=>{
 
       BaseModel[makeDoc$] = function (attrs) {
         const doc = this._$docCacheGet(attrs._id);
-        if (doc === undefined) {
+        if (doc === void 0) {
           const doc = new this(attrs);
           this._$docCacheSet(doc);
           return doc;
@@ -126,7 +126,7 @@ define((require, exports, module)=>{
         const model = this.constructor;
         if (full) {
           const rec = model.docs.findOne({_id: this._id});
-          if (rec === undefined) {
+          if (rec === void 0) {
             this.attributes = {};
           } else {
             this.attributes = rec;
@@ -134,9 +134,9 @@ define((require, exports, module)=>{
         }
 
         this.changes = {};
-        if (this[error$] !== undefined) this[error$] = undefined;
+        if (this[error$] !== void 0) this[error$] = void 0;
         this.$clearCache();
-        if (model._$docCacheGet(this._id) === undefined)
+        if (model._$docCacheGet(this._id) === void 0)
           model._$docCacheSet(this);
 
         return this;
@@ -189,7 +189,7 @@ define((require, exports, module)=>{
           Val.allowAccessIf(doc.authorize);
           doc.authorize(userId);
           doc.$assertValid();
-          if (topLevel !== undefined) {
+          if (topLevel !== void 0) {
             Changes.updateCommands(changes, doc.changes, topLevel);
             doc.changes = changes;
           }
@@ -223,7 +223,7 @@ define((require, exports, module)=>{
 
       util.merge(_support, {
         resetDocs(model) {
-          if (_resetDocs[model.modelName] !== undefined)
+          if (_resetDocs[model.modelName] !== void 0)
             _resetDocs[model.modelName]();
         },
         bumpVersion() {
@@ -250,15 +250,15 @@ define((require, exports, module)=>{
       let docs, db;
 
       _resetDocs[model.modelName] = ()=>{
-        if (db !== undefined) {
-          db[dbMap$] = undefined;
-          db = docs = undefined;
+        if (db !== void 0) {
+          db[dbMap$] = void 0;
+          db = docs = void 0;
         }
       };
 
       const getDc = ()=>{
         const dc = util.thread[docCache$];
-        return dc && model.db === dc.$db ? dc : undefined;
+        return model.db === dc?.$db ? dc : void 0;
       };
 
       util.merge(model, {
@@ -275,7 +275,7 @@ define((require, exports, module)=>{
           return subject.onChange(callback);
         },
         get docs() {
-          if (this.db === undefined) return;
+          if (this.db === void 0) return;
           docs = docs || db[dbMap$];
           if (docs) return docs;
 
@@ -285,22 +285,18 @@ define((require, exports, module)=>{
         get db() {
           const tdb = dbBroker.db;
           if (tdb !== db) {
-            docs = undefined;
+            docs = void 0;
             db = tdb;
           }
           return db;
         },
 
-        _$docCacheGet(id) {
-          const dc = getDc();
-          if (dc !== undefined)
-            return dc[id];
-        },
+        _$docCacheGet: (id) => getDc()?.[id],
 
-        _$docCacheSet(doc) {
+        _$docCacheSet: (doc) => {
           const thread = util.thread;
           let dc = getDc();
-          if (dc === undefined || dc.$db !== model.db) {
+          if (dc === void 0 || dc.$db !== model.db) {
             dc = util.createDictionary();
             dc.$db = model.db;
             thread[docCache$] = dc;
@@ -308,17 +304,15 @@ define((require, exports, module)=>{
           dc[doc._id] = doc;
         },
 
-        _$docCacheDelete(doc) {
+        _$docCacheDelete: (doc) => {
           if (doc._id) {
             const dc = getDc();
-            if (dc !== undefined)
+            if (dc !== void 0)
               delete dc[doc._id];
           }
         },
 
-        _$docCacheClear() {
-          return util.thread[docCache$] = undefined;
-        },
+        _$docCacheClear: () => {util.thread[docCache$] = void 0},
       });
     },
   };

@@ -35,19 +35,13 @@ define((require, exports, module)=>{
   };
 
   const registerObserver = (model, name, callback)=>{
-    const subj = model[observers$][name] || (model[observers$][name] = new Observable);
+    const subj = model[observers$][name] ?? (model[observers$][name] = new Observable);
     return subj.onChange(callback).stop;
   };
 
-  const callBeforeObserver = (type, doc) => {
-    const subj = doc.constructor[observers$][type];
-    subj === undefined || subj.notify(doc, type);
-  };
+  const callBeforeObserver = (type, doc) => {doc.constructor[observers$][type]?.notify(doc, type)};
 
-  const callAfterLocalChange = (docChange) => {
-    const subj = docChange.model[observers$].afterLocalChange;
-    subj === undefined || subj.notify(docChange);
-  };
+  const callAfterLocalChange = (docChange) => {docChange.model[observers$].afterLocalChange?.notify(docChange)};
 
   const callWhenFinally = (doc, ex) => {
     const subj = doc.constructor[observers$].whenFinally;
@@ -432,7 +426,7 @@ define((require, exports, module)=>{
       return this;
     }
 
-    get $cache() {return this[cache$] || (this[cache$] = {})}
+    get $cache() {return this[cache$] ?? (this[cache$] = {})}
 
     $clearCache() {
       if (this[cache$] !== undefined)
@@ -441,7 +435,7 @@ define((require, exports, module)=>{
     }
 
     $cacheRef(key) {
-      return this.$cache[key] || (this.$cache[key] = {});
+      return this.$cache[key] ?? (this.$cache[key] = {});
     }
   }
   const _support = {
@@ -569,8 +563,7 @@ define((require, exports, module)=>{
 
   const belongsTo = (model, name, field) => function () {
     const value = this[field];
-    return value && this.$cacheRef(name)[value] ||
-      (this.$cacheRef(name)[value] = model.findById(value));
+    return value && model.findById(value);
   };
 
   const getValue = field => function () {return getField(this, field)};

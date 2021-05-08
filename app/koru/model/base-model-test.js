@@ -778,14 +778,10 @@ define((require, exports, module)=>{
           const publisher = Publisher.create({name: "Macmillan"});
           const sut = Book.build({publisher_id: publisher._id});
 
-          const publisherFind = spy(Publisher, 'findById');
-
           const cached = sut.publisher;
           assert.same(sut.publisher, cached);
           assert.same(sut.publisher.name, "Macmillan");
           assert.same(Book.$fields.publisher_id.model, Publisher);
-
-          assert.calledOnce(publisherFind);
         });
 
         test("belongs_to manual name", ()=>{

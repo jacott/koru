@@ -117,7 +117,6 @@ define((require, exports, module)=>{
       }
 
       static runComplete() {
-        console.log(`DEBUG runComplete`, intercepting);
         if (intercepting) {
           ServerIntercept.finishIntercept();
           intercepting = false;
