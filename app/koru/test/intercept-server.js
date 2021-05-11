@@ -19,6 +19,8 @@ define((require, exports, module)=>{
     return true;
   };
 
+  const parseOptions = {plugins: ["classProperties"]};
+
   const parseCode = (spos, interceptPrefix, source) => {
 
     const epos = spos - (/[$\w]/.test(source[spos]) ? 1 : 0);
@@ -32,7 +34,7 @@ define((require, exports, module)=>{
       if (/\S/.test(source[i])) break;
     }
 
-    const nast = parser.parse(source, {});
+    const nast = parser.parse(source, parseOptions);
     const names = {};
 
     traverse(nast, {
