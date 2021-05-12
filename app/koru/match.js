@@ -68,6 +68,7 @@ define((require)=>{
       integer: match(value => typeof value === 'number' && Math.floor(value) === value, 'match.integer'),
       baseObject: match(value => value != null && value.constructor === Object, 'match.baseObject'),
       object: match(value => typeof value === 'object' && value !== null, 'match.object'),
+      array: match(value => Array.isArray(value), 'match.array'),
       func: match(match.function[match$], 'match.func'),
       match: match(match.isMatch, 'match.match'),
       symbol: match(value => value != null && value.constructor === Symbol, 'match.Symbol'),

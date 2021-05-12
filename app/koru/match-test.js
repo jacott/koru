@@ -147,6 +147,7 @@ define((require, exports, module)=>{
       assert.same(''+match.func, 'match.func');
       assert.same(''+match.object, 'match.object');
       assert.same(''+match.baseObject, 'match.baseObject');
+      assert.same(''+match.array, 'match.array');
       assert.same(''+match.any, 'match.any');
       assert.same(''+match.match, 'match.match');
     });
@@ -360,6 +361,11 @@ define((require, exports, module)=>{
       assert.isFalse(match.baseObject.test(function () {}));
       assert.isFalse(match.baseObject.test(new Date));
       assert.isFalse(match.baseObject.test('hello'));
+
+      docProp('array', 'match any object that is true for `Array.isArray`');
+      assert.isTrue(match.array.test([]));
+      assert.isFalse(match.array.test(null));
+      assert.isFalse(match.array.test({}));
 
       docProp('match', 'match any matcher');
       assert.isTrue(match.match.test(match.string));
