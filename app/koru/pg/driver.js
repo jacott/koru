@@ -41,7 +41,7 @@ define((require, exports, module)=>{
   };
 
   const closeDefaultDb = ()=>{
-    defaultDb && defaultDb.end();
+    defaultDb?.end();
     defaultDb = null;
   };
 
@@ -49,7 +49,7 @@ define((require, exports, module)=>{
 
   const getConn = client =>{
     const {thread} = util, sym = client[tx$];
-    const tx = thread[sym] || (thread[sym] = fetchPool(client).acquire());
+    const tx = thread[sym] ?? (thread[sym] = fetchPool(client).acquire());
     if (tx.conn.isClosed()) {
       try {
         const future = new Future;
@@ -136,10 +136,10 @@ define((require, exports, module)=>{
 
   const selectFields = (table, fields)=>{
     if (! fields) return '*';
-    let add, col;
+    let add = false, col;
     const result = ['_id'];
     for (col in fields) {
-      if (add === void 0) {
+      if (! add) {
         add = !! fields[col];
       } else if (add !== !! fields[col])
         throw new Error('fields must be all true or all false');
@@ -184,7 +184,7 @@ define((require, exports, module)=>{
 
     const posMap = {}, params = [];
     let count = 0;
-    text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
+    text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] ?? (
       params.push(arg0[key]),
       (posMap[key] = `$${++count}`)));
     return [text, params];
@@ -302,10 +302,7 @@ define((require, exports, module)=>{
       this.query(`DROP TABLE IF EXISTS "${name}"`);
     }
 
-    get inTransaction() {
-      const tx = util.thread[this[tx$]];
-      return (tx && tx.transaction) === 'COMMIT';
-    }
+    get inTransaction() {return util.thread[this[tx$]]?.transaction === 'COMMIT'}
 
     startTransaction() {
       getConn(this); // ensure connection
@@ -536,9 +533,8 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       return toColumns(this, rowSet, cols).values;
     }
 
-    ensureIndex(keys, options) {
+    ensureIndex(keys, options={}) {
       this._ensureTable();
-      options = options || {};
       let cols = Object.keys(keys);
       const name = this._name+'_'+cols.join('_');
       cols = cols.map(col => '"'+col+(keys[col] === -1 ? '" DESC' : '"'));
@@ -655,7 +651,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
               util.forEach(value, w => {
                 const q = [];
                 foundIn(w, q);
-                q.length && parts.push('('+q.join(' AND ')+')');
+                q.length != 0 && parts.push('('+q.join(' AND ')+')');
               });
               result.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
               continue;
@@ -669,7 +665,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
           const colSpec = colMap[key];
 
-          if (value != null) switch(colSpec && colSpec.data_type) {
+          if (value != null) switch(colSpec?.data_type) {
             case 'ARRAY':
             if (typeof value === 'object') {
               if (Array.isArray(value)) {
@@ -830,10 +826,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       this._ensureTable();
 
       const table = this;
-      let sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
+      let sql = 'SELECT '+selectFields(this, options?.fields)+' FROM "'+this._name+'"';
 
       let values;
-      if (where) {
+      if (where != void 0) {
         values = [];
         where = table.where(where, values);
       }
@@ -841,7 +837,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       if (where === void 0)
         return new Cursor(this, sql, null, options);
 
-      sql = sql+' WHERE '+where;
+      sql += ' WHERE '+where;
       return new Cursor(this, sql, values, options);
     }
 
@@ -1036,7 +1032,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         case 'timestamp without time zone':
           if (value) {
             if (value.toISOString)
-              value = value && value.toISOString();
+              value = value?.toISOString();
             else {
               let date = new Date(value);
               if (! isNaN(+date))
@@ -1085,7 +1081,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         let type;
         if (key[0] === '$')
           type = toBaseType(value[key]);
-        if (type && type.slice(-2) === '[]')
+        if (type?.slice(-2) === '[]')
           return type.slice(0, -2);
         return type;
         break;

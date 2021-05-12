@@ -13,7 +13,7 @@ define((require)=>{
 
     const callObservers = (observers, called, docChange, value)=>{
       const cbs = observers[value];
-      if (cbs === undefined) return;
+      if (cbs === void 0) return;
       cbs.forEach(handle =>{
         const token = handle[token$];
         if (! called.has(token)) {
@@ -29,12 +29,12 @@ define((require)=>{
 
       const ob = model.onChange(dc =>{
         const asBefore = dc.was;
-        const nowValue = dc.isDelete ? undefined : dc.doc[field];
-        const oldValue = asBefore === null ? undefined : asBefore[field];
+        const nowValue = dc.isDelete ? void 0 : dc.doc[field];
+        const oldValue = asBefore === null ? void 0 : asBefore[field];
 
         const called = new Set; // ensure only called once;
 
-        if (oldValue != undefined) {
+        if (oldValue != void 0) {
           if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
             callObservers(observers, called, dc, oldValue[i]);
           } else {
@@ -42,7 +42,7 @@ define((require)=>{
           }
         }
 
-        if (nowValue != undefined && nowValue !== oldValue) {
+        if (nowValue !== void 0 && nowValue !== oldValue) {
           if (Array.isArray(nowValue)) for(let i = 0; i < nowValue.length; ++i) {
             callObservers(observers, called, dc, nowValue[i]);
           } else {
@@ -59,8 +59,8 @@ define((require)=>{
       const modelObMap = Object.create(null);
 
       const observeValue = (value, callback, token)=>{
-        const observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
-        const obs = observers[value] || (observers[value] = new Observable(()=>{
+        const observers = dbObservers[dbBroker.dbId] ?? (dbObservers[dbBroker.dbId] = {});
+        const obs = observers[value] ?? (observers[value] = new Observable(()=>{
           delete observers[value];
           for(const _ in observers) return;
           const modelObserver = modelObMap[dbBroker.dbId];
@@ -92,7 +92,7 @@ define((require)=>{
           removeValue: (value)=>{
             const str = ''+value;
             const ob = obsSet[value];
-            if (ob === undefined) return;
+            if (ob === void 0) return;
 
             ob.stop();
             delete obsSet[value];
