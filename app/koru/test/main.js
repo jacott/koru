@@ -11,6 +11,8 @@ define((require, exports, module)=>{
 
   const Module = module.constructor;
 
+  const NUMBER_RE = /([\d.]+(?:e[+-]\d+)?)/;
+
   const origAfTimeout = Core._origAfTimeout = koru.afTimeout;
 
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
@@ -53,10 +55,11 @@ define((require, exports, module)=>{
     actual => {
       switch(typeof expected) {
       case 'string':
+        if (typeof actual === 'number') actual = ''+actual;
         if (typeof actual !== 'string')
           return false;
-        const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
-        const actParts = actual.split(/([\d.]+(?:e[+-]\d+)?)/);
+        const expParts = expected.split(NUMBER_RE);
+        const actParts = actual.split(NUMBER_RE);
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {
