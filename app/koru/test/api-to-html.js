@@ -8,8 +8,6 @@ define((require)=>{
   const jsParser        = require('koru/parse/js-parser');
   const util            = require('koru/util');
 
-  const {private$} = require('koru/symbols');
-
   const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(),
         node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
@@ -963,10 +961,13 @@ define((require)=>{
   apiToHtml.jsdocToHtml = jsdocToHtml;
   apiToHtml.makeTree = makeTree;
 
-  apiToHtml[private$] = {
-    parent$,
-    node$,
-  };
+  if (isTest) {
+    apiToHtml[isTest] = {
+      parent$,
+      node$,
+      mapArgs,
+    };
+  }
 
   return apiToHtml;
 });

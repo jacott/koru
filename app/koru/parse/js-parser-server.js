@@ -129,6 +129,11 @@ define((require)=> JsPaser => {
           expr(node.init);
         }
         break;
+      case 'AssignmentPattern':
+        addParam(node.left, 'nv');
+        addText('=', node.left.end, 'o');
+        expr(node.right);
+        break;
       default:
         typeExpr(node, hl);
       }
@@ -217,7 +222,7 @@ define((require)=> JsPaser => {
         expr(node.body);
       },
       AssignmentPattern(node) {
-        typeExpr(node.left, 'nv');
+        expr(node.left);
         addText('=', node.start, 'o');
         expr(node.right);
       },
@@ -256,7 +261,7 @@ define((require)=> JsPaser => {
       FunctionExpression(node) {
         addAsync(node);
         addText('function', srcPos, 'kd');
-        addParams(node.params);
+        addParams(node.params, 'nv');
         expr(node.body);
       },
       ConditionalExpression(node) {
@@ -476,22 +481,19 @@ define((require)=> JsPaser => {
           args.push('}');
           return 0;
         case 'AssignmentPattern':
-          args.push(node.left.name);
+          extract(node.left);
           return 0;
         case 'Identifier':
           args.push(node.name);
           return 0;
         case 'ObjectProperty':
-          if (node.shorthand) walk(node.key, extract);
-          else {
-            args.push('{');
-            walkArray([node.value], extract);
-            args.push('}');
-          }
-          return 0;
+          extract(node.value);
+          return 2;
 
         case 'ObjectPattern':
+          args.push('{');
           walkArray(node.properties, extract);
+          args.push('}');
           return 0;
         }
         return 1;

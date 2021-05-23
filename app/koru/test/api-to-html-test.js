@@ -5,8 +5,6 @@ isServer && define((require, exports, module)=>{
   const util            = require('koru/util');
   const TH              = require('./main');
 
-  const {private$} = require('koru/symbols');
-
   const apiToHtml = require('./api-to-html');
 
   const {stub, spy, match: m} = TH;
@@ -15,7 +13,7 @@ isServer && define((require, exports, module)=>{
                                   {'$data-api': 'links'},
                                   {'$data-api': 'pages'}]}).outerHTML;
 
-  const {parent$} = apiToHtml[private$];
+  const {parent$} = apiToHtml[isTest];
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("P Value", ()=>{
@@ -213,6 +211,37 @@ m1 intro
         let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
 
+      });
+    });
+
+    group("mapArgs", ()=>{
+      const {mapArgs} = apiToHtml[isTest];
+
+      test("named args", ()=>{
+        const ans = mapArgs('constructor({arg1, arg2})', [{
+          body: 'theBody(goes.here)',
+          calls: [
+            [ [], [ 'O', 'Book' ] ],
+            [
+              [
+                [
+                  'P',
+                  {
+                    arg1: ['F', 'arg1Func'],
+                    arg2: 'arg 2'
+                  }
+                ]
+              ],
+              [ 'O', 'Book' ]
+            ]
+          ]
+        }]);
+
+        assert.equals(ans.args, ['arg1', 'arg2']);
+        assert.equals(ans.argMap.arg1, {
+          optional: true, types: {function: 'function'}, type: undefined, href: m.func});
+        assert.equals(ans.argMap.arg2, {
+          optional: true, types: {string: 'string'}, type: undefined, href: m.func});
       });
     });
 

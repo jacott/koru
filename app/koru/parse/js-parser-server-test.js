@@ -12,6 +12,8 @@ isServer && define((require, exports, module)=>{
     });
 
     test("extractParams", ()=>{
+      assert.equals(jsParser.extractParams('foo({arg1, arg2}={})'), ['{', 'arg1', 'arg2', '}']);
+      assert.equals(jsParser.extractParams('constructor({arg1, arg2})'), ['{', 'arg1', 'arg2', '}']);
       assert.equals(jsParser.extractParams('({a: {b: c}}, ...args)'), ['{', '{', 'c', '}', '}', 'args']);
 
       assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'), ['{', '{', 'd', '}', '}', '{', 'b', 'c', '}', 'rest']);
@@ -261,6 +263,17 @@ c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
 
       assert.equals(markup(jsParser.highlight('1|'+jsParser.indent(anon.toString()))), `
 ~m#1#~o#|#~kd#function# (~nv#a#) {
+  ~k#return# ~o#typeof# ~nx#a#;
+}`);
+    });
+
+    test("optional named params", ()=>{
+      const anon = function ({a}={}) {
+        return typeof a;
+      };
+
+      assert.equals(markup(jsParser.highlight('1|'+jsParser.indent(anon.toString()))), `
+~m#1#~o#|#~kd#function# ({~nv#a#}~o#=#{}) {
   ~k#return# ~o#typeof# ~nx#a#;
 }`);
     });
