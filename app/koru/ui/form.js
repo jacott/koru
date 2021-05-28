@@ -330,8 +330,7 @@ define((require)=>{
         fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
       }
 
-      if (Array.isArray(msg))
-        msg = Val.text(msg);
+      msg = format.translate(msg);
 
       if (! fieldElm) return;
 

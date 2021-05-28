@@ -21,7 +21,7 @@ define((require)=>{
         const errors = doc[error$] !== undefined ? doc[error$][field]
                 : typeof doc === 'string' ? [[doc]] : doc;
         if (errors !== undefined) {
-          return errors.map(Val.text).join(", ");
+          return errors.map(format.translate).join(", ");
         } else if (other_error) {
           console.log('ERROR: ', JSON.stringify(doc[error$]));
           return ResourceString.en[other_error];
@@ -37,10 +37,9 @@ define((require)=>{
       },
     },
 
+    /** @deprecated */
     text(msg) {
-      if (Array.isArray(msg))
-        return format(ResourceString.en[msg[0]] || msg[0], msg.slice(1));
-      return ResourceString.en[msg] || msg;
+      return format.translate(msg);
     },
 
     check(obj, spec, options={}) {
