@@ -549,10 +549,15 @@ define((require)=>{
         let msg;
         if (typeof elm === "string") {
           msg = elm;
-          if (selectNode != null) {
-            elm = findAll(selectNode, elm);
-          } else {
-            elm = document.querySelectorAll(elm);
+          try {
+            if (selectNode != null) {
+              elm = findAll(selectNode, elm);
+            } else {
+              elm = document.querySelectorAll(elm);
+            }
+          } catch(err) {
+            if (err.name !== 'SyntaxError') throw err;
+            assert.fail(err.toString());
           }
         } else if (elm == null) {
           self.htmlClue = `an Element; got: ${elm}`;
