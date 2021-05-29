@@ -138,12 +138,29 @@ define((require, exports, module)=>{
       case 'I':
         const [cmd2, a1, a2, interceptPrefix] = data.slice(cmd.length+1).split('\t', 4);
         switch(cmd2) {
-        case 'bp':
+        case 'bp': {
           const id = a1.replace(/^app\//, '');
           const epos = +a2 - 1;
           const source = data.slice(a1.length + a2.length + interceptPrefix.length + 8);
           Intercept.ws = ws;
+          Intercept.interceptObj = void 0;
           Intercept.breakPoint(id, epos, interceptPrefix, source);
+          break;
+        }
+        case 'doc': {
+          if (Intercept.interceptObj !== void 0) {
+            ws.send('ID'+Intercept.objectSource(a1));
+          } else {
+            for (const key in clients) {
+              const cs = clients[key], {conns} = cs;
+              for (const conn of conns.keys()) {
+                conn.ws.send('D'+a1);
+                break;
+              }
+              break;
+            }
+          }
+        }
         }
         break;
       }

@@ -1,6 +1,8 @@
 define((require, exports, module)=>{
   'use strict';
   const TH              = require('koru/test');
+  const parser          = requirejs.nodeRequire('@babel/parser');
+  const traverse        = requirejs.nodeRequire('@babel/traverse').default;
 
   const {stub, spy, util} = TH;
 
@@ -28,7 +30,7 @@ define((require, exports, module)=>{
         const source = fooBar.toString();
         const epos = source.indexOf(".")+3;
         Intercept.breakPoint(mod.id, epos, "to", source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to").toString();}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
       });
 
 
@@ -37,7 +39,7 @@ define((require, exports, module)=>{
         const source = fooBar.toString().slice(0, -1);
         const epos = source.length+1;
         Intercept.breakPoint(mod.id, epos, "", source+".}");
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko'+'ru_.__INTERCEPT$__]("")}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko'+'ru_.__INTERCEPT$__]("")._}');
       });
 
       test("scope var complete", ()=>{
@@ -58,14 +60,26 @@ define((require, exports, module)=>{
         };
 
         let fbSource = fooBar.toString();
-        const epos = fbSource.indexOf("ssert");
-        const source = fbSource.replace(/ssert\(\);/, '');
+        const epos = fbSource.indexOf("assert");
+        const source = fbSource.replace(/assert\(\);/, 'a');
 
-        Intercept.breakPoint(mod.id, epos, "a", source);
+        Intercept.breakPoint(mod.id, epos, "", source);
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"a\",{fooBar, ab, abb, abc, ac})';
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,ab,abb,abc,fooBar,})._a';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
+      });
+
+      test("scope in assignment", ()=>{
+        function code() {const ErrOther = 123;class ErrMine extends Error {}}
+
+        let source = code.toString();
+        const epos = source.indexOf("Error") + 3;
+        Intercept.breakPoint(mod.id, epos, "Err", source);
+
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,})._Error {}}';
+
+        assert.same(ipv.repSrc.slice(epos - 3), exp);
       });
     });
   });

@@ -21,39 +21,52 @@ define((require, exports, module)=>{
 
   const parseOptions = {plugins: ["classProperties"]};
 
-  const parseCode = (spos, interceptPrefix, source) => {
+  const isBindingLive = (me, binding) => {
+    if (binding.path._guessExecutionStatusRelativeTo(me) !== 'after') {
+      return true;
+    } else {
+      if (binding.path.isFunctionDeclaration()) return true;
+      return false;
+    }
+  };
 
-    const epos = spos - (/[$\w]/.test(source[spos]) ? 1 : 0);
+
+  const parseCode = (spos, interceptPrefix, source) => {
 
     let rep = '[_ko'+`ru_.__INTERCEPT$__]("${interceptPrefix}"`;
 
-    let i = spos-1;
-    for(; i >= 0; --i) {
-      if (source[i] === ".")
-        return source.slice(0 , spos - 1) + rep + ")" + source.slice(epos);
-      if (/\S/.test(source[i])) break;
+    for(let i = spos-1; i >= 0; --i) {
+      const ch = source[i];
+      if (/\W/.test(ch)) {
+        if (ch === ".") return source.slice(0 , spos - 1) + rep + ')._' + source.slice(spos);
+        break;
+      }
     }
 
-    const nast = parser.parse(source, parseOptions);
-    const names = {};
+    const ast = parser.parse(source, parseOptions);
 
-    traverse(nast, {
+    let me;
+    traverse(ast, {
       enter(path) {
         const {node} = path;
-        if (
-          node.start <= spos && node.end >= spos) {
-          for (const name in path.scope.bindings) {
-            if (path.scope.bindings[name].identifier.start < spos) {
-              names[name] = true;
-            }
-          }
+        if (node.start <= spos && node.end >= spos) {
+          me = path;
         }
       }
     });
 
-    rep += ",{" + Object.keys(names).join(", ") +"}";
+    rep += ",{";
+    const bindings = me.scope.getBlockParent().getAllBindings();
+    for (const name in bindings) {
+      if (name.startsWith(interceptPrefix)) {
+        const binding =  bindings[name];
+        if (isBindingLive(me, binding)) {
+          rep += name + ',';
+        }
+      }
+    }
 
-    return source.slice(0 , spos ) + "globalThis" + rep + ")" + source.slice(spos + interceptPrefix.length);
+    return source.slice(0 , spos ) + "globalThis" + rep + "})._" + source.slice(spos);
   };
 
 
@@ -84,7 +97,7 @@ define((require, exports, module)=>{
         repSrc = expPath = void 0;
       }
 
-      static sendCandidates(cand) {
+      static sendResult(cand) {
         this.finishIntercept();
         this.ws.send('I' + cand);
       }

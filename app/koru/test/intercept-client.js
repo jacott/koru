@@ -9,9 +9,17 @@ define((require, exports, module)=>{
 
     let intercepting = false;
 
+    let providing = false;
+
     class ClientIntercept extends Intercept {
-      static sendCandidates(cand) {
-        intercepting = true;
+      static sendResult(cand) {
+        if (! providing) {
+          providing = true;
+          Test.session.provide('D', data => {
+            Test.testHandle('ID' + ClientIntercept.objectSource(data));
+          });
+        }
+        intercepting = cand[0] === 'C';
         Test.testHandle('I', cand);
         this.finishIntercept();
       }
