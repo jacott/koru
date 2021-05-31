@@ -562,19 +562,15 @@ define((require, exports, module)=>{
 
     test("mergeExclude", ()=>{
       /**
-       * Merge `properties` into `obj`, excluding properties in `exclude` that have truthy values.
-       * That is, add each property in `properties`, excluding those that have truthy values in
+       * Merge `properties` into `obj`, excluding properties in `exclude`.
+       * That is, add each property in `properties`, excluding those that are in
        * `exclude`, to `obj`, or where a property of that name already exists in `obj`, replace
        * the property in `obj` with the property from `properties`. Return the modified `obj`.
        * @param obj an object to modify
        * @param properties properties to be added to or modified in `obj`, unless they are in `exclude`
-       * (with truthy values)
-       * @param exclude properties which (if they have truthy values) are excluded from being added to or
-       * modified in `obj`
+       * @param exclude properties which are excluded from being added to or modified in `obj`
        *
-       * @returns `obj` modified: each property in `properties`, excluding properties in `exclude`with
-       * truthy values, has been added to `obj`, or where a property of that name already existed in `obj`,
-       * the property in `obj` has been replaced with the property from `properties`
+       * @returns the modified `obj`.
        **/
       api.method('mergeExclude');
       //[
@@ -582,7 +578,7 @@ define((require, exports, module)=>{
           sub = {a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
 
-      util.mergeExclude(sub,sup, {d: true, e: true});
+      util.mergeExclude(sub,sup, {d: void 0, e: false});
 
       item = 6;
 

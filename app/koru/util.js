@@ -217,7 +217,7 @@ define((require)=>{
 
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
-        if (exclude[prop]) continue;
+        if (hasOwn(exclude, prop)) continue;
         Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
       }
       return obj;
