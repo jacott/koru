@@ -500,9 +500,13 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       Core.abort(err);
       return false;
     }
-    const msg = (err instanceof Error) ? util.extractError(err) : (
-        err === "timeout" ? "Test timed out" : (
-          err === "wrongReturn" ? "Unexpected return value" : err.toString()));
+    const msg = (err instanceof Error)
+          ? util.extractError(err)
+          : (err === "timeout"
+             ? "Test timed out"
+             : (err === "wrongReturn"
+                ? "Unexpected return value"
+                : err.toString()));
     if (Core.test.mode !== 'running') {
       err = typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err;
       Core.test.errors = [err];
@@ -539,8 +543,9 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     while(true) {
       if (Core.abortMode !== void 0) {
         if (Core.abortMode === 'end') {
-          tests.length = nt;
           nextFunc = (Core.test !== void 0 && Core.test.mode !== 'after') ? tearDown : testStart;
+          nextTest = void 0;
+          nt = tests.length;
         } else
           return;
       }
