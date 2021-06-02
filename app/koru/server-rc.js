@@ -149,7 +149,7 @@ define((require, exports, module)=>{
         }
         case 'doc': {
           if (Intercept.interceptObj !== void 0) {
-            ws.send('ID'+Intercept.objectSource(a1));
+            ws.send('ID'+JSON.stringify(Intercept.objectSource(a1)));
           } else {
             for (const key in clients) {
               const cs = clients[key], {conns} = cs;

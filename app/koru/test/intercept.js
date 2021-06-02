@@ -7,51 +7,97 @@ define((require, exports, module)=>{
 
   let interceptPrefix = '';
 
+  const setSource = (info, fn) => {
+    const source =  fn.toString();
+
+    if (/\[native code\]\s*\}$/.test(source)) {
+      info.propertyType = 'native '+info.propertyType;
+    } else {
+      info.source = source;
+    }
+  };
+
+
   const Intercept = require('koru/env!./intercept')(class {
     static finishIntercept() {
       interceptPrefix = '';
     }
 
-    static objectSource(name) {
-      if (Intercept.interceptObj === void 0)
-        return void 0;
-
-      let source = recurseLoc(Intercept.locals, name) ?? recurseLoc(Intercept.interceptObj, name);
-
-      let value;
-      try {
-        value = util.inspect(Intercept.locals?.[name] ?? Intercept.interceptObj[name]);
-      } catch(err) {
-        value = err.toString();
+    static objectFunction(object) {
+      if (object == null) return;
+      if (typeof object === 'function') {
+        return object;
       }
-      return JSON.stringify([value, source]);
+      return this.objectFunction(object.constructor);
+    }
+
+    static objectName(object) {
+      const ans = this.objectFunction(object);
+      if (ans === void 0) return '';
+      if (ans === object) return ans.name;
+      return ans.name+".prototype";
+    }
+
+    static objectSource(name) {
+      if (Intercept.interceptObj === void 0) return null;
+
+      const local = this.lookup(Intercept.locals, name);
+
+      const ans = local ?? this.lookup(Intercept.interceptObj, name);
+
+      if (ans === void 0) return null;
+
+      const {object, propertyType, value} = ans;
+
+      const info = {
+        object: Intercept.objectName(object),
+        name,
+        propertyType,
+        value: util.inspect(value),
+        valueType: typeof value,
+      };
+
+      if (typeof value === 'function') {
+        let strValue;
+        try {
+          const luValue = Intercept.locals?.[name] ?? Intercept.interceptObj[name];
+          if (luValue !== value) {
+            info.value = util.inspect(luValue);
+            info.valueType = typeof luValue;
+          } else {
+            info.value = '';
+          }
+        } catch(err) {
+          info.value = err.toString();
+          info.valueType = 'error';
+        }
+
+        setSource(info, value);
+
+        info.signature = JsParser.extractCallSignature(value, name);
+      } else if (value !== null && typeof value === 'object' &&
+                 typeof value.constructor === 'function' &&
+                 value.constructor !== Object) {
+        setSource(info, value.constructor);
+      }
+
+      return info;
+    }
+
+    static lookup(obj, name) {
+      return recurseLoc(obj, name);
     }
   });
 
-  const recurseLoc = (obj, name) => {
-    if (obj == null) return;
-    try {
-      const desc = Object.getOwnPropertyDescriptor(obj, name);
-      if (desc === void 0) {
-        return recurseLoc(Object.getPrototypeOf(obj), name);
-      }
-      if (desc.get !== void 0) return desc.get.toString();
-      if (desc.set !== void 0) return desc.set.toString();
-      const {value} = desc;
-      if (value == null) return null;
-      switch(typeof value) {
-      case 'function': return value.toString();
-      case 'object': {
-        const {constructor} = value;
-        if (typeof constructor === 'function')
-          return constructor.toString();
-        return null;
-      }
-      default: return null;
-      }
-    } catch(err) {
-      return err.toString();
+  const recurseLoc = (object, name) => {
+    if (object == null) return;
+    const desc = Object.getOwnPropertyDescriptor(object, name);
+    if (desc === void 0) {
+      return recurseLoc(Object.getPrototypeOf(object), name);
     }
+    if (desc.get !== void 0) return {object, value: desc.get, propertyType: 'get'};
+    if (desc.set !== void 0) return {object, value: desc.set, propertyType: 'set'};
+    return {object, value: desc.value, propertyType: 'value'};
   };
 
   const InterceptThrow = {
@@ -98,7 +144,7 @@ define((require, exports, module)=>{
         if (typeof v === 'function') {
           let sig = '';
           try {
-            sample = JsParser.extractCallSignature(sample);
+            sample = JsParser.extractCallSignature(v, name);
           } catch (err) {}
           if (sample.startsWith('constructor')) {
             if (type === 'G')

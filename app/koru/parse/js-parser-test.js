@@ -110,6 +110,13 @@ a(b.foo(
                       'sig(a, b, c)');
       });
 
+      test("native", ()=>{
+        assert.equals(jsParser.extractCallSignature(Array.prototype.copyWithin),
+                      'copyWithin(arg0, arg1)');
+        assert.equals(jsParser.extractCallSignature(Array.prototype.copyWithin.toString()),
+                      'copyWithin()');
+      });
+
       test("arrow function", ()=>{
         const sig = foo => foo*2;
 
@@ -124,8 +131,8 @@ a(b.foo(
       });
 
       test("nameless arrow function", ()=>{
-        assert.equals(jsParser.extractCallSignature(foo => foo*2),
-                      '(foo)');
+        assert.equals(jsParser.extractCallSignature(foo => foo*2, 'myname'),
+                      'myname(foo)');
       });
 
       test("function expression", ()=>{

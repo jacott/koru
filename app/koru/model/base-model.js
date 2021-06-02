@@ -566,8 +566,8 @@ define((require, exports, module)=>{
     return value && model.findById(value);
   };
 
-  const getValue = field => function () {return getField(this, field)};
-  const setValue = field => function (value) {setField(this, field, value)};
+  const getValue = field => function getValue() {return getField(this, field)};
+  const setValue = field => function setValue(value) {setField(this, field, value)};
 
   const setUpValidators = (model, field, options)=>{
     const validators = getValidators(model, field);

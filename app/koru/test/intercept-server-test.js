@@ -1,8 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
   const TH              = require('koru/test');
-  const parser          = requirejs.nodeRequire('@babel/parser');
-  const traverse        = requirejs.nodeRequire('@babel/traverse').default;
 
   const {stub, spy, util} = TH;
 

@@ -16,7 +16,7 @@ define((require, exports, module)=>{
         if (! providing) {
           providing = true;
           Test.session.provide('D', data => {
-            Test.testHandle('ID' + ClientIntercept.objectSource(data));
+            Test.testHandle('ID' + JSON.stringify(ClientIntercept.objectSource(data)));
           });
         }
         intercepting = cand[0] === 'C';

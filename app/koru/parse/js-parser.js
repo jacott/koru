@@ -19,9 +19,12 @@ define((require)=>{
     STRING[q] = new RegExp(`[\\\\${q}\\n]`, 'g');
   });
 
-  const extractCallSignature = func =>{
+  const extractCallSignature = (func, name=func.name ?? '') =>{
     let code = func.toString();
-    const name = func.name || '';
+
+    if (typeof func === 'function' && /\[native code\]\s*\}$/.test(code)) {
+      return `${name}(${new Array(func.length).fill('arg').map((n, i) => n+i).join(", ")})`;
+    }
 
     let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function[\s\r\n]*(?=\w)?)/.exec(code);
 
