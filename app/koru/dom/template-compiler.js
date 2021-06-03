@@ -77,7 +77,9 @@ define((require)=>{
     if (typeof node === 'string' || node.shift)
       return node;
 
-    const result =  {name: node.name, attrs: node.attrs, ns: node.ns};
+    const result =  {name: node.name};
+    if (node.attrs.length != 0) result.attrs = node.attrs;
+    if (node.ns !== void 0) result.ns = node.ns;
     if (node.children.length)
       result.children = node.children.map(node => nodeToJson(node));
 

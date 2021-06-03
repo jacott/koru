@@ -229,7 +229,7 @@ define((require)=>{
   };
 
   const setAttrs = (template, elm, attrs)=>{
-    if (attrs != null) for(let j=0; j < attrs.length; ++j) {
+    for(let j=0; j < attrs.length; ++j) {
       const attr = attrs[j];
 
       if (typeof attr === 'string') {
@@ -312,7 +312,7 @@ define((require)=>{
             document.createElementNS(ns=SVGNS, name)
             : document.createElement(name))
               : document.createElementNS(ns, name);
-        setAttrs(template, elm, attrs);
+        attrs !== void 0 && setAttrs(template, elm, attrs);
         children != null && addNodes(template, elm, children, ns);
         parent.appendChild(elm);
       }

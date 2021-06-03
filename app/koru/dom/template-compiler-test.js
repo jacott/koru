@@ -20,7 +20,7 @@ isServer && define((require, exports, module)=>{
       assert.equals(json, {
         name: "Hello",
         nodes: [
-          {name: 'div', attrs: [], children: ['hello']}
+          {name: 'div', children: ['hello']}
         ],
       });
     });
@@ -46,7 +46,7 @@ isServer && define((require, exports, module)=>{
             name: 'Fnord'
           }, {
             name: 'Baz', extends: 'Fnord', ns: "http://www.w3.org/2000/svg",
-            nodes: [{name: 'div', attrs: []}]}],
+            nodes: [{name: 'div'}]}],
         nodes: [{
           name: 'div',
           attrs: [
@@ -55,9 +55,8 @@ isServer && define((require, exports, module)=>{
           children: [
             ' ', ['>', 'Bar'], ' ', {
               name: 'svg',
-              attrs: [],
               children: [
-                {name:"defs", attrs: [],
+                {name:"defs",
                  children: [{
                    name: "pattern", attrs: [
                      ["=","id","image123"],["=","patternUnits","userSpaceOnUse"],
@@ -71,8 +70,8 @@ isServer && define((require, exports, module)=>{
                    }]
                  }]},
                 {name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]},
-                {name: 'foreignObject', attrs: [], children: [
-                  {name: "div", attrs: [], ns: "http://www.w3.org/1999/xhtml"}
+                {name: 'foreignObject', children: [
+                  {name: "div", ns: "http://www.w3.org/1999/xhtml"}
                 ]}
               ],
             }]
