@@ -9,6 +9,11 @@ isServer && define((require, exports, module)=>{
   const TemplateCompiler  = require('./template-compiler');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("filenameToTemplateName", ()=>{
+      assert.same(TemplateCompiler.filenameToTemplateName("needUpperFirst"), "NeedUpperFirst");
+      assert.same(TemplateCompiler.filenameToTemplateName("funNy-name"), "FunNyName");
+    });
+
     test("no template", ()=>{
       const json = JSON.parse(TemplateCompiler.toJavascript("<div>hello</div>", "a/b/c/hello.html"));
 

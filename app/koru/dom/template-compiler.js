@@ -16,7 +16,12 @@ define((require)=>{
     }
   }
 
+  const filenameToTemplateName = filename => filename.replace(/^.*\//, '').replace(/\..*$/,'').split('-')
+        .map(n => n ? n[0].toUpperCase() + n.slice(1) : '').join('');
+
   const TemplateCompiler = {
+    filenameToTemplateName,
+
     toJavascript: (code, filename='<anonymous>')=>{
       let template;
       try {
@@ -25,8 +30,7 @@ define((require)=>{
           onopentag(name, attrs, code, spos, epos) {
             if (template === undefined && name !== 'template') {
               template = new Template(undefined, {
-                name: filename.replace(/^.*\//, '').replace(/\..*$/,'').split('-')
-                  .map(n => n ? n[0].toUpperCase() + n.slice(1) : '').join('')
+                name: filenameToTemplateName(filename)
               });
 
             }
