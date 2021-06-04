@@ -37,7 +37,9 @@ define((require, exports, module)=>{
     for(let i = spos-1; i >= 0; --i) {
       const ch = source[i];
       if (/\W/.test(ch)) {
-        if (ch === ".") return source.slice(0 , spos - 1) + rep + ')._' + source.slice(spos);
+        if (ch === ".") {
+          return source.slice(0 , spos - (source[i-1] === "?" ? 0 : 1)) + rep + ')._' + source.slice(spos);
+        }
         break;
       }
     }

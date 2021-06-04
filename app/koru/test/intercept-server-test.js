@@ -23,6 +23,14 @@ define((require, exports, module)=>{
 
       afterEach(Intercept.finishIntercept);
 
+      test("after optional chaining", ()=>{
+        const fooBar = function fooBar() {fooBar?.toString();};
+        const source = fooBar.toString();
+        const epos = source.indexOf(".")+3;
+        Intercept.breakPoint(mod.id, epos, "to", source);
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
+      });
+
       test("within member word", ()=>{
         const fooBar = function fooBar() {fooBar.toString();};
         const source = fooBar.toString();
