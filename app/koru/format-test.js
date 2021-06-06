@@ -1,14 +1,28 @@
 define((require, exports, module)=>{
   'use strict';
+  /**
+   * Text formatter with language translation
+   */
   const ResourceString  = require('koru/resource-string');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, onEnd, stubProperty} = TH;
 
   const format = require('./format');
+  const origFormat = format;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    group("compiling", ()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      api.module();
+    });
+
+    group("compile", ()=>{
+      /**
+       * Compile a string of text for faster translating and formatting
+       */
+      before(()=>{api.method()});
+
       test("constant", ()=>{
         assert.equals(format.compile("no args"), ["no args"]);
       });
@@ -37,7 +51,14 @@ define((require, exports, module)=>{
       });
     });
 
-    group("formatting", ()=>{
+    group("format", ()=>{
+      /**
+       * Format a string with parameters
+       */
+      let format;
+      beforeEach(()=>{
+        format = api.custom(origFormat);
+      });
       test("constant", ()=>{
         assert.equals(format("no args"), "no args");
       });
@@ -88,6 +109,8 @@ define((require, exports, module)=>{
     });
 
     test("translate", ()=>{
+      api.method();
+
       stubProperty(ResourceString, 'no', {value: {
         is_invalid: 'er ikke gyldig',
       }});
@@ -95,6 +118,8 @@ define((require, exports, module)=>{
       stubProperty(ResourceString, 'de', {value: {
         cant_be_less_than: 'darf nicht kleiner als {0} sein'
       }});
+
+      assert.same(format.translate(null), null);
 
       assert.same(format.translate('is_invalid'), 'is not valid');
 
@@ -107,8 +132,6 @@ define((require, exports, module)=>{
       assert.same(format.translate(['cant_be_less_than', 20], 'zu'), "can't be less than 20");
 
       assert.same(format.translate('no translation:123', 'zu'), "no translation:123");
-
-
     });
   });
 });

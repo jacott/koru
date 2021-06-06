@@ -149,7 +149,7 @@ define((require)=>{
       }
       return findString(lang, text);
     }
-    if (text.constructor === Array) {
+    if (text?.constructor === Array) {
       return format(findString(lang, text[0]), text.slice(1));
     }
     return text;

@@ -18,19 +18,19 @@ define((require)=>{
     error$,
     Error: {
       msgFor(doc, field, other_error) {
-        const errors = doc[error$] !== undefined ? doc[error$][field]
-                : typeof doc === 'string' ? [[doc]] : doc;
-        if (errors !== undefined) {
+        const errors = field !== void 0
+              ? doc[error$][field]
+              : (Array.isArray(doc) ? doc : [[doc.toString()]]);
+        if (errors !== void 0) {
           return errors.map(format.translate).join(", ");
-        } else if (other_error) {
-          console.log('ERROR: ', JSON.stringify(doc[error$]));
+        } else if (other_error !== void 0) {
           return ResourceString.en[other_error];
         } else
           return null;
       },
 
       toString(doc) {
-        const errors = doc[error$] || doc;
+        const errors = doc[error$] ?? doc;
         return Object.keys(errors)
           .map(field => `${field}: ${this.msgFor(errors[field])}`)
           .join("; ");

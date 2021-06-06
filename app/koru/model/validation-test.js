@@ -39,17 +39,37 @@ define((require, exports, module)=>{
     });
 
     group("Error", ()=>{
+      let eapi;
+      before(()=>{
+        eapi = api.innerSubject(Val.Error, 'Error');
+      });
+
       test("msgFor", ()=>{
+        /**
+         * Extract the translated error message for a field
+         */
+        eapi.method();
+        //[
         const doc = {[error$]: {foo: [['too_long', 34]]}};
 
         assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
+
+        assert.same(Val.Error.msgFor("error one"), "error one");
+        assert.same(Val.Error.msgFor([["error 1"], "error 2"]), 'error 1, error 2');
+        //]
       });
 
       test("toString", ()=>{
+        /**
+         * Translate all errors
+         */
+        eapi.method();
+        //[
         const doc = {[error$]: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
 
         assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; '+
                     'bar: is not valid');
+        //]
       });
     });
 
