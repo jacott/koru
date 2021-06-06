@@ -33,6 +33,14 @@ define((require, exports, module)=>{
       v = {};
     });
 
+    test("don't use object with prototype for dictionary", ()=>{
+      const msg = [{"toString": 0}];
+
+      const em = message.encodeMessage('G', msg, v.gDict).slice(1);
+      const dm = message.decodeMessage(em, v.gDict);
+      assert.equals(dm, msg);
+    });
+
     test("encode undefined", ()=>{
       assert.equals(_encode(undefined), v.ans = [1]);
 

@@ -131,7 +131,7 @@ define((require)=>{
     if (byte & 0x40)
       return [byte - 0x40, index];
 
-    throw new Error('Unsupported format: ' + byte);
+    throw new Error(`Unsupported format: ${byte} at ${index}`);
   };
 
   const encode = (buffer, object, dict) => {
@@ -258,7 +258,7 @@ define((require)=>{
       throw new Error('type is unserializable: '+constructor);
   };
 
-  const newLocalDict = () => ({index: 0, k2c: {}, c2k: []});
+  const newLocalDict = () => ({index: 0, k2c: Object.create(null), c2k: []});
 
   const getStringCode = (dict, word) => {
     if (dict.constructor === Array) {
