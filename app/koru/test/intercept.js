@@ -7,6 +7,8 @@ define((require, exports, module)=>{
 
   let interceptPrefix = '';
 
+  const {ctx} = module;
+
   const setSource = (info, fn) => {
     const source =  fn.toString();
 
@@ -14,6 +16,16 @@ define((require, exports, module)=>{
       info.propertyType = 'native '+info.propertyType;
     } else {
       info.source = source;
+    }
+  };
+
+  const getModuleId = (object) => {
+    if (object == null || object === Object || object === Function) return;
+    const moduleId = ctx.exportsModule(object)?.[0].id;
+    if (moduleId !== void 0) {
+      return moduleId;
+    } else {
+      return getModuleId(object.constructor) ?? getModuleId(Object.getPrototypeOf(object));
     }
   };
 
@@ -75,11 +87,15 @@ define((require, exports, module)=>{
         setSource(info, value);
 
         info.signature = JsParser.extractCallSignature(value, name);
-      } else if (value !== null && typeof value === 'object' &&
-                 typeof value.constructor === 'function' &&
-                 value.constructor !== Object) {
-        setSource(info, value.constructor);
+      } else if (value !== null && typeof value === 'object') {
+        if (typeof value.constructor === 'function' &&
+            value.constructor !== Object) {
+          setSource(info, value.constructor);
+        }
       }
+
+      const moduleId = getModuleId(value);
+      if (moduleId !== void 0) info.moduleId = moduleId;
 
       return info;
     }
