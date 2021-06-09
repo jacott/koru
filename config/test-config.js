@@ -27,7 +27,7 @@ exports.server = cfg => {
 };
 
 exports.common = cfg => {
-  const record = !! KORUAPI;
+  const record = !! isTest;
   cfg.set('requirejs.recordExports', record);
   cfg.set('requirejs.config.koru/test/api.record', record);
 };

@@ -21,7 +21,7 @@ define((require, exports, module)=>{
 
   const getModuleId = (object) => {
     if (object == null || object === Object || object === Function) return;
-    const moduleId = ctx.exportsModule(object)?.[0].id;
+    const moduleId = ctx._exportMap?.get(object)?.[0].id;
     if (moduleId !== void 0) {
       return moduleId;
     } else {

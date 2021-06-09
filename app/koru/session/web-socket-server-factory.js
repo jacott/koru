@@ -55,13 +55,12 @@ define((require, exports, module)=>{
             return;
           }
 
-          if (clientHash !== session.versionHash && clientHash) {
+          if (clientHash !== '' && clientHash !== session.versionHash) {
             if (session.version === 'dev')
               newVersion = session.version;
             else {
-              const cmp = session.compareVersion !== void 0 ?
-                    session.compareVersion(clientVersion, clientHash)
-                    : util.compareVersion(clientVersion, session.version);
+              const cmp = session.compareVersion?.(clientVersion, clientHash)
+                    ?? util.compareVersion(clientVersion, session.version);
               if (cmp < 0) {
                 if (cmp == -2) {
                   forceReload(ws, session);
@@ -93,7 +92,7 @@ define((require, exports, module)=>{
             koru.info(`Close conn id:${sessId}, tot:${session.totalSessions}, userId:${conn.userId}`);
           }
         });
-        conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
+        conn.engine = util.browserVersion(ugr.headers['user-agent'] ?? '');
         conn.remoteAddress = remoteAddress;
         conn.remotePort = ugr.connection.remotePort;
 
