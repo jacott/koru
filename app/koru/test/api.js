@@ -5,6 +5,7 @@ define((require, exports, module)=>{
   const moduleGraph     = require('koru/module-graph');
   const jsParser        = require('koru/parse/js-parser');
   const {stubName$}     = require('koru/symbols');
+  const CoreJsTypes     = require('koru/test/core-js-types');
   const util            = require('koru/util');
   const TH              = require('./main');
 
@@ -561,7 +562,7 @@ define((require, exports, module)=>{
         return resolveFunc(relType(orig, value), orig);
 
       if (this._coreTypes.has(value))
-        return [relType(orig, value), displayName, this._specialNames.get(value) || value.name];
+        return [relType(orig, value), displayName, CoreJsTypes.objectName(value) ?? value.name];
 
       let api = this.valueToApi(value);
       if (api) {
@@ -989,57 +990,15 @@ define((require, exports, module)=>{
   }
   API[reportStubs$] = false;
 
-  const Generator = (function *() {})().constructor;
+  API._coreTypes = CoreJsTypes.typeSet;
 
-  API._coreTypes = new Set([
-    Array,
-    ArrayBuffer,
-    Boolean,
-    Date,
-    Element,
-    HTMLDocument,
-    Error,
-    EvalError,
-    Generator,
-    Float32Array,
-    Float64Array,
-    Function,
-    Int16Array,
-    Int32Array,
-    Int8Array,
-    Map,
-    Math,
-    Number,
-    Object,
-    Promise,
-    RangeError,
-    ReferenceError,
-    RegExp,
-    Set,
-    String,
-    Symbol,
-    SyntaxError,
-    TypeError,
-    Uint16Array,
-    Uint32Array,
-    Uint8Array,
-    Uint8ClampedArray,
-    URIError,
-    WeakMap,
-    WeakSet,
-  ]);
-
-  if (isClient) {
-    API._coreTypes.add(HTMLCollection);
+  if (isServer) {
+    CoreJsTypes.addHtml();
   }
 
   API._coreDisplay = new Map([
     [Promise, 'Promise()'],
     [RegExp, obj => ''+obj],
-  ]);
-
-  API._specialNames = new Map([
-    [Generator, 'Generator'],
   ]);
 
   const resolveModule = (type, value)=>{

@@ -44,7 +44,7 @@ define((require, exports, module)=>{
     }
 
     afterEach(() => {
-      Intercept.interceptObj = void 0;
+      Intercept.interceptObj = Intercept.locals = void 0;
     });
 
     group("lookup", ()=>{
@@ -169,7 +169,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("native method", ()=>{
+      test("native method Array", ()=>{
         Intercept.interceptObj = [1,2,3];
         assert.equals(Intercept.objectSource('copyWithin'), {
           object: 'Array.prototype',
@@ -178,6 +178,35 @@ define((require, exports, module)=>{
           value: '',
           valueType: 'function',
           signature: 'copyWithin(arg0, arg1)',
+          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+            'Array/copyWithin',
+        });
+      });
+
+      test("native method Math", ()=>{
+        Intercept.interceptObj = globalThis;
+        assert.equals(Intercept.objectSource('Math'), {
+          object: '',
+          name: 'Math',
+          propertyType: 'native value',
+          value: '{}',
+          valueType: 'object',
+          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+            'Math',
+        });
+      });
+
+      test("native method Math max", ()=>{
+        Intercept.interceptObj = Math;
+        assert.equals(Intercept.objectSource('max'), {
+          object: 'Math',
+          name: 'max',
+          propertyType: 'native value',
+          value: '',
+          valueType: 'function',
+          signature: 'max(arg0, arg1)',
+          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+            'Math/max',
         });
       });
 
@@ -189,6 +218,7 @@ define((require, exports, module)=>{
           propertyType: 'native value',
           value: 'Date("2021-06-02T12:00:00.000Z")',
           valueType: 'object',
+          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date',
         });
       });
     });

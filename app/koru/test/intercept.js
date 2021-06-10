@@ -3,17 +3,22 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const JsParser        = require('koru/parse/js-parser');
   const Core            = require('koru/test/core');
+  const CoreJsTypes     = require('koru/test/core-js-types');
   const util            = require('koru/util');
 
   let interceptPrefix = '';
 
   const {ctx} = module;
 
-  const setSource = (info, fn) => {
+  const setSource = (object, info, fn) => {
     const source =  fn.toString();
 
     if (/\[native code\]\s*\}$/.test(source)) {
       info.propertyType = 'native '+info.propertyType;
+      const url = CoreJsTypes.mdnUrl(info.object.replace(/\.prototype$/, ''));
+      if (url !== void 0) {
+        info.source = url + '/' + info.name;
+      }
     } else {
       info.source = source;
     }
@@ -40,29 +45,30 @@ define((require, exports, module)=>{
       if (typeof object === 'function') {
         return object;
       }
+      if (CoreJsTypes.typeSet.has(object)) return object;
       return this.objectFunction(object.constructor);
     }
 
     static objectName(object) {
       const ans = this.objectFunction(object);
       if (ans === void 0) return '';
-      if (ans === object) return ans.name;
-      return ans.name+".prototype";
+      if (ans === object) return CoreJsTypes.objectName(object) ?? ans.name;
+      return CoreJsTypes.objectName(object) ?? ans.name+".prototype";
     }
 
     static objectSource(name) {
       if (Intercept.interceptObj === void 0) return null;
 
-      const local = this.lookup(Intercept.locals, name);
+      const ans = this.lookup(Intercept.locals, name) ?? this.lookup(Intercept.interceptObj, name);
 
-      const ans = local ?? this.lookup(Intercept.interceptObj, name);
+      const isLocal = Intercept.interceptObj === globalThis;
 
       if (ans === void 0) return null;
 
       const {object, propertyType, value} = ans;
 
       const info = {
-        object: Intercept.objectName(object),
+        object: Intercept.objectName(isLocal ? void 0 : object),
         name,
         propertyType,
         value: util.inspect(value),
@@ -84,13 +90,29 @@ define((require, exports, module)=>{
           info.valueType = 'error';
         }
 
-        setSource(info, value);
+        setSource(object, info, value);
 
         info.signature = JsParser.extractCallSignature(value, name);
       } else if (value !== null && typeof value === 'object') {
+        let url;
         if (typeof value.constructor === 'function' &&
             value.constructor !== Object) {
-          setSource(info, value.constructor);
+          const coreName = CoreJsTypes.objectName(value.constructor);
+          if (coreName === void 0) {
+            setSource(object, info, value.constructor);
+          } else {
+            url = CoreJsTypes.mdnUrl(coreName);
+          }
+        }
+
+        const coreName = CoreJsTypes.objectName(value);
+        if (coreName !== void 0) {
+          url = CoreJsTypes.mdnUrl(coreName);
+        }
+
+        if (url !== void 0) {
+          info.source = url;
+          info.propertyType = 'native '+info.propertyType;
         }
       }
 

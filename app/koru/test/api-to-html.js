@@ -6,12 +6,13 @@ define((require)=>{
   const Document        = require('koru/dom/html-doc');
   const HTMLUtil        = require('koru/parse/html-util');
   const jsParser        = require('koru/parse/js-parser');
+  const coreJsTypes     = require('koru/test/core-js-types');
   const util            = require('koru/util');
 
   const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(),
         node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
-  const MDNDOC_URL = 'https://developer.mozilla.org/en-US/docs/';
+  const {MDNDOC_URL} = coreJsTypes;
 
   const noContent = (tag)=> opts =>{
     const attrs = {[tag]: ''};
@@ -265,51 +266,6 @@ define((require)=>{
         return HTMLUtil.highlight(code).outerHTML;
       }
     },
-  };
-
-  const WebAPI = 'Web/API/';
-
-  const CORE_TYPES = {
-    Array: true,
-    ArrayBuffer: true,
-    Boolean: true,
-    Date: true,
-    Element: WebAPI,
-    HTMLDocument: WebAPI,
-    HTMLCollection: WebAPI,
-    Error: true,
-    EvalError: true,
-    Generator: true,
-    Float32Array: true,
-    Float64Array: true,
-    Function: true,
-    Int16Array: true,
-    Int32Array: true,
-    Int8Array: true,
-    Map: true,
-    Math: true,
-    Null: true,
-    Number: true,
-    Object: true,
-    Primitive: 'Glossary/',
-    Promise: true,
-    RangeError: true,
-    ReferenceError: true,
-    RegExp: true,
-    Set: true,
-    String: true,
-    Symbol: true,
-    SyntaxError: true,
-    TypeError: true,
-    Uint16Array: true,
-    Uint32Array: true,
-    Uint8Array: true,
-    Uint8ClampedArray: true,
-    Undefined: true,
-    URIError: true,
-    WeakMap: true,
-    WeakSet: true,
-    TemplateLiteral: 'Web/JavaScript/Reference/Template_literals',
   };
 
   const BLOCK_TAGS = {
@@ -759,12 +715,7 @@ define((require)=>{
     if (ans) return ans;
     const cType = util.capitalize(type);
 
-    const ct = CORE_TYPES[cType] || type === 'any-type';
-    if (ct)
-      return MDNDOC_URL+
-      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct) +
-      (type === 'any-type' ? '' : ct === true || ct.endsWith('/') ? cType : '');
-    return '#'+type;
+    return coreJsTypes.mdnUrl(cType, type === 'any-type') ?? '#'+type;
   };
 
   const valueToHtml = (arg)=>{
