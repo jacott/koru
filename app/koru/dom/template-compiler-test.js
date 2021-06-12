@@ -1,10 +1,8 @@
-isServer && define((require, exports, module)=>{
+define((require, exports, module)=>{
   'use strict';
   const HTMLParser      = require('koru/parse/html-parser');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
-
-  const fs              = requirejs.nodeRequire('fs');
 
   const TemplateCompiler  = require('./template-compiler');
 
@@ -25,7 +23,8 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("extends", ()=>{
+    isServer && test("extends", ()=>{
+      const fs = requirejs.nodeRequire('fs');
       const fn = module.toUrl('./template-compiler-test.html');
       const code = fs.readFileSync(fn).toString();
 
