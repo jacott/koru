@@ -178,7 +178,7 @@ define((require, exports, module)=>{
           value: '',
           valueType: 'function',
           signature: 'copyWithin(arg0, arg1)',
-          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
             'Array/copyWithin',
         });
       });
@@ -191,7 +191,7 @@ define((require, exports, module)=>{
           propertyType: 'native value',
           value: '{}',
           valueType: 'object',
-          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
             'Math',
         });
       });
@@ -205,7 +205,7 @@ define((require, exports, module)=>{
           value: '',
           valueType: 'function',
           signature: 'max(arg0, arg1)',
-          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
             'Math/max',
         });
       });
@@ -218,7 +218,7 @@ define((require, exports, module)=>{
           propertyType: 'native value',
           value: 'Date("2021-06-02T12:00:00.000Z")',
           valueType: 'object',
-          source: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date',
         });
       });
     });

@@ -10,15 +10,19 @@ define((require, exports, module)=>{
 
   const {ctx} = module;
 
+  const setMdnUrl = (info) => {
+    const url = CoreJsTypes.mdnUrl(info.object.replace(/\.prototype$/, ''));
+    if (url !== void 0) {
+      info.url = url + '/' + info.name;
+    }
+  };
+
   const setSource = (object, info, fn) => {
     const source =  fn.toString();
 
     if (/\[native code\]\s*\}$/.test(source)) {
       info.propertyType = 'native '+info.propertyType;
-      const url = CoreJsTypes.mdnUrl(info.object.replace(/\.prototype$/, ''));
-      if (url !== void 0) {
-        info.source = url + '/' + info.name;
-      }
+      setMdnUrl(info);
     } else {
       info.source = source;
     }
@@ -95,6 +99,7 @@ define((require, exports, module)=>{
         info.signature = JsParser.extractCallSignature(value, name);
       } else if (value !== null && typeof value === 'object') {
         let url;
+
         if (typeof value.constructor === 'function' &&
             value.constructor !== Object) {
           const coreName = CoreJsTypes.objectName(value.constructor);
@@ -111,7 +116,7 @@ define((require, exports, module)=>{
         }
 
         if (url !== void 0) {
-          info.source = url;
+          info.url = url;
           info.propertyType = 'native '+info.propertyType;
         }
       }

@@ -10,6 +10,7 @@ define((require, exports, module)=>{
     ArrayBuffer: true,
     Boolean: true,
     Date: true,
+    Node: WebAPI,
     Element: WebAPI,
     HTMLDocument: WebAPI,
     HTMLCollection: WebAPI,
@@ -50,49 +51,58 @@ define((require, exports, module)=>{
 
   const Generator = (function *() {})().constructor;
 
-  const typeSet =  new Map([
-    [Array, 'Array'],
-    [ArrayBuffer, 'ArrayBuffer'],
-    [Boolean, 'Boolean'],
-    [Date, 'Date'],
-    [Error, 'Error'],
-    [EvalError, 'EvalError'],
-    [Generator, 'Generator'],
-    [Float32Array, 'Float32Array'],
-    [Float64Array, 'Float64Array'],
-    [Function, 'Function'],
-    [Int16Array, 'Int16Array'],
-    [Int32Array, 'Int32Array'],
-    [Int8Array, 'Int8Array'],
-    [Map, 'Map'],
-    [Math, 'Math'],
-    [Number, 'Number'],
-    [Object, 'Object'],
-    [Promise, 'Promise'],
-    [RangeError, 'RangeError'],
-    [ReferenceError, 'ReferenceError'],
-    [RegExp, 'RegExp'],
-    [Set, 'Set'],
-    [String, 'String'],
-    [Symbol, 'Symbol'],
-    [SyntaxError, 'SyntaxError'],
-    [TypeError, 'TypeError'],
-    [Uint16Array, 'Uint16Array'],
-    [Uint32Array, 'Uint32Array'],
-    [Uint8Array, 'Uint8Array'],
-    [Uint8ClampedArray, 'Uint8ClampedArray'],
-    [URIError, 'URIError'],
-    [WeakMap, 'WeakMap'],
-    [WeakSet, 'WeakSet'],
+  const typeSet =  new Map;
+
+  const addTypes = obj => {
+    for (const name of obj) {
+      const value = globalThis[name];
+      if (value !== void 0) typeSet.set(value, name);
+    }
+  };
+
+  addTypes([
+    "Array",
+    "ArrayBuffer",
+    "Boolean",
+    "Date",
+    "Error",
+    "EvalError",
+    "Generator",
+    "Float32Array",
+    "Float64Array",
+    "Function",
+    "Int16Array",
+    "Int32Array",
+    "Int8Array",
+    "Map",
+    "Math",
+    "Number",
+    "Object",
+    "Promise",
+    "RangeError",
+    "ReferenceError",
+    "RegExp",
+    "Set",
+    "String",
+    "Symbol",
+    "SyntaxError",
+    "TypeError",
+    "Uint16Array",
+    "Uint32Array",
+    "Uint8Array",
+    "Uint8ClampedArray",
+    "URIError",
+    "WeakMap",
+    "WeakSet",
   ]);
 
   const addHtml = () => {
-    if (typeof HTMLCollection !== 'undefined') typeSet.set(HTMLCollection, 'HTMLCollection');
-    if (typeof HTMLDocument !== 'undefined') typeSet.set(HTMLDocument, 'HTMLDocument');
-    if (typeof Element !== 'undefined') typeSet.set(Element, 'Element');
+    addTypes([
+      "Node", "HTMLCollection", "Element", "HTMLDocument",
+    ]);
   };
 
-  addHtml();
+  if (isClient) addHtml();
 
   return {
     objectName: (object)=>typeSet.get(object),
