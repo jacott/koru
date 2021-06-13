@@ -14,6 +14,8 @@ define((require, exports, module)=>{
     Element: WebAPI,
     HTMLDocument: WebAPI,
     HTMLCollection: WebAPI,
+    EventTarget: WebAPI,
+    DOMTokenList: WebAPI,
     Error: true,
     EvalError: true,
     Generator: true,
@@ -98,7 +100,8 @@ define((require, exports, module)=>{
 
   const addHtml = () => {
     addTypes([
-      "Node", "HTMLCollection", "Element", "HTMLDocument",
+      "Node", "HTMLCollection", "Element", "HTMLDocument", "EventTarget",
+      "DOMTokenList"
     ]);
   };
 
