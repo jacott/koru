@@ -514,24 +514,12 @@ define((require)=>{
 
   {
     const findAll = (elms, query)=>{
-      const directChild = query[0] === '>';
+      if (query[0] === '>') query = ':scope'+query;
 
       const result = new Set();
       for(let i = 0; i < elms.length; ++i) {
         const elm = elms[i];
-        let se;
-        if (directChild) {
-          if (elm.id)
-            se = elm.querySelectorAll(elm.tagName+'#'+elm.id+query);
-          else {
-            elm.id = '_querySelector_tempId_';
-            se = elm.querySelectorAll(elm.tagName+'#_querySelector_tempId_'+query);
-            elm.removeAttribute('id');
-          }
-        } else {
-          se = elms[i].querySelectorAll(query);
-        }
-
+        const se = elms[i].querySelectorAll(query);
         for(let j = 0; j < se.length; ++j) {
           result.add(se[j]);
         }
