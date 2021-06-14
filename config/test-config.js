@@ -27,8 +27,7 @@ exports.server = cfg => {
 };
 
 exports.common = cfg => {
-  const record = !! isTest;
-  cfg.set('requirejs.recordExports', record);
+  const record = !! isTest; // FIXME GJ this should be defacto convention
   cfg.set('requirejs.config.koru/test/api.record', record);
 };
 

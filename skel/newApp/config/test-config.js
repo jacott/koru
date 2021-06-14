@@ -26,7 +26,6 @@ exports.server = cfg =>{
 exports.common = cfg =>{
   // Auto api compiling when tests are run is controlled by env.KORUAPI
   const record = !! KORUAPI;
-  cfg.set('requirejs.recordExports', record);
   cfg.set('requirejs.config.koru/test/api.record', record);
 };
 
