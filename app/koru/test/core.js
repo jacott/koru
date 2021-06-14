@@ -101,7 +101,13 @@ define((require)=>{
     };
   };
 
-  const stringifyLine = (a) => JSON.stringify(a).slice(0, -1)+'\\n"';
+  const stringifyLine = (a) => {
+    const str = util.inspect(a);
+    return str.slice(0, -1)+'\\n'+str[0];
+  };
+
+  const MultiStringJoin = " +\n    ";
+  const MultiStringNE = "\n != ";
 
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
@@ -111,18 +117,22 @@ define((require)=>{
     const la = a.length -1, lb = b.length -1;
     const minl = Math.min(la, lb) + 1;
 
-    let dsl = 0;
+    let dsl = -1;
     for(let i = 0; i < minl; ++i) {
       if (a[i] !== b[i]) {
         dsl = i;
         break;
       }
     }
+    if (dsl == -1) dsl = minl;
 
-    let ans = a.join(" +\n") + "\n != ";
+    let ans = a.join(MultiStringJoin) + MultiStringNE;
 
+    if (dsl > la) {
+      return ans + b.join(MultiStringJoin) + "\n Is longer";
+    }
     if (dsl > lb) {
-      return ans + b.join(" +\n") + "\n Is shorter";
+      return ans + b.join(MultiStringJoin) + "\n Is shorter";
     } else {
       let del = -1;
       for(let i = 0; i < minl ; ++i) {
@@ -132,16 +142,16 @@ define((require)=>{
         }
       }
 
-      ans += b.slice(0, dsl + 1).join(" +\n");
+      ans += b.slice(0, dsl + 1).join(MultiStringJoin);
       const a1 = a[dsl], b1 = b[dsl];
       const len = Math.min(a1.length, b1.length);
       let s = 0;
       while(s < len && a1[s] === b1[s]) ++s;
-      ans += "\n" + "-".repeat(s) +"^ here";
+      ans += "\n" + "-".repeat(s+4) +"^ here\n    ";
       if (del > 0)
         return ans + "; the Remainder is the same";
 
-      return ans + b.slice(dsl+1, lb - del + 1).join(" +\n");
+      return ans + b.slice(dsl+1, lb - del + 1).join(MultiStringJoin);
     }
   };
 
