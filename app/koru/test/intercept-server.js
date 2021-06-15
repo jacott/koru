@@ -140,6 +140,9 @@ define((require, exports, module)=>{
       }
     }
 
+    ServerIntercept.parser = parser;
+    ServerIntercept.parseOptions = parseOptions;
+
     if (isTest) {
       ServerIntercept[isTest] = {
         get repSrc() {return repSrc},
