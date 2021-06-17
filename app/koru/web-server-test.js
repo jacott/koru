@@ -224,7 +224,7 @@ isServer && define((require, exports, module)=>{
         assert.same(req, v.req);
 
         assert.same(fst.readFile(options.root + path).toString(),
-                    'define({"name":"Test.WebServer","nodes":[{"name":"div","attrs":[],"children":[["","hello"]]}]})');
+                    'define({"name":"Test.WebServer","nodes":[{"name":"div","children":[["","hello"]]}]})');
       });
 
       webServer.requestListener(v.req, v.res);
