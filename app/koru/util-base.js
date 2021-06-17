@@ -3,8 +3,8 @@ define((require, exports, module)=>{
   const {hasOwnProperty} = Object.prototype;
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
 
-  const qstr = s => /[\x00-\x1f'\\]/.test(s)
-        ? JSON.stringify(s) : "'"+s+"'";
+  const qstr = (s) => /[\x00-\x09\x0b-\x1f\']/.test(s) ?
+        JSON.stringify(s) : "'" + s.replace(/[\\\n]/g, (m) => m[0] === '\n' ? '\\n' : '\\\\') + "'";
 
   const qlabel = id => {
     if (LABEL_RE.test(id)) return id;

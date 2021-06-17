@@ -247,14 +247,45 @@ because of its widespread use.
       assert.isFalse(deepEqual([1, 1], [1, matcher]));
       assert.isFalse(deepEqual([2, 2], [1, matcher]));
 
-      assert.isTrue(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+      assert.isTrue(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                              {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 
-      assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
-      assert.isFalse(deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}}, {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+      assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                               {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
+      assert.isFalse(deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}},
+                               {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
 
-      assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
+      assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                               {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
       assert.isFalse(deepEqual({a: 1}, {a: "1"}));
+    });
+
+    test('deepEqual string failure message', ()=>{
+      const {deepEqual} = TH.Core;
+      const hint = {};
+      assert.isFalse(deepEqual("1256789".split("").join("xx\n")+"\n",
+                               "12567\r98".split("").join("xx\n"), hint, 'x'))
+
+      const exp = `
+    '1xx\\n' +
+    '2xx\\n' +
+    '5xx\\n' +
+    '6xx\\n' +
+    '7xx\\n' +
+    '8xx\\n' +
+    '9\\n'
+ != '1xx\\n' +
+    '2xx\\n' +
+    '5xx\\n' +
+    '6xx\\n' +
+    '7xx\\n' +
+    "\\rxx\\n"
+-----^ here
+    '9xx\\n' +
+    '8\\n'`;
+
+      assert.equals(hint.x, exp);
     });
   });
 });

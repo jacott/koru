@@ -9,7 +9,7 @@ define((require)=>{
 
   const match = require('koru/match')[isTest];
 
-  const {inspect, extractError, hasOwn} = util;
+  const {inspect, extractError, hasOwn, qstr, last} = util;
 
   const {is} = Object;
 
@@ -101,10 +101,7 @@ define((require)=>{
     };
   };
 
-  const stringifyLine = (a) => {
-    const str = util.inspect(a);
-    return str.slice(0, -1)+'\\n'+str[0];
-  };
+  const qnlStr = (s) => qstr(s+"\n");
 
   const MultiStringJoin = " +\n    ";
   const MultiStringNE = "\n != ";
@@ -112,13 +109,15 @@ define((require)=>{
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
       return format("{i0}\n != {i1}", as, bs);
-    const a = as.split("\n").map(stringifyLine), b = bs.split("\n").map(stringifyLine);
+    const a = as.split("\n"), b = bs.split("\n");
+    last(a) === '' && a.pop();
+    last(b) === '' && b.pop();
 
-    const la = a.length -1, lb = b.length -1;
+    const la = a.length - 1, lb = b.length - 1;
     const minl = Math.min(la, lb) + 1;
 
     let dsl = -1;
-    for(let i = 0; i < minl; ++i) {
+    for (let i = 0; i < minl; ++i) {
       if (a[i] !== b[i]) {
         dsl = i;
         break;
@@ -126,13 +125,13 @@ define((require)=>{
     }
     if (dsl == -1) dsl = minl;
 
-    let ans = a.join(MultiStringJoin) + MultiStringNE;
+    let ans = a.map(qnlStr).join(MultiStringJoin) + MultiStringNE;
 
     if (dsl > la) {
-      return ans + b.join(MultiStringJoin) + "\n Is longer";
+      return ans + b.map(qnlStr).join(MultiStringJoin) + "\n Is longer";
     }
     if (dsl > lb) {
-      return ans + b.join(MultiStringJoin) + "\n Is shorter";
+      return ans + b.map(qnlStr).join(MultiStringJoin) + "\n Is shorter";
     } else {
       let del = -1;
       for(let i = 0; i < minl ; ++i) {
@@ -142,8 +141,12 @@ define((require)=>{
         }
       }
 
-      ans += b.slice(0, dsl + 1).join(MultiStringJoin);
-      const a1 = a[dsl], b1 = b[dsl];
+      ans += b.slice(0, dsl + 1).map(qnlStr).join(MultiStringJoin);
+      let a1 = qnlStr(a[dsl]), b1 = qnlStr(b[dsl]);
+      if (a1[0] !== b1[0]) {
+        if (a1[0] !== '"') a1 = JSON.stringify(a1);
+        if (b1[0] !== '"') b1 = JSON.stringify(b1);
+      }
       const len = Math.min(a1.length, b1.length);
       let s = 0;
       while(s < len && a1[s] === b1[s]) ++s;
@@ -151,7 +154,7 @@ define((require)=>{
       if (del > 0)
         return ans + "; the Remainder is the same";
 
-      return ans + b.slice(dsl+1, lb - del + 1).join(MultiStringJoin);
+      return ans + b.slice(dsl+1, lb - del + 1).map(qnlStr).join(MultiStringJoin);
     }
   };
 

@@ -26,10 +26,10 @@ define((require, exports, module)=>{
        **/
       api.method('inspect');
       //[
-      const obj = {"": 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, "\\a": 5};
+      const obj = { '': 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, '\\a': 5 };
       assert.equals(
         util.inspect(obj),
-        `{123: 1, '': 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, "\\\\a": 5}`);
+        `{123: 1, '': 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, '\\\\a': 5}`);
 
       const array = [1,2,3];
       assert.equals(
@@ -53,7 +53,7 @@ define((require, exports, module)=>{
       assert.equals(util.qlabel("abc123"), 'abc123');
       assert.equals(util.qlabel("a'234"), `"a'234"`);
       assert.equals(util.qlabel("123a"), `'123a'`);
-      assert.equals(util.qlabel('ab\nc'), `"ab\\nc"`);
+      assert.equals(util.qlabel('ab\nc'), `'ab\\nc'`);
       //]
     });
 
@@ -66,8 +66,9 @@ define((require, exports, module)=>{
       assert.equals(util.qstr("1234"), "'1234'");
       assert.equals(util.qstr("1'234"), `"1'234"`);
       assert.equals(util.qstr('12"3a'), `'12"3a'`);
-      assert.equals(util.qstr("12\n3a"), `"12\\n3a"`);
-      assert.equals(util.qstr("12\\n3a"), `"12\\\\n3a"`);
+      assert.equals(util.qstr("\r"), '"\\r"');
+      assert.equals(util.qstr('12\n3a'), `'12\\n3a'`);
+      assert.equals(util.qstr('12\\n3a'), `'12\\\\n3a'`);
       //]
     });
 
