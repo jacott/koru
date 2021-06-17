@@ -1,0 +1,36 @@
+#!/usr/bin/env -S node --no-wasm-code-gc
+// -*- js2 -*-
+const path = require('path');
+const fs = require('fs');
+
+global.isServer = true;
+global.isClient = false;
+global.isTest = false;
+
+const {topDir, system, loadEnv, withKoru} = require('../lib/script-utils');
+const {argv} = process;
+
+const file = argv[2];
+
+withKoru({env: 'test'}, () => {
+  requirejs(['koru/server', 'koru/parse/code-formatter', 'koru/fs-tools'], (koru, {reformat}, fst) => {
+
+    const convertFile = (file) => {
+      const stat = fst.lstat(file);
+      if (stat == null) {
+        console.error('No such file or directory: '+file);
+        process.exit(1);
+      }
+      if (stat.isDirectory()) {
+        for (const n of fst.readdir(file)) {
+          convertFile(path.join(file, n));
+        }
+      } else if (stat.isFile() && file.endsWith('.js')) {
+        const source = reformat(fst.readFile(file).toString());
+        fst.writeFile(file, source);
+      }
+    };
+
+    convertFile(file);
+  });
+});

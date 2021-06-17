@@ -502,7 +502,8 @@ define((require)=> JsPaser => {
       const visitor = (node) => {
         if (node.params != null) {
           for (const n of node.params) {
-            walk({n}, extract);
+            if (extract(n) == 1)
+              walk(n, extract);
           }
           return 0;
         }

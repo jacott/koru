@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const format          = require('koru/format');
   const stacktrace      = require('koru/stacktrace');
@@ -28,11 +28,11 @@ define((require)=>{
 
   let elidePoint = void 0;
 
-  const fail = (message="failed", elidePoint=0) =>{
+  const fail = (message='failed', elidePoint=0) => {
     throw new AssertionError(message, typeof elidePoint === 'number' ? elidePoint+1 : elidePoint);
   };
 
-  const assert = (truth, msg)=>{
+  const assert = (truth, msg) => {
     ++Core.assertCount;
     let {__msg} = Core;
     const ep = elidePoint;
@@ -50,7 +50,7 @@ define((require)=>{
   };
 
   assert.fail = fail;
-  assert.elide = (body, adjust=0)=>{
+  assert.elide = (body, adjust=0) => {
     try {
       return body();
     } catch(ex) {
@@ -60,7 +60,7 @@ define((require)=>{
     }
   };
 
-  const refute = (truth, msg)=>{
+  const refute = (truth, msg) => {
     Core.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
@@ -71,10 +71,10 @@ define((require)=>{
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});
   Object.defineProperty(refute, 'elideFromStack', {get: getElideFromStack});
 
-  assert.msg = msg =>(Core.__msg = msg, assert);
-  refute.msg = msg =>(Core.__msg = msg, refute);
+  assert.msg = (msg) => (Core.__msg = msg, assert);
+  refute.msg = (msg) => (Core.__msg = msg, refute);
 
-  const compileOptions = options=>{
+  const compileOptions = (options) => {
     if (! options.assertMessage)
       options.assertMessage = 'Expected ' + (options.message || 'success');
 
@@ -86,9 +86,9 @@ define((require)=>{
     return options;
   };
 
-  const assertFunc = (pass, options)=>{
+  const assertFunc = (pass, options) => {
     const func = options.assert;
-    return (...args)=>{
+    return (...args) => {
       const sideAffects = {_asserting: pass};
 
       if (pass === ! func.apply(sideAffects, args)) {
@@ -101,15 +101,15 @@ define((require)=>{
     };
   };
 
-  const qnlStr = (s) => qstr(s+"\n");
+  const qnlStr = (s) => qstr(s+'\n');
 
-  const MultiStringJoin = " +\n    ";
-  const MultiStringNE = "\n != ";
+  const MultiStringJoin = ' +\n    ';
+  const MultiStringNE = '\n != ';
 
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
-      return format("{i0}\n != {i1}", as, bs);
-    const a = as.split("\n"), b = bs.split("\n");
+      return format('{i0}\n != {i1}', as, bs);
+    const a = as.split('\n'), b = bs.split('\n');
     last(a) === '' && a.pop();
     last(b) === '' && b.pop();
 
@@ -128,10 +128,10 @@ define((require)=>{
     let ans = a.map(qnlStr).join(MultiStringJoin) + MultiStringNE;
 
     if (dsl > la) {
-      return ans + b.map(qnlStr).join(MultiStringJoin) + "\n Is longer";
+      return ans + b.map(qnlStr).join(MultiStringJoin) + '\n Is longer';
     }
     if (dsl > lb) {
-      return ans + b.map(qnlStr).join(MultiStringJoin) + "\n Is shorter";
+      return ans + b.map(qnlStr).join(MultiStringJoin) + '\n Is shorter';
     } else {
       let del = -1;
       for(let i = 0; i < minl ; ++i) {
@@ -150,36 +150,36 @@ define((require)=>{
       const len = Math.min(a1.length, b1.length);
       let s = 0;
       while(s < len && a1[s] === b1[s]) ++s;
-      ans += "\n" + "-".repeat(s+4) +"^ here\n    ";
+      ans += '\n' + '-'.repeat(s+4) +'^ here\n    ';
       if (del > 0)
-        return ans + "; the Remainder is the same";
+        return ans + '; the Remainder is the same';
 
       return ans + b.slice(dsl+1, lb - del + 1).map(qnlStr).join(MultiStringJoin);
     }
   };
 
 
-  const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL)=>{
+  const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL) => {
     if (is(actual, expected)) {
       return true;
     }
 
-    const setHint = (aobj=actual, eobj=expected, prefix)=>{
+    const setHint = (aobj=actual, eobj=expected, prefix) => {
       if (! hint) return false;
       const prev = hint[hintField];
 
-      hint[hintField] = (prefix || '') + "\n    " +
+      hint[hintField] = (prefix || '') + '\n    ' +
         (typeof aobj === 'string' && typeof eobj === 'string' ?
          formatStringDiff(aobj, eobj) :
-         format("{i0}\n != {i1}", aobj, eobj)
-        ) + (prev ? "\n" + prev : '');
+         format('{i0}\n != {i1}', aobj, eobj)
+        ) + (prev ? '\n' + prev : '');
       return false;
     };
 
     if (match.isMatch(expected))
       return match.test(expected, actual) || setHint();
 
-    const badKey = key =>{
+    const badKey = (key) => {
       if (hint) {
         hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField]||''}`;
         setHint();

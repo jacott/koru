@@ -1,11 +1,11 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * The heart of the test framework.
    **/
   const match           = require('koru/match');
-  const Stacktrace      = require('koru/stacktrace');
   const stacktrace      = require('koru/stacktrace');
+  const Stacktrace      = require('koru/stacktrace');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -13,9 +13,9 @@ define((require, exports, module)=>{
 
   const Core = require('./core');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
 
-    test("properties", ()=>{
+    test('properties', () => {
       assert.same(Core, TH.Core);
       api.property('test', {info: 'The currently running test'});
       assert.same(Core.test.name, 'koru/test/core test properties.');
@@ -36,18 +36,18 @@ because of its widespread use.
       assert.same(Core.match, match[isTest]);
     });
 
-    group("AssertionError", ()=>{
+    group('AssertionError', () => {
       /**
        * An error thrown by an assertion methods.
        **/
       let aeApi;
-      before(()=>{
+      before(() => {
         aeApi = api.innerSubject(Core.AssertionError, null);
       });
 
-      after(()=>{aeApi = undefined});
+      after(() => {aeApi = undefined});
 
-      test("constructor", ()=>{
+      test('constructor', () => {
         /**
          * Create an AssertionError.
 
@@ -60,12 +60,12 @@ because of its widespread use.
           info: `The normalized stack trace with the elided frames and message`});
         let {AssertionError} = Core;
         //[
-        const inner1 = ()=>{inner2()};
-        const inner2 = ()=>{inner3()};
-        const inner3 = ()=>{
-          const err = new AssertionError("I failed");
+        const inner1 = () => {inner2()};
+        const inner2 = () => {inner3()};
+        const inner3 = () => {
+          const err = new AssertionError('I failed');
           assert(err instanceof Error);
-          assert.same(err.message, "I failed");
+          assert.same(err.message, 'I failed');
           assert.equals(Stacktrace.normalize(err), [
             m(/    at .*inner3.* \(koru\/test\/core-test.js:\d+:\d+\)/),
             m(/    at .*inner2.* \(koru\/test\/core-test.js:\d+:\d+\)/),
@@ -73,22 +73,22 @@ because of its widespread use.
             m(/    at .* \(koru\/test\/core-test.js:\d+:\d+\)/),
           ]);
 
-          const err2 = new AssertionError("I have a shortened customStack", 2);
+          const err2 = new AssertionError('I have a shortened customStack', 2);
           assert.equals(Stacktrace.normalize(err).slice(2), Stacktrace.normalize(err2));
 
-          const err3 = (()=> new AssertionError("I use another stack", err2))();
+          const err3 = (() => new AssertionError('I use another stack', err2))();
           assert.same(Stacktrace.normalize(err3), Stacktrace.normalize(err2));
         };
         inner1();
         //]
         AssertionError = aeApi.class();
-        const a1 = new AssertionError("message");
-        const a2 = new AssertionError("message", 1);
-        const a3 = new AssertionError("message", a1);
+        const a1 = new AssertionError('message');
+        const a2 = new AssertionError('message', 1);
+        const a3 = new AssertionError('message', a1);
       });
     });
 
-    test("fail", ()=>{
+    test('fail', () => {
       /**
        * throw assertionError
        *
@@ -98,10 +98,10 @@ because of its widespread use.
        **/
       //[
       let ex;
-      const inner1 = ()=>{inner2()};
-      const inner2 = ()=>{
+      const inner1 = () => {inner2()};
+      const inner2 = () => {
         try {
-          assert.fail("I failed", 1);
+          assert.fail('I failed', 1);
         } catch(e) {
           ex = e;
         }
@@ -110,19 +110,19 @@ because of its widespread use.
       inner1();
 
       assert.instanceof(ex, Core.AssertionError);
-      assert.same(ex.message, "I failed");
+      assert.same(ex.message, 'I failed');
       assert.equals(Stacktrace.normalize(ex), [
         m(/^    at.*inner1.*core-test.js/),
         m(/^    at.*core-test.js/),
       ]);
       //]
       api.customIntercept(assert, {name: 'fail', sig: 'assert.'});
-      assert.exception(()=>{assert.fail()});
-      assert.exception(()=>{assert.fail("test1")});
-      assert.exception(()=>{assert.fail("test2", 1)});
+      assert.exception(() => {assert.fail()});
+      assert.exception(() => {assert.fail('test1')});
+      assert.exception(() => {assert.fail('test2', 1)});
     });
 
-    test("elide", ()=>{
+    test('elide', () => {
       /**
        * Elide stack starting from caller
        *
@@ -131,14 +131,14 @@ because of its widespread use.
        * @param adjust the number of additional stack frames to elide.
        **/
       //[
-      const inner = ()=>{
-        assert.fail("I failed");
+      const inner = () => {
+        assert.fail('I failed');
       };
 
       let ex;
       try {
-        (()=>{
-          assert.elide(()=>{
+        (() => {
+          assert.elide(() => {
             inner();
           }, 1);
         })();
@@ -146,23 +146,23 @@ because of its widespread use.
         ex = e;
       }
       assert.instanceof(ex, Core.AssertionError);
-      assert.same(ex.message, "I failed");
-      assert.equals(ex.customStack, new Core.AssertionError("I failed", 1).customStack);
+      assert.same(ex.message, 'I failed');
+      assert.equals(ex.customStack, new Core.AssertionError('I failed', 1).customStack);
 
       //]
       // api trace here because intercept will interfere with stack trace
       api.customIntercept(assert, {name: 'elide', sig: 'assert.'});
       try {
-        assert.elide(()=>{inner()});
+        assert.elide(() => {inner()});
       } catch (ex) {
       }
       try {
-        assert.elide(()=>{inner()}, 1);
+        assert.elide(() => {inner()}, 1);
       } catch (ex) {
       }
     });
 
-    test("assert", ()=>{
+    test('assert', () => {
       /**
        * Assert is truthy. Contains methods for more convenient assertions in {#::assert}. `assert`
        * is a global method.
@@ -179,9 +179,9 @@ because of its widespread use.
         const {assert} = Core;
         //[
         try {
-          assert(1, "I succeeded");
-          assert(true, "So did I");
-          assert(0, "I failed");
+          assert(1, 'I succeeded');
+          assert(true, 'So did I');
+          assert(0, 'I failed');
         } catch(e) {
           ex = e;
         }
@@ -189,11 +189,11 @@ because of its widespread use.
       }
       //[
       assert.instanceof(ex, Core.AssertionError);
-      assert.same(ex.message, "I failed");
+      assert.same(ex.message, 'I failed');
       //]
     });
 
-    test("refute", ()=>{
+    test('refute', () => {
       /**
        * Assert is falsy. Contains methods for more convenient assertions in {#::assert}. `refute`
        * is a global method.
@@ -210,9 +210,9 @@ because of its widespread use.
         const {assert} = Core;
         //[
         try {
-          refute(0, "I succeeded");
-          refute(false, "So did I");
-          refute(true, "I failed");
+          refute(0, 'I succeeded');
+          refute(false, 'So did I');
+          refute(true, 'I failed');
         } catch(e) {
           ex = e;
         }
@@ -220,11 +220,11 @@ because of its widespread use.
       }
       //[
       assert.instanceof(ex, Core.AssertionError);
-      assert.same(ex.message, "I failed");
+      assert.same(ex.message, 'I failed');
       //]
     });
 
-    test("deepEqual", ()=>{
+    test('deepEqual', () => {
       /**
        * Like {#koru/util.deepEqual} except allows a hint to show where values don't match.
        **/
@@ -234,7 +234,7 @@ because of its widespread use.
 
       assert.isTrue(deepEqual(null, null));
       assert.isTrue(deepEqual(null, undefined));
-      assert.isFalse(deepEqual(null, ""));
+      assert.isFalse(deepEqual(null, ''));
       assert.isTrue(deepEqual({}, {}));
       assert.isFalse(deepEqual(0, -0));
       assert.isFalse(deepEqual({a: 0}, {a: -0}));
@@ -242,7 +242,7 @@ because of its widespread use.
       assert.same(hint.keyCheck, '\n    {a: null}\n != {b: null}\nat key = a');
 
 
-      const matcher = TH.match(v => v % 2 === 0);
+      const matcher = TH.match((v) => v % 2 === 0);
       assert.isTrue(deepEqual([1, 2, null], [1, matcher, TH.match.any]));
       assert.isFalse(deepEqual([1, 1], [1, matcher]));
       assert.isFalse(deepEqual([2, 2], [1, matcher]));
@@ -258,14 +258,14 @@ because of its widespread use.
       assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
                                {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
-      assert.isFalse(deepEqual({a: 1}, {a: "1"}));
+      assert.isFalse(deepEqual({a: 1}, {a: '1'}));
     });
 
-    test('deepEqual string failure message', ()=>{
+    test('deepEqual string failure message', () => {
       const {deepEqual} = TH.Core;
       const hint = {};
-      assert.isFalse(deepEqual("1256789".split("").join("xx\n")+"\n",
-                               "12567\r98".split("").join("xx\n"), hint, 'x'))
+      assert.isFalse(deepEqual('1256789'.split('').join('xx\n')+'\n',
+                               "12567\r98".split('').join('xx\n'), hint, 'x'))
 
       const exp = `
     '1xx\\n' +
