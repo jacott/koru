@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const htmlEncode      = require('koru/dom/html-encode');
   const HTMLParser      = require('koru/parse/html-parser');
@@ -16,13 +16,14 @@ define((require)=>{
     }
   }
 
-  const filenameToTemplateName = filename => filename.replace(/^.*\//, '').replace(/\..*$/,'').split('-')
-        .map(n => n ? n[0].toUpperCase() + n.slice(1) : '').join('');
+  const filenameToTemplateName = (filename) => filename
+        .replace(/^.*\//, '').replace(/\..*$/,'').split('-')
+        .map((n) => n ? n[0].toUpperCase() + n.slice(1) : '').join('');
 
   const TemplateCompiler = {
     filenameToTemplateName,
 
-    toJavascript: (code, filename='<anonymous>')=>{
+    toJavascript: (code, filename='<anonymous>', templateName) => {
       let template;
       try {
         HTMLParser.parse(code, {
@@ -30,14 +31,14 @@ define((require)=>{
           onopentag(name, attrs, code, spos, epos) {
             if (template === undefined && name !== 'template') {
               template = new Template(undefined, {
-                name: filenameToTemplateName(filename)
+                name: templateName ?? filenameToTemplateName(filename)
               });
 
             }
             if (name === 'template') {
               name = attrs.name;
               if (! name)
-                throw ["Template name is missing", spos];
+                throw ['Template name is missing', spos];
               if (! name.match(/^([A-Z]\w*\.?)+$/))
                 throw [`Template name must match the format: Foo(.Bar)* ${name}`, spos];
               template = new Template(template, attrs);
@@ -49,7 +50,7 @@ define((require)=>{
           },
           ontext(code, si, ei){
             template !== void 0 &&
-            template.addText(unescapeHTML(code.slice(si, ei).replace(/(?:^\s+|\s+$)/g, ' ')));
+              template.addText(unescapeHTML(code.slice(si, ei).replace(/(?:^\s+|\s+$)/g, ' ')));
           },
           onclosetag(name){
             if (name === 'template') {
@@ -62,7 +63,7 @@ define((require)=>{
           }
         });
         if (template === undefined) {
-          throw ["Content missing", filename, 0];
+          throw ['Content missing', filename, 0];
         }
         return template;
       } catch (err) {
@@ -73,7 +74,7 @@ define((require)=>{
     }
   };
 
-  const nodeToJson = (node)=>{
+  const nodeToJson = (node) => {
     if (typeof node === 'string' || node.shift)
       return node;
 
@@ -81,12 +82,12 @@ define((require)=>{
     if (node.attrs.length != 0) result.attrs = node.attrs;
     if (node.ns !== void 0) result.ns = node.ns;
     if (node.children.length)
-      result.children = node.children.map(node => nodeToJson(node));
+      result.children = node.children.map((node) => nodeToJson(node));
 
     return result;
   };
 
-  const extractBraces = (text)=>{
+  const extractBraces = (text) => {
     const parts = text.split(/({{[\s\S]*?}})/);
 
     if (parts.length === 1) return text;
@@ -102,7 +103,7 @@ define((require)=>{
     return parts;
   };
 
-  const compileBraceExpr = (bexpr)=>{
+  const compileBraceExpr = (bexpr) => {
     let result;
     if (bexpr.match(/^[!#>\/]/)) {
       result = [bexpr[0]];
@@ -114,13 +115,13 @@ define((require)=>{
     return result;
   };
 
-  const extractAttrs = (attrs)=>{
+  const extractAttrs = (attrs) => {
 
     const tokens = [];
     const result = [];
     tokenizeWithQuotes(attrs, tokens);
 
-    tokens.forEach(token => {
+    tokens.forEach((token) => {
       if (typeof token === 'string') {
         result.push(justOne(extractBraces(token[0] === '"' ? token.slice(1) : token)));
 
@@ -133,7 +134,7 @@ define((require)=>{
     return result;
   };
 
-  const justOne = (nodes)=>{
+  const justOne = (nodes) => {
     if (typeof nodes === 'string') return nodes;
 
 
@@ -170,7 +171,7 @@ define((require)=>{
     return ans;
   };
 
-  const tokenizeWithQuotes = (bexpr, result)=>{
+  const tokenizeWithQuotes = (bexpr, result) => {
     // split by tokens
     while(bexpr !== '') {
       bexpr = bexpr.trim();
@@ -187,7 +188,7 @@ define((require)=>{
     }
   };
 
-  const addToken = (token, result)=>{
+  const addToken = (token, result) => {
     const m = /^([:-\w]+)=([\s\S]*)$/.exec(token);
     if (m) {
       IGNORE[m[1]] || result.push(['=', m[1], quotenorm(m[2])]);
@@ -196,7 +197,7 @@ define((require)=>{
     }
   };
 
-  const quotenorm = (token)=>{
+  const quotenorm = (token) => {
     if (token.match(/^(['"])[\s\S]*\1$/))
       return '"' + token.slice(1,-1);
     else
@@ -234,10 +235,10 @@ define((require)=>{
         return;
       }
 
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         if (typeof node === 'string')
           node && chn.push(node);
-        else node.forEach(elm => {
+        else node.forEach((elm) => {
           elm && chn.push(elm);
         });
       });
@@ -254,10 +255,10 @@ define((require)=>{
     toJson() {
       const content = Object.assign({}, this.attrs);
       if (this.nested.length)
-        content.nested = this.nested.map(row => row.toJson());
+        content.nested = this.nested.map((row) => row.toJson());
 
       if (this.nodes.children.length)
-        content.nodes = this.nodes.children.map(node => nodeToJson(node));
+        content.nodes = this.nodes.children.map((node) => nodeToJson(node));
 
       return content;
     }

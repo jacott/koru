@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const HTMLParser      = require('koru/parse/html-parser');
   const TH              = require('koru/test-helper');
@@ -6,24 +6,35 @@ define((require, exports, module)=>{
 
   const TemplateCompiler  = require('./template-compiler');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("filenameToTemplateName", ()=>{
-      assert.same(TemplateCompiler.filenameToTemplateName("needUpperFirst"), "NeedUpperFirst");
-      assert.same(TemplateCompiler.filenameToTemplateName("funNy-name"), "FunNyName");
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('filenameToTemplateName', () => {
+      assert.same(TemplateCompiler.filenameToTemplateName('needUpperFirst'), 'NeedUpperFirst');
+      assert.same(TemplateCompiler.filenameToTemplateName('funNy-name'), 'FunNyName');
     });
 
-    test("no template", ()=>{
-      const json = JSON.parse(TemplateCompiler.toJavascript("<div>hello</div>", "a/b/c/hello.html"));
+    test('no template', () => {
+      const json = JSON.parse(TemplateCompiler.toJavascript('<div>hello</div>', 'a/b/c/hello.html'));
 
       assert.equals(json, {
-        name: "Hello",
+        name: 'Hello',
         nodes: [
           {name: 'div', children: ['hello']}
         ],
       });
     });
 
-    isServer && test("extends", ()=>{
+    test('no template, supplied name', () => {
+      const json = JSON.parse(TemplateCompiler.toJavascript('<div>hello</div>', void 0, 'My.Template'));
+
+      assert.equals(json, {
+        name: 'My.Template',
+        nodes: [
+          {name: 'div', children: ['hello']}
+        ],
+      });
+    });
+
+    isServer && test('extends', () => {
       const fs = requirejs.nodeRequire('fs');
       const fn = module.toUrl('./template-compiler-test.html');
       const code = fs.readFileSync(fn).toString();
@@ -44,7 +55,7 @@ define((require, exports, module)=>{
           }]}, {
             name: 'Fnord'
           }, {
-            name: 'Baz', extends: 'Fnord', ns: "http://www.w3.org/2000/svg",
+            name: 'Baz', extends: 'Fnord', ns: 'http://www.w3.org/2000/svg',
             nodes: [{name: 'div'}]}],
         nodes: [{
           name: 'div',
@@ -55,22 +66,22 @@ define((require, exports, module)=>{
             ' ', ['>', 'Bar'], ' ', {
               name: 'svg',
               children: [
-                {name:"defs",
+                {name:'defs',
                  children: [{
-                   name: "pattern", attrs: [
-                     ["=","id","image123"],["=","patternUnits","userSpaceOnUse"],
-                     ["=","width","83.38"],["=","height","100"],["=","x","0"],["=","y","0"]],
+                   name: 'pattern', attrs: [
+                     ['=','id','image123'],['=','patternUnits','userSpaceOnUse'],
+                     ['=','width','83.38'],['=','height','100'],['=','x','0'],['=','y','0']],
                    children: [{
-                     name: "image", attrs: [
-                       ["=","xlink:href","http://vimaly.test/myImage.jpg"],
-                       ["=","x","0"],["=","y","0"],
-                       ["=","width","100%"],["=","height","100%"],
-                       ["=","preserveAspectRatio","xMinYMin slice"]]
+                     name: 'image', attrs: [
+                       ['=','xlink:href','http://vimaly.test/myImage.jpg'],
+                       ['=','x','0'],['=','y','0'],
+                       ['=','width','100%'],['=','height','100%'],
+                       ['=','preserveAspectRatio','xMinYMin slice']]
                    }]
                  }]},
                 {name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]},
                 {name: 'foreignObject', children: [
-                  {name: "div", ns: "http://www.w3.org/1999/xhtml"}
+                  {name: 'div', ns: 'http://www.w3.org/1999/xhtml'}
                 ]}
               ],
             }]
@@ -78,8 +89,8 @@ define((require, exports, module)=>{
       });
     });
 
-    test("error", ()=>{
-      assert.exception(()=>{
+    test('error', () => {
+      assert.exception(() => {
         JSON.parse(TemplateCompiler.toJavascript(`<div></section>`, 'error-example.js'));
       }, {
         constructor: HTMLParser.HTMLParseError,
