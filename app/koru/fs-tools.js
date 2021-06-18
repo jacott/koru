@@ -117,7 +117,13 @@ const futureWrap = (obj, func, args)=>{
   };
   args.push(callback);
   func.apply(obj, args);
-  return future.wait();
+  try {
+    return future.wait();
+  } catch (err) {
+    const e2 = new Error(err.message);
+    e2.code = err.code;
+    throw e2;
+  }
 };
 
 define({
