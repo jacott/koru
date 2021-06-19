@@ -1160,11 +1160,34 @@ define((require, exports, module)=>{
       assert.same(util.niceFilename("a1!@#$%/sdffsdDDfdsf/fds.txt"), 'a1-sdffsdddfdsf-fds-txt');
     });
 
+    test('trimMatchingSeq', ()=>{
+      /**
+       * Trim the matching start and ends of two sequences
+       */
+      api.method();
+      //[
+      assert.equals(util.trimMatchingSeq('string', 'substring'), ['', 'sub']);
+      assert.equals(util.trimMatchingSeq('substring', 'sub'), ['string', '']);
+      assert.equals(util.trimMatchingSeq('1a23', '1d23'), ['a', 'd']);
+      assert.equals(util.trimMatchingSeq('123abc456', '123def456'), ['abc', 'def']);
+      assert.equals(util.trimMatchingSeq('diffStart', 'myStart'), ['diff', 'my']);
+      assert.equals(util.trimMatchingSeq('diffEnd', 'diffEnds'), ['', 's']);
+      assert.equals(util.trimMatchingSeq('diff', 'strings'), ['diff', 'strings']);
+      assert.equals(util.trimMatchingSeq('same', 'same'), ['', '']);
+      assert.equals(util.trimMatchingSeq('', ''), ['', '']);
+      assert.equals(util.trimMatchingSeq('a', ''), ['a', '']);
+      assert.equals(util.trimMatchingSeq('', 'b'), ['', 'b']);
+      //]
+    });
+
     test("titleize", ()=>{
+      api.method();
+      //[
       assert.same(util.titleize(""), "");
       assert.same(util.titleize("abc"), "Abc");
       assert.same(util.titleize("abc-def_xyz.qqq+foo%bar"), "Abc Def Xyz Qqq Foo Bar");
       assert.same(util.titleize("CarlySimon"), "Carly Simon");
+      //]
     });
 
     test("humanize", ()=>{

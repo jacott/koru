@@ -838,6 +838,30 @@ define((require)=>{
       return name.replace(/_ids?$/,'');
     },
 
+    trimMatchingSeq(a, b) {
+      const al = a.length - 1, bl = b.length -1;
+      const ml = Math.min(al, bl);
+      if (ml == -1) return [a, b];
+
+      let i = 0;
+      for(; i <= ml; ++i) {
+        if (a[i] !== b[i]) break;
+      }
+      if (i > ml) {
+        return [a.slice(i), b.slice(i)]
+      }
+
+      const le = ml - i;
+      let j = 0;
+      for(; j <= le; ++j) {
+        if (a[al - j] !== b[bl -j]) break;
+      }
+      if (j > le) {
+        return [a.slice(0, -j - 1), b.slice(0, -j - 1)]
+      }
+      return [a.slice(i , al - j + 1), b.slice(i , bl - j + 1)]
+    },
+
     capitalize(value) {
       if(value == null || value === '')
         return '';
