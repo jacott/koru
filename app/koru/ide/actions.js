@@ -15,5 +15,6 @@ define((require, exports, module) => {
         Actions[cmd] = action;
       }
       action(ws, clients, data);
-    } };
+    }
+  };
 });

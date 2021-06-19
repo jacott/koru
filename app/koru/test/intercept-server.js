@@ -1,12 +1,10 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
+  const {parse, scopeWalk} = require('koru/parse/js-ast');
   const session         = require('koru/session');
   const Core            = require('koru/test/core');
   const WebServer       = require('koru/web-server');
-
-  const parser          = requirejs.nodeRequire('@babel/parser');
-  const traverse        = requirejs.nodeRequire('@babel/traverse').default;
 
   let initHandler = true, origDefaultHandler, expPath, repSrc;
   const parseOpts = {module: true, bare_returns: true};
@@ -19,59 +17,53 @@ define((require, exports, module)=>{
     return true;
   };
 
-  const parseOptions = {plugins: ["classProperties"]};
-
-  const isBindingLive = (me, binding) => {
-    if (binding.path._guessExecutionStatusRelativeTo(me) !== 'after') {
-      return true;
-    } else {
-      if (binding.path.isFunctionDeclaration()) return true;
-      return false;
-    }
-  };
-
-
   const parseCode = (spos, interceptPrefix, source) => {
     let rep = '[_ko'+`ru_.__INTERCEPT$__]("${interceptPrefix}"`;
 
     for(let i = spos-1; i >= 0; --i) {
       const ch = source[i];
       if (/\W/.test(ch)) {
-        if (ch === ".") {
-          return source.slice(0 , spos - (source[i-1] === "?" ? 0 : 1)) + rep + ')._' + source.slice(spos);
+        if (ch === '.') {
+          return source.slice(0 , spos - (source[i-1] === '?' ? 0 : 1)) + rep + ')._' + source.slice(spos);
         }
         break;
       }
     }
 
-    const ast = parser.parse(source, parseOptions);
+    const ast = parse(source);
 
     let me;
-    traverse(ast, {
-      enter(path) {
+    try {
+      const callback = (path, walk) => {
         const {node} = path;
-        if (node.start <= spos && node.end >= spos) {
+        if (node.start > spos) throw 'done';
+        if (node.end >= spos) {
           me = path;
+          walk(path);
+          throw 'done'
         }
-      }
-    });
+      };
+      scopeWalk(ast, callback);
+    } catch(done) {
+      if (done !== 'done') throw done;
+    }
 
-    rep += ",{";
-    const bindings = me.scope.getBlockParent().getAllBindings();
+    rep += ',{';
+    const bindings = me.scope.getAllBindings();
     for (const name in bindings) {
       if (name.startsWith(interceptPrefix)) {
         const binding =  bindings[name];
-        if (isBindingLive(me, binding)) {
+        if (binding.isLive) {
           rep += name + ',';
         }
       }
     }
 
-    return source.slice(0 , spos ) + "globalThis" + rep + "})._" + source.slice(spos);
+    return source.slice(0 , spos ) + 'globalThis' + rep + '})._' + source.slice(spos);
   };
 
 
-  return Intercept => {
+  return (Intercept) => {
     const {ctx} = module;
 
     let unloadId = '';
@@ -112,7 +104,7 @@ define((require, exports, module)=>{
         repSrc = parseCode(spos, interceptPrefix, source);
 
         let thisMod = false;
-        ctx.loadModule = mod => {
+        ctx.loadModule = (mod) => {
           thisMod = mod.id === id;
           return loadModule.call(ctx, mod);
         };
@@ -139,9 +131,6 @@ define((require, exports, module)=>{
         }
       }
     }
-
-    ServerIntercept.parser = parser;
-    ServerIntercept.parseOptions = parseOptions;
 
     if (isTest) {
       ServerIntercept[isTest] = {

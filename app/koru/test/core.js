@@ -109,6 +109,7 @@ define((require) => {
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
       return format('{i0}\n != {i1}', as, bs);
+
     const a = as.split('\n'), b = bs.split('\n');
     last(a) === '' && a.pop();
     last(b) === '' && b.pop();
@@ -225,11 +226,13 @@ define((require) => {
 
     const akeys = Object.keys(actual);
     const ekeys = Object.keys(expected);
-    if (ekeys.length !== akeys.length)
+    if (ekeys.length !== akeys.length) {
+      const [ta, tb] = util.trimMatchingSeq(akeys.sort(), ekeys.sort());
       return hint ?
-      setHint(actual, expected, ' keys differ:\n    ' +
-              util.inspect(akeys.sort()) + '\n != ' + util.inspect(ekeys.sort()))
-      : false;
+        setHint(actual, expected, ' keys differ:\n    ' +
+                formatStringDiff(ta.join(', '), tb.join(', ')))
+        : false;
+    }
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];

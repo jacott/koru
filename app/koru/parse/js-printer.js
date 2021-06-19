@@ -37,6 +37,10 @@ define((require, exports, module) => {
 
     }
 
+    sourceOfNode(node) {
+      return this.input.slice(node.start, node.end);
+    }
+
     addComment(node) {
       this.writer(this.input.slice(node.start, node.end));
       this.inputPoint = node.end;

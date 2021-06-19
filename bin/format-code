@@ -8,7 +8,14 @@ global.isClient = false;
 global.isTest = false;
 
 const {topDir, system, loadEnv, withKoru} = require('../lib/script-utils');
-const {argv} = process;
+let dryRun = false;
+const argv = process.argv.filter((a) => {
+  if (a === '--dry-run') {
+    dryRun = true;
+    return false;
+  }
+  return true;
+});
 
 const file = argv[2];
 
@@ -26,8 +33,13 @@ withKoru({env: 'test'}, () => {
           convertFile(path.join(file, n));
         }
       } else if (stat.isFile() && file.endsWith('.js')) {
-        const source = reformat(fst.readFile(file).toString());
-        fst.writeFile(file, source);
+        try {
+          const source = reformat(fst.readFile(file).toString());
+          dryRun || fst.writeFile(file, source);
+        } catch (err) {
+          console.error('while reformatting '+file);
+          throw err;
+        }
       }
     };
 

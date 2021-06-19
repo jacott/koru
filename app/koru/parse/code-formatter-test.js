@@ -18,7 +18,7 @@ isServer && define((require, exports, module) => {
 switch (options) {
 case 'object':
   if (options != null) {
-    if (info === 'function') {
+    if (info === 'x') {
     } else
       info = info.toString();
   }
@@ -44,6 +44,43 @@ case 'object':
         assert.equals(reformat("(_, m1) => (addresses.push(m1), '')"), "(_, m1) => (addresses.push(m1), '')");
         assert.equals(reformat('arg1=>{arg1("bar")}'), "(arg1) => {arg1('bar')}");
         assert.equals(reformat('async ()=>{arg1()}'), 'async () => {arg1()}');
+      });
+
+      test('complex 1', () => {
+        let e;
+        const text = (() => {
+          const a = 1;
+          let c = (() => {
+            let cc = () => cc;
+            if (++d < 5) e(c);
+          })();
+          function f() {}
+          class g extends f(() => {}) {
+            m() {return () => {}}
+          }
+          var d = 1;
+          let e = () => {
+            const b = 2;
+            return c;
+          };
+          e();
+        }).toString();
+
+        assert.equals(reformat(text), text);
+      });
+
+      test('complex 2', () => {
+        const text = (() => {
+          class g extends f(() => {
+            const a = 123;
+          }) {
+            m = () => {function foo() {}}
+          }
+        }).toString();
+
+        assert.equals(reformat(text), text);
+
+
       });
     });
   });

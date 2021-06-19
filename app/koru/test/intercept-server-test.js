@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test');
 
@@ -17,38 +17,38 @@ define((require, exports, module)=>{
     Defun: true,
   };
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    group("breakPoint", ()=>{
-      const mod = new Module(void 0, "foo/bar");
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    group('breakPoint', () => {
+      const mod = new Module(void 0, 'foo/bar');
 
       afterEach(Intercept.finishIntercept);
 
-      test("after optional chaining", ()=>{
+      test('after optional chaining', () => {
         const fooBar = function fooBar() {fooBar?.toString();};
         const source = fooBar.toString();
-        const epos = source.indexOf(".")+3;
-        Intercept.breakPoint(mod.id, epos, "to", source);
+        const epos = source.indexOf('.')+3;
+        Intercept.breakPoint(mod.id, epos, 'to', source);
         assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
       });
 
-      test("within member word", ()=>{
+      test('within member word', () => {
         const fooBar = function fooBar() {fooBar.toString();};
         const source = fooBar.toString();
-        const epos = source.indexOf(".")+3;
-        Intercept.breakPoint(mod.id, epos, "to", source);
+        const epos = source.indexOf('.')+3;
+        Intercept.breakPoint(mod.id, epos, 'to', source);
         assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
       });
 
 
-      test("member at end of body", ()=>{
+      test('member at end of body', () => {
         const fooBar = function fooBar() {fooBar.toString()};
         const source = fooBar.toString().slice(0, -1);
         const epos = source.length+1;
-        Intercept.breakPoint(mod.id, epos, "", source+".}");
+        Intercept.breakPoint(mod.id, epos, '', source+'.}');
         assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko'+'ru_.__INTERCEPT$__]("")._}');
       });
 
-      test("scope var complete", ()=>{
+      test('scope var complete', () => {
         const fooBar = function fooBar() {
           {const x1 = 1;}
           const ab = 123;
@@ -66,26 +66,34 @@ define((require, exports, module)=>{
         };
 
         let fbSource = fooBar.toString();
-        const epos = fbSource.indexOf("assert");
+        const epos = fbSource.indexOf('assert');
         const source = fbSource.replace(/assert\(\);/, 'a');
 
-        Intercept.breakPoint(mod.id, epos, "", source);
+        Intercept.breakPoint(mod.id, epos, '', source);
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,ab,abb,abc,fooBar,})._a';
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,abb,abc,ab,fooBar,})._a';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });
 
-      test("scope in assignment", ()=>{
-        function code() {const ErrOther = 123;class ErrMine extends Error {}}
+      test('scope in assignment', () => {
+        function code() {const ErrOther = 123;class ErrMine extends Error {x() {new ErrMine()}}}
 
         let source = code.toString();
-        const epos = source.indexOf("Error") + 3;
-        Intercept.breakPoint(mod.id, epos, "Err", source);
+        let epos = source.indexOf('Error') + 3;
+        Intercept.breakPoint(mod.id, epos, 'Err', source);
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,})._Error {}}';
+        assert.same(ipv.repSrc.slice(epos - 3, - 21),
+                    'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,})._Error {');
 
-        assert.same(ipv.repSrc.slice(epos - 3), exp);
+
+        epos = source.indexOf('new', epos) + 7;
+        Intercept.breakPoint(mod.id, epos, 'Err', source);
+
+        assert.same(ipv.repSrc.slice(epos - 3, - 3),
+                    'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,ErrMine,})._ErrMine()');
+
+
       });
     });
   });
