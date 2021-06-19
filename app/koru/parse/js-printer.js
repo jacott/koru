@@ -1,6 +1,6 @@
 define((require, exports, module) => {
   'use strict';
-  const {parse, walk, walkArray} = requirejs.nodeRequire('./js-parse-walker');
+  const {parse, walk, walkArray} = require('koru/parse/js-ast');
 
   class JsPrinter {
     inputPoint = 0;

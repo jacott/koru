@@ -1,14 +1,13 @@
-define((require)=> JsPaser => {
+define((require) => JsPaser => {
   'use strict';
   const koru            = require('koru');
   const htmlDoc         = require('koru/dom/html-doc');
+  const {parse, walk, walkArray} = require('koru/parse/js-ast');
   const util            = require('koru/util');
 
-  const {parse, walk, walkArray} = requirejs.nodeRequire('./js-parse-walker');
+  const n2c = (node, code) => {koru.info(node.type+ ': '+ code.slice(node.start, node.end))};
 
-  const n2c = (node, code)=>{koru.info(node.type+ ": "+ code.slice(node.start, node.end))};
-
-  const ASYNC_WRAPPER_START = "async ()=>{";
+  const ASYNC_WRAPPER_START = 'async ()=>{';
 
   JsPaser.HL_MAP = {
     string: 's',
@@ -16,7 +15,7 @@ define((require)=> JsPaser => {
     boolean: 'kc',
   };
 
-  JsPaser.parse = (codeIn, opts={})=> {
+  JsPaser.parse = (codeIn, opts={}) => {
     return parse(codeIn, opts);
   };
 
@@ -26,7 +25,7 @@ define((require)=> JsPaser => {
     allowUndeclaredExports: true,
   };
 
-  JsPaser.highlight = (codeIn, tag='div')=>{
+  JsPaser.highlight = (codeIn, tag='div') => {
     if (! codeIn) return;
 
     let srcPos = 0;
@@ -39,7 +38,7 @@ define((require)=> JsPaser => {
     const div = document.createElement(tag);
     div.className = 'highlight';
 
-    const addSpan = (spos, epos, hl)=>{
+    const addSpan = (spos, epos, hl) => {
       const span = document.createElement('span');
       span.className = hl;
       span.textContent = codeIn.slice(spos, epos);
@@ -47,7 +46,7 @@ define((require)=> JsPaser => {
       srcPos = epos;
     };
 
-    const catchup = pos=>{
+    const catchup = (pos) => {
       if (srcPos >= pos) return;
       while (commentIndex < comments.length) {
         const c = comments[commentIndex];
@@ -62,28 +61,28 @@ define((require)=> JsPaser => {
       srcPos = pos;
     };
 
-    const addRange = (spos, epos, hl)=>{
+    const addRange = (spos, epos, hl) => {
       if (srcPos > spos) return;
       catchup(spos);
       addSpan(spos, epos, hl);
     };
 
-    const addText = (text, start, hl)=>{
+    const addText = (text, start, hl) => {
       const spos = codeIn.indexOf(text, Math.max(srcPos, start));
       addRange(spos, spos+text.length, hl);
     };
 
-    const addHl = (node, hl)=>{
+    const addHl = (node, hl) => {
       addRange(node.start, node.end, hl);
     };
 
-    const binaryExpr = (node)=>{
+    const binaryExpr = (node) => {
       expr(node.left);
       addText(node.operator, node.left.end, 'o');
       expr(node.right);
     };
 
-    const expr = node=>{
+    const expr = (node) => {
       if (node == null) return;
       if (Array.isArray(node)) {
         node.forEach(expr);
@@ -92,14 +91,14 @@ define((require)=> JsPaser => {
       }
     };
 
-    const typeExpr = (node, type)=>{
+    const typeExpr = (node, type) => {
       const cType = identType;
       identType = type;
       expr(node);
       identType = cType;
     };
 
-    const addAsync = (node)=>{
+    const addAsync = (node) => {
       node.async && addText('async', node.start, 'k');
     };
 
@@ -145,7 +144,7 @@ define((require)=> JsPaser => {
       }
     };
 
-    const functionExpression = (node)=>{
+    const functionExpression = (node) => {
       addAsync(node);
       addText('function', node.start, 'kd');
       expr(node.name);
@@ -153,7 +152,7 @@ define((require)=> JsPaser => {
       expr(node.body);
     };
 
-    const addKey = (node, type='na')=>{
+    const addKey = (node, type='na') => {
       if (node.key.type === 'Identifier') {
         addIdent(node.key, 'na');
       } else {
@@ -162,14 +161,14 @@ define((require)=> JsPaser => {
       return node.shorthand;
     };
 
-    const ClassDeclaration = (node)=>{
-        addText('class', node.start, 'k');
-        typeExpr(node.id, 'nc');
-        if (node.superClass) {
-          addText('extends', srcPos, 'k');
-          expr(node.superClass);
-        }
-        expr(node.body);
+    const ClassDeclaration = (node) => {
+      addText('class', node.start, 'k');
+      typeExpr(node.id, 'nc');
+      if (node.superClass) {
+        addText('extends', srcPos, 'k');
+        expr(node.superClass);
+      }
+      expr(node.body);
     };
 
     const addIdent = (node, hl=identType) => {
@@ -411,7 +410,7 @@ define((require)=> JsPaser => {
       }
     };
 
-    const visitor = node =>{
+    const visitor = (node) => {
       const hl = TYPES[node.type];
       switch (typeof hl) {
       case 'string': addHl(node, hl); break;
@@ -431,7 +430,7 @@ define((require)=> JsPaser => {
   };
 
   {
-    const tryParse = (iter)=>{
+    const tryParse = (iter) => {
       let ex1;
       for (let code of iter) {
         try {
@@ -445,11 +444,11 @@ define((require)=> JsPaser => {
       throw ex1;
     };
 
-    JsPaser.extractParams = (code)=>{
+    JsPaser.extractParams = (code) => {
       code = code.trim();
       const orig = code;
-      if (! code.endsWith("}"))
-        code += "{}";
+      if (! code.endsWith('}'))
+        code += '{}';
       let sig = code.replace(/^function\b\s*/, 'x');
 
       sig = `1|{${sig}}`;
@@ -471,7 +470,7 @@ define((require)=> JsPaser => {
       }
       const args = [];
 
-      const extractItem = (n)=>{extract(n)};
+      const extractItem = (n) => {extract(n)};
 
       const extract = (node) => {
         switch(node.type) {

@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test');
 
@@ -6,8 +6,8 @@ isServer && define((require, exports, module)=>{
 
   const JsAst = require('./js-ast');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test('classProperties', ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('classProperties', () => {
       class A {
         b = 123;
       }
@@ -16,7 +16,7 @@ isServer && define((require, exports, module)=>{
 
       const types = [];
 
-      JsAst.walk(ast, node => {
+      JsAst.walk(ast, (node) => {
         types.push(node.type);
         return 1;
       });
