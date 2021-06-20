@@ -4,7 +4,6 @@ define((require, exports, module) => {
    * The heart of the test framework.
    **/
   const match           = require('koru/match');
-  const stacktrace      = require('koru/stacktrace');
   const Stacktrace      = require('koru/stacktrace');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -261,31 +260,77 @@ because of its widespread use.
       assert.isFalse(deepEqual({a: 1}, {a: '1'}));
     });
 
-    test('deepEqual string failure message', () => {
+    group('deepEqual string failure message', () => {
       const {deepEqual} = TH.Core;
-      const hint = {};
-      assert.isFalse(deepEqual('1256789'.split('').join('xx\n')+'\n',
-                               "12567\r98".split('').join('xx\n'), hint, 'x'))
+      const a = '1234567890123456789012345\n';
 
-      const exp = `
-    '1xx\\n' +
-    '2xx\\n' +
-    '5xx\\n' +
-    '6xx\\n' +
-    '7xx\\n' +
-    '8xx\\n' +
-    '9\\n'
- != '1xx\\n' +
-    '2xx\\n' +
-    '5xx\\n' +
-    '6xx\\n' +
-    '7xx\\n' +
-    "\\rxx\\n"
------^ here
-    '9xx\\n' +
-    '8\\n'`;
+      test('missing nl', () => {
+        const b = a.slice(0, -4);
+        const hint = {};
+        assert.isFalse(deepEqual(a, b, hint, 'x'));
 
-      assert.equals(hint.x, exp);
+        const exp = '\n'+
+              '    "1234567890123456789012345\\n"\n' +
+              ' != "1234567890123456789012"\n' +
+              '---------------------------^ here';
+
+        assert.equals(hint.x, exp);
+      });
+
+      test('is longer', () => {
+        const b = a + 'abcd\n';
+        const hint = {};
+        assert.isFalse(deepEqual(a, b, hint, 'x'));
+
+        const exp = '\n' +
+              "    '1234567890123456789012345\\n'\n" +
+              " != '1234567890123456789012345\\n' +\n" +
+              "    'abcd\\n'\n" +
+              ' Is longer';
+
+        assert.equals(hint.x, exp);
+      });
+
+      test('is shorter', () => {
+        const b = a + 'abcd\n';
+        const hint = {};
+        assert.isFalse(deepEqual(b, a, hint, 'x'));
+
+        const exp = '\n' +
+              "    '1234567890123456789012345\\n' +\n" +
+              "    'abcd\\n'\n" +
+              " != '1234567890123456789012345\\n'\n" +
+              ' Is shorter';
+
+        assert.equals(hint.x, exp);
+      });
+
+
+      test('middle diff', () => {
+        const hint = {};
+        const b = '1798'.split('');
+
+        b[1] = '7xxabc';
+
+
+
+        assert.isFalse(deepEqual('1789'.split('').join('xxxxxx\n')+'\n',
+                                 b.join('xxxxxx\n'), hint, 'x'))
+
+        const exp = '\n' +
+              "    '1xxxxxx\\n' +\n" +
+              '    "7xxxxxx\\n" +\n' +
+              '    "8xxxxxx\\n" +\n' +
+              '    "9\\n"\n' +
+              " != '1xxxxxx\\n' +\n" +
+              '    "7xxabcxxxxxx\\n"\n' +
+              '--------^ here +\n' +
+              '    "9xxxxxx\\n" +\n' +
+              '    "8"';
+
+        assert.equals(hint.x, exp);
+      });
+
     });
   });
 });

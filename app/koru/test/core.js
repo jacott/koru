@@ -101,18 +101,27 @@ define((require) => {
     };
   };
 
-  const qnlStr = (s) => qstr(s+'\n');
-
   const MultiStringJoin = ' +\n    ';
   const MultiStringNE = '\n != ';
+
+  const inspectStringArray = (str) =>  str.map(qstr).join(MultiStringJoin);
+
+  const splitMulti = (str) => {
+    const ans = [];
+    let i = str.indexOf('\n')+1, j = 0;
+    for (;i != 0 ; j = i, i = str.indexOf('\n', i)+1) {
+      ans.push(str.slice(j, i));
+    }
+    if (j < str.length) ans.push(str.slice(j));
+    return ans;
+  };
+
 
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
       return format('{i0}\n != {i1}', as, bs);
 
-    const a = as.split('\n'), b = bs.split('\n');
-    last(a) === '' && a.pop();
-    last(b) === '' && b.pop();
+    let a = splitMulti(as), b = splitMulti(bs);
 
     const la = a.length - 1, lb = b.length - 1;
     const minl = Math.min(la, lb) + 1;
@@ -126,37 +135,57 @@ define((require) => {
     }
     if (dsl == -1) dsl = minl;
 
-    let ans = a.map(qnlStr).join(MultiStringJoin) + MultiStringNE;
-
     if (dsl > la) {
-      return ans + b.map(qnlStr).join(MultiStringJoin) + '\n Is longer';
+      return inspectStringArray(a) + MultiStringNE + inspectStringArray(b) + '\n Is longer';
     }
     if (dsl > lb) {
-      return ans + b.map(qnlStr).join(MultiStringJoin) + '\n Is shorter';
-    } else {
-      let del = -1;
-      for(let i = 0; i < minl ; ++i) {
-        if (a[la-i] !== b[lb-i]) {
-          del = i;
-          break;
-        }
-      }
-
-      ans += b.slice(0, dsl + 1).map(qnlStr).join(MultiStringJoin);
-      let a1 = qnlStr(a[dsl]), b1 = qnlStr(b[dsl]);
-      if (a1[0] !== b1[0]) {
-        if (a1[0] !== '"') a1 = JSON.stringify(a1);
-        if (b1[0] !== '"') b1 = JSON.stringify(b1);
-      }
-      const len = Math.min(a1.length, b1.length);
-      let s = 0;
-      while(s < len && a1[s] === b1[s]) ++s;
-      ans += '\n' + '-'.repeat(s+4) +'^ here\n    ';
-      if (del > 0)
-        return ans + '; the Remainder is the same';
-
-      return ans + b.slice(dsl+1, lb - del + 1).map(qnlStr).join(MultiStringJoin);
+      return inspectStringArray(a) + MultiStringNE + inspectStringArray(b) + '\n Is shorter';
     }
+
+    let del = -1;
+    for(let i = 0; i < minl ; ++i) {
+      if (a[la-i] !== b[lb-i]) {
+        del = i;
+        break;
+      }
+    }
+
+
+    if (del > 0) {
+      a = a.slice(0, -del);
+      b = b.slice(0, -del);
+    }
+
+    let aq = inspectStringArray(a.slice(0, dsl));
+    let bq = inspectStringArray(b.slice(0, dsl));
+
+    const minq = Math.min(a.length, b.length);
+
+    for(let i = dsl; i < minq; ++i) {
+      let ad = qstr(a[i]), bd = qstr(b[i]);
+      if (ad !== bd) {
+        if (ad[0] !== '"') ad = JSON.stringify(a[i]);
+        if (bd[0] !== '"') bd = JSON.stringify(b[i]);
+      }
+      aq += aq.length == 0 ? ad : MultiStringJoin + ad;
+      bq += bq.length == 0 ? bd : MultiStringJoin + bd;
+      if (i == dsl) {
+        const len = Math.min(ad.length, bd.length);
+        let s = 0;
+        while(s < len && ad[s] === bd[s]) ++s;
+        bq += '\n' + '-'.repeat(s+4) +'^ here';
+      }
+    }
+
+
+    if (a.length > minq) {
+      aq += MultiStringJoin + inspectStringArray(a.slice(minq));
+    }
+    if (b.length > minq) {
+      bq += MultiStringJoin + inspectStringArray(b.slice(minq));
+    }
+
+    return (aq + MultiStringNE + bq) + (del > 0 ? '\n the Remainder is the same' : '');
   };
 
 
