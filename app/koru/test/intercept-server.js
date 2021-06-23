@@ -34,12 +34,10 @@ define((require, exports, module) => {
 
     let me;
     try {
-      const callback = (path, walk) => {
-        const {node} = path;
+      const callback = (node, scope) => {
         if (node.start > spos) throw 'done';
         if (node.end >= spos) {
-          me = path;
-          walk(path);
+          me = scope;
           throw 'done'
         }
       };
@@ -49,7 +47,7 @@ define((require, exports, module) => {
     }
 
     rep += ',{';
-    const bindings = me.scope.getAllBindings();
+    const bindings = me.getAllBindings();
     for (const name in bindings) {
       if (name.startsWith(interceptPrefix)) {
         const binding =  bindings[name];

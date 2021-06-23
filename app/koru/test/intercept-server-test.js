@@ -55,7 +55,7 @@ define((require, exports, module) => {
           function abb() {
             const x3 = 3;
           };
-          function abc() {
+          function abc(p1) {
             const ac = 456;
             abb();
             assert();
@@ -71,7 +71,7 @@ define((require, exports, module) => {
 
         Intercept.breakPoint(mod.id, epos, '', source);
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,abb,abc,ab,fooBar,})._a';
+        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,abc,p1,ab,abb,fooBar,})._a';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });
