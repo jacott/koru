@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Dom             = require('koru/dom');
 
@@ -7,9 +7,9 @@ define((require, exports, module)=>{
     class: 'icon',
   }, Dom.SVGNS);
 
-  const use = (icon) => Dom.svgUse('#icon-'+icon);
+  const use = (icon, attrs) => Dom.svgUse('#icon-'+icon, attrs);
 
-  const createIcon = (icon)=>{
+  const createIcon = (icon) => {
     const svg = SvgElm.cloneNode(false);
     svg.setAttribute('name', icon);
     svg.appendChild(use(icon));
@@ -17,7 +17,7 @@ define((require, exports, module)=>{
   };
 
   Dom.registerHelpers({
-    svgIcon: (name, attributes)=>{
+    svgIcon: (name, attributes) => {
       if (! Dom.current.isElement()) {
         const icon = createIcon(name);
         for (const name in attributes) {
@@ -31,18 +31,19 @@ define((require, exports, module)=>{
 
   return {
     use,
+    setIcon: (useElm, icon) => useElm.setAttributeNS(Dom.XLINKNS, 'href', '#icon-'+icon),
 
     createIcon,
 
-    add: (id, symbol) =>{
+    add: (id, symbol) => {
       if (! (symbol instanceof globalThis.SVGElement))
-        symbol = Dom.h({symbol, viewBox: "0 0 24 24"}, Dom.SVGNS);
+        symbol = Dom.h({symbol, viewBox: '0 0 24 24'}, Dom.SVGNS);
 
-      symbol.setAttribute('id', "icon-"+id);
+      symbol.setAttribute('id', 'icon-'+id);
       document.querySelector('#SVGIcons>defs').appendChild(symbol);
     },
 
-    selectMenuDecorator: ({icon}, elm)=>{
+    selectMenuDecorator: ({icon}, elm) => {
       if (icon === void 0) return;
       const fc = elm.previousSibling;
       if (fc !== null && fc.tagName === 'SVG')

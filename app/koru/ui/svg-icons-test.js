@@ -34,6 +34,21 @@ define((require, exports, module)=>{
       //]
     });
 
+    test("setIcon", ()=>{
+      /**
+       * set the icon in a svg use element
+       */
+      api.method();
+      //[
+      const use = SVGIcons.use('hamburger-menu');
+
+      SVGIcons.setIcon(use, 'circle');
+
+      assert.same(use.namespaceURI, Dom.SVGNS);
+      assert.same(use.getAttributeNS(Dom.XLINKNS, 'href'), '#icon-circle');
+      //]
+    });
+
     test("createIcon", ()=>{
       /**
        * Create an svg element that uses a icon definition.

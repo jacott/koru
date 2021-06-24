@@ -166,9 +166,10 @@ define(()=>{
     }
   };
 
-  const svgUse = (href) => {
+  const svgUse = (href, attrs) => {
     const useElm = document.createElementNS(SVGNS, 'use');
     useElm.setAttributeNS(XLINKNS, 'href', href);
+    for (const name in attrs) useElm.setAttribute(name, attrs[name]);
     return useElm;
   };
 

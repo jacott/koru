@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Utilities for building and converting [Nodes](#mdn:/API/Node)
@@ -11,8 +11,8 @@ define((require, exports, module)=>{
 
   const Html = require('./html');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("escapeHTML", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('escapeHTML', () => {
       /**
        * Escape special html characters
        **/
@@ -22,7 +22,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("html", ()=>{
+    test('html', () => {
       /**
        * Convert an `object` into a html node.
        *
@@ -44,9 +44,9 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const body = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
-             {li: {width: 500, svg: [], viewBox: "0 0 100 100"}}],
+      const body = {class: 'greeting', id: 'gId', section: {
+        ul: [{li: {span: 'Hello'}}, {$comment$: 'a comment'}, {li: 'two'},
+             {li: {width: 500, svg: [], viewBox: '0 0 100 100'}}],
       }, 'data-lang': 'en'};
 
       const ans = util.deepCopy(body);
@@ -63,21 +63,21 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("htmlToJson", ()=>{
+    test('htmlToJson', () => {
       /**
        * Convert an `Element` to a plain `object`
        **/
       api.method();
       //[
-      const obj = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {li: 'two'}],
+      const obj = {class: 'greeting', id: 'gId', section: {
+        ul: [{li: {span: 'Hello'}}, {li: 'two'}],
       }, 'data-lang': 'en'};
 
       api.method('htmlToJson');
       assert.equals(Html.htmlToJson(Html.h(obj)), obj);
 
-      const assertConvert = json => {
-        assert.elide(()=>{assert.equals(Html.htmlToJson(Html.h(json)), json)});
+      const assertConvert = (json) => {
+        assert.elide(() => {assert.equals(Html.htmlToJson(Html.h(json)), json)});
       };
 
       assertConvert({div: 'simple'});
@@ -92,16 +92,21 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("svgUse", ()=>{
+    test('svgUse', () => {
       /**
        * create an svg use link to a ref
        */
       api.method();
       //[
-      const use = Html.svgUse('#icon-hamburger-menu');
+      const circle = Html.svgUse('#icon-circle');
+      assert.same(circle.getAttributeNS(Html.XLINKNS, 'href'), '#icon-circle');
 
-      assert.same(use.namespaceURI, Html.SVGNS);
-      assert.same(use.getAttributeNS(Html.XLINKNS, 'href'), '#icon-hamburger-menu');
+      const menu = Html.svgUse('#icon-hamburger-menu', {x: 3, y: 2});
+
+      assert.same(menu.namespaceURI, Html.SVGNS);
+      assert.same(menu.getAttributeNS(Html.XLINKNS, 'href'), '#icon-hamburger-menu');
+      assert.same(menu.getAttribute('x'), '3');
+      assert.same(menu.getAttribute('y'), '2');
       //]
     });
   });
