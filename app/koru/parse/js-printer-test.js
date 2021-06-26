@@ -20,7 +20,7 @@ isServer && define((require, exports, module) => {
       let output = '';
       const simple = new JsPrinter({
         input: example.toString(),
-        writer: (token) => {
+        write: (token) => {
           output += token;
         }});
 
@@ -32,12 +32,12 @@ isServer && define((require, exports, module) => {
       //]
     });
 
-    test('lookingAt', ()=>{
+    test('lookingAt', () => {
       api.protoMethod();
       //[
-      const input = (()=>{let abc=123;}).toString();
+      const input = (() => {let abc=123}).toString();
       let output = '';
-      const p = new JsPrinter({input , writer: token => {output += token}})
+      const p = new JsPrinter({input , write: (token) => {output += token}});
       assert(p.lookingAt(/^[^\n]+123/));
       //]
     });
@@ -58,8 +58,8 @@ isServer && define((require, exports, module) => {
 
       class MyPrinter extends JsPrinter {
         addComment(node) {
-          this.writer(this.input.slice(node.start, node.end)
-                          .replace(/comment/ig, 'COMMENT'));
+          this.write(this.input.slice(node.start, node.end)
+                     .replace(/comment/ig, 'COMMENT'));
           this.inputPoint = node.end;
         }
       }
@@ -67,7 +67,7 @@ isServer && define((require, exports, module) => {
       let output = '';
       const simple = new MyPrinter({
         input: exampleComment.toString(),
-        writer: (token) => {
+        write: (token) => {
           output += token;
         }});
 

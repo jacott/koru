@@ -6,9 +6,9 @@ define((require, exports, module) => {
     inputPoint = 0;
     commentIndex = 0;
 
-    constructor({input, writer, ast=parse(input)}) {
+    constructor({input, write, ast=parse(input)}) {
       this.input = input;
-      this.writer = writer;
+      this.write = write;
       this.ast = ast;
     }
 
@@ -30,18 +30,18 @@ define((require, exports, module) => {
       }
     }
 
-    sourceOfNode(node) {
-      return this.input.slice(node.start, node.end);
-    }
+    sourceOfNode(node) {return this.input.slice(node.start, node.end)}
 
     addComment(node) {
-      this.writer(this.input.slice(node.start, node.end));
-      this.inputPoint = node.end;
+      this.write(this.input.slice(node.start, node.end), 'comment');
+      this.advance(node.end);
     }
 
     lookingAt(regex, last) {
       return regex.exec(this.input.slice(this.inputPoint, last));
     }
+
+    advance(point) {if (point > this.inputPoint) this.inputPoint = point}
 
     catchup(point) {
       if (this.inputPoint >= point) return;
@@ -50,13 +50,13 @@ define((require, exports, module) => {
         const c = comments[this.commentIndex];
         if (c.start > point) break;
         if (c.start > this.inputPoint) {
-          this.writer(this.input.slice(this.inputPoint, c.start));
+          this.write(this.input.slice(this.inputPoint, c.start), 'catchup');
         }
-        this.addComment(c)
+        this.addComment(c);
         ++this.commentIndex;
       }
-      this.writer(this.input.slice(this.inputPoint, point));
-      this.inputPoint = point;
+      this.write(this.input.slice(this.inputPoint, point), 'catchup');
+      this.advance(point);
     }
   }
 

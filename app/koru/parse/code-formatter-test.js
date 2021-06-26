@@ -13,6 +13,41 @@ isServer && define((require, exports, module) => {
         assert.equals(reformat('foo("\x0d");'), `foo("\x0d");`);
       });
 
+      test('blank lines', () => {
+        assert.equals(reformat(`{
+  foo();
+\t\r
+\n  \f\v\r
+;;;;;
+;;;;;
+;;;;;
+
+
+  bar();
+}`), `{\n  foo();\n\n  bar();\n}`);
+      });
+
+      test('blank lines at end of block', () => {
+        assert.equals(reformat(`{
+  foo();
+  bar();
+
+
+}`), `{\n  foo();\n  bar();\n}`);
+      });
+
+      test('TemplateElement', () => {
+        assert.equals(reformat('a = `\n\n\n\n`;'), 'a = `\n\n\n\n`;');
+      });
+
+      test('adjusts semicolons', () => {
+        assert.equals(reformat('()=>{foo();;;\n;;; bar();}'), `() => {foo();\n bar()}`);
+        assert.equals(reformat('{a = (1,2);  }'), `{a = (1,2)}`);
+        assert.equals(reformat('{output += token}'), `{output += token}`);
+        assert.equals(reformat('let a\nlet b;'), `let a;\nlet b;`);
+        assert.equals(reformat('class A {\nfoo = 123\n}'), 'class A {\nfoo = 123;\n}');
+      });
+
       test('complex', () => {
         const a = `
 switch (options) {
@@ -79,7 +114,6 @@ case 'object':
         }).toString();
 
         assert.equals(reformat(text), text);
-
 
       });
     });
