@@ -1,6 +1,6 @@
 define((require, exports, module) => {
   'use strict';
-  const {parse, walk, walkArray} = require('koru/parse/js-ast');
+  const {parse, visitorKeys} = require('koru/parse/js-ast');
 
   class JsPrinter {
     inputPoint = 0;
@@ -13,28 +13,21 @@ define((require, exports, module) => {
     }
 
     print(node) {
-      const visitor = (node) => {
-        if (node == null) return 2;
-
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          this.print(n);
+        }
+      } else if (node != null) {
         const method = this[node.type];
         if (method !== void 0) {
           method.call(this, node);
-          return 2;
+        } else {
+          this.catchup(node.start);
+          for (const key of visitorKeys(node)) {
+            this.print(node[key]);
+          }
         }
-
-        return 1;
       }
-
-      if (Array.isArray(node)) {
-        for (const n of node) {
-          walk(n, visitor);
-          this.catchup(n.end);
-        }
-      } else {
-        walk(node, visitor);
-        this.catchup(node.end);
-      }
-
     }
 
     sourceOfNode(node) {
@@ -44,6 +37,10 @@ define((require, exports, module) => {
     addComment(node) {
       this.writer(this.input.slice(node.start, node.end));
       this.inputPoint = node.end;
+    }
+
+    lookingAt(regex, last) {
+      return regex.exec(this.input.slice(this.inputPoint, last));
     }
 
     catchup(point) {

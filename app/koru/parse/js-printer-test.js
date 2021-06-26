@@ -26,7 +26,19 @@ isServer && define((require, exports, module) => {
 
       simple.print(simple.ast);
 
+      simple.catchup(simple.ast.end);
+
       assert.same(output, example.toString());
+      //]
+    });
+
+    test('lookingAt', ()=>{
+      api.protoMethod();
+      //[
+      const input = (()=>{let abc=123;}).toString();
+      let output = '';
+      const p = new JsPrinter({input , writer: token => {output += token}})
+      assert(p.lookingAt(/^[^\n]+123/));
       //]
     });
 
@@ -60,6 +72,8 @@ isServer && define((require, exports, module) => {
         }});
 
       simple.print(simple.ast);
+
+      simple.catchup(simple.ast.end);
 
       assert.same(output, exampleComment.toString().replace(/\bcomment\b/g, 'COMMENT'));
       //]

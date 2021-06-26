@@ -5,6 +5,16 @@ define((require, exports, module) => {
   const {qstr, last}    = require('koru/util');
 
   class MyPrinter extends JsPrinter {
+    printParams(params) {
+      if (params.length != 0) {
+        this.inputPoint = params[0].start;
+        for (const n of params) {
+          this.print(n);
+          this.catchup(n.end);
+        }
+        this.inputPoint = last(params).end;
+      }
+    }
     StringLiteral(node) {
       this.catchup(node.start);
       const raw = node.extra.raw;
@@ -16,16 +26,12 @@ define((require, exports, module) => {
       this.catchup(node.start);
       node.async && this.writer('async ');
       this.writer('(');
-      if (node.params.length != 0) {
-        this.inputPoint = node.params[0].start;
-        this.print(node.params);
-        this.inputPoint = last(node.params).end;
-      }
+      this.printParams(node.params);
+
       const idx = this.input.indexOf('=>', this.inputPoint);
       this.writer(') => ');
       this.inputPoint = idx+ (this.input[idx+2] === ' ' ? 3 : 2 );
       this.print(node.body);
-      this.catchup(node.body.end);
     }
   }
 
@@ -47,6 +53,8 @@ define((require, exports, module) => {
         const printer = new MyPrinter({input, writer, ast});
 
         printer.print(ast);
+
+        printer.catchup(ast.end);
 
         return output;
       }
