@@ -189,10 +189,11 @@ define((require, exports, module) => {
         node.body != null && this.walk(node.body, scope);
       });
     }
-  };
+  }
 
   ScopeWalker.prototype.ArrowFunctionExpression = ScopeWalker.prototype.FunctionExpression;
   ScopeWalker.prototype.FunctionDeclaration = ScopeWalker.prototype.FunctionExpression;
+  ScopeWalker.prototype.ObjectMethod = ScopeWalker.prototype.ClassMethod;
 
   return {
     VISITOR_KEYS,

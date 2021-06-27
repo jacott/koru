@@ -60,7 +60,7 @@ isServer && define((require, exports, module) => {
           }
         });
 
-        let fail = false
+        let fail = false;
         const result = Object.entries(asserts).map(([k, {text}]) => {
           if (text.indexOf('fail') != -1) fail = true;
           return ' at '+k+'> '+text;
@@ -115,9 +115,10 @@ isServer && define((require, exports, module) => {
       });
 
       test('params', () => {
-        assertScope(() => {
-          var hh = (xx) => assert(xx, hh);
-        });
+        assertScope(() => {return {foo(a) {assert(a)}}});
+
+        assertScope(() => {var hh = (xx) => assert(xx, hh)});
+
         assertScope(() => {
           const c = () => function a(b) {assert(a, b, !c)};
           assert(c);
@@ -138,7 +139,7 @@ isServer && define((require, exports, module) => {
           })()]] = [[]];
 
           assert(b);
-        })
+        });
       });
 
       test('simple', () => {
@@ -240,7 +241,7 @@ isServer && define((require, exports, module) => {
             ik.splice(idx, 0, n);
           }
         }
-        return ik
+        return ik;
       };
 
       const walk = (ast) => {
