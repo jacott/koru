@@ -1,7 +1,7 @@
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
-  const {parse, scopeWalk} = require('koru/parse/js-ast');
+  const {parse, scopeWalk, visitorKeys} = require('koru/parse/js-ast');
   const session         = require('koru/session');
   const Core            = require('koru/test/core');
   const WebServer       = require('koru/web-server');
@@ -33,14 +33,15 @@ define((require, exports, module) => {
     const ast = parse(source);
 
     let me;
+    const callback = (node, scope) => {
+      if (node.start > spos) throw 'done';
+      if (node.end >= spos) {
+        me = scope;
+        if (visitorKeys(node).length == 0)
+          throw 'done';
+      }
+    };
     try {
-      const callback = (node, scope) => {
-        if (node.start > spos) throw 'done';
-        if (node.end >= spos) {
-          me = scope;
-          throw 'done'
-        }
-      };
       scopeWalk(ast, callback);
     } catch(done) {
       if (done !== 'done') throw done;
@@ -59,7 +60,6 @@ define((require, exports, module) => {
 
     return source.slice(0 , spos ) + 'globalThis' + rep + '})._' + source.slice(spos);
   };
-
 
   return (Intercept) => {
     const {ctx} = module;

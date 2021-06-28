@@ -10,7 +10,7 @@ define((require, exports, module) => {
   const last = (a) => a[a.length - 1];
 
   class Scope {
-    constructor(parentPath) {
+    constructor(parentPath=null) {
       this.parentPath = parentPath;
       this.bindings = {};
     }
@@ -74,7 +74,6 @@ define((require, exports, module) => {
       if (cn !== null && typeof cn === 'object') {
         for (const n of Array.isArray(cn) ? cn : [cn]) {
           this.walk(n, scope);
-          this.callback(n, scope);
         }
       }
     }
@@ -90,6 +89,7 @@ define((require, exports, module) => {
     }
 
     walk(node, scope) {
+      this.callback(node, scope);
       if (this[node.type] !== void 0) {
         this[node.type](node, scope);
       } else {
@@ -205,6 +205,6 @@ define((require, exports, module) => {
     walk,
     walkArray,
 
-    scopeWalk: (ast, callback) => {new ScopeWalker(callback).walk(ast)},
+    scopeWalk: (ast, callback) => {new ScopeWalker(callback).walk(ast, new Scope())},
   };
 });

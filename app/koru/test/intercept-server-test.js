@@ -24,21 +24,20 @@ define((require, exports, module) => {
       afterEach(Intercept.finishIntercept);
 
       test('after optional chaining', () => {
-        const fooBar = function fooBar() {fooBar?.toString();};
+        const fooBar = function fooBar() {fooBar?.toString()};
         const source = fooBar.toString();
         const epos = source.indexOf('.')+3;
         Intercept.breakPoint(mod.id, epos, 'to', source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko'+'ru_.__INTERCEPT$__]("to")._toString()}');
       });
 
       test('within member word', () => {
-        const fooBar = function fooBar() {fooBar.toString();};
+        const fooBar = function fooBar() {fooBar.toString()};
         const source = fooBar.toString();
         const epos = source.indexOf('.')+3;
         Intercept.breakPoint(mod.id, epos, 'to', source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to")._toString();}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to")._toString()}');
       });
-
 
       test('member at end of body', () => {
         const fooBar = function fooBar() {fooBar.toString()};
@@ -50,19 +49,19 @@ define((require, exports, module) => {
 
       test('scope var complete', () => {
         const fooBar = function fooBar() {
-          {const x1 = 1;}
+          {const x1 = 1}
           const ab = 123;
           function abb() {
             const x3 = 3;
-          };
+          }
           function abc(p1) {
             const ac = 456;
             abb();
             assert();
             const de = 789;
-            {const x4 = 4;}
+            {const x4 = 4}
           }
-          {const x2 = 1;}
+          {const x2 = 1}
         };
 
         let fbSource = fooBar.toString();
@@ -76,6 +75,19 @@ define((require, exports, module) => {
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });
 
+      test('global scope', () => {
+        const source = ((a) => {
+          // comment
+          var b;
+        }).toString();
+
+        let epos = source.indexOf('//') - 1;
+        Intercept.breakPoint(mod.id, epos, '', source);
+
+        assert.same(ipv.repSrc.slice(epos - 3, - 27),
+                    '   globalThis[_koru_.__INTERCEPT$__]("",{b,a,})._ // comment');
+      });
+
       test('scope in assignment', () => {
         function code() {const ErrOther = 123;class ErrMine extends Error {x() {new ErrMine()}}}
 
@@ -86,14 +98,11 @@ define((require, exports, module) => {
         assert.same(ipv.repSrc.slice(epos - 3, - 21),
                     'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,})._Error {');
 
-
         epos = source.indexOf('new', epos) + 7;
         Intercept.breakPoint(mod.id, epos, 'Err', source);
 
         assert.same(ipv.repSrc.slice(epos - 3, - 3),
                     'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,ErrMine,})._ErrMine()');
-
-
       });
     });
   });
