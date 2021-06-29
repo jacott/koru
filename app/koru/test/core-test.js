@@ -240,7 +240,6 @@ because of its widespread use.
       assert.isFalse(deepEqual({a: null}, {b: null}, hint, 'keyCheck'));
       assert.same(hint.keyCheck, '\n    {a: null}\n != {b: null}\nat key = a');
 
-
       const matcher = TH.match((v) => v % 2 === 0);
       assert.isTrue(deepEqual([1, 2, null], [1, matcher, TH.match.any]));
       assert.isFalse(deepEqual([1, 1], [1, matcher]));
@@ -258,6 +257,20 @@ because of its widespread use.
                                {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
       assert.isFalse(deepEqual({a: 1}, {a: '1'}));
+    });
+
+    test('deepEqual object key mismatch', () => {
+      const a = {e: 1, a: 2, c: 3};
+      const b = {...a, b: 4};
+      const hint = {};
+      assert.isFalse(TH.Core.deepEqual(a, b, hint, 'x'));
+
+      const exp =     ' keys differ:\n' +
+            "    ''\n" +
+            " != 'b'\n" +
+            '    {e: 1, a: 2, c: 3}\n' +
+            ' != {e: 1, a: 2, c: 3, b: 4}';
+      assert.equals(hint.x, exp);
     });
 
     group('deepEqual string failure message', () => {
@@ -305,17 +318,14 @@ because of its widespread use.
         assert.equals(hint.x, exp);
       });
 
-
       test('middle diff', () => {
         const hint = {};
         const b = '1798'.split('');
 
         b[1] = '7xxabc';
 
-
-
         assert.isFalse(deepEqual('1789'.split('').join('xxxxxx\n')+'\n',
-                                 b.join('xxxxxx\n'), hint, 'x'))
+                                 b.join('xxxxxx\n'), hint, 'x'));
 
         const exp = '\n' +
               "    '1xxxxxx\\n' +\n" +
@@ -330,7 +340,6 @@ because of its widespread use.
 
         assert.equals(hint.x, exp);
       });
-
     });
   });
 });

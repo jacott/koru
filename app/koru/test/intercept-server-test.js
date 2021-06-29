@@ -85,7 +85,7 @@ define((require, exports, module) => {
         Intercept.breakPoint(mod.id, epos, '', source);
 
         assert.same(ipv.repSrc.slice(epos - 3, - 27),
-                    '   globalThis[_koru_.__INTERCEPT$__]("",{b,a,})._ // comment');
+                    '   globalThis[_ko'+'ru_.__INTERCEPT$__]("",{b,a,})._ // comment');
       });
 
       test('scope in assignment', () => {

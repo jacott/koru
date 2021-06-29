@@ -25,7 +25,6 @@ define((require) => {
     get name() {return 'AssertionError'}
   }
 
-
   let elidePoint = void 0;
 
   const fail = (message='failed', elidePoint=0) => {
@@ -116,7 +115,6 @@ define((require) => {
     return ans;
   };
 
-
   const formatStringDiff = (as, bs) => {
     if (Math.min(as.length, bs.length) < 20)
       return format('{i0}\n != {i1}', as, bs);
@@ -150,7 +148,6 @@ define((require) => {
       }
     }
 
-
     if (del > 0) {
       a = a.slice(0, -del);
       b = b.slice(0, -del);
@@ -177,7 +174,6 @@ define((require) => {
       }
     }
 
-
     if (a.length > minq) {
       aq += MultiStringJoin + inspectStringArray(a.slice(minq));
     }
@@ -187,7 +183,6 @@ define((require) => {
 
     return (aq + MultiStringNE + bq) + (del > 0 ? '\n the Remainder is the same' : '');
   };
-
 
   const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL) => {
     if (is(actual, expected)) {

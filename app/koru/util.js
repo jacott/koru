@@ -1,5 +1,5 @@
 /* global Intl */
-define((require)=>{
+define((require) => {
   'use strict';
   const match           = require('./match');
   const Stacktrace      = require('./stacktrace');
@@ -22,16 +22,16 @@ define((require)=>{
 
   const PRIMITIVE  = {string: 1, number: 1, boolean: 1, undefined: 1, function: 2};
 
-  const typeorder = obj => obj === null ? -1 : TYPEORDER[typeof obj];
+  const typeorder = (obj) => obj === null ? -1 : TYPEORDER[typeof obj];
 
   let timeAdjust = 0, timeUncertainty = 0;
 
   const slice = Array.prototype.slice;
 
-  const enUsCollator = new Intl.Collator("en-US");
+  const enUsCollator = new Intl.Collator('en-US');
   const {compare} = enUsCollator;
 
-  const compareByName = (a, b)=>{
+  const compareByName = (a, b) => {
     const aname = (a && a.name) || '';
     const bname = (b && b.name) || '';
     const ans = compare(aname, bname);
@@ -43,7 +43,7 @@ define((require)=>{
     return ans < 0 ? -1 : 1;
   }; compareByName.compareKeys = ['name', '_id'];
 
-  const compareByOrder = (a, b)=>{
+  const compareByOrder = (a, b) => {
     const ao = (a && a.order) || 0;
     const bo = (b && b.order) || 0;
     if (ao === bo) {
@@ -53,7 +53,7 @@ define((require)=>{
     } else return  ao < bo ? -1 : 1;
   }; compareByOrder.compareKeys = ['order', '_id'];
 
-  const sansSuffix = (value, len)=> value ? typeof value === 'string' ?
+  const sansSuffix = (value, len) => value ? typeof value === 'string' ?
         +value.slice(0, -len) : +value : 0;
 
   const colorToArray = (color) => {
@@ -142,14 +142,14 @@ define((require)=>{
     return true;
   };
 
-  const twoDigits = num => {
+  const twoDigits = (num) => {
     const str = ''+num;
     return str.length === 1 ? `0${str}` : str;
   };
 
-  const identity = value => value;
+  const identity = (value) => value;
 
-  const diffString = (oldstr, newstr)=>{
+  const diffString = (oldstr, newstr) => {
     const lastold = oldstr.length-1, lastnew = newstr.length-1;
     const minLast = Math.min(lastold, lastnew);
     let s = 0, e = 0, oldchar = 0;
@@ -176,7 +176,7 @@ define((require)=>{
   };
 
   const LOCAL_COMPARE_OPTS = {numeric: true};
-  const localeCompare = (a, b)=>{
+  const localeCompare = (a, b) => {
     if (a === b) return 0;
     if (typeof a === 'string' && typeof b === 'string') {
       const ans = a.localeCompare(b, undefined, LOCAL_COMPARE_OPTS);
@@ -185,25 +185,24 @@ define((require)=>{
     return a < b ? -1 : 1;
   };
 
-
   util.merge(util, {
     DAY: 1000*60*60*24,
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     diffString,
-    diffStringLength: (oldstr, newstr)=>{
+    diffStringLength: (oldstr, newstr) => {
       const ans = diffString(oldstr, newstr);
       return ans === undefined ? 0 : Math.max(ans[1], ans[2]);
     },
 
     localeCompare,
 
-    defineAlias: (object, newAlias, existing)=>{
+    defineAlias: (object, newAlias, existing) => {
       Object.defineProperty(object, newAlias, Object.getOwnPropertyDescriptor(object, existing));
     },
 
-    setProperty: (object, name, descriptor)=>{
+    setProperty: (object, name, descriptor) => {
       const oldDesc = Object.getOwnPropertyDescriptor(object, name);
       if (oldDesc === undefined) {
         if (descriptor.writable === undefined && hasOwn(descriptor, 'value'))
@@ -449,9 +448,9 @@ define((require)=>{
       if (st) {
         if (st.length != 0) {
           if (st[0][7] !== '-')
-            st[0] = "    at -"+st[0].slice(6);
+            st[0] = '    at -'+st[0].slice(6);
         }
-        return (err.toStringPrefix || '') + err.toString() + "\n" + st.join("\n");
+        return (err.toStringPrefix || '') + err.toString() + '\n' + st.join('\n');
       } else
         return util.inspect(err);
     },
@@ -460,12 +459,12 @@ define((require)=>{
       return slice.call(list, from, to);
     },
 
-    isObjEmpty: obj =>{
-      for(const noop in obj) {return false;}
+    isObjEmpty: (obj) => {
+      for(const noop in obj) {return false}
       return true;
     },
 
-    hasOnly: (obj, keyMap)=>{
+    hasOnly: (obj, keyMap) => {
       for(const noop in obj) {
         if (keyMap[noop] === undefined) return false;
       }
@@ -478,7 +477,7 @@ define((require)=>{
     },
 
     firstParam(obj) {
-      if (obj) for(const key in obj) {return obj[key];}
+      if (obj) for(const key in obj) {return obj[key]}
     },
 
     keyMatches(obj, regex) {
@@ -554,14 +553,14 @@ define((require)=>{
     mapToSearchStr(map) {
       return util.map(
         Object.keys(map),
-        key => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`
+        (key) => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`
       ).join('&');
     },
 
     searchStrToMap(query) {
       const result = {};
       if (! query) return result;
-      util.forEach(query.split('&'), item => {
+      util.forEach(query.split('&'), (item) => {
         const parts = item.split('=', 2);
         result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);
       });
@@ -573,17 +572,17 @@ define((require)=>{
 
       const result = encodeURIComponent(value);
       // Fix the mismatch between OAuth's  RFC3986's and Javascript
-      return result.replace(/\!/g, "%21")
-        .replace(/\'/g, "%27")
-        .replace(/\(/g, "%28")
-        .replace(/\)/g, "%29")
-        .replace(/\*/g, "%2A");
+      return result.replace(/\!/g, '%21')
+        .replace(/\'/g, '%27')
+        .replace(/\(/g, '%28')
+        .replace(/\)/g, '%29')
+        .replace(/\*/g, '%2A');
     },
 
     decodeURIComponent(value) {
       if (! value) return null;
       return decodeURIComponent(value.replace(
-          /(\+|%(?![a-f0-9]{2}))/ig, m=> m === '+' ? ' ' : '%25'));
+        /(\+|%(?![a-f0-9]{2}))/ig, (m) => m === '+' ? ' ' : '%25'));
     },
 
     arrayToMap(list) {
@@ -604,11 +603,11 @@ define((require)=>{
       if (valueName == null)
         func = identity;
       else switch(typeof(valueName)) {
-      case 'string':
-      case 'number':
-        func = curr => curr[valueName];
+        case 'string':
+        case 'number':
+        func = (curr) => curr[valueName];
         break;
-      case 'function':
+        case 'function':
         func = valueName;
         break;
       }
@@ -629,12 +628,12 @@ define((require)=>{
 
     mapField(list, fieldName) {
       fieldName = fieldName || '_id';
-      return list && util.map(list, doc => doc[fieldName]);
+      return list && util.map(list, (doc) => doc[fieldName]);
     },
 
     idNameListToMap(list) {
       const result = {};
-      util.forEach(list, item => {
+      util.forEach(list, (item) => {
         result[item[0]] = item[1];
       });
       return result;
@@ -668,7 +667,7 @@ define((require)=>{
       const result = [];
 
       const internal = (a, l) => {
-        util.forEach(a, value => {
+        util.forEach(a, (value) => {
           if (l && Array.isArray(value))
             internal(value, l - 1);
           else
@@ -701,7 +700,7 @@ define((require)=>{
       return -1;
     },
 
-    createDictionary: ()=>{
+    createDictionary: () => {
       const dict = Object.create(null);
       dict['.;\x00'] = undefined; delete dict['.;\x00'];
       return dict;
@@ -734,7 +733,7 @@ define((require)=>{
 
       if (constructor === Array) {
         --maxLevel;
-        return orig.map(v => util.deepCopy(v, maxLevel));
+        return orig.map((v) => util.deepCopy(v, maxLevel));
       }
 
       if (constructor === Date || constructor === Uint8Array)
@@ -748,7 +747,7 @@ define((require)=>{
     intersectp (list1, list2) {
       const set = new Set(list1);
 
-      return list2.some(item => set.has(item));
+      return list2.some((item) => set.has(item));
     },
 
     diff(list1, list2) {
@@ -806,7 +805,7 @@ define((require)=>{
     humanize(name) {
       name = this.uncapitalize(name);
       return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(
-          /([A-Z])/g, (_, m1) => ' '+m1.toLowerCase());
+        /([A-Z])/g, (_, m1) => ' '+m1.toLowerCase());
     },
 
     initials(name, count, abvr) {
@@ -848,7 +847,7 @@ define((require)=>{
         if (a[i] !== b[i]) break;
       }
       if (i > ml) {
-        return [a.slice(i), b.slice(i)]
+        return [a.slice(i), b.slice(i)];
       }
 
       const le = ml - i;
@@ -856,10 +855,7 @@ define((require)=>{
       for(; j <= le; ++j) {
         if (a[al - j] !== b[bl -j]) break;
       }
-      if (j > le) {
-        return [a.slice(0, -j - 1), b.slice(0, -j - 1)]
-      }
-      return [a.slice(i , al - j + 1), b.slice(i , bl - j + 1)]
+      return [a.slice(i , al - j + 1), b.slice(i , bl - j + 1)];
     },
 
     capitalize(value) {
@@ -878,11 +874,11 @@ define((require)=>{
 
     titleize(value) {
       return this.capitalize(value.replace(
-          /[-._%+A-Z]\w/g, w => ' ' + util.capitalize(w.replace(/^[-._%+]/,''))).trim());
+        /[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/,''))).trim());
     },
 
     camelize(value) {
-      return value.replace(/[-._%+A-Z]\w/g, w => util.capitalize(w.replace(/^[-._%+]/,'')));
+      return value.replace(/[-._%+A-Z]\w/g, (w) => util.capitalize(w.replace(/^[-._%+]/,'')));
     },
 
     niceFilename(name) {
@@ -890,7 +886,7 @@ define((require)=>{
     },
 
     hashToCss(hash) {
-      return util.map(Object.keys(hash), key => `${key}:${hash[key]}`).join(";");
+      return util.map(Object.keys(hash), (key) => `${key}:${hash[key]}`).join(';');
     },
 
     pc(fraction) {
@@ -911,7 +907,7 @@ define((require)=>{
         if (! decs)
           return ''+Math.round(number);
       }
-      return Math.floor(number) + "." + decs;
+      return Math.floor(number) + '.' + decs;
     },
 
     sansPx(value) {return sansSuffix(value, 2)},
@@ -1080,7 +1076,7 @@ define((require)=>{
     twoDigits,
 
     emailAddress(email, name) {
-      return name.replace(/[<>]/g, '') + " <" + email + ">";
+      return name.replace(/[<>]/g, '') + ' <' + email + '>';
     },
 
     extractFromEmail(email) {
@@ -1096,18 +1092,18 @@ define((require)=>{
       return ans;
     },
 
-    parseEmailAddresses(input="") {
+    parseEmailAddresses(input='') {
       const addresses = [];
 
       const remainder = input.replace(
-          /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>)[,\s]*/ig,
-        (_, m1) => (addresses.push(m1), "")
+        /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>)[,\s]*/ig,
+        (_, m1) => (addresses.push(m1), '')
       );
 
       return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
     },
 
-    toHex: array =>{
+    toHex: (array) => {
       let hex = '';
       for(let i = 0; i < array.length; ++i) {
         const s = array[i].toString(16);
@@ -1122,7 +1118,7 @@ define((require)=>{
       return assoc;
     },
 
-    indexTolineColumn: (text, index)=>{
+    indexTolineColumn: (text, index) => {
       let line = 1, i = 0;
       const {length} = text;
       while (true) {
