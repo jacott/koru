@@ -1,6 +1,6 @@
 define((require, exports, module) => {
   'use strict';
-  const {parse}         = require('koru/parse/js-ast');
+  const {parse, visitorKeys} = require('koru/parse/js-ast');
   const JsPrinter       = require('koru/parse/js-printer');
   const {qstr, last}    = require('koru/util');
 

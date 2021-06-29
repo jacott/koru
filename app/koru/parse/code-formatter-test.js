@@ -40,6 +40,11 @@ isServer && define((require, exports, module) => {
         assert.equals(reformat('a = `\n\n\n\n`;'), 'a = `\n\n\n\n`;');
       });
 
+      test('TemplateLiteral', () => {
+        assert.equals(reformat("d = `${a}a${b}b${c||''}`;"), "d = `${a}a${b}b${c||''}`;");
+        assert.equals(reformat('``'), '``');
+      });
+
       test('adjusts semicolons', () => {
         assert.equals(reformat('()=>{foo();;;\n;;; bar();}'), `() => {foo();\n bar()}`);
         assert.equals(reformat('{a = (1,2);  }'), `{a = (1,2)}`);
@@ -114,7 +119,6 @@ case 'object':
         }).toString();
 
         assert.equals(reformat(text), text);
-
       });
     });
   });

@@ -1,6 +1,7 @@
 define((require, exports, module) => {
   'use strict';
   const {parse, visitorKeys} = require('koru/parse/js-ast');
+  const {last}          = require('koru/util');
 
   class JsPrinter {
     inputPoint = 0;
@@ -57,6 +58,16 @@ define((require, exports, module) => {
       }
       this.write(this.input.slice(this.inputPoint, point), 'catchup');
       this.advance(point);
+    }
+
+    TemplateLiteral(node) {
+      this.catchup(node.start);
+      const {quasis, expressions} = node;
+      for(let i = 0; i < expressions.length; ++i) {
+        this.print(quasis[i]);
+        this.print(expressions[i]);
+      }
+      this.print(last(quasis));
     }
   }
 
