@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Validate field with custom validation function.
@@ -22,19 +22,24 @@ define((require, exports, module)=>{
   }
   Book.registerValidator(ValidateValidator);
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    group("validate", ()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    group('validate', () => {
       /**
-       * Run `validator` on field (if changed)
+       * Run `validator` on `field` (if changed)
+
        * @param validator A function which has the document as `this` and takes one argument `field`
-       * name. If an error is found use {#../../validation.addError} to invalidate document.
+       * name. If an error is found use {#../../validation.addError} to invalidate document or
+       * return a string containing the error message.
+
+       * @returns an optional string which is an error message if invalid. The message will be added
+       * to the documents errors for the `field`.
        **/
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      const checkDigit13Valid = (isbn)=>{
+      const checkDigit13Valid = (isbn) => {
         let r = 0;
         for(let i = 0; i < 12; ++i) {
           const d = +isbn[i];
@@ -47,7 +52,7 @@ define((require, exports, module)=>{
         return r !== -1 && +isbn[12] == (10 - (r%10)) % 10;
       };
 
-      test("calls", ()=>{
+      test('calls', () => {
         //[
         Book.defineFields({
           ISBN: {type: 'text', validate(field) {
@@ -63,7 +68,7 @@ define((require, exports, module)=>{
               }
             }
 
-            Val.addError(this, field, 'is_invalid');
+            return 'is_invalid';
           }}
         });
         const book = Book.build({ISBN: '978-3-16-148410-0'});
