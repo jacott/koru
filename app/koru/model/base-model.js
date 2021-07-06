@@ -382,7 +382,7 @@ define((require, exports, module)=>{
         : undefined;
     }
 
-    $withChanges(changes) {
+    $withChanges(changes=this.changes) {
       if (changes === 'del') return null;
       if (changes === 'add') return this;
       const cached = changes[changes$];

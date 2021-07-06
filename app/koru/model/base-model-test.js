@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * The base class for all models
@@ -24,16 +24,16 @@ define((require, exports, module)=>{
 
   const BaseModel = require('./base-model');
 
-  const newBookModule = ()=>{
+  const newBookModule = () => {
     const bm = new Module(void 0, 'book');
-    module.onUnload = ()=>{};
+    module.onUnload = () => {};
     return bm;
   };
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module();
 
       Val.register({onUnload: after}, {
@@ -42,12 +42,12 @@ define((require, exports, module)=>{
       });
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       Model._destroyModel('Book', 'drop');
       v = {};
     });
 
-    test("define", ()=>{
+    test('define', () => {
       /**
        * Define and register a model.
        *
@@ -83,7 +83,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("defineFields", ()=>{
+    test('defineFields', () => {
       /**
        * Define the types and {#../validators/main;;validators} of the fields in a model. Usually
        * called with {#.define}
@@ -153,7 +153,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("assertFound", ()=>{
+    test('assertFound', () => {
       /**
        * Assert model instance is found
 
@@ -177,14 +177,14 @@ define((require, exports, module)=>{
       //]
     });
 
-    group("validation", ()=>{
+    group('validation', () => {
       class Book extends ValidatorHelper.ModelStub {
       }
       Book.modelName = 'Book';
 
       Book.registerValidator(TextValidator);
 
-      test("changesOnly", ()=>{
+      test('changesOnly', () => {
         /**
          * Only changes to the field are validated
          *
@@ -209,7 +209,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("changesOnly original$", ()=>{
+      test('changesOnly original$', () => {
         Book.defineFields({
           pages: {type: 'number', number: {'>': 0}, changesOnly: true}
         });
@@ -229,8 +229,8 @@ define((require, exports, module)=>{
       });
     });
 
-    group("with Model", ()=>{
-      beforeEach(()=>{
+    group('with Model', () => {
+      beforeEach(() => {
         class Book extends BaseModel {
           authorize() {}
         }
@@ -242,56 +242,56 @@ define((require, exports, module)=>{
         v.Book = Book;
       });
 
-      group("model lock", ()=>{
-        test("nesting", ()=>{
+      group('model lock', () => {
+        test('nesting', () => {
           try {
-            v.Book.lock("a", ()=>{
+            v.Book.lock('a', () => {
               try {
-                v.Book.lock("a", ()=>{
-                  assert.isTrue(v.Book.isLocked("a"));
-                  throw new Error("catch me");
+                v.Book.lock('a', () => {
+                  assert.isTrue(v.Book.isLocked('a'));
+                  throw new Error('catch me');
                 });
               } catch(ex) {
-                assert.isTrue(v.Book.isLocked("a"));
+                assert.isTrue(v.Book.isLocked('a'));
                 throw ex;
               }
-              assert.fail("should not reach here");
+              assert.fail('should not reach here');
             });
           } catch (ex) {
-            if (ex.message !== "catch me")
+            if (ex.message !== 'catch me')
               throw ex;
           }
 
-          assert.isFalse(v.Book.isLocked("a"));
+          assert.isFalse(v.Book.isLocked('a'));
         });
 
-        test("Exception unlocks", ()=>{
+        test('Exception unlocks', () => {
           try {
-            v.Book.lock("a", ()=>{
-              assert.isTrue(v.Book.isLocked("a"));
-              throw new Error("catch me");
+            v.Book.lock('a', () => {
+              assert.isTrue(v.Book.isLocked('a'));
+              throw new Error('catch me');
             });
           } catch (ex) {
-            if (ex.message !== "catch me")
+            if (ex.message !== 'catch me')
               throw ex;
           }
 
-          assert.isFalse(v.Book.isLocked("a"));
+          assert.isFalse(v.Book.isLocked('a'));
         });
 
-        test("isLocked", ()=>{
-          v.Book.lock("a", ()=>{
-            v.isLocked_a = v.Book.isLocked("a");
-            v.isLocked_b = v.Book.isLocked("b");
+        test('isLocked', () => {
+          v.Book.lock('a', () => {
+            v.isLocked_a = v.Book.isLocked('a');
+            v.isLocked_b = v.Book.isLocked('b');
           });
 
           assert.isTrue(v.isLocked_a);
           assert.isFalse(v.isLocked_b);
-          assert.isFalse(v.Book.isLocked("a"));
+          assert.isFalse(v.Book.isLocked('a'));
         });
       });
 
-      test("nullToUndef", ()=>{
+      test('nullToUndef', () => {
         const book = new v.Book();
         book.title = null;
         assert.same(book.title, undefined);
@@ -301,7 +301,7 @@ define((require, exports, module)=>{
         assert.same(book.title, undefined);
       });
 
-      test("onChange", ()=>{
+      test('onChange', () => {
         /**
          * Observe changes to model records.
          *
@@ -327,7 +327,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("remote", ()=>{
+      test('remote', () => {
         /**
          * Define multiple Remote updating Procedure calls prefixed by model's
          * name.
@@ -347,7 +347,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("remoteGet", ()=>{
+      test('remoteGet', () => {
         /**
          * Define multiple Remote inquiry Procedure calls prefixed by
          * model's name.
@@ -367,7 +367,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("accessor", ()=>{
+      test('accessor', () => {
         const {Book} = v;
         Book.defineFields({
           starSign: {type: 'text', accessor: {get() {
@@ -395,29 +395,28 @@ define((require, exports, module)=>{
         assert.same(Book.getField(sut, 'luckyNumber'), 42);
       });
 
-      test("classMethods", ()=>{
+      test('classMethods', () => {
         const {Book} = v;
         const doc = Book.build();
         assert.same(doc.constructor, doc.classMethods);
       });
 
-      test("_id", ()=>{
+      test('_id', () => {
         const {Book} = v;
         assert.equals(Book.$fields._id, {type: 'id'});
 
-        const doc = new Book({_id: "attrId"});
+        const doc = new Book({_id: 'attrId'});
 
-        assert.same(doc._id, "attrId");
+        assert.same(doc._id, 'attrId');
 
-        doc.changes._id = "chgId";
-        assert.same(doc._id, "attrId");
-
+        doc.changes._id = 'chgId';
+        assert.same(doc._id, 'attrId');
 
         doc.attributes._id = null;
-        assert.same(doc._id, "chgId");
+        assert.same(doc._id, 'chgId');
       });
 
-      test("exists", ()=>{
+      test('exists', () => {
         const {Book} = v;
         const doc = Book.create({title: 'foo'});
 
@@ -426,14 +425,14 @@ define((require, exports, module)=>{
         assert.isFalse(Book.exists('bad'));
       });
 
-      test("query", ()=>{
+      test('query', () => {
         const {Book} = v;
         const query = Book.query;
 
         assert.same(query.model, Book);
       });
 
-      test("$onThis", ()=>{
+      test('$onThis', () => {
         const {Book} = v;
         const sut = Book.create();
 
@@ -443,7 +442,7 @@ define((require, exports, module)=>{
         assert.same(query.singleId, sut._id);
       });
 
-      test("where", ()=>{
+      test('where', () => {
         const {Book} = v;
         const query = Book.where('t1', 123);
 
@@ -451,7 +450,7 @@ define((require, exports, module)=>{
         assert.equals(query._wheres, {t1: 123});
       });
 
-      test("findById", ()=>{
+      test('findById', () => {
         /**
          * Find a document by its `_id`. Returns the same document each time if called from same
          * thread.
@@ -465,46 +464,47 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("findBy", ()=>{
+      test('findBy', () => {
         const {Book} = v;
         const doc = Book.create({
           title: 'Pride and Prejudice', pages: ['It is a truth universally acknowledged...']});
 
-        assert.same(Book.findBy('title', {$regex: "Pr"}).attributes, doc.attributes);
+        assert.same(Book.findBy('title', {$regex: 'Pr'}).attributes, doc.attributes);
       });
 
-      test("$withChanges", ()=>{
+      test('$withChanges', () => {
         /**
          * Return a doc representing this doc with the supplied changes staged against it such that
          * calling {##$save} will apply the changes.
          *
          * If this method is called again with the same changes object
          * then a cached version of the before doc is returned.
+
+         * @param changes defaults to `this.changes`
          */
         api.protoMethod();
 
         const {Book} = v;
         Book.defineFields({author: 'text'});
         //[
-
         const doc = new Book({
-          _id: "123", pages: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
+          _id: '123', pages: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
         assert.same(doc.$withChanges('add'), doc);
         assert.same(doc.$withChanges('del'), null);
 
         let undo = {$partial: {
           pages: [
-            "bar.baz.$partial", ['$match', 'new val', '$patch', [0,3,"orig"]],
-            "bar.buzz", 2,
+            'bar.baz.$partial', ['$match', 'new val', '$patch', [0,3,'orig']],
+            'bar.buzz', 2,
             'fnord.a', 2],
           author: ['$replace', 'H. G. Wells'],
         }};
         let old = doc.$withChanges(undo);
 
-        assert.same(old.pages.bar.baz, "orig val");
+        assert.same(old.pages.bar.baz, 'orig val');
         assert.same(old.pages.bar.buzz, 2);
-        assert.same(old.author, "H. G. Wells");
+        assert.same(old.author, 'H. G. Wells');
 
         assert.same(doc.pages.bar.baz, 'new val');
         assert.same(doc.pages.bar.buzz, 5);
@@ -514,8 +514,8 @@ define((require, exports, module)=>{
 
         old = doc.$withChanges({$partial: {
           pages: [
-            "bar.baz", null,
-            "bar.buzz", 2,
+            'bar.baz', null,
+            'bar.buzz', 2,
             'fnord.a', 2],
           author: ['$replace', null],
         }});
@@ -524,33 +524,36 @@ define((require, exports, module)=>{
         assert.same(old.pages.bar.buzz, 2);
         assert.same(old.author, undefined);
         //]
+
+        doc.changes.author = 'a2';
+        assert.same(doc.$withChanges(), doc.$withChanges());
+        assert.same(doc.$withChanges().author, 'a2');
       });
 
-
-      test("$invertChanges", ()=>{
+      test('$invertChanges', () => {
         /**
          * Use the {beforeChange} keys to extract the new values. See {#koru/changes.extractChangeKeys}
          *
          * @returns new hash of extracted values.
          */
         const {Book} = v;
-        const beforeChange = {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}};
-        const doc = new Book({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+        const beforeChange = {a: 1, b: 2, c: 3, $partial: {e: ['1.f', 42]}};
+        const doc = new Book({_id: '1', a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
 
         const changes = doc.$invertChanges(beforeChange);
 
         assert.equals(changes, {a: 2, b: null, c: null, e: [1, {f: 69}]});
 
         // should not alter passed in arguments
-        assert.equals(beforeChange, {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}});
-        assert.equals(doc.attributes, {_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+        assert.equals(beforeChange, {a: 1, b: 2, c: 3, $partial: {e: ['1.f', 42]}});
+        assert.equals(doc.attributes, {_id: '1', a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
       });
 
-      test("change", ()=>{
+      test('change', () => {
         const {Book} = v;
         const doc = Book.create({pages: {bar: {baz: 'orig'}}});
 
-        doc.$change('pages').bar.baz = "new";
+        doc.$change('pages').bar.baz = 'new';
 
         const bar = doc.pages.bar;
 
@@ -558,16 +561,15 @@ define((require, exports, module)=>{
         assert.equals(doc.attributes.pages, {bar: {baz: 'orig'}});
 
         doc.$change('pages').fnord = 123;
-        doc.$change('pages').bar.boo = "me too";
+        doc.$change('pages').bar.boo = 'me too';
 
+        assert.equals(bar, {baz: 'new', boo: 'me too'});
 
-        assert.equals(bar, {baz: 'new', boo: "me too"});
-
-        assert.equals(doc.changes, {pages: {bar: {baz: 'new', boo: "me too"}, fnord: 123}});
+        assert.equals(doc.changes, {pages: {bar: {baz: 'new', boo: 'me too'}, fnord: 123}});
         assert.equals(doc.attributes.pages, {bar: {baz: 'orig'}});
       });
 
-      test("$assertValid", ()=>{
+      test('$assertValid', () => {
         /**
          * Validate the document and throw an error if invalid
          **/
@@ -579,7 +581,7 @@ define((require, exports, module)=>{
 
         try {
           book.$assertValid();
-          assert.fail("Should not have succeeded");
+          assert.fail('Should not have succeeded');
         } catch(err) {
           assert.same(err.constructor, koru.Error);
           assert.equals(err.error, 400);
@@ -592,7 +594,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      group("$save", ()=>{
+      group('$save', () => {
         /**
          * Validate the document and persist to server DB. Runs `before`, `after` and {##onChange}
          * hooks.
@@ -601,11 +603,11 @@ define((require, exports, module)=>{
          * `"force"` will save even if validation fails.
          **/
 
-        beforeEach(()=>{
+        beforeEach(() => {
           api.protoMethod();
         });
 
-        test("normal mode", ()=>{
+        test('normal mode', () => {
           const {Book} = v;
           //[
           // normal (undefined) mode
@@ -623,7 +625,7 @@ define((require, exports, module)=>{
           //]
         });
 
-        test("mode 'force'", ()=>{
+        test("mode 'force'", () => {
           const {Book} = v;
           //[
           // "force" mode
@@ -632,7 +634,7 @@ define((require, exports, module)=>{
 
           spy(book, '$isValid');
 
-          book.$save("force");
+          book.$save('force');
 
           assert.called(book.$isValid); // assert validation methods were run
 
@@ -640,7 +642,7 @@ define((require, exports, module)=>{
           //]
         });
 
-        test("mode assert", ()=>{
+        test('mode assert', () => {
           TH.noInfo();
           const {Book} = v;
           //[
@@ -649,8 +651,8 @@ define((require, exports, module)=>{
           const book = Book.build();
 
           try {
-            book.$save("assert");
-            assert.fail("Should not have saved");
+            book.$save('assert');
+            assert.fail('Should not have saved');
           } catch(err) {
             assert.same(err.constructor, koru.Error);
             assert.equals(err.error, 400);
@@ -658,7 +660,7 @@ define((require, exports, module)=>{
           }
 
           book.author = 'T & T';
-          book.$save("assert");
+          book.$save('assert');
           assert.same(book[error$], void 0);
 
           assert.same(book.$reload().author, 'T & T');
@@ -666,7 +668,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("$$save", ()=>{
+      test('$$save', () => {
         /**
          * Is shorthand for {##$save;("assert")}
          **/
@@ -677,7 +679,7 @@ define((require, exports, module)=>{
         Book.defineFields({author: {type: 'text', required: true}});
         const book = Book.build();
 
-        assert.invalidRequest(()=>{book.$$save()});
+        assert.invalidRequest(() => {book.$$save()});
 
         book.author = 'T & T';
         book.$$save();
@@ -685,7 +687,7 @@ define((require, exports, module)=>{
         assert.same(book.$reload().author, 'T & T');
         //]
       });
-      test("timestamps", ()=>{
+      test('timestamps', () => {
         const {Book} = v;
         Book.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
 
@@ -693,7 +695,7 @@ define((require, exports, module)=>{
         assert.equals(Book.updateTimestamps, {updatedAt: true});
 
         v.now = Date.now()+1234;
-        intercept(util, 'dateNow', ()=>v.now);
+        intercept(util, 'dateNow', () => v.now);
 
         const doc = Book.create({title: 'testing'});
 
@@ -726,18 +728,18 @@ define((require, exports, module)=>{
         assert.same(+doc.updatedAt, v.now);
       });
 
-      group("belongs_to", ()=>{
+      group('belongs_to', () => {
         let Publisher;
-        beforeEach(()=>{
+        beforeEach(() => {
           Publisher = Model.define('Publisher').defineFields({name: 'text'});
-          after(()=>{Model._destroyModel('Publisher', 'drop')});
+          after(() => {Model._destroyModel('Publisher', 'drop')});
         });
 
-        afterEach(()=>{
-//          Model._destroyModel('Publisher', 'drop');
+        afterEach(() => {
+          //          Model._destroyModel('Publisher', 'drop');
         });
 
-        test("belongs_to_dbId", ()=>{
+        test('belongs_to_dbId', () => {
           /**
            * A `pseudo_field` synced to the {#../db-broker;.dbId}. It defines a model getter like
            * `belongs_to` does. It can only be defined once per model.
@@ -758,11 +760,11 @@ define((require, exports, module)=>{
 
           Publisher.create({name: 'Macmillan', _id: 'default'});
 
-          assert.same(book.publisher.name, "Macmillan");
+          assert.same(book.publisher.name, 'Macmillan');
           //]
         });
 
-        test("accessor", ()=>{
+        test('accessor', () => {
           const {Book} = v;
           Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
@@ -771,41 +773,41 @@ define((require, exports, module)=>{
           assert.same(sut.changes.publisher_id, undefined);
         });
 
-        test("belongs_to auto", ()=>{
+        test('belongs_to auto', () => {
           const {Book} = v;
           Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
-          const publisher = Publisher.create({name: "Macmillan"});
+          const publisher = Publisher.create({name: 'Macmillan'});
           const sut = Book.build({publisher_id: publisher._id});
 
           const cached = sut.publisher;
           assert.same(sut.publisher, cached);
-          assert.same(sut.publisher.name, "Macmillan");
+          assert.same(sut.publisher.name, 'Macmillan');
           assert.same(Book.$fields.publisher_id.model, Publisher);
         });
 
-        test("belongs_to manual name", ()=>{
+        test('belongs_to manual name', () => {
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', modelName: 'Publisher'}});
 
-          const publisher = Publisher.create({name: "Macmillan"});
+          const publisher = Publisher.create({name: 'Macmillan'});
           const sut = Book.build({baz_id: publisher._id});
 
-          assert.same(sut.baz.name, "Macmillan");
+          assert.same(sut.baz.name, 'Macmillan');
         });
 
-        test("belongs_to manual model", ()=>{
+        test('belongs_to manual model', () => {
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', model: Publisher}});
 
-          const publisher = Publisher.create({name: "Macmillan"});
+          const publisher = Publisher.create({name: 'Macmillan'});
           const sut = Book.build({baz_id: publisher._id});
 
-          assert.same(sut.baz.name, "Macmillan");
+          assert.same(sut.baz.name, 'Macmillan');
         });
       });
 
-      test("hasMany", ()=>{
+      test('hasMany', () => {
         function fooFinder(query) {
           v.doc = this;
           v.query = query;
@@ -820,10 +822,9 @@ define((require, exports, module)=>{
         assert.same(sut.foos, v.query);
         assert.same(v.query, v.expectQuery);
         assert.same(v.doc, sut);
-
       });
 
-      test("user_id_on_create", ()=>{
+      test('user_id_on_create', () => {
         const {Book} = v;
         v.User = Model.define('User');
         after(function () {
@@ -833,7 +834,7 @@ define((require, exports, module)=>{
 
         assert.equals(Book.userIds, { user_id: 'create' });
 
-        TH.login("u1234", function () {
+        TH.login('u1234', function () {
           const doc = Book.create({title: 'testing'});
 
           assert(doc._id);
@@ -841,14 +842,14 @@ define((require, exports, module)=>{
           assert.same(doc.user_id, util.thread.userId);
 
           let id;
-          session.rpc('save', 'Book', null, {_id: id = "123456", title: 'testing'} );
+          session.rpc('save', 'Book', null, {_id: id = '123456', title: 'testing'} );
           assert.same(Book.findById(id).user_id, util.thread.userId);
 
           assert.same(Book.create({user_id: 'override'}).$reload().user_id, 'override');
         });
       });
 
-      test("field accessor false", ()=>{
+      test('field accessor false', () => {
         const {Book} = v;
         Book.defineFields({fuzz: {type: 'text', accessor: false}});
         const doc = Book.build({fuzz: 'bar'});
@@ -858,7 +859,7 @@ define((require, exports, module)=>{
         assert.same(Book.$fields.fuzz.accessor, false);
       });
 
-      test("equality", ()=>{
+      test('equality', () => {
         const {Book} = v;
         const OtherClass = Model.define('OtherClass'),
               a = new Book(),
@@ -869,7 +870,7 @@ define((require, exports, module)=>{
 
         refute.isTrue(a.$equals(b));
 
-        a.attributes._id = "hello";
+        a.attributes._id = 'hello';
 
         refute.isTrue(a.$equals(b));
 
@@ -881,11 +882,11 @@ define((require, exports, module)=>{
         refute.isTrue(a.$equals(null));
       });
 
-      test("create", ()=>{
+      test('create', () => {
         const {Book} = v;
         const attrs = {title: 'testing'};
 
-        isClient && spy(session, "rpc");
+        isClient && spy(session, 'rpc');
         const doc = Book.create(attrs);
         refute.same(doc.changes,doc.attributes);
         assert.equals(doc.changes,{});
@@ -893,14 +894,14 @@ define((require, exports, module)=>{
         attrs._id = doc._id;
 
         assert.same(doc.attributes,
-                                             Book.findById(doc._id).attributes);
+                    Book.findById(doc._id).attributes);
 
         if(isClient)
           assert.calledOnceWith(session.rpc, 'save', 'Book', null, {
-            _id: doc._id, title: "testing"});
+            _id: doc._id, title: 'testing'});
       });
 
-      test("$partial in $isValid", ()=>{
+      test('$partial in $isValid', () => {
         const {Book} = v;
         const doc = Book.create({_id: '123', title: 'testing'});
         doc.validate = function () {
@@ -926,7 +927,7 @@ define((require, exports, module)=>{
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
 
-      test("$save with partial", ()=>{
+      test('$save with partial', () => {
         const {Book} = v;
         const doc = Book.create({_id: '123', title: 'testing'});
 
@@ -937,7 +938,7 @@ define((require, exports, module)=>{
         assert.equals(doc.$reload(true).title, 'testing 123');
       });
 
-      test("$savePartial calls save", ()=>{
+      test('$savePartial calls save', () => {
         const {Book} = v;
         const doc = Book.create({_id: '123', title: 'testing'});
         stub(doc, '$save').returns('answer');
@@ -947,7 +948,7 @@ define((require, exports, module)=>{
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
 
-      test("$$savePartial calls save", ()=>{
+      test('$$savePartial calls save', () => {
         const {Book} = v;
         const doc = Book.create({_id: '123', title: 'testing'});
         const assertSave = stub(doc, '$save').withArgs('assert').returns(true);
@@ -960,7 +961,7 @@ define((require, exports, module)=>{
         assert.same(assertSave.firstCall.thisValue, doc);
       });
 
-      test("$hasChanged", ()=>{
+      test('$hasChanged', () => {
         const {Book} = v;
         const doc = new Book({_id: 't123', pages: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {pages: [
@@ -979,7 +980,7 @@ define((require, exports, module)=>{
         assert.isFalse(doc.$hasChanged('bar', {foo: 123}));
       });
 
-      test("$fieldDiff", ()=>{
+      test('$fieldDiff', () => {
         const {Book} = v;
         const doc = new Book({_id: 't123', pages: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {pages: [
@@ -993,12 +994,11 @@ define((require, exports, module)=>{
             two: 'a string.sfx',
             four: [1,2,3],
           });
-
         };
         doc.$isValid();
       });
 
-      test("duplicate id", ()=>{
+      test('duplicate id', () => {
         const {Book} = v;
         const doc = Book.create({_id: '123', title: 'testing'});
 
@@ -1007,7 +1007,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("$reload on removed doc", ()=>{
+      test('$reload on removed doc', () => {
         const {Book} = v;
         const doc = Book.create({title: 'old'});
 
@@ -1018,7 +1018,7 @@ define((require, exports, module)=>{
         assert.equals(doc.attributes, {});
       });
 
-      test("$clearChanges", ()=>{
+      test('$clearChanges', () => {
         const {Book} = v;
         const doc = new Book({_id: 't1', title: 'foo'});
 
@@ -1036,11 +1036,11 @@ define((require, exports, module)=>{
         assert(util.isObjEmpty(doc.changes));
       });
 
-      test("update", ()=>{
+      test('update', () => {
         const {Book} = v;
         const doc = Book.create({title: 'old'});
 
-        isClient && spy(session, "rpc");
+        isClient && spy(session, 'rpc');
 
         doc.title = 'new';
         doc.$save();
@@ -1051,13 +1051,13 @@ define((require, exports, module)=>{
         assert.equals(doc.changes,{});
 
         assert.same(doc.attributes, Book
-                                             .findById(doc._id).attributes);
+                    .findById(doc._id).attributes);
 
         if(isClient)
-          assert.calledOnceWith(session.rpc,'save', 'Book', doc._id, {title: "new"});
+          assert.calledOnceWith(session.rpc,'save', 'Book', doc._id, {title: 'new'});
       });
 
-      test("build", ()=>{
+      test('build', () => {
         /**
          * Build a new model. Does not copy _id from attributes.
          */
@@ -1075,11 +1075,10 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("setFields", ()=>{
+      test('setFields', () => {
         const {Book} = v;
         Book.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
         const sut = new Book();
-
 
         const result = sut.$setFields(['a','d','notdefined','_id', '_version'],{
           a: 'aa',d: 'dd', notdefined: 'set', notme: 'nm', _id: 'noset', _version: 5,
@@ -1090,16 +1089,15 @@ define((require, exports, module)=>{
         assert.equals(sut.changes,{a: 'aa',d: 'dd'});
 
         assert.same(sut.notdefined,'set');
-
       });
 
-      test("inspect$", ()=>{
+      test('inspect$', () => {
         const {Book} = v;
         const doc = new Book({_id: 'id123', title: 'Oasis'});
         assert.equals(doc[inspect$](), 'Model.Book("id123", "Oasis")');
       });
 
-      test("toId", ()=>{
+      test('toId', () => {
         const {Book} = v;
         const doc = new Book({_id: 'theId'});
 
@@ -1107,15 +1105,13 @@ define((require, exports, module)=>{
         assert.same(Book.toId('astring'), 'astring');
       });
 
-      test("toDoc", ()=>{
+      test('toDoc', () => {
         const {Book} = v;
         const doc = new Book({_id: 'theId'});
 
-
         stub(Book, 'findById', function (id) {
-          return "found " + id;
+          return 'found ' + id;
         });
-
 
         assert.same(Book.toDoc(doc)._id, 'theId');
         assert.same(Book.toDoc('astring'), 'found astring');
