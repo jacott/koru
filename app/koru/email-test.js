@@ -1,10 +1,10 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
-  const stream          = require('stream');
-  const SmtpPool        = requirejs.nodeRequire('nodemailer-smtp-pool');
+  const NodeMailer      = requirejs.nodeRequire('nodemailer');
   const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
+  const stream          = require('stream');
   const nodeUtil        = requirejs.nodeRequire('util');
 
   const {stub, spy} = TH;
@@ -12,29 +12,29 @@ isServer && define((require, exports, module)=>{
   const Email = require('./email');
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.origTransport = Email._transport;
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       Email._transport = v.origTransport;
       v = {};
     });
 
-    test("send", ()=>{
+    test('send', () => {
       Email._transport = {
         sendMail(options, callback) {
           v.sendOpts = options;
           callback();
         },
       };
-      Email.send(v.options = {from: "foo@vimaly.com"});
+      Email.send(v.options = {from: 'foo@vimaly.com'});
 
       assert.same(v.sendOpts, v.options);
     });
 
-    test("initPool to stub", ()=>{
+    test('initPool to stub', () => {
       const stub = SmtpStub();
       let logCount = 0;
       stub.on('log', function (info) {
@@ -44,34 +44,28 @@ isServer && define((require, exports, module)=>{
 
       Email.initPool(stub);
       Email.send(v.options = {
-        from: "foo@vimaly.com",
-        to: "bar@vimaly.com",
-        subject: "The subject",
-        text: "The text body",
+        from: 'foo@vimaly.com',
+        to: 'bar@vimaly.com',
+        subject: 'The subject',
+        text: 'The text body',
       });
 
       assert.same(logCount, 5);
       assert.equals(JSON.parse(v.info.message), {
-        from: "foo@vimaly.com", to: ["bar@vimaly.com"]});
-
+        from: 'foo@vimaly.com', to: ['bar@vimaly.com']});
     });
 
-    test("initPool to url", ()=>{
-      assert.same(Email.SmtpPool, SmtpPool);
+    test('initPool to url', () => {
+      stub(NodeMailer, 'createTransport');
 
-      after(()=>{Email.SmtpPool = SmtpPool});
+      Email.initPool('smtp://foo:bar@vimaly.com:465');
 
-      Email.SmtpPool = (...args)=>{
-        v.smtpPollArgs = args.slice();
-        return SmtpStub();
-      };
-
-
-      Email.initPool("smtp://foo:bar@vimaly.com:465");
-
-      assert.equals(v.smtpPollArgs, [{
-        port: 465, host: "vimaly.com", auth: {user: 'foo', pass: 'bar'},
-        secure: false, requireTLS: true}]);
+      assert.calledOnceWith(NodeMailer.createTransport, {
+        pool: true,
+        port: 465, host: 'vimaly.com',
+        auth: {user: 'foo', pass: 'bar'},
+        secure: false, requireTLS: true,
+      });
     });
   });
 });

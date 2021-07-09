@@ -1,11 +1,9 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const util            = require('koru/util');
   const NodeMailer      = requirejs.nodeRequire('nodemailer');
   const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
   const urlModule       = requirejs.nodeRequire('url');
-
-  let SmtpPool = requirejs.nodeRequire('nodemailer-smtp-pool');
 
   const Email = {
     send(options) {
@@ -29,27 +27,28 @@ define((require)=>{
                   pass: parts[1] && decodeURIComponent(parts[1])};
         }
 
-        Email._transport = NodeMailer.createTransport(SmtpPool({
+        Email._transport = NodeMailer.createTransport({
+          pool: true,
           port: port || 25,
           host: mailUrl.hostname || 'localhost',
           secure: false,
           requireTLS: port == 465,
           auth: auth
-        }));
+        });
 
       } else {
-        if (! urlOrTransport) {
+        if (urlOrTransport === void 0) {
           urlOrTransport = SmtpStub();
 
-          urlOrTransport.on('log', function (info) {
+          urlOrTransport.on('log', (info) => {
             switch(info.type) {
             case 'message':
-              console.log(info.message.replace(/=([A-F0-9]{2})/g, function (_, hex) {
-                return String.fromCharCode(parseInt(hex, 16));
-              }).replace(/=\r\n/g, '').replace(/\r\n/g, '\n'));
+              console.log(info.message
+                          .replace(/=([A-F0-9]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+                          .replace(/=\r\n/g, '').replace(/\r\n/g, '\n'));
               break;
             default:
-              console.log("====== Email ======");
+              console.log('====== Email ======');
             }
           });
         }
@@ -65,9 +64,6 @@ define((require)=>{
         throw new Error('Email has not been initialized');
       }
     },
-
-    set SmtpPool(value) {SmtpPool = value},
-    get SmtpPool() {return SmtpPool},
   };
 
   return Email;
