@@ -1,7 +1,7 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
-   `* DomTemplate is used to create interactive [Dom Trees](#mdn:/API/Node)
+   * Template is used to create interactive [Dom Trees](#mdn:/API/Node)
    **/
   const koru            = require('koru');
   const Dom             = require('koru/dom');
@@ -16,26 +16,26 @@ isClient && define((require, exports, module)=>{
 
   const {ctx$} = require('koru/symbols');
 
-  const DomTemplate = require('./template');
+  const Template = require('./template');
 
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       delete Dom.tpl.Foo;
       Dom.removeChildren(document.body);
       v = {};
     });
 
-    test("stopEvent", ()=>{
+    test('stopEvent', () => {
       const ev = {stopImmediatePropagation: stub(), preventDefault: stub()};
       Dom.stopEvent(ev);
       assert.called(ev.stopImmediatePropagation);
       assert.called(ev.preventDefault);
       const Tpl = Dom.newTemplate({
-        name: "Foo",
+        name: 'Foo',
         nodes:[{
-          name:"div",
+          name:'div',
         }],
       });
 
@@ -84,20 +84,20 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("relative name", ()=>{
+    test('relative name', () => {
       Dom.newTemplate({
-        name: "Bar.Baz.Buzz",
+        name: 'Bar.Baz.Buzz',
         nodes:[{
-          name:"div",
+          name:'div',
           children: [' ', ['>', '../../Fnord.Sub.Sub', ['=', 'x', 123]]],
         }],
       });
 
       Dom.newTemplate({
-        name: "Bar.Fnord.Sub.Sub",
+        name: 'Bar.Fnord.Sub.Sub',
         nodes: [{
           name: 'div',
-          children: ["hello Fnord"],
+          children: ['hello Fnord'],
         }],
       });
 
@@ -106,30 +106,30 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("partial", ()=>{
-      beforeEach( ()=>{
+    group('partial', () => {
+      beforeEach( () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes:[{
-            name:"section",
-            attrs: [["=","id","FooId"]],
+            name:'section',
+            attrs: [['=','id','FooId']],
             children:[' ', ['>', '/Bar']],
           }],
         });
 
         Dom.newTemplate({
-          name: "Bar",
+          name: 'Bar',
           nodes:[{
-            name:"div",
+            name:'div',
             children:[' ', ['>', 'Baz', ['=', 'initials', 'myFunc']]],
           }],
         });
 
         Dom.newTemplate({
-          name: "Bar.Baz",
+          name: 'Bar.Baz',
           nodes:[{
-            name:"input",
-            attrs:[["=","type",'text'], ["=", 'value', ['', 'initials']]],
+            name:'input',
+            attrs:[['=','type','text'], ['=', 'value', ['', 'initials']]],
             children: [{
               name: 'article',
               attrs: [['=', 'id', 'BazArticle']],
@@ -138,12 +138,12 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      afterEach( ()=>{
+      afterEach( () => {
         Dom.removeChildren(document.body);
         delete Dom.tpl.Bar;
       });
 
-      test("setCtx", ()=>{
+      test('setCtx', () => {
         const elm = Dom.tpl.Foo.$render({});
         assert.dom(elm, function () {
           v.pCtx = Dom.myCtx(this);
@@ -159,7 +159,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("find ctx", ()=>{
+      test('find ctx', () => {
         Dom.tpl.Bar.$helpers({
           myFunc() {
             v.helperFoundCtx = Dom.tpl.Foo.$ctx();
@@ -189,7 +189,7 @@ isClient && define((require, exports, module)=>{
         assert.same(Dom.ctxById('FooId'), elm[ctx$]);
       });
 
-      test("updateAllTags", ()=>{
+      test('updateAllTags', () => {
         const elm = Dom.tpl.Foo.$render({myFunc: 'one'});
 
         document.body.appendChild(elm);
@@ -210,7 +210,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("restoring focus", ()=>{
+      test('restoring focus', () => {
         Dom.tpl.Bar.$helpers({
           myFunc() {
             v.helperFoundCtx = Dom.tpl.Foo.$ctx();
@@ -243,17 +243,17 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("default arg is data", ()=>{
+      test('default arg is data', () => {
         Dom.tpl.Bar.$created = stub();
 
         const data = {arg: 'me'};
         Dom.tpl.Foo.$render(data);
 
         assert.calledWith(Dom.tpl.Bar.$created, match(
-          ctx => (assert.same(ctx.data, data), true)));
+          (ctx) => (assert.same(ctx.data, data), true)));
       });
 
-      test("scoping", ()=>{
+      test('scoping', () => {
         const initials = 'BJ';
         Dom.tpl.Bar.$helpers({
           myFunc() {
@@ -268,8 +268,8 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("$actions", ()=>{
-      Dom.newTemplate({name: "Foo"});
+    test('$actions', () => {
+      Dom.newTemplate({name: 'Foo'});
       Dom.tpl.Foo.$actions({
         one: v.one = stub(),
         two: stub(),
@@ -286,7 +286,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(v.one, event);
     });
 
-    test("focus events", ()=>{
+    test('focus events', () => {
       /**
        * ensure focus and blur are capture events.
 
@@ -308,8 +308,8 @@ isClient && define((require, exports, module)=>{
       stub(foo, 'addEventListener');
       Dom.tpl.Foo.$attachEvents(foo);
 
-      assert.calledWith(foo.addEventListener, 'focus', match(f => v.f = f), true);
-      assert.calledWith(foo.addEventListener, 'blur', match(f => v.b = f), true);
+      assert.calledWith(foo.addEventListener, 'focus', match((f) => v.f = f), true);
+      assert.calledWith(foo.addEventListener, 'blur', match((f) => v.b = f), true);
       assert.calledWithExactly(foo.addEventListener, 'focusout', v.b);
 
       v.f(v.ev = {type: 'focus', currentTarget: foo, target: foo.querySelector('button')});
@@ -320,12 +320,10 @@ isClient && define((require, exports, module)=>{
       v.b(v.ev = {type: 'blur', currentTarget: foo, target: foo.querySelector('button')});
       assert.calledWith(v.blur, v.ev);
 
-
       v.b(v.ev = {type: 'focusout', currentTarget: foo, target: document.activeElement});
       refute.called(v.focusout);
       v.b(v.ev = {type: 'focusout', currentTarget: foo, target: foo.querySelector('button')});
       assert.calledWith(v.focusout, v.ev);
-
 
       stub(foo, 'removeEventListener');
       Dom.tpl.Foo.$detachEvents(foo);
@@ -335,8 +333,8 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(foo.removeEventListener, 'focusout', v.b);
     });
 
-    group("menustart", ()=>{
-      beforeEach(()=>{
+    group('menustart', () => {
+      beforeEach(() => {
         Dom.newTemplate({name: 'Foo', nodes: [{
           name: 'div', children: [
             {name: 'button'},
@@ -358,23 +356,23 @@ isClient && define((require, exports, module)=>{
         };
       });
 
-      test("non touch pointerdown", ()=>{
+      test('non touch pointerdown', () => {
         Dom.triggerEvent(v.target, 'pointerdown');
-        assert.calledWith(v.menustart, match(ev => ev.type === 'pointerdown'));
+        assert.calledWith(v.menustart, match((ev) => ev.type === 'pointerdown'));
       });
 
-      test("touch click", ()=>{
+      test('touch click', () => {
         Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
 
         refute.called(v.menustart);
         Dom.triggerEvent(v.target, 'click');
 
-        assert.calledWith(v.menustart, match(ev => ev.type === 'click'));
+        assert.calledWith(v.menustart, match((ev) => ev.type === 'click'));
       });
 
-      test("$detachEvents", ()=>{
+      test('$detachEvents', () => {
         assert.calledWithExactly(v.foo.addEventListener, 'pointerdown', match(
-          f => v.pointerdown = f));
+          (f) => v.pointerdown = f));
         spy(v.foo, 'removeEventListener');
         Dom.tpl.Foo.$detachEvents(v.foo);
 
@@ -382,8 +380,8 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("dragstart on touch", ()=>{
-      beforeEach(()=>{
+    group('dragstart on touch', () => {
+      beforeEach(() => {
         Dom.newTemplate({name: 'Foo', nodes: [{
           name: 'div', children: [
             {name: 'span', attrs: [['=', 'draggable', 'true']]},
@@ -400,7 +398,7 @@ isClient && define((require, exports, module)=>{
         Dom.tpl.Foo.$attachEvents(v.foo);
         assert.calledWithExactly(v.foo.addEventListener, 'dragstart', match.func);
         assert.calledWithExactly(v.foo.addEventListener, 'touchstart', match(
-          f => v.touchstart = f));
+          (f) => v.touchstart = f));
 
         stub(koru, 'setTimeout').returns(321);
         stub(koru, 'clearTimeout');
@@ -411,18 +409,18 @@ isClient && define((require, exports, module)=>{
           target: v.target,
           touches: [{clientX: 30, clientY: 60}],
         };
-        v.start = ()=>{
+        v.start = () => {
           v.touchstart(v.touchstartEvent);
 
-          assert.calledWith(document.addEventListener, 'touchend', match(f => v.touchend = f),
+          assert.calledWith(document.addEventListener, 'touchend', match((f) => v.touchend = f),
                             Dom.captureEventOption);
 
-          assert.calledWith(document.addEventListener, 'touchmove', match(f => v.touchmove = f),
+          assert.calledWith(document.addEventListener, 'touchmove', match((f) => v.touchmove = f),
                             Dom.captureEventOption);
         };
       });
 
-      test("touch and hold", ()=>{
+      test('touch and hold', () => {
         v.start();
 
         assert.calledWith(koru.setTimeout, match.func, 300);
@@ -442,10 +440,9 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(document.removeEventListener, 'touchmove', v.touchmove,
                           Dom.captureEventOption);
 
-
         v.touchstart(v.touchstartEvent);
 
-        assert.calledWith(koru.setTimeout, match(to => v.to = to), 300);
+        assert.calledWith(koru.setTimeout, match((to) => v.to = to), 300);
         refute.called(v.dragStart);
         stub(Dom, 'triggerEvent');
         v.to();
@@ -458,7 +455,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWithExactly(v.foo.removeEventListener, 'touchstart', v.touchstart);
       });
 
-      test("move cancels", ()=>{
+      test('move cancels', () => {
         v.start();
 
         refute.called(koru.clearTimeout);
@@ -471,8 +468,8 @@ isClient && define((require, exports, module)=>{
         assert.calledTwice(document.removeEventListener);
       });
 
-      test("end cancels", ()=>{
-         v.start();
+      test('end cancels', () => {
+        v.start();
 
         refute.called(koru.clearTimeout);
 
@@ -489,7 +486,7 @@ isClient && define((require, exports, module)=>{
         assert.calledTwice(document.removeEventListener);
       });
 
-      test("dragging", ()=>{
+      test('dragging', () => {
         v.start();
 
         koru.setTimeout.yield();
@@ -516,7 +513,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("event calling", ()=>{
+    test('event calling', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'span'},
@@ -538,7 +535,7 @@ isClient && define((require, exports, module)=>{
 
       assert.dom('body>div', function () {
         const top = this;
-        after(()=>{Dom.remove(top)});
+        after(() => {Dom.remove(top)});
         spy(top, 'addEventListener');
         Dom.tpl.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
@@ -592,17 +589,31 @@ isClient && define((require, exports, module)=>{
         Dom.tpl.Foo.$detachEvents(top);
         Dom.remove(top);
         Dom.tpl.Foo.$detachEvents(top);
-
       });
     });
 
-    group("newTemplate", ()=>{
-      beforeEach(()=>{
+    test('addTemplates', () => {
+      /**
+       * Add nested templates to parent. This is automatically called but is exposed so that it can
+       * be overwritten in a sub class.
+       */
+      api.method();
+      //[
+      const Tpl = new Template('MyTemplate');
+      Template.addTemplates(Tpl, {
+        name: 'Sub1', nodes: ['sub 1'],
+        nested: [{name: 'Sub', nodes: ['sub 1 sub']}]});
+      assert.same(Tpl.Sub1.Sub.$render({}).textContent, 'sub 1 sub');
+      //]
+    });
+
+    group('newTemplate', () => {
+      beforeEach(() => {
       });
 
-      test("simple", ()=>{
+      test('simple', () => {
         /**
-         * Create a new `DomTemplate` from an html blueprint.
+         * Create a new `Template` from an html blueprint.
          *
          * @param [module] if supplied the template will be deleted if
          * `module` is unloaded
@@ -615,74 +626,73 @@ isClient && define((require, exports, module)=>{
         api.method('newTemplate');
         const myMod = {id: 'myMod', onUnload: stub(),
                        __proto__: Module.prototype};
-        assert.same(DomTemplate.newTemplate(myMod, {
-          name: "Foo", nodes: [{name: "div"}]
+        assert.same(Template.newTemplate(myMod, {
+          name: 'Foo', nodes: [{name: 'div'}]
         }), Dom.tpl.Foo);
 
         const tpl = Dom.tpl.Foo;
-        assert.same(tpl.name, "Foo");
-        assert.equals(tpl.nodes, [{name: "div"}]);
+        assert.same(tpl.name, 'Foo');
+        assert.equals(tpl.nodes, [{name: 'div'}]);
         assert.equals(tpl._events, []);
 
         myMod.onUnload.yield();
         refute(Dom.tpl.Foo);
       });
 
-      test("not found", ()=>{
-        const tp = Dom.newTemplate({name: "Foo.Bar.Baz"});
+      test('not found', () => {
+        const tp = Dom.newTemplate({name: 'Foo.Bar.Baz'});
         assert.same(Dom.lookupTemplate('Foo.Fizz.Bar'), undefined);
       });
 
-      test("lookupTemplate", ()=>{
-        const foo = Dom.newTemplate({name: "Foo"});
-        const baz = Dom.newTemplate({name: "Foo.Bar.Baz"});
-        const bob = Dom.newTemplate({name: "Foo.Bar.Bob"});
-        assert.same(DomTemplate.lookupTemplate(baz, "."), baz);
-        assert.same(DomTemplate.lookupTemplate(baz, ".."), baz.parent);
-        assert.same(DomTemplate.lookupTemplate(baz, "../.."), baz.parent.parent);
-        assert.same(DomTemplate.lookupTemplate(baz, "../../."), baz.parent.parent);
-        assert.same(DomTemplate.lookupTemplate(baz, "../Bob"), bob);
-        assert.same(DomTemplate.lookupTemplate(baz.parent, "Bob"), bob);
-        assert.same(DomTemplate.lookupTemplate(foo, "Bar.Bob"), bob);
-        assert.same(DomTemplate.lookupTemplate(foo, "/Foo.Bar.Bob"), bob);
+      test('lookupTemplate', () => {
+        const foo = Dom.newTemplate({name: 'Foo'});
+        const baz = Dom.newTemplate({name: 'Foo.Bar.Baz'});
+        const bob = Dom.newTemplate({name: 'Foo.Bar.Bob'});
+        assert.same(Template.lookupTemplate(baz, '.'), baz);
+        assert.same(Template.lookupTemplate(baz, '..'), baz.parent);
+        assert.same(Template.lookupTemplate(baz, '../..'), baz.parent.parent);
+        assert.same(Template.lookupTemplate(baz, '../../.'), baz.parent.parent);
+        assert.same(Template.lookupTemplate(baz, '../Bob'), bob);
+        assert.same(Template.lookupTemplate(baz.parent, 'Bob'), bob);
+        assert.same(Template.lookupTemplate(foo, 'Bar.Bob'), bob);
+        assert.same(Template.lookupTemplate(foo, '/Foo.Bar.Bob'), bob);
       });
 
-      test("nest by name", ()=>{
-        const fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
-        const fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});
+      test('nest by name', () => {
+        const fbb = Dom.newTemplate({name: 'Foo.Bar.Baz'});
+        const fff = Dom.newTemplate({name: 'Foo.Fnord.Fuzz'});
 
-        assert.same(fbb, Dom.lookupTemplate("Foo.Bar.Baz"));
-        assert.same(fbb, DomTemplate.lookupTemplate(Dom.lookupTemplate("Foo"), "Bar.Baz"));
-        assert.same(fff, DomTemplate.lookupTemplate(fbb, "../../Fnord.Fuzz"));
+        assert.same(fbb, Dom.lookupTemplate('Foo.Bar.Baz'));
+        assert.same(fbb, Template.lookupTemplate(Dom.lookupTemplate('Foo'), 'Bar.Baz'));
+        assert.same(fff, Template.lookupTemplate(fbb, '../../Fnord.Fuzz'));
 
         const tpl = Dom.tpl.Foo.Bar;
         assert.same(tpl.name, 'Bar');
-        assert.same(Dom.lookupTemplate("Foo.Bar"), tpl);
-
+        assert.same(Dom.lookupTemplate('Foo.Bar'), tpl);
 
         assert.same(tpl.Baz.name, 'Baz');
 
-        Dom.newTemplate({name: "Foo"});
+        Dom.newTemplate({name: 'Foo'});
 
         assert.same(Dom.tpl.Foo.name, 'Foo');
         assert.same(Dom.tpl.Foo.Bar.Baz.name, 'Baz');
 
-        Dom.newTemplate({name: "Foo.Bar"});
+        Dom.newTemplate({name: 'Foo.Bar'});
 
         assert.same(Dom.tpl.Foo.Bar.name, 'Bar');
         assert.same(Dom.tpl.Foo.Bar.Baz.name, 'Baz');
       });
     });
 
-    group("with template", ()=>{
-      beforeEach( ()=>{
+    group('with template', () => {
+      beforeEach( () => {
         Dom.newTemplate({
-          name: "Foo",
-          nodes:[{name: "div", attrs:[["=","id",'foo'], ["", 'myHelper']],}],
+          name: 'Foo',
+          nodes:[{name: 'div', attrs:[['=','id','foo'], ['', 'myHelper']],}],
         });
       });
 
-      test("$created", ()=>{
+      test('$created', () => {
         const pCtx = {foo: 'bar'};
         Dom.tpl.Foo.$extend({
           $created(ctx, elm) {
@@ -701,7 +711,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("updateAllTags called only if data", ()=>{
+      test('updateAllTags called only if data', () => {
         const myHelper = stub();
         Dom.tpl.Foo.$helpers({
           myHelper,
@@ -717,8 +727,8 @@ isClient && define((require, exports, module)=>{
         assert.same(myHelper.firstCall.thisValue, data);
       });
 
-      test("setBoolean", ()=>{
-        refute.exception(()=>{Dom.setBoolean('disabled', true)});
+      test('setBoolean', () => {
+        refute.exception(() => {Dom.setBoolean('disabled', true)});
 
         assert.dom(document.createElement('div'), function () {
           Dom.setBoolean('checked', true, this);
@@ -742,15 +752,15 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      group("with rendered", ()=>{
-        beforeEach( ()=>{
+      group('with rendered', () => {
+        beforeEach( () => {
 
           v.foo = Dom.tpl.Foo.$render();
 
           document.body.appendChild(v.foo);
         });
 
-        test("focus", ()=>{
+        test('focus', () => {
           document.body.appendChild(Dom.textToHtml('<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>'));
           assert.dom('form', function () {
             assert.dom('[name=b2]', function () {
@@ -768,11 +778,11 @@ isClient && define((require, exports, module)=>{
           });
         });
 
-        test("replace element", ()=>{
+        test('replace element', () => {
           Dom.newTemplate({name: 'Foo.Bar', nodes: [{name: 'span'}]});
           Dom.newTemplate({name: 'Foo.Baz', nodes: [{name: 'h1'}]});
 
-          const dStub = Dom.tpl.Foo.Bar.$destroyed = (...args)=>{
+          const dStub = Dom.tpl.Foo.Bar.$destroyed = (...args) => {
             if (v) v.args = args;
           };
 
@@ -809,9 +819,9 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("rendering svg", ()=>{
-      DomTemplate.newTemplate({
-        name: "Foo",
+    test('rendering svg', () => {
+      Template.newTemplate({
+        name: 'Foo',
         nodes: [{
           name: 'section',
           attrs: [],
@@ -823,68 +833,68 @@ isClient && define((require, exports, module)=>{
         }],
       });
 
-      assert.dom(Dom.tpl.Foo.$render(), section =>{
-        assert.dom('svg', svg => {
+      assert.dom(Dom.tpl.Foo.$render(), (section) => {
+        assert.dom('svg', (svg) => {
           assert(svg instanceof window.SVGSVGElement);
-          assert.dom('path', path => {
+          assert.dom('path', (path) => {
             assert(path instanceof window.SVGPathElement);
             assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
           });
         });
-        assert.dom('div', div =>{
+        assert.dom('div', (div) => {
           assert(div instanceof window.HTMLElement);
         });
       });
     });
 
-    test("setting namespace", ()=>{
-      DomTemplate.newTemplate({
-        name: "Foo", ns: "http://www.w3.org/2000/svg",
+    test('setting namespace', () => {
+      Template.newTemplate({
+        name: 'Foo', ns: 'http://www.w3.org/2000/svg',
         nodes: [{
           name: 'g',
           children: [{
-          name:"image",
-            attrs: [["=","xlink:href","/abc.jpg"]],
+            name:'image',
+            attrs: [['=','xlink:href','/abc.jpg']],
           }, {
-            name:"image",
-            attrs: [["=","xlink:href", ["", "image2"]]],
+            name:'image',
+            attrs: [['=','xlink:href', ['', 'image2']]],
           }, {
-            name:"foreignObject",
+            name:'foreignObject',
             attrs: [], children: [
-              {name:"div", ns:"http://www.w3.org/1999/xhtml"}
+              {name:'div', ns:'http://www.w3.org/1999/xhtml'}
             ],
           }]
         }],
       });
 
-      assert.dom(Dom.tpl.Foo.$render({image2: '/def.jpg'}), g => {
-        assert.dom('image:first-child', image =>{
+      assert.dom(Dom.tpl.Foo.$render({image2: '/def.jpg'}), (g) => {
+        assert.dom('image:first-child', (image) => {
           assert(image instanceof window.SVGImageElement);
           assert.equals(image.getAttributeNS('http://www.w3.org/1999/xlink', 'href'), '/abc.jpg');
         });
-        assert.dom('image:nth-child(2)', image =>{
+        assert.dom('image:nth-child(2)', (image) => {
           assert(image instanceof window.SVGImageElement);
           assert.equals(image.getAttributeNS('http://www.w3.org/1999/xlink', 'href'), '/def.jpg');
         });
-        assert.dom('foreignObject', foreignObject => {
+        assert.dom('foreignObject', (foreignObject) => {
           isClient && assert(foreignObject instanceof window.SVGForeignObjectElement);
-          assert.dom('div', div => {
+          assert.dom('div', (div) => {
             isClient && assert(div instanceof window.HTMLDivElement);
           });
         });
       });
     });
 
-    test("rendering fragment", ()=>{
-      DomTemplate.newTemplate({
-        name: "Foo",
+    test('rendering fragment', () => {
+      Template.newTemplate({
+        name: 'Foo',
         nodes: [{
-          name:"div",
-          attrs: [["=","id","div1"]],
-          children: [" ",["","bar"]," "]
+          name:'div',
+          attrs: [['=','id','div1']],
+          children: [' ',['','bar'],' ']
         }, {
-          name:"div",
-          attrs: [["=","id","div2"]],
+          name:'div',
+          attrs: [['=','id','div2']],
         }],
       });
 
@@ -894,13 +904,13 @@ isClient && define((require, exports, module)=>{
       assert(frag[ctx$]);
     });
 
-    test("inserting Document Fragment", ()=>{
-      DomTemplate.newTemplate({
-        name: "Foo",
+    test('inserting Document Fragment', () => {
+      Template.newTemplate({
+        name: 'Foo',
         nodes: [{
-          name:"div",
+          name:'div',
           attrs:[],
-          children: [" ",["","bar"]," "],
+          children: [' ',['','bar'],' '],
         }],
       });
 
@@ -912,11 +922,11 @@ isClient && define((require, exports, module)=>{
         },
       });
 
-      content = ()=>{
+      content = () => {
         const frag = document.createDocumentFragment();
-        frag.appendChild(Dom.h({id: "e1", div: 'e1'}));
-        frag.appendChild(Dom.h({id: "e2", div: 'e2'}));
-        frag.appendChild(Dom.h({id: "e3", div: 'e3'}));
+        frag.appendChild(Dom.h({id: 'e1', div: 'e1'}));
+        frag.appendChild(Dom.h({id: 'e2', div: 'e2'}));
+        frag.appendChild(Dom.h({id: 'e3', div: 'e3'}));
         return frag;
       };
 
@@ -925,10 +935,10 @@ isClient && define((require, exports, module)=>{
         assert.dom('div', {count: 3});
       });
 
-      content = ()=>{
+      content = () => {
         const frag = document.createDocumentFragment();
-        frag.appendChild(Dom.h({id: "n1", p: 'n1'}));
-        frag.appendChild(Dom.h({id: "n2", p: 'n2'}));
+        frag.appendChild(Dom.h({id: 'n1', p: 'n1'}));
+        frag.appendChild(Dom.h({id: 'n2', p: 'n2'}));
         return frag;
       };
 
@@ -938,7 +948,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('p', {count: 2});
       });
 
-      content = ()=>{
+      content = () => {
         const elm = document.createElement('span');
         elm.textContent = 'foo';
         return elm;
@@ -953,11 +963,18 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("$render", ()=>{
-      test("autostop", ()=>{
+    group('$render', () => {
+      /**
+       * Render a template without events
+       */
+      beforeEach(() => {
+        api.protoMethod();
+      });
+
+      test('autostop', () => {
         Dom.newTemplate({
-          name: "Foo",
-          nodes:[{name: "div"}],
+          name: 'Foo',
+          nodes:[{name: 'div'}],
         });
 
         const elm = Dom.tpl.Foo.$render({});
@@ -978,12 +995,12 @@ isClient && define((require, exports, module)=>{
         refute.called(stub1);
       });
 
-      test("cleanup on exception", ()=>{
+      test('cleanup on exception', () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes: [{
-            name:"div",
-            children: [" ",["","bar"]," "],
+            name:'div',
+            children: [' ',['','bar'],' '],
           }],
         });
 
@@ -1002,13 +1019,13 @@ isClient && define((require, exports, module)=>{
         }
         assert.equals(v.ex.toStringPrefix, 'while rendering: Foo\n');
 
-        assert.calledWith(Dom.destroyData, match(elm => elm.tagName === 'DIV'));
+        assert.calledWith(Dom.destroyData, match((elm) => elm.tagName === 'DIV'));
       });
 
-      test("no frag if only one child node", ()=>{
+      test('no frag if only one child node', () => {
         Dom.newTemplate({
-          name: "Foo",
-          nodes:[{name: "div"}],
+          name: 'Foo',
+          nodes:[{name: 'div'}],
         });
 
         const elm = Dom.tpl.Foo.$render({});
@@ -1016,10 +1033,10 @@ isClient && define((require, exports, module)=>{
         assert.same(elm.tagName, 'DIV');
       });
 
-      test("frag if multi childs", ()=>{
+      test('frag if multi childs', () => {
         Dom.newTemplate({
-          name: "Foo",
-          nodes:[{name: "div",}, {name: 'span'}, {name: 'section'}],
+          name: 'Foo',
+          nodes:[{name: 'div',}, {name: 'span'}, {name: 'section'}],
         });
         const frag = Dom.tpl.Foo.$render({});
         assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
@@ -1031,16 +1048,15 @@ isClient && define((require, exports, module)=>{
         assert.same(ctx, frag.lastChild[ctx$]);
       });
 
-
-      test("attributes", ()=>{
+      test('attributes', () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes:[{
-            name:"div",attrs:[
-              ["=","id",["","id"]],
-              ["=","class",["","classes"]],
-              ["=","data-id",["","user._id"]],
-              ["","draggable"]
+            name:'div',attrs:[
+              ['=','id',['','id']],
+              ['=','class',['','classes']],
+              ['=','data-id',['','user._id']],
+              ['','draggable']
             ],
             children:[],
           }],
@@ -1048,7 +1064,7 @@ isClient && define((require, exports, module)=>{
 
         Dom.tpl.Foo.$helpers({
           classes() {
-            return "the classes";
+            return 'the classes';
           },
 
           draggable() {
@@ -1056,7 +1072,7 @@ isClient && define((require, exports, module)=>{
           },
         });
 
-        assert.dom(Dom.tpl.Foo.$render({id: 'foo', user: {_id: '123'}}), elm =>{
+        assert.dom(Dom.tpl.Foo.$render({id: 'foo', user: {_id: '123'}}), (elm) => {
           assert.same(elm.getAttribute('id'), 'foo');
           assert.same(elm.getAttribute('class'), 'the classes');
           assert.same(elm.getAttribute('data-id'), '123');
@@ -1068,15 +1084,14 @@ isClient && define((require, exports, module)=>{
           ctx.updateAllTags();
 
           assert.same(elm.getAttribute('data-id'), '0');
-
         });
       });
 
-      test("parent", ()=>{
+      test('parent', () => {
         Dom.newTemplate({
-          name: "Foo.Bar",
+          name: 'Foo.Bar',
           nested: [{
-            name: "Baz",
+            name: 'Baz',
           }],
         });
 
@@ -1090,22 +1105,22 @@ isClient && define((require, exports, module)=>{
         assert.isFalse(Dom.tpl.Foo.Bar.$contains(Dom.tpl.Foo));
       });
 
-      test("updateElement", ()=>{
+      test('updateElement', () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes:[{
-            name:"div",
+            name:'div',
             children:[{
-              name:"h1",
+              name:'h1',
               attrs:[['', 'foo', '.user.nameFunc']],
               children:[['', 'user.name']]
             },{
-              name:"label",
-              attrs:[["=", "class", "search"]],
+              name:'label',
+              attrs:[['=', 'class', 'search']],
               children:[['', 'user.initials']],
             }]
           }, {
-            name: "h2",
+            name: 'h2',
             children:[['', 'user.name']],
           }],
         });
@@ -1131,13 +1146,13 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("updateElement 2", ()=>{
+      test('updateElement 2', () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes:[{
-            name:"div",
+            name:'div',
             children:[['', 'name'], {
-              name:"p",
+              name:'p',
               children:[['', 'name']],
             }],
           }],
@@ -1155,11 +1170,11 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("body", ()=>{
+      test('body', () => {
         Dom.newTemplate({
-          name: "Foo",
+          name: 'Foo',
           nodes:[{
-            name:"div",
+            name:'div',
             children:[['', 'user.initials']],
           }],
         });
@@ -1168,9 +1183,9 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("registerHelpers", ()=>{
+    test('registerHelpers', () => {
       const Foo = Dom.newTemplate({
-        name: "Foo.Super",
+        name: 'Foo.Super',
         nodes:[],
       });
 
@@ -1181,26 +1196,26 @@ isClient && define((require, exports, module)=>{
       });
 
       Dom.registerHelpers({
-        _test_name() {return "global name"},
-        _test_age() {return "global age"},
+        _test_name() {return 'global name'},
+        _test_age() {return 'global age'},
       });
 
-      after(()=>{Dom._helpers._test_name = Dom._helpers._test_age = null});
+      after(() => {Dom._helpers._test_name = Dom._helpers._test_age = null});
 
       const data = {name: 'sally'};
 
-      assert.same(Foo._helpers._test_name.call(data), "SALLY");
-      assert.same(Foo._helpers._test_age.call(data), "global age");
-      assert.same(Dom._helpers._test_name.call(data), "global name");
+      assert.same(Foo._helpers._test_name.call(data), 'SALLY');
+      assert.same(Foo._helpers._test_age.call(data), 'global age');
+      assert.same(Dom._helpers._test_name.call(data), 'global name');
     });
 
-    test("extends", ()=>{
+    test('extends', () => {
       const Super = Dom.newTemplate({
-        name: "Foo.Super",
+        name: 'Foo.Super',
       });
 
       Dom.newTemplate({
-        name: "Foo.Super.Duper"
+        name: 'Foo.Super.Duper'
       });
 
       Super.$helpers({
@@ -1211,26 +1226,26 @@ isClient && define((require, exports, module)=>{
 
       Super.$extend({
         fuz() {
-          return "fuz";
+          return 'fuz';
         },
       });
 
       const Sub = Dom.newTemplate({
-        name: "Foo.Sub",
-        extends: "../Foo.Super", // test lookup works
+        name: 'Foo.Sub',
+        extends: '../Foo.Super', // test lookup works
         nodes:[{
-          name:"div",
+          name:'div',
           children:[['', 'superFoo']],
         }],
         nested: [{
-          name: "Duper"
+          name: 'Duper'
         }]
       });
 
       assert.same(Sub.Duper.parent, Sub);
 
-      assert.same(Sub.fuz(), "fuz");
+      assert.same(Sub.fuz(), 'fuz');
       assert.dom(Sub.$render({name: 'susan'}), 'SUSAN');
     });
- });
+  });
 });

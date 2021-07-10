@@ -1,7 +1,7 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const htmlDoc         = require('koru/dom/html-doc');
-  const DomTemplate     = require('koru/dom/template');
+  const Template        = require('koru/dom/template');
   const Dom             = require('koru/env!koru/dom/dom');
   const util            = require('koru/util');
 
@@ -13,9 +13,9 @@ define((require)=>{
       return this;
     },
 
-    newTemplate: DomTemplate.newTemplate,
+    newTemplate: Template.newTemplate.bind(Template),
 
-    lookupTemplate(name) {return DomTemplate.lookupTemplate(this.tpl, name)},
+    lookupTemplate(name) {return Template.lookupTemplate(this.tpl, name)},
   });
 
   return Dom;

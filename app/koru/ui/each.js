@@ -1,6 +1,6 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
-  const DomTemplate     = require('koru/dom/template');
+  const Template        = require('koru/dom/template');
   const AutoList        = require('koru/ui/auto-list');
   const Dom             = require('../dom');
   const Query           = require('../model/query');
@@ -12,7 +12,7 @@ define((require, exports, module)=>{
   const each$ = Symbol();
   const {COMMENT_NODE} = document;
 
-  const each = (startEach, data, args, options={})=>{
+  const each = (startEach, data, args, options={}) => {
     let {
       template: templateName=typeof args === 'string' ? `Each_${args}` : 'Each_row'
     } = options;
@@ -42,7 +42,6 @@ define((require, exports, module)=>{
       pv.templateName = templateName;
       let template = null;
 
-
       if (typeof templateName === 'object') {
         if ('$autoRender' in templateName)
           template = templateName;
@@ -52,8 +51,8 @@ define((require, exports, module)=>{
 
       if (template == null) {
         const ctpl = $.template;
-        template = DomTemplate.lookupTemplate(ctpl, templateName) ||
-          DomTemplate.lookupTemplate(Dom.tpl, templateName);
+        template = Template.lookupTemplate(ctpl, templateName) ||
+          Template.lookupTemplate(Dom.tpl, templateName);
         if (template == null) throw new Error(
           `template "${templateName}" not found in template "${ctpl.name}"`);
       }
@@ -62,8 +61,8 @@ define((require, exports, module)=>{
     }
 
     let result = typeof pv.helper === 'function'
-          ? pv.helper.call(data, each, options)
-          : pv.helper;
+        ? pv.helper.call(data, each, options)
+        : pv.helper;
 
     if (result != null) {
       if (Array.isArray(result))
@@ -124,7 +123,7 @@ define((require, exports, module)=>{
       if (! row) return;
       const {endEach} = this;
       const elm = (row.nodeType) ? row : this[private$].template.$autoRender(
-          Array.isArray(row) ? {_id: row[0], name: row[1]} : row,
+        Array.isArray(row) ? {_id: row[0], name: row[1]} : row,
         this.parentCtx);
       endEach.parentNode.insertBefore(elm, endEach);
       return elm;
@@ -134,7 +133,7 @@ define((require, exports, module)=>{
       this.clear();
 
       const {map} = options;
-      list.forEach(src => {
+      list.forEach((src) => {
         this.append(map == null ? src : map(src));
       });
     }

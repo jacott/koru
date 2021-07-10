@@ -1,9 +1,9 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
-  const DomTemplate     = require('koru/dom/template');
+  const Template        = require('koru/dom/template');
   const fst             = require('koru/fs-tools');
   const BaseController  = require('koru/server-pages/base-controller');
   const util            = require('koru/util');
@@ -19,9 +19,9 @@ define((require, exports, module)=>{
   Dom.registerHelpers({
     less(file) {
       const {App} = this.controller;
-      const dir = path.join(App._pageDirPath, path.dirname(file)), base = path.basename(file)+".less";
+      const dir = path.join(App._pageDirPath, path.dirname(file)), base = path.basename(file)+'.less';
       try {
-        return Compilers.read('less', path.join(dir, base), path.join(dir, '.build', base+".css"));
+        return Compilers.read('less', path.join(dir, base), path.join(dir, '.build', base+'.css'));
       } catch(ex) {
         if (ex.error === 404) return;
       }
@@ -29,32 +29,32 @@ define((require, exports, module)=>{
 
     css(file) {
       const {App} = this.controller;
-      return fst.readFile(path.join(App._pageDirPath, file+".css")).toString();
+      return fst.readFile(path.join(App._pageDirPath, file+'.css')).toString();
     },
 
     controllerId() {return this.controller.constructor.modId},
 
-    page() {return this.controller.pathParts[0] || "root"},
+    page() {return this.controller.pathParts[0] || 'root'},
   });
 
-  const addViewController = (sp, name, View, Controller)=>{
+  const addViewController = (sp, name, View, Controller) => {
     Controller.modId = name;
     View.Controller = Controller;
     View.Controller.App = sp;
     sp[views$][name] = View;
   };
 
-  const removeViewController = (sp, name)=>{
+  const removeViewController = (sp, name) => {
     sp[views$][name] = undefined;
   };
 
-  const requirePage = (id, {onunload}={})=>{
+  const requirePage = (id, {onunload}={}) => {
     let viewId = `koru/html-server!${id}`;
-    require(viewId, _=>{}, (err, mod) =>{
+    require(viewId, (_) => {}, (err, mod) => {
       if (err.error !== 404) return;
       mod.unload();
       viewId =`koru/html-md!${id}`;
-      require(viewId, _=>{}, err2 =>{
+      require(viewId, (_) => {}, (err2) => {
         throw err2.error === 404 ? err : err2;
       });
     });
@@ -63,10 +63,10 @@ define((require, exports, module)=>{
 
     require(id, (tplf) => {
       const controllerMod = module.get(id);
-      View = DomTemplate.newTemplate(viewMod, viewMod.exports);
+      View = Template.newTemplate(viewMod, viewMod.exports);
       if (typeof tplf === 'function')
         Controller = tplf({View, Controller: BaseController}) || BaseController;
-      const unload = ()=>{
+      const unload = () => {
         koru.unload(controllerMod.id);
         koru.unload(viewMod.id);
         if (onunload !== undefined) onunload();
@@ -77,12 +77,12 @@ define((require, exports, module)=>{
     return {View, Controller};
   };
 
-  const fetchView = (sp, parts, pos=0, views=sp[views$], root=sp._pageDirPath)=>{
+  const fetchView = (sp, parts, pos=0, views=sp[views$], root=sp._pageDirPath) => {
     while (pos < parts.length && ! parts[pos]) ++pos;
     const key = parts[pos] || '';
     let view = views[key];
-    if (view === undefined && key.indexOf(".") === -1) {
-      const fn = path.resolve(root, key) + ".js";
+    if (view === undefined && key.indexOf('.') === -1) {
+      const fn = path.resolve(root, key) + '.js';
       const stfn = fst.stat(fn);
       if (stfn != null) {
         const id = sp._pageDir+parts.slice(0, pos+1).join('/');
@@ -94,7 +94,7 @@ define((require, exports, module)=>{
     return {view, pathParts: parts.slice(pos+1)};
   };
 
-  const decodePathPart = (i)=>{
+  const decodePathPart = (i) => {
     try {
       return util.decodeURIComponent(i) || '';
     } catch(ex) {
@@ -108,15 +108,15 @@ define((require, exports, module)=>{
       this._pageDirPath = path.join(koru.appDir, pageDir);
       this._pathRoot = pathRoot;
       this.WebServer = WebServer;
-      const defaultLayoutId = path.join(pageDir, "layouts/default");
-      this[defaultLayout$] = fst.stat(path.join(koru.appDir, defaultLayoutId+".js"))
+      const defaultLayoutId = path.join(pageDir, 'layouts/default');
+      this[defaultLayout$] = fst.stat(path.join(koru.appDir, defaultLayoutId+'.js'))
         ? requirePage(defaultLayoutId).View : genericLayout;
 
       this[views$] = {};
-      this._handleRequest = (request, response, urlPath, error)=>{
+      this._handleRequest = (request, response, urlPath, error) => {
         const searchIdx = urlPath.indexOf('?');
         const parts = (searchIdx == -1 ? urlPath : urlPath.slice(0, searchIdx))
-              .split('/').map(i => decodePathPart(i)), plen = parts.length;
+              .split('/').map((i) => decodePathPart(i)), plen = parts.length;
         const suffixIdx = plen == 0 ? '' : parts[plen-1].search(/\.[^.]+$/);
         if (suffixIdx == -1) {
           this.suffix = 'html';

@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const Ctx             = require('koru/dom/ctx');
@@ -17,11 +17,11 @@ define((require)=>{
 
   let currentEvent;
 
-  const dragTouchStart = (event)=>{
+  const dragTouchStart = (event) => {
     let touch = event.touches[0];
     let v = event.currentTarget[dragTouchStart$];
 
-    const te = (event)=>{
+    const te = (event) => {
       if (event.touches.length !== 0) return;
       if (v.dragging) {
         Dom.triggerEvent(event.target, 'pointerup', {
@@ -30,7 +30,7 @@ define((require)=>{
       cancel();
     };
 
-    const tm = (event)=>{
+    const tm = (event) => {
       if (! v.dragging)
         return cancel();
 
@@ -39,12 +39,11 @@ define((require)=>{
       event.preventDefault();
       event.stopImmediatePropagation();
 
-
       Dom.triggerEvent(event.target, 'pointermove', {
         clientX: touch.clientX, clientY: touch.clientY});
     };
 
-    const cancel = ()=>{
+    const cancel = () => {
       if (v == null) return;
       document.removeEventListener('touchend', te, Dom.captureEventOption);
       document.removeEventListener('touchmove', tm, Dom.captureEventOption);
@@ -75,9 +74,9 @@ define((require)=>{
     };
   };
 
-  const onBlur = event =>{if (document.activeElement !== event.target) onEvent(event)};
+  const onBlur = (event) => {if (document.activeElement !== event.target) onEvent(event)};
 
-  const onEvent = (event, type=event.type)=>{
+  const onEvent = (event, type=event.type) => {
     const prevEvent = currentEvent;
     const prevCtx = Ctx._currentCtx;
     currentEvent = event;
@@ -130,7 +129,7 @@ define((require)=>{
     }
   };
 
-  const fire = (event, elm, func)=>{
+  const fire = (event, elm, func) => {
     if (func.call(elm, event) === false || currentEvent !== event) {
       currentEvent === 'propigation' || event.preventDefault();
       event.stopImmediatePropagation();
@@ -141,7 +140,7 @@ define((require)=>{
 
   const menustart = Dom.makeMenustartCallback(onEvent);
 
-  const nativeOff = (parent, eventType, selector, func)=>{
+  const nativeOff = (parent, eventType, selector, func) => {
     const events = parent[ctx$]?.__events;
 
     if (events != null) {
@@ -171,7 +170,7 @@ define((require)=>{
     }
   };
 
-  const nativeOnOff = (parent, func, selector, events)=>{
+  const nativeOnOff = (parent, func, selector, events) => {
     parent = parent.nodeType ? parent : parent[0];
 
     if (selector) {
@@ -186,13 +185,13 @@ define((require)=>{
     }
   };
 
-  const fetchTemplate = (template, name, rest)=>{
+  const fetchTemplate = (template, name, rest) => {
     let result;
     if (name[0] === '/') {
       result = root[name.slice(1)];
     } else {
-      if (name === ".") return template;
-      if (name === "..") return template.parent;
+      if (name === '.') return template;
+      if (name === '..') return template.parent;
       result = template[name];
       while (result == null && name.startsWith('../') && template !== void 0) {
         name = name.slice(3);
@@ -209,7 +208,7 @@ define((require)=>{
     return result;
   };
 
-  const addNodeEval = (template, node, parent)=>{
+  const addNodeEval = (template, node, parent) => {
     let elm;
     switch(node[0]) {
     case '-':
@@ -224,11 +223,11 @@ define((require)=>{
     return elm;
   };
 
-  const addAttrEval = (template, id, node, elm)=>{
+  const addAttrEval = (template, id, node, elm) => {
     Ctx._currentCtx.attrEvals.push(parseNode(template, node, [elm, id]));
   };
 
-  const setAttrs = (template, elm, attrs)=>{
+  const setAttrs = (template, elm, attrs) => {
     for(let j=0; j < attrs.length; ++j) {
       const attr = attrs[j];
 
@@ -252,31 +251,7 @@ define((require)=>{
     }
   };
 
-  const addTemplates = (parent, blueprint)=>{
-    let {name} = blueprint;
-    if (name.match(/\./)) {
-      const names = name.split('.');
-      name = names.pop();
-      forEach(names, nm  => {
-        parent = parent[nm] ?? (parent[nm] =  new DomTemplate(nm, parent));
-      });
-    }
-    if (hasOwn(parent, name) && parent[name] != null) {
-      parent = parent[name];
-      initBlueprint(parent, blueprint);
-    } else {
-      parent[name] = parent = new DomTemplate(name, parent, blueprint);
-    }
-    const {nested} = blueprint;
-
-    if (nested != null) for(let i = 0; i < nested.length; ++i) {
-      addTemplates(parent, nested[i]);
-    }
-
-    return parent;
-  };
-
-  const initBlueprint = (tpl, blueprint)=>{
+  const initBlueprint = (tpl, blueprint) => {
     if (blueprint.extends != null) {
       const sup = lookupTemplate(tpl.parent, blueprint.extends);
       if (sup == null)
@@ -288,7 +263,7 @@ define((require)=>{
     tpl.nodes = blueprint.nodes;
   };
 
-  const addNodes = (template, parent, nodes, pns)=>{
+  const addNodes = (template, parent, nodes, pns) => {
     const len = nodes.length;
     for (let i = 0; i < len; ++i) {
       const node = nodes[i];
@@ -319,7 +294,7 @@ define((require)=>{
     }
   };
 
-  const parseNode = (template, node, result)=>{
+  const parseNode = (template, node, result) => {
     const origName = node[1];
     const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(origName);
     const partial = node[0] === '>';
@@ -347,7 +322,7 @@ define((require)=>{
     return result;
   };
 
-  class DomTemplate {
+  class Template {
     constructor(name, parent, blueprint) {
       this.name = name;
       this.parent = parent !== root ? parent : null;
@@ -358,23 +333,48 @@ define((require)=>{
         this._helpers = Object.create(Dom._helpers);
     }
 
-    static newTemplate(module, blueprint) {
+    static get root() {return root}
+
+    static newTemplate(module, blueprint, parent=this.root) {
       if (arguments.length === 1)
-        return addTemplates(root, module);
+        return this.addTemplates(parent, module);
 
-
-      const tpl = addTemplates(root, blueprint);
+      const tpl = this.addTemplates(parent, blueprint);
       tpl.$module = module;
-      koru.onunload(module, ()=>{
-        (tpl.parent ?? root)[tpl.name] = void 0;
+      koru.onunload(module, () => {
+        (tpl.parent ?? parent)[tpl.name] = void 0;
         for (const name in tpl) {
           const sub = tpl[name];
-          if (sub?.$module != null && sub instanceof DomTemplate) {
+          if (sub?.$module != null && sub instanceof Template) {
             koru.unload(sub.$module.id);
           }
         }
       });
       return tpl;
+    }
+
+    static addTemplates(parent, blueprint) {
+      let {name} = blueprint;
+      if (name.match(/\./)) {
+        const names = name.split('.');
+        name = names.pop();
+        forEach(names, (nm) => {
+          parent = parent[nm] ?? (parent[nm] =  new this(nm, parent));
+        });
+      }
+      if (hasOwn(parent, name) && parent[name] != null) {
+        parent = parent[name];
+        initBlueprint(parent, blueprint);
+      } else {
+        parent[name] = parent = new this(name, parent, blueprint);
+      }
+      const {nested} = blueprint;
+
+      if (nested != null) for(let i = 0; i < nested.length; ++i) {
+        this.addTemplates(parent, nested[i]);
+      }
+
+      return parent;
     }
 
     static stopEvent(event) {
@@ -409,7 +409,7 @@ define((require)=>{
 
       if (this._events.length > 0) {
         if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE)
-          throw new Error("attempt to attach events to document fragment: " + this.$fullname);
+          throw new Error('attempt to attach events to document fragment: ' + this.$fullname);
         this.$attachEvents(elm);
         Dom.ctx(elm).onDestroy(() => this.$detachEvents(elm));
       }
@@ -444,7 +444,7 @@ define((require)=>{
     }
 
     get $fullname() {
-      return (this.parent === null ? "" : this.parent.$fullname + ".") + this.name;
+      return (this.parent === null ? '' : this.parent.$fullname + '.') + this.name;
     }
 
     $helpers(properties) {
@@ -460,7 +460,7 @@ define((require)=>{
 
     $event(key, func) {
       const m = /^(\S+)(.*)/.exec(key);
-      if (! m) throw new Error("invalid event spec: " + key);
+      if (! m) throw new Error('invalid event spec: ' + key);
       this._events.push([m[1], m[2].trim(), func]);
       return this;
     }
@@ -497,7 +497,7 @@ define((require)=>{
     }
 
     [inspect$]() {
-      return "DomTemplate(" + this.$fullname +")";
+      return 'Template(' + this.$fullname +')';
     }
 
     $contains(subTemplate=null) {
@@ -511,9 +511,9 @@ define((require)=>{
 
     static get _currentEvent() {return currentEvent}
     static set _currentEvent(value) {currentEvent =  value}
-  };
+  }
 
-  const nativeOn = (parent, eventType, selector, func)=>{
+  const nativeOn = (parent, eventType, selector, func) => {
     const events = parent[ctx$].__events ?? (parent[ctx$].__events = {});
 
     let eventTypes = events[eventType];
@@ -545,14 +545,13 @@ define((require)=>{
     eventTypes[selector||':TOP'] = func;
   };
 
-
-  const lookupTemplate = DomTemplate.lookupTemplate = (tpl, name)=>{
+  const lookupTemplate = Template.lookupTemplate = (tpl, name) => {
     const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
     return m == null
       ? fetchTemplate(tpl, name)
-      : fetchTemplate(tpl, m[1], m[2].split("."));
+      : fetchTemplate(tpl, m[1], m[2].split('.'));
   };
 
-  return DomTemplate;
+  return Template;
 });

@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * Automatically manage a list of Elements matching a {#koru/model/query}.
@@ -7,7 +7,7 @@ isClient && define((require, exports, module)=>{
    **/
   const Dom             = require('koru/dom');
   const Ctx             = require('koru/dom/ctx');
-  const DomTemplate     = require('koru/dom/template');
+  const Template        = require('koru/dom/template');
   const TemplateCompiler = require('koru/dom/template-compiler');
   const Model           = require('koru/model');
   const TH              = require('koru/model/test-helper');
@@ -18,38 +18,38 @@ isClient && define((require, exports, module)=>{
 
   const AutoList = require('./auto-list');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     class Book extends Model.BaseModel {
     }
-    const createBook = (i, opts)=>
+    const createBook = (i, opts) =>
           Book.create(Object.assign({_id: 'b'+i, title: 'b'+i, pageCount: i*100}, opts));
 
-    const createBooks = (...args)=> args.map(i => createBook(i));
+    const createBooks = (...args) => args.map((i) => createBook(i));
 
     const Row = Dom.newTemplate(TemplateCompiler.toJavascript(
       `<div>{{title}}</div>`, 'Book').toJson());
 
-    before(()=>{
+    before(() => {
       Book.define({
         name: 'Book',
         fields: {title: 'text', pageCount: 'number'}
       });
     });
 
-    after(()=>{
+    after(() => {
       Model._destroyModel('Book', 'drop');
     });
 
-    beforeEach(()=>{
+    beforeEach(() => {
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       Book.docs = void 0;
       Dom.removeChildren(document.body);
       Dom.tpl.Book = void 0;
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Build a new AutoList
        *
@@ -90,20 +90,20 @@ isClient && define((require, exports, module)=>{
       const AutoList = api.class();
 
       //[
-      const book1 = Book.create({title: "The Eye of the World"});
-      const book2 = Book.create({title: "The Great Hunt"});
+      const book1 = Book.create({title: 'The Eye of the World'});
+      const book2 = Book.create({title: 'The Great Hunt'});
 
       const container = Dom.h({});
       const list = new AutoList({query: Book.query.sort('title'), template: Row, container});
 
-      assert.dom(container, ()=>{
+      assert.dom(container, () => {
         assert.dom(':first-child', 'The Eye of the World');
         assert.dom(':last-child', 'The Great Hunt');
       });
       //]
     });
 
-    test("no query and addOrder", ()=>{
+    test('no query and addOrder', () => {
       const container = document.body;
       const list = new AutoList({
         template: {$autoRender(data) {
@@ -117,7 +117,7 @@ isClient && define((require, exports, module)=>{
       const doc1 = {n: 'doc1'};
       const doc2 = {n: 'doc2'};
 
-      assert.dom(container, ()=>{
+      assert.dom(container, () => {
         refute.dom(':first-child');
         list.updateEntry(doc2);
         list.updateEntry(doc1);
@@ -126,14 +126,14 @@ isClient && define((require, exports, module)=>{
         assert.dom(':last-child', 'doc1');
 
         const doc2Elm = list.elm(doc2);
-        assert.dom(':first-child', 'doc2', elm =>{
+        assert.dom(':first-child', 'doc2', (elm) => {
           assert.same(elm, doc2Elm);
           elm.lastChild.focus();
           assert.same(document.activeElement, elm.lastChild);
         });
         doc2.n = 'doc2.change';
         list.updateEntry(doc2);
-        assert.dom(':first-child', 'doc2', elm =>{
+        assert.dom(':first-child', 'doc2', (elm) => {
           assert.same(elm, doc2Elm);
           assert.same(document.activeElement, elm.lastChild);
         });
@@ -147,7 +147,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("basic arguments", ()=>{
+    test('basic arguments', () => {
       const container = Dom.h({});
       new AutoList({
         query: {forEach(func) {func({n: 2}), func({n: 1})}},
@@ -157,13 +157,13 @@ isClient && define((require, exports, module)=>{
         compareKeys: ['n']
       });
 
-      assert.dom(container, ()=>{
+      assert.dom(container, () => {
         assert.dom(':first-child', '1');
         assert.dom(':last-child', '2');
       });
     });
 
-    test("observeUpdates", ()=>{
+    test('observeUpdates', () => {
       const container = Dom.h({});
 
       const observeUpdates = stub();
@@ -171,7 +171,7 @@ isClient && define((require, exports, module)=>{
       createBook(2); createBook(3);
 
       const list = new AutoList({
-        query: Book.where(b => b.title < 'b7').sort('title'), template: Row, container,
+        query: Book.where((b) => b.title < 'b7').sort('title'), template: Row, container,
         observeUpdates,
       });
 
@@ -179,7 +179,6 @@ isClient && define((require, exports, module)=>{
 
       assert.calledOnceWith(observeUpdates, list, book1, 'added');
       observeUpdates.reset();
-
 
       book1.$update('pageCount', 700);
 
@@ -191,8 +190,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(observeUpdates, list, m.model(book1), 'removed');
     });
 
-
-    test("changeOptions", ()=>{
+    test('changeOptions', () => {
       /**
        * Rebuild list based on a different options. It trys to preserve DOM elements where possible.
 
@@ -202,8 +200,8 @@ isClient && define((require, exports, module)=>{
       api.protoMethod('changeOptions');
 
       //[
-      const book1 = Book.create({title: "The Eye of the World", pageCount: 782});
-      const book2 = Book.create({title: "The Great Hunt", pageCount: 681});
+      const book1 = Book.create({title: 'The Eye of the World', pageCount: 782});
+      const book2 = Book.create({title: 'The Great Hunt', pageCount: 681});
 
       const container = Dom.h({});
       let query = Book.query.sort('title');
@@ -211,29 +209,29 @@ isClient && define((require, exports, module)=>{
 
       assert.equals(list.query, query);
 
-      assert.dom(container, ()=>{
+      assert.dom(container, () => {
         let book1Elm;
-        assert.dom(':first-child', {data: m.model(book1)}, elm =>{
+        assert.dom(':first-child', {data: m.model(book1)}, (elm) => {
           book1Elm = elm;
         });
 
-        list.changeOptions({query: Book.where(d=> ! /Shadow/.test(d.title)).sort('pageCount')});
+        list.changeOptions({query: Book.where((d) => ! /Shadow/.test(d.title)).sort('pageCount')});
 
         assert.dom(':first-child', 'The Great Hunt');
-        assert.dom(':last-child', 'The Eye of the World', elm =>{
+        assert.dom(':last-child', 'The Eye of the World', (elm) => {
           assert.same(elm, book1Elm);
         });
 
-        Book.create({title: "The Fires of Heaven", pageCount: 963});
+        Book.create({title: 'The Fires of Heaven', pageCount: 963});
         assert.dom(':last-child', 'The Fires of Heaven'); // reverse sort
 
-        const b4 = Book.create({title: "The Shadow Rising", pageCount: 1001});
+        const b4 = Book.create({title: 'The Shadow Rising', pageCount: 1001});
         refute(list.elm(b4)); // filtered out
       });
       //]
     });
 
-    test("updateEntry", ()=>{
+    test('updateEntry', () => {
       /**
        * Explicitly update an entry in the list. This method is called automatically when the
        * query.onChange callback is is used; i.e. when an entry is changed.
@@ -245,7 +243,7 @@ isClient && define((require, exports, module)=>{
        * @param action if value is `"remove"` then remove entry
 
        **/
-      api.protoMethod("updateEntry");
+      api.protoMethod('updateEntry');
 
       //[
       const container = Dom.h({});
@@ -259,7 +257,7 @@ isClient && define((require, exports, module)=>{
         compare: util.compareByField('title'),
         observeUpdates,
       });
-      assert.dom(container, ()=>{
+      assert.dom(container, () => {
         const b1 = {_id: 'b1', title: 'Book 1'}, b2 = {_id: 'b1', title: 'Book 2'};
         list.updateEntry(b1);
         list.updateEntry(b2);
@@ -279,7 +277,7 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("nodeElm", ()=>{
+    test('nodeElm', () => {
       /**
        * Return the elm for a node.
 
@@ -290,7 +288,7 @@ isClient && define((require, exports, module)=>{
       const container = Dom.h({});
       const parentCtx = Dom.setCtx(container, new Dom.Ctx());
       const list = new AutoList({
-        query: Book.where(n=>n.title !== 'b2').sort('title'),
+        query: Book.where((n) => n.title !== 'b2').sort('title'),
         template: Row, container, limit: 1, parentCtx});
 
       createBook(1);
@@ -304,7 +302,7 @@ isClient && define((require, exports, module)=>{
       assert.same(list.nodeElm(entries.lastNode, 'render'), container.lastChild);
     });
 
-    test("elm", ()=>{
+    test('elm', () => {
       /**
        * Return the elm for a document.
 
@@ -315,7 +313,7 @@ isClient && define((require, exports, module)=>{
       const parentCtx = Dom.setCtx(container, new Dom.Ctx());
       //[
       const list = new AutoList({
-        query: Book.where(n=>n.title !== 'b2').sort('title'),
+        query: Book.where((n) => n.title !== 'b2').sort('title'),
         template: Row, container, limit: 1, parentCtx});
 
       const [book1, book2, book3] = createBooks(1,2,3);
@@ -341,7 +339,7 @@ isClient && define((require, exports, module)=>{
       assert.same(list.limit, 3);
     });
 
-    test("thisNode", ()=>{
+    test('thisNode', () => {
       /**
        * Return the {#koru/btree} node associated with this instance of `doc`
 
@@ -354,7 +352,7 @@ isClient && define((require, exports, module)=>{
       const parentCtx = Dom.setCtx(container, new Dom.Ctx());
       //[
       const list = new AutoList({
-        query: Book.where(n=>n.title !== 'b2').sort('title'),
+        query: Book.where((n) => n.title !== 'b2').sort('title'),
         template: Row, container, limit: 1, parentCtx});
 
       const [book1, book2] = createBooks(1,2);
@@ -364,7 +362,7 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("thisElm", ()=>{
+    test('thisElm', () => {
       /**
        * Return element associated with this instance of `doc`
 
@@ -377,7 +375,7 @@ isClient && define((require, exports, module)=>{
       const parentCtx = Dom.setCtx(container, new Dom.Ctx());
       //[
       const list = new AutoList({
-        query: Book.where(n=>n.title !== 'b2').sort('title'),
+        query: Book.where((n) => n.title !== 'b2').sort('title'),
         template: Row, container, limit: 1, parentCtx});
 
       const [book1, book2] = createBooks(1,2);
@@ -387,7 +385,7 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("limit", ()=>{
+    test('limit', () => {
       /**
        * A limit of `n` can be given to only display the first (ordered) `n` entries.
        *
@@ -414,32 +412,32 @@ isClient && define((require, exports, module)=>{
       assert.same(container.children.length, 2);
     });
 
-    group("limits", ()=>{
+    group('limits', () => {
       let newList, overLimit;
 
-      const assertVisible = (list, shown, hidden=[]) => {assert.elide(()=>{
+      const assertVisible = (list, shown, hidden=[]) => {assert.elide(() => {
         let bad = 0, elm;
-        let exp = n => n;
+        let exp = (n) => n;
 
         const {container} = list[private$];
 
-        const check = n => (
+        const check = (n) => (
           bad = n,
           elm = list.elm(Book.findById('b'+n)),
           exp(elm) && (elm == null || elm.parentNode == container)
         );
         assert(shown.every(check), `book b${bad} not shown`);
-        exp = n => ! n;
+        exp = (n) => ! n;
         assert(hidden.every(check), `book b${bad} not hidden`);
         assert.equals(Array.from(list.entries).map(
-          n => +n.title.slice(1)), shown.concat(hidden));
-      });};
+          (n) => +n.title.slice(1)), shown.concat(hidden));
+      })};
 
-      beforeEach(()=>{
+      beforeEach(() => {
         for(let i = 1; i < 6; ++i) createBook(i);
 
         const container = Dom.h({});
-        newList = limit =>{
+        newList = (limit) => {
           return new AutoList({
             query: Book.query.sort('pageCount', 'title'), template: Row, container, limit,
             overLimit: overLimit = stub(),
@@ -447,7 +445,7 @@ isClient && define((require, exports, module)=>{
         };
       });
 
-      test("elm not rendered", ()=>{
+      test('elm not rendered', () => {
         const list = newList(2);
 
         const book1 = Book.findById('b1');
@@ -463,7 +461,7 @@ isClient && define((require, exports, module)=>{
         assert.same(list.limit, 4);
       });
 
-      test("increase limit", ()=>{
+      test('increase limit', () => {
         createBook(6);
         const list = newList(3);
         list.limit = 5;
@@ -473,7 +471,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,2,3,4,5,6]);
       });
 
-      test("decrease limit", ()=>{
+      test('decrease limit', () => {
         const list = newList(3);
         assert.same(list.limit, 3);
 
@@ -496,20 +494,20 @@ isClient && define((require, exports, module)=>{
         assert.calledOnce(overLimit);
       });
 
-      test("remove last visible", ()=>{
+      test('remove last visible', () => {
         const list = newList(3);
         Book.findById('b3').$remove();
         assertVisible(list, [1,2,4], [5]);
       });
 
-      test("remove all visible", ()=>{
+      test('remove all visible', () => {
         const list = newList(4);
         Book.findById('b3').$remove();
         Book.findById('b1').$remove();
         assertVisible(list, [2,4,5]);
       });
 
-      test("remove invisible", ()=>{
+      test('remove invisible', () => {
         const list = newList(3);
         const book6 = createBook(6);
         const book7 = createBook(7);
@@ -522,7 +520,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,2,2.5], [3,4,5]);
       });
 
-      test("last visible ticket value not important", ()=>{
+      test('last visible ticket value not important', () => {
         const list = newList(3);
         const book1 = Book.findById('b1');
         const book3 = Book.findById('b3');
@@ -533,7 +531,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,6,2], [3,4,5]);
       });
 
-      test("move up", ()=>{
+      test('move up', () => {
         const list = newList(3);
         const book1 = Book.findById('b1');
         Book.findById('b5').$update('pageCount', book1.pageCount+5);
@@ -543,7 +541,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,5,3], [4]);
       });
 
-      test("move down", ()=>{
+      test('move down', () => {
         const list = newList(3);
         const book4 = Book.findById('b4');
         Book.findById('b2').$update('pageCount', book4.pageCount+7);
@@ -557,7 +555,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,4,2], [5]);
       });
 
-      test("move within visible to visible", ()=>{
+      test('move within visible to visible', () => {
         const list = newList(3);
         const book1 = Book.findById('b1');
         const book2 = Book.findById('b2');
@@ -570,14 +568,14 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,3,4], [5]);
       });
 
-      test("move lastVis to lastVis", ()=>{
+      test('move lastVis to lastVis', () => {
         const list = newList(3);
         const book3 = Book.findById('b3');
         book3.$update('pageCount', book3.pageCount+.5);
         assertVisible(list, [1,2,3], [4,5]);
       });
 
-      test("move within hidden to hidden", ()=>{
+      test('move within hidden to hidden', () => {
         const list = newList(2);
         assertVisible(list, [1,2], [3,4,5]);
         const book2 = Book.findById('b2'), book3 = Book.findById('b3');
@@ -590,7 +588,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,5], [3,4]);
       });
 
-      test("move last visible up", ()=>{
+      test('move last visible up', () => {
         const list = newList(3);
         const book1 = Book.findById('b1');
         Book.findById('b3').$update('pageCount', book1.pageCount-5); // move away from t2
@@ -600,7 +598,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [3,1,4], [5]);
       });
 
-      test("move last visible, last node up", ()=>{
+      test('move last visible, last node up', () => {
         const list = newList(5);
         const book1 = Book.findById('b1');
         const book3 = Book.findById('b3');
@@ -611,7 +609,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,6,2,5,3], [4]);
       });
 
-      test("move last visible to last", ()=>{
+      test('move last visible to last', () => {
         const list = newList(3);
         Book.findById('b3').$update('pageCount', Book.findById('b5').pageCount+5);
         assertVisible(list, [1,2,4], [5,3]);
@@ -620,7 +618,7 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,2,5], [3]);
       });
 
-      test("move last visible down", ()=>{
+      test('move last visible down', () => {
         const list = newList(3);
         const book4 = Book.findById('b4');
         Book.findById('b3').$update('pageCount', book4.pageCount+5);
@@ -630,20 +628,20 @@ isClient && define((require, exports, module)=>{
         assertVisible(list, [1,2,3], [5]);
       });
 
-      test("append", ()=>{
+      test('append', () => {
         const list = newList(3);
         createBook(6);
         assertVisible(list, [1,2,3], [4,5,6]);
       });
 
-      test("delete last visible", ()=>{
+      test('delete last visible', () => {
         const list = newList(5);
         Book.findById('b5').$remove();
         assertVisible(list, [1,2,3,4]);
       });
     });
 
-    test("comment with changeOptions", ()=>{
+    test('comment with changeOptions', () => {
       const container = Dom.h({div: [
         'before', {$comment$: 'start'}, {$comment$: 'end'}, 'after',
       ]});
@@ -657,27 +655,27 @@ isClient && define((require, exports, module)=>{
         query: Book.query.sort('title'), template: Row, container: startComment});
 
       assert.equals(util.map(
-        container.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
+        container.childNodes, (n) => `${n.nodeType}:${n.data || n.textContent}`),
                     ['3:before', '8:start', '1:b1', '1:b2', '1:b3', '8:end', '3:after']);
 
       list.changeOptions({query: Book.where('pageCount', 1000).sort('title')});
 
       assert.equals(util.map(
-        container.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
+        container.childNodes, (n) => `${n.nodeType}:${n.data || n.textContent}`),
                     ['3:before', '8:start', '1:b2', '8:end', '3:after']);
     });
 
-    test("updateAllTags with changeOptions", ()=>{
+    test('updateAllTags with changeOptions', () => {
       api.protoMethod('changeOptions');
 
       const book1 = createBook(1, {pageCount: 1000}), book2 = createBook(2);
 
-      assert.dom(Dom.h({ul: ''}), pn => {
+      assert.dom(Dom.h({ul: ''}), (pn) => {
         const list = new AutoList({
           container: pn,
           template: Row,
           query: {
-            forEach: body => {body(book1), body(book2)},
+            forEach: (body) => {body(book1), body(book2)},
           },
           compare: util.compareByField('pageCount')
         });
@@ -686,7 +684,7 @@ isClient && define((require, exports, module)=>{
 
         list.changeOptions({
           query: {
-            forEach: body => {body(book1), body(book2)},
+            forEach: (body) => {body(book1), body(book2)},
           },
           compare: util.compareByField('title')
         });
@@ -695,7 +693,7 @@ isClient && define((require, exports, module)=>{
 
         list.changeOptions({
           query: {
-            forEach: body => {body(book1), body(book2)},
+            forEach: (body) => {body(book1), body(book2)},
           },
           updateAllTags: true,
         });
@@ -704,7 +702,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("start, end comment", ()=>{
+    test('start, end comment', () => {
       const AutoList = api.class();
 
       //[
@@ -720,29 +718,28 @@ isClient && define((require, exports, module)=>{
       const list = new AutoList({
         query: Book.query.sort('title'), template: Row, container: startComment});
 
-      assert.dom(container, pn =>{
+      assert.dom(container, (pn) => {
         createBook(4);
         createBook(1);
         createBook(5);
 
         assert.equals(util.map(
-          pn.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
+          pn.childNodes, (n) => `${n.nodeType}:${n.data || n.textContent}`),
                       ['3:before', '8:start', '1:b1', '1:b4', '1:b5', '8:end', '3:after']);
       });
       //]
     });
 
-    test("observing", ()=>{
-      const [book1, book2, book3] = [1,2,3].map(i => createBook(i));
+    test('observing', () => {
+      const [book1, book2, book3] = [1,2,3].map((i) => createBook(i));
 
-      let query = Book.query.where(d=>d.title[0]==='b').sort('pageCount');
+      let query = Book.query.where((d) => d.title[0]==='b').sort('pageCount');
       const container = Dom.h({});
       const list = new AutoList({query, template: Row, container});
 
-      const mapEntries = _=> Array.from(list.entries).map(n => Book.findById(n._id).title);
+      const mapEntries = (_) => Array.from(list.entries).map((n) => Book.findById(n._id).title);
 
-
-      assert.dom(container, pn =>{
+      assert.dom(container, (pn) => {
         assert.equals(mapEntries(), ['b1', 'b2', 'b3']);
 
         const book4 = createBook(4, {pageCount: 50});
@@ -769,7 +766,7 @@ isClient && define((require, exports, module)=>{
         book3.$update('pageCount', 20);
         assert.equals(mapEntries(), ['b3', 'b1', 'b2']);
 
-        assert.equals(util.map(pn.children, n => Dom.ctx(n).data.title),
+        assert.equals(util.map(pn.children, (n) => Dom.ctx(n).data.title),
                       ['b3', 'b1', 'b2']);
 
         book3.$update('title', 'b300');
@@ -777,7 +774,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("stop", ()=>{
+    test('stop', () => {
       /**
        * Stop observing model changes.
 
@@ -793,8 +790,8 @@ isClient && define((require, exports, module)=>{
       const stop = stub();
       const list = new AutoList({query: {
         compare: util.compareByName,
-        onChange: _=> ({stop}),
-        forEach: body =>{body(person)},
+        onChange: (_) => ({stop}),
+        forEach: (body) => {body(person)},
       }, template: Row, container});
 
       spy(list, 'stop');
@@ -813,18 +810,18 @@ isClient && define((require, exports, module)=>{
       list.stop(); // should be harmless to call again
     });
 
-    test("copyKeys", ()=>{
+    test('copyKeys', () => {
       /**
        * should copy key values; not assign
        **/
       const a = {key: [1,2,3]};
-      const compare = (a,b)=> -1;
+      const compare = (a,b) => -1;
       const compareKeys = ['key'];
       const list = new AutoList({
         container: Dom.h({}),
         template: Row,
         query: {
-          forEach: body =>{body(a)},
+          forEach: (body) => {body(a)},
           compare,
           compareKeys,
         }
