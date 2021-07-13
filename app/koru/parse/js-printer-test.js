@@ -15,14 +15,15 @@ isServer && define((require, exports, module) => {
       const JsPrinter = api.class();
       //[
       const example = () => {
-        return 1 + 2;
+        return 1+2;
       };
       let output = '';
       const simple = new JsPrinter({
         input: example.toString(),
         write: (token) => {
           output += token;
-        }});
+        },
+      });
 
       simple.print(simple.ast);
 
@@ -32,51 +33,73 @@ isServer && define((require, exports, module) => {
       //]
     });
 
-    test('lookingAt', () => {
-      api.protoMethod();
-      //[
-      const input = (() => {let abc=123}).toString();
+    test('comments', () => {
+      const input = `(\n   // c1 \n \n \n    f, /*xx*/  /*(*/1,/*<*/2/*>*/,3/*)*/)`;
       let output = '';
-      const p = new JsPrinter({input , write: (token) => {output += token}});
-      assert(p.lookingAt(/^[^\n]+123/));
-      //]
-    });
-
-    test('addComment', () => {
-      /**
-       * Handle comments
-       */
-      api.protoMethod();
-      //[
-      const exampleComment = () => {
-        // start comment
-        {
-          return exampleComment + /* middle comment */ 2;
-        }
-        // end comment
-      };
-
-      class MyPrinter extends JsPrinter {
-        addComment(node) {
-          this.write(this.input.slice(node.start, node.end)
-                     .replace(/comment/ig, 'COMMENT'));
-          this.inputPoint = node.end;
-        }
-      }
-
-      let output = '';
-      const simple = new MyPrinter({
-        input: exampleComment.toString(),
-        write: (token) => {
+      let comments = [];
+      const simple = new JsPrinter({
+        input,
+        write: (token, type) => {
+          if (type === 'comment') {
+            comments.push(token);
+          }
           output += token;
-        }});
+        },
+      });
 
       simple.print(simple.ast);
-
       simple.catchup(simple.ast.end);
+      assert.same(output, input);
+      assert.equals(comments, ['\n   // c1 \n \n \n', ' /*xx*/', '  /*(*/', '/*<*/', '/*>*/', '/*)*/']);
+    });
 
-      assert.same(output, exampleComment.toString().replace(/\bcomment\b/g, 'COMMENT'));
-      //]
+    test('writeCatchup', () => {
+      let output = [];
+      const simple = new JsPrinter({
+        input: '',
+        write: (token, type) => {
+          assert.same(type, 'catchup');
+          output.push(token)},
+      });
+
+      const assertOutput = (input, expect) => {
+        simple.writeCatchup(input);
+        assert.equals(output, expect);
+        output = [];
+      };
+
+      assertOutput('\nhello\n\nnew\nworld', ['\n', 'hello', '\n', '\n', 'new', '\n', 'world']);
+      assertOutput('hello new world', ['hello new world']);
+      assertOutput('\n\n\n', ['\n', '\n', '\n']);
+    });
+
+    test('writeAdvance', () => {
+      const input = `(/*(*/1,/*<*/2/*>*/,3/*)*/)`;
+      let output = '';
+      class Mine extends JsPrinter {
+        NumericLiteral(node) {
+          const v = node.value.toString();
+          const point = this.indexOf(v, this.inputPoint);
+          this.advance(point - v.length);
+          this.write("'");
+          this.write(v);
+          this.write("'");
+          this.advance(point);
+        }
+        SequenceExpression(node) {
+          this.write('[');
+          this.print(node.expressions);
+          this.write(']');
+        }
+      }
+      const simple = new Mine({
+        input,
+        write: (token, type) => {output += token},
+      });
+
+      simple.print(simple.ast);
+      simple.catchup(simple.ast.end);
+      assert.same(output, "(/*(*/['1',/*<*/'2'/*>*/,'3'/*)*/])");
     });
   });
 });

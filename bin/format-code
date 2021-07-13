@@ -19,13 +19,14 @@ const argv = process.argv.filter((a) => {
 
 const file = argv[2];
 
+const formatOpts = {initialIndent: 0};
+
 withKoru({env: 'test'}, () => {
   requirejs(['koru/server', 'koru/parse/code-formatter', 'koru/fs-tools'], (koru, {reformat}, fst) => {
-
     const convertFile = (file) => {
       const stat = fst.lstat(file);
       if (stat == null) {
-        console.error('No such file or directory: '+file);
+        console.error('No such file or directory: ' + file);
         process.exit(1);
       }
       if (stat.isDirectory()) {
@@ -34,10 +35,10 @@ withKoru({env: 'test'}, () => {
         }
       } else if (stat.isFile() && file.endsWith('.js')) {
         try {
-          const source = reformat(fst.readFile(file).toString());
+          const source = reformat(fst.readFile(file).toString(), formatOpts);
           dryRun || fst.writeFile(file, source);
         } catch (err) {
-          console.error('while reformatting '+file);
+          console.error('while reformatting ' + file);
           throw err;
         }
       }

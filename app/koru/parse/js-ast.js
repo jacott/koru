@@ -2,10 +2,17 @@ define((require, exports, module) => {
   'use strict';
   const {parse, walk, walkArray,
          visitorKeys, inferVisitorKeys,
-         VISITOR_KEYS
+         VISITOR_KEYS,
         } = requirejs.nodeRequire('./js-parse-walker');
 
-  const defaultOptions = { allowImportExportEverywhere: true, plugins: ['classProperties', 'classStaticBlock'] };
+  const defaultOptions = {
+    allowImportExportEverywhere: true,
+    allowAwaitOutsideFunction: true,
+    allowReturnOutsideFunction: true,
+    allowSuperOutsideMethod: true,
+    allowUndeclaredExports: true,
+    createParenthesizedExpressions: true,
+    plugins: ['classProperties', 'classStaticBlock']};
 
   const last = (a) => a[a.length - 1];
 
@@ -123,7 +130,7 @@ define((require, exports, module) => {
             if (node.type === 'ObjectProperty') {
               declareVisitor(node.key, node.value);
             } else {
-              throw new Error('wrong type '+node.type);
+              throw new Error('wrong type ' + node.type);
             }
           }
           break;
@@ -148,13 +155,13 @@ define((require, exports, module) => {
           }
           break;
         default:
-          throw new Error('unexpected type '+key.type+':'+key.start);
+          throw new Error('unexpected type ' + key.type + ':' + key.start);
         }
         descend && value != null && this.walk(value, scope);
       };
 
       for (const d of nodes) {
-        if(d.type === 'VariableDeclarator') {
+        if (d.type === 'VariableDeclarator') {
           bindVar(d.id, d.init);
         } else {
           bindVar(d);
