@@ -12,7 +12,7 @@ const koruPackage = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.
 
 const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
-const load = (command)=> function (...args) {
+const load = (command) => function (...args) {
   this.koruVersion = koruPackage.version;
   this.koruPackage = koruPackage;
   program = null;
@@ -77,7 +77,7 @@ KORU_BROWSER_DEBUGGING_PORT remote-debugging-port for browser. Defaults to 9222.
 
   if (program !== null) {
     if (program.rawArgs.length > 2) {
-      console.error("Unexpected command: ", program.rawArgs[2]);
+      console.error('Unexpected command: ', program.rawArgs[2]);
       process.exit(1);
     }
   }
