@@ -18,6 +18,12 @@ define((require, exports, module)=>{
 
     });
 
+    test('at', ()=>{
+      const a= '0123';
+      assert.same(a.at(0), '0');
+      assert.same(a.at(-1), '3');
+    });
+
     test("inspect", ()=>{
       /**
        * Convert any type to a displayable string. The symbol `inspect$` can be used to override
