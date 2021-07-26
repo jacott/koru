@@ -1,21 +1,22 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const SRP             = require('koru/crypto/srp');
   const Email           = require('koru/email');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');
   const Val             = require('koru/model/validation');
   const Random          = require('koru/random').global;
   const session         = require('koru/session');
-  const SRP             = require('koru/crypto/srp');
   const util            = require('koru/util');
   const crypto          = requirejs.nodeRequire('crypto');
 
   let emailConfig;
 
-  const getToken = data =>{
+  const getToken = (data) => {
     data = data.toString();
-    if (data.match(/^[\d\w]+\|[\d\w]+$/))
+    if (data.match(/^[\d\w]+\|[\d\w]+$/)) {
       return data.split('|');
+    }
     return [];
   };
 
@@ -26,8 +27,8 @@ define((require, exports, module)=>{
       const keyVal = [];
       for (let key in tokens) {
         const time = tokens[key];
-        if (time > now) {
-          keyVal.push(time+'|'+key);
+        if (time>now) {
+          keyVal.push(time + '|' + key);
         }
       }
       keyVal.sort();
@@ -36,7 +37,7 @@ define((require, exports, module)=>{
       const result = {};
       for (let i = 1; i <= max; ++i) {
         const pair = keyVal[keyVal.length - i].split('|');
-        result[pair[1]] = +pair[0];
+        result[pair[1]] = + pair[0];
       }
 
       return result;
@@ -45,7 +46,7 @@ define((require, exports, module)=>{
     makeToken() {
       const token = Random.id();
       const tokens = this.unexpiredTokens();
-      tokens[token] = util.dateNow()+180*24*1000*60*60;
+      tokens[token] = util.dateNow() + 180*24*1000*60*60;
       this.tokens = tokens;
       return token;
     }
@@ -64,35 +65,42 @@ define((require, exports, module)=>{
     },
   });
 
-  const configureEmail = ()=>{
+  const configureEmail = () => {
     emailConfig = koru.config.userAccount && koru.config.userAccount.emailConfig || {};
 
     if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
     if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
-    if (! emailConfig.sendResetPasswordEmailText)
+    if (! emailConfig.sendResetPasswordEmailText) {
       koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
-    if (typeof emailConfig.sendResetPasswordEmailText !== 'function')
+    }
+    if (typeof emailConfig.sendResetPasswordEmailText !== 'function') {
       koru.throwConfigError('userAccount.sendResetPasswordEmailText',
                             'must be of type function(userId, resetToken)');
+    }
   };
 
-  const makeScrypt = (password, salt=crypto.randomBytes(16))=>{
-    const future = new util.Future;
-    crypto.scrypt(password, salt, 64,
-                  void 0, (err, key)=>{
-                    if (err) future.throw(err);
-                    else future.return(key);
-                  });
+  const makeScrypt = (password, salt=crypto.randomBytes(16)) => {
+    const future = new util.Future();
+    crypto.scrypt(
+      password, salt, 64,
+      void 0, (err, key) => {
+        if (err) {
+          future.throw(err);
+        } else {
+          future.return(key);
+        }
+      });
+
     const key = future.wait().toString('hex');
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
   let running = false;
 
-  const stop = ()=>{
+  const stop = () => {
+    emailConfig = void 0;
     if (! running) return;
     running = false;
-    emailConfig = void 0;
     session.unprovide('V');
   };
 
@@ -140,12 +148,12 @@ define((require, exports, module)=>{
       if (doc.password.type === 'scrypt') {
         try {
           assertScryptPassword(doc, password);
-        } catch(err) {
-          if (err.error == 403)
+        } catch (err) {
+          if (err.error == 403) {
             return;
+          }
           throw err;
         }
-
       } else {
         const C = new SRP.Client(password);
         const S = new SRP.Server(doc.password);
@@ -161,15 +169,15 @@ define((require, exports, module)=>{
       const token = doc.makeToken();
       doc.$$save();
       return [doc, token];
-
     },
 
     verifyToken(emailOrId, token) {
       const doc = emailOrId.indexOf('@') === -1
             ? UserLogin.findById(emailOrId)
             : UserLogin.findBy('email', emailOrId);
-      if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0)
+      if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0) {
         return doc;
+      }
     },
 
     createUserLogin(attrs) {
@@ -191,7 +199,7 @@ define((require, exports, module)=>{
     makeResetPasswordKey(user) {
       const lu = UserLogin.findBy('userId', user._id);
 
-      lu.resetToken = Random.id()+Random.id();
+      lu.resetToken = Random.id() + Random.id();
       lu.resetTokenExpire = util.dateNow() + 24*60*60*1000;
       lu.$$save();
 
@@ -208,6 +216,7 @@ define((require, exports, module)=>{
         to: lu.email,
         subject: 'How to reset your password on ' + emailConfig.siteName,
         text: emailConfig.sendResetPasswordEmailText(user, lu._id + '-' + lu.resetToken),
+        html: emailConfig.sendResetPasswordEmailHtml?.(user, lu._id + '-' + lu.resetToken),
       });
     },
 
@@ -218,7 +227,7 @@ define((require, exports, module)=>{
         userId: attrs.userId,
         tokens: {},
         password: attrs.password,
-      });;
+      });
 
       const update = {};
 
@@ -257,13 +266,15 @@ define((require, exports, module)=>{
     },
   };
 
-  const assertScryptPassword = (doc, password)=>{
+  const assertScryptPassword = (doc, password) => {
     if (doc === void 0 || doc.password == null ||
-        doc.password.type !== 'scrypt')
+        doc.password.type !== 'scrypt') {
       throw new koru.Error(403, 'failure');
+    }
 
-    if (makeScrypt(password, Buffer.from(doc.password.salt, 'hex')).key !== doc.password.key)
-      throw new koru.Error(403, "Invalid password");
+    if (makeScrypt(password, Buffer.from(doc.password.salt, 'hex')).key !== doc.password.key) {
+      throw new koru.Error(403, 'Invalid password');
+    }
   };
 
   session.defineRpc('UserAccount.changePassword', changePassword);
@@ -340,11 +351,11 @@ define((require, exports, module)=>{
 
     Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
-
-    if (UserAccount.interceptChangePassword)
+    if (UserAccount.interceptChangePassword) {
       UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
-    else
+    } else {
       this.$srpUserAccount.$update({password: response.newPassword});
+    }
 
     const result = {
       HAMK: this.$srp && this.$srp.HAMK,
@@ -371,8 +382,9 @@ define((require, exports, module)=>{
         if (sessId === this.sessId) continue;
         const curr = conns[sessId];
 
-        if (curr.userId === this.userId)
+        if (curr.userId === this.userId) {
           curr.userId = void 0;
+        }
       }
     }
   });
@@ -381,7 +393,7 @@ define((require, exports, module)=>{
     const conn = this;
     const cmd = data[0];
     let token;
-    switch(cmd) {
+    switch (cmd) {
     case 'L': {
       const [_id, token] = getToken(data.slice(1));
       const lu = _id && UserLogin.findById(_id);
@@ -392,12 +404,12 @@ define((require, exports, module)=>{
       } else {
         conn.send('VF');
       }
-    } break;
+    }; break;
     case 'X': { // logout me
       const [_id, token] = getToken(data.slice(1));
       token && UserAccount.logout(_id, token);
       conn.userId = void 0; // will send a VS + VC. See server-connection
-    } break;
+    }; break;
     }
   }
 
