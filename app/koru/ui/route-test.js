@@ -861,6 +861,27 @@ isClient && define((require, exports, module) => {
       assert.same(Baz.onExit, null);
     });
 
+    test('removeTemplate', () => {
+      const Baz = {
+        name: 'Baz',
+
+        $autoRender(arg) {
+          return Dom.h({div: arg, id: 'Baz'});
+        },
+      };
+
+      Route.root.addTemplate(Baz);
+
+      Baz.onExit = Baz.onEntry = void 0;
+
+      Route.root.removeTemplate(Baz);
+
+      assert.same(Baz.onEntry, void 0);
+      assert.same(Baz.onExit, void 0);
+
+      assert.equals(Route.root.routes, {baz: null});
+    });
+
     test('gotoPath default', () => {
       Route.root.addTemplate(v.FooBar, {path: 'foo-location'});
       stub(koru, 'getLocation').returns({pathname: '/foo-location/append-data'});

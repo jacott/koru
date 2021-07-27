@@ -497,8 +497,8 @@ define((require, exports, module) => {
     removeTemplate(template, options={}) {
       const path = options.path === void 0 ? templatePath(template) : options.path;
       this.routes[path] = null;
-      if (template?.onEntry.isAuto) template.onEntry = null;
-      if (template?.onExit.isAuto) template.onExit = null;
+      if (template?.onEntry?.isAuto) template.onEntry = null;
+      if (template?.onExit?.isAuto) template.onExit = null;
     }
 
     addDialog(module, template, options) {
