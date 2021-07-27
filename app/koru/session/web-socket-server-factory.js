@@ -1,16 +1,16 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const accSha256       = require('koru/crypto/acc-sha256');
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
   const ServerConnection = require('koru/session/server-connection');
-  const accSha256       = require('koru/crypto/acc-sha256');
+  const message         = require('./message');
   const koru            = require('../main');
   const util            = require('../util');
-  const message         = require('./message');
 
-  const forceReload = (ws, session) =>{
-    ws.send('U'+session.versionHash);
+  const forceReload = (ws, session) => {
+    ws.send('U' + session.versionHash);
     ws.send('Lforce-reload');
     ws.close();
   };
@@ -20,17 +20,17 @@ define((require, exports, module)=>{
     const globalDictAdders = {};
     let _globalDict, _globalDictEncoded;
     let _preloadDict = message.newGlobalDict();
-    let dictHash = [1,2,3,5, 7,11,13,17]; // dont' change this without bumping koru.PROTOCOL_VERSION
+    let dictHash = [1, 2, 3, 5, 7, 11, 13, 17]; // dont' change this without bumping koru.PROTOCOL_VERSION
     let dictHashStr = null;
     const {version, versionHash} = koru;
 
-    globalDictAdders[module.id] = adder => {
+    globalDictAdders[module.id] = (adder) => {
       for (const name in session._rpcs) {
         adder(name);
       }
     };
 
-    const addToDict = word => {
+    const addToDict = (word) => {
       if (_preloadDict === null) return;
       if (message.getStringCode(_preloadDict, word) == -1) {
         accSha256.add(word, dictHash);
@@ -40,15 +40,17 @@ define((require, exports, module)=>{
 
     const onConnection = (ws, ugr) => {
       const _remoteAddress = ugr.connection.remoteAddress;
-      const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress) ?
-            ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
+      const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress)
+            ? ugr.headers['x-real-ip'] || _remoteAddress
+            : _remoteAddress;
 
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
         let gdict = globalDictEncoded(), dictHash = dictHashStr;
         const parts = url === null ? null : url.split('?', 2);
-        const [clientProtocol, clientVersion, clientHash] = url === null ?
-              [] : parts[0].split('/').slice(2);
+        const [clientProtocol, clientVersion, clientHash] = url === null
+              ? []
+              : parts[0].split('/').slice(2);
         if (url !== null) {
           if (+clientProtocol !== koru.PROTOCOL_VERSION) {
             forceReload(ws, session);
@@ -56,19 +58,18 @@ define((require, exports, module)=>{
           }
 
           if (clientHash !== '' && clientHash !== session.versionHash) {
-            if (session.version === 'dev')
+            if (session.version === 'dev') {
               newVersion = session.version;
-            else {
-              const cmp = session.compareVersion?.(clientVersion, clientHash)
-                    ?? util.compareVersion(clientVersion, session.version);
-              if (cmp < 0) {
+            } else {
+              const cmp = session.compareVersion?.(clientVersion, clientHash) ??
+                    util.compareVersion(clientVersion, session.version);
+              if (cmp<0) {
                 if (cmp == -2) {
                   forceReload(ws, session);
                   return;
                 }
                 newVersion = session.version;
-              }
-              else if (cmp > 0) return; // client on greater version; we will update (hopefully) so
+              } else if (cmp>0) return // client on greater version; we will update (hopefully) so
               // just wait around
             }
           } else {
@@ -106,9 +107,9 @@ define((require, exports, module)=>{
         return conn;
       };
 
-      if (session.connectionIntercept)
+      if (session.connectionIntercept) {
         session.connectionIntercept(newSession, ws, ugr, remoteAddress);
-      else {
+      } else {
         newSession();
       }
     };
@@ -155,7 +156,7 @@ define((require, exports, module)=>{
     });
 
     const buildGlobalDict = () => {
-      for(const name in globalDictAdders) {
+      for (const name in globalDictAdders) {
         globalDictAdders[name](addToDict);
       }
       _globalDict = _preloadDict;
@@ -167,8 +168,9 @@ define((require, exports, module)=>{
       return _globalDict;
     };
 
-    const globalDictEncoded = ()=> session.globalDict === void 0 ?
-          void 0 : _globalDictEncoded;
+    const globalDictEncoded = () => session.globalDict === void 0
+          ? void 0
+          : _globalDictEncoded;
 
     session.countNotify = new Observable();
 
@@ -176,17 +178,19 @@ define((require, exports, module)=>{
       const msgId = data[0];
       const func = session._rpcs[util.thread.action = data[1]];
       try {
-        if (! func)
+        if (! func) {
           throw new koru.Error(404, 'unknown method: ' + data[1]);
+        }
 
-        const result = TransQueue.transaction(()=>{
+        const result = TransQueue.transaction(() => {
           util.thread.msgId = msgId;
-          if (msgId.length > 17)
+          if (msgId.length > 17) {
             util.thread.random = new Random(msgId);
+          }
           return func.apply(this, data.slice(2));
         });
         this.sendBinary('M', [msgId, 'r', result]);
-      } catch(ex) {
+      } catch (ex) {
         if (ex.error === void 0) {
           koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
@@ -198,7 +202,7 @@ define((require, exports, module)=>{
 
     function sendAll(cmd, msg) {
       const {conns} = this;
-      for(const key in conns) conns[key].send(cmd, msg);
+      for (const key in conns) conns[key].send(cmd, msg);
     }
 
     function load(id) {
@@ -212,13 +216,13 @@ define((require, exports, module)=>{
       const mod = ctx.modules[id];
       if (mod) {
         mod.unload();
-        session.versionHash = 'h'+Date.now(); // tell reconnecting clients codebase has changed
+        session.versionHash = 'h' + Date.now(); // tell reconnecting clients codebase has changed
       }
       this.sendAll('U', session.versionHash + ':' + id);
     }
 
     return session;
-  };
+  }
 
   koru.onunload(module, 'reload');
 

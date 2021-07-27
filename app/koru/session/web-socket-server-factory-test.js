@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const TransQueue      = require('koru/model/trans-queue');
@@ -16,33 +16,33 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.ws = TH.mockWs();
       v.mockSess = new SessionBase({});
       v.mockSess.wss = v.ws;
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("stop", ()=>{
+    test('stop', () => {
       const sess = sut(v.mockSess);
 
       sess.stop();
       assert.called(sess.wss.close);
     });
 
-    group("rpc", ()=>{
-      const makeConn = ()=> util.merge(new ServerConnection(v.sess, v.ws, '123', () => {}), {
+    group('rpc', () => {
+      const makeConn = () => util.merge(new ServerConnection(v.sess, v.ws, '123', () => {}), {
         sendBinary: stub(),
       });
 
-      beforeEach(()=>{
+      beforeEach(() => {
         v.sess = sut(v.mockSess);
         v.msgId = 'm123';
-        v.run = rpcMethod => {
+        v.run = (rpcMethod) => {
           v.sess.defineRpc('foo.rpc', rpcMethod);
 
           const data = [v.msgId, 'foo.rpc', 1, 2, 3];
@@ -53,13 +53,13 @@ define((require, exports, module)=>{
         };
       });
 
-      test("in TransQueue transaction failure", ()=>{
+      test('in TransQueue transaction failure', () => {
         let inTrans = false;
-        v.sess.defineRpc('foo.rpc', ()=>{
+        v.sess.defineRpc('foo.rpc', () => {
           assert.isTrue(inTrans);
           throw new koru.Error(404, 'not found');
         });
-        intercept(TransQueue, 'transaction', func =>{
+        intercept(TransQueue, 'transaction', (func) => {
           inTrans = true;
           try {
             return func();
@@ -68,20 +68,20 @@ define((require, exports, module)=>{
           }
         });
         const conn = makeConn();
-        conn.sendBinary.invokes(c => {
+        conn.sendBinary.invokes((c) => {
           assert.isFalse(inTrans);
         });
         v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
         assert.calledWith(conn.sendBinary, 'M', ['m123', 'e', 404, 'not found']);
       });
 
-      test("in TransQueue transaction success", ()=>{
+      test('in TransQueue transaction success', () => {
         let inTrans = false;
-        v.sess.defineRpc('foo.rpc', ()=>{
+        v.sess.defineRpc('foo.rpc', () => {
           assert.isTrue(inTrans);
-          return "success";
+          return 'success';
         });
-        intercept(TransQueue, 'transaction', func =>{
+        intercept(TransQueue, 'transaction', (func) => {
           inTrans = true;
           try {
             return func();
@@ -90,44 +90,44 @@ define((require, exports, module)=>{
           }
         });
         const conn = makeConn();
-        conn.sendBinary.invokes(c => {
+        conn.sendBinary.invokes((c) => {
           assert.isFalse(inTrans);
         });
         v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
         assert.calledWith(conn.sendBinary, 'M', ['m123', 'r', 'success']);
       });
 
-      test("Random.id", ()=>{
-        v.msgId = "a1212345671234567890";
-        v.run(arg => {
-          assert.same(Random.id(), "Fs3Fn26qRzQI9PL1H");
+      test('Random.id', () => {
+        v.msgId = 'a1212345671234567890';
+        v.run((arg) => {
+          assert.same(Random.id(), 'Fs3Fn26qRzQI9PL1H');
           v.ans = Random.id();
         });
 
         assert.same(v.ans, 'W2gquYPP21ZS1N14d');
 
-        v.msgId = "a12123456712345678Aa";
-        v.run(arg => {
+        v.msgId = 'a12123456712345678Aa';
+        v.run((arg) => {
           assert.same(util.thread.msgId, 'a12123456712345678Aa');
 
-          assert.same(Random.id(), "FFykqEzyflL6oKnqR");
+          assert.same(Random.id(), 'FFykqEzyflL6oKnqR');
           v.ans = Random.id();
         });
 
         assert.same(v.ans, 'ygIaapK60J3Lx3KGY');
       });
 
-      test("old msgId", ()=>{
-        v.msgId = "a1212";
-        v.run(arg => {
-          refute.same(Random.id(), "XDYyyXJ6M7iSTHjwZ");
+      test('old msgId', () => {
+        v.msgId = 'a1212';
+        v.run((arg) => {
+          refute.same(Random.id(), 'XDYyyXJ6M7iSTHjwZ');
           v.ans = Random.id();
         });
 
         refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
       });
 
-      test("result", ()=>{
+      test('result', () => {
         v.run(function (...args) {
           v.thisValue = this;
           v.args = args.slice();
@@ -137,10 +137,10 @@ define((require, exports, module)=>{
         assert.equals(v.args, [1, 2, 3]);
         assert.same(v.thisValue, v.conn);
 
-        assert.calledWith(v.conn.sendBinary, 'M', ['m123', "r", "result"]);
+        assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'r', 'result']);
       });
 
-      test("exception", ()=>{
+      test('exception', () => {
         stub(koru, 'error');
         v.run((one, two, three) => {
           throw v.error = new koru.Error(404, {foo: 'not found'});
@@ -150,7 +150,7 @@ define((require, exports, module)=>{
         assert.same(v.error.message, "{foo: 'not found'} [404]");
       });
 
-      test("general exception", ()=>{
+      test('general exception', () => {
         stub(koru, 'error');
         v.run((one, two, three) => {
           throw new Error('Foo');
@@ -160,7 +160,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("unload client only", ()=>{
+    test('unload client only', () => {
       const sess = sut(v.mockSess);
       stub(koru, 'unload');
       stub(sess, 'sendAll');
@@ -174,21 +174,21 @@ define((require, exports, module)=>{
       assert.calledWith(sess.sendAll, 'U', '1234:foo');
     });
 
-    test("initial KORU_APP_VERSION", ()=>{
+    test('initial KORU_APP_VERSION', () => {
       TH.stubProperty(koru, 'version', 'dev');
       TH.stubProperty(koru, 'versionHash', 'h1');
       const sess = sut(v.mockSess);
 
-      assert.same(sess.versionHash, "h1");
-      assert.same(sess.version, "dev");
+      assert.same(sess.versionHash, 'h1');
+      assert.same(sess.version, 'dev');
     });
 
-    group("onConnection", ()=>{
-      beforeEach(()=>{
+    group('onConnection', () => {
+      beforeEach(() => {
         v.sess = sut(v.mockSess);
         v.assertSent = (args) => {
-          assert.elide(()=>{
-            assert.calledOnceWith(v.ws.send, m(arg => {
+          assert.elide(() => {
+            assert.calledOnceWith(v.ws.send, m((arg) => {
               v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
               assert.equals(v.msg, args);
 
@@ -199,7 +199,7 @@ define((require, exports, module)=>{
         };
       });
 
-      test("wrong protocol received", ()=>{
+      test('wrong protocol received', () => {
         v.ws[isTest].request.url = '/4/dev/';
 
         v.sess.onConnection(v.ws, v.ws[isTest].request);
@@ -208,8 +208,8 @@ define((require, exports, module)=>{
         assert.calledWith(v.ws.send, 'Lforce-reload');
       });
 
-      group("dictHash", ()=>{
-        beforeEach(()=>{
+      group('dictHash', () => {
+        beforeEach(() => {
           v.sess.addToDict('Helium');
           v.sess.addToDict('Tungsten');
           v.ws[isTest].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
@@ -218,20 +218,20 @@ define((require, exports, module)=>{
           TH.noInfo();
         });
 
-        test("wrong dictHash received", ()=>{
+        test('wrong dictHash received', () => {
           v.ws[isTest].request.url += '?dict=abcdf23';
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent([
             '', 'h123',
-            m(dict=>v.dict=dict),
+            m((dict) => v.dict = dict),
             '0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0']);
 
           assert.equals(Array.from(v.dict), [
-            72, 101, 108, 105, 117, 109, 255, 84, 117, 110, 103, 115, 116, 101, 110, 255, 0
+            72, 101, 108, 105, 117, 109, 255, 84, 117, 110, 103, 115, 116, 101, 110, 255, 0,
           ]);
         });
 
-        test("correct dictHash received", ()=>{
+        test('correct dictHash received', () => {
           v.ws[isTest].request.url +=
             '?dict=0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0';
           v.sess.onConnection(v.ws, v.ws[isTest].request);
@@ -239,19 +239,19 @@ define((require, exports, module)=>{
         });
       });
 
-      group("compareVersion", ()=>{
-        beforeEach(()=>{
+      group('compareVersion', () => {
+        beforeEach(() => {
           v.ws[isTest].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h456';
           v.sess.version = 'v1.2.3';
           TH.noInfo();
         });
 
-        test("remote info", ()=>{
+        test('remote info', () => {
           v.ws[isTest].request.connection = {remoteAddress: '127.0.0.1', remotePort: '12345'};
           v.ws[isTest].request.headers = {
-            'user-agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "+
-              "(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36",
+            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ' +
+              '(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36',
             'x-real-ip': '11.22.33.44',
           };
 
@@ -264,7 +264,7 @@ define((require, exports, module)=>{
           assert.equals(conn.remotePort, '12345');
         });
 
-        test("override halts response", ()=>{
+        test('override halts response', () => {
           stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = stub().returns(1);
 
@@ -277,7 +277,7 @@ define((require, exports, module)=>{
           refute.called(v.ws.send);
         });
 
-        test("override reloads", ()=>{
+        test('override reloads', () => {
           stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = stub().returns(-1);
 
@@ -289,7 +289,7 @@ define((require, exports, module)=>{
           v.assertSent(['v1.2.3', 'h456', m.any, m.string]);
         });
 
-        test("force-reload", ()=>{
+        test('force-reload', () => {
           stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = stub().returns(-2);
 
@@ -300,7 +300,7 @@ define((require, exports, module)=>{
           assert.called(v.ws.close);
         });
 
-        test("compareVersion", ()=>{
+        test('compareVersion', () => {
           /** client < server **/
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent(['v1.2.3', 'h456', m.any, m.string]);
@@ -316,20 +316,20 @@ define((require, exports, module)=>{
           v.assertSent(['', 'h456', m.any, m.string]);
         });
 
-        test("no version,hash", ()=>{
+        test('no version,hash', () => {
           v.ws[isTest].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent(['', 'h456', m.any, m.string]);
         });
 
-        test("old version but good hash", ()=>{
+        test('old version but good hash', () => {
           v.sess.versionHash = 'h123';
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent(['', 'h123', m.any, m.string]);
         });
-      });    });
+      })});
 
-    test("unload server", ()=>{
+    test('unload server', () => {
       const sess = sut(v.mockSess);
       stub(sess, 'sendAll');
       const {ctx} = requirejs.module;
@@ -344,7 +344,7 @@ define((require, exports, module)=>{
 
       refute.same(sess.versionHash, '1234');
 
-      assert.calledWith(sess.sendAll, 'U', sess.versionHash+':foo');
+      assert.calledWith(sess.sendAll, 'U', sess.versionHash + ':foo');
     });
   });
 });

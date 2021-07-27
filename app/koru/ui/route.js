@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Dom             = require('koru/dom');
   const koru            = require('koru/main');
@@ -21,48 +21,50 @@ define((require, exports, module)=>{
   let runInstance; // used with async callbacks
 
   let debug_page = false;
-  Trace.debug_page = value => {debug_page = value};
+  Trace.debug_page = (value) => {debug_page = value};
 
-  const exitEntry = (exit, oldSymbols, entry, pageRoute, page, then)=>{
+  const exitEntry = (exit, oldSymbols, entry, pageRoute, page, then) => {
     const entryLen = entry.length;
     let exitLen = exit.length;
-    const diff = exitLen - entryLen;
+    const diff = exitLen-entryLen;
     let index, sym, item;
 
-    for(--exitLen; exitLen >= 0; --exitLen) {
+    for (--exitLen; exitLen >= 0; --exitLen) {
       item = exit[exitLen];
-      if (item !== entry[exitLen - diff] ||
-          ((sym = item.routeVar) !== void 0 && oldSymbols[sym] !== pageRoute[sym]))
+      if (item !== entry[exitLen-diff] ||
+          ((sym = item.routeVar) !== void 0 && oldSymbols[sym] !== pageRoute[sym])) {
         break;
+      }
     }
 
-    for(index = 0; index < diff; ++index) {
+    for (index = 0; index<diff; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit?.(page, pageRoute);
     }
 
-    for(; index <= exitLen; ++index) {
+    for (;index <= exitLen; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit?.(page, pageRoute);
     }
 
     currentPage = exit[index];
 
-    index = index - diff - 1 ;
+    index = index-diff-1;
     let runInstanceCopy = runInstance = {};
-    const callback = ()=>{
-      if (runInstanceCopy !== runInstance)
-        return; // route call overridden
-      if (index < 0) {
+    const callback = () => {
+      if (runInstanceCopy !== runInstance) {
+        return // route call overridden
+        ;
+      } if (index<0) {
         runInstanceCopy = null; // stop multi calling
         then();
         return true;
       }
       item = entry[index--];
       currentPage = item;
-      if (item.async)
+      if (item.async) {
         item.onBaseEntry(page, pageRoute, callback);
-      else {
+      } else {
         item.onBaseEntry?.(page, pageRoute);
         callback();
       }
@@ -70,51 +72,55 @@ define((require, exports, module)=>{
     callback();
   };
 
-  const pathname = (template, pageRoute)=>{
+  const pathname = (template, pageRoute) => {
     let path = '';
     if (template?.route !== void 0) {
       path = routePath(template.route, pageRoute);
-      if (template.subPath)
-        path += '/'+template.subPath;
+      if (template.subPath) {
+        path += '/' + template.subPath;
+      }
     }
 
-    if (pageRoute.append)
+    if (pageRoute.append) {
       return path + '/' + pageRoute.append;
+    }
 
     return path;
   };
 
-  const routePath = (route, pageRoute)=>{
+  const routePath = (route, pageRoute) => {
     if (! route) return '';
 
     let {path} = route;
     const routeVar = route.routeVar !== void 0 && pageRoute[route.routeVar];
-    if (routeVar)
+    if (routeVar) {
       path += '/' + routeVar;
+    }
 
     if (route.parent === void 0) return path;
-    return routePath(route.parent, pageRoute)+'/'+path;
+    return routePath(route.parent, pageRoute) + '/' + path;
   };
 
-  const toPath = (page)=>{
+  const toPath = (page) => {
     let route;
     if (page) {
-      if (page.noParentRoute)
+      if (page.noParentRoute) {
         return [];
+      }
       route = page.$autoRender ? page.route : page;
     }
     const path = [];
-    while(route) {
+    while (route) {
       path.push(route);
       route = route.parent;
     }
     return path;
   };
 
-  const templatePath = (template)=> util.dasherize(template.name);
+  const templatePath = (template) => util.dasherize(template.name);
 
-  const onEntryFunc = (options)=> {
-    const autoOnEntry = (page, pageRoute)=>{
+  const onEntryFunc = (options) => {
+    const autoOnEntry = (page, pageRoute) => {
       page._renderedPage = page.$autoRender((typeof options.data === 'function'
                                              ? options.data(page, pageRoute)
                                              : options.data) || {});
@@ -138,26 +144,28 @@ define((require, exports, module)=>{
   autoOnExit.isAuto = true;
 
   function addCommon(route, module, template, options={}) {
-    if (module !== void 0) module.onUnload(()=>{
+    if (module !== void 0) module.onUnload(() => {
       if (currentPage === template) {
         try {
           currentPage.onExit?.(currentPage, currentPageRoute);
-        } catch(err) {
+        } catch (err) {
           koru.unhandledException(err);
         }
       }
       route.removeTemplate(template, options);
     });
     const path = options.path === void 0 ? templatePath(template) : options.path;
-    if (route.routes.path !== void 0)
+    if (route.routes.path !== void 0) {
       throw new Error(`Path already exists! ${path} for template '${this.path}'`);
+    }
     route.routes[path] = template;
     template.route = route;
     template.subPath = path;
     template.routeOptions = options;
 
-    if (options.defaultPage)
+    if (options.defaultPage) {
       route.defaultPage = template;
+    }
 
     return options;
   }
@@ -169,7 +177,7 @@ define((require, exports, module)=>{
     }
   }
 
-  const handleAbortPage = (self, err)=>{
+  const handleAbortPage = (self, err) => {
     if (err.constructor === AbortPage) {
       pageState = 'pushState';
       err.location !== void 0 && self.replacePath(err.location, ...err.args);
@@ -195,23 +203,24 @@ define((require, exports, module)=>{
 
     static waitForPage(expectPage, duration) {
       duration = duration || 2000;
-      return new Promise((resolve, reject)=>{
+      return new Promise((resolve, reject) => {
         if (currentPage === expectPage) {
           resolve(currentPage, currentHref);
           return;
         }
         let handle;
-        const timeout = koru.setTimeout(()=>{
+        const timeout = koru.setTimeout(() => {
           handle.stop();
           reject(new Error(`Timed out waiting for: ${expectPage?.name} after ${duration}ms`));
         }, duration);
-        handle = Route.onChange((actualPage, pageRoute, href)=>{
+        handle = Route.onChange((actualPage, pageRoute, href) => {
           handle.stop();
           koru.clearTimeout(timeout);
-          if (actualPage === expectPage)
+          if (actualPage === expectPage) {
             resolve(actualPage, href);
-          else
+          } else {
             reject(new Error(`expected page: ${expectPage?.name}, got: ${actualPage?.name}`));
+          }
         });
       });
     }
@@ -244,7 +253,7 @@ define((require, exports, module)=>{
         page = page?.route?.defaultPage ?? page?.defaultPage ?? page;
       }
 
-      pageRoute = util.reverseMerge(pageRoute || {},  currentPageRoute, excludes);
+      pageRoute = util.reverseMerge(pageRoute || {}, currentPageRoute, excludes);
       pageRoute.pathname = pathname(page, pageRoute || {});
 
       debug_page && koru.logger('D', 'gotoPage', util.inspect(pageRoute, 2));
@@ -262,53 +271,51 @@ define((require, exports, module)=>{
       if (page?.isDialog) {
         try {
           page.onEntry(page, pageRoute);
-        }
-        catch(err) {
+        } catch (err) {
           handleAbortPage(this, err);
         }
+      } else {
+        try {
+          ++inGotoPage;
+          const then = () => {
+            let href, title;
+            if (page == null) {
+              href = null;
+              title = Route.title;
+              pageRoute = {};
+            } else {
+              href = Route.pageRouteToHref(page.onEntry?.(page, pageRoute) ?? pageRoute);
+              title = page.title ?? Route.title;
+            }
 
-      } else try {
-        ++inGotoPage;
-        const then = ()=>{
-          let href, title;
-          if (page == null) {
-            href = null;
-            title = Route.title;
-            pageRoute = {};
+            Route.recordHistory(page, href);
+            currentHref = href;
+            currentPage = page;
+            Route.setTitle(title);
+            Route.notify(page, pageRoute, href);
+          };
+
+          if (currentPage != null) {
+            currentPage.onExit?.(page, pageRoute);
+
+            exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
           } else {
-            href = Route.pageRouteToHref(page.onEntry?.(page, pageRoute) ?? pageRoute);
-            title = page.title ?? Route.title;
+            exitEntry([], {}, toPath(page), pageRoute, page, then);
           }
-
-          Route.recordHistory(page, href);
-          currentHref = href;
-          currentPage = page;
-          Route.setTitle(title);
-          Route.notify(page, pageRoute, href);
-        };
-
-        if (currentPage != null) {
-          currentPage.onExit?.(page, pageRoute);
-
-          exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
-        } else {
-          exitEntry([], {}, toPath(page), pageRoute, page, then);
+        } catch (err) {
+          handleAbortPage(this, err);
+        } finally {
+          --inGotoPage;
+          Route.loadingArgs = null;
+          currentPageRoute = pageRoute;
         }
-
-
-      } catch(err) {
-        handleAbortPage(this, err);
-
-      } finally {
-        --inGotoPage;
-        Route.loadingArgs = null;
-        currentPageRoute = pageRoute;
       }
     }
 
     static recordHistory(page, href) {
-      if (pageState === null || page?.noPageHistory)
+      if (pageState === null || page?.noPageHistory) {
         return;
+      }
       let cmd = 'replaceState';
       if (pageState !== cmd && currentHref !== href) {
         cmd = pageState;
@@ -328,8 +335,9 @@ define((require, exports, module)=>{
     }
 
     static pageRouteToHref(pageRoute) {
-      let href = typeof pageRoute ==='string' ? pageRoute :
-            pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+      let href = typeof pageRoute === 'string'
+          ? pageRoute
+          : pageRoute.pathname + (pageRoute.search || '') + (pageRoute.hash || '');
       if (! /^\/#/.test(href)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
       return href;
     }
@@ -356,8 +364,9 @@ define((require, exports, module)=>{
       const location = koru.getLocation();
       const newRef = location.href.slice(location.origin.length);
 
-      if (newRef === currentHref)
+      if (newRef === currentHref) {
         return;
+      }
 
       currentHref = newRef;
       const orig = pageState;
@@ -391,12 +400,14 @@ define((require, exports, module)=>{
 
     static gotoPath(page, ...args) {
       const pageRoute = {};
-      if (page == null)
+      if (page == null) {
         page = koru.getLocation();
+      }
 
       if (typeof page !== 'string') {
-        if (! page.pathname)
+        if (! page.pathname) {
           return this.gotoPage(page, ...args);
+        }
 
         if (page.pathname !== '/') {
           page = this.pageRouteToHref(page);
@@ -407,9 +418,8 @@ define((require, exports, module)=>{
         page = decodeURIComponent(page);
       }
 
-
       const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) ||
-        /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
+            /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
       if (m) {
         page = m[1] || '/';
         if (m[2]) pageRoute.search = m[2];
@@ -422,7 +432,7 @@ define((require, exports, module)=>{
       page = root;
 
       let newPage = root.defaultPage;
-      for(let i = 0; i < parts.length; ++i) {
+      for (let i = 0; i < parts.length; ++i) {
         const part = parts[i];
         if (part === '') continue;
         newPage = page?.routes?.[part];
@@ -442,11 +452,13 @@ define((require, exports, module)=>{
         page = newPage;
       }
 
-      if (newPage !== void 0 && newPage === root.defaultPage)
+      if (newPage !== void 0 && newPage === root.defaultPage) {
         page = newPage;
+      }
 
-      if (page === root)
+      if (page === root) {
         throw new koru.Error(404, 'Page not found: ' + util.inspect(pageRoute));
+      }
 
       this.gotoPage(page, pageRoute);
     }
@@ -457,8 +469,7 @@ define((require, exports, module)=>{
       const search = pageRoute?.search;
       if (! search) return result;
 
-
-      util.forEach(search.slice(1).split('&'), pair => {
+      util.forEach(search.slice(1).split('&'), (pair) => {
         const [name, value] = pair.split('=');
         result[name] = value;
       });
@@ -467,18 +478,20 @@ define((require, exports, module)=>{
     }
 
     addTemplate(module, template, options) {
-      if (module !== void 0 && ! (module instanceof Module) ) {
+      if (module !== void 0 && ! (module instanceof Module)) {
         options = template;
         template = module;
         module = void 0;
       }
       options = addCommon(this, module, template, options);
 
-      if (! template.onEntry)
+      if (! template.onEntry) {
         template.onEntry = onEntryFunc(options);
+      }
 
-      if (! template.onExit)
+      if (! template.onExit) {
         template.onExit = autoOnExit;
+      }
     }
 
     removeTemplate(template, options={}) {
@@ -489,7 +502,7 @@ define((require, exports, module)=>{
     }
 
     addDialog(module, template, options) {
-      if (module !== void 0 && ! (module instanceof Module) ) {
+      if (module !== void 0 && ! (module instanceof Module)) {
         options = template;
         template = module;
         module = void 0;
@@ -506,7 +519,7 @@ define((require, exports, module)=>{
     addBase(module, template, options) {
       if (module) {
         if ('exports' in module) {
-          module.onUnload(()=>{
+          module.onUnload(() => {
             this.removeBase(template);
           });
         } else {
@@ -520,8 +533,9 @@ define((require, exports, module)=>{
 
       const path = options.path === void 0 ? templatePath(template) : options.path;
 
-      if (template.route !== void 0)
+      if (template.route !== void 0) {
         throw new Error(template.name + ' is already a route base');
+      }
 
       return template.route = this.routes[path] = new Route(path, template, this, options);
     }
@@ -543,9 +557,9 @@ define((require, exports, module)=>{
         (template.onBaseEntry || defaultOnBaseEntry).call(template, page, pageRoute, callback);
       }
     }
-  };
+  }
 
-  const myAnchor = (route)=> route?.childAnchor ?? Route.childAnchor;
+  const myAnchor = (route) => route?.childAnchor ?? Route.childAnchor;
 
   function defaultOnBaseExit(page, pageRoute) {
     Dom.remove(this._renderedPage || document.getElementById(this.name));
