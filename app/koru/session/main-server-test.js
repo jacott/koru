@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const message         = require('koru/session/message');
@@ -12,12 +12,12 @@ isServer && define((require, exports, module)=>{
   const Session = require('./main');
   let v = {};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module({subjectModule: module.get('./main'), subjectName: 'Session'});
     });
 
-    beforeEach(()=>{
+    beforeEach(() => {
       v.ws = TH.mockWs();
       v.mockSess = {
         _wssOverride: function() {
@@ -28,11 +28,11 @@ isServer && define((require, exports, module)=>{
       };
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("openBatch", ()=>{
+    test('openBatch', () => {
       /**
        * Build an encoded batch message.
 
@@ -52,13 +52,13 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("versionHash", ()=>{
+    test('versionHash', () => {
       v.sess = serverSession(v.mockSess);
-      assert.calledWith(v.ws.on, 'connection', m(func => v.func = func));
+      assert.calledWith(v.ws.on, 'connection', m((func) => v.func = func));
 
       v.sess.addToDict('foo');
 
-      v.sess.registerGlobalDictionaryAdder({id: 'test'}, adder =>{
+      v.sess.registerGlobalDictionaryAdder({id: 'test'}, (adder) => {
         adder('g1'); adder('g2');
       });
 
@@ -69,7 +69,7 @@ isServer && define((require, exports, module)=>{
       TH.noInfo();
       v.func(v.ws, v.ws[isTest].request);
 
-      assert.calledWith(v.ws.send, TH.match(arg => {
+      assert.calledWith(v.ws.send, TH.match((arg) => {
         v.msg = message.decodeMessage(arg.subarray(1), Session.globalDict);
         assert.equals(v.msg, ['', 'h1', TH.match.any, TH.match.string]);
 
@@ -79,7 +79,6 @@ isServer && define((require, exports, module)=>{
       const dict = message.newGlobalDict();
 
       assert.same(v.msg[2].length, 11);
-
 
       message.decodeDict(v.msg[2], 0, dict);
       message.finalizeGlobalDict(dict);
@@ -96,11 +95,11 @@ isServer && define((require, exports, module)=>{
       assert.same(v.sess.globalDict.k2c['fuz'], undefined);
     });
 
-    test("client errors", ()=>{
-       v.sess = serverSession(v.mockSess);
+    test('client errors', () => {
+      v.sess = serverSession(v.mockSess);
 
       let func;
-      assert.calledWith(v.sess.provide, 'E', TH.match(f => func = f));
+      assert.calledWith(v.sess.provide, 'E', TH.match((f) => func = f));
 
       stub(koru, 'logger');
       v.sess.sessId = 's123';
@@ -108,13 +107,13 @@ isServer && define((require, exports, module)=>{
       assert.calledWith(koru.logger, 'E', 'my test error');
     });
 
-    test("clientErrorConvert", ()=>{
+    test('clientErrorConvert', () => {
       v.sess = serverSession(v.mockSess);
 
       let func;
-      assert.calledWith(v.sess.provide, 'E', TH.match(f => func = f));
+      assert.calledWith(v.sess.provide, 'E', TH.match((f) => func = f));
 
-      const clientErrorConvert = stub().returns("converted");
+      const clientErrorConvert = stub().returns('converted');
 
       stub(koru, 'logger');
       v.sess.sessId = 's123';
@@ -125,11 +124,11 @@ isServer && define((require, exports, module)=>{
         koru.logger, 'E', 'converted');
     });
 
-    test("onerror", ()=>{
+    test('onerror', () => {
       stub(koru, 'info');
       const conn = TH.sessionConnect(v.ws);
 
-      assert.calledWith(v.ws.on, 'error', TH.match(func => v.func = func));
+      assert.calledWith(v.ws.on, 'error', TH.match((func) => v.func = func));
 
       spy(conn, 'close');
 
@@ -148,11 +147,11 @@ isServer && define((require, exports, module)=>{
       refute(conn.sessId in Session.conns);
     });
 
-    test("onclose", ()=>{
+    test('onclose', () => {
       TH.noInfo();
       const conn = TH.sessionConnect(v.ws);
 
-      assert.calledWith(v.ws.on, 'close', TH.match(func => v.func = func));
+      assert.calledWith(v.ws.on, 'close', TH.match((func) => v.func = func));
 
       spy(conn, 'close');
 

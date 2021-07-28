@@ -1,25 +1,26 @@
-define((require)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
-  const server          = require('../web-server').server;
   const webSocketServerFactory = require('./web-socket-server-factory');
   const WebSocket       = requirejs.nodeRequire('ws');
+  const server          = require('../web-server').server;
 
-  return session =>{
+  return (session) => {
     webSocketServerFactory(session);
 
-    session.provide('L', data =>{
+    session.provide('L', (data) => {
       koru.logger('L', data);
     });
-    session.provide('E', data =>{
-      if (koru.clientErrorConvert !== undefined)
+    session.provide('E', (data) => {
+      if (koru.clientErrorConvert !== undefined) {
         data = koru.clientErrorConvert(data);
+      }
       koru.logger('E', data);
     });
 
-    session.connectionIntercept = (newSession, ws, ugr, remoteAddress)=>{
+    session.connectionIntercept = (newSession, ws, ugr, remoteAddress) => {
       if (/127\.0\.0\.1/.test(remoteAddress) && ugr.url === '/rc') {
-        session.remoteControl && session.remoteControl(ws);
+        session.remoteControl?.(ws);
         return;
       }
       newSession();

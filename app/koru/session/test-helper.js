@@ -1,9 +1,9 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const BaseTH          = require('koru/model/test-helper');
   const util            = require('koru/util');
   const koru            = require('../main');
   const session         = require('../session/base');
-  const BaseTH          = require('koru/model/test-helper');
 
   const {Core, stub} = BaseTH;
 
@@ -15,14 +15,17 @@ define((require, exports, module)=>{
     },
 
     mockWs() {
-      return {
+      const ws = {
         [isTest]: {
-          request: {connection: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`}
+          request: {connection: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`},
         },
         on: stub(),
         send: stub(),
-        close: stub(),
+        close: stub().invokes(() => {ws.readyState = 3}),
+        readyState: 1,
       };
+
+      return ws;
     },
 
     mockConnectState(v, state) {

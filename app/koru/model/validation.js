@@ -1,10 +1,10 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const format         = require('../format');
-  const koru           = require('../main');
-  const match          = require('../match');
-  const ResourceString = require('../resource-string');
-  const util           = require('../util');
+  const format          = require('../format');
+  const koru            = require('../main');
+  const match           = require('../match');
+  const ResourceString  = require('../resource-string');
+  const util            = require('../util');
 
   const {error$} = require('koru/symbols');
 
@@ -22,18 +22,19 @@ define((require)=>{
               ? doc[error$][field]
               : (Array.isArray(doc) ? doc : [[doc.toString()]]);
         if (errors !== void 0) {
-          return errors.map(format.translate).join(", ");
+          return errors.map(format.translate).join(', ');
         } else if (other_error !== void 0) {
           return ResourceString.en[other_error];
-        } else
+        } else {
           return null;
+        }
       },
 
       toString(doc) {
         const errors = doc[error$] ?? doc;
         return Object.keys(errors)
-          .map(field => `${field}: ${this.msgFor(errors[field])}`)
-          .join("; ");
+          .map((field) => `${field}: ${this.msgFor(errors[field])}`)
+          .join('; ');
       },
     },
 
@@ -44,35 +45,35 @@ define((require)=>{
 
     check(obj, spec, options={}) {
       const {onError, altSpec, baseName: name, filter} = options;
-      const check1 = (obj, subSpec, name)=>{
+      const check1 = (obj, subSpec, name) => {
         if (typeof subSpec === 'string') {
           if (obj == null) return;
-          if (match[subSpec] && match[subSpec].test(obj))
+          if (match[subSpec] && match[subSpec].test(obj)) {
             return;
+          }
           bad(name, obj, subSpec);
-
-
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
-          util.forEach(obj, (item, index)=>{
+          util.forEach(obj, (item, index) => {
             check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.test(subSpec)) {
-          for(const key in obj) {
+          for (const key in obj) {
             try {
               if (hasOwn(subSpec, key)) {
-                check1(obj[key], subSpec[key], name ? name+'.'+key : key);
+                check1(obj[key], subSpec[key], name ? name + '.' + key : key);
               } else if (subSpec === spec && altSpec && hasOwn(altSpec, key)) {
-                check1(obj[key], altSpec[key], name ? name+'.'+key : key);
+                check1(obj[key], altSpec[key], name ? name + '.' + key : key);
               } else {
-                bad(name ? name+'.'+key : key, obj, subSpec, key);
+                bad(name ? name + '.' + key : key, obj, subSpec, key);
               }
-            } catch(ex) {
+            } catch (ex) {
               if (filter && ex === false) {
                 filter(obj, key, subSpec, name);
-              } else
+              } else {
                 throw ex;
+              }
             }
           }
         } else if (! (match.isMatch(subSpec) && subSpec.test(obj))) {
@@ -80,16 +81,17 @@ define((require)=>{
         }
       };
 
-      const bad = (...args)=>{
-        if (typeof onError === 'function' && onError(...args))
+      const bad = (...args) => {
+        if (typeof onError === 'function' && onError(...args)) {
           return;
+        }
         throw false;
       };
 
       try {
         check1(obj, spec, name);
         return true;
-      } catch(ex) {
+      } catch (ex) {
         if (ex === false) {
           return false;
         }
@@ -97,56 +99,59 @@ define((require)=>{
       }
     },
 
-    nestedFieldValidator: func => function (field) {
+    nestedFieldValidator: (func) => function (field) {
       const doc = this;
       const value = doc.changes[field];
       if (value !== undefined) {
         func(doc, field, value, {
           onError(name, obj) {
-            if (name)
+            if (name) {
               Val.addError(doc, field, 'is_invalid',
                            name, typeof obj === 'string' ? obj : obj && obj[error$]);
-            else
+            } else {
               Val.addError(doc, field, 'is_invalid');
-
+            }
           },
         });
       }
-
     },
 
     assertCheck(obj, spec, options) {
       let error, reason;
       if (! this.check(
-        obj, spec, options == null || options.onError === undefined
+        obj, spec, options?.onError === undefined
           ? {
-          __proto__: options,
-          onError(name, obj) {
-            if (obj && obj[error$] !== undefined) {
-              reason = obj[error$];
-            } else if (name) {
-              reason = {}; reason[name] = [['is_invalid']];
-            } else {
-              reason = 'is_invalid';
-            }
-            if (error === undefined)
-              error = new koru.Error(400, reason);
+            __proto__: options,
+            onError(name, obj) {
+              if (obj && obj[error$] !== undefined) {
+                reason = obj[error$];
+              } else if (name) {
+                reason = {}; reason[name] = [['is_invalid']];
+              } else {
+                reason = 'is_invalid';
+              }
+              if (error === undefined) {
+                error = new koru.Error(400, reason);
+              }
+            },
           }
-          } : options))
+        : options)) {
         throw error;
+      }
     },
 
     assertDocChanges(doc, spec, new_spec=ID_SPEC) {
       if (doc.$isNewRecord()) {
         this.allowAccessIf(new_spec !== null);
         this.assertCheck(doc.changes, spec, {altSpec: new_spec});
-      } else
+      } else {
         this.assertCheck(doc.changes, spec);
+      }
     },
 
     matchFields(fieldSpec, name) {
-      const m = match(doc=>{
-        if (doc === null || typeof doc !== 'object' ) return false;
+      const m = match((doc) => {
+        if (doc === null || typeof doc !== 'object') return false;
         if (doc[error$] !== undefined) doc[error$] = undefined;
         for (const field in doc) {
           if (! hasOwn(fieldSpec, field)) {
@@ -169,14 +174,15 @@ define((require)=>{
       const fields = model.$fields;
       for (const id in fields) {
         const field = fields[id];
-        if (! field.readOnly)
+        if (! field.readOnly) {
           ans[id] = field.type;
+        }
       }
       return ans;
     },
 
     validateField(doc, field, spec) {
-      for(const name in spec) {
+      for (const name in spec) {
         const validator = validators[name];
         validator && validator.call(this, doc, field, spec[name], spec);
       }
@@ -198,7 +204,7 @@ define((require)=>{
 
     /** Simple is not objects {} or functions */
     allowIfSimple(...args) {
-      for(let i=0;i < args.length;++i) {
+      for (let i = 0; i < args.length; ++i) {
         switch (typeof args[i]) {
         case 'object':
           if (args[i] == null) break;
@@ -206,10 +212,10 @@ define((require)=>{
           if (proto === Array.prototype) {
             Val.allowIfSimple.apply(Val, args[i]);
             break;
-          } else if (proto === Date.prototype) break;
-          accessDenied("argument is an object ");
+          } else if (proto === Date.prototype) break
+          accessDenied('argument is an object ');
         case 'function':
-          accessDenied("argument is a function");
+          accessDenied('argument is a function');
         }
       }
       return true;
@@ -230,8 +236,8 @@ define((require)=>{
       if (errs === undefined) return;
 
       const result = [];
-      for(const field in errs) {
-        const msgs = errs[field].map(m => util.inspect(m));
+      for (const field in errs) {
+        const msgs = errs[field].map((m) => util.inspect(m));
 
         result.push(field + ': ' + msgs.join('; '));
       }
@@ -241,16 +247,16 @@ define((require)=>{
     inspectErrors(doc) {
       const errs = this.errorsToString(doc);
 
-      return doc.constructor.modelName + (errs ? ": Errors: " + errs : ": No errors");
+      return doc.constructor.modelName + (errs ? ': Errors: ' + errs : ': No errors');
     },
 
     allowIfValid(truthy, doc) {
       if (! truthy) {
         let reason;
         if (doc != null) {
-          if (doc[error$] !== undefined)
+          if (doc[error$] !== undefined) {
             reason = doc[error$];
-          else {
+          } else {
             if (typeof doc === 'object') {
               reason = doc;
             } else {
@@ -266,21 +272,25 @@ define((require)=>{
     },
 
     allowIfFound(truthy, field) {
-      if (! truthy)
+      if (! truthy) {
         throw new koru.Error(404, field ? {[field]: [['not_found']]} : 'Not found');
+      }
     },
 
     validateName(name, length) {
-      if (typeof name !== 'string')
+      if (typeof name !== 'string') {
         return ['is_required'];
+      }
 
       name = name.trim();
 
-      if (name.length === 0)
+      if (name.length === 0) {
         return ['is_required'];
+      }
 
-      if (name.length > length)
+      if (name.length > length) {
         return ['cant_be_greater_than', length];
+      }
 
       return name;
     },
@@ -297,38 +307,39 @@ define((require)=>{
           validators[regName] = item;
           registered.push(regName);
         } else {
-          for(const regName in item) {
+          for (const regName in item) {
             validators[regName] = item[regName];
             registered.push(regName);
           }
         }
       }
 
-      module.onUnload(()=>{
-        registered.forEach(key =>{delete validators[key]});
+      module.onUnload(() => {
+        registered.forEach((key) => {delete validators[key]});
       });
     },
 
-    deregister: key =>{delete validators[key]},
+    deregister: (key) => {delete validators[key]},
 
-    addError: (doc, field, ...args)=>{
+    addError: (doc, field, ...args) => {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
     },
 
-    addErrorIfNone: (doc, field, ...args)=>{
+    addErrorIfNone: (doc, field, ...args) => {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$];
-      if (errors[field] === void 0)
+      if (errors[field] === void 0) {
         errors[field] = [args];
+      }
     },
 
-    transferErrors: (field, from, to)=>{
+    transferErrors: (field, from, to) => {
       const errors = from[error$] && from[error$][field];
       if (errors === undefined) return;
 
-      errors.forEach(err => {Val.addError(to, field, ...err)});
+      errors.forEach((err) => {Val.addError(to, field, ...err)});
     },
 
     addSubErrors(doc, field, subErrors) {
@@ -336,52 +347,56 @@ define((require)=>{
       for (const name in subErrors) {
         const fullname = `${field}.${name}`;
         const fieldErrors = errors[fullname];
-        if (fieldErrors === undefined)
+        if (fieldErrors === undefined) {
           errors[fullname] = subErrors[name].slice();
-        else
-          subErrors[name].forEach(r => {fieldErrors.push(r)});
+        } else {
+          subErrors[name].forEach((r) => {fieldErrors.push(r)});
+        }
       }
     },
 
     clearErrors(doc) {
-      if (doc !== null && typeof doc === 'object' && doc[error$] !== undefined)
+      if (doc !== null && typeof doc === 'object' && doc[error$] !== undefined) {
         doc[error$] = undefined;
+      }
     },
   };
 
-  const accessDenied = (details, nolog)=>{
-    const reason = "Access denied";
-    const error = new koru.Error(403, details === void 0 ? reason : reason + " - " + details);
+  const accessDenied = (details, nolog) => {
+    const reason = 'Access denied';
+    const error = new koru.Error(403, details === void 0 ? reason : reason + ' - ' + details);
 
-    if (! nolog && ! util.thread.suppressAccessDenied)
+    if (! nolog && ! util.thread.suppressAccessDenied) {
       koru.info(`Access denied: user ${koru.userId()}: ${details}`,
                 koru.util.extractError(error));
+    }
     throw error;
   };
 
-  const convertPermitSpec = (input)=>{
+  const convertPermitSpec = (input) => {
     const output = {};
 
-    for(let i=0,item;item=input[i];++i) {
+    for (let i = 0, item; item = input[i]; ++i) {
       switch (typeof item) {
       case 'string':
         output[item] = true;
         break;
       case 'object':
         if (Array.isArray(item)) {
-          for(let j=0;j < item.length;++j) {
+          for (let j = 0; j < item.length; ++j) {
             const obj = item[j];
-            for(const key in obj) {
+            for (const key in obj) {
               output[key] = [convertPermitSpec(obj[key])];
             }
           }
         } else {
-          for(const key in item) {
+          for (const key in item) {
             const list = item[key];
-            if (Array.isArray(list))
+            if (Array.isArray(list)) {
               output[key] = convertPermitSpec(list);
-            else
+            } else {
               output[key] = list;
+            }
           }
         }
         break;
@@ -391,11 +406,12 @@ define((require)=>{
     return output;
   };
 
-  const ensure = (type, args)=>{
-    if (typeof type === 'string')
+  const ensure = (type, args) => {
+    if (typeof type === 'string') {
       type = match[type];
-    for(let i = 0; i < args.length; ++i) {
-      type.test(args[i])  || accessDenied(`expected ${type}`);
+    }
+    for (let i = 0; i < args.length; ++i) {
+      type.test(args[i]) || accessDenied(`expected ${type}`);
     }
   };
 
