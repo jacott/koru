@@ -69,8 +69,11 @@ define((require, exports, module) => {
                   return;
                 }
                 newVersion = session.version;
-              } else if (cmp>0) return // client on greater version; we will update (hopefully) so
-              // just wait around
+              } else if (cmp>0) {
+                // client on greater version; we will update (hopefully) so just close for now.
+                ws.close();
+                return;
+              }
             }
           } else {
             const search = util.searchStrToMap(parts[1]);

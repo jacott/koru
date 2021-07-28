@@ -26,10 +26,14 @@ define((require, exports, module) => {
       newSession();
     };
 
-    session.wss = new (session._wssOverride || WebSocket.Server)({
-      server: server, perMessageDeflate: false}),
+    const config = module.config();
 
-    session.wss.on('connection', session.onConnection);
+    if (! config.noWss) {
+      session.wss = new WebSocket.Server({
+        server, perMessageDeflate: false}),
+
+      session.wss.on('connection', session.onConnection);
+    }
 
     return session;
   };

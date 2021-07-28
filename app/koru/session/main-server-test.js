@@ -6,23 +6,25 @@ isServer && define((require, exports, module) => {
   const util            = require('koru/util');
   const serverSession   = require('./main-server');
   const TH              = require('./test-helper');
+  const WebSocket       = requirejs.nodeRequire('ws');
+  const server          = require('../web-server').server;
 
-  const {stub, spy, match: m, stubProperty} = TH;
+  const {stub, spy, match: m, stubProperty, intercept} = TH;
 
   const Session = require('./main');
   let v = {};
 
   TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    const config = module.get('./main-server').config();
     before(() => {
       api.module({subjectModule: module.get('./main'), subjectName: 'Session'});
     });
 
     beforeEach(() => {
       v.ws = TH.mockWs();
+
+      config.noWss = true;
       v.mockSess = {
-        _wssOverride: function() {
-          return v.ws;
-        },
         provide: stub(),
         _rpcs: {},
       };
@@ -53,7 +55,17 @@ isServer && define((require, exports, module) => {
     });
 
     test('versionHash', () => {
+      let opts;
+      intercept(WebSocket, 'Server', function (arg) {
+        opts = arg;
+        return v.ws;
+      });
+      config.noWss = false;
       v.sess = serverSession(v.mockSess);
+
+      assert.same(opts.server, server);
+      assert.isFalse(opts.perMessageDeflate);
+
       assert.calledWith(v.ws.on, 'connection', m((func) => v.func = func));
 
       v.sess.addToDict('foo');
