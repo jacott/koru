@@ -107,6 +107,13 @@ isServer && define((require, exports, module) => {
       assert.same(v.sess.globalDict.k2c['fuz'], undefined);
     });
 
+    test('connectionIntercept returns conn', () => {
+      const conn = {};
+      const newSession = () => conn;
+      const sess = serverSession({provide: stub()});
+      assert.same(sess.connectionIntercept(newSession, void 0, void 0, '1.2.3.4'), conn);
+    });
+
     test('client errors', () => {
       v.sess = serverSession(v.mockSess);
 

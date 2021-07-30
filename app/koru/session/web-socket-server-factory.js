@@ -4,6 +4,7 @@ define((require, exports, module) => {
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
+  const HttpRequest     = require('koru/session/http-request');
   const ServerConnection = require('koru/session/server-connection');
   const message         = require('./message');
   const koru            = require('../main');
@@ -39,11 +40,7 @@ define((require, exports, module) => {
     };
 
     const onConnection = (ws, ugr) => {
-      const _remoteAddress = ugr.connection.remoteAddress;
-      const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress)
-            ? ugr.headers['x-real-ip'] || _remoteAddress
-            : _remoteAddress;
-
+      const remoteAddress = HttpRequest.remoteAddress(ugr);
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
         let gdict = globalDictEncoded(), dictHash = dictHashStr;

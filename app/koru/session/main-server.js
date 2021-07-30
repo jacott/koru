@@ -19,11 +19,11 @@ define((require, exports, module) => {
     });
 
     session.connectionIntercept = (newSession, ws, ugr, remoteAddress) => {
-      if (/127\.0\.0\.1/.test(remoteAddress) && ugr.url === '/rc') {
+      if (/127\.0\.0\.1$|^::1$/.test(remoteAddress) && ugr.url === '/rc') {
         session.remoteControl?.(ws);
         return;
       }
-      newSession();
+      return newSession();
     };
 
     const config = module.config();
