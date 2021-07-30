@@ -1,25 +1,26 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define((require)=>{
+define((require) => {
   'use strict';
-  const {private$} = require('koru/symbols');
-  const koru       = require('../main');
-  const util       = require('../util');
-  const message    = require('./message');
+  const {private$}      = require('koru/symbols');
+  const message         = require('./message');
+  const koru            = require('../main');
+  const util            = require('../util');
 
   const retryCount$ = Symbol(), waitSends$ = Symbol();
   const heatbeatSentAt$ = Symbol(), heatbeatTime$ = Symbol();
 
-  const adjustedNow = ()=>Date.now()+util.timeAdjust;
+  const adjustedNow = () => Date.now() + util.timeAdjust;
 
-  const completeBaseSetup = base => {
+  const completeBaseSetup = (base) => {
     base.provide('X', function ([newVersion, hash, dict, dictHash]) {
       if (newVersion !== '') {
         koru.info(`New version: ${newVersion},${hash}`);
-        if (typeof this.newVersion === 'function')
+        if (typeof this.newVersion === 'function') {
           this.newVersion({newVersion, hash});
-        else
+        } else {
           return void koru.reload();
+        }
       }
       this.hash = hash;
       if (dict !== null) {
@@ -34,11 +35,12 @@ define((require)=>{
 
       const {ws, globalDict, [waitSends$]: waitSends} = this;
 
-      for(let i = 0; i < waitSends.length; ++i) {
+      for (let i = 0; i < waitSends.length; ++i) {
         // encode here because we may have a different global dictionary
         const item = waitSends[i];
         ws.send(
-          typeof item === 'string' ? item
+          typeof item === 'string'
+            ? item
             : message.encodeMessage(item[0], item[1], globalDict));
       }
       waitSends.length = 0;
@@ -48,21 +50,21 @@ define((require)=>{
       const now = adjustedNow();
       const serverTime = +data;
       const sentAt = this[heatbeatSentAt$];
-      const uncertainty = now - sentAt;
-
+      const uncertainty = now-sentAt;
 
       this[heatbeatTime$] = now + this.heartbeatInterval;
 
       if (serverTime > util.DAY) {
         util.adjustTime(
-          serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now)/2) : 0,
-          util.timeUncertainty === 0 ? uncertainty
-            : Math.min(uncertainty, (util.timeUncertainty*4 + uncertainty)*0.2)
+          serverTime<sentAt || serverTime>now ? serverTime - Math.floor((sentAt+now) / 2) : 0,
+          util.timeUncertainty === 0
+            ? uncertainty
+            : Math.min(uncertainty, (util.timeUncertainty * 4 + uncertainty) * 0.2),
         );
       }
     });
 
-    base.provide('L', data => {require([data], () => {})});
+    base.provide('L', (data) => {require([data], () => {})});
     base.provide('U', function unload(data) {
       const [hash, modId] = data.split(':', 2);
       this.hash = hash;
@@ -70,15 +72,15 @@ define((require)=>{
     });
 
     base.provide('W', function batchedMessages(data) {
-      for(let i = 0; i < data.length; ++i) {
+      for (let i = 0; i < data.length; ++i) {
         try {
           const msg = data[i];
           const func = this._commands[msg[0]];
           if (func === void 0) {
-            throw new Error("Invalid command "+msg[0]);
+            throw new Error('Invalid command ' + msg[0]);
           }
           func.call(this, msg[1]);
-        } catch(ex) {
+        } catch (ex) {
           koru.unhandledException(ex);
         }
       }
@@ -88,12 +90,14 @@ define((require)=>{
 
     base.provide('B', function broadcast(data) {
       const func = base._broadcastFuncs[data[0]];
-      if (typeof func !== 'function')
-        koru.error("Broadcast function '"+data[0]+"' not registered");
-      else try {
-        func.apply(this, data.slice(1));
-      } catch(ex) {
-        koru.unhandledException(ex);
+      if (typeof func !== 'function') {
+        koru.error("Broadcast function '" + data[0] + "' not registered");
+      } else {
+        try {
+          func.apply(this, data.slice(1));
+        } catch (ex) {
+          koru.unhandledException(ex);
+        }
       }
     });
 
@@ -105,8 +109,9 @@ define((require)=>{
         } else {
           koru.onunload(module, () => base.deregisterBroadcast(name));
         }
-        if (base._broadcastFuncs[name])
-          throw new Error("Broadcast function '"+name+"' alreaady registered");
+        if (base._broadcastFuncs[name]) {
+          throw new Error("Broadcast function '" + name + "' alreaady registered");
+        }
         base._broadcastFuncs[name] = func;
       },
       deregisterBroadcast(name) {
@@ -114,7 +119,6 @@ define((require)=>{
       },
     });
   };
-
 
   return function webSocketSenderFactory(
     _session, sessState, execWrapper=koru.fiberConnWrapper, base=_session) {
@@ -124,7 +128,7 @@ define((require)=>{
     let reconnTimeout = null;
 
     if (! session.version && typeof KORU_APP_VERSION === 'string') {
-      const [version, hash] = KORU_APP_VERSION.split(",", 2);
+      const [version, hash] = KORU_APP_VERSION.split(',', 2);
       session.version = version;
       session.hash = hash;
     }
@@ -134,7 +138,7 @@ define((require)=>{
       if (ws === null) return;
       try {
         ws.close();
-      } catch(ex) {}
+      } catch (ex) {}
       ws.onclose({wasClean: true});
     }
 
@@ -145,17 +149,19 @@ define((require)=>{
       state: sessState,
 
       send(type, msg) {
-        if (this.ws !== null && this.state.isReady())
+        if (this.ws !== null && this.state.isReady()) {
           session.ws.send(type+msg);
-        else
+        } else {
           waitSends.push(type+msg);
+        }
       },
 
       sendBinary(type, msg) {
-        if (this.ws !== null && this.state.isReady())
+        if (this.ws !== null && this.state.isReady()) {
           this.ws.send(message.encodeMessage(type, msg, session.globalDict));
-        else
+        } else {
           waitSends.push([type, util.deepCopy(msg)]);
+        }
       },
 
       connect: start,
@@ -164,7 +170,7 @@ define((require)=>{
       stop() {
         sessState.close();
         closeWs(this.ws);
-        this._onStops && this._onStops.forEach(func => func());
+        this._onStops && this._onStops.forEach((func) => func());
       },
 
       pause() {
@@ -227,8 +233,9 @@ define((require)=>{
         }
       };
 
-      if (session[private$] === undefined)
+      if (session[private$] === undefined) {
         session[private$] = {};
+      }
 
       session[private$].queueHeatBeat = () => {
         heartbeatTO && heartbeatTO();
@@ -239,17 +246,18 @@ define((require)=>{
 
       ws._session = session;
 
-      ws.onmessage = event => {
+      ws.onmessage = (event) => {
         session[heatbeatTime$] = adjustedNow() + session.heartbeatInterval;
         if (heartbeatTO == null) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
         }
-        if (onMessage === null)
+        if (onMessage === null) {
           onMessage = session._onMessage.bind(session);
+        }
         session.execWrapper(onMessage, session, event.data);
       };
 
-      const onclose  = event => {
+      const onclose = (event) => {
         stopReconnTimeout();
         ws.onmessage = null;
         if (heartbeatTO) heartbeatTO();
@@ -259,24 +267,25 @@ define((require)=>{
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
                     event.code, new Date());
         }
-        session[retryCount$] = Math.min(4, session[retryCount$]+1);
+        session[retryCount$] = Math.min(4, session[retryCount$] + 1);
 
-        if (sessState.isClosed() || sessState.isPaused())
+        if (sessState.isClosed() || sessState.isPaused()) {
           return;
+        }
 
-        reconnTimeout = koru._afTimeout(start, session[retryCount$]*500);
+        reconnTimeout = koru._afTimeout(start, session[retryCount$] * 500);
 
         sessState.retry(event.code, event.reason);
       };
 
-
-      ws.onerror = onclose;
+      ws.onerror = () => {};
       ws.onclose = onclose;
     }
 
-    if (base._broadcastFuncs === undefined)
+    if (base._broadcastFuncs === undefined) {
       completeBaseSetup(base);
+    }
 
     return session;
-  };
+  }
 });

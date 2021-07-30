@@ -47,9 +47,9 @@ define((require, exports, module) => {
       assert.same(mySession.connect, mySession.start);
     });
 
-    test("onerror", ()=>{
+    test('onerror', () => {
       v.sess.start();
-      assert.same(v.ws.onerror, v.ws.onclose);
+      assert.same(v.ws.onerror.toString(), '() => {}');
     });
 
     test('onStop callbacks', () => {
