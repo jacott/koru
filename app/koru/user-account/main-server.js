@@ -119,6 +119,8 @@ define((require, exports, module) => {
      **/
     model: UserLogin,
 
+    makeScryptPassword: makeScrypt,
+
     resetPassword(token, password) {
       Val.ensureString(token);
       const parts = token.split('-');

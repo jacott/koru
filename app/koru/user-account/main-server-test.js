@@ -58,6 +58,12 @@ define((require, exports, module) => {
       v = {};
     });
 
+    test('makeScryptPassword', () => {
+      const password = UserAccount.makeScryptPassword('new password', '012345678ab');
+
+      assert.equals(password, {type: 'scrypt', salt: '012345678ab', key: m(/^f3306b608.*c1dde17$/)});
+    });
+
     test('makeResetPasswordKey', () => {
       stub(Random, 'id')
         .onCall(0).returns('randid=')
