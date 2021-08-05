@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   const Session         = require('koru/session').constructor;
   const TH              = require('koru/test-helper');
 
@@ -6,11 +6,11 @@ define((require, exports, module)=>{
 
   const ClientLogin = require('./client-login');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("setUserId", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('setUserId', () => {
       const session = new Session('test');
       const oc = stub();
-      after(()=>{
+      after(() => {
         util.thread.userId = void 0;
       });
       after(ClientLogin.onChange(session, oc));
@@ -26,6 +26,20 @@ define((require, exports, module)=>{
 
       ClientLogin.setUserId(session, void 0);
       assert.same(util.thread.userId, 'public');
+    });
+
+    test('stop', () => {
+      const session = new Session('test');
+      const oc = stub();
+      after(() => {
+        util.thread.userId = void 0;
+      });
+      after(ClientLogin.onChange(session, oc));
+
+      ClientLogin.stop(session);
+
+      ClientLogin.setUserId(session, 'u123');
+      refute.called(oc);
     });
   });
 });

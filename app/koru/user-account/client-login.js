@@ -1,11 +1,11 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Observable      = require('koru/observable');
   const util            = require('koru/util');
 
   const sessMap = {};
 
-  const setState = (session, state)=>{
+  const setState = (session, state) => {
     const subject = sessMap[session._id];
     if (! subject) return;
     subject.state = state;
@@ -14,7 +14,7 @@ define((require)=>{
 
   return {
     onChange(session, func) {
-      const subject = sessMap[session._id] || (sessMap[session._id] = new Observable());
+      const subject = sessMap[session._id] ?? (sessMap[session._id] = new Observable());
       return subject.onChange(func);
     },
     setUserId(session, id) {
@@ -37,6 +37,10 @@ define((require)=>{
     getState(session) {
       const subject = sessMap[session._id];
       return subject && subject.state;
-    }
+    },
+
+    stop(session) {
+      sessMap[session._id] = void 0;
+    },
   };
 });
