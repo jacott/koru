@@ -8,52 +8,53 @@ const stat_w = Future.wrap(fs.stat);
 const unlink_w = Future.wrap(fs.unlink);
 const utimes_w = Future.wrap(fs.utimes);
 
-const waitMethod = (method, ...args)=>{
+const waitMethod = (method, ...args) => {
   try {
     return futureWrap(fs, method, args);
   } catch (ex) {
-    if (ex.code === 'ENOENT')
+    if (ex.code === 'ENOENT') {
       return;
+    }
 
     throw ex;
   }
 };
 
-const stat = path => waitMethod(fs.stat, path);
-const lstat = path => waitMethod(fs.lstat, path);
+const stat = (path) => waitMethod(fs.stat, path);
+const lstat = (path) => waitMethod(fs.lstat, path);
 
 const rm_rf_w = Future.wrap((dir, callback) => {
   let restart = false;
-  Fiber(()=>{
+  Fiber(() => {
     if (restart) return;
     restart = true;
     try {
       const filenames = readdir_w(dir).wait();
 
-      const stats = filenames.map(filename => stat_w(Path.join(dir, filename)));
+      const stats = filenames.map((filename) => stat_w(Path.join(dir, filename)));
 
       wait(stats);
 
-      for(let i = 0; i < filenames.length; ++i) {
+      for (let i = 0; i < filenames.length; ++i) {
         const fn = Path.join(dir, filenames[i]);
 
         filenames[i] =
-          stats[i].get().isDirectory() ?
-          rm_rf_w(fn) : unlink_w(fn);
+          stats[i].get().isDirectory()
+          ? rm_rf_w(fn)
+          : unlink_w(fn);
       }
 
       wait(filenames);
 
       fs.rmdir(dir, callback);
-    } catch(ex) {
+    } catch (ex) {
       callback(ex);
       return;
     }
   }).run();
 });
 
-
-const appendData = (path, data)=>{
+const appendData = (path, data) => {
   const fd = futureWrap(fs, fs.open, [path, 'a', 0o644]);
   try {
     return futureWrap(fs, fs.write, [fd, data, 0, data.length, null]);
@@ -62,37 +63,38 @@ const appendData = (path, data)=>{
   }
 };
 
-const rename = (from, to)=> futureWrap(fs, fs.rename, [from, to]);
+const rename = (from, to) => futureWrap(fs, fs.rename, [from, to]);
 
-const truncate = (path, len)=> futureWrap(fs, fs.truncate, [path, len || 0]);
+const truncate = (path, len) => futureWrap(fs, fs.truncate, [path, len || 0]);
 
-const unlink = (path)=> futureWrap(fs, fs.unlink, [path]);
+const unlink = (path) => futureWrap(fs, fs.unlink, [path]);
 
-const link = (from, to)=> futureWrap(fs, fs.link, [from, to]);
+const link = (from, to) => futureWrap(fs, fs.link, [from, to]);
 
-const rmdir = (path)=> futureWrap(fs, fs.rmdir, [path]);
+const rmdir = (path) => futureWrap(fs, fs.rmdir, [path]);
 
-const readdir = (path)=> futureWrap(fs, fs.readdir, [path]);
+const readdir = (path) => futureWrap(fs, fs.readdir, [path]);
 
-const readFile = (path, options)=> futureWrap(fs, fs.readFile, [path, options]);
+const readFile = (path, options) => futureWrap(fs, fs.readFile, [path, options]);
 
-const writeFile = (path, options)=> futureWrap(fs, fs.writeFile, [path, options]);
+const writeFile = (path, options) => futureWrap(fs, fs.writeFile, [path, options]);
 
-const mkdir = (dir)=>{
+const mkdir = (dir) => {
   try {
     return futureWrap(fs, fs.mkdir, [dir, 0755]);
   } catch (ex) {
-    if (ex.code === 'EEXIST')
+    if (ex.code === 'EEXIST') {
       return;
+    }
 
     throw ex;
   }
 };
 
-const mkdir_p = (path)=>{
+const mkdir_p = (path) => {
   path = Path.resolve(path);
   let idx = 0;
-  while((idx = path.indexOf('/', idx+1)) !== -1) {
+  while ((idx = path.indexOf('/', idx+1)) !== -1) {
     const tpath = path.slice(0, idx);
     const st = stat(path);
     if (st && ! st.isDirectory()) {
@@ -105,10 +107,10 @@ const mkdir_p = (path)=>{
   mkdir(path);
 };
 
-const futureWrap = (obj, func, args)=>{
-  const future = new Future;
+const futureWrap = (obj, func, args) => {
+  const future = new Future();
 
-  const callback = (error, data)=>{
+  const callback = (error, data) => {
     if (error) {
       future.throw(error);
       return;
@@ -136,6 +138,7 @@ define({
   rmdir,
   stat,
   lstat,
+  realpath: (path) => futureWrap(fs, fs.realpath, [path]),
   readlink(path) {
     return waitMethod(fs.readlink, path);
   },
@@ -156,9 +159,10 @@ define({
     try {
       unlink(file);
       return true;
-    } catch(ex) {
-      if (ex.code !== 'ENOENT')
+    } catch (ex) {
+      if (ex.code !== 'ENOENT') {
         throw ex;
+      }
       return false;
     }
   },
