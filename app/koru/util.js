@@ -20,7 +20,7 @@ define((require) => {
     function: 6,
   };
 
-  const PRIMITIVE  = {string: 1, number: 1, boolean: 1, undefined: 1, function: 2};
+  const PRIMITIVE = {string: 1, number: 1, boolean: 1, undefined: 1, function: 2};
 
   const typeorder = (obj) => obj === null ? -1 : TYPEORDER[typeof obj];
 
@@ -38,9 +38,9 @@ define((require) => {
     if (ans == 0) {
       if (a == null) return 0;
       const ai = a._id || '', bi = b._id || '';
-      return ai === bi ? 0 : ai < bi ? -1 : 1;
+      return ai === bi ? 0 : ai<bi ? -1 : 1;
     }
-    return ans < 0 ? -1 : 1;
+    return ans<0 ? -1 : 1;
   }; compareByName.compareKeys = ['name', '_id'];
 
   const compareByOrder = (a, b) => {
@@ -49,12 +49,17 @@ define((require) => {
     if (ao === bo) {
       if (a == null) return 0;
       const ai = a._id || '', bi = b._id || '';
-      return ai === bi ? 0 : ai < bi ? -1 : 1;
-    } else return  ao < bo ? -1 : 1;
+      return ai === bi ? 0 : ai<bi ? -1 : 1;
+    } else {
+      return ao<bo ? -1 : 1;
+    }
   }; compareByOrder.compareKeys = ['order', '_id'];
 
-  const sansSuffix = (value, len) => value ? typeof value === 'string' ?
-        +value.slice(0, -len) : +value : 0;
+  const sansSuffix = (value, len) => value
+        ? typeof value === 'string'
+        ? +value.slice(0, -len)
+        : +value
+        : 0;
 
   const colorToArray = (color) => {
     if (! color) return color;
@@ -63,16 +68,16 @@ define((require) => {
     const m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
     if (m) {
       let i;
-      for(i = 1; i < 4; ++i) {
+      for (i = 1; i<4; ++i) {
         result.push(parseInt(m[i], 16));
       }
-      result.push(m[4] ? Math.round(parseInt(m[i], 16)*100/256)/100 : 1);
+      result.push(m[4] ? Math.round(parseInt(m[i], 16) * 100 / 256) / 100 : 1);
       return result;
     } else {
       const m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
       if (m) {
         let i;
-        for(i = 1; i < 4; ++i) {
+        for (i = 1; i<4; ++i) {
           result.push(parseInt(m[i]));
         }
         result.push(m[4] ? parseFloat(m[i]) : 1);
@@ -80,8 +85,8 @@ define((require) => {
       } else {
         const m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
         if (m) {
-          for(let i = 1; i < 4; ++i) {
-            result.push(parseInt(m[i]+m[i], 16));
+          for (let i = 1; i<4; ++i) {
+            result.push(parseInt(m[i] + m[i], 16));
           }
           result.push(1);
           return result;
@@ -95,35 +100,40 @@ define((require) => {
       return true;
     }
 
-    if (match.isMatch(expected))
+    if (match.isMatch(expected)) {
       return match.test(expected, actual);
+    }
 
-    if (typeof actual !== 'object' || typeof expected !== 'object')
+    if (typeof actual !== 'object' || typeof expected !== 'object') {
       return actual === undefined || expected === undefined ? actual == expected : false;
+    }
 
     if (actual == null || expected == null) return false;
 
-    if (maxLevel == 0)
+    if (maxLevel == 0) {
       throw new Error('deepEqual maxLevel exceeded');
+    }
 
     if (Array.isArray(actual)) {
       if (! Array.isArray(expected)) return false;
       const len = actual.length;
       if (expected.length !== len) return false;
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i<len; ++i) {
         if (! deepEqual(actual[i], expected[i], maxLevel-1)) return false;
       }
       return true;
     }
 
     const proto = Object.getPrototypeOf(actual);
-    if (proto !== Object.getPrototypeOf(expected))
+    if (proto !== Object.getPrototypeOf(expected)) {
       return false;
+    }
 
     if (proto === Date.prototype) return actual.getTime() === expected.getTime();
 
-    if (proto === RegExp.prototype)
+    if (proto === RegExp.prototype) {
       return actual.source === expected.source && actual.flags === expected.flags;
+    }
 
     const akeys = Object.keys(actual);
 
@@ -132,31 +142,33 @@ define((require) => {
       const vala = actual[key];
       if (is(vala, vale)) continue;
       if (vala === undefined || vale === undefined) return false;
-      if (! deepEqual(vala, vale, maxLevel-1))
+      if (! deepEqual(vala, vale, maxLevel-1)) {
         return false;
+      }
     }
     for (const key in actual) {
-      if (expected[key] === undefined && actual[key] !== undefined)
+      if (expected[key] === undefined && actual[key] !== undefined) {
         return false;
+      }
     }
     return true;
   };
 
   const twoDigits = (num) => {
-    const str = ''+num;
+    const str = '' + num;
     return str.length === 1 ? `0${str}` : str;
   };
 
   const identity = (value) => value;
 
   const diffString = (oldstr, newstr) => {
-    const lastold = oldstr.length-1, lastnew = newstr.length-1;
+    const lastold = oldstr.length - 1, lastnew = newstr.length - 1;
     const minLast = Math.min(lastold, lastnew);
     let s = 0, e = 0, oldchar = 0;
     // while the characters in oldstr and newstr are the same, increment s once for each character
     // designated by a single code point, twice for each character designated by a code point pair
-    while(s <= minLast && (oldchar=oldstr.charCodeAt(s)) === newstr.charCodeAt(s)) {
-      if (oldchar >= 0xd800 && oldchar <= 0xdbff && s < minLast) {
+    while (s <= minLast && (oldchar = oldstr.charCodeAt(s)) === newstr.charCodeAt(s)) {
+      if (oldchar >= 0xd800 && oldchar <= 0xdbff && s<minLast) {
         if (oldstr.charCodeAt(s+1) !== newstr.charCodeAt(s+1)) break;
         ++s;
       }
@@ -165,14 +177,14 @@ define((require) => {
     // s is now the index of the first non-matching chararacter in oldstr and newstr
 
     // return undefined if oldstr and newstr are the same
-    if (lastold == lastnew && s == minLast+1) return;
+    if (lastold == lastnew && s == minLast+1) return
 
     // starting at the end of oldstr and newstr, while the characters in oldstr
     // and newstr are the same, increment e
-    while(s <= minLast - e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e;
+    ; while (s <= minLast-e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e
     // e is now the number of matching characters at the end of oldstr and newstr
 
-    return [s, oldstr.length-s-e, newstr.length-s-e];
+    return [s, oldstr.length - s-e, newstr.length - s-e];
   };
 
   const LOCAL_COMPARE_OPTS = {numeric: true};
@@ -182,13 +194,13 @@ define((require) => {
       const ans = a.localeCompare(b, undefined, LOCAL_COMPARE_OPTS);
       if (ans != 0) return ans;
     }
-    return a < b ? -1 : 1;
+    return a<b ? -1 : 1;
   };
 
   util.merge(util, {
     DAY: 1000*60*60*24,
     MAXLEVEL: 50,
-    EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+    EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
 
     diffString,
     diffStringLength: (oldstr, newstr) => {
@@ -205,8 +217,9 @@ define((require) => {
     setProperty: (object, name, descriptor) => {
       const oldDesc = Object.getOwnPropertyDescriptor(object, name);
       if (oldDesc === undefined) {
-        if (descriptor.writable === undefined && hasOwn(descriptor, 'value'))
+        if (descriptor.writable === undefined && hasOwn(descriptor, 'value')) {
           descriptor.writable = true;
+        }
         if (descriptor.enumerable === undefined) descriptor.enumerable = true;
         if (descriptor.configurable === undefined) descriptor.configurable = true;
       }
@@ -215,30 +228,32 @@ define((require) => {
     },
 
     mergeExclude(obj, properties, exclude) {
-      for(const prop in properties) {
+      for (const prop in properties) {
         if (hasOwn(exclude, prop)) continue;
-        Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+        Object.defineProperty(obj, prop, Object.getOwnPropertyDescriptor(properties, prop));
       }
       return obj;
     },
 
     mergeInclude(obj, properties, include) {
       if (Array.isArray(include)) {
-        for(let i = 0; i < include.length; ++i) {
+        for (let i = 0; i < include.length; ++i) {
           const prop = include[i];
-          const desc = Object.getOwnPropertyDescriptor(properties,prop);
+          const desc = Object.getOwnPropertyDescriptor(properties, prop);
           desc && Object.defineProperty(obj, prop, desc);
         }
-      } else for(const prop in include) {
-        const desc = Object.getOwnPropertyDescriptor(properties,prop);
-        desc && Object.defineProperty(obj, prop, desc);
+      } else {
+        for (const prop in include) {
+          const desc = Object.getOwnPropertyDescriptor(properties, prop);
+          desc && Object.defineProperty(obj, prop, desc);
+        }
       }
       return obj;
     },
 
     reverseMerge(obj, properties, exclude) {
       if (properties == null) return obj;
-      for(const prop in properties) {
+      for (const prop in properties) {
         if (exclude && exclude[prop]) continue;
         if (! (prop in obj)) {
           const desc = Object.getOwnPropertyDescriptor(properties, prop);
@@ -260,15 +275,17 @@ define((require) => {
       const result = {};
       if (Array.isArray(keys)) {
         const len = keys.length;
-        for(let i = 0; i < len; ++i) {
+        for (let i = 0; i<len; ++i) {
           const key = keys[i];
-          if (key in obj)
+          if (key in obj) {
             result[key] = obj[key];
+          }
         }
       } else {
         for (const key in keys) {
-          if (key in obj)
+          if (key in obj) {
             result[key] = obj[key];
+          }
         }
       }
       return result;
@@ -277,8 +294,9 @@ define((require) => {
     extractNotKeys(obj, keys) {
       const result = {};
       for (const key in obj) {
-        if (! (key in keys))
+        if (! (key in keys)) {
           result[key] = obj[key];
+        }
       }
       return result;
     },
@@ -286,10 +304,11 @@ define((require) => {
     splitKeys(obj, includeKeys) {
       const include = {}, exclude = {};
       for (const key in obj) {
-        if (key in includeKeys)
+        if (key in includeKeys) {
           include[key] = obj[key];
-        else
+        } else {
           exclude[key] = obj[key];
+        }
       }
       return {include, exclude};
     },
@@ -306,14 +325,14 @@ define((require) => {
     forEach(list, visitor) {
       if (! list) return;
       const len = list.length;
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i<len; ++i) {
         visitor(list[i], i);
       }
     },
 
     reverseForEach(list, visitor) {
       if (! list) return;
-      for(let i = list.length-1; i >= 0 ; --i) {
+      for (let i = list.length - 1; i >= 0; --i) {
         visitor(list[i], i);
       }
     },
@@ -321,7 +340,7 @@ define((require) => {
     map(list, func) {
       const len = list.length;
       const result = new Array(len);
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i<len; ++i) {
         result[i] = func(list[i], i);
       }
       return result;
@@ -329,7 +348,7 @@ define((require) => {
 
     mapLinkedList(ll, f) {
       const ans = [];
-      for(let i = ll; i != null; i = i.next) {
+      for (let i = ll; i != null; i = i.next) {
         ans.push(f(i));
       }
       return ans;
@@ -338,8 +357,8 @@ define((require) => {
     append(list, append) {
       const len = append.length;
       const dl = list.length;
-      list.length = dl + len;
-      for(let i = 0; i < len; ++i) {
+      list.length = dl+len;
+      for (let i = 0; i<len; ++i) {
         list[dl+i] = append[i];
       }
       return list;
@@ -356,11 +375,13 @@ define((require) => {
     deepEqual,
 
     shallowEqual(array1, array2) {
-      if (! Array.isArray(array1) || ! Array.isArray(array2) || array1.length !== array2.length)
+      if (! Array.isArray(array1) || ! Array.isArray(array2) || array1.length !== array2.length) {
         return false;
-      for(let i = 0; i < array1.length; ++i) {
-        if (array1[i] !== array2[i])
+      }
+      for (let i = 0; i < array1.length; ++i) {
+        if (array1[i] !== array2[i]) {
           return false;
+        }
       }
       return true;
     },
@@ -376,26 +397,29 @@ define((require) => {
         const pa = ma[1].split('.');
         const pb = mb[1].split('.');
         const len = Math.max(pa.length, pb.length);
-        for(let i = 0; i < len; ++i) {
+        for (let i = 0; i<len; ++i) {
           if (pa[i] !== pb[i]) {
-            const an = +pa[i] || 0, bn = +pb[i] || 0;
-            if (an !== bn)
-              return an > bn ? 1 : -1;
+            const an = + pa[i] || 0, bn = + pb[i] || 0;
+            if (an !== bn) {
+              return an>bn ? 1 : -1;
+            }
           }
         }
 
-        const an = +ma[2] || 0, bn = +mb[2] || 0;
-        if (an !== bn)
-          return an > bn ? 1 : -1;
+        const an = + ma[2] || 0, bn = + mb[2] || 0;
+        if (an !== bn) {
+          return an>bn ? 1 : -1;
+        }
 
         return ma[3] === mb[3] ? 0 : ma[3] > mb[3] ? 1 : 1;
       }
-      return a > b ? 1 : -1;
+      return a>b ? 1 : -1;
     },
 
     elemMatch(a, b) {
-      if (a === null || typeof a !== 'object')
+      if (a === null || typeof a !== 'object') {
         return a === b;
+      }
       for (const key in a) {
         if (! deepEqual(a[key], b[key])) return false;
       }
@@ -404,7 +428,7 @@ define((require) => {
 
     invert(map, func) {
       const result = {};
-      for(const prop in map) {
+      for (const prop in map) {
         result[map[prop]] = func ? func(prop) : prop;
       }
       return result;
@@ -413,7 +437,7 @@ define((require) => {
     lookupDottedValue(key, attributes) {
       const parts = typeof key === 'string' ? key.split('.') : key;
       let val = attributes[parts[0]];
-      for(let i=1; val && i < parts.length;++i) {
+      for (let i = 1; val && i < parts.length; ++i) {
         val = val[parts[i]];
       }
       return val;
@@ -426,13 +450,14 @@ define((require) => {
      * the arguments: includesAttributes(attrs, changes, doc)
      */
     includesAttributes(attrs, ...docs) {
-      for(const key in attrs) {
+      for (const key in attrs) {
         let match = false;
-        for(let i = 0; i < docs.length; ++i) {
+        for (let i = 0; i < docs.length; ++i) {
           const doc = docs[i];
           if (key in doc) {
-            if (doc[key] != attrs[key])
+            if (doc[key] != attrs[key]) {
               return false;
+            }
             match = true;
             break;
           }
@@ -447,12 +472,14 @@ define((require) => {
       const st = Stacktrace.normalize(err);
       if (st) {
         if (st.length != 0) {
-          if (st[0][7] !== '-')
-            st[0] = '    at -'+st[0].slice(6);
+          if (st[0][7] !== '-') {
+            st[0] = '    at -' + st[0].slice(6);
+          }
         }
         return (err.toStringPrefix || '') + err.toString() + '\n' + st.join('\n');
-      } else
+      } else {
         return util.inspect(err);
+      }
     },
 
     slice(list, from, to) {
@@ -460,12 +487,12 @@ define((require) => {
     },
 
     isObjEmpty: (obj) => {
-      for(const noop in obj) {return false}
+      for (const noop in obj) {return false}
       return true;
     },
 
     hasOnly: (obj, keyMap) => {
-      for(const noop in obj) {
+      for (const noop in obj) {
         if (keyMap[noop] === undefined) return false;
       }
       return true;
@@ -477,14 +504,15 @@ define((require) => {
     },
 
     firstParam(obj) {
-      if (obj) for(const key in obj) {return obj[key]}
+      if (obj) for (const key in obj) {return obj[key]}
     },
 
     keyMatches(obj, regex) {
       let m;
       if (obj != null) for (const key in obj) {
-        if (m = regex.exec(key))
+        if (m = regex.exec(key)) {
           return m;
+        }
       }
       return null;
     },
@@ -497,10 +525,10 @@ define((require) => {
 
     itemIndex(list, item) {
       if (item != null && typeof item === 'object') {
-        for(let index = 0; index < list.length; ++index) {
+        for (let index = 0; index < list.length; ++index) {
           const row = list[index];
           let found = true;
-          for(const key in item) {
+          for (const key in item) {
             if (item[key] !== row[key]) {
               found = false;
               break;
@@ -526,24 +554,25 @@ define((require) => {
 
     values(map) {
       const result = [];
-      for(const key in map) result.push(map[key]);
+      for (const key in map) result.push(map[key]);
       return result;
     },
 
     indexOfRegex(list, value, fieldName) {
-      if (!list) return;
+      if (! list) return;
       fieldName = fieldName || '_id';
-      for(let i=0; i < list.length; ++i) {
+      for (let i = 0; i < list.length; ++i) {
         const row = list[i];
-        if (value.test(row[fieldName]))
+        if (value.test(row[fieldName])) {
           return i;
+        }
       }
       return -1;
     },
 
     pick(map, ...fields) {
       const result = {};
-      for(let i = 0; i < fields.length; ++i) {
+      for (let i = 0; i < fields.length; ++i) {
         const field = fields[i];
         result[field] = map[field];
       }
@@ -553,7 +582,7 @@ define((require) => {
     mapToSearchStr(map) {
       return util.map(
         Object.keys(map),
-        (key) => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`
+        (key) => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`,
       ).join('&');
     },
 
@@ -589,7 +618,7 @@ define((require) => {
       const result = {};
       if (Array.isArray(list)) {
         const len = list.length;
-        for(let i = 0; i < len; ++i) result[list[i]] = true;
+        for (let i = 0; i<len; ++i) result[list[i]] = true;
       }
       return result;
     },
@@ -600,22 +629,24 @@ define((require) => {
       }
       const result = {};
       let func;
-      if (valueName == null)
+      if (valueName == null) {
         func = identity;
-      else switch(typeof(valueName)) {
+      } else {
+        switch (typeof (valueName)) {
         case 'string':
         case 'number':
-        func = (curr) => curr[valueName];
-        break;
+          func = (curr) => curr[valueName];
+          break;
         case 'function':
-        func = valueName;
-        break;
+          func = valueName;
+          break;
+        }
       }
-      for(let lc = 2;lc < arguments.length; ++lc) {
+      for (let lc = 2; lc < arguments.length; ++lc) {
         const list = arguments[lc];
-        if (!list) continue;
+        if (! list) continue;
 
-        for(let i=0; i < list.length; ++i) {
+        for (let i = 0; i < list.length; ++i) {
           if (keyName != null) {
             result[list[i][keyName]] = func ? func(list[i], i) : valueName;
           } else {
@@ -641,22 +672,28 @@ define((require) => {
 
     find(list, func) {
       const len = list.length;
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i<len; ++i) {
         const result = list[i];
         if (func(result, i)) return result;
       }
     },
 
-    binarySearch: (list, compare, start=list.length>>1, lower=0, upper=list.length) => {
+    binarySearch: (list, compare, start=list.length >> 1, lower=0, upper=list.length) => {
       if (upper == 0) return -1;
-      if (start < lower) start = lower;
-      else if (start >= upper) start = upper-1;
+      if (start<lower) {
+        start = lower;
+      } else if (start >= upper) start = upper-1
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
-        if (upper-1 <= lower)
-          return ans > 0 && lower == 0 ? -1 :
-          ans < 0 && upper == list.length ? list.length-1 : lower;
-        if (ans > 0) upper = start;
-        else lower = start;
+        if (upper-1 <= lower) {
+          return ans>0 && lower == 0
+            ? -1
+            : ans<0 && upper == list.length ? list.length - 1 : lower;
+        }
+        if (ans>0) {
+          upper = start;
+        } else {
+          lower = start;
+        }
         start = ((upper-lower) >> 1) + lower;
       }
 
@@ -668,10 +705,11 @@ define((require) => {
 
       const internal = (a, l) => {
         util.forEach(a, (value) => {
-          if (l && Array.isArray(value))
-            internal(value, l - 1);
-          else
+          if (l && Array.isArray(value)) {
+            internal(value, l-1);
+          } else {
             result.push(value);
+          }
         });
       };
 
@@ -680,22 +718,24 @@ define((require) => {
     },
 
     findBy(list, value, fieldName) {
-      if (!list) return;
+      if (! list) return;
       fieldName = fieldName || '_id';
-      for(let i=0; i < list.length; ++i) {
+      for (let i = 0; i < list.length; ++i) {
         const row = list[i];
-        if (row[fieldName] === value)
+        if (row[fieldName] === value) {
           return row;
+        }
       }
     },
 
     indexOf(list, value, fieldName) {
-      if (!list) return;
+      if (! list) return;
       fieldName = fieldName || '_id';
-      for(let i=0; i < list.length; ++i) {
+      for (let i = 0; i < list.length; ++i) {
         const row = list[i];
-        if (row[fieldName] === value)
+        if (row[fieldName] === value) {
           return i;
+        }
       }
       return -1;
     },
@@ -713,11 +753,13 @@ define((require) => {
       if (PRIMITIVE[typeof orig] !== undefined || orig === null) return orig;
 
       const {constructor} = orig;
-      if (constructor === Array)
+      if (constructor === Array) {
         return orig.slice();
+      }
 
-      if (constructor === Date || constructor === Uint8Array)
+      if (constructor === Date || constructor === Uint8Array) {
         return new constructor(orig);
+      }
 
       return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
     },
@@ -726,8 +768,9 @@ define((require) => {
     deepCopy(orig, maxLevel=util.MAXLEVEL) {
       if (PRIMITIVE[typeof orig] !== undefined || orig === null) return orig;
 
-      if (maxLevel == 0)
+      if (maxLevel == 0) {
         throw new Error('deepCopy maxLevel exceeded');
+      }
 
       const {constructor} = orig;
 
@@ -736,15 +779,16 @@ define((require) => {
         return orig.map((v) => util.deepCopy(v, maxLevel));
       }
 
-      if (constructor === Date || constructor === Uint8Array)
+      if (constructor === Date || constructor === Uint8Array) {
         return new constructor(orig);
+      }
 
       const copy = Object.create(Object.getPrototypeOf(orig));
-      for(const key in orig) copy[key] = util.deepCopy(orig[key], maxLevel-1);
+      for (const key in orig) copy[key] = util.deepCopy(orig[key], maxLevel-1);
       return copy;
     },
 
-    intersectp (list1, list2) {
+    intersectp(list1, list2) {
       const set = new Set(list1);
 
       return list2.some((item) => set.has(item));
@@ -766,12 +810,13 @@ define((require) => {
       const ans = [];
       const map2 = new Set(list2);
 
-      if (list1) for(let i = 0; i < list1.length; ++i) {
+      if (list1) for (let i = 0; i < list1.length; ++i) {
         const val = list1[i];
-        if (map2.has(val))
+        if (map2.has(val)) {
           map2.delete(val);
-        else
+        } else {
           ans.push(val);
+        }
       }
 
       for (const val of map2.values()) {
@@ -799,13 +844,13 @@ define((require) => {
 
     pluralize(name, value) {
       if (value === 1) return name;
-      return name+'s';
+      return name + 's';
     },
 
     humanize(name) {
       name = this.uncapitalize(name);
-      return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(
-        /([A-Z])/g, (_, m1) => ' '+m1.toLowerCase());
+      return name.replace(/_id$/, '').replace(/[_-]/g, ' ').replace(
+        /([A-Z])/g, (_, m1) => ' ' + m1.toLowerCase());
     },
 
     initials(name, count, abvr) {
@@ -813,20 +858,22 @@ define((require) => {
 
       name = (name || '').split(' ');
       let result = '';
-      for(let i=0;count > 1 && i < name.length -1;++i, --count) {
-        result += name[i].slice(0,1);
+      for (let i = 0; count>1 && i < name.length - 1; ++i, --count) {
+        result += name[i].slice(0, 1);
       }
-      if (count > 0 && name.length > 0)
-        result += name[name.length-1].slice(0,1);
+      if (count>0 && name.length > 0) {
+        result += name[name.length - 1].slice(0, 1);
+      }
 
-      if (result.length < 2 && abvr)
-        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count - 1);
+      if (result.length < 2 && abvr) {
+        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count-1);
+      }
 
       return result.toUpperCase();
     },
 
     dasherize(name) {
-      return this.humanize(name).replace(/[\s_]+/g,'-');
+      return this.humanize(name).replace(/[\s_]+/g, '-');
     },
 
     labelize(name) {
@@ -834,55 +881,57 @@ define((require) => {
     },
 
     sansId(name) {
-      return name.replace(/_ids?$/,'');
+      return name.replace(/_ids?$/, '');
     },
 
     trimMatchingSeq(a, b) {
-      const al = a.length - 1, bl = b.length -1;
+      const al = a.length - 1, bl = b.length - 1;
       const ml = Math.min(al, bl);
       if (ml == -1) return [a, b];
 
       let i = 0;
-      for(; i <= ml; ++i) {
+      for (;i <= ml; ++i) {
         if (a[i] !== b[i]) break;
       }
-      if (i > ml) {
+      if (i>ml) {
         return [a.slice(i), b.slice(i)];
       }
 
-      const le = ml - i;
+      const le = ml-i;
       let j = 0;
-      for(; j <= le; ++j) {
-        if (a[al - j] !== b[bl -j]) break;
+      for (;j <= le; ++j) {
+        if (a[al-j] !== b[bl-j]) break;
       }
-      return [a.slice(i , al - j + 1), b.slice(i , bl - j + 1)];
+      return [a.slice(i, al-j + 1), b.slice(i, bl-j + 1)];
     },
 
     capitalize(value) {
-      if(value == null || value === '')
+      if (value == null || value === '') {
         return '';
+      }
 
       return value.charAt(0).toUpperCase() + value.substring(1);
     },
 
     uncapitalize(value) {
-      if(value == null || value === '')
+      if (value == null || value === '') {
         return '';
+      }
 
       return value.charAt(0).toLowerCase() + value.substring(1);
     },
 
     titleize(value) {
       return this.capitalize(value.replace(
-        /[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/,''))).trim());
+        /[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/, ''))).trim());
     },
 
     camelize(value) {
-      return value.replace(/[-._%+A-Z]\w/g, (w) => util.capitalize(w.replace(/^[-._%+]/,'')));
+      return value.replace(/[-._%+A-Z]\w/g, (w) => util.capitalize(w.replace(/^[-._%+]/, '')));
     },
 
     niceFilename(name) {
-      return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g,'-');
+      return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g, '-');
     },
 
     hashToCss(hash) {
@@ -895,17 +944,20 @@ define((require) => {
 
     toDp(number, dp, zeroFill=false) {
       const scalar = Math.pow(10, dp);
-      let decs = ''+(Math.round(number * scalar) % scalar);
+      let decs = '' + (Math.round(number*scalar) % scalar);
 
-      if (! zeroFill && ! decs)
-        return ''+number;
+      if (! zeroFill && ! decs) {
+        return '' + number;
+      }
 
-      while (decs.length < dp)
+      while (decs.length < dp) {
         decs = '00000'.slice(decs.length - dp) + decs;
-      if (!zeroFill) {
+      }
+      if (! zeroFill) {
         decs = decs.replace(/0+$/, '');
-        if (! decs)
-          return ''+Math.round(number);
+        if (! decs) {
+          return '' + Math.round(number);
+        }
       }
       return Math.floor(number) + '.' + decs;
     },
@@ -914,7 +966,7 @@ define((require) => {
     sansPc(value) {return sansSuffix(value, 1)},
 
     compare,
-    compareNumber: (a, b) => a - b,
+    compareNumber: (a, b) => a-b,
     compareByName,
     compareByOrder,
 
@@ -928,12 +980,14 @@ define((require) => {
         if (afield === bfield) {
           if (a == null || isSym) return 0;
           const ai = a._id || '', bi = b._id || '';
-          return ai === bi ? 0 : ai < bi ? -1 : 1;
+          return ai === bi ? 0 : ai<bi ? -1 : 1;
         }
-        if (atype !== btype)
-          return atype < btype ? -direction : direction;
-        return ((atype !== 1 || isId)  ? afield < bfield : compare(afield, bfield) < 0)
-          ? -direction : direction;
+        if (atype !== btype) {
+          return atype<btype ? -direction : direction;
+        }
+        return ((atype !== 1 || isId) ? afield<bfield : compare(afield, bfield) < 0)
+          ? -direction
+          : direction;
       };
       cmp.compareKeys = isSym || field === '_id' ? [field] : [field, '_id'];
       return cmp;
@@ -943,13 +997,13 @@ define((require) => {
       const flen = fields.length;
       const compKeys = [], compMethod = [];
 
-      for(let i = 0; i < flen; ++i) {
+      for (let i = 0; i<flen; ++i) {
         const key = fields[i];
         const dir = i+1 == flen || typeof fields[i+1] !== 'number' ? 1 : Math.sign(fields[++i]);
         compMethod.push(typeof key !== 'symbol' && key.slice(-3) !== '_id' ? dir*2 : dir);
         compKeys.push(key);
       }
-      const lastKey = compKeys[compKeys.length-1];
+      const lastKey = compKeys[compKeys.length - 1];
       if (lastKey !== '_id' && typeof lastKey !== 'symbol') {
         compMethod.push(1);
         compKeys.push('_id');
@@ -957,19 +1011,21 @@ define((require) => {
       const clen = compKeys.length;
       const cmp = (a, b) => {
         let dir = 1;
-        for(let i = 0; i < clen; ++i) {
+        for (let i = 0; i<clen; ++i) {
           const f = compKeys[i];
           const af = a[f], bf = b[f];
           if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
             const atype = typeorder(af), btype = typeorder(bf);
             const dir = compMethod[i];
-            if (atype !== btype)
-              return atype < btype ? -dir : dir;
+            if (atype !== btype) {
+              return atype<btype ? -dir : dir;
+            }
             if (af == null) return -1;
             if (bf == null) return 1;
-            if (atype == 1 && (dir < -1 || dir > 1))
+            if (atype == 1 && (dir < -1 || dir>1)) {
               return compare(af, bf) < 0 ? -dir : dir;
-            return af < bf ? -dir : dir;
+            }
+            return af<bf ? -dir : dir;
           }
         }
         return 0;
@@ -981,8 +1037,8 @@ define((require) => {
     colorToArray,
 
     setNestedHash(value, hash, ...keys) {
-      const last = keys.length-1;
-      for(let i = 0; i < last; ++i) {
+      const last = keys.length - 1;
+      for (let i = 0; i<last; ++i) {
         const key = keys[i];
         hash = hash[key] || (hash[key] = {});
       }
@@ -991,8 +1047,8 @@ define((require) => {
     },
 
     getNestedHash(hash, ...keys) {
-      const last = keys.length-1;
-      for(let i = 0; i < last; ++i) {
+      const last = keys.length - 1;
+      for (let i = 0; i<last; ++i) {
         const key = keys[i];
         hash = hash[key];
         if (! hash) return undefined;
@@ -1002,9 +1058,9 @@ define((require) => {
     },
 
     deleteNestedHash(hash, ...keys) {
-      let last = keys.length-1;
+      let last = keys.length - 1;
       const prevs = [];
-      for(let i = 0; i < last; ++i) {
+      for (let i = 0; i<last; ++i) {
         const key = keys[i];
         prevs.push(hash);
         hash = hash[key];
@@ -1015,7 +1071,7 @@ define((require) => {
       const value = hash[keys[last]];
       delete hash[keys[last]];
 
-      for(let i = prevs.length - 1; i >0; --i) {
+      for (let i = prevs.length - 1; i>0; --i) {
         for (const noop in prevs[i]) return value;
         delete prevs[i-1][keys[--last]];
       }
@@ -1045,7 +1101,7 @@ define((require) => {
     get timeUncertainty() {return timeUncertainty},
 
     dateNow() {
-      return util.thread.date || (Date.now()+timeAdjust);
+      return util.thread.date || (Date.now() + timeAdjust);
     },
 
     newDate() {
@@ -1053,24 +1109,26 @@ define((require) => {
     },
 
     dateInputFormat(date) {
-      if (date && date.constructor === Date)
-        return date.getFullYear() + '-' + twoDigits(date.getMonth()+1) +
-        '-' + twoDigits(date.getDate());
+      if (date && date.constructor === Date) {
+        return date.getFullYear() + '-' + twoDigits(date.getMonth() + 1) +
+          '-' + twoDigits(date.getDate());
+      }
       return '';
     },
 
     yyyymmddToDate(value) {
       const m = /^\s*(\d\d\d\d)([\s-/])(\d\d?)\2(\d\d?)\s*$/.exec(value);
       if (! m) return;
-      const year = +m[1];
-      const month = +m[3] - 1;
-      const date = +m[4];
+      const year = + m[1];
+      const month = + m[3] - 1;
+      const date = + m[4];
       const res = new Date(year, month, date);
 
       if (res.getFullYear() === year &&
           res.getMonth() === month &&
-          res.getDate() === date)
+          res.getDate() === date) {
         return res;
+      }
     },
 
     twoDigits,
@@ -1097,17 +1155,17 @@ define((require) => {
 
       const remainder = input.replace(
         /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>)[,\s]*/ig,
-        (_, m1) => (addresses.push(m1), '')
+        (_, m1) => (addresses.push(m1), ''),
       );
 
-      return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
+      return addresses.length > 0 ? {addresses, remainder} : null;
     },
 
     toHex: (array) => {
       let hex = '';
-      for(let i = 0; i < array.length; ++i) {
+      for (let i = 0; i < array.length; ++i) {
         const s = array[i].toString(16);
-        hex += s.length == 1 ? '0'+s : s;
+        hex += s.length == 1 ? '0' + s : s;
       }
       return hex;
     },
@@ -1123,8 +1181,8 @@ define((require) => {
       const {length} = text;
       while (true) {
         const n = text.indexOf('\n', i);
-        if (n == -1 || n > index) {
-          return [line, index - i];
+        if (n == -1 || n>index) {
+          return [line, index-i];
         }
         ++line;
         i = n+1;

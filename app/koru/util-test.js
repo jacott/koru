@@ -167,6 +167,13 @@ define((require, exports, module) => {
       assert.same(util.DAY, +d2 - d1);
     });
 
+    test('EMAIL_RE', ()=>{
+      api.property('EMAIL_RE', {info: 'RegExp to match email addresses'});
+      assert.isTrue(util.EMAIL_RE.test('test@example.com'));
+      assert.isFalse(util.EMAIL_RE.test('test@example.c'));
+      assert.isTrue(util.EMAIL_RE.test('test@example.university'));
+    });
+
     test('pc', () => {
       /**
        * Return a string comprised of the percent form of `fraction`, with the percent symbol, %.
