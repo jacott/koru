@@ -1,9 +1,12 @@
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
+  const HttpRequest     = require('koru/session/http-request');
+  const WebServer       = require('koru/web-server');
   const webSocketServerFactory = require('./web-socket-server-factory');
   const WebSocket       = requirejs.nodeRequire('ws');
-  const server          = require('../web-server').server;
+
+  const server = WebServer.server;
 
   return (session) => {
     webSocketServerFactory(session);
@@ -19,7 +22,7 @@ define((require, exports, module) => {
     });
 
     session.connectionIntercept = (newSession, ws, ugr, remoteAddress) => {
-      if (/127\.0\.0\.1$|^::1$/.test(remoteAddress) && ugr.url === '/rc') {
+      if (HttpRequest.isLocalAddress(remoteAddress) && ugr.url === '/rc') {
         session.remoteControl?.(ws);
         return;
       }
