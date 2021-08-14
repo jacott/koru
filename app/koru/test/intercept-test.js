@@ -1,17 +1,18 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const koru            = require('koru');
   const TH              = require('koru/test');
 
-  const {stub, spy, util} = TH;
+  const {stub, spy, util, stubProperty, match: m} = TH;
 
   const Intercept = require('./intercept');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     class Mode {
       constructor(type) {
         this.type = type;
       }
-    };
+    }
 
     const nightMode = new Mode('night');
     const dayMode = new Mode('day');
@@ -21,7 +22,7 @@ define((require, exports, module)=>{
         this.mode = dayMode;
       }
       find(text, chapter) {
-        return [12,56332];
+        return [12, 56332];
       }
 
       static readingLevel() {
@@ -45,68 +46,85 @@ define((require, exports, module)=>{
 
     afterEach(() => {
       Intercept.interceptObj = Intercept.locals = void 0;
+      Intercept.finishIntercept();
     });
 
-    group("lookup", ()=>{
-      test("object", ()=>{
+    group('koru.__INTERCEPT$__', () => {
+      beforeEach(() => {
+        stub(Intercept, 'sendResult');
+      });
+
+      test('works with new', () => {
+        assert.exception(() => {
+          new globalThis[koru.__INTERCEPT$__]('Date', {});
+        }, {name: 'intercept'});
+
+        assert.same(Intercept.interceptObj, globalThis);
+
+        assert.calledWith(Intercept.sendResult, m(/^C\[\["Date"/));
+      });
+    });
+
+    group('lookup', () => {
+      test('object', () => {
         const object = new Mode({day: 'sunny'});
         assert.equals(Intercept.lookup(object, 'type'), {
           object, value: object.type, propertyType: 'value',
         });
       });
 
-      test("static function", ()=>{
+      test('static function', () => {
         assert.equals(Intercept.lookup(PictureBook, 'readingLevel'), {
-          object: PictureBook, value: PictureBook.readingLevel, propertyType: 'value'
+          object: PictureBook, value: PictureBook.readingLevel, propertyType: 'value',
         });
 
         assert.equals(Intercept.lookup(Literature, 'readingLevel'), {
-          object: Literature, value: Literature.readingLevel, propertyType: 'value'
+          object: Literature, value: Literature.readingLevel, propertyType: 'value',
         });
       });
 
-      test("constructor function", ()=>{
+      test('constructor function', () => {
         const object = new PictureBook();
         assert.equals(Intercept.lookup(object, 'mode'), {
           object, value: object.mode, propertyType: 'value',
         });
       });
 
-      test("prototype function", ()=>{
+      test('prototype function', () => {
         const object = new PictureBook();
         assert.equals(Intercept.lookup(object, 'drawPicture'), {
-          object: PictureBook.prototype, value: object.drawPicture, propertyType: 'value'
+          object: PictureBook.prototype, value: object.drawPicture, propertyType: 'value',
         });
       });
 
-      test("nested prototype function", ()=>{
+      test('nested prototype function', () => {
         const object = new PictureBook();
         assert.equals(Intercept.lookup(object, 'find'), {
-          object: Literature.prototype, value: object.find, propertyType: 'value'
+          object: Literature.prototype, value: object.find, propertyType: 'value',
         });
       });
 
-      test("getter", ()=>{
+      test('getter', () => {
         const object = new PictureBook();
         assert.equals(Intercept.lookup(object, 'pageCount'), {
           object: Literature.prototype,
           value: Object.getOwnPropertyDescriptor(Literature.prototype, 'pageCount').get,
-          propertyType: 'get'
+          propertyType: 'get',
         });
       });
 
-      test("setter", ()=>{
+      test('setter', () => {
         const object = new PictureBook();
         assert.equals(Intercept.lookup(object, 'readingMode'), {
           object: Literature.prototype,
           value: Object.getOwnPropertyDescriptor(Literature.prototype, 'readingMode').set,
-          propertyType: 'set'
+          propertyType: 'set',
         });
       });
     });
 
-    group("objectSource", ()=>{
-      test("not function", ()=>{
+    group('objectSource', () => {
+      test('not function', () => {
         Intercept.interceptObj = new Mode('day');
         assert.equals(Intercept.objectSource('type'), {
           object: 'Mode.prototype',
@@ -117,7 +135,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("static function", ()=>{
+      test('static function', () => {
         Intercept.interceptObj = PictureBook;
         assert.equals(Intercept.objectSource('readingLevel'), {
           object: 'PictureBook',
@@ -130,8 +148,8 @@ define((require, exports, module)=>{
         });
       });
 
-      test("constructor function", ()=>{
-        Intercept.interceptObj =  new PictureBook();
+      test('constructor function', () => {
+        Intercept.interceptObj = new PictureBook();
         assert.equals(Intercept.objectSource('mode'), {
           object: 'PictureBook.prototype',
           name: 'mode',
@@ -142,7 +160,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("prototype function", ()=>{
+      test('prototype function', () => {
         Intercept.interceptObj = new PictureBook();
         assert.equals(Intercept.objectSource('drawPicture'), {
           object: 'PictureBook.prototype',
@@ -155,7 +173,7 @@ define((require, exports, module)=>{
         });
       });
 
-      test("getter with error", ()=>{
+      test('getter with error', () => {
         Intercept.interceptObj = new PictureBook();
         const pageCount = Object.getOwnPropertyDescriptor(Literature.prototype, 'pageCount').get;
         assert.equals(Intercept.objectSource('pageCount'), {
@@ -169,8 +187,8 @@ define((require, exports, module)=>{
         });
       });
 
-      test("native method Array", ()=>{
-        Intercept.interceptObj = [1,2,3];
+      test('native method Array', () => {
+        Intercept.interceptObj = [1, 2, 3];
         assert.equals(Intercept.objectSource('copyWithin'), {
           object: 'Array.prototype',
           name: 'copyWithin',
@@ -178,12 +196,12 @@ define((require, exports, module)=>{
           value: '',
           valueType: 'function',
           signature: 'copyWithin(arg0, arg1)',
-          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/' +
             'Array/copyWithin',
         });
       });
 
-      test("native method Math", ()=>{
+      test('native method Math', () => {
         Intercept.interceptObj = globalThis;
         assert.equals(Intercept.objectSource('Math'), {
           object: '',
@@ -191,12 +209,12 @@ define((require, exports, module)=>{
           propertyType: 'native value',
           value: '{}',
           valueType: 'object',
-          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/' +
             'Math',
         });
       });
 
-      test("native method Math max", ()=>{
+      test('native method Math max', () => {
         Intercept.interceptObj = Math;
         assert.equals(Intercept.objectSource('max'), {
           object: 'Math',
@@ -205,12 +223,12 @@ define((require, exports, module)=>{
           value: '',
           valueType: 'function',
           signature: 'max(arg0, arg1)',
-          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'+
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/' +
             'Math/max',
         });
       });
 
-      test("native object", ()=>{
+      test('native object', () => {
         Intercept.interceptObj = {date: new Date(1622635200000)};
         assert.equals(Intercept.objectSource('date'), {
           object: 'Object.prototype',

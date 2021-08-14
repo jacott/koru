@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const JsParser        = require('koru/parse/js-parser');
@@ -18,10 +18,10 @@ define((require, exports, module)=>{
   };
 
   const setSource = (object, info, fn) => {
-    const source =  fn.toString();
+    const source = fn.toString();
 
     if (/\[native code\]\s*\}$/.test(source)) {
-      info.propertyType = 'native '+info.propertyType;
+      info.propertyType = 'native ' + info.propertyType;
       setMdnUrl(info);
     } else {
       info.source = source;
@@ -37,7 +37,6 @@ define((require, exports, module)=>{
       return getModuleId(object.constructor) ?? getModuleId(Object.getPrototypeOf(object));
     }
   };
-
 
   const Intercept = require('koru/env!./intercept')(class {
     static finishIntercept() {
@@ -57,7 +56,7 @@ define((require, exports, module)=>{
       const ans = this.objectFunction(object);
       if (ans === void 0) return '';
       if (ans === object) return CoreJsTypes.objectName(object) ?? ans.name;
-      return CoreJsTypes.objectName(object) ?? ans.name+".prototype";
+      return CoreJsTypes.objectName(object) ?? ans.name + '.prototype';
     }
 
     static objectSource(name) {
@@ -89,7 +88,7 @@ define((require, exports, module)=>{
           } else {
             info.value = '';
           }
-        } catch(err) {
+        } catch (err) {
           info.value = err.toString();
           info.valueType = 'error';
         }
@@ -117,7 +116,7 @@ define((require, exports, module)=>{
 
         if (url !== void 0) {
           info.url = url;
-          info.propertyType = 'native '+info.propertyType;
+          info.propertyType = 'native ' + info.propertyType;
         }
       }
 
@@ -145,23 +144,24 @@ define((require, exports, module)=>{
 
   const InterceptThrow = {
     name: 'intercept',
-    toString: () => 'intercept'
+    toString: () => 'intercept',
   };
 
   function intercept(prefix, locals) {
     Core.abortMode = 'end';
     if (InterceptThrow.interceptObj === void 0) {
-      Intercept.interceptObj = this;
+      const self = locals === void 0 ? this : globalThis;
+      Intercept.interceptObj = self;
       Intercept.locals = locals;
       interceptPrefix = prefix;
       const map = new Map();
       if (locals !== void 0) recurse(locals, locals, map);
-      recurse(this, this, map);
+      recurse(self, self, map);
       const cand = Array.from(map.values()).sort((a, b) => a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
-      Intercept.sendResult('C'+JSON.stringify(cand));
+      Intercept.sendResult('C' + JSON.stringify(cand));
     }
     throw InterceptThrow;
-  };
+  }
 
   koru.__INTERCEPT$__ = Symbol();
   Object.prototype[koru.__INTERCEPT$__] = intercept;
@@ -170,7 +170,7 @@ define((require, exports, module)=>{
     if (obj == null) return ans;
     for (const name of Object.getOwnPropertyNames(obj)) {
       if (interceptPrefix === name.slice(0, interceptPrefix.length) &&
-          ! ans.has(name) && name !== 'constructor' && name.slice(0,2) !== '__' && isNaN(+name)) {
+          ! ans.has(name) && name !== 'constructor' && name.slice(0, 2) !== '__' && isNaN(+name)) {
         const desc = Object.getOwnPropertyDescriptor(obj, name);
         let type = desc.get !== void 0 ? 'G' : typeof desc.value === 'function' ? 'F' : 'P';
         let sample = '';
@@ -179,8 +179,7 @@ define((require, exports, module)=>{
         try {
           v = orig[name];
           if (typeof v !== 'object' && v !== void 0) sample = v.toString();
-
-        } catch(err) {
+        } catch (err) {
           sample = err.toString();
         }
 
@@ -190,15 +189,17 @@ define((require, exports, module)=>{
             sample = JsParser.extractCallSignature(v, name);
           } catch (err) {}
           if (sample.startsWith('constructor')) {
-            if (type === 'G')
+            if (type === 'G') {
               type += 'C';
-            else
+            } else {
               type = 'C';
+            }
           } else if (sample[0] === '(') {
             sample = name+sample;
           }
-          if (type === 'G')
+          if (type === 'G') {
             type += 'F';
+          }
         }
 
         ans.set(name, [name, type, sample.slice(0, 400)]);
