@@ -40,7 +40,7 @@ bundleAll.bundle({hash}, ({ast, css, compiler})=>{
     compact: true,
     sourceMaps: true,
     sourceFileName: "index.js",
-    sourceRoot: "/",
+    sourceRoot: "",
     comments: false,
   });
 
