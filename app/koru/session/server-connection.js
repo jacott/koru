@@ -118,7 +118,8 @@ define((require, exports, module)=>{
       (map.get(thread) || startBatch(this, map, thread))([type, data]);
     }
 
-    onMessage(data, flags) {
+    onMessage(data, isBinary) {
+      if (! isBinary) data = data.toString();
       if (data[0] === 'H')
         return void this.send(`K${Date.now()}`);
 
