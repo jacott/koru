@@ -1,11 +1,11 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const Observable      = require('koru/observable');
   const TH              = require('koru/test-helper');
-  const util            = require('../util');
   const Model           = require('./main');
+  const util            = require('../util');
 
   const {hasOwn, deepCopy} = util;
 
@@ -13,28 +13,28 @@ define((require)=>{
   const postCreate = {};
   const defines = {};
 
-  let nameGen, last, lastNow, tx, dbId, dbVars;
+  let seqGen, last, lastNow, tx, dbId, dbVars;
   const dbs = {};
 
-  const switchDb = ()=> {
+  const switchDb = () => {
     dbId = dbBroker.dbId;
     if (dbs[dbId] === undefined) {
-      dbs[dbId] = {tx: [], nameGen: {}, last: {}, lastNow};
+      dbs[dbId] = {tx: [], seqGen: {}, last: {}, lastNow};
     }
     dbVars = dbs[dbId];
-    nameGen = dbVars.nameGen;
+    seqGen = dbVars.seqGen;
     last = dbVars.last;
     lastNow = dbVars.lastNow;
     tx = dbVars.tx;
   };
 
-  const checkDb = ()=>{dbBroker.dbId === dbId || switchDb()};
+  const checkDb = () => {dbBroker.dbId === dbId || switchDb()};
 
-  const getUniqueNow = ()=>{
+  const getUniqueNow = () => {
     checkDb();
     let now = util.dateNow();
 
-    if(lastNow && now <= lastNow) {
+    if (lastNow && now <= lastNow) {
       now = ++lastNow;
     } else {
       lastNow = now;
@@ -43,12 +43,10 @@ define((require)=>{
     return new Date(now);
   };
 
-  const generateName = (prefix, space=' ')=>{
-    checkDb();
-    if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
-    return `${prefix}${space}${++nameGen[prefix]}`;
-  };
+  const generateSeq = (key) => (
+    checkDb(), typeof (seqGen[key]) === 'number' ? ++seqGen[key] : (seqGen[key] = 1));
 
+  const generateName = (prefix, space=' ') => `${prefix}${space}${generateSeq(prefix)}`;
 
   class BaseBuilder {
     constructor(attributes={}, defaults={}) {
@@ -58,7 +56,7 @@ define((require)=>{
 
     addField(field, value) {
       if (! hasOwn(this.attributes, field)) {
-        switch(typeof value) {
+        switch (typeof value) {
         case 'undefined': break;
         case 'function':
           this.defaults[field] = value();
@@ -76,11 +74,12 @@ define((require)=>{
 
     makeAttributes() {
       const result = {};
-      const addAttributes = attributes =>{
-        for(const key in attributes) {
+      const addAttributes = (attributes) => {
+        for (const key in attributes) {
           const value = attributes[key];
-          if (value !== undefined)
+          if (value !== undefined) {
             result[key] = value;
+          }
         }
       };
       addAttributes(this.defaults);
@@ -94,7 +93,7 @@ define((require)=>{
       super(attributes, {});
       this.model = Model[modelName];
       this._useSave = '';
-      if (! this.model) throw new Error('Model: "'+modelName+'" not found');
+      if (! this.model) throw new Error('Model: "' + modelName + '" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
     }
 
@@ -105,15 +104,17 @@ define((require)=>{
         if (! model) throw new Error(
           `model not found for reference: ${refId} in model ${this.model.modelName}`);
         const {modelName} = model;
-        if (typeof doc === 'function')
+        if (typeof doc === 'function') {
           doc = doc(this);
+        }
         if (doc === void 0) {
           doc = last[ref] || last[util.uncapitalize(modelName)];
         }
         if (doc == null) {
-          const func = Factory['create'+util.capitalize(ref)] || Factory['create'+modelName];
-          if (func === void 0)
-            throw new Error("can't find factory create for "+modelName);
+          const func = Factory['create' + util.capitalize(ref)] || Factory['create' + modelName];
+          if (func === void 0) {
+            throw new Error("can't find factory create for " + modelName);
+          }
           doc = func();
         }
         this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
@@ -122,19 +123,24 @@ define((require)=>{
     }
 
     genName(field='name', prefix=this.model.modelName, space) {
-      return this.addField(field, generateName(prefix, space));
+      return this.addField(field, () => generateName(prefix, space));
+    }
+
+    genSeq(field, key) {
+      return this.addField(field, () => generateSeq(key));
     }
 
     useSave(value) {
-      this._useSave = value === 'force' ? value : (value ? "assert" : '');
+      this._useSave = value === 'force' ? value : (value ? 'assert' : '');
       return this;
     }
 
     insert() {
       const id = this.model._insertAttrs(this.makeAttributes());
       const doc = this.model.findById(id);
-      if (doc == null)
-        throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
+      if (doc == null) {
+        throw Error('Factory insert failed! ' + this.model.modelName + ': ' + id);
+      }
 
       const dc = DocChange.add(doc);
       isClient && this.model._indexUpdate.notify(dc);
@@ -155,15 +161,16 @@ define((require)=>{
         doc = this.model.build({});
         doc.changes = this.makeAttributes();
         doc.$save(this._useSave);
-      } else
+      } else {
         doc = this.insert();
+      }
 
       this._afterCreate && this._afterCreate.notify(doc, this);
       return doc;
     }
 
     afterCreate(func) {
-      (this._afterCreate ?? (this._afterCreate = new Observable)).add(func);
+      (this._afterCreate ?? (this._afterCreate = new Observable())).add(func);
       return this;
     }
   }
@@ -171,30 +178,30 @@ define((require)=>{
   const Factory = {
     startTransaction() {
       checkDb();
-      tx.push([last, nameGen]);
+      tx.push([last, seqGen]);
       last = Object.assign({}, last);
-      dbVars.nameGen = nameGen = Object.assign({}, nameGen);
+      dbVars.seqGen = seqGen = Object.assign({}, seqGen);
     },
 
     endTransaction() {
       checkDb();
       if (tx.length === 0) {
-        throw new Error("No transaction in progress!");
+        throw new Error('No transaction in progress!');
       }
-      [last, nameGen] = tx.pop();
-      dbVars.nameGen = nameGen;
+      [last, seqGen] = tx.pop();
+      dbVars.seqGen = seqGen;
       dbVars.last = last;
     },
 
     preserve(sym, docs) {
-      for(let i = docs.length-1; i >= 0; --i) {
+      for (let i = docs.length - 1; i >= 0; --i) {
         const doc = docs[i];
         doc[sym] = deepCopy(doc.attributes);
       }
     },
 
     restore(sym, docs) {
-      for(let i = docs.length-1; i >= 0; --i) {
+      for (let i = docs.length - 1; i >= 0; --i) {
         const doc = docs[i];
         doc.attributes = deepCopy(doc[sym]);
         doc.$reload();
@@ -202,7 +209,7 @@ define((require)=>{
     },
 
     clearSym(sym, docs) {
-      for(let i = docs.length-1; i >= 0; --i) {
+      for (let i = docs.length - 1; i >= 0; --i) {
         delete docs[i][sym];
       }
     },
@@ -210,10 +217,10 @@ define((require)=>{
     clear() {
       checkDb();
       if (tx.length !== 0) {
-        throw new Error("Transaction in progress!");
+        throw new Error('Transaction in progress!');
       }
       dbVars.last = last = {};
-      dbVars.nameGen = nameGen = {};
+      dbVars.seqGen = seqGen = {};
     },
 
     get inTransaction() {
@@ -227,17 +234,18 @@ define((require)=>{
 
       const func = typeof args[0] === 'function' ? args.shift() : null;
 
-      if (args.length === 0 || typeof args[args.length - 1] === 'string')
+      if (args.length === 0 || typeof args[args.length - 1] === 'string') {
         args.push({});
+      }
 
-      for(let i = 0; i < number; ++i) {
+      for (let i = 0; i<number; ++i) {
         func && func.apply(args, [i, args[args.length - 1]]);
-        list.push(this[creator].apply(this,args));
+        list.push(this[creator].apply(this, args));
       }
       return list;
     },
 
-    get last () {
+    get last() {
       checkDb();
       return last;
     },
@@ -249,11 +257,12 @@ define((require)=>{
 
     lastOrCreate(name) {
       checkDb();
-      return last[name] || Factory['create'+util.capitalize(name)]();
+      return last[name] || Factory['create' + util.capitalize(name)]();
     },
 
     getUniqueNow,
     generateName,
+    generateSeq,
 
     traits(funcs) {
       util.merge(traits, funcs);
@@ -267,9 +276,9 @@ define((require)=>{
     },
 
     defines(models) {
-      for(const key in models) {
-        this['build'+key] = buildFunc(key, models[key]);
-        this['create'+key] = createFunc(key, models[key]);
+      for (const key in models) {
+        this['build' + key] = buildFunc(key, models[key]);
+        this['create' + key] = createFunc(key, models[key]);
       }
       return this;
     },
@@ -278,32 +287,33 @@ define((require)=>{
     Builder,
   };
 
-  const buildFunc = (key, def)=> (...traitsAndAttributes)=>{
+  const buildFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
     return def.call(
       Factory, buildAttributes(key, traitsAndAttributes)).build();
   };
 
-  const createFunc = (key, def)=> (...traitsAndAttributes)=>{
+  const createFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    const result =
-            def.call(Factory, buildAttributes(key, traitsAndAttributes)).create();
+    const result = def.call(Factory, buildAttributes(key, traitsAndAttributes)).create();
 
-    if (postCreate[key] !== void 0)
+    if (postCreate[key] !== void 0) {
       return postCreate[key](result, key, traitsAndAttributes);
-    else
-      return last[key.substring(0,1).toLowerCase()+key.substring(1)] = result;
+    } else {
+      return last[key.substring(0, 1).toLowerCase() + key.substring(1)] = result;
+    }
   };
 
-  const buildAttributes = (key, args)=>{
+  const buildAttributes = (key, args) => {
     const attributes = {}, keyTraits = traits[key] || {};
-    for(let i=0; i < args.length;++i) {
+    for (let i = 0; i < args.length; ++i) {
       if (typeof args[i] === 'string') {
         const trait = keyTraits[args[i]];
-        if (!trait) throw new Error('unknown trait "'+ args[i] +'" for ' + key);
-        Object.assign(attributes, typeof trait === 'function' ?
-                      trait.call(keyTraits, attributes, args, i) : trait);
-      } else if(args[i]) {
+        if (! trait) throw new Error('unknown trait "' + args[i] + '" for ' + key);
+        Object.assign(attributes, typeof trait === 'function'
+                      ? trait.call(keyTraits, attributes, args, i)
+                      : trait);
+      } else if (args[i]) {
         Object.assign(attributes, args[i]);
       }
     }

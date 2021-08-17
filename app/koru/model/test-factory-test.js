@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * TestFactory is used to facilitate building and persisting document {#../base-model;;models} for
@@ -25,32 +25,32 @@ define((require, exports, module)=>{
   class Book extends Model.BaseModel {
   }
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       TH.startTransaction();
       const bm = new Module(void 0, 'book');
       module.onUnload = after;
 
       Val.register(bm, {RequiredValidator});
       Book.define({module, name: 'Book', fields: {
-        title: {type: 'text', required: true}, author: 'text', pages: 'number'
+        title: {type: 'text', required: true}, author: 'text', pages: 'number',
       }});
     });
 
-    after(()=>{
+    after(() => {
       Model._destroyModel('Book', 'drop');
       TH.rollbackTransaction();
     });
 
-    beforeEach(()=>{
+    beforeEach(() => {
       TH.startTransaction();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       TH.rollbackTransaction();
     });
 
-    test("defines", ()=>{
+    test('defines', () => {
       /**
        * Defines the models to build and create.
 
@@ -59,7 +59,7 @@ define((require, exports, module)=>{
        * field property values and other useful options.
        **/
       api.method();
-      after(()=>{
+      after(() => {
         TestFactory.createBook = TestFactory.buildBook = void 0;
         TestFactory.createAuthor = TestFactory.buildAuthor = void 0;
       });
@@ -74,7 +74,7 @@ define((require, exports, module)=>{
             .genName('title')
             .addField('pages', 100)
           ;
-        }
+        },
       });
       const book1 = TestFactory.buildBook();
       assert.same(book1.title, 'Book 1');
@@ -87,6 +87,26 @@ define((require, exports, module)=>{
       //]
     });
 
+    test('generateSeq', () => {
+      /**
+       * Generate a sequential number for a `key`
+       */
+      api.method();
+
+      //[
+      const builder = new TestFactory.Builder('Book', {title: 'Now We Are Six'});
+
+      builder
+        .addField('title', 'When We Were Very Young')
+        .addField('isbn', 9780140361230)
+        .genSeq('pages', 'book-pages');
+
+      assert.equals(builder.defaults, {isbn: 9780140361230, pages: 1});
+
+      assert.same(TestFactory.generateSeq('book-pages'), 2);
+      assert.same(TestFactory.generateSeq('book-chapters'), 1);
+      //]
+    });
 
     const builderSubject = () => api.innerSubject(TestFactory.Builder, null, {
       abstract() {
@@ -97,13 +117,13 @@ define((require, exports, module)=>{
       },
     });
 
-    group("Builder", ()=>{
+    group('Builder', () => {
       let api;
-      before(()=>{
+      before(() => {
         api = builderSubject();
       });
 
-      test("constructor", ()=>{
+      test('constructor', () => {
         /**
          * Create a Builder instance for the specified model.
 
@@ -128,13 +148,12 @@ define((require, exports, module)=>{
 
         assert.equals(builder.attributes, {title: 'Now We Are Six'});
 
-
         assert.equals(builder.makeAttributes(), {
           author: 'A. A. Milne', pages: 112, title: 'Now We Are Six'});
         //]
       });
 
-      test("addField", ()=>{
+      test('addField', () => {
         /**
          * Add a field to `Builder.defaults`.
 
@@ -151,14 +170,31 @@ define((require, exports, module)=>{
         builder
           .addField('title', 'When We Were Very Young')
           .addField('isbn', 9780140361230)
-          .addField('pages', () => 100 + 12)
-        ;
+          .addField('pages', () => 100+12);
 
         assert.equals(builder.defaults, {isbn: 9780140361230, pages: 112});
         //]
       });
 
-      test("addRef", ()=>{
+      test('genSeq', () => {
+        /**
+         * Generate a sequential number for a `field` and a `key`
+         */
+        api.protoMethod();
+
+        //[
+        const builder = new TestFactory.Builder('Book', {title: 'Now We Are Six'});
+
+        builder
+          .addField('title', 'When We Were Very Young')
+          .addField('isbn', 9780140361230)
+          .genSeq('pages', 'book-pages');
+
+        assert.equals(builder.defaults, {isbn: 9780140361230, pages: 1});
+        //]
+      });
+
+      test('addRef', () => {
         /**
          * Add a default reference to another model.
 
@@ -168,7 +204,7 @@ define((require, exports, module)=>{
          * needed then:
 
          * * if doc is a function the function will be executed and its return result will be used
-             to replace `doc`.  Then;
+         to replace `doc`.  Then;
 
          * * if `undefined` use the last document created for the reference model.
 
@@ -178,11 +214,11 @@ define((require, exports, module)=>{
         class Chapter extends Model.BaseModel {
         }
         Chapter.define({module, name: 'Chapter', fields: {
-          number: 'number', book_id: 'belongs_to'
+          number: 'number', book_id: 'belongs_to',
         }});
-        after(()=>{Model._destroyModel('Chapter', 'drop')});
+        after(() => {Model._destroyModel('Chapter', 'drop')});
 
-        after(()=>{
+        after(() => {
           TestFactory.createBook = TestFactory.buildBook = void 0;
         });
 
@@ -192,7 +228,7 @@ define((require, exports, module)=>{
               .genName('title')
               .addField('pages', 100)
             ;
-          }
+          },
         });
 
         api.protoMethod();
@@ -212,28 +248,28 @@ define((require, exports, module)=>{
         assert.equals(builder2.defaults, {});
 
         const builder3 = new TestFactory.Builder('Chapter', {number: 1})
-              .addRef('book', ()=> TestFactory.createBook({_id: 'book123'}))
+              .addRef('book', () => TestFactory.createBook({_id: 'book123'}))
         ;
 
         assert.equals(builder3.defaults, {book_id: 'book123'});
         //]
       });
 
-      test("create", ()=>{
+      test('create', () => {
         /**
          * Create the document. Called by, say, `Factory.createBook`. See {#.constructor}, {##useSave}
          **/
         api.protoMethod();
         //[
         const builder = new TestFactory.Builder('Book')
-          ;
+        ;
 
         const book = builder.create();
         assert.equals(book.attributes, {_id: m.id});
         //]
       });
 
-      test("build", ()=>{
+      test('build', () => {
         /**
          * build an unsaved document. Called by, say, `Factory.buildBook`.
          **/
@@ -241,7 +277,7 @@ define((require, exports, module)=>{
         //[
         const builder = new TestFactory.Builder('Book')
               .addField('title', 'Winnie-the-Pooh')
-          ;
+        ;
 
         const book = builder.build();
         assert.equals(book.attributes, {});
@@ -249,7 +285,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("useSave", ()=>{
+      test('useSave', () => {
         /**
          * Determine if the normal Model save code should be run.
 
@@ -266,9 +302,10 @@ define((require, exports, module)=>{
         Val.register(bm, {RequiredValidator});
 
         //[
-        intercept(Book.prototype, 'validate', function() {
-          if (this.author === void 0)
+        intercept(Book.prototype, 'validate', function () {
+          if (this.author === void 0) {
             this.author = 'Anon';
+          }
         });
 
         {
@@ -279,7 +316,6 @@ define((require, exports, module)=>{
 
           const book = builder.create();
           assert.equals(book.attributes, {_id: m.id});
-
         }
 
         {
@@ -288,7 +324,7 @@ define((require, exports, module)=>{
                 .useSave(true)
           ;
 
-          assert.exception(()=>{
+          assert.exception(() => {
             const book = builder.create();
           }, {error: 400, reason: {title: [['is_required']]}});
         }
@@ -305,6 +341,5 @@ define((require, exports, module)=>{
         //]
       });
     });
-
   });
 });
