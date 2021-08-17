@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const TH              = require('koru/test');
+  const Core            = require('koru/test/core');
 
   const {stub, spy, util, stubProperty, match: m} = TH;
 
@@ -56,7 +57,12 @@ define((require, exports, module) => {
 
       test('works with new', () => {
         assert.exception(() => {
-          new globalThis[koru.__INTERCEPT$__]('Date', {});
+          const restore = stubProperty(Core, 'abortMode', {value: ''});
+          try {
+            new globalThis[koru.__INTERCEPT$__]('Date', {});
+          } finally {
+            restore();
+          }
         }, {name: 'intercept'});
 
         assert.same(Intercept.interceptObj, globalThis);
