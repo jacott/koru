@@ -10,7 +10,7 @@ isServer && define((require, exports, module) => {
     let text;
     group('format', () => {
       test('indent', () => {
-        assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;'), 'if (\n  1 +\n  2 +\n  3) ++b');
+        assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;\n'), 'if (\n  1 +\n  2 +\n  3) ++b;\n');
         assert.equals(reformat('a &&\nb\n&& c'), 'a &&\n  b &&\n  c');
 
         assert.equals(reformat('if (a) {\n} else if (x) {\n  {\n++c;\n}\n}\n'),
@@ -214,10 +214,12 @@ x()`;
       });
 
       test('WhileStatement', () => {
+        assert.equals(reformat('while (b) {\na();\n}\n'), 'while (b) {\n  a();\n}\n');
         assert.equals(reformat('  while(  abc  )\n  yin();'), '  while (abc) {\n    yin();\n  }');
         assert.equals(reformat('while(\n  abc ||\ndef  )    {}'), 'while (\n  abc ||\n  def) {}');
         assert.equals(reformat('while(  abc  )    {}'), 'while (abc) {}');
-        assert.equals(reformat('while(  abc  )  yin();'), 'while (abc) yin()');
+        assert.equals(reformat('while(  abc  )  yin()'), 'while (abc) yin()');
+        assert.equals(reformat('while(  abc  )  yin();\n'), 'while (abc) yin();\n');
       });
 
       test('IfStatement', () => {
@@ -249,6 +251,7 @@ x()`;
         assert.equals(reformat('if (a) {\nreturn;\n}'), 'if (a) {\n  return;\n}');
         assert.equals(reformat('if(\n  abc || def  )    {}'), 'if (\n  abc || def) {}');
         assert.equals(reformat('if(  abc  )    {}'), 'if (abc) {}');
+        assert.equals(reformat('if(  abc  )  yin()\n'), 'if (abc) yin();\n');
         assert.equals(reformat('if(  abc  )  yin()'), 'if (abc) yin()');
         assert.equals(reformat('if(  abc  )\n  yin();'), 'if (abc) {\n  yin();\n}');
         assert.equals(reformat('if (abc) {\n  yin();\n} else\n  yang();'), 'if (abc) {\n  yin();\n} else {\n  yang();\n}');

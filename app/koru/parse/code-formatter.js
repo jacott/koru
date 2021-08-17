@@ -607,10 +607,13 @@ define((require, exports, module) => {
       if (node.body.type === 'BlockStatement' ||
           node.body.loc.start.line === node.test.loc.end.line) {
         this.advancePrintNode(node.body);
+        if (node.body.type === 'BlockStatement') {
+          this.noSemiColon();
+        }
       } else {
         this.convertToBlock(node.body);
+        this.noSemiColon();
       }
-      this.noSemiColon();
     }
 
     LabeledStatement(node) {
