@@ -14,7 +14,7 @@ isServer && define((require, exports, module) => {
         assert.equals(reformat('a &&\nb\n&& c'), 'a &&\n  b &&\n  c');
 
         assert.equals(reformat('if (a) {\n} else if (x) {\n  {\n++c;\n}\n}\n'),
-                      'if (a) {\n} else if (x) {\n  {\n    ++c;\n  };\n}\n');
+                      'if (a) {\n} else if (x) {\n  {\n    ++c;\n  }\n}\n');
 
         assert.equals(reformat('if (a) {\nb();\n} else if (x &&\ny) {\nc();\n}\n'),
                       'if (a) {\n  b();\n} else if (x &&\n           y) {\n  c();\n}\n');
@@ -316,6 +316,11 @@ x()`;
 
 
 }`), `{\n  foo();\n  bar();\n}`);
+      });
+
+      test('nested blocks', () => {
+        assert.equals(reformat('{\n{\nlet a = 1\n}\n{\nlet b = 1\n}\n\n}'),
+                      '{\n  {\n    let a = 1;\n  }\n  {\n    let b = 1;\n  }\n}');
       });
 
       test('TemplateElement', () => {

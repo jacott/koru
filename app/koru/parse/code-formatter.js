@@ -107,12 +107,13 @@ define((require, exports, module) => {
           continue;
         }
         if (p !== void 0) {
+          const noSemi = p.type === 'BlockStatement';
           if (this.isSameLine(n)) {
-            this.write(';');
+            noSemi || this.write(';');
             this.write(' ');
             this.skipOver(SameLineWsOrSemiRE);
           } else {
-            this.write(';');
+            noSemi || this.write(';');
             let max = 2;
             if ((p.trailingComments?.length ?? 0) != 0) {
               max = 0;
@@ -135,7 +136,7 @@ define((require, exports, module) => {
           this.print(n);
         }
       }
-      const noSemi = this.isNoSemiColon();
+      const noSemi = this.isNoSemiColon() || p.type === 'BlockStatement';
       if ((p.trailingComments?.length ?? 0) != 0) {
         noSemi || this.write(';');
         this.write(' ');
