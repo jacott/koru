@@ -70,8 +70,10 @@ x()`;
       });
 
       test('comments', () => {
-        assert.equals(reformat('{\na(); // c1\nb(); // c2\n}'), '{\n  a(); // c1\n  b(); // c2\n}');
-        assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1,/*<*/ 2/*>*/, 3/*)*/)`);
+        assert.equals(reformat('{\na();   // c1\nb();// c2\n}'), '{\n  a();   // c1\n  b(); // c2\n}');
+        assert.equals(reformat('if (a) return\n// x\na.b()'), 'if (a) return;\n// x\na.b()');
+        assert.equals(reformat('a = 1\n// x\nb()'), 'a = 1;\n// x\nb()');
+        assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1, /*<*/2/*>*/, 3/*)*/)`);
         assert.equals(reformat('((((/*(*/1,2,3/*)*/))))'), '(/*(*/1, 2, 3/*)*/)');
       });
 
@@ -135,8 +137,8 @@ x()`;
       });
 
       test('AssignmentExpression', () => {
-        assert.equals(reformat('a =\n 1 +\n2 +\n3;'), 'a =\n  1 +\n  2 +\n  3');
         assert.equals(reformat('a =   (( //a\n  1,2));'), `a = ( //a\n  1, 2)`);
+        assert.equals(reformat('a =\n 1 +\n2 +\n3;'), 'a =\n  1 +\n  2 +\n  3');
         assert.equals(reformat('a =   {b: 1};'), `a = {b: 1}`);
         assert.equals(reformat('a\n =  b'), `a =\n  b`);
         assert.equals(reformat('a=   b'), `a = b`);
@@ -293,6 +295,10 @@ x()`;
         assert.equals(reformat('const {  a,  b: c, } = d;'), 'const {a, b: c} = d;');
       });
 
+      test('parenthesis', () => {
+        assert.equals(reformat('a = (1,2,\n3\n)'), 'a = (1, 2,\n     3\n)');
+      });
+
       test('params', () => {
         assert.equals(reformat('var  a1,b,c  ; const  a = 123;'), `var a1, b, c; const a = 123;`);
         assert.equals(reformat('foo  (  a, \n    b,c,  );'), `foo(a,\n    b, c)`);
@@ -319,6 +325,10 @@ x()`;
 
 
 }`), `{\n  foo();\n  bar();\n}`);
+      });
+
+      test('one line block', () => {
+        assert.equals(reformat('{a();b();}'), '{a(); b()}');
       });
 
       test('nested blocks', () => {

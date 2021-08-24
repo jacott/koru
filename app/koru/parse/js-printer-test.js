@@ -99,7 +99,7 @@ isServer && define((require, exports, module) => {
 
       simple.print(simple.ast);
       simple.catchup(simple.ast.end);
-      assert.same(output, "(/*(*/['1',/*<*/'2'/*>*/,'3'/*)*/])");
+      assert.same(output, "(/*(*/['1',/*<*/'2'/*>*/,'3']/*)*/)");
     });
   });
 });

@@ -117,7 +117,6 @@ define((require, exports, module) => {
             let max = 2;
             if ((p.trailingComments?.length ?? 0) != 0) {
               max = 0;
-              this.write(' ');
             }
             const adv = Math.max(this.lastIndexOf('\n', n.start) + 1, minIdx);
             this.skipOver(SameLineWsOrSemiRE);
@@ -334,7 +333,10 @@ define((require, exports, module) => {
     }
 
     SequenceExpression(node) {
-      this.printParams(node.expressions);
+      this.printParams(node.expressions, false);
+      if (this.isAtNewline()) {
+        this.skipOverNl(1);
+      }
     }
 
     ArrayExpression(node) {

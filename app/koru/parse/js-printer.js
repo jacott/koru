@@ -70,7 +70,7 @@ define((require, exports, module) => {
       this.write = write;
       this.ast = ast;
       this.commentIndex = 0;
-      if (this.commentIndex >= ast.comments.length) {
+      if (ast.comments.length == 0) {
         this.commentEnd = this.commentStart = input.length;
       } else {
         this.commentEnd = -1;
@@ -168,7 +168,7 @@ define((require, exports, module) => {
     }
 
     writeComments(point) {
-      while (this.commentStart <= point && this.commentStart < this.input.length) {
+      while (this.commentStart < point && this.commentStart < this.input.length) {
         this.addComment();
       }
     }
@@ -222,11 +222,11 @@ define((require, exports, module) => {
         re.lastIndex = this.inputPoint;
         const m = re.exec(this.input);
         if (m === null) {
-          if (this.commentStart > this.inputPoint) return;
+          if (this.commentStart >= this.inputPoint) return;
           this.addComment();
         } else {
           if (write) this.write(m[0]);
-          this.inputPoint = m.index + m[0].length;
+          this.inputPoint = Math.min(this.commentStart, m.index + m[0].length);
           this.writeComments(this.inputPoint);
           return m[0];
         }
@@ -256,7 +256,7 @@ define((require, exports, module) => {
 
     catchup(point) {
       if (this.inputPoint >= point) return;
-      while (this.commentStart <= point && this.commentStart < this.input.length) {
+      while (this.commentStart < point && this.commentStart < this.input.length) {
         this.writeCatchup(this.input.slice(this.inputPoint, this.commentStart));
         this.addComment();
       }
