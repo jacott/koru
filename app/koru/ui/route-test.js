@@ -574,8 +574,8 @@ isClient && define((require, exports, module) => {
 
       Route.root.routeVar = 'foo';
       after(() => {Route.root.routeVar = null});
-      intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = stub());
-      intercept(Route.root, 'onBaseExit', v.rootBaseExit = stub());
+      v.rootBaseEntry = stub(Route.root, 'onBaseEntry');
+      v.rootBaseExit = stub(Route.root, 'onBaseExit');
 
       Route.root.addBase(Baz, {parent: void 0});
 
@@ -601,8 +601,8 @@ isClient && define((require, exports, module) => {
         onExit: stub(),
       };
 
-      intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = stub());
-      intercept(Route.root, 'onBaseExit', v.rootBaseExit = stub());
+      v.rootBaseEntry = stub(Route.root, 'onBaseEntry');
+      v.rootBaseExit = stub(Route.root, 'onBaseExit');
 
       Route.root.addTemplate(BazBar);
 
