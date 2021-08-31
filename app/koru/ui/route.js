@@ -18,7 +18,7 @@ define((require, exports, module) => {
   let currentTitle, currentHref;
   let pageState = 'pushState';
   let pageCount = 0;
-  let runInstance; // used with async callbacks
+  let runInstance = 0; // used with async callbacks
 
   let debug_page = false;
   Trace.debug_page = (value) => {debug_page = value};
@@ -50,13 +50,13 @@ define((require, exports, module) => {
     currentPage = exit[index];
 
     index = index-diff-1;
-    let runInstanceCopy = runInstance = {};
+    let runInstanceCopy = ++runInstance;
     const callback = () => {
       if (runInstanceCopy !== runInstance) {
         return // route call overridden
         ;
       } if (index<0) {
-        runInstanceCopy = null; // stop multi calling
+        runInstanceCopy = 0; // stop multi calling
         then();
         return true;
       }
