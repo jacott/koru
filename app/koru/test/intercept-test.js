@@ -186,7 +186,7 @@ define((require, exports, module) => {
           object: 'Literature.prototype',
           name: 'pageCount',
           propertyType: 'get',
-          value: "TypeError: Cannot read property 'length' of undefined",
+          value: m(/TypeError: Cannot read prop/),
           valueType: 'error',
           signature: 'get pageCount()',
           source: pageCount.toString(),
