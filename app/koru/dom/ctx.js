@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Dom             = require('koru/dom/base');
   const util            = require('koru/util');
@@ -33,14 +33,14 @@ define((require)=>{
     '-': '-',
   };
 
-  const getValue = (data, func, args)=>{
+  const getValue = (data, func, args) => {
     if (args == null) return;
     if (args.dotted != null) {
       let value = getValue(data, func, []);
       if (value == null) return value;
       const {dotted} = args;
-      const last = dotted.length -1;
-      for(let i = 0; i <= last ; ++i) {
+      const last = dotted.length - 1;
+      for (let i = 0; i <= last; ++i) {
         const row = dotted[i];
         const lv = value;
         value = lv[dotted[i]];
@@ -48,16 +48,16 @@ define((require)=>{
           return value;
         }
         if (typeof value === 'function') {
-          value = i === last ?
-            value.apply(lv, evalArgs(data, args)) :
-            value.call(lv);
+          value = i === last
+            ? value.apply(lv, evalArgs(data, args))
+            : value.call(lv);
         }
       }
       return value;
     }
 
     let parts = null;
-    switch(typeof func) {
+    switch (typeof func) {
     case 'function':
       return func.apply(data, evalArgs(data, args));
     case 'string': {
@@ -67,7 +67,7 @@ define((require)=>{
         return sp;
       }
 
-      switch(func[0]) {
+      switch (func[0]) {
       case '"': return func.slice(1);
       case '.':
         parts = func.split('.');
@@ -75,8 +75,9 @@ define((require)=>{
       default:
         if (Specials[func[0]] !== void 0) {
           const n = Number.parseFloat(func);
-          if (! isNaN(n))
+          if (! isNaN(n)) {
             return n;
+          }
         }
       }
 
@@ -91,14 +92,15 @@ define((require)=>{
         }
       }
       if (parts !== null) {
-        for(let i = 2; value != null && i < parts.length; ++i) {
+        for (let i = 2; value != null && i < parts.length; ++i) {
           data = value;
           value = value[parts[i]];
         }
       }
       if (value !== void 0) {
-        if (typeof value === 'function')
+        if (typeof value === 'function') {
           return value.apply(data, evalArgs(data, args));
+        }
         return value;
       }
       return;
@@ -110,24 +112,25 @@ define((require)=>{
         return evalPartial.call(data, func, args);
       }
     default:
-      throw new Error('Unexpected type: '+ (typeof func));
+      throw new Error('Unexpected type: ' + (typeof func));
     }
   };
 
-  const updateNode = (node, data)=>{
+  const updateNode = (node, data) => {
     currentElement = node[0];
 
     let value = getValue(data, node[1], node[2]);
 
-    if (value === void 0 || value === currentElement)
+    if (value === void 0 || value === currentElement) {
       return;
+    }
 
-    if (value === null)  {
-      if (currentElement.nodeType === COMMENT_NODE)
+    if (value === null) {
+      if (currentElement.nodeType === COMMENT_NODE) {
         value = currentElement;
-      else
+      } else {
         value = document.createComment('empty');
-
+      }
     } else if (typeof value === 'object' && value.nodeType === DOCUMENT_FRAGMENT_NODE) {
       if (currentElement[endMarker$] !== void 0) {
         Dom.removeInserts(currentElement);
@@ -136,8 +139,9 @@ define((require)=>{
           const start = document.createComment('start');
           Dom.replaceElement(start, currentElement);
           currentElement = start;
-        } else
+        } else {
           currentElement.textContent = 'start';
+        }
         currentElement[endMarker$] = document.createComment('end');
         currentElement.parentNode.insertBefore(
           currentElement[endMarker$], currentElement.nextSibling);
@@ -145,9 +149,7 @@ define((require)=>{
 
       currentElement.parentNode.insertBefore(value, currentElement[endMarker$]);
       value = currentElement;
-
     } else if (typeof value !== 'object' || ! ('nodeType' in value)) {
-
       // ***  Text output ***
       if (currentElement.nodeType === TEXT_NODE) {
         currentElement.textContent = value.toString();
@@ -155,7 +157,7 @@ define((require)=>{
       } else {
         value = document.createTextNode(value.toString());
       }
-    } // else *** User created node
+    }// else *** User created node
 
     if (currentElement !== value) {
       Dom.replaceElement(value, currentElement);
@@ -163,14 +165,14 @@ define((require)=>{
     node[0] = value;
   };
 
-  const evalArgs = (data, args)=>{
+  const evalArgs = (data, args) => {
     const len = args.length;
     if (len === 0) return args;
 
     let output = [];
     let hash = void 0;
 
-    for(let i = 0; i < len; ++i) {
+    for (let i = 0; i<len; ++i) {
       const arg = args[i];
       if (arg != null && typeof arg === 'object' && arg[0] === '=') {
         if (hash === void 0) hash = {};
@@ -179,21 +181,22 @@ define((require)=>{
         output.push(getValue(data, arg, []));
       }
     }
-    if (hash !== void 0) for(const key in hash) {
+    if (hash !== void 0) for (const key in hash) {
       output.push(hash);
       break;
     }
     return output;
   };
 
-  const animationEnd = event =>{
+  const animationEnd = (event) => {
     const target = event.target;
     const ctx = Dom.myCtx(target);
     const func = ctx && ctx.animationEnd;
 
     if (func == null) return;
-    if (ctx.animationEndRepeat !== true)
+    if (ctx.animationEndRepeat !== true) {
       removeOnAnmiationEnd.call(ctx);
+    }
 
     func(ctx, target);
   };
@@ -210,22 +213,24 @@ define((require)=>{
       return currentElement[ctx$].updateAllTags(args);
     }
 
-    if (func.$autoRender !== void 0)
+    if (func.$autoRender !== void 0) {
       return func.$autoRender(args);
-    else
+    } else {
       return func.call(this, args);
+    }
   }
 
   function removeOnAnmiationEnd() {
     if (this.animationEnd == null) return;
     this.animationEnd = null;
-    if (--animationEndCount === 0)
+    if (--animationEndCount === 0) {
       document.body.removeEventListener('animationend', animationEnd, true);
+    }
   }
 
-  const nullStop = ()=>{};
+  const nullStop = () => {};
 
-  const autoUpdateChange = (ctx)=>{
+  const autoUpdateChange = (ctx) => {
     const handle = ctx[autoUpdate$];
     handle.stop();
     handle.subject = ctx.data;
@@ -235,7 +240,7 @@ define((require)=>{
       : (model.observeId?.(ctx.data._id, handle.oc) ?? model.onChange?.(handle.oc))?.stop ?? nullStop;
   };
 
-  const stopAutoUpdate = (ctx)=>{
+  const stopAutoUpdate = (ctx) => {
     ctx[autoUpdate$].stop();
     ctx[autoUpdate$] = void 0;
   };
@@ -263,12 +268,13 @@ define((require)=>{
       if (this[onDestroy$] !== void 0) {
         const list = this[onDestroy$];
         this[onDestroy$] = void 0;
-        for(let i = list.length - 1; i >=0; --i) {
+        for (let i = list.length - 1; i >= 0; --i) {
           const row = list[i];
-          if (typeof row === 'function')
+          if (typeof row === 'function') {
             row.call(this, this, elm);
-          else
-            row.stop(this, elm);
+          } else {
+            row.stop();
+          }
         }
       }
       this.destroyed !== void 0 && this.destroyed(this, elm);
@@ -286,9 +292,9 @@ define((require)=>{
     element() {return this.firstElement}
 
     updateAllTags(data) {
-      if (data === void 0)
+      if (data === void 0) {
         data = this[data$];
-      else if (data !== this[data$]) {
+      } else if (data !== this[data$]) {
         this[data$] = data;
         this[autoUpdate$] === void 0 || autoUpdateChange(this);
       }
@@ -298,21 +304,22 @@ define((require)=>{
       currentCtx = this;
       try {
         const {evals, attrEvals} = this;
-        for(let i = 0; i < attrEvals.length; ++i) {
+        for (let i = 0; i < attrEvals.length; ++i) {
           const node = attrEvals[i];
           currentElement = node[0];
           const raw = getValue(data, node[2], node[3]);
-          const value = (raw === 0 ? '0' : raw ||'').toString();
+          const value = (raw === 0 ? '0' : raw || '').toString();
           const name = node[1];
           if (name != null && currentElement.getAttribute(name) !== value) {
-            if (name === 'xlink:href')
+            if (name === 'xlink:href') {
               currentElement.setAttributeNS(Dom.XLINKNS, 'href', value);
-            else
+            } else {
               currentElement.setAttribute(name, value);
+            }
           }
         }
 
-        for(let i = 0; i < evals.length; ++i) {
+        for (let i = 0; i < evals.length; ++i) {
           updateNode(evals[i], data);
         }
       } finally {
@@ -332,7 +339,7 @@ define((require)=>{
       try {
         const {evals} = this;
         const len = evals.length;
-        for(let i = 0; i < len; ++i) {
+        for (let i = 0; i<len; ++i) {
           const ev = evals[i];
           if (Dom.contains(elm, ev[0])) {
             updateNode(ev, currentCtx.data);
@@ -347,12 +354,14 @@ define((require)=>{
     onAnimationEnd(func, repeat) {
       let old = null;
       if (this.animationEnd == null) {
-        if(++animationEndCount === 1)
+        if (++animationEndCount === 1) {
           document.body.addEventListener('animationend', animationEnd, true);
+        }
         this.onDestroy(removeOnAnmiationEnd);
       } else {
-        if (func !== 'cancel')
+        if (func !== 'cancel') {
           old = this.animationEnd;
+        }
 
         if (func == null || func === 'cancel') {
           removeOnAnmiationEnd.call(this);
@@ -360,14 +369,15 @@ define((require)=>{
         }
       }
       this.animationEnd = func;
-      if (func != null && repeat === 'repeat')
+      if (func != null && repeat === 'repeat') {
         this.animationEndRepeat = true;
+      }
       old !== null && old(this, this.element());
     }
 
     autoUpdate(observe) {
       if (this[autoUpdate$] !== void 0) stopAutoUpdate(this);
-      this[autoUpdate$] = {subject: void 0, stop: nullStop, observe, oc: dc => {
+      this[autoUpdate$] = {subject: void 0, stop: nullStop, observe, oc: (dc) => {
         const handle = this[autoUpdate$];
         if (dc.isDelete) {
           handle.stop();
@@ -389,13 +399,13 @@ define((require)=>{
         const wrapper = Dom.makeMenustartCallback(callback);
         elm.addEventListener('pointerdown', wrapper, opts);
         elm.addEventListener('click', wrapper, opts);
-        this.onDestroy(()=>{
+        this.onDestroy(() => {
           elm.removeEventListener('pointerdown', wrapper, opts);
           elm.removeEventListener('click', wrapper, opts);
         });
       } else {
         elm.addEventListener(type, callback, opts);
-        this.onDestroy(()=>{elm.removeEventListener(type, callback, opts)});
+        this.onDestroy(() => {elm.removeEventListener(type, callback, opts)});
       }
     }
 
@@ -403,12 +413,12 @@ define((require)=>{
     static set _currentCtx(value) {currentCtx = value}
 
     static get _currentElement() {return currentElement}
-  };
+  }
 
   Ctx[private$] = {onDestroy$};
 
   Ctx.current = {
-    data: elm =>{
+    data: (elm) => {
       if (elm != null) {
         const ctx = Dom.ctx(elm);
         return ctx && ctx.data;
@@ -421,14 +431,14 @@ define((require)=>{
     get ctx() {return currentCtx},
     set _ctx(value) {currentCtx = value},
     get element() {return currentElement},
-    isElement: ()=> currentElement.nodeType === ELEMENT_NODE,
-    getValue: (name, ...args)=> getValue(currentCtx.data, name, args),
+    isElement: () => currentElement.nodeType === ELEMENT_NODE,
+    getValue: (name, ...args) => getValue(currentCtx.data, name, args),
   };
 
   Ctx[private$] = {
-    getValue: getValue,
-    evalArgs: evalArgs,
-    set currentElement(value) {currentElement = value}
+    getValue,
+    evalArgs,
+    set currentElement(value) {currentElement = value},
   };
 
   return Ctx;

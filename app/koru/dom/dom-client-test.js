@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   // Adorn koru/dom/base with extra client only utilities
   const Ctx             = require('koru/dom/ctx');
@@ -14,12 +14,12 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       api.module({subjectModule: module.get('koru/dom')});
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       Dom.flushNextFrame();
       document.body.removeAttribute('class');
       Dom.removeChildren(document.body);
@@ -28,28 +28,28 @@ define((require, exports, module)=>{
       Ctx[private$].currentElement = null;
     });
 
-    group("ensureInView", ()=>{
+    group('ensureInView', () => {
       /**
        * Ensure that `elm` is as visible as possible with minimal scrolling.
        **/
 
-      beforeEach(()=>{
+      beforeEach(() => {
         api.method();
       });
 
-      test("horizontal", ()=>{
+      test('horizontal', () => {
         //[
         // horizontal scroll
-        const block = (text)=>Dom.h({
+        const block = (text) => Dom.h({
           style: 'flex:0 0 50px', div: [text]});
 
-        const divs = 'one two three four five'.split(' ').map(t => block(t));
+        const divs = 'one two three four five'.split(' ').map((t) => block(t));
         const container = Dom.h({
           style: 'margin:30px;width:75px;height:30px;overflow:scroll;',
           div: {
             style: 'display:flex;width:300px',
             div: divs,
-          }
+          },
         });
 
         document.body.appendChild(container);
@@ -86,15 +86,15 @@ define((require, exports, module)=>{
         assert.near(outer.scrollLeft, 83, 4);
       });
 
-      test("vertical", ()=>{
+      test('vertical', () => {
         //[
         // vertical scroll
-        const block = (text)=>Dom.h({style: 'width:50px;height:20px', div: [text]});
+        const block = (text) => Dom.h({style: 'width:50px;height:20px', div: [text]});
 
-        const divs = 'one two three four five'.split(' ').map(t => block(t));
+        const divs = 'one two three four five'.split(' ').map((t) => block(t));
         const container = Dom.h({
           style: 'margin:30px;width:150px;height:30px;overflow:scroll',
-          div: divs
+          div: divs,
         });
 
         document.body.appendChild(container);
@@ -132,7 +132,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("getBoundingClientRect", ()=>{
+    test('getBoundingClientRect', () => {
       /**
        * Get the
        * [boundingClientRect](#mdn:/API/Element/getBoundingClientRect)
@@ -147,7 +147,7 @@ define((require, exports, module)=>{
       api.method();
       //[
       const div = Dom.h({
-        style: 'position:absolute;left:25px;top:50px;width:150px;height:80px;'+
+        style: 'position:absolute;left:25px;top:50px;width:150px;height:80px;' +
           'font-size:16px;font-family:monospace',
         contenteditable: true,
         div: ['Hello ', 'world', {br: ''}, {br: ''}, '']});
@@ -187,7 +187,7 @@ define((require, exports, module)=>{
         left: r2.right, top: 50, width: 0, height: 19}, 2);
     });
 
-    test("setCtx", ()=>{
+    test('setCtx', () => {
       /**
        * Attach a {#koru/dom/ctx} to an [Element](#mdn:/API/Element)
 
@@ -220,18 +220,19 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("supports passive", ()=>{
+    test('supports passive', () => {
       assert.isTrue(Dom.supportsPassiveEvents === true || Dom.supportsPassiveEvents === false);
     });
 
-    test("captureEventOption", ()=>{
-      if (Dom.supportsPassiveEvents)
+    test('captureEventOption', () => {
+      if (Dom.supportsPassiveEvents) {
         assert.equals(Dom.captureEventOption, {capture: true, passive: false});
-      else
+      } else {
         assert.same(Dom.captureEventOption, true);
+      }
     });
 
-    test("isAboveBottom", ()=>{
+    test('isAboveBottom', () => {
       /**
        * Determine if an element is above the bottom of a region.
 
@@ -240,12 +241,12 @@ define((require, exports, module)=>{
        **/
 
       api.method('isAboveBottom');
-      const x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
-                     div: "x"});
+      const x = Dom.h({$style: 'position:absolute;left:-12px;width:20px;height:30px',
+                       div: 'x'});
       document.body.appendChild(x);
 
       assert(Dom.isAboveBottom(x, document.body));
-      x.style.bottom = "-9px";
+      x.style.bottom = '-9px';
       assert(Dom.isAboveBottom(x, document.body));
       x.style.bottom = '';
       x.style.top = '110%';
@@ -261,7 +262,7 @@ define((require, exports, module)=>{
       api.done();
     });
 
-    test("isInView", ()=>{
+    test('isInView', () => {
       /**
        * Determine if an element is within the viewable area of a
        * `region`.
@@ -270,12 +271,12 @@ define((require, exports, module)=>{
        * Dom `Element` or a `boundingClientRect`
        **/
       api.method('isInView');
-      const x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
-                     div: "x"});
+      const x = Dom.h({$style: 'position:absolute;left:-12px;width:20px;height:30px',
+                       div: 'x'});
       document.body.appendChild(x);
 
       refute(Dom.isInView(x, document.body));
-      x.style.left = "-9px";
+      x.style.left = '-9px';
       assert(Dom.isInView(x, document.body));
 
       x.style.bottom = '-17px';
@@ -296,32 +297,32 @@ define((require, exports, module)=>{
 
       x.style.top = '-17px';
       refute(Dom.isInView(x, document.body));
-      x.style.top = "-14px";
+      x.style.top = '-14px';
       assert(Dom.isInView(x, document.body));
       x.style.top = '';
       x.style.bottom = '-14px';
       assert(Dom.isInView(x, document.body));
     });
 
-    test("getClosest", ()=>{
+    test('getClosest', () => {
       document.body.appendChild(Dom.h({class: 'foo', div: {span: 'hello'}}));
 
-      assert.dom('span', span =>{
+      assert.dom('span', (span) => {
         assert.same(Dom.getClosest(span.firstChild, '.foo>span'), span);
         assert.same(Dom.getClosest(span.firstChild, '.foo'), span.parentNode);
       });
     });
 
-    test("html string", ()=>{
-      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
-                           '<button type="button" id="sp">Hello</button></div></div></div>');
+    test('html string', () => {
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
+                                 '<button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
 
-      assert.dom('#top', top =>{
+      assert.dom('#top', (top) => {
         assert.same(elm, top);
 
-        assert.dom('>.foo', ()=>{ // doubles as a test for assert.dom directChild
+        assert.dom('>.foo', () => { // doubles as a test for assert.dom directChild
           assert.dom('>.bar>button#sp', 'Hello');
         });
       });
@@ -333,7 +334,7 @@ define((require, exports, module)=>{
       assert.same(nested.firstChild.textContent, 'hello');
     });
 
-    test("childElementIndex", ()=>{
+    test('childElementIndex', () => {
       const elm = Dom.h({});
       let child;
       elm.appendChild(child = document.createElement('b'));
@@ -348,12 +349,12 @@ define((require, exports, module)=>{
       assert.same(Dom.childElementIndex(child), 2);
     });
 
-    test("mapToData", ()=>{
+    test('mapToData', () => {
       const elm = Dom.h({});
 
-      'one two three'.split(' ').forEach(data=>{
+      'one two three'.split(' ').forEach((data) => {
         const child = Dom.h({});
-        Dom.setCtx(child, {data: data});
+        Dom.setCtx(child, {data});
         assert.same(Dom.myCtx(child).firstElement, child);
 
         elm.appendChild(child);
@@ -362,7 +363,7 @@ define((require, exports, module)=>{
       assert.equals(Dom.mapToData(elm.children), ['one', 'two', 'three']);
     });
 
-    test("setClassBySuffix", ()=>{
+    test('setClassBySuffix', () => {
       const elm = {className: ''};
 
       Dom.setClassBySuffix('use', 'Mode', elm);
@@ -390,7 +391,7 @@ define((require, exports, module)=>{
       assert.same(elm.className, '');
     });
 
-    test("setClassByPrefix", ()=>{
+    test('setClassByPrefix', () => {
       const elm = {className: ''};
 
       Dom.setClassByPrefix('use', 'mode-', elm);
@@ -416,19 +417,19 @@ define((require, exports, module)=>{
       assert.same(elm.className, '');
     });
 
-    test("getUpDownByClass", ()=>{
-      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
-                           '<button type="button" id="sp">Hello</button></div>'+
-                           '<div class="dest"></div></div></div>');
+    test('getUpDownByClass', () => {
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
+                                 '<button type="button" id="sp">Hello</button></div>' +
+                                 '<div class="dest"></div></div></div>');
 
-      assert.dom(elm, ()=>{
-        assert.dom('#sp', sp =>{
+      assert.dom(elm, () => {
+        assert.dom('#sp', (sp) => {
           assert.className(Dom.getUpDownByClass(sp, 'foo', 'dest'), 'dest');
         });
       });
     });
 
-    test("closestChildOf", ()=>{
+    test('closestChildOf', () => {
       /**
        * Search up `parent`'s child which is `elm` or a ancestor of `elm`.
 
@@ -451,14 +452,13 @@ define((require, exports, module)=>{
       //]
     });
 
-
-    test("INPUT_SELECTOR, WIDGET_SELECTOR", ()=>{
+    test('INPUT_SELECTOR, WIDGET_SELECTOR', () => {
       assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
-      assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,'+
+      assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,' +
                   '[contenteditable="true"],button,a');
     });
 
-    test("getClosest", ()=>{
+    test('getClosest', () => {
       /**
        * search up for element that matches selector
 
@@ -486,7 +486,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("getClosestCtx", ()=>{
+    test('getClosestCtx', () => {
       /**
        * search up for element that matches selector
 
@@ -515,22 +515,22 @@ define((require, exports, module)=>{
       assert.same(Dom.getClosestCtx(button, '.foo'), ctx);
     });
 
-    group("hideAndRemove", ()=>{
-      beforeEach(()=>{
+    group('hideAndRemove', () => {
+      beforeEach(() => {
         v.onAnimationEnd = stub(Dom.Ctx.prototype, 'onAnimationEnd');
       });
 
-      test("non existent", ()=>{
+      test('non existent', () => {
         Dom.hideAndRemove('Foo');
 
         refute.called(v.onAnimationEnd);
       });
 
-      test("remove by id", ()=>{
+      test('remove by id', () => {
         document.body.appendChild(Dom.h({id: 'Foo'}));
 
         assert.dom('#Foo', function () {
-          Dom.setCtx(v.elm = this, v.ctx = new Dom.Ctx);
+          Dom.setCtx(v.elm = this, v.ctx = new Dom.Ctx());
           Dom.hideAndRemove('Foo');
 
           assert.className(this, 'remElm');
@@ -543,10 +543,10 @@ define((require, exports, module)=>{
         refute.dom('#Foo');
       });
 
-      test("remove by elm", ()=>{
+      test('remove by elm', () => {
         document.body.appendChild(v.elm = Dom.h({id: 'Foo'}));
 
-        Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
+        Dom.setCtx(v.elm, v.ctx = new Dom.Ctx());
 
         spy(v.ctx, 'onDestroy');
 
@@ -562,30 +562,30 @@ define((require, exports, module)=>{
       });
     });
 
-    test("forEach", ()=>{
+    test('forEach', () => {
       const elm = Dom.textToHtml('<div></div>');
       document.body.appendChild(elm);
-      for(let i = 0; i < 5; ++i) {
-        elm.appendChild(Dom.textToHtml('<div class="foo">'+i+'</div>'));
+      for (let i = 0; i<5; ++i) {
+        elm.appendChild(Dom.textToHtml('<div class="foo">' + i + '</div>'));
       }
 
       let results = [];
-      Dom.forEach(elm, '.foo', e =>{results.push(e.textContent)});
+      Dom.forEach(elm, '.foo', (e) => {results.push(e.textContent)});
 
       assert.same(results.join(','), '0,1,2,3,4');
 
       results = 0;
-      Dom.forEach(document, 'div', ()=>{++results;});
+      Dom.forEach(document, 'div', () => {++results});
 
       assert.same(results, 6);
     });
 
-    test("remove", ()=>{
+    test('remove', () => {
       /**
        * Remove element and descontruct its {#koru/dom/ctx}
        **/
       api.method('remove');
-      api.example(_=>{
+      api.example((_) => {
         const elm = Dom.h({});
         Dom.setCtx(elm, new Dom.Ctx());
         document.body.appendChild(elm);
@@ -599,7 +599,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("removeAll", ()=>{
+    test('removeAll', () => {
       stub(Dom, 'remove');
 
       const r1 = Dom.remove.withArgs(1);
@@ -611,8 +611,8 @@ define((require, exports, module)=>{
       assert(r2.calledBefore(r1));
     });
 
-    test("contains", ()=>{
-      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
+    test('contains', () => {
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
                                  '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
@@ -620,7 +620,7 @@ define((require, exports, module)=>{
       assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
     });
 
-    test("insertStartEndMarkers", ()=>{
+    test('insertStartEndMarkers', () => {
       /**
        * Insert a pair of comments into `parent` that can be used for start and end markers.
 
@@ -642,7 +642,7 @@ define((require, exports, module)=>{
       assert.same(footer.previousSibling.previousSibling, startMarker);
     });
 
-    test("endMarker", ()=>{
+    test('endMarker', () => {
       /**
        * Return the end marker for a start marker.
        *
@@ -660,7 +660,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("removeInserts", ()=>{
+    test('removeInserts', () => {
       /**
        * remove inserts between start end markers.
        *
@@ -674,7 +674,7 @@ define((require, exports, module)=>{
       assert.same(Dom.endMarker(startMarker), startMarker[endMarker$]);
 
       parent.appendChild(startMarker);
-      for (const i of [1,2,3]) parent.appendChild(document.createElement('p'));
+      for (const i of [1, 2, 3]) parent.appendChild(document.createElement('p'));
       parent.appendChild(startMarker[endMarker$]);
       parent.appendChild(document.createElement('i'));
 
@@ -691,16 +691,15 @@ define((require, exports, module)=>{
       assert.same(startMarker[endMarker$].parentNode, parent);
     });
 
-
-    test("onPointerUp", ()=>{
+    test('onPointerUp', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'span'},
-        ]
+        ],
       }]});
       Dom.tpl.Foo.$events({
         'pointerdown span'(event) {
-          Dom.onPointerUp(e2 =>{
+          Dom.onPointerUp((e2) => {
             v.ctx = Dom.current.ctx;
             v.target = e2.target;
           });
@@ -709,7 +708,7 @@ define((require, exports, module)=>{
 
       document.body.appendChild(Dom.tpl.Foo.$autoRender({}));
 
-      assert.dom('div>span', span =>{
+      assert.dom('div>span', (span) => {
         Dom.triggerEvent(span, 'pointerdown');
         Dom.triggerEvent(span, 'pointerup');
 
@@ -724,7 +723,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("modifierKey", ()=>{
+    test('modifierKey', () => {
       refute(Dom.modifierKey({}));
       assert(Dom.modifierKey({ctrlKey: true}));
       assert(Dom.modifierKey({shiftKey: true}));
@@ -732,38 +731,38 @@ define((require, exports, module)=>{
       assert(Dom.modifierKey({altKey: true}));
     });
 
-    test("decimal helper", ()=>{
+    test('decimal helper', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
-          ["","decimal","foo",["=","format","\"3"]]
-        ]
+          ['', 'decimal', 'foo', ['=', 'format', '"3']],
+        ],
       }]});
 
-      assert.dom(Dom.tpl.Foo.$render({foo: 123.45}), elm => {
-        assert.same(elm.textContent, "123.450");
+      assert.dom(Dom.tpl.Foo.$render({foo: 123.45}), (elm) => {
+        assert.same(elm.textContent, '123.450');
         Dom.ctx(elm).updateAllTags({foo: 423.45750001});
-        assert.same(elm.textContent, "423.458");
+        assert.same(elm.textContent, '423.458');
         Dom.ctx(elm).updateAllTags({foo: null});
-        assert.same(elm.textContent, "");
+        assert.same(elm.textContent, '');
       });
     });
 
-    test("comment helper", ()=>{
+    test('comment helper', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
-          ["","comment","\"foo"]
-        ]
+          ['', 'comment', '"foo'],
+        ],
       }]});
 
-      assert.dom(Dom.tpl.Foo.$render({}), elm => {
+      assert.dom(Dom.tpl.Foo.$render({}), (elm) => {
         const comment = elm.firstChild;
         assert.equals(comment.nodeType, document.COMMENT_NODE);
         assert.equals(comment.data, 'foo');
       });
     });
 
-    group("inputValue helper", ()=>{
-      test("restore", ()=>{
+    group('inputValue helper', () => {
+      test('restore', () => {
         const elm = Ctx[private$].currentElement = {};
         TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = stub()});
         Dom.restoreOriginalValue(elm);
@@ -791,30 +790,29 @@ define((require, exports, module)=>{
         v.stub.reset();
         Dom.restoreOriginalValue(elm);
         assert.calledWith(v.stub, 'bar');
-
       });
     });
 
-    group("destroyMeWith", ()=>{
-      beforeEach( ()=>{
-        v.elm = Dom.h({div: "subject"});
+    group('destroyMeWith', () => {
+      beforeEach(() => {
+        v.elm = Dom.h({div: 'subject'});
         v.elmCtx = Dom.setCtx(v.elm);
 
-        v.dep = Dom.h({div: "dep"});
+        v.dep = Dom.h({div: 'dep'});
         v.depCtx = Dom.setCtx(v.dep);
 
         document.body.appendChild(v.elm);
         document.body.appendChild(v.dep);
         Dom.destroyMeWith(v.dep, v.elm);
 
-        v.dep2 = Dom.h({div: "dep2"});
+        v.dep2 = Dom.h({div: 'dep2'});
         v.dep2Ctx = Dom.setCtx(v.dep2);
 
         document.body.appendChild(v.dep2);
         Dom.destroyMeWith(v.dep2, v.elm);
       });
 
-      test("removes with", ()=>{
+      test('removes with', () => {
         Dom.remove(v.elm);
         assert.same(v.elm[ctx$], null);
         assert.same(v.dep[ctx$], null);
@@ -823,7 +821,7 @@ define((require, exports, module)=>{
         assert.same(v.dep2.parentNode, null);
       });
 
-      test("detaches if removed", ()=>{
+      test('detaches if removed', () => {
         const {destoryObservers$} = Ctx[private$];
         Dom.remove(v.dep);
         const obs = [m.is(v.dep2)];
@@ -834,8 +832,8 @@ define((require, exports, module)=>{
       });
     });
 
-    test("onDestroy", ()=>{
-      v.elm = Dom.h({div: "subject"});
+    test('onDestroy', () => {
+      v.elm = Dom.h({div: 'subject'});
       v.elmCtx = Dom.setCtx(v.elm);
       v.elmCtx.onDestroy(v.st1 = stub());
       v.elmCtx.onDestroy(v.st2 = {stop: stub()});
@@ -843,21 +841,21 @@ define((require, exports, module)=>{
       Dom.destroyData(v.elm);
       assert.calledWith(v.st1, v.elmCtx, v.elm);
       assert.same(v.st1.firstCall.thisValue, v.elmCtx);
-      assert.calledWith(v.st2.stop, v.elmCtx, v.elm);
+      assert.calledWithExactly(v.st2.stop);
       assert.same(v.st2.stop.firstCall.thisValue, v.st2);
     });
 
-    group("reposition", ()=>{
+    group('reposition', () => {
       /**
        * Align element with an origin
        **/
       // See SelectMenu for more testing
 
-      beforeEach(()=>{
+      beforeEach(() => {
         api.method();
       });
 
-      test("above", ()=>{
+      test('above', () => {
         //[
         const popup = Dom.h({class: 'popup', $style: 'position:absolute;width:200px;height:10px'});
         document.body.appendChild(popup);
@@ -871,7 +869,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("align right", ()=>{
+      test('align right', () => {
         //[
         const popup = Dom.h({
           class: 'popup',
@@ -881,7 +879,7 @@ define((require, exports, module)=>{
         // set align right
         Dom.reposition('above', {
           align: 'right',
-          popup, boundingClientRect: {left: 50, top: 100, right: 120}
+          popup, boundingClientRect: {left: 50, top: 100, right: 120},
         });
 
         const rect = popup.getBoundingClientRect();
@@ -890,7 +888,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("align out of range", ()=>{
+      test('align out of range', () => {
         const style = 'position:absolute;width:80px;height:10px';
         const popup = Dom.h({class: 'popup'});
         document.body.appendChild(popup);
@@ -898,34 +896,34 @@ define((require, exports, module)=>{
 
 
         // align right
-        popup.style.cssText = style+";margin-right:-400px";
+        popup.style.cssText = style + ';margin-right:-400px';
         Dom.reposition('above', {
           align: 'right',
-          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth}
+          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
                     {right: winWidth, top: 90});
 
-        popup.style.cssText = style+";margin-right:40px";
+        popup.style.cssText = style + ';margin-right:40px';
         Dom.reposition('above', {
           align: 'right',
-          popup, boundingClientRect: {left: 100, top: 100, right: 100}
+          popup, boundingClientRect: {left: 100, top: 100, right: 100},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
                     {left: 0, top: 90});
 
 
         // align left
-        popup.style.cssText = style+";margin-left:-40px";
+        popup.style.cssText = style + ';margin-left:-40px';
         Dom.reposition('above', {
-          popup, boundingClientRect: {left: 10, top: 100, right: 60}
+          popup, boundingClientRect: {left: 10, top: 100, right: 60},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
                     {left: 0, top: 90});
 
-        popup.style.cssText = style+";margin-left:40px";
+        popup.style.cssText = style + ';margin-left:40px';
         Dom.reposition('above', {
-          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth}
+          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
                     {right: winWidth, top: 90});
