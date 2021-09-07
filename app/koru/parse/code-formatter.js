@@ -77,17 +77,22 @@ define((require, exports, module) => {
     printParams(params, catchup=true) {
       if (params.length != 0) {
         this.skipOver();
-        let p = params[0];
+        let p;
         for (const n of params) {
-          if (p !== n) {
+          if (p !== void 0) {
             this.writeAdvance(',');
             this.skipOver();
             this.writeGapIfNeeded();
           }
-          this.skipOverNl(p == n ? 1 : 2);
+          this.skipOverNl(p === void 0 ? 1 : 2);
           p = n;
-          this.print(n, true);
-          this.catchup(n.end);
+          if (n !== null) {
+            this.print(n, true);
+            this.catchup(n.end);
+          }
+        }
+        if (p === null) {
+          this.writeAdvance(',');
         }
         this.skipOver(SameLineWsOrCommaRE);
         if (catchup && this.isAtNewline()) {

@@ -274,20 +274,20 @@ x()`;
       });
 
       test('CallExpression', () => {
+        assert.equals(reformat('a\n  (\n\n\n  b,c,d)'), `a(\n  b, c, d)`);
         assert.equals(reformat('(a)\n.toString()'), `(a)\n.toString()`);
         assert.equals(reformat('( a)()'), `(a)()`);
-        assert.equals(reformat('a\n  (\n\n\n  b,c,d)'), `a(\n  b, c, d)`);
         assert.equals(reformat('a  (  b,c,d)'), `a(b, c, d)`);
       });
 
       test('objects', () => {
+        assert.equals(reformat('a({\n  a: c,d2,  \n\n \n \n  d, e:\n f  \n  });'),
+                      'a({\n  a: c, d2,\n\n  d, e: f,\n})');
         assert.equals(reformat('const {  a,b: c,\n\n\n } = d;'), 'const {a, b: c,\n} = d;');
         assert.equals(reformat('define(() => {\n return {\n reformat: {},\n}\n})'),
                       'define(() => {\n  return {\n    reformat: {},\n  };\n})');
         assert.equals(reformat('({ a = 123,b  }) => 456'), '({a=123, b}) => 456');
         assert.equals(reformat('a(  { b:   c,   d,e:e,  });'), 'a({b: c, d, e})');
-        assert.equals(reformat('a({\n  a: c,d2,  \n\n \n \n  d, e:\n f  \n  });'),
-                      'a({\n  a: c, d2,\n\n  d, e: f,\n})');
         assert.equals(reformat('a({ [b]: 123 })'), 'a({[b]: 123})');
         assert.equals(reformat('a({ [b]: c })'), 'a({[b]: c})');
 
@@ -300,6 +300,8 @@ x()`;
       });
 
       test('params', () => {
+        assert.equals(reformat('var a = [,]'), 'var a = [,]');
+        assert.equals(reformat('var a = [,,1]'), 'var a = [, , 1]');
         assert.equals(reformat('var  a1,b,c  ; const  a = 123;'), `var a1, b, c; const a = 123;`);
         assert.equals(reformat('foo  (  a, \n    b,c,  );'), `foo(a,\n    b, c)`);
       });
