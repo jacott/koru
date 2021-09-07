@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -9,8 +9,8 @@ define((require, exports, module)=>{
   const {match: m} = TH;
   const {deepCopy} = util;
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("has", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('has', () => {
       /**
        * test if undo has changed field
        **/
@@ -22,7 +22,7 @@ define((require, exports, module)=>{
       assert.isFalse(Changes.has({$partial: {foo: undefined}}, 'bar'));
     });
 
-    group("merge", ()=>{
+    group('merge', () => {
       /**
        * Merge one set of changes into another.
        *
@@ -33,14 +33,14 @@ define((require, exports, module)=>{
        * @returns `to`
        **/
 
-      test("toplevel, partial", ()=>{
+      test('toplevel, partial', () => {
         api.method();
-        // [
+        //[
         const current = {title: 'The Bone', author: 'Kery Hulme', genre: ['Romance', 'Mystery']};
         assert.same(Changes.merge(current, {$partial: {
           title: ['$append', ' People'],
           author: ['$patch', [3, 1, 'i']],
-          genre: ['$remove', ['Romance'], '$add', ['Drama']]
+          genre: ['$remove', ['Romance'], '$add', ['Drama']],
         }}), current);
 
         assert.equals(current, {
@@ -53,7 +53,7 @@ define((require, exports, module)=>{
         Changes.merge(current, {$partial: {
           title: ['$replace', 'E nga iwi o nga iwi'],
           author: ['$prepend', 'Kai Tahu '],
-          genre: ['$add', ['Drama']]
+          genre: ['$add', ['Drama']],
         }});
 
         assert.equals(current, {
@@ -63,9 +63,9 @@ define((require, exports, module)=>{
         });
       });
 
-      test("partial, partial", ()=>{
+      test('partial, partial', () => {
         api.method();
-        // [
+        //[
         const current = {$partial: {
           title: ['$append', 'The Bone'],
           author: ['$prepend', 'Kery'],
@@ -73,7 +73,7 @@ define((require, exports, module)=>{
         Changes.merge(current, {$partial: {
           title: ['$append', ' People'],
           author: ['$patch', [3, 1, 'i']],
-          genre: ['$add', ['Mystery']]
+          genre: ['$add', ['Mystery']],
         }});
 
         assert.equals(current, {$partial: {
@@ -84,9 +84,9 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("partial, toplevel", ()=>{
+      test('partial, toplevel', () => {
         api.method();
-        // [
+        //[
         const current = {$partial: {
           title: ['$append', 'The Bone'],
           author: ['$prepend', 'Kery'],
@@ -99,11 +99,11 @@ define((require, exports, module)=>{
         assert.equals(current, {
           title: 'The Bone People',
           genre: ['Mystery'],
-          $partial: {author: ['$prepend', 'Kery'],}});
+          $partial: {author: ['$prepend', 'Kery']}});
         //]
       });
 
-      test("toplevel, toplevel", ()=>{
+      test('toplevel, toplevel', () => {
         const current = {
           title: 'The Bone',
           author: 'Keri Hulme',
@@ -121,16 +121,16 @@ define((require, exports, module)=>{
       });
     });
 
-    group("applyOne", ()=>{
+    group('applyOne', () => {
       /**
        * Apply only one attribute from changes
        */
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      test("simple changes", ()=>{
+      test('simple changes', () => {
         //[
         const attrs = {bar: 1, foo: 2, fuz: 3, fiz: 4};
         const changes = {foo: null, fuz: undefined, fiz: 5, nit: 6};
@@ -143,19 +143,19 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("with non numeric array index", ()=>{
+      test('with non numeric array index', () => {
         // say "foo.bar.baz" instead of "foo.0.baz"
         assert.exception(() => {
-          Changes.applyOne({a: [{b: [1]}]}, "a.0.b.x", {value: 2});
+          Changes.applyOne({a: [{b: [1]}]}, 'a.0.b.x', {value: 2});
         }, 'Error', "Non numeric index for array: 'x'");
 
         assert.exception(() => {
-          Changes.applyOne({a: [{b: [1]}]}, "a.x.b.0", {value: 2});
+          Changes.applyOne({a: [{b: [1]}]}, 'a.x.b.0', {value: 2});
         }, 'Error', "Non numeric index for array: 'x'");
       });
     });
 
-    group("applyAll", ()=>{
+    group('applyAll', () => {
       /**
        * Apply all commands to an attributes object. Commands can have:
 
@@ -170,39 +170,39 @@ define((require, exports, module)=>{
        * object
        **/
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      test("top level match", ()=>{
+      test('top level match', () => {
         //[
         // matches top level
-        const attrs = {foo: 1, bar: "two"};
-        const changes = {$match: {foo: 1, bar: {md5: "b8a9"}}};
-        refute.exception(_=>{Changes.applyAll(attrs, changes)});
-        assert.equals(attrs, {foo: 1, bar: "two"});
-        assert.equals(changes, {$match: {foo: 1, bar: {md5: "b8a9"}}});
+        const attrs = {foo: 1, bar: 'two'};
+        const changes = {$match: {foo: 1, bar: {md5: 'b8a9'}}};
+        refute.exception(() => {Changes.applyAll(attrs, changes)});
+        assert.equals(attrs, {foo: 1, bar: 'two'});
+        assert.equals(changes, {$match: {foo: 1, bar: {md5: 'b8a9'}}});
         //]
       });
 
-      test("top level not match", ()=>{
+      test('top level not match', () => {
         //[
         // bad checksum
-        const attrs = {foo: 1, bar: {md5: "bad"}};
-        const changes = {$match: {foo: 1, bar: "two"}};
+        const attrs = {foo: 1, bar: {md5: 'bad'}};
+        const changes = {$match: {foo: 1, bar: 'two'}};
         assert.exception(
-          _=>{Changes.applyAll(attrs, changes)},
-          {error: 409, reason: {bar: 'not_match'}}
+          () => {Changes.applyAll(attrs, changes)},
+          {error: 409, reason: {bar: 'not_match'}},
         );
         //]
       });
 
-      test("undo", ()=>{
+      test('undo', () => {
         //[
         // can apply undo
         const attrs = {
           foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]},
-          simple: [123]
+          simple: [123],
         };
         const changes = {
           foo: 2,
@@ -213,8 +213,8 @@ define((require, exports, module)=>{
               'bif.2.$partial', [
                 'bip', 'new',
                 'bob.$partial', [
-                  '$append', ' appended'
-                ]
+                  '$append', ' appended',
+                ],
               ],
             ],
           },
@@ -230,8 +230,8 @@ define((require, exports, module)=>{
               'bif.2.$partial', [
                 'bip', 'new',
                 'bob.$partial', [
-                  '$append', ' appended'
-                ]
+                  '$append', ' appended',
+                ],
               ],
             ],
           },
@@ -240,8 +240,8 @@ define((require, exports, module)=>{
         assert.same(Changes.original(undo), changes);
 
         assert.equals(attrs, {
-          foo: 2, bar: 4,  baz: {
-            bif: [1, 2, {bob: 'text appended', bip: 'new'}]
+          foo: 2, bar: 4, baz: {
+            bif: [1, 2, {bob: 'text appended', bip: 'new'}],
           },
           simple: 456,
         });
@@ -253,12 +253,12 @@ define((require, exports, module)=>{
             baz: [
               'bif.2.$partial', [
                 'bob.$partial', [
-                  '$patch', [-9, 9, null]
+                  '$patch', [-9, 9, null],
                 ],
                 'bip', null,
               ],
             ],
-          }
+          },
         });
 
         Changes.applyAll(attrs, undo);
@@ -269,14 +269,14 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("applyAsDiff", ()=>{
+      test('applyAsDiff', () => {
         const doc = {index: {
-          d: {dog: [123,234], donkey: [56,456]},
-          p: {pig: [3, 34]}
+          d: {dog: [123, 234], donkey: [56, 456]},
+          p: {pig: [3, 34]},
         }};
         const patch = {index: {
-          d: {dog: [123,234], deer: [34]},
-          h: {horse: [23,344]},
+          d: {dog: [123, 234], deer: [34]},
+          h: {horse: [23, 344]},
           p: {pig: [3, 34]},
         }};
         const undo = Changes.applyAll(doc, patch);
@@ -285,7 +285,7 @@ define((require, exports, module)=>{
           'h', null,
           'd.$partial', [
             'deer', null,
-            'donkey', [56, 456]]
+            'donkey', [56, 456]],
         ]}});
 
         const redo = Changes.applyAll(doc, {$partial: {index: [
@@ -297,30 +297,30 @@ define((require, exports, module)=>{
 
         assert.equals(redo, {$partial: {index: [
           'd.$partial', ['donkey', null, 'deer', [34]],
-          'h', {horse: [23, 344]}
+          'h', {horse: [23, 344]},
         ]}});
 
         assert.equals(doc, {index: {
-          d: {dog: [123,234], donkey: [56,456]},
-          p: {pig: [3, 34]}
+          d: {dog: [123, 234], donkey: [56, 456]},
+          p: {pig: [3, 34]},
         }});
       });
 
-      test("no changes", ()=>{
-        const attrs = {foo: 1, bar: [1,2]};
+      test('no changes', () => {
+        const attrs = {foo: 1, bar: [1, 2]};
         const changes = {
           foo: 1,
           $partial: {
             bar: ['$add', [1]],
           },
         };
-        ;
+
         assert.equals(Changes.applyAll(attrs, changes), {});
         assert.equals(attrs, {foo: 1, bar: [1, 2]});
       });
 
-      test("null to object partial", ()=>{
-        const attrs ={_id: 'idhw'};
+      test('null to object partial', () => {
+        const attrs = {_id: 'idhw'};
         const changes = {$partial: {
           html: ['div.0.b', 'hello', 'input.$partial', ['id', 'world']],
         }};
@@ -334,45 +334,45 @@ define((require, exports, module)=>{
         assert.equals(undo, {$partial: {html: ['$replace', null]}});
       });
 
-      test("with objects", ()=>{
+      test('with objects', () => {
         const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-        let changes = {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}};
+        let changes = {a: 2, b: null, d: 4, $partial: {nest: ['bar', 'bar']}};
 
         const undo = Changes.applyAll(orig, changes);
-        assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
-        assert.equals(undo, {a: 1, b: 2, d: null, $partial: {nest: ["bar", null]}});
+        assert.equals(orig, {a: 2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
+        assert.equals(undo, {a: 1, b: 2, d: null, $partial: {nest: ['bar', null]}});
         assert.same(undo.d, null);
 
-        assert.equals(changes, {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}});
+        assert.equals(changes, {a: 2, b: null, d: 4, $partial: {nest: ['bar', 'bar']}});
         assert.same(changes.b, null);
 
         {
-          const changes = {$partial: {nest: ["bar", 'new'], new: ["deep.list", 'deeplist']}};
+          const changes = {$partial: {nest: ['bar', 'new'], new: ['deep.list', 'deeplist']}};
           const undo = Changes.applyAll(orig, changes);
 
-          assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
+          assert.equals(orig, {a: 2, c: 3, nest: {foo: 'foo', bar: 'new'},
                                d: 4, new: {deep: {list: 'deeplist'}}});
-          assert.equals(undo, {$partial: {nest: ["bar", 'bar'], "new": ['$replace', null]}});
+          assert.equals(undo, {$partial: {nest: ['bar', 'bar'], 'new': ['$replace', null]}});
         }
       });
 
-      test("deleting array entry by string", ()=>{
-        const orig = {a: [1,2,3]};
+      test('deleting array entry by string', () => {
+        const orig = {a: [1, 2, 3]};
         const changes = {$partial: {a: ['1', undefined]}};
 
         assert.equals(Changes.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
         assert.equals(orig.a, [1, 3]);
       });
 
-      test("deleting array entry by number", ()=>{
-        const orig = {a: [1,2,3]};
+      test('deleting array entry by number', () => {
+        const orig = {a: [1, 2, 3]};
         const changes = {$partial: {a: [1, undefined]}};
 
         assert.equals(Changes.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
         assert.equals(orig.a, [1, 3]);
       });
 
-      test("already applied", ()=>{
+      test('already applied', () => {
         //[
         const ary = [1, 2, 3], aa = {aa: 1, ary};
         const b = [1, 2];
@@ -390,14 +390,14 @@ define((require, exports, module)=>{
 
         assert.equals(
           Changes.applyAll(orig.a, {aa: 1, ab: 2, ary: [1, 5, 4, 6, 3]}),
-          {$partial: {ary: ['$patch', [1, 2, [4, 5]]]}}
+          {$partial: {ary: ['$patch', [1, 2, [4, 5]]]}},
         );
         assert.equals(ary, [1, 5, 4, 6, 3]);
       });
 
-      test("with empty array", ()=>{
+      test('with empty array', () => {
         const orig = {top: {ar: []}};
-        const changes = {$partial: {top: ["ar.1.foo", 3]}};
+        const changes = {$partial: {top: ['ar.1.foo', 3]}};
 
         const undo = Changes.applyAll(orig, changes);
 
@@ -408,24 +408,24 @@ define((require, exports, module)=>{
         assert.equals(orig, {top: {ar: [,]}});
       });
 
-      test("change array", ()=>{
+      test('change array', () => {
         const orig = {top: {ar: []}};
-        const changes = {$partial: {top: ["ar.0", 'new']}};
+        const changes = {$partial: {top: ['ar.0', 'new']}};
 
         assert.equals(Changes.applyAll(orig, changes), {$partial: {top: ['ar.0', undefined]}});
-        assert.equals(orig, {top: {ar: ["new"]}});
+        assert.equals(orig, {top: {ar: ['new']}});
       });
 
-      test("with array", ()=>{
+      test('with array', () => {
         const orig = {ar: [{foo: 1}, {foo: 2}]};
-        const changes = {$partial: {ar: ["1.foo", 3]}};
+        const changes = {$partial: {ar: ['1.foo', 3]}};
 
         assert.equals(Changes.applyAll(orig, changes), {$partial: {ar: ['1.foo', 2]}});
         assert.equals(orig, {ar: [{foo: 1}, {foo: 3}]});
       });
     });
 
-    test("nestedDiff", ()=>{
+    test('nestedDiff', () => {
       /**
        * Create diff in partial format to the specified depth.
        *
@@ -450,11 +450,11 @@ define((require, exports, module)=>{
         'level1.$partial', [
           'level2.$partial', [
             'iLike.$partial', ['$patch', [9, 0, 'e rimu t']],
-            'iAlsoLike', 'Tuis'
+            'iAlsoLike', 'Tuis',
           ]]]);
 
       const wasCopy = deepCopy(was);
-      Changes.applyAll({likes: wasCopy},  {$partial: {likes: changes}});
+      Changes.applyAll({likes: wasCopy}, {$partial: {likes: changes}});
       assert.equals(wasCopy, now);
 
       /** depth 2 **/
@@ -484,24 +484,23 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("nestedDiff continued", ()=>{
+    test('nestedDiff continued', () => {
       assert.equals(Changes.nestedDiff({
         d: {dog: [123, 234], donkey: [56, 456]},
-        p: {pig: [3, 34]}
+        p: {pig: [3, 34]},
       }, {
         d: {dog: [123, 234], deer: [34]},
         h: {horse: [23, 344]},
-        p: {pig: [3, 34]}
+        p: {pig: [3, 34]},
       }, 5), [
         'd.$partial', ['donkey', null, 'deer', [34]],
         'h', {horse: [23, 344]},
       ]);
     });
 
-
-    group("applyPartial", ()=>{
-      group("$match", ()=>{
-        before(()=>{
+    group('applyPartial', () => {
+      group('$match', () => {
+        before(() => {
           /**
            * Match commands ensure we only update if the current value matches. The whole
            * transaction is aborted if the match is not satisfied.
@@ -511,75 +510,73 @@ define((require, exports, module)=>{
            **/
         });
 
-        group("equal", ()=>{
-          test("equal", ()=>{
+        group('equal', () => {
+          test('equal', () => {
             const attrs = {obj: {name: 'old name', number: 5}};
             const changes = ['$match', {name: 'old name', number: 5}];
-            refute.exception(_=>{
+            refute.exception(() => {
               Changes.applyPartial(attrs, 'obj', changes);
             });
             assert.equals(attrs, {obj: {name: 'old name', number: 5}});
           });
 
-          test("not equal", ()=>{
+          test('not equal', () => {
             const attrs = {obj: {name: 'old name', number: 5}};
             const changes = ['$match', {name: 'old name', number: 6}];
-            assert.exception(_=>{
+            assert.exception(() => {
               Changes.applyPartial(attrs, 'obj', changes);
             }, {error: 409, reason: {obj: 'not_match'}});
           });
         });
 
-        group("md5", ()=>{
-          test("equal", ()=>{
+        group('md5', () => {
+          test('equal', () => {
             const attrs = {name: 'old name'};
             const changes = ['$match', {md5: '58a5352c62'}];
-            refute.exception(_=>{
+            refute.exception(() => {
               Changes.applyPartial(attrs, 'name', changes);
             });
             assert.equals(attrs, {name: 'old name'});
-
           });
 
-          test("not equal", ()=>{
+          test('not equal', () => {
             const attrs = {name: 'old name'};
             const changes = ['$match', {md5: '58a5352c63'}];
-            assert.exception(_=>{
+            assert.exception(() => {
               Changes.applyPartial(attrs, 'name', changes);
             }, {error: 409, reason: {name: 'not_match'}});
           });
         });
 
-        group("sha256", ()=>{
-          test("equal", ()=>{
+        group('sha256', () => {
+          test('equal', () => {
             const attrs = {name: 'old name'};
             const changes = ['$match', {sha256: '2b727fb85cff'}];
-            refute.exception(_=>{
+            refute.exception(() => {
               Changes.applyPartial(attrs, 'name', changes);
             });
             assert.equals(attrs, {name: 'old name'});
-
           });
 
-          test("not equal", ()=>{
+          test('not equal', () => {
             const attrs = {name: 'old name'};
             const changes = ['$match', {sha256: '2b727fb85cfe'}];
-            assert.exception(_=>{
+            assert.exception(() => {
               Changes.applyPartial(attrs, 'name', changes);
             }, {error: 409, reason: {name: 'not_match'}});
           });
         });
       });
 
-      group("$replace", ()=>{
-        before(()=>{
+      group('$replace', () => {
+        before(() => {
           /**
            * Replace the content of the field. Add the field is does not exists. Delete the field if
            * value is null.
            **/
         });
 
-        test("no change", ()=>{
+        test('no change', () => {
           const attrs = {name: 'old name'};
           const changes = ['$replace', 'old name'];
           const undo = [];
@@ -588,7 +585,7 @@ define((require, exports, module)=>{
           assert.equals(undo, []);
         });
 
-        test("modify", ()=>{
+        test('modify', () => {
           const attrs = {name: 'old name'};
           const changes = ['$replace', 'new name'];
           const undo = [];
@@ -597,7 +594,7 @@ define((require, exports, module)=>{
           assert.equals(undo, ['$replace', 'old name']);
         });
 
-        test("add", ()=>{
+        test('add', () => {
           const attrs = {};
           const changes = ['$replace', 'new name'];
           const undo = [];
@@ -606,7 +603,7 @@ define((require, exports, module)=>{
           assert.equals(undo, ['$replace', null]);
         });
 
-        test("delete", ()=>{
+        test('delete', () => {
           const attrs = {name: 'old name'};
           const changes = ['$replace', null];
           const undo = [];
@@ -616,26 +613,26 @@ define((require, exports, module)=>{
         });
       });
 
-      group("$prepend, $append", ()=>{
-        before(()=>{
+      group('$prepend, $append', () => {
+        before(() => {
           /**
            * Add contents to the start or end of a field. Fields can be of type string or array.
            **/
         });
 
-        test("wrong type", ()=>{
+        test('wrong type', () => {
           const attrs = {name: 123};
           const undo = [];
-          assert.exception(_=>{
+          assert.exception(() => {
             Changes.applyPartial(attrs, 'name', ['$prepend', 'me'], undo);
           }, {error: 400, reason: {name: 'wrong_type'}});
 
-          assert.exception(_=>{
+          assert.exception(() => {
             Changes.applyPartial(attrs, 'name', ['$append', 'me'], undo);
           }, {error: 400, reason: {name: 'wrong_type'}});
         });
 
-        test("string", ()=>{
+        test('string', () => {
           const name = 'orig name';
           const attrs = {name};
           const prepend = 'put me at front', append = 'put me at end';
@@ -644,12 +641,12 @@ define((require, exports, module)=>{
           Changes.applyPartial(attrs, 'name', changes, undo);
           assert.equals(attrs, {name: 'put me at frontorig nameput me at end'});
           assert.equals(undo, [
-            '$patch', [-append.length, append.length, null],
+            '$patch', [- append.length, append.length, null],
             '$patch', [0, prepend.length, null],
           ]);
         });
 
-        test("array", ()=>{
+        test('array', () => {
           const numbers = [2, 4, 3];
           const attrs = {numbers};
           const prepend = [45, 12], append = [16, 18];
@@ -663,7 +660,7 @@ define((require, exports, module)=>{
           ]);
         });
 
-        test("$append only", ()=>{
+        test('$append only', () => {
           const name = 'orig name';
           const attrs = {name};
           const append = 'put me at end';
@@ -672,13 +669,13 @@ define((require, exports, module)=>{
           Changes.applyPartial(attrs, 'name', changes, undo);
           assert.equals(attrs, {name: 'orig nameput me at end'});
           assert.equals(undo, ['$patch', [
-            -append.length, append.length, null
+            - append.length, append.length, null,
           ]]);
         });
       });
 
-      group("$patch", ()=>{
-        before(()=>{
+      group('$patch', () => {
+        before(() => {
           /**
            * Patch the field using an array of 3-tuples. A 3-tuple consists of:
 
@@ -688,8 +685,8 @@ define((require, exports, module)=>{
            **/
         });
 
-        test("mix with $append", ()=>{
-          const name = "foo.one.two";
+        test('mix with $append', () => {
+          const name = 'foo.one.two';
           const attrs = {name};
           const changes = [
             '$patch', [-4, 4, null], '$patch', [-4, 4, null], '$append', '.one', '$append', '.three'];
@@ -710,29 +707,29 @@ define((require, exports, module)=>{
           assert.equals(attrs, {name: 'foo.one.three'});
         });
 
-        test("string", ()=>{
+        test('string', () => {
           const name = 'orig content';
           const attrs = {name};
           const changes = ['$patch', [
-            0, 1, "",                 // delete only
-            2, 4, "i was changed ",   // delete and add
-            3, 0, "and I was added. " // add only
+            0, 1, '',                 // delete only
+            2, 4, 'i was changed ',   // delete and add
+            3, 0, 'and I was added. ' // add only
           ]];
           const undo = [];
           Changes.applyPartial(attrs, 'name', changes, undo);
           assert.equals(attrs, {name: 'rii was changed nteand I was added. nt'});
           assert.equals(undo, ['$patch', [
-            0, 0, "o",
-            2, "i was changed ".length, "g co",
-            3, "and I was added. ".length, null,
+            0, 0, 'o',
+            2, 'i was changed '.length, 'g co',
+            3, 'and I was added. '.length, null,
           ]]);
           const undo2 = [];
           Changes.applyPartial(attrs, 'name', undo, undo2);
           assert.equals(attrs, {name: 'orig content'});
           assert.equals(undo2, ['$patch', [
             0, 1, null,                 // delete only
-            2, 4, "i was changed ",   // delete and add
-            3, 0, "and I was added. " // add only
+            2, 4, 'i was changed ',   // delete and add
+            3, 0, 'and I was added. ' // add only
           ]]);
 
           const attrs2 = {name: 'Austin;'};
@@ -741,12 +738,12 @@ define((require, exports, module)=>{
           assert.equals(attrs2.name, 'Jane Austen.');
         });
 
-        test("-ve delta", ()=>{
+        test('-ve delta', () => {
           const name = 'orig content';
           const attrs = {name};
           const changes = ['$patch', [
-            3, 0, "_",
-            -4, 2, "-ve delta. ", // -ve deltas are always from end of content
+            3, 0, '_',
+            -4, 2, '-ve delta. ' // -ve deltas are always from end of content
           ]];
           const undo = [];
           Changes.applyPartial(attrs, 'name', changes, undo);
@@ -759,17 +756,17 @@ define((require, exports, module)=>{
           Changes.applyPartial(attrs, 'name', undo, undo2);
           assert.equals(attrs, {name: 'orig content'});
           assert.equals(undo2, ['$patch', [
-            3, 0, "_",
-            5, 2, "-ve delta. ",
+            3, 0, '_',
+            5, 2, '-ve delta. ',
           ]]);
         });
 
-        test("array", ()=>{
-          const numbers = [1,2,3,4,5,6];
+        test('array', () => {
+          const numbers = [1, 2, 3, 4, 5, 6];
           const attrs = {numbers};
           const changes = ['$patch', [
             3, 0, [12, 18, 16],
-            -3, 2, [15, 11], // -ve deltas are always from end of content
+            -3, 2, [15, 11] // -ve deltas are always from end of content
           ]];
           const undo = [];
           Changes.applyPartial(attrs, 'numbers', changes, undo);
@@ -780,17 +777,17 @@ define((require, exports, module)=>{
           ]]);
           const undo2 = [];
           Changes.applyPartial(attrs, 'numbers', undo, undo2);
-          assert.equals(attrs, {numbers: [1,2,3,4,5,6]});
+          assert.equals(attrs, {numbers: [1, 2, 3, 4, 5, 6]});
           assert.equals(undo2, ['$patch', [
             3, 0, [12, 18, 16],
             0, 2, [15, 11],
           ]]);
         });
 
-        test("missing from", ()=>{
+        test('missing from', () => {
           const attrs = {}, undo = [];
-          Changes.applyPartial(attrs, 'numbers', ['$patch', [0, 0, [1,2]]], undo);
-          assert.equals(attrs, {numbers: [1,2]});
+          Changes.applyPartial(attrs, 'numbers', ['$patch', [0, 0, [1, 2]]], undo);
+          assert.equals(attrs, {numbers: [1, 2]});
           assert.equals(undo, ['$patch', [0, 2, null]]);
 
           const undo2 = [];
@@ -801,8 +798,8 @@ define((require, exports, module)=>{
         });
       });
 
-      group("$add, $remove", ()=>{
-        before(()=>{
+      group('$add, $remove', () => {
+        before(() => {
           /**
            * Add items unless already exists and remove items if they exist.
 
@@ -810,7 +807,7 @@ define((require, exports, module)=>{
            **/
         });
 
-        test("$add", ()=>{
+        test('$add', () => {
           const attrs = {books: [{title: 's&s', author: 'JA'}]};
           const changes = [
             '$add', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
@@ -821,7 +818,7 @@ define((require, exports, module)=>{
           assert.equals(undo, ['$remove', [{title: 'p&p', author: 'JA'}]]);
         });
 
-        test("$remove", ()=>{
+        test('$remove', () => {
           const attrs = {books: [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}]};
           const changes = [
             '$remove', [{title: 'p&p'}, {title: 'e'}],
@@ -832,7 +829,7 @@ define((require, exports, module)=>{
           assert.equals(undo, ['$add', [{title: 'p&p', author: 'JA'}]]);
         });
 
-        test("no change $add", ()=>{
+        test('no change $add', () => {
           const attrs = {books: [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}]};
           const changes = [
             '$add', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
@@ -843,7 +840,7 @@ define((require, exports, module)=>{
           assert.equals(undo, []);
         });
 
-        test("no change $remove", ()=>{
+        test('no change $remove', () => {
           const attrs = {books: []};
           const changes = [
             '$remove', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
@@ -854,8 +851,8 @@ define((require, exports, module)=>{
           assert.equals(undo, []);
         });
 
-        test("undo", ()=>{
-          const numbers = [1,2,3,4,16,15];
+        test('undo', () => {
+          const numbers = [1, 2, 3, 4, 16, 15];
           const attrs = {numbers};
           const changes = [
             '$add', [4, 7, 8],
@@ -870,14 +867,14 @@ define((require, exports, module)=>{
           ]);
           const undo2 = [];
           Changes.applyPartial(attrs, 'numbers', undo, undo2);
-          assert.equals(attrs, {numbers: [3,4,16,15,1,2]});
+          assert.equals(attrs, {numbers: [3, 4, 16, 15, 1, 2]});
           assert.equals(undo2, [
             '$add', [7, 8],
             '$remove', [1, 2],
           ]);
         });
 
-        test("add to null", ()=>{
+        test('add to null', () => {
           const attrs = {};
           const changes = [
             '$add', ['a', 'b'],
@@ -890,7 +887,7 @@ define((require, exports, module)=>{
           ]);
         });
 
-        test("remove from null", ()=>{
+        test('remove from null', () => {
           const attrs = {};
           const changes = [
             '$remove', ['a', 'b'],
@@ -902,24 +899,24 @@ define((require, exports, module)=>{
         });
       });
 
-      group("subfields", ()=>{
+      group('subfields', () => {
         let v = {};
-        beforeEach(()=>{
+        beforeEach(() => {
           /**
            * Sub-fields can consist of field names or array indexes. If the last segment is
            * '$partial' then value is a partial command otherwise it is the replacement value.
            **/
 
           v.attrs = {html: {
-            ol: [{li: {b: 'one'}}, {li: {b: 'two'}}, {li: ['3', ' ', 'three']}]
+            ol: [{li: {b: 'one'}}, {li: {b: 'two'}}, {li: ['3', ' ', 'three']}],
           }};
         });
 
-        afterEach(()=>{
+        afterEach(() => {
           v = {};
         });
 
-        test("null to value", ()=>{
+        test('null to value', () => {
           const attrs = {index: {d: {dog: [123, 234], donkey: [56, 456]}, p: {pig: [3, 34]}}};
           const actions = [
             'd.$partial', ['donkey', null, 'deer', [34]],
@@ -934,7 +931,7 @@ define((require, exports, module)=>{
             'd.$partial', ['deer', null, 'donkey', [56, 456]]]);
         });
 
-        test("simple replacement", ()=>{
+        test('simple replacement', () => {
           const changes = [
             'ol.1.li.b', '2',
           ];
@@ -947,7 +944,7 @@ define((require, exports, module)=>{
           ]);
         });
 
-        test("no change", ()=>{
+        test('no change', () => {
           const changes = [
             'ol.2.li.0', '3',
           ];
@@ -959,7 +956,7 @@ define((require, exports, module)=>{
           assert.equals(undo, []);
         });
 
-        test("missing top", ()=>{
+        test('missing top', () => {
           const changes = ['div.1.i', 'hello', 'div.2.b', 'bye bye'];
           const undo = [];
           Changes.applyPartial(v.attrs, 'foo', changes, undo);
@@ -971,7 +968,7 @@ define((require, exports, module)=>{
           assert.equals(v.attrs, {html: m.object});
         });
 
-        test("missing sub", ()=>{
+        test('missing sub', () => {
           const changes = ['div.1.i', 'hello'];
           const undo = [];
           Changes.applyPartial(v.attrs, 'html', changes, undo);
@@ -983,11 +980,11 @@ define((require, exports, module)=>{
           assert.equals(v.attrs, {html: m.object});
         });
 
-        test("partial", ()=>{
+        test('partial', () => {
           const changes = [
             'ol.2.li.$partial', [
-              '$add', ['4', '5']
-            ]
+              '$add', ['4', '5'],
+            ],
           ];
 
           const undo = [];
@@ -995,18 +992,18 @@ define((require, exports, module)=>{
           assert.equals(v.attrs.html.ol[2], {li: ['3', ' ', 'three', '4', '5']});
           assert.equals(undo, [
             'ol.2.li.$partial', [
-              '$remove', ['4', '5']
+              '$remove', ['4', '5'],
             ],
           ]);
         });
 
-        test("composite", ()=>{
+        test('composite', () => {
           const attrs = {checklists: {
             cl1: {name: 'cl 1', items: {
               it1: {name: 'it 1'},
               it2: {name: 'it 2'},
             }},
-            cl2: {name: 'cl 2'}
+            cl2: {name: 'cl 2'},
           }};
           const changes = [
             'cl1.items.it1.name.$partial', ['$append', 'chg'],
@@ -1033,7 +1030,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("original", ()=>{
+    test('original', () => {
       /**
        * Reteries the original set of changes from an `undo`. See {#.applyAll}
        **/
@@ -1044,7 +1041,7 @@ define((require, exports, module)=>{
       assert.same(Changes.original(undo), orig);
     });
 
-    test("updateCommands", ()=>{
+    test('updateCommands', () => {
       /**
        * Given an original change command (commands), a modified top-level changes (modified), and
        * the original top-level changes (original) update commands to reflect the modifications
@@ -1062,13 +1059,13 @@ define((require, exports, module)=>{
         },
         fuz: 5,
       };
-      const modified = {foo: 3, bar: {baz: [3], bif: 'six'}, buz: 'buz.foo', newone: [1,2,3]};
+      const modified = {foo: 3, bar: {baz: [3], bif: 'six'}, buz: 'buz.foo', newone: [1, 2, 3]};
       const original = {foo: 2, bar: {baz: [4], bif: 'six'}, buz: 'buz.foo', zip: 'bar.zip', fuz: 5};
 
       Changes.updateCommands(commands, modified, original);
       assert.equals(commands, {
         foo: 3,
-        newone: [1,2,3],
+        newone: [1, 2, 3],
         bar: {baz: [3], bif: 'six'},
         $partial: {
           buz: ['$append', '.foo'],
@@ -1076,7 +1073,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("empty partial in updateCommands", ()=>{
+    test('empty partial in updateCommands', () => {
       const commands = {
         $partial: {
           zip: ['$prepend', 'bar.'],
@@ -1093,7 +1090,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("extractChangeKeys", ()=>{
+    test('extractChangeKeys', () => {
       /**
        * Extract top level parameters that have changed given a set of attributes and a undo
        * command
@@ -1111,11 +1108,11 @@ define((require, exports, module)=>{
       assert.equals(params, {foo: 1, bar: 2, fuz: null});
     });
 
-    group("topLevelChanges", ()=>{
+    group('topLevelChanges', () => {
       /**
        * Extract top level fields that have changed given a set of attributes and a change command
        **/
-      test("exmaple", ()=>{
+      test('exmaple', () => {
         assert.equals(Changes.topLevelChanges({foo: {a: 1}}, {$partial: {foo: ['$replace', null]}}),
                       {foo: null});
 
@@ -1133,84 +1130,81 @@ define((require, exports, module)=>{
       });
     });
 
-    group("diffSeq", ()=>{
-      before(()=>{
+    group('diffSeq', () => {
+      before(() => {
         /**
          * build an instruction to convert oldSeq to newSeq
          **/
       });
 
-      test("equal", ()=>{
-        assert.equals(Changes.diffSeq([1,2,3], [1,2,3]), undefined);
+      test('equal', () => {
+        assert.equals(Changes.diffSeq([1, 2, 3], [1, 2, 3]), undefined);
       });
 
-      test("unicode", ()=>{
-        assert.equals("bomb 🔜𝌆".length, 9);
-        assert.equals(Array.from("bomb 🔜𝌆").length, 7);
+      test('unicode', () => {
+        assert.equals('bomb 🔜𝌆'.length, 9);
+        assert.equals(Array.from('bomb 🔜𝌆').length, 7);
 
-        assert.equals(Changes.diffSeq("b💣mb 🔜𝌆abc", "b💣mb 💣abc"), [6, 4, "💣"]);
+        assert.equals(Changes.diffSeq('b💣mb 🔜𝌆abc', 'b💣mb 💣abc'), [6, 4, '💣']);
       });
 
-
-      test("customCompare", ()=>{
-        const o = n => ({a: n});
-        assert.equals(Changes.diffSeq([1,2,3].map(o), [1,4,3].map(o), util.deepEqual), [
-          1, 1, [{a: 4}]
+      test('customCompare', () => {
+        const o = (n) => ({a: n});
+        assert.equals(Changes.diffSeq([1, 2, 3].map(o), [1, 4, 3].map(o), util.deepEqual), [
+          1, 1, [{a: 4}],
         ]);
       });
 
-      test("simple", ()=>{
-        assert.equals(Changes.diffSeq([1,2,3,4,5,6], [1,2,2,8,7,5,6]), [
-          2, 2, [2, 8, 7]
+      test('simple', () => {
+        assert.equals(Changes.diffSeq([1, 2, 3, 4, 5, 6], [1, 2, 2, 8, 7, 5, 6]), [
+          2, 2, [2, 8, 7],
         ]);
-        assert.equals(Changes.diffSeq([2,3,4,5,6], [1,2,2,8,7,5,6]), [
-          0, 3, [1, 2, 2, 8, 7]
+        assert.equals(Changes.diffSeq([2, 3, 4, 5, 6], [1, 2, 2, 8, 7, 5, 6]), [
+          0, 3, [1, 2, 2, 8, 7],
         ]);
-        assert.equals(Changes.diffSeq([2,3,4,5,6], [1,2,2,8,7,5,6,1]), [
-          0, 5, [1,2,2,8,7,5,6,1]
+        assert.equals(Changes.diffSeq([2, 3, 4, 5, 6], [1, 2, 2, 8, 7, 5, 6, 1]), [
+          0, 5, [1, 2, 2, 8, 7, 5, 6, 1],
         ]);
       });
 
-      test("string", ()=>{
-        assert.equals(Changes.diffSeq("it1", "it21"), [2, 0, '2']);
-        assert.equals(Changes.diffSeq("it21", "it1"), [2, 1, '']);
-        assert.equals(Changes.diffSeq("cl 123.2", "cl 123"), [6, 2, '']);
-        assert.equals(Changes.diffSeq("helo worlld", "hello world"), [3, 6, 'lo wor']);
-        assert.equals(Changes.diffSeq("hello world", "helo worlld"), [3, 6, 'o worl']);
-        assert.equals(Changes.diff("hello world", "helo worlld"), [3, 6, 'o worl']);
-        assert.equals(Changes.diffSeq("hello world", "hello world"), undefined);
+      test('string', () => {
+        assert.equals(Changes.diffSeq('it1', 'it21'), [2, 0, '2']);
+        assert.equals(Changes.diffSeq('it21', 'it1'), [2, 1, '']);
+        assert.equals(Changes.diffSeq('cl 123.2', 'cl 123'), [6, 2, '']);
+        assert.equals(Changes.diffSeq('helo worlld', 'hello world'), [3, 6, 'lo wor']);
+        assert.equals(Changes.diffSeq('hello world', 'helo worlld'), [3, 6, 'o worl']);
+        assert.equals(Changes.diff('hello world', 'helo worlld'), [3, 6, 'o worl']);
+        assert.equals(Changes.diffSeq('hello world', 'hello world'), undefined);
       });
     });
 
-    test("applyPatch", ()=>{
-      assert.equals(Changes.applyPatch("it1", [2, 0, '2']), "it21");
-      assert.equals(Changes.applyPatch("it1", [0, 0]), "it1");
+    test('applyPatch', () => {
+      assert.equals(Changes.applyPatch('it1', [2, 0, '2']), 'it21');
+      assert.equals(Changes.applyPatch('it1', [0, 0]), 'it1');
     });
 
-
-
-    test("arrayChanges", ()=>{
+    test('arrayChanges', () => {
       /**
        * Extract a list of added and removed elems from an after and before
 
        * Note: converts elements to strings to compare unless hash method supplied
        **/
 
-      assert.equals(Changes.arrayChanges([1,2,6], [3,1]), {added: [2, 6], removed: [3]});
-      assert.equals(Changes.arrayChanges([1,"5",6], [3,1]), {added: ["5", 6], removed: [3]});
-      assert.equals(Changes.arrayChanges([1,"5",6]), {added: [1,"5",6], removed: []});
-      assert.equals(Changes.arrayChanges(null, ["5", 1.2]), {added: [], removed: ["5", 1.2]});
+      assert.equals(Changes.arrayChanges([1, 2, 6], [3, 1]), {added: [2, 6], removed: [3]});
+      assert.equals(Changes.arrayChanges([1, '5', 6], [3, 1]), {added: ['5', 6], removed: [3]});
+      assert.equals(Changes.arrayChanges([1, '5', 6]), {added: [1, '5', 6], removed: []});
+      assert.equals(Changes.arrayChanges(null, ['5', 1.2]), {added: [], removed: ['5', 1.2]});
 
       assert.equals(
         Changes.arrayChanges(
           [{id: 1, a: 2}, {id: 5, b: 3}], [{id: 5, b: 3}, {id: 'x', a: 2}],
-          o=>''+o.id
+          (o) => '' + o.id,
         ),
         {added: [{id: 1, a: 2}], removed: [{id: 'x', a: 2}]});
     });
 
-    group("fieldDiff", ()=>{
-      before(()=>{
+    group('fieldDiff', () => {
+      before(() => {
         /**
          * determine which sub-fields have changed
 
@@ -1221,13 +1215,13 @@ define((require, exports, module)=>{
          **/
       });
 
-      test("not in change", ()=>{
+      test('not in change', () => {
         api.method('fieldDiff');
         const attrs = {_id: 't123'};
         assert.equals(Changes.fieldDiff('foo', attrs, {fuz: '123'}), undefined);
       });
 
-      test("no change", ()=>{
+      test('no change', () => {
         api.method('fieldDiff');
         const attrs = {_id: 't123', foo: {one: 123, two: 'a string', three: true}};
         const changes = {foo: {one: 123, two: 'a string', three: true}};
@@ -1235,37 +1229,37 @@ define((require, exports, module)=>{
         assert.equals(Changes.fieldDiff('foo', attrs, changes), undefined);
       });
 
-      test("bad args", ()=>{
-        assert.exception(_=>{
+      test('bad args', () => {
+        assert.exception(() => {
           Changes.fieldDiff('foo', undefined, {$partial: {}});
         }, {message: 'illegal arguments'});
 
-        assert.exception(_=>{
+        assert.exception(() => {
           Changes.fieldDiff('foo', {$partial: {}}, undefined);
         }, {message: 'illegal arguments'});
 
-        assert.exception(_=>{
+        assert.exception(() => {
           Changes.fieldDiff('foo', {$partial: {}}, {$partial: {}});
         }, {message: 'illegal arguments'});
       });
 
-      test("fromTo", ()=>{
+      test('fromTo', () => {
         const attrs = {one: {two: {three: {a: 123, b: 456}}}};
-        const changes = {$partial: {one: ["two.three.b", 789]}};
+        const changes = {$partial: {one: ['two.three.b', 789]}};
 
         assert.equals(Changes.fromTo(['one', 'two', 'three'], attrs, changes), {
-          from: {a: 123, b: 456}, to: {a: 123, b: 789}
+          from: {a: 123, b: 456}, to: {a: 123, b: 789},
         });
       });
 
-      test("object", ()=>{
+      test('object', () => {
         const attrs = {_id: 't123', foo: {one: 123, two: 'a string', three: true}};
-        const changes = {foo: {two: 'new string', three: true, four: [1,2,3]}};
+        const changes = {foo: {two: 'new string', three: true, four: [1, 2, 3]}};
 
         assert.equals(Changes.diff(attrs.foo, changes.foo), {
           one: null,
           two: 'new string',
-          four: [1,2,3],
+          four: [1, 2, 3],
         });
 
         assert.same(Changes.fieldDiff('foo', null, null), undefined);
@@ -1277,52 +1271,48 @@ define((require, exports, module)=>{
         assert.equals(Changes.fieldDiff('foo', attrs, {}), {one: null, two: null, three: null});
         assert.equals(Changes.fieldDiff('foo', attrs, attrs), {});
 
-
         assert.equals(Changes.fieldDiff('foo', attrs, changes), {
           one: null,
           two: 'new string',
-          four: [1,2,3],
+          four: [1, 2, 3],
         });
 
-
-
         assert.equals(Changes.fieldDiff('foo', {}, changes), {
-          two: 'new string', three: true, four: [1,2,3]});
+          two: 'new string', three: true, four: [1, 2, 3]});
 
         assert.equals(Changes.fieldDiff('foo', attrs, {foo: 123}), 123);
         assert.equals(Changes.fieldDiff('foo', {foo: {}}, {foo: new Date(2017, 1, 1)}),
                       new Date(2017, 1, 1));
 
         assert.equals(Changes.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}), {
-          one: null, two: null, three: null
+          one: null, two: null, three: null,
         });
 
         assert.equals(Changes.fieldDiff('foo', {$partial: {foo: ['$replace', null]}}, attrs), {
-          one: 123, two: 'a string', three: true
+          one: 123, two: 'a string', three: true,
         });
 
         assert.equals(Changes.fieldDiff('foo', {foo: {}}, {$partial: {
-          foo: ['two', 'new string', 'three', true, 'four', [1,2,3]]
+          foo: ['two', 'new string', 'three', true, 'four', [1, 2, 3]],
         }}), {
-          two: 'new string', three: true, four: [1,2,3]});
+          two: 'new string', three: true, four: [1, 2, 3]});
 
         assert.equals(Changes.fieldDiff('foo', {$partial: {
-          foo: ['two', 'old string', 'three', true, 'five', 5]
+          foo: ['two', 'old string', 'three', true, 'five', 5],
         }}, attrs), {
           two: 'a string', five: null});
       });
 
-      test("array", ()=>{
-        const attrs = {_id: 't123', foo: [1,2,3,4]};
-        const changes = {foo: [1,2,4,5,6]};
+      test('array', () => {
+        const attrs = {_id: 't123', foo: [1, 2, 3, 4]};
+        const changes = {foo: [1, 2, 4, 5, 6]};
 
         assert.equals(Changes.fieldDiff('foo', attrs, changes), [2, 2, [4, 5, 6]]);
 
         assert.equals(Changes.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}),
                       [0, 4, []]);
         assert.equals(Changes.fieldDiff('foo', {$partial: {foo: ['$replace', null]}}, attrs),
-                      [0, 0, [1,2,3,4]]);
-
+                      [0, 0, [1, 2, 3, 4]]);
       });
     });
   });
