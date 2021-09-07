@@ -143,7 +143,6 @@ define((require, exports, module) => {
       const noSemi = this.isNoSemiColon() || p.type === 'BlockStatement';
       if ((p.trailingComments?.length ?? 0) != 0) {
         noSemi || this.write(';');
-        this.write(' ');
       } else {
         this.skipOver(SameLineWsOrSemiRE);
         if (this.isAtNewline()) {
