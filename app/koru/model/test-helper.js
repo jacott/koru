@@ -1,7 +1,6 @@
 define((require, exports, module)=>{
   'use strict';
   const session         = require('koru/session/base');
-  const koru            = require('../main');
   const TH              = require('../test-helper');
   const Query           = require('./query');
 
@@ -29,7 +28,7 @@ define((require, exports, module)=>{
   const stubSendM = ()=>{
     _sendM = session._sendM;
     if (_sendM) {
-      session._sendM = koru.nullFunc;
+      session._sendM = util.voidFunc;
     }
   };
 

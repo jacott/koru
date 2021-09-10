@@ -96,7 +96,7 @@ define((require, exports, module)=>{
           }
           if (from == -1) from = i;
         }
-        return {model, sort, from: args.slice(from), filterTest, stop: koru.nullFunc};
+        return {model, sort, from: args.slice(from), filterTest, stop: util.voidFunc};
       };
 
       function addUniqueIndex(...args) {return prepareIndex(this, args)}

@@ -137,7 +137,7 @@ define((require, exports, module)=>{
       if (koru.afTimeout.restore)
         koru.afTimeout.restore();
 
-      stub(koru, 'afTimeout').returns(koru.nullFunc);
+      stub(koru, 'afTimeout').returns(util.voidFunc);
     },
 
     yieldAfTimeout: ()=>{koru.afTimeout.yieldAndReset()},

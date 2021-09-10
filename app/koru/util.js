@@ -177,11 +177,11 @@ define((require) => {
     // s is now the index of the first non-matching chararacter in oldstr and newstr
 
     // return undefined if oldstr and newstr are the same
-    if (lastold == lastnew && s == minLast+1) return
+    if (lastold == lastnew && s == minLast+1) return;
 
     // starting at the end of oldstr and newstr, while the characters in oldstr
     // and newstr are the same, increment e
-    ; while (s <= minLast-e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e
+    while (s <= minLast-e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e;
     // e is now the number of matching characters at the end of oldstr and newstr
 
     return [s, oldstr.length - s-e, newstr.length - s-e];
@@ -623,7 +623,7 @@ define((require) => {
       return result;
     },
 
-    toMap(keyName, valueName/*, lists */) {
+    toMap(keyName, valueName, /* lists */) {
       if (arguments.length === 1) {
         return util.arrayToMap(keyName);
       }
@@ -1188,6 +1188,9 @@ define((require) => {
         i = n+1;
       }
     },
+
+    voidFunc: () => {},
+    trueFunc: () => true,
   });
 
   return util;

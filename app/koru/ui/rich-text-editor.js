@@ -29,7 +29,7 @@ define((require, exports, module)=>{
   } = DomNav;
 
 
-  const noop = koru.nullFunc;
+  const noop = util.voidFunc;
 
   const EMPTY_PRE = Dom.h({pre: document.createElement('BR'), 'data-lang': 'text'});
   const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);

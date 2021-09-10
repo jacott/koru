@@ -240,7 +240,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       recordTCTime();
     }
     lastTest = test;
-    if (isClient) koru.afTimeout = ()=> koru.nullFunc;
+    if (isClient) koru.afTimeout = ()=> util.voidFunc;
   });
 
   Core.onTestEnd(test=>{

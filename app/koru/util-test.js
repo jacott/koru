@@ -1641,5 +1641,15 @@ define((require, exports, module) => {
       assert.equals(util.indexTolineColumn(text, text.length), [3, 6]);
       //]
     });
+
+    test('voidFunc', ()=>{
+      assert.same(util.voidFunc(), void 0);
+      assert.same(util.voidFunc(123), void 0);
+    });
+
+    test('trueFunc', ()=>{
+      assert.isTrue(util.trueFunc());
+      assert.isTrue(util.trueFunc(false));
+    });
   });
 });

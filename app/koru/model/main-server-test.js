@@ -451,7 +451,7 @@ define((require, exports, module)=>{
         sort: ['a', 'b', 'c', -1, 'd'],
         filterTest: m(q => q instanceof Query),
         from: [-1, 'c', 1, 'd'],
-        stop: koru.nullFunc,
+        stop: util.voidFunc,
       });
     });
 
@@ -467,7 +467,7 @@ define((require, exports, module)=>{
         sort: ['a', 'b', 'c', -1, 'd'],
         filterTest: void 0,
         from: [-1, 'c', 1, 'd'],
-        stop: koru.nullFunc,
+        stop: util.voidFunc,
       });
     });
 
