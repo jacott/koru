@@ -70,12 +70,13 @@ x()`;
       });
 
       test('comments', () => {
+        assert.equals(reformat('a = {\n  b,\n\n // c1\n}'), 'a = {\n  b,\n\n  // c1\n}');
         assert.equals(reformat('{\na(); // c1\n}'), '{\n  a(); // c1\n}');
         assert.equals(reformat('{\na();   // c1\nb();// c2\n}'), '{\n  a();   // c1\n  b();// c2\n}');
         assert.equals(reformat('if (a) return\n// x\na.b()'), 'if (a) return;\n// x\na.b()');
         assert.equals(reformat('a = 1\n// x\nb()'), 'a = 1;\n// x\nb()');
-        assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1, /*<*/2/*>*/, 3/*)*/)`);
-        assert.equals(reformat('((((/*(*/1,2,3/*)*/))))'), '(/*(*/1, 2, 3/*)*/)');
+        assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1, /*<*/2/*>*/, 3,/*)*/)`);
+        assert.equals(reformat('((((/*(*/1,2,3/*)*/))))'), '(/*(*/1, 2, 3,/*)*/)');
       });
 
       test('keywords', () => {

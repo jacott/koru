@@ -94,10 +94,15 @@ define((require, exports, module) => {
         if (p === null) {
           this.writeAdvance(',');
         }
-        this.skipOver(SameLineWsOrCommaRE);
-        if (catchup && this.isAtNewline()) {
+        if ((p?.trailingComments?.length ?? 0) != 0) {
           this.write(',');
-          this.skipOverNl(1);
+          this.skipOver(SameLineWsOrCommaRE);
+        } else {
+          this.skipOver(SameLineWsOrCommaRE);
+          if (catchup && this.isAtNewline()) {
+            this.write(',');
+            this.skipOverNl(1);
+          }
         }
       }
     }
