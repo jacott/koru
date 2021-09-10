@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Publication     = require('koru/pubsub/publication');
 
@@ -6,8 +6,8 @@ define((require, exports, module)=>{
 
   class $$publishName$$Pub extends Publication {
     init() {
-      this.handles = [$$modelName$$.onChange(dc =>{this.sendUpdate(dc)})];
-      $$modelName$$.query.forEach(doc =>{this.conn.added($$modelName$$, doc._id, doc.attributes)});
+      this.handles = [$$modelName$$.onChange((dc) => {this.sendUpdate(dc)})];
+      $$modelName$$.query.forEach((doc) => {this.conn.added($$modelName$$, doc._id, doc.attributes)});
     }
 
     stop() {

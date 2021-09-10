@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const SWManager       = require('koru/client/sw-manager');
   const Session         = require('koru/session');
@@ -10,6 +10,6 @@ define((require, exports, module)=>{
   return KoruStartup.startStop(
     SWManager,
     UserAccount,
-    Session
+    Session,
   );
 });

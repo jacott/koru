@@ -1,27 +1,28 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
 
-  const toggleMenuScript = `(${(()=>{
-    document.getElementById("mainMenu").addEventListener("click", event=>{
+  const toggleMenuScript = `(${(() => {
+    document.getElementById('mainMenu').addEventListener('click', (event) => {
       event.stopImmediatePropagation();
       const {classList} = document.getElementById('pageHeader');
-      if (classList.contains("menu-open"))
-        classList.remove("menu-open");
-      else {
-        classList.add("menu-open");
+      if (classList.contains('menu-open')) {
+        classList.remove('menu-open');
+      } else {
+        classList.add('menu-open');
         const elm = document.querySelector('.menu-open>nav:first-of-type [tabindex="0"]');
         elm && elm.focus();
       }
     });
-    document.getElementById("pageHeader").addEventListener("click", event=>{
+    document.getElementById('pageHeader').addEventListener('click', (event) => {
       event.stopImmediatePropagation();
       const {classList} = document.getElementById('pageHeader');
-      if (classList.contains("menu-open"))
-        classList.remove("menu-open");
+      if (classList.contains('menu-open')) {
+        classList.remove('menu-open');
+      }
     });
-  }).toString()})()`;
+                               }).toString()})()`;
 
   Dom.registerHelpers({
     versionHash() {
@@ -36,9 +37,9 @@ define((require, exports, module)=>{
       const frag = document.createDocumentFragment();
       [['sample1', 'Sample 1'],
        ['about', 'About'],
-      ].forEach(row => {
+      ].forEach((row) => {
         frag.appendChild(Dom.h({
-          class: row[0], href: '/'+row[0], tabindex: "0", a: {span: row[1]},
+          class: row[0], href: '/' + row[0], tabindex: '0', a: {span: row[1]},
         }));
       });
       return frag;
@@ -54,8 +55,9 @@ define((require, exports, module)=>{
         if (clientScript || loadScript) {
           return Dom.h([
             loadScript === undefined ? '' : loadScript,
-            clientScript === undefined ? '' :
-              {script: `define('clientScript', ['client', '${clientScript}'], (_, o)=>{o.start()});`},
+            clientScript === undefined
+              ? ''
+              : {script: `define('clientScript', ['client', '${clientScript}'], (_, o)=>{o.start()});`},
           ]);
         }
       },

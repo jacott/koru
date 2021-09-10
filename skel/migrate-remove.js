@@ -1,4 +1,4 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.reversible({
     add() {
       mig.removeColumns($$tableName$$, $$removeColumns$$);

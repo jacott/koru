@@ -1,7 +1,7 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
 
-  module.exports = mig =>{
+  module.exports = (mig) => {
     mig.addColumns($$tableName$$, $$addColumns$$);
   };
 });

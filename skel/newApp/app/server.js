@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
@@ -8,14 +8,14 @@ define((require, exports, module)=>{
 
   koru.onunload(module, 'reload');
 
-  return ()=>{
+  return () => {
     startup();
 
-    process.on('SIGTERM', ()=>{
+    process.on('SIGTERM', () => {
       console.log('Closing [SIGTERM]');
       webServer.stop();
       session.stop();
-      IdleCheck.waitIdle(()=>{
+      IdleCheck.waitIdle(() => {
         console.log('=> Shutdown ' + new Date());
         process.exit(0);
       });

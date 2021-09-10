@@ -1,9 +1,7 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.reversible({
-    add() {
-    },
+    add() {},
 
-    revert() {
-    },
+    revert() {},
   });
 });

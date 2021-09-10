@@ -1,6 +1,6 @@
 const path = require('path');
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const fileWatch       = require('koru/file-watch');
@@ -10,13 +10,13 @@ define((require, exports, module)=>{
   const stubber         = require('koru/test/stubber');
   const webServer       = require('koru/web-server');
 
-  TH.Core.onStart(()=>{TH.startTransaction()});
-  TH.Core.onEnd(()=>{TH.rollbackTransaction()});
+  TH.Core.onStart(() => {TH.startTransaction()});
+  TH.Core.onEnd(() => {TH.rollbackTransaction()});
 
   require('koru/server');
   require('koru/server-rc');
 
-  return ()=>{
+  return () => {
     stubber.spy(Model.BaseModel, 'addUniqueIndex');
     stubber.spy(Model.BaseModel, 'addIndex');
 

@@ -1,21 +1,21 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.createTable({
     name: 'User',
     fields: {
-      email: {type: "text"},
-      name: {type: "text"}
-    }
+      email: {type: 'text'},
+      name: {type: 'text'},
+    },
   });
 
   mig.createTable({
-    name: "UserLogin",
+    name: 'UserLogin',
     fields: {
-      userId: {type: "id"},
-      email: {type: "text"},
-      password: {type: "jsonb"},
-      tokens: {type: "jsonb"},
-      resetToken: {type: "text"},
-      resetTokenExpire: {type: "bigint"}
+      userId: {type: 'id'},
+      email: {type: 'text'},
+      password: {type: 'jsonb'},
+      tokens: {type: 'jsonb'},
+      resetToken: {type: 'text'},
+      resetTokenExpire: {type: 'bigint'},
     },
 
     indexes: [

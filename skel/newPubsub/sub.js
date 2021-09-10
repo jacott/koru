@@ -1,11 +1,11 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Subscription    = require('koru/pubsub/subscription');
-  const $$modelName$$ = require('models/$$modelModule$$');
+  const $$modelName$$   = require('models/$$modelModule$$');
 
   class $$publishName$$Sub extends Subscription {
     connect() {
-      this.match($$modelName$$, ()=> true);
+      this.match($$modelName$$, () => true);
       super.connect();
     }
 

@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/model/test-db-helper');
   const session         = require('koru/session');
@@ -10,22 +10,22 @@ define((require, exports, module)=>{
   const $$modelName$$ = require('models/$$modelModule$$');
   const $$publishName$$Pub = require('pubsub/$$fileName$$-pub');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let conn;
-    beforeEach(()=>{
+    beforeEach(() => {
       TH.startTransaction();
       conn = ConnTH.mockConnection();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       ConnTH.stopAllSubs(conn);
       TH.rollbackTransaction();
     });
 
-    test("publish", ()=>{
+    test('publish', () => {
       const doc1 = Factory.create$$modelName$$();
 
-      const sub = conn.onSubscribe('sub1', 1, "$$publishName$$");
+      const sub = conn.onSubscribe('sub1', 1, '$$publishName$$');
 
       assert.calledWith(conn.sendBinary, 'A' ['$$modelName$$', doc1._id, doc1.attributes]);
 

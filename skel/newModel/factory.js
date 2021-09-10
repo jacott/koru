@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Model           = require('koru/model');
   const Factory         = require('koru/model/test-factory');
@@ -8,5 +8,5 @@ define((require, exports, module)=>{
     //$$newModel$$ - DO NOT REMOVE THIS LINE!
   });
 
-  module.exports = Factory;
+  return Factory;
 });

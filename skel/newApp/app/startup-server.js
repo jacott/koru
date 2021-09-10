@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const bootstrap       = require('koru/migrate/bootstrap');
   const AllPub          = require('koru/pubsub/all-pub');
@@ -7,7 +7,7 @@ define((require, exports, module)=>{
 
   KoruStartup.restartOnUnload(require, module);
 
-  return ()=>{
+  return () => {
     bootstrap();
     if (AllPub.pubName === void 0) AllPub.pubName = 'All';
     UserAccount.start();

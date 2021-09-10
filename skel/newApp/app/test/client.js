@@ -2,7 +2,7 @@ window.requirejs = window.yaajs;
 
 window.history.replaceState(null, document.title = 'Test Mode', '/');
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru/main');
 
