@@ -80,11 +80,18 @@ define((require, exports, module) => {
         let p;
         for (const n of params) {
           if (p !== void 0) {
-            this.writeAdvance(',');
-            this.skipOver();
-            this.writeGapIfNeeded();
+            if ((n?.leadingComments?.length ?? 0) != 0 || (p?.trailingComments?.length ?? 0) != 0) {
+              this.writeAdvance(',');
+              this.skipOver(SameLineWsOrCommaRE);
+            } else {
+              this.writeAdvance(',');
+              this.skipOver();
+              this.writeGapIfNeeded();
+              this.skipOverNl(2);
+            }
+          } else {
+            this.skipOverNl(1);
           }
-          this.skipOverNl(p === void 0 ? 1 : 2);
           p = n;
           if (n !== null) {
             this.print(n, true);
@@ -93,9 +100,10 @@ define((require, exports, module) => {
         }
         if (p === null) {
           this.writeAdvance(',');
-        }
-        if ((p?.trailingComments?.length ?? 0) != 0) {
-          this.write(',');
+        } else if ((p?.trailingComments?.length ?? 0) != 0) {
+          if (p.loc.end.line < p.trailingComments.at(-1).loc.end.line) {
+            this.write(',');
+          }
           this.skipOver(SameLineWsOrCommaRE);
         } else {
           this.skipOver(SameLineWsOrCommaRE);
@@ -120,18 +128,16 @@ define((require, exports, module) => {
           const noSemi = p.type === 'BlockStatement';
           if (this.isSameLine(n)) {
             noSemi || this.write(';');
-            this.write(' ');
+            if ((n.leadingComments?.length ?? 0) == 0 && (p.trailingComments?.length ?? 0) == 0) {
+              this.write(' ');
+            }
             this.skipOver(SameLineWsOrSemiRE);
           } else {
             noSemi || this.write(';');
-            let max = 2;
-            if ((p.trailingComments?.length ?? 0) != 0) {
-              max = 0;
-            }
             const adv = Math.max(this.lastIndexOf('\n', n.start) + 1, minIdx);
             this.skipOver(SameLineWsOrSemiRE);
-            for (let i = Math.min(max, n.loc.start.line - this.lastLine); i>0; --i) {
-              this.write('\n');
+            if ((n.leadingComments?.length ?? 0) == 0 && (p.trailingComments?.length ?? 0) == 0) {
+              this.skipOverNl(2);
             }
             this.advance(adv);
           }

@@ -74,7 +74,7 @@ define((require, exports, module) => {
 
     clearTimeout: (handle) => clearTimeout(handle),
 
-    'debug': logDebug,
+    ['de' + 'bug']: logDebug,
 
     info: (...args) => {koru.logger('I', args.join(' '))},
 
