@@ -78,7 +78,7 @@ define((require, exports, module)=>{
 
   Test.testHandle('A');
 
-  session.connect();
+  session.start();
 
   return Test;
 });

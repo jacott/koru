@@ -164,6 +164,9 @@ define((require) => {
         }
       },
 
+      /**
+       * @deprecated use start
+       */
       connect: start,
       start,
 
