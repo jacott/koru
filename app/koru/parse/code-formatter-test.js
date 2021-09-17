@@ -347,6 +347,7 @@ x()`;
       });
 
       test('TemplateLiteral', () => {
+        assert.equals(reformat('`${f})${i})`'), '`${f})${i})`');
         assert.equals(reformat("d = `${a}a${b}b${c||''}`;"), "d = `${a}a${b}b${c || ''}`");
         assert.equals(reformat('``'), '``');
       });

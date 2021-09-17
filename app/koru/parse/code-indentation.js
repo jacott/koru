@@ -13,6 +13,13 @@ define((require, exports, module) => {
     '}': true,
   };
 
+  const TEXT_TYPE = {
+    __proto__: null,
+    string: true,
+    template: true,
+    comment: true,
+  };
+
   const lookingFor = [/^\*/, /^\/\*+[^\S\n]*/];
 
   const extractCommentPiece = (ci, piece, lookingForIdx, extraIndent) => {
@@ -20,7 +27,7 @@ define((require, exports, module) => {
       piece = piece.trimStart();
 
       if (lookingForIdx >= 0) {
-        const m = lookingFor[lookingForIdx].exec(piece)
+        const m = lookingFor[lookingForIdx].exec(piece);
         if (m !== null) {
           extraIndent = ''.padEnd(m[0].length);
         }
@@ -36,7 +43,6 @@ define((require, exports, module) => {
     ci.append(piece, 'comment');
     return extraIndent;
   };
-
 
   class CodeIndentation {
     constructor({initialIndent=0, tabWidth=2}={}) {
@@ -131,11 +137,12 @@ define((require, exports, module) => {
       let extraIndent = '';
       let lookingForIdx = 2;
       while ((m = re.exec(token)) !== null) {
-        let piece = token.slice(idx, m.index + m[0].length - 1).trimEnd()+'\n';
-        if (piece === '\n')
+        let piece = token.slice(idx, m.index + m[0].length - 1).trimEnd() + '\n';
+        if (piece === '\n') {
           this.append('\n', 'comment');
-        else
-          extraIndent = extractCommentPiece(this, piece, --lookingForIdx, extraIndent)
+        } else {
+          extraIndent = extractCommentPiece(this, piece, --lookingForIdx, extraIndent);
+        }
         idx = re.lastIndex;
       }
 
@@ -151,7 +158,8 @@ define((require, exports, module) => {
       this.line += token;
 
       if (type !== 'noIndent') {
-        if (DEC_INDENT[token] !== void 0) {
+        const isCode = TEXT_TYPE[type] === void 0;
+        if (isCode && DEC_INDENT[token] !== void 0) {
           this.decIndent();
           return;
         }
@@ -161,7 +169,7 @@ define((require, exports, module) => {
           this.needsPadding = false;
         }
 
-        if (INC_INDENT[token] !== void 0) {
+        if (isCode && INC_INDENT[token] !== void 0) {
           this.incIndent();
           return;
         }
