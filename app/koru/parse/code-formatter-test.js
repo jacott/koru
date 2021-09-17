@@ -263,6 +263,7 @@ x()`;
       });
 
       test('Method defs', () => {
+        assert.equals(reformat('class A {set [x](v) {}}'), 'class A {set [x](v) {}}');
         assert.equals(reformat('class A {\n  a(x, y) {\n  }\n}'), 'class A {\n  a(x, y) {}\n}');
         assert.equals(reformat('a = function   *   ( a, b,c) {}'), 'a = function *(a, b, c) {}');
         assert.equals(reformat('function   *  a   ( a, b,c)\n {}'), 'function *a(a, b, c) {}');

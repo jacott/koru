@@ -191,7 +191,7 @@ define((require, exports, module) => {
       if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
         this.writeAdvance('function');
         this.write(' ');
-      } else if (node.kind === 'get' && node.kind !== 'set') {
+      } else if (node.kind === 'get' || node.kind === 'set') {
         this.writeAdvance(node.kind);
         this.write(' ');
       }
