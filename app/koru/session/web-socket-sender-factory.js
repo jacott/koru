@@ -173,7 +173,7 @@ define((require) => {
       stop() {
         sessState.close();
         closeWs(this.ws);
-        this._onStops && this._onStops.forEach((func) => func());
+        this._onStops?.forEach((func) => func());
       },
 
       pause() {
@@ -236,12 +236,12 @@ define((require) => {
         }
       };
 
-      if (session[private$] === undefined) {
+      if (session[private$] === void 0) {
         session[private$] = {};
       }
 
       session[private$].queueHeatBeat = () => {
-        heartbeatTO && heartbeatTO();
+        heartbeatTO?.();
         queueHeatBeat();
       };
 
@@ -265,8 +265,8 @@ define((require) => {
         ws.onmessage = null;
         if (heartbeatTO) heartbeatTO();
         session[heatbeatTime$] = heartbeatTO = session.ws = session._queueHeatBeat = null;
-        if (event === undefined) return;
-        if (event.code && event.code !== 1006 && session[retryCount$] != 0) {
+        if (event === void 0) return;
+        if (event.code !== void 0 && event.code !== 1006 && session[retryCount$] != 0) {
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
                     event.code, new Date());
         }
@@ -285,7 +285,7 @@ define((require) => {
       ws.onclose = onclose;
     }
 
-    if (base._broadcastFuncs === undefined) {
+    if (base._broadcastFuncs === void 0) {
       completeBaseSetup(base);
     }
 

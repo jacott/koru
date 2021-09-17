@@ -221,6 +221,12 @@ define((require, exports, module) => {
       this.sendAll('U', session.versionHash + ':' + id);
     }
 
+    if (isTest) {
+      session[isTest] = {
+        resetSessCounter: () => {sessCounter = 0},
+      };
+    }
+
     return session;
   }
 
