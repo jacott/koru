@@ -1,4 +1,4 @@
-define(()=>{
+define(() => {
   const head$ = Symbol(),
         next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
 
@@ -20,6 +20,9 @@ define(()=>{
 
     get value() {return this[value$]}
     set value(v=null) {this[value$] = v}
+
+    get prev() {return this[prev$]}
+    get next() {return this[next$]}
   }
 
   class DLinkedList {
@@ -45,10 +48,12 @@ define(()=>{
       const tail = this[tail$];
       const node = new Node(value, tail, this);
       this[tail$] = node;
-      if (tail !== this)
+      if (tail !== this) {
         tail[next$] = node;
-      if (this[head$] === this)
+      }
+      if (this[head$] === this) {
         this[head$] = node;
+      }
 
       return node;
     }
@@ -57,35 +62,38 @@ define(()=>{
       const head = this[head$];
       const node = new Node(value, this, head);
       this[head$] = node;
-      if (head !== this)
+      if (head !== this) {
         head[prev$] = node;
-      if (this[tail$] === this)
+      }
+      if (this[tail$] === this) {
         this[tail$] = node;
+      }
 
       return node;
     }
 
     forEach(callback) {
-      for(let node = this[head$]; node !== this; node = node[next$]) {
-        if (node[value$] !== void 0)
+      for (let node = this[head$]; node !== this; node = node[next$]) {
+        if (node[value$] !== void 0) {
           callback(node[value$]);
+        }
       }
     }
 
     *values() {
-      for(let node = this[head$]; node !== this; node = node[next$])
-        if (node[value$] !== void 0) yield(node[value$]);
+      for (let node = this[head$]; node !== this; node = node[next$])
+        if (node[value$] !== void 0) yield (node[value$]);
     }
 
     *nodes() {
-      for(let node = this[head$]; node !== this; node = node[next$])
-        yield(node);
+      for (let node = this[head$]; node !== this; node = node[next$])
+        yield (node);
     }
 
     clear() {
       let node = this[head$];
       if (node === this) return;
-      while(node !== this) {
+      while (node !== this) {
         const nn = node[next$];
         node[value$] = void 0;
         node[prev$] = node[next$] = null;

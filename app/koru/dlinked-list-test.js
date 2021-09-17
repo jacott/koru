@@ -1,7 +1,7 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
-   * A double linked list. The list is iterable.
+   * A double linked list. The list is iterable. Nodes can be deleted without needing this list.
    **/
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -10,8 +10,8 @@ define((require, exports, module)=>{
 
   const DLinkedList = require('./dlinked-list');
 
-  TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
-    test("constructor", ()=>{
+  TH.testCase(module, ({beforeEach, afterEach, test, group}) => {
+    test('constructor', () => {
       /**
        * Make an instance of DLinkedList
        *
@@ -37,7 +37,7 @@ define((require, exports, module)=>{
       node3.delete();
     });
 
-    test("head", ()=>{
+    test('head', () => {
       /**
        * Retrieve the node that is the head of the list
        **/
@@ -55,7 +55,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("tail", ()=>{
+    test('tail', () => {
       /**
        * Retrieve the node that is the tail of the list
        **/
@@ -73,7 +73,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("add", ()=>{
+    test('add', () => {
       /**
        * add `value` to the end of the list.
        *
@@ -108,7 +108,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("addFront", ()=>{
+    test('addFront', () => {
       /**
        * add `value` to the front of the list.
        *
@@ -130,7 +130,6 @@ define((require, exports, module)=>{
       assert.same(node1, subject.tail);
       assert.same(node2, subject.head);
 
-
       assert.equals(Array.from(subject), [2, 1]);
 
       node1.delete();
@@ -141,14 +140,14 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("forEach", ()=>{
+    test('forEach', () => {
       /**
        * visit each entry
        *
        * @param {function} visitor called for each observer with the `value` from {##add}.
        *
        **/
-       api.protoMethod();
+      api.protoMethod();
       //[
       const subject = new DLinkedList();
 
@@ -157,13 +156,13 @@ define((require, exports, module)=>{
 
       const ans = [];
 
-      subject.forEach(v => {ans.push(v)});
+      subject.forEach((v) => {ans.push(v)});
 
       assert.equals(ans, ['a', 'b']);
       //]
     });
 
-    test("nodes", ()=>{
+    test('nodes', () => {
       /**
        * Return an iterator over the nodes added to the list. ({##add} returns the `node`)
        **/
@@ -171,10 +170,10 @@ define((require, exports, module)=>{
       //[
       const subject = new DLinkedList();
 
-      const f = ()=>{};
+      const f = () => {};
       const exp = [
         m.is(subject.add(1)),
-        m.is(subject.add(f))
+        m.is(subject.add(f)),
       ];
       subject.add('a');
 
@@ -189,7 +188,23 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("values", ()=>{
+    test('node', () => {
+      const subject = new DLinkedList();
+      const n1 = subject.add(1);
+      const n2 = subject.add(2);
+      const n3 = subject.add(3);
+
+      assert.same(n2.value, 2);
+
+      assert.same(n1.prev, subject);
+      assert.same(n1.next, n2);
+
+      assert.same(n2.prev, n1);
+
+      assert.same(n3.next, subject);
+    });
+
+    test('values', () => {
       /**
        * Return an iterator over the values added to the list.
        **/
@@ -197,7 +212,7 @@ define((require, exports, module)=>{
       //[
       const subject = new DLinkedList();
 
-      const f = ()=>{};
+      const f = () => {};
       subject.add(1),
       subject.add(f),
       subject.add('a');
@@ -213,7 +228,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("clear", ()=>{
+    test('clear', () => {
       /**
        * clear all entries. (calls `listEmpty` if present)
        **/
