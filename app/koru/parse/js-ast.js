@@ -134,6 +134,10 @@ define((require, exports, module) => {
             }
           }
           break;
+        case 'RestElement':
+          descend && this.walk(key, scope);
+          scope.bindings[key.argument.name] = {isLive: true, key: key.argument};
+          return;
         case 'Identifier':
           if (value == null) {
             descend && this.walk(key, scope);

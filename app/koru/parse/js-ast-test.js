@@ -33,11 +33,11 @@ isServer && define((require, exports, module) => {
         text = text.toString();
         let sidx = 0;
         const asserts = {};
-        while (sidx != - 1) {
+        while (sidx != -1) {
           sidx = text.indexOf('assert(', sidx);
-          if (sidx == - 1) break;
-          const eidx = text.indexOf(')', sidx + 5);
-          asserts[sidx] = {text: 'fail.notFound' + text.slice(sidx + 6, eidx + 1)};
+          if (sidx == -1) break;
+          const eidx = text.indexOf(')', sidx+5);
+          asserts[sidx] = {text: 'fail.notFound' + text.slice(sidx+6, eidx+1)};
           sidx = eidx;
         }
         JsAst.scopeWalk(JsAst.parse(text), (node, scope) => {
@@ -62,7 +62,7 @@ isServer && define((require, exports, module) => {
 
         let fail = false;
         const result = Object.entries(asserts).map(([k, {text}]) => {
-          if (text.indexOf('fail') != - 1) fail = true;
+          if (text.indexOf('fail') != -1) fail = true;
           return ' at ' + k + '> ' + text;
         }).join('\n');
         if (fail) {
@@ -107,7 +107,7 @@ isServer && define((require, exports, module) => {
                     }
                     assert(hh, aa, A, k, q, m, h, j, i);
                   }
-                };
+                }
               } while(h);
             }
           })();
@@ -115,6 +115,7 @@ isServer && define((require, exports, module) => {
       });
 
       test('params', () => {
+        assertScope(() => {return {foo(...a) {assert(a)}}});
         assertScope(() => {return {foo(a) {assert(a)}}});
 
         assertScope(() => {var hh = (xx) => assert(xx, hh)});
@@ -125,7 +126,7 @@ isServer && define((require, exports, module) => {
         });
 
         assertScope(() => {
-          function x(a, {b, c: {d: e=123}, f: [g=((h) => assert(h, x, a, b, e, ! g))(1), [i]]}) {
+          function x(a, {b, c: {e=123}, f: [g=((h) => assert(h, x, a, b, e, ! g))(1), [i]]}) {
             assert(x, a, b, e, g, i);
           }
           x(1, {c: {}, f: [void 0, []]});
@@ -152,7 +153,7 @@ isServer && define((require, exports, module) => {
 
       test('for', () => {
         assertScope((() => {
-          for (let i = assert(! i), j=assert(i, ! j); assert(i, j), i < 10; ++i, assert(i, j)) {
+          for (let i = assert(! i), j = assert(i, ! j); assert(i, j), i<10; ++i, assert(i, j)) {
             assert(i, j);
           }
           assert();
@@ -171,8 +172,8 @@ isServer && define((require, exports, module) => {
           const q = 123;
           let z = 0;
           assert(q, z);
-          const {aa, a: {b: c=(() => {
-            let e = 123 + c;
+          const {aa, a: {c=(() => {
+            let e = 123+c;
             assert(e, q, z, aa, ! c);
           })()}, d: [f, [g=(assert(q, z, aa, c, f, ! g), 456)]]} = {};
           assert(q, z, aa, c, f, g);
@@ -237,7 +238,7 @@ isServer && define((require, exports, module) => {
 
         const idx = ik.indexOf(a[0]);
         for (const n of b) {
-          if (ik.indexOf(n) == - 1) {
+          if (ik.indexOf(n) == -1) {
             ik.splice(idx, 0, n);
           }
         }
@@ -249,7 +250,7 @@ isServer && define((require, exports, module) => {
           const node = ast[key];
           if (node !== null && typeof node === 'object') {
             if (Array.isArray(node)) {
-              for (const n of node) walk(n)
+              for (const n of node) walk(n);
             } else {
               walk(node);
             }
