@@ -90,7 +90,7 @@ define((require, exports, module)=>{
       sut(v.sess, {rpcQueue});
       api.protoMethod('checkMsgId', {subject: v.sess});
 
-      const id = 40+Random.id();
+      const id = '14' + Random.id();
       assert.equals(v.sess._sendM('foo'), '1rid1');
       v.sess.checkMsgId(id);
       assert.equals(v.sess._sendM('foo'), '15rid1');

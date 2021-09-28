@@ -19,9 +19,10 @@ define((require)=>{
   }
 
   function checkMsgId(msgId) {
-    const nid = parseInt(msgId.slice(0, -this[baseId$].length));
-    if (nid >= this[nextMsgId$])
+    const nid = parseInt(msgId.slice(0, - this[baseId$].length), 36);
+    if (nid >= this[nextMsgId$]) {
       this[nextMsgId$] = nid+1;
+    }
   }
 
   function lastMsgId() {return this[lastMsgId$]}
