@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Random          = require('koru/random');
   const RPCQueue        = require('koru/session/rpc-queue');
@@ -11,7 +11,7 @@ define((require)=>{
   function cancelRpc(msgId) {
     const rpcQueue = this[rpcQueue$];
     const entry = rpcQueue.get(msgId);
-    if (entry) {
+    if (entry !== void 0) {
       rpcQueue.delete(msgId);
       this.state.decPending(! this.isRpcGet(entry[0][1]));
       return true;
@@ -47,40 +47,43 @@ define((require)=>{
       replaceRpcQueue,
     });
     Object.defineProperty(session, 'lastMsgId', {configurable: true, get: lastMsgId});
-    session[nextMsgId$]= 1,
-    session[lastMsgId$]= '',
+    session[nextMsgId$] = 1,
+    session[lastMsgId$] = '',
     session[baseId$] = Random.global.id();
     session[rpcQueue$] = rpcQueue;
 
-    session.state._onConnect['20-rpc'] || session.state.onConnect("20-rpc", onConnect);
+    session.state._onConnect['20-rpc'] ?? session.state.onConnect('20-rpc', onConnect);
 
-    session._commands.M || session.provide('M', recvM);
+    session.provide('M', recvM);
 
     return session;
-  };
+  }
 
   function rpc(name, ...args) {
     let func = args[args.length - 1];
-    if (typeof func !== 'function') func = null;
-    else
+    if (typeof func !== 'function') {
+      func = null;
+    } else {
       args.length = args.length - 1;
+    }
 
     if (this.isSimulation) {
-      this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
-
-    } else try {
-      this.isSimulation = true;
-      this._sendM(name, args, func);
-      this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
-    } finally {
-      this.isSimulation = false;
+      this._rpcs[name]?.apply(util.thread, args);
+    } else {
+      try {
+        this.isSimulation = true;
+        this._sendM(name, args, func);
+        this._rpcs[name]?.apply(util.thread, args);
+      } finally {
+        this.isSimulation = false;
+      }
     }
   }
 
   function _sendM(name, args, func) {
-    const msgId = this[lastMsgId$] = (this[nextMsgId$]++).toString(36)+this[baseId$];
+    const msgId = this[lastMsgId$] = (this[nextMsgId$]++).toString(36) + this[baseId$];
     const data = [msgId, name];
-    args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
+    if (args !== void 0) for (const arg of args) data.push(util.deepCopy(arg));
     this[rpcQueue$].push(this, data, func);
     this.state.incPending(! this.isRpcGet(name));
     this.state.isReady() && this.sendBinary('M', data);
@@ -91,21 +94,22 @@ define((require)=>{
     const session = this;
     const msgId = data[0];
     const args = session[rpcQueue$].get(msgId);
-    if (! args) return;
+    if (args === void 0) return;
     session.cancelRpc(msgId);
     const type = data[1];
     if (type === 'e') {
-      const callback = args[1] || koru.globalCallback;
-      if (data.length === 3)
+      const callback = args[1] ?? koru.globalCallback;
+      if (data.length === 3) {
         callback(new Error(data[2]));
-      else
-        callback(new koru.Error(+data[2], data[3]));
+      } else {
+        callback(new koru.Error(+ data[2], data[3]));
+      }
       return;
     }
-    args[1] && args[1](null, data[2]);
+    args[1]?.(null, data[2]);
   }
 
-  function onConnect (session) {
+  function onConnect(session) {
     session[rpcQueue$].resend(session);
   }
 

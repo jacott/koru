@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Attach rpc to a session
@@ -7,11 +7,11 @@ define((require, exports, module)=>{
   const SessionBase     = require('koru/session/base').constructor;
   const RPCQueue        = require('koru/session/rpc-queue');
   const api             = require('koru/test/api');
-  const koru            = require('../main');
-  const util            = require('../util');
   const message         = require('./message');
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
+  const koru            = require('../main');
+  const util            = require('../util');
 
   const {stub, spy} = TH;
 
@@ -19,8 +19,8 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach( ()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
 
@@ -34,14 +34,14 @@ define((require, exports, module)=>{
       stub(Random.global, 'id').returns('rid1');
       v.sess = sut(new MySession());
 
-      v.recvM = (...args)=>{v.sess._commands.M.call(v.sess, args)};
+      v.recvM = (...args) => {v.sess._commands.M.call(v.sess, args)};
     });
 
-    afterEach( ()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("setup", ()=>{
+    test('setup', () => {
       /**
        * Wire up rpc to a session
        *
@@ -60,7 +60,7 @@ define((require, exports, module)=>{
       assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
     });
 
-    test("replaceRpcQueue", ()=>{
+    test('replaceRpcQueue', () => {
       /**
        * Replace the rpc queue with a different one.
        **/
@@ -82,7 +82,7 @@ define((require, exports, module)=>{
       assert.calledWith(myQueue.push, v.sess, ['2rid1', 'bar.rpc', 'x'], null);
     });
 
-    test("checkMsgId", ()=>{
+    test('checkMsgId', () => {
       /**
        * Ensure than next msgId will be greater than this one
        **/
@@ -98,7 +98,7 @@ define((require, exports, module)=>{
       assert.equals(v.sess._sendM('foo'), '16rid1');
     });
 
-    test("lastRpc", ()=>{
+    test('lastRpc', () => {
       /**
        * Return lastRpc msgId to use with {##cancelRpc}
        **/
@@ -107,7 +107,7 @@ define((require, exports, module)=>{
       assert.same(v.sess.lastMsgId, '1rid1');
     });
 
-    test("cancelRpc", ()=>{
+    test('cancelRpc', () => {
       /**
        * Return lastRpc msgId to use with {##cancelRpc}
        **/
@@ -128,7 +128,7 @@ define((require, exports, module)=>{
       assert.same(v.sess.state.pendingCount(), 0);
       assert.same(v.sess.state.pendingUpdateCount(), 0);
 
-      v.sess.defineRpcGet('foo.get', arg => {});
+      v.sess.defineRpcGet('foo.get', (arg) => {});
       v.sess.rpc('foo.get', 1);
       assert.same(v.sess.state.pendingCount(), 1);
       assert.same(v.sess.state.pendingUpdateCount(), 0);
@@ -139,27 +139,27 @@ define((require, exports, module)=>{
       assert.same(v.sess.state.pendingUpdateCount(), 0);
     });
 
-    group("reconnect", ()=>{
+    group('reconnect', () => {
       /**
        * Ensure docs are tested against matches after subscriptions have returned.
        * Any unwanted docs should be removed.
        **/
-      test("replay messages",  ()=>{
-        assert.calledWith(v.state.onConnect, "20-rpc", TH.match(func => v.onConnect = func));
-        v.sess.rpc("foo.bar", 1, 2);
-        v.sess.rpc("foo.baz", 1, 2);
+      test('replay messages', () => {
+        assert.calledWith(v.state.onConnect, '20-rpc', TH.match((func) => v.onConnect = func));
+        v.sess.rpc('foo.bar', 1, 2);
+        v.sess.rpc('foo.baz', 1, 2);
         v.state._state = 'retry';
         v.sendBinary.reset();
-        v.recvM("1rid1", 'r');
+        v.recvM('1rid1', 'r');
 
         v.onConnect(v.sess);
 
-        assert.calledWith(v.sendBinary, 'M', ["2rid1", "foo.baz", 1, 2]);
+        assert.calledWith(v.sendBinary, 'M', ['2rid1', 'foo.baz', 1, 2]);
         assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
       });
     });
 
-    test("callback rpc",  ()=>{
+    test('callback rpc', () => {
       stub(koru, 'globalCallback');
 
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
@@ -167,7 +167,6 @@ define((require, exports, module)=>{
       v.sess.rpc('foo.rpc', 'a');
       const msgIdA = v.sess.lastMsgId;
       assert.equals(v.args, ['a']);
-
 
       v.sess.rpc('foo.rpc', 'b', v.bstub = stub());
       const msgIdB = v.sess.lastMsgId;
@@ -177,7 +176,7 @@ define((require, exports, module)=>{
       const msgIdC = v.sess.lastMsgId;
       v.recvM(msgIdC, 'e', '404', 'error Msg');
 
-      assert.calledWithExactly(v.cstub, TH.match(err=>{
+      assert.calledWithExactly(v.cstub, TH.match((err) => {
         assert.same(err.error, 404);
         assert.same(err.reason, 'error Msg');
         return true;
@@ -185,19 +184,19 @@ define((require, exports, module)=>{
 
       refute.called(v.bstub);
 
-      v.recvM(msgIdB, 'r', [1,2,3]);
-      v.recvM(msgIdB, 'r', [1,2,3]);
+      v.recvM(msgIdB, 'r', [1, 2, 3]);
+      v.recvM(msgIdB, 'r', [1, 2, 3]);
 
       assert.calledOnce(v.bstub);
 
-      assert.calledWithExactly(v.bstub, null, TH.match(result=>(
-        assert.equals(result, [1,2,3]), true)));
+      assert.calledWithExactly(v.bstub, null, TH.match((result) => (
+        assert.equals(result, [1, 2, 3]), true)));
 
       v.sess.rpc('foo.rpc', 'x');
       const msgIdX = v.sess.lastMsgId;
 
       v.recvM(msgIdX, 'e', '404', 'global cb');
-      assert.calledOnceWith(koru.globalCallback, TH.match(err => {
+      assert.calledOnceWith(koru.globalCallback, TH.match((err) => {
         assert.equals(err.error, 404);
         assert.equals(err.reason, 'global cb');
         return true;
@@ -208,7 +207,7 @@ define((require, exports, module)=>{
       }
     });
 
-    test("rpc",  ()=>{
+    test('rpc', () => {
       v.ready = true;
       let _msgId = 0, fooId;
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
@@ -219,7 +218,6 @@ define((require, exports, module)=>{
       assert.isFalse(v.sess.isSimulation);
       assert.same(v.state.pendingCount(), 1);
       assert.same(v.state.pendingUpdateCount(), 1);
-
 
       assert.equals(v.args, [1, 2, 3]);
       assert.same(v.thisValue, util.thread);
@@ -246,8 +244,8 @@ define((require, exports, module)=>{
       function rpcSimMethod(...args) {
         v.thisValue = this;
         v.args = args.slice();
-        fooId = (++_msgId).toString(36)+'rid1';
-        assert.calledWith(v.sendBinary, 'M', [fooId, "foo.rpc"].concat(v.args));
+        fooId = (++_msgId).toString(36) + 'rid1';
+        assert.calledWith(v.sendBinary, 'M', [fooId, 'foo.rpc'].concat(v.args));
         assert.isTrue(v.sess.isSimulation);
         v.sess.rpc('foo.s2', 'aaa');
         assert.same(v.sess.lastMsgId, fooId);
@@ -261,23 +259,22 @@ define((require, exports, module)=>{
         v.s2Name = name;
         v.s2This = this;
         assert.isTrue(v.sess.isSimulation);
-        refute.exception(()=>{v.sess.rpc('foo.remote')});
+        refute.exception(() => {v.sess.rpc('foo.remote')});
       }
     });
 
-    test("server only rpc",  ()=>{
+    test('server only rpc', () => {
       v.ready = true;
-      refute.exception(()=>{v.sess.rpc('foo.rpc', 1, 2, 3)});
+      refute.exception(() => {v.sess.rpc('foo.rpc', 1, 2, 3)});
 
       assert.same(v.state.pendingCount(), 1);
       assert.same(v.state.pendingUpdateCount(), 1);
 
-
       assert.calledWith(v.sendBinary, 'M', [
-        v.sess.lastMsgId, "foo.rpc", 1, 2, 3]);
+        v.sess.lastMsgId, 'foo.rpc', 1, 2, 3]);
     });
 
-    test("onChange rpc",  ()=>{
+    test('onChange rpc', () => {
       after(v.state.pending.onChange(v.ob = stub()));
 
       assert.same(v.state.pendingCount(), 0);
@@ -308,5 +305,5 @@ define((require, exports, module)=>{
 
       assert.same(v.state.pendingCount(), 0);
       assert.same(v.state.pendingUpdateCount(), 0);
-    });  });
+    })});
 });

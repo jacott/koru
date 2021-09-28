@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * IndexedDB queue for RPC messages to be sent. This queue is for a
@@ -9,31 +9,31 @@ isClient && define((require, exports, module)=>{
    *
    * RpcGet methods are not persisted.
    **/
-  const koru          = require('koru');
-  const MockIndexedDB = require('koru/model/mock-indexed-db');
-  const QueryIDB      = require('koru/model/query-idb');
-  const TH            = require('koru/test-helper');
-  const api           = require('koru/test/api');
-  const MockPromise   = require('koru/test/mock-promise');
+  const koru            = require('koru');
+  const MockIndexedDB   = require('koru/model/mock-indexed-db');
+  const QueryIDB        = require('koru/model/query-idb');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const MockPromise     = require('koru/test/mock-promise');
 
   const {stub, spy} = TH;
 
-  const sut  = require('./rpc-idb-queue');
+  const sut = require('./rpc-idb-queue');
 
   let v = {};
 
-  const poll = ()=>{Promise._poll()};
+  const poll = () => {Promise._poll()};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    before(() => {
       MockPromise.stubPromise();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("new", ()=>{
+    test('new', () => {
       /**
        * Build a new queue
        **/
@@ -45,8 +45,8 @@ isClient && define((require, exports, module)=>{
       assert.isFalse(queue.isRpcPending());
     });
 
-    group("with rpcQueue", ()=>{
-      beforeEach(()=>{
+    group('with rpcQueue', () => {
+      beforeEach(() => {
         v.mdb = new MockIndexedDB(0);
         v.db = new QueryIDB({name: 'foo', versoion: 0});
         poll();
@@ -56,7 +56,7 @@ isClient && define((require, exports, module)=>{
         poll();
       });
 
-      test("works if db closed", ()=>{
+      test('works if db closed', () => {
         const queue = new sut(v.db);
 
         const session = {isRpcGet() {return false}, checkMsgId() {}};
@@ -70,7 +70,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(queue.get('a12'), [v.data, func]);
       });
 
-      test("persistence", ()=>{
+      test('persistence', () => {
         const queue = new sut(v.db);
 
         const session = {isRpcGet() {return false}, checkMsgId() {}};
@@ -79,12 +79,12 @@ isClient && define((require, exports, module)=>{
         queue.push(session, v.data = ['a12', 'foo', 1], func);
         poll();
         assert.equals(v.os_rpcQueue.docs, {
-          a12: {_id: 'a12', data: ['a12', 'foo', 1]}
+          a12: {_id: 'a12', data: ['a12', 'foo', 1]},
         });
         assert.equals(queue.get('a12'), [v.data, func]);
       });
 
-      test("get not persisted", ()=>{
+      test('get not persisted', () => {
         const queue = new sut(v.db);
 
         const session = {isRpcGet(arg) {return arg === 'foo'}, checkMsgId() {}};
@@ -95,10 +95,9 @@ isClient && define((require, exports, module)=>{
         poll();
         assert.equals(v.os_rpcQueue.docs, {});
         assert.equals(queue.get('a12'), [v.data, func]);
-
       });
 
-      test("reload", ()=>{
+      test('reload', () => {
         /**
          * reload all waiting messages into memory for resend
          **/
@@ -113,18 +112,19 @@ isClient && define((require, exports, module)=>{
         const queue = new sut(v.db);
         const state = {incPending: stub()};
         const sess = {
-          _msgId: 0, state,
+          state,
           sendBinary(type, data) {
             assert.same(type, 'M');
             ans.push(data);
           },
-          checkMsgId() {},
+          checkMsgId: stub(),
         };
 
         queue.reload(sess).then(() => {queue.resend(sess)});
         poll();
         poll();
-        assert.same(sess._msgId.toString(36), 'a102');
+        assert.calledThrice(sess.checkMsgId);
+        assert.calledWith(sess.checkMsgId, 'a10212345670123456789');
 
         assert.same(state.incPending.callCount, 3);
         assert.calledWith(state.incPending, true);
