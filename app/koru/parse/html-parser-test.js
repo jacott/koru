@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   /**
    * HTML parsing helpers
    **/
@@ -14,7 +14,7 @@ define((require, exports, module)=>{
 
   //--- Tag types From HTMLParser
   const RAW_TAGS = {
-    script: '</script>', style: '</style>', textarea: '</textarea>', title: '</title>'
+    script: '</script>', style: '</style>', textarea: '</textarea>', title: '</title>',
   };
 
   const BLOCK_TAGS = {
@@ -42,37 +42,37 @@ define((require, exports, module)=>{
     tbody: TBODY_FOOT, tfoot: TBODY_FOOT,
 
     // NO_SELF_NEST
-    li: {li: true}, optgroup: {optgroup: true}, tr: {tr: true}, th: {th: true}, td: {td: true}
+    li: {li: true}, optgroup: {optgroup: true}, tr: {tr: true}, th: {th: true}, td: {td: true},
   };
   //--- end of Tag types
 
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let result, texts;
-    const onopentag = (name)=>{result += ' >'+name},
-          ontext = (c, s, e)=>{texts.push(c.slice(s,e))},
-          onclosetag = (name)=>{result += ' <'+name};
+    const onopentag = (name) => {result += ' >' + name},
+          ontext = (c, s, e) => {texts.push(c.slice(s, e))},
+          onclosetag = (name) => {result += ' <' + name};
 
-    const assertParse = (inp, exp)=>{
+    const assertParse = (inp, exp) => {
       result = ''; texts = [];
       try {
         HTMLParser.parse(inp, {onopentag, ontext, onclosetag});
-      } catch(err) {
+      } catch (err) {
         koru.info(result);
         throw err;
       }
 
-      assert.elide(()=>{assert.equals(result, exp)});
+      assert.elide(() => {assert.equals(result, exp)});
     };
 
-    test("dangling end p", ()=>{
+    test('dangling end p', () => {
       assertParse(`<p>start<pre>middle</pre>end</p>after`, ' >p <p >pre <pre >p <p');
       assert.equals(texts, ['start', 'middle', 'end', 'after']);
     });
 
-    test("raw tags", ()=>{
+    test('raw tags', () => {
       const parts = [];
-      const ontext = (code, s, e)=>{
+      const ontext = (code, s, e) => {
         parts.push(code.slice(s, e));
       };
 
@@ -93,11 +93,11 @@ body:before {
 }
 `, `
  if ( i < a && b > i) ++i;
-`
+`,
       ]);
     });
 
-    test("no nest", ()=>{
+    test('no nest', () => {
       assertParse(`
 <div>
   <input>
@@ -127,7 +127,7 @@ body:before {
 `, ' >p >span >b <b <span <p >p <p');
     });
 
-    test("parse", ()=>{
+    test('parse', () => {
       /**
        * Parse a string of HTML markup calling the callbacks when matched. All callbacks are passed
        * `code`, `spos`, `epos` where `spos` and `epos` are indexes marking the correspoinding slice
@@ -179,64 +179,70 @@ body:before {
 </div>
 `;
 
-      const mapAttrs = (attrs)=>{
+      const mapAttrs = (attrs) => {
         let ans = '';
         for (const n in attrs)
           ans += ' ' + (attrs[n] === n ? n : `${n}="${attrs[n]}"`);
         return ans;
       };
 
-
       let result = '';
       const tags = [], comments = [];
       let level = 0;
       HTMLParser.parse(code, {
-        onopentag: (name, attrs, code, spos, epos)=>{
+        onopentag: (name, attrs, code, spos, epos) => {
           tags.push(util.isObjEmpty(attrs) ? [++level, name] : [++level, name, attrs]);
           result += code.slice(spos, epos);
         },
-        ontext: (code, spos, epos)=>{
+        ontext: (code, spos, epos) => {
           result += code.slice(spos, epos);
         },
-        oncomment: (code, spos, epos)=>{
+        oncomment: (code, spos, epos) => {
           const text = code.slice(spos, epos);
           comments.push(text);
           result += text;
         },
-        onclosetag: (name, type, code, spos, epos)=>{
+        onclosetag: (name, type, code, spos, epos) => {
           --level;
-          tags.push(['end '+name, type]);
-          if (type === 'end')
+          tags.push(['end ' + name, type]);
+          if (type === 'end') {
             result += code.slice(spos, epos);
-        }
+          }
+        },
       });
 
       assert.equals(tags, [
-        [1, 'div',     {id: 'top', class: 'one two', disabled: ""}],
-        [2,   'input', {name: 'title', value: '\n&quot;hello'}],
-        [     'end input', 'self'],
-        [2,   'p'],
-        [3,     'b'],
-        [       'end b', 'end'],
-        [     'end p', 'missing'],
-        [2,   'p'],
-        [3,     'br'],
-        [       'end br', 'self'],
-        [3,     'span'],
-        [       'end span', 'end'],
-        [     'end p', 'missing'],
-        [   'end div', 'end'],
+        [1, 'div', {id: 'top', class: 'one two', disabled: ''}],
+        [2, 'input', {name: 'title', value: '\n&quot;hello'}],
+        ['end input', 'self'],
+        [2, 'p'],
+        [3, 'b'],
+        ['end b', 'end'],
+        ['end p', 'missing'],
+        [2, 'p'],
+        [3, 'br'],
+        ['end br', 'self'],
+        [3, 'span'],
+        ['end span', 'end'],
+        ['end p', 'missing'],
+        ['end div', 'end'],
       ]);
       assert.equals(comments, ["<!-- I'm a comment -->", '<!--\n    <p>\n    comment 2\n  -->']);
       assert.equals(code, result);
       //]
     });
 
-    test("weird whitespace", ()=>{
+    test('single quotes', () => {
       let attrs;
-      const onopentag = (name, _attrs)=>{
-        attrs = _attrs;
-      };
+      const onopentag = (name, _attrs) => {attrs = _attrs};
+
+      HTMLParser.parse(`<div id  =  'foo'></div>`, {onopentag});
+      assert.equals(attrs, {id: 'foo'});
+    });
+
+    test('weird whitespace', () => {
+      let attrs;
+      const onopentag = (name, _attrs) => {attrs = _attrs};
 
       HTMLParser.parse(`
 <br />
@@ -250,40 +256,42 @@ id
 
  "123" {{helper1 arg1 "arg2"}}/>
 `, {onopentag});
-      assert.equals(attrs, {id: '123', "{{helper1": true, arg1: true, '"arg2"}}': true});
+      assert.equals(attrs, {id: '123', '{{helper1': true, arg1: true, '"arg2"}}': true});
     });
 
-    test("error contents", ()=>{
+    test('error contents', () => {
       try {
-        HTMLParser.parse("\n\nabcd</b>", {filename: "path/for/foo.js"});
-        assert.fail("expected error");
-      } catch(err) {
-        if (err.constructor !== HTMLParser.HTMLParseError)
+        HTMLParser.parse('\n\nabcd</b>', {filename: 'path/for/foo.js'});
+        assert.fail('expected error');
+      } catch (err) {
+        if (err.constructor !== HTMLParser.HTMLParseError) {
           throw err;
+        }
         assert.equals(err.message, `Unexpected end tag\n\tat path/for/foo.js:3:4`);
 
-        assert.same(err.filename, "path/for/foo.js");
+        assert.same(err.filename, 'path/for/foo.js');
         assert.same(err.line, 3);
         assert.same(err.column, 4);
       }
     });
 
-    test("error parsing", ()=>{
-      const assertParseError = (code, exp)=>{
+    test('error parsing', () => {
+      const assertParseError = (code, exp) => {
         try {
           HTMLParser.parse(code);
         } catch (err) {
-          if (err.name !== 'HTMLParseError')
+          if (err.name !== 'HTMLParseError') {
             throw err;
-          assert.elide(()=>{
+          }
+          assert.elide(() => {
             assert.equals(err.message.replace(/\n[^:]+:/, ':'), exp);
           });
           return;
         }
-        assert.fail("did not expect to parse", 1);
+        assert.fail('did not expect to parse', 1);
       };
 
-      assertParseError('<noend', "Unexpected end of input:1:6");
+      assertParseError('<noend', 'Unexpected end of input:1:6');
       assertParseError(`
 <html>
   <!-- bad comment --  >
@@ -296,7 +304,7 @@ id
  <!-- bad comment ->
 </html>
 `,
-                       "Missing end of comment:5:0");
+                       'Missing end of comment:5:0');
 
       assertParseError(`<div id=abc>`,
                        "Expected '\"':1:8");
@@ -306,10 +314,9 @@ id
 
       assertParseError(`<b>hello</b`,
                        'Unexpected end of input:1:11');
-
     });
 
-    test("tag types", ()=>{
+    test('tag types', () => {
       assert.equals(BLOCK_TAGS, HTMLParser.BLOCK_TAGS);
       assert.equals(NO_NEST, HTMLParser[isTest].NO_NEST);
       assert.equals(RAW_TAGS, HTMLParser[isTest].RAW_TAGS);
