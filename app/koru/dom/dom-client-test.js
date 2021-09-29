@@ -37,6 +37,14 @@ define((require, exports, module) => {
         api.method();
       });
 
+      test('no elm', () => {
+        refute.exception(() => {
+          Dom.ensureInView(null);
+          api.skip();
+          Dom.ensureInView(void 0);
+        });
+      });
+
       test('horizontal', () => {
         //[
         // horizontal scroll

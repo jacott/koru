@@ -14,24 +14,24 @@ define((require) => {
 
   const vendorStylePrefix = (() => {
     const style = document.documentElement.style;
-    const styles = ['Moz', 'ms',  'webkit', 'o', ''];
+    const styles = ['Moz', 'ms', 'webkit', 'o', ''];
     let i = 0;
-    for(; i < styles.length; ++i) {
-      if (styles[i]+'Transform' in style) break;
+    for (;i < styles.length; ++i) {
+      if (styles[i] + 'Transform' in style) break;
     }
     return styles[i];
   })();
 
   const vendorFuncPrefix = vendorStylePrefix.toLowerCase();
 
-  const matches = document.documentElement[vendorFuncPrefix+'MatchesSelector'] ||
+  const matches = document.documentElement[vendorFuncPrefix + 'MatchesSelector'] ||
         document.documentElement.matchesSelector;
 
   require('./next-frame')(Dom);
 
   Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
-  Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
-  Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
+  Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR + ',button,a';
+  Dom.FOCUS_SELECTOR = '[tabindex="0"],' + Dom.INPUT_SELECTOR;
 
   let supportsPassiveEvents = false;
   window.addEventListener('test', null, Object.defineProperty({}, 'passive', {
@@ -60,8 +60,9 @@ define((require) => {
     HTMLDocument.prototype.caretPositionFromPoint = function (x, y) {
       const range = this.caretRangeFromPoint(x, y);
       return range === null
-        ? null : {offsetNode: range.startContainer, offset: range.startOffset};
-    };
+        ? null
+        : {offsetNode: range.startContainer, offset: range.startOffset};
+    }
   }
 
   const getRangeClientRect = (range) => {
@@ -76,10 +77,10 @@ define((require) => {
         if (text) {
           if (so < text.length) {
             tr.setStart(sc, so);
-            tr.setEnd(sc, so + 1);
+            tr.setEnd(sc, so+1);
             dims = tr.getBoundingClientRect();
           } else {
-            tr.setStart(sc, so - 1);
+            tr.setStart(sc, so-1);
             tr.setEnd(sc, so);
             dims = tr.getBoundingClientRect();
             result.left = dims.right;
@@ -100,8 +101,9 @@ define((require) => {
       result.top = dims.top;
       result.bottom = dims.bottom;
 
-      if (result.left === undefined)
+      if (result.left === undefined) {
         result.left = dims.left;
+      }
       result.right = result.left;
       return result;
     } else {
@@ -124,39 +126,42 @@ define((require) => {
     _matchesFunc: matches,
 
     isInView: (elm, regionOrNode) => {
-      const region = regionOrNode.getBoundingClientRect === undefined ?
-            regionOrNode : regionOrNode.getBoundingClientRect();
+      const region = regionOrNode.getBoundingClientRect === undefined
+            ? regionOrNode
+            : regionOrNode.getBoundingClientRect();
       const bb = elm.getBoundingClientRect();
-      const cx = (bb.left+bb.width/2);
-      const cy = (bb.top+bb.height/2);
+      const cx = (bb.left + bb.width / 2);
+      const cy = (bb.top + bb.height / 2);
 
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
 
     isAboveBottom: (elm, region) => {
-      if ('getBoundingClientRect' in region)
+      if ('getBoundingClientRect' in region) {
         region = region.getBoundingClientRect();
+      }
 
       return elm.getBoundingClientRect().top < region.bottom;
     },
 
-    ensureInView: (elm) => {
+    ensureInView: (elm=null) => {
+      if (elm === null) return;
       const adjustments = [];
       let {left, right, bottom, top} = elm.getBoundingClientRect();
       for (let sp = Dom.getScrollParent(elm); sp !== null; sp = Dom.getScrollParent(sp)) {
         const pDim = sp.getBoundingClientRect();
         const pBottom = pDim.top + sp.clientHeight;
         const pRight = pDim.left + sp.clientWidth;
-        const vdiff = bottom > pBottom
-              ? Math.min(bottom - pBottom, top - pDim.top)
+        const vdiff = bottom>pBottom
+              ? Math.min(bottom-pBottom, top - pDim.top)
               : top < pDim.top
-              ?   top - pDim.top
-              :   0;
-        const hdiff = right > pRight
-              ? Math.min(right - pRight, left - pDim.left)
+              ? top - pDim.top
+              : 0;
+        const hdiff = right>pRight
+              ? Math.min(right-pRight, left - pDim.left)
               : left < pDim.left
-              ?   left - pDim.left
-              :   0;
+              ? left - pDim.left
+              : 0;
 
         if (vdiff != 0 || hdiff != 0) {
           left += hdiff; right += hdiff;
@@ -164,7 +169,7 @@ define((require) => {
           adjustments.push([sp, sp.scrollLeft + hdiff, sp.scrollTop + vdiff]);
         }
       }
-      for(let i = 0; i < adjustments.length; ++i) {
+      for (let i = 0; i < adjustments.length; ++i) {
         const [elm, scrollLeft, scrollTop] = adjustments[i];
         elm.scrollTop = scrollTop;
         elm.scrollLeft = scrollLeft;
@@ -175,29 +180,32 @@ define((require) => {
       if (elm === null) return null;
       elm = elm.parentNode;
       for (;elm !== null; elm = elm.parentNode) {
-        if (elm.scrollHeight > elm.clientHeight || elm.scrollWidth > elm.clientWidth)
+        if (elm.scrollHeight > elm.clientHeight || elm.scrollWidth > elm.clientWidth) {
           return elm;
+        }
       }
       return null;
     },
 
     setClassBySuffix: (name, suffix, elm=Dom.element) => {
       if (elm === null) return;
-      const classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')
-            .replace(/(^ | $)/g,'');
+      const classes = elm.className.replace(new RegExp('\\s*\\S*' + suffix + '\\b', 'g'), '')
+            .replace(/(^ | $)/g, '');
 
       elm.className = name
-        ? (classes.length ? classes + ' ' : '') + name + suffix : classes;
+        ? (classes.length ? classes + ' ' : '') + name+suffix
+      : classes;
     },
 
     setClassByPrefix: (name, prefix, elm=Dom.element) => {
       if (elm === null) return;
 
-      const classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '')
-            .replace(/(^ | $)/g,'');
+      const classes = elm.className.replace(new RegExp('\\s*' + prefix + '\\S*', 'g'), '')
+            .replace(/(^ | $)/g, '');
 
       elm.className = name
-        ? (classes.length ? classes + ' ' : '') + prefix + name : classes;
+        ? (classes.length ? classes + ' ' : '') + prefix+name
+      : classes;
     },
 
     setClass: (name, isAdd, elm) => {
@@ -206,10 +214,11 @@ define((require) => {
 
     setBoolean: (name, isAdd, elm=Dom.element) => {
       if (elm === null) return;
-      if (isAdd)
+      if (isAdd) {
         elm.setAttribute(name, name);
-      else
+      } else {
         elm.removeAttribute(name);
+      }
     },
 
     focus: (elm, selector) => {
@@ -232,32 +241,33 @@ define((require) => {
     },
 
     getBoundingClientRect: (object) => {
-      if (object instanceof Range)
+      if (object instanceof Range) {
         return getRangeClientRect(object);
-      else if (object.getBoundingClientRect)
+      } else if (object.getBoundingClientRect) {
         return object.getBoundingClientRect();
-      else if (object.left !== undefined)
+      } else if (object.left !== undefined) {
         return object;
+      }
     },
 
     forEach: (elm, querySelector, func) => {
       if (elm == null) return;
       const elms = elm.querySelectorAll(querySelector);
       const len = elms.length;
-      for(let i = 0; i < len; ++i) func(elms[i]);
+      for (let i = 0; i<len; ++i) func(elms[i]);
     },
 
     mapToData: (list) => {
       const len = list.length;
       const result = [];
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i<len; ++i) {
         result.push(convertToData(list[i]));
       }
       return result;
     },
 
     closestChildOf: (elm=null, parent) => {
-      while(elm !== null) {
+      while (elm !== null) {
         const p = elm.parentNode;
         if (p === parent) return elm;
         elm = p;
@@ -266,8 +276,9 @@ define((require) => {
     },
 
     getClosest: (elm=null, selector) => {
-      if (elm !== null && elm.nodeType !== document.ELEMENT_NODE)
+      if (elm !== null && elm.nodeType !== document.ELEMENT_NODE) {
         elm = elm.parentNode;
+      }
       return elm && elm.closest(selector);
     },
 
@@ -285,8 +296,8 @@ define((require) => {
 
     nextSibling: (elm=null, selector) => {
       if (elm !== null) {
-        for(let next = elm.nextElementSibling; next !== null;
-            next = next.nextElementSibling) {
+        for (let next = elm.nextElementSibling; next !== null;
+             next = next.nextElementSibling) {
           if (matches.call(next, selector)) return next;
         }
       }
@@ -295,15 +306,16 @@ define((require) => {
 
     childElementIndex: (child) => {
       let i = 0;
-      while( (child = child.previousElementSibling) != null ) i++;
+      while ((child = child.previousElementSibling) != null) i++;
       return i;
     },
 
     buildEvent,
 
     triggerEvent: (node, event, args) => {
-      if (typeof event === 'string')
+      if (typeof event === 'string') {
         event = buildEvent(event, args);
+      }
 
       node.dispatchEvent(event);
 
@@ -311,8 +323,9 @@ define((require) => {
     },
 
     hideAndRemove: (elm) => {
-      if (typeof elm === 'string')
+      if (typeof elm === 'string') {
         elm = document.getElementById(elm);
+      }
       const ctx = Dom.myCtx(elm);
       if (ctx === null) return;
       Dom.addClass(elm, 'remElm');
@@ -320,8 +333,9 @@ define((require) => {
     },
 
     show: (elm) => {
-      if (typeof elm === 'string')
+      if (typeof elm === 'string') {
         elm = document.getElementById(elm);
+      }
 
       const ctx = Dom.myCtx(elm);
       if (ctx === null) return;
@@ -333,12 +347,12 @@ define((require) => {
 
     hasPointerEvents: true,
 
-    get event(){return Template._currentEvent},
+    get event() {return Template._currentEvent},
 
     _helpers: {
       inputValue: (value) => {
         Dom.setOriginalValue(Dom.current.element, value);
-        Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
+        Dom.updateInput(Dom.current.element, value == null ? '' : '' + value);
       },
 
       decimal: (value, {format=2}={}) => {
@@ -351,8 +365,9 @@ define((require) => {
     originalValue: (elm) => elm[original$],
     setOriginalValue: (elm, value) => {elm[original$] = value},
     restoreOriginalValue: (elm) => {
-      if (hasOwn(elm, original$))
+      if (hasOwn(elm, original$)) {
         elm.value = elm[original$];
+      }
     },
 
     stopEvent: Template.stopEvent,
@@ -369,8 +384,7 @@ define((require) => {
       const elmCtx = elm[ctx$];
       const observers = ctx[destoryObservers$];
       elmCtx[destoryWith$] = (
-        (observers === undefined) ? (ctx[destoryObservers$] = new DLinkedList()) : observers
-      ).add(elm);
+        (observers === undefined) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(elm);
     },
 
     destroyData: (elm=null) => {
@@ -383,7 +397,7 @@ define((require) => {
           ctx[destoryObservers$] = undefined;
           for (const withElm of observers) {
             const withCtx = withElm[ctx$];
-            if (withCtx != null)  {
+            if (withCtx != null) {
               withCtx[destoryWith$] = undefined;
             }
             Dom.remove(withElm);
@@ -399,7 +413,7 @@ define((require) => {
     removeId: (id) => Dom.remove(document.getElementById(id)),
 
     removeAll: (elms) => {
-      for(let i = elms.length - 1; i >= 0; --i) {
+      for (let i = elms.length - 1; i >= 0; --i) {
         Dom.remove(elms[i]);
       }
     },
@@ -417,7 +431,7 @@ define((require) => {
       const parent = start.parentNode;
       if (! parent) return;
       const end = start[endMarker$];
-      for(let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
+      for (let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
         elm.remove();
         Dom.destroyData(elm);
       }
@@ -427,7 +441,7 @@ define((require) => {
       if (elm === null) return;
 
       let row;
-      while((row = elm.firstChild) !== null) {
+      while ((row = elm.firstChild) !== null) {
         Dom.destroyData(row);
         row.remove();
       }
@@ -450,8 +464,9 @@ define((require) => {
       if (elm === null) return;
       if (typeof elm === 'string') elm = document.querySelector(elm);
       let ctx = elm[ctx$];
-      while(ctx === undefined && elm.parentNode !== null)
+      while (ctx === undefined && elm.parentNode !== null) {
         ctx = (elm = elm.parentNode)[ctx$];
+      }
       return ctx === undefined ? null : ctx;
     },
 
@@ -521,7 +536,7 @@ define((require) => {
         $._ctx = ctx;
         try {
           func(event);
-        } catch(ex) {
+        } catch (ex) {
           Dom.handleException(ex);
         } finally {
           $._ctx = orig;
