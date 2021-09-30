@@ -426,6 +426,11 @@ define((require, exports, module) => {
         }
         break;
       case 'AssignmentPattern':
+        if (! node.shorthand && node.key.name !== node.value.left.name) {
+          this.print(node.key);
+          this.write(': ');
+          this.advance(node.value.start);
+        }
         this.printLeftRight(node.value, '=', false);
         break;
       default:

@@ -93,6 +93,7 @@ x()`;
       });
 
       test('spread and default assignments', () => {
+        assert.equals(reformat('let {x: y=123}={}'), 'let {x: y=123} = {}');
         assert.equals(reformat('let {["x"+"x"]: b} = {xx: 123};'), "let {['x' + 'x']: b} = {xx: 123};");
         assert.equals(reformat('let    a  ;'), 'let a;');
         assert.equals(reformat('const    a=123;'), 'const a = 123;');
