@@ -7,7 +7,7 @@ define((require) => {
   const util            = require('koru/util');
 
   function stateFactory() {
-    let state = 'startup';
+    let state = 'closed';
     let count = 0;
     let updateCount = 0;
 

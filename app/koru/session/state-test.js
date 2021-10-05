@@ -19,6 +19,8 @@ define((require, exports, module) => {
     });
 
     test('pending', () => {
+      assert.same(sessState._state, 'closed');
+
       assert.same(sessState.pendingCount(), 0);
       after(sessState.pending.onChange(v.change = stub()));
 

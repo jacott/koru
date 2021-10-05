@@ -62,6 +62,8 @@ define((require, exports, module) => {
     });
 
     test('pause', () => {
+      assert.same(v.sess.state._state, 'closed');
+
       v.sess.start();
       v.ws.close = stub();
 
