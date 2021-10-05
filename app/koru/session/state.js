@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const makeSubject     = require('koru/make-subject');
@@ -13,7 +13,7 @@ define((require)=>{
 
     let debug_pending = false;
 
-    Trace.debug_pending = (value)=>{
+    Trace.debug_pending = (value) => {
       if (value) {
         koru._incPendingStack = [];
         koru._decPendingStack = [];
@@ -25,7 +25,7 @@ define((require)=>{
       }
     };
 
-    const setState = (self, value)=>{
+    const setState = (self, value) => {
       const was = state;
       state = value;
       was === 'ready' && was !== value && self.notify(false);
@@ -36,8 +36,9 @@ define((require)=>{
       _onConnect: {},
 
       onConnect(priority, func) {
-        if (priority in this._onConnect)
-          throw new Error("onConnect " + priority + " already taken for onConnect");
+        if (priority in this._onConnect) {
+          throw new Error('onConnect ' + priority + ' already taken for onConnect');
+        }
         this._onConnect[priority] = func;
       },
 
@@ -49,7 +50,7 @@ define((require)=>{
         this.session = session;
         state = 'ready';
         const onConnect = this._onConnect;
-        util.forEach(Object.keys(onConnect).sort(), priority =>{onConnect[priority](session)});
+        util.forEach(Object.keys(onConnect).sort(), (priority) => {onConnect[priority](session)});
         this.notify(true);
       },
 
@@ -59,8 +60,9 @@ define((require)=>{
       retry(code, reason) {
         const was = state;
         state = 'retry';
-        if (was !== 'retry')
+        if (was !== 'retry') {
           this.notify(false, code, reason);
+        }
       },
 
       isReady() {return state === 'ready'},
@@ -79,8 +81,9 @@ define((require)=>{
         debug_pending && koru._incPendingStack.push(
           util.extractError(new Error(`${count} ${isUpdate}`)));
         if (isUpdate) ++updateCount;
-        if (++count === 1)
+        if (++count === 1) {
           this.pending.notify(true);
+        }
       },
 
       decPending(isUpdate=false) {
@@ -94,7 +97,7 @@ define((require)=>{
           this.pending.notify(false);
         } else if (count === -1) {
           count = 0;
-          throw new Error("Unexpected dec when no outstanding waits");
+          throw new Error('Unexpected dec when no outstanding waits');
         }
       },
 
@@ -107,5 +110,5 @@ define((require)=>{
     return makeSubject(sessionState);
   }
 
-  return  stateFactory();
+  return stateFactory();
 });

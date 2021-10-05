@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
   const stateFactory    = require('./state').constructor;
@@ -8,17 +8,17 @@ define((require, exports, module)=>{
   let sessState;
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       sessState = new stateFactory();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
       sessState = null;
     });
 
-    test("pending", ()=>{
+    test('pending', () => {
       assert.same(sessState.pendingCount(), 0);
       after(sessState.pending.onChange(v.change = stub()));
 
@@ -56,7 +56,7 @@ define((require, exports, module)=>{
       assert.calledWith(v.change, true);
     });
 
-    test("onConnect", ()=>{
+    test('onConnect', () => {
       sessState.onConnect('22', v.conn22_1 = stub());
       assert.exception(function () {
         sessState.onConnect('22', v.conn22_2 = stub());
@@ -84,7 +84,7 @@ define((require, exports, module)=>{
       assert.equals(sessState._onConnect['22'], undefined);
     });
 
-    test("pause", ()=>{
+    test('pause', () => {
       after(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
@@ -94,10 +94,9 @@ define((require, exports, module)=>{
       assert.calledOnceWith(v.onChange, false);
 
       assert.isTrue(sessState.isPaused());
-
     });
 
-    test("retry startup", ()=>{
+    test('retry startup', () => {
       after(sessState.onChange(v.onChange = stub()));
 
       sessState.retry(4404, 'not found');
@@ -108,8 +107,7 @@ define((require, exports, module)=>{
       assert.calledOnceWith(v.onChange, false, 4404, 'not found');
     });
 
-
-    test("retry ready", ()=>{
+    test('retry ready', () => {
       after(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
