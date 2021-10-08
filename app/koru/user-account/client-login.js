@@ -18,8 +18,11 @@ define((require) => {
       return subject.onChange(func);
     },
     setUserId(session, id) {
-      util.thread.userId = id || session.DEFAULT_USER_ID;
-      setState(session, 'change');
+      id = id || session.DEFAULT_USER_ID;
+      if (util.thread.userId !== id) {
+        util.thread.userId = id;
+        setState(session, 'change');
+      }
     },
 
     ready(session) {

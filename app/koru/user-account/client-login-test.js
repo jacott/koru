@@ -24,8 +24,15 @@ define((require, exports, module) => {
       ClientLogin.setUserId(session, 'u123');
       assert.same(util.thread.userId, 'u123');
 
+      oc.reset();
       ClientLogin.setUserId(session, void 0);
       assert.same(util.thread.userId, 'public');
+
+      assert.calledWith(oc, 'change');
+
+      oc.reset();
+      ClientLogin.setUserId(session, void 0);
+      refute.called(oc);
     });
 
     test('stop', () => {
