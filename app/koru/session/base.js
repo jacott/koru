@@ -75,7 +75,7 @@ define((require)=>{
       const func = this._commands[type];
 
       if (typeof func !== 'function')
-        koru.info('Unexpected session message: '+ type, conn.sessId);
+        koru.info('Unexpected session('+this._id+') message: '+ type, conn.sessId);
       else
         func.call(conn, obj);
     }
