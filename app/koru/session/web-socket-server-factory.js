@@ -25,6 +25,8 @@ define((require, exports, module) => {
     let dictHashStr = null;
     const {version, versionHash} = koru;
 
+    if (session.ServerConnection === void 0) session.ServerConnection = ServerConnection;
+
     globalDictAdders[module.id] = (adder) => {
       for (const name in session._rpcs) {
         adder(name);
@@ -83,7 +85,7 @@ define((require, exports, module) => {
 
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
-        const conn = session.conns[sessId] = new ServerConnection(session, ws, ugr, sessId, () => {
+        const conn = session.conns[sessId] = new session.ServerConnection(session, ws, ugr, sessId, () => {
           ws.close();
           const conn = session.conns[sessId];
           if (conn) {

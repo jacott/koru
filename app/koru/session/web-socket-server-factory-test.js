@@ -327,7 +327,30 @@ define((require, exports, module) => {
           v.sess.onConnection(v.ws, v.ws[isTest].request);
           v.assertSent(['', 'h123', m.any, m.string]);
         });
-      })});
+      });
+    });
+
+    test('override NewConnection', () => {
+      v.mockSess.ServerConnection = class extends ServerConnection {
+        constructor(...args) {
+          super(...args);
+          this.onMessage = stub();
+        }
+      };
+      const onMessage = v.ws.on.withArgs('message');
+      const sess = sut(v.mockSess);
+      v.ws[isTest].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+      sess.versionHash = 'h456';
+      sess.version = 'v1.2.3';
+      TH.noInfo();
+      sess.onConnection(v.ws, v.ws[isTest].request);
+
+      assert.calledOnceWith(onMessage, 'message', m.func);
+
+      const conn = sess.conns[1];
+      onMessage.yield('testing');
+      assert.calledWith(conn.onMessage, 'testing');
+    });
 
     test('unload server', () => {
       const sess = sut(v.mockSess);
