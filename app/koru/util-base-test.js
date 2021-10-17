@@ -1,30 +1,46 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
-  const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {inspect$} = require('koru/symbols');
 
   const util = require('./util');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       api.module({subjectModule: module.get('./util'), subjectName: 'util'});
     });
 
-    test("properties", ()=>{
-      api.property('idLen', v => `${v}. The length of an \`_id\` in characters.`);
+    test('properties', () => {
+      api.property('idLen', (v) => `${v}. The length of an \`_id\` in characters.`);
       assert.same(util.idLen, 17);
-
     });
 
-    test('at', ()=>{
-      const a= '0123';
+    test('at', () => {
+      const a = '0123';
       assert.same(a.at(0), '0');
       assert.same(a.at(-1), '3');
     });
 
-    test("inspect", ()=>{
+    test('id', () => {
+      const {u8Id} = util;
+      for (let i = 0; i < u8Id.length; ++i) {
+        u8Id[i] = i+8;
+      }
+
+      assert.same(util.id(), '90abcdefghijklmno');
+    });
+
+    test('idToUint8Array', () => {
+      util.idToUint8Array('1234ABCDEFGHIJKLM', util.u8Id);
+      assert.same(util.id(), '1234ABCDEFGHIJKLM');
+
+      util.idToUint8Array('7890abcdefghijklm', util.u8Id);
+      assert.same(util.id(), '7890abcdefghijklm');
+    });
+
+    test('inspect', () => {
       /**
        * Convert any type to a displayable string. The symbol `inspect$` can be used to override
        * the value returned.
@@ -32,44 +48,44 @@ define((require, exports, module)=>{
        **/
       api.method('inspect');
       //[
-      const obj = { '': 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, '\\a': 5 };
+      const obj = {'': 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, '\\a': 5};
       assert.equals(
         util.inspect(obj),
         `{123: 1, '': 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, '\\\\a': 5}`);
 
-      const array = [1,2,3];
+      const array = [1, 2, 3];
       assert.equals(
         util.inspect(array),
-        "[1, 2, 3]"
+        '[1, 2, 3]',
       );
 
-      array[inspect$] = ()=>"overridden";
+      array[inspect$] = () => 'overridden';
 
-      assert.equals(util.inspect(array), "overridden");
+      assert.equals(util.inspect(array), 'overridden');
       //]
     });
 
-    test("qlabel", ()=>{
+    test('qlabel', () => {
       /**
        * Quote label. Add quotes only if needed to be used as a property name.
        **/
       api.method();
       //[
-      assert.equals(util.qlabel("1234"), '1234');
-      assert.equals(util.qlabel("abc123"), 'abc123');
+      assert.equals(util.qlabel('1234'), '1234');
+      assert.equals(util.qlabel('abc123'), 'abc123');
       assert.equals(util.qlabel("a'234"), `"a'234"`);
-      assert.equals(util.qlabel("123a"), `'123a'`);
+      assert.equals(util.qlabel('123a'), `'123a'`);
       assert.equals(util.qlabel('ab\nc'), `'ab\\nc'`);
       //]
     });
 
-    test("qstr", ()=>{
+    test('qstr', () => {
       /**
        * Quote string
        **/
       api.method();
       //[
-      assert.equals(util.qstr("1234"), "'1234'");
+      assert.equals(util.qstr('1234'), "'1234'");
       assert.equals(util.qstr("1'234"), `"1'234"`);
       assert.equals(util.qstr('12"3a'), `'12"3a'`);
       assert.equals(util.qstr("\r"), '"\\r"');
@@ -78,7 +94,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("mergeNoEnum", ()=>{
+    test('mergeNoEnum', () => {
       /**
        * Merge `source` into `dest` and set `enumerable` to `false` for each added or modified
        * property. That is, add each enumerable property in `source` to `dest`, or where a
@@ -109,7 +125,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("merge", ()=>{
+    test('merge', () => {
       /**
        * Merge `source` into `dest`. That is, add each enumerable property in `source` to `dest`, or where a
        * property of that name already exists in `dest`, replace the property in `dest` with the
@@ -144,10 +160,9 @@ define((require, exports, module)=>{
 
       assert.same(ans, c);
       assert.equals(ans, {d: 5, b: 3, c: 4});
-
     });
 
-    test("last", ()=>{
+    test('last', () => {
       assert.same(util.last([1, 4]), 4);
     });
   });

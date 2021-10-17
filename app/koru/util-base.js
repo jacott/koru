@@ -17,20 +17,20 @@ define((require, exports, module) => {
       // Convert the argument to an integer
       n = Math.trunc(n) || 0;
       // Allow negative indexing from the end
-      if (n < 0) n += this.length;
+      if (n<0) n += this.length;
       // Out-of-bounds access returns undefined
-      if (n < 0 || n >= this.length) return undefined;
+      if (n<0 || n >= this.length) return undefined;
       // Otherwise, this is just normal property access
       return this[n];
     }
 
     for (let C of [Array, String, Uint8Array]) {
       if (C.prototype.at === void 0) {
-        Object.defineProperty(C.prototype, "at",
-                              { value,
-                                writable: true,
-                                enumerable: false,
-                                configurable: true });
+        Object.defineProperty(C.prototype, 'at',
+                              {value,
+                               writable: true,
+                               enumerable: false,
+                               configurable: true});
       }
     }
   }
@@ -125,6 +125,20 @@ define((require, exports, module) => {
       }
 
       return result.slice(0, idLen);
+    },
+    idToUint8Array: (str, u8Id) => {
+      for (let i = 0; i < str.length; ++i) {
+        const o = str.charCodeAt(i);
+        if (o<65) {
+          u8Id[i] = o === 48 ? 9 : o-49;
+        } else if (o<97) {
+          u8Id[i] = o-29;
+        } else {
+          u8Id[i] = o-87;
+        }
+      }
+
+      return u8Id;
     },
 
     browserVersion(ua) {
