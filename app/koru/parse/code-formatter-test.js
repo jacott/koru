@@ -112,8 +112,8 @@ x()`;
         assert.equals(reformat('typeof a'), 'typeof a');
         assert.equals(reformat('-   [a].toString()'), '-[a].toString()');
         assert.equals(reformat('-   a()'), '-a()');
-        assert.equals(reformat('-   (i+1)'), '-(i+1)');
-        assert.equals(reformat('+   (i+1)'), '+(i+1)');
+        assert.equals(reformat('-   (i+1)'), '-(i + 1)');
+        assert.equals(reformat('+   (i+1)'), '+(i + 1)');
         assert.equals(reformat('-   i'), '-i');
         assert.equals(reformat('-++i'), '- ++i');
         assert.equals(reformat('-i++'), '- i++');
@@ -136,7 +136,7 @@ x()`;
         assert.equals(reformat('3 * 2 + 4 + 5*5 + 6 * 7'), '3*2 + 4 + 5*5 + 6*7');
         assert.equals(reformat('3 * (2 + 4)'), `3 * (2+4)`);
         assert.equals(reformat('3 *   2   +4'), `3*2 + 4`);
-        assert.equals(reformat('a&   b'), `a&b`);
+        assert.equals(reformat('a&   b'), `a & b`);
         assert.equals(reformat('a\n &  b'), `a &\n  b`);
       });
 
@@ -173,7 +173,7 @@ x()`;
         assert.equals(reformat('for(a;;) break\n'), 'for (a;;) break;\n');
         assert.equals(reformat('for(;;) break\n'), 'for (;;) break;\n');
         assert.equals(reformat('for(let i = 0;i < 4;++i) {\n i++\n};\n'),
-                      'for (let i = 0; i<4; ++i) {\n  i++;\n}\n');
+                      'for (let i = 0; i < 4; ++i) {\n  i++;\n}\n');
       });
 
       test('TryStatement', () => {

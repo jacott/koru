@@ -30,7 +30,7 @@ define((require, exports, module) => {
   };
 
   const isSimpleNode = (isLeft, node, operator) => (
-    node.type === 'NumericLiteral' || node.type === 'Identifier') || (
+    node.type === 'NumericLiteral') || (
       node.type === 'BinaryExpression' &&
         node.operator === operator &&
         (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
@@ -757,7 +757,7 @@ define((require, exports, module) => {
       };
 
       const printer = new MyPrinter({input, write});
-      if (initialIndent<0) {
+      if (initialIndent < 0) {
         initialIndent = printer.nextStopPoint(true);
       }
       const indent = new CodeIndentation({initialIndent, tabWidth});
