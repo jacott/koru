@@ -276,7 +276,8 @@ define((require)=>{
           for(let i = 0; i < slen; ++i) {
             const key = _sort[i];
             const dir = i+1 == slen || typeof _sort[i+1] !== 'number' ? 1 : Math.sign(_sort[++i]);
-            const {type} = $fields[key];
+            const type = $fields[key]?.type;
+            if (type === void 0) throw new Error('invalid field: '+key);
 
             compMethod.push(type === 'text'? dir*2 : dir);
             compKeys.push(key);
