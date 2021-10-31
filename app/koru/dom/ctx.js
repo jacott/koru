@@ -376,6 +376,7 @@ define((require) => {
     }
 
     autoUpdate(observe) {
+      if (observe !== void 0 && typeof observe !== 'function') throw new Error('Invalid argument');
       if (this[autoUpdate$] !== void 0) stopAutoUpdate(this);
       this[autoUpdate$] = {subject: void 0, stop: nullStop, observe, oc: (dc) => {
         const handle = this[autoUpdate$];
