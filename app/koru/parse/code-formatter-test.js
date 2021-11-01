@@ -286,6 +286,7 @@ x()`;
       });
 
       test('objects', () => {
+        assert.equals(reformat(`let a = { 'abc': 1, '345': 2, '2ad': 3, '#$%': 4  };`), `let a = {abc: 1, 345: 2, '2ad': 3, '#$%': 4};`);
         assert.equals(reformat('a({\n  a: c,d2,  \n\n \n \n  d, e:\n f  \n  });'),
                       'a({\n  a: c, d2,\n\n  d, e: f,\n})');
         assert.equals(reformat('const {  a,b: c,\n\n\n } = d;'), 'const {a, b: c,\n} = d;');

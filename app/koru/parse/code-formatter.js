@@ -12,6 +12,8 @@ define((require, exports, module) => {
   const WsRE = /\s+/yg;
   const SameLineWsOrSemiRE = /(?:;|[^\S\n])+/yg;
 
+  const allowedKeyRE = /^\d+$|^[A-Za-z_$][\w$]*$/;
+
   const isSameEndLine = (p, c) => p.loc.end.line == c.loc.end.line;
 
   const StringOrComment = {
@@ -290,6 +292,16 @@ define((require, exports, module) => {
       }
     }
 
+    printObjectKey(key) {
+      if (key.type === 'StringLiteral' && allowedKeyRE.test(key.value)) {
+        this.catchup(key.start);
+        this.write(key.value);
+        this.advance(key.end);
+      } else {
+        this.print(key);
+      }
+    }
+
     BreakStatement(node) {this.printKeywordOption(node, 'break', node.label)}
     ContinueStatement(node) {this.printKeywordOption(node, 'continue', node.label)}
 
@@ -419,7 +431,7 @@ define((require, exports, module) => {
           this.advance(node.value.start);
           this.print(node.value);
         } else {
-          this.print(node.key);
+          this.printObjectKey(node.key);
           this.write(': ');
           this.advance(node.value.start);
           this.print(node.value);
@@ -427,7 +439,7 @@ define((require, exports, module) => {
         break;
       case 'AssignmentPattern':
         if (! node.shorthand && node.key.name !== node.value.left.name) {
-          this.print(node.key);
+          this.printObjectKey(node.key);
           this.write(': ');
           this.advance(node.value.start);
         }
@@ -435,7 +447,7 @@ define((require, exports, module) => {
         break;
       default:
         if (! node.computed) {
-          this.print(node.key);
+          this.printObjectKey(node.key);
           this.write(': ');
           this.advance(node.value.start);
         }
