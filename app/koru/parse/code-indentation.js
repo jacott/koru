@@ -32,12 +32,12 @@ define((require, exports, module) => {
           extraIndent = ''.padEnd(m[0].length);
         }
         if (lookingForIdx == 0) {
-          piece = extraIndent+piece;
+          piece = extraIndent + piece;
         }
       } else if (extraIndent.length > 1 && /^\*+\//.test(piece)) {
         extraIndent = '';
       } else {
-        piece = extraIndent+piece;
+        piece = extraIndent + piece;
       }
     }
     ci.append(piece, 'comment');
@@ -112,10 +112,10 @@ define((require, exports, module) => {
       let {indents, currentIndex} = this;
       if (currentIndex >= indents.length) {
         indents.push(this.lineIndent, this.line.length);
-      } else if (currentIndex+2 >= this.lineIndentStart) {
-        indents[currentIndex+1] = this.line.length;
+      } else if (currentIndex + 2 >= this.lineIndentStart) {
+        indents[currentIndex + 1] = this.line.length;
       }
-      this.currentIndex = currentIndex+2;
+      this.currentIndex = currentIndex + 2;
     }
 
     decIndent() {
@@ -157,8 +157,8 @@ define((require, exports, module) => {
       this.lastToken = token;
       this.line += token;
 
+      const isCode = TEXT_TYPE[type] === void 0;
       if (type !== 'noIndent') {
-        const isCode = TEXT_TYPE[type] === void 0;
         if (isCode && DEC_INDENT[token] !== void 0) {
           this.decIndent();
           return;
@@ -175,7 +175,7 @@ define((require, exports, module) => {
         }
       }
 
-      if (token === '\n' || type === 'comment' && token[token.length - 1] === '\n') {
+      if ((isCode && token === '\n') || (type === 'comment' && token[token.length - 1] === '\n')) {
         this.newLine(token, type);
       }
     }

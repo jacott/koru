@@ -349,6 +349,7 @@ x()`;
       });
 
       test('TemplateLiteral', () => {
+        assert.equals(reformat('{\na = `\n${\nx\n}${y+1}`;}'), '{\n  a = `\n${\n  x}${y + 1}`}');
         assert.equals(reformat('`${f})${i})`'), '`${f})${i})`');
         assert.equals(reformat("d = `${a}a${b}b${c||''}`;"), "d = `${a}a${b}b${c || ''}`");
         assert.equals(reformat('``'), '``');

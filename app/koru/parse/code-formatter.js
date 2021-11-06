@@ -3,7 +3,7 @@ define((require, exports, module) => {
   const CodeIndentation = require('koru/parse/code-indentation');
   const {parse, visitorKeys} = require('koru/parse/js-ast');
   const JsPrinter       = require('koru/parse/js-printer');
-  const {qstr, last}    = require('koru/util');
+  const {qstr}          = require('koru/util');
 
   const extraIndent$ = Symbol();
 
@@ -376,7 +376,7 @@ define((require, exports, module) => {
 
     UnaryExpression(node) {
       this.writeAdvance(node.operator);
-      if (/\w/.test(last(node.operator)) ||
+      if (/\w/.test(node.operator.at(-1)) ||
           (node.operator === '!'
            ? (node.argument.type !== 'UnaryExpression' || node.argument.operator !== '!')
            : ! UnaryAllowedClose[node.argument.type])) {
@@ -697,9 +697,27 @@ define((require, exports, module) => {
       this.advance(node.end);
     }
 
-    TemplateElement(node) {
-      this.write(node.value.raw, 'template');
+    TemplateLiteral(node) {
+      const {quasis, expressions} = node;
+      this.advance(quasis[0].start);
+      this.write('`');
+      this.write(quasis[0].value.raw, 'template');
+      this.advance(quasis[0].end);
+      for (let i = 0; i < expressions.length; ++i) {
+        this.writeAdvance('${', 'template');
+        this.print(expressions[i]);
+        this.write('}', 'template');
+        const q = quasis[i + 1];
+        this.write(q.value.raw, 'template');
+        this.advance(quasis[i].end);
+      }
+
+      this.write('`');
       this.advance(node.end);
+    }
+
+    TemplateElement(node) {
+      throw new Error('Should not get here');
     }
 
     ArrowFunctionExpression(node) {

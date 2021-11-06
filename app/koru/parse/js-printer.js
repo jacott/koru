@@ -16,18 +16,18 @@ define((require, exports, module) => {
   };
 
   const lastLeftMatchingIndex = (map, string, idx, end=0) => {
-    while (idx>end) {
+    while (idx > end) {
       --idx;
       const char = string[idx];
       if (map[char] === void 0) {
-        return idx+1;
+        return idx + 1;
       }
     }
     return idx;
   };
 
   const lastRightMatchingIndex = (map, string, idx, end=string.length) => {
-    while (idx<end) {
+    while (idx < end) {
       const char = string[idx];
       if (map[char] === void 0) {
         return idx;
@@ -49,7 +49,7 @@ define((require, exports, module) => {
                                             node.end);
 
       printer.commentEnd = lastLeftMatchingIndex(WS_NO_NL_CHAR, printer.input,
-                                                 farEnd-1, node.end);
+                                                 farEnd - 1, node.end);
 
       if (! WS_NO_NL_CHAR[printer.input[printer.commentEnd]]) {
         ++printer.commentEnd;
@@ -186,7 +186,7 @@ define((require, exports, module) => {
         if (this.input[point] !== '\n') return nl;
         nl = true;
         if (--maxNl >= 0) this.write('\n');
-        this.advance(point+1);
+        this.advance(point + 1);
       }
       return nl;
     }
@@ -206,7 +206,7 @@ define((require, exports, module) => {
     nextStopPoint(ignorePadding=false) {
       const {input} = this;
       const len = input.length;
-      for (let i = this.inputPoint; i<len; ++i) {
+      for (let i = this.inputPoint; i < len; ++i) {
         const char = input[i];
         if (char === '/') return ignorePadding ? i : this.inputPoint;
         if (char === '\n' || WS_CHAR[char] === void 0) return i;
