@@ -2,7 +2,7 @@ define((require) => {
   'use strict';
   const {inspect$}      = require('koru/symbols');
 
-  const red$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
+  const red$ = Symbol(), void$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
         size$ = Symbol(), memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
@@ -87,9 +87,9 @@ define((require) => {
     }
 
     deleteNode(n) {
-      let {root} = this;
-      if (n === void 0) return void 0;
+      if (n === void 0 || n[up$] === void$) return;
 
+      let {root} = this;
       --this[size$];
       let p = n[up$];
       let {[left$]: left, [right$]: child} = n;
@@ -142,22 +142,23 @@ define((require) => {
         } else {
           this.root = null;
         }
-        return n;
-      }
-      if (p !== null) {
-        if (p[left$] === n) {
-          p[left$] = child;
-        } else {
-          p[right$] = child;
-        }
       } else {
-        this.root = child;
-      }
-      child[up$] = p;
-      if (! n[red$]) {
-        child[red$] = false;
+        if (p !== null) {
+          if (p[left$] === n) {
+            p[left$] = child;
+          } else {
+            p[right$] = child;
+          }
+        } else {
+          this.root = child;
+        }
+        child[up$] = p;
+        if (! n[red$]) {
+          child[red$] = false;
+        }
       }
 
+      n[up$] = void$;
       return n;
     }
 
@@ -526,13 +527,11 @@ define((require) => {
   const display = (formatter, node, level=0, prefix='') => {
     if (node === null || level > 10) return '';
     return `\n${
-      pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''
-    }${
-      display(
-        formatter, node[left$], level + 1, 'l')
-    }${
-      display(
-        formatter, node[right$], level + 1, 'r')}`;
+    pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''}${
+    display(
+      formatter, node[left$], level + 1, 'l')}${
+    display(
+      formatter, node[right$], level + 1, 'r')}`;
   };
 
   const dsp = (node, dv, l=2) => {

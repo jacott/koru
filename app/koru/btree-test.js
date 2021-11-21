@@ -591,6 +591,9 @@ r  200
 r    250 *
 `);
         assert.same(n[up$].value, 50);
+
+        assert.same(tree.deleteNode(n), n);
+        assert.same(tree.deleteNode(n), void 0);
       });
 
       test('deleteNode with two-children and right has left child', () => {
