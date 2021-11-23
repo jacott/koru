@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)). It
@@ -17,8 +17,8 @@ isServer && define((require, exports, module)=>{
 
   const Mutex = require('./mutex');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("constructor", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('constructor', () => {
       /**
        * Construct a Mutex.
        **/
@@ -31,7 +31,7 @@ isServer && define((require, exports, module)=>{
 
       try {
         mutex.lock();
-        koru.runFiber(()=>{
+        koru.runFiber(() => {
           mutex.lock();
           ++counter;
           mutex.unlock();
@@ -51,13 +51,13 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("lock", ()=>{
+    test('lock', () => {
       /**
        * Aquire a lock on the mutex. Will pause until the mutex is unlocked
        **/
       api.protoMethod();
       //[
-      const mutex = new Mutex;
+      const mutex = new Mutex();
 
       assert.isFalse(mutex.isLocked);
 
@@ -66,13 +66,13 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("unlock", ()=>{
+    test('unlock', () => {
       /**
        * Release a lock on the mutex. Will allow another fiber to aquire the lock
        **/
       api.protoMethod();
       //[
-      const mutex = new Mutex;
+      const mutex = new Mutex();
       mutex.lock();
       assert.isTrue(mutex.isLocked);
 
@@ -81,32 +81,42 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("sequencing", ()=>{
-      const mutex = new Mutex;
+    test('sequencing', () => {
+      const mutex = new Mutex();
+
+      api.protoProperty('isLocked', {info: `true if mutex is locked`});
+      assert.isFalse(mutex.isLocked);
 
       mutex.lock();
+
+      api.protoProperty('isLockedByMe', {info: `true if mutex is locked by the current thread`});
+      assert.isTrue(mutex.isLockedByMe);
+
       mutex.unlock();
       api.done();
+
+      let lockedByMe = [];
 
       let ex;
       let counter = 0;
 
-      const runInner = (cb) =>{
-        koru.runFiber(()=>{
+      const runInner = (cb) => {
+        koru.runFiber(() => {
+          lockedByMe.push(mutex.isLockedByMe);
           if (ex !== void 0) return;
           try {
             mutex.lock();
             cb();
             ++counter;
           } catch (e) {
-            if (ex === void 0); {
+            if (ex === void 0) ; {
               ex = e;
             }
           } finally {
             try {
               mutex.unlock();
-            } catch(e) {
-              if (ex === void 0); {
+            } catch (e) {
+              if (ex === void 0) ; {
                 ex = e;
               }
             }
@@ -116,13 +126,14 @@ isServer && define((require, exports, module)=>{
 
       try {
         mutex.lock();
-        runInner(()=>{
+        lockedByMe.push(mutex.isLockedByMe);
+        runInner(() => {
           const {current} = Fiber;
-          koru.setTimeout(()=>{current.run()});
+          koru.setTimeout(() => {current.run()});
           Fiber.yield();
           assert.same(counter, 1);
         });
-        runInner(()=>{
+        runInner(() => {
           assert.same(counter, 2);
         });
         assert.same(counter, 0);
@@ -137,10 +148,11 @@ isServer && define((require, exports, module)=>{
 
       assert.same(counter, 3);
 
-      assert.exception(()=>{
+      assert.exception(() => {
         mutex.unlock();
       }, {message: 'mutex not locked'});
 
+      assert.equals(lockedByMe, [true, false, false]);
     });
   });
 });

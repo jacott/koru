@@ -14,6 +14,8 @@ define((require)=>{
 
     get isLocked() {return this[head$] !== void 0}
 
+    get isLockedByMe() {return this[head$]?.[0] === Fiber.current}
+
     lock() {
       const current = Fiber.current, node = [current, void 0];
 
