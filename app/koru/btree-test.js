@@ -539,6 +539,24 @@ r    63
         from: 45, to: 7, direction: -1, excludeFrom: false, excludeTo: true})), [45, 42, 8]);
     });
 
+    test('delete next while iterating', () => {
+      const tree = new BTree();
+      insertNodes(tree, [100, 200, 50, 150, 250]);
+      const iter = tree.nodes({from: 100, to: 250});
+      assert.same(iter.next().value.value, 100);
+      tree.delete(150);
+      assert.same(iter.next().value, void 0);
+    });
+
+    test('delete prev while iterating', () => {
+      const tree = new BTree();
+      insertNodes(tree, [100, 200, 50, 150, 250]);
+      const iter = tree.nodes({from: 250, to: 100, direction: -1});
+      assert.same(iter.next().value.value, 250);
+      tree.delete(200);
+      assert.same(iter.next().value, void 0);
+    });
+
     group('trivial delete', () => {
       test('delete node with two-non-leaf children', () => {
         const tree = new BTree();

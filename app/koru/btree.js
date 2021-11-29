@@ -2,7 +2,7 @@ define((require) => {
   'use strict';
   const {inspect$}      = require('koru/symbols');
 
-  const red$ = Symbol(), void$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
+  const red$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
         size$ = Symbol(), memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
@@ -87,7 +87,7 @@ define((require) => {
     }
 
     deleteNode(n) {
-      if (n === void 0 || n[up$] === void$) return;
+      if (n === void 0 || n[red$] === void 0) return;
 
       let {root} = this;
       --this[size$];
@@ -158,7 +158,7 @@ define((require) => {
         }
       }
 
-      n[up$] = void$;
+      n[red$] = void 0;
       return n;
     }
 
@@ -295,6 +295,9 @@ define((require) => {
             if (excludeTo ? res <= 0 : res < 0) return;
           }
           yield node;
+          if (nn !== null && nn[red$] === void 0) {
+            break;
+          }
         }
       } else if (direction == -1) {
         let node, nn;
@@ -314,6 +317,9 @@ define((require) => {
             if (excludeTo ? res >= 0 : res > 0) return;
           }
           yield node;
+          if (nn !== null && nn[red$] === void 0) {
+            break;
+          }
         }
       }
     }
