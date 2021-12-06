@@ -11,6 +11,32 @@ isServer && define((require, exports, module) => {
   const sut = require('./http-util');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('HttpError', () => {
+      let response = {statusCode: 403};
+      let error = new sut.HttpError({response, body: 'the body'});
+      assert.same(error.message, 'Bad Request [403]');
+      assert.same(error.statusCode, 403);
+      assert.same(error.response, response);
+      assert.same(error.body, 'the body');
+
+      error = new sut.HttpError({message: 'foo', statusCode: 418, response});
+      assert.same(error.message, 'foo [418]');
+      assert.same(error.statusCode, 418);
+      assert.same(error.response, response);
+      assert.same(error.body, undefined);
+
+      error = new sut.HttpError({statusCode: 418});
+      assert.same(error.statusCode, 418);
+      assert.same(error.response, undefined);
+      assert.same(error.body, undefined);
+
+      error = new sut.HttpError();
+      assert.same(error.message, 'Bad Request [400]');
+      assert.same(error.statusCode, 400);
+      assert.same(error.response, undefined);
+      assert.same(error.body, undefined);
+    });
+
     group('expBackoff', () => {
       beforeEach(() => {
         let timerHandle = 100;
