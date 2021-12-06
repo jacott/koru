@@ -62,13 +62,13 @@ define((require, exports, module) => {
             } else {
               const cmp = session.compareVersion?.(clientVersion, clientHash) ??
                     util.compareVersion(clientVersion, session.version);
-              if (cmp<0) {
+              if (cmp < 0) {
                 if (cmp == -2) {
                   forceReload(ws, session);
                   return;
                 }
                 newVersion = session.version;
-              } else if (cmp>0) {
+              } else if (cmp > 0) {
                 // client on greater version; we will update (hopefully) so just close for now.
                 ws.close();
                 return;
@@ -166,7 +166,7 @@ define((require, exports, module) => {
       _preloadDict = dictHash = null;
 
       message.finalizeGlobalDict(_globalDict);
-      _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
+      _globalDictEncoded = message.encodeDict(_globalDict);
       return _globalDict;
     };
 

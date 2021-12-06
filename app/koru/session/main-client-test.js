@@ -1,11 +1,11 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const {private$}      = require('koru/symbols');
-  const koru            = require('../main');
-  const util            = require('../util');
   const message         = require('./message');
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
+  const koru            = require('../main');
+  const util            = require('../util');
 
   const sessionClientFactory = require('./main-client');
 
@@ -13,8 +13,8 @@ define((require, exports, module)=>{
 
   let v = {}, sessState = null;
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       sessState = stateFactory();
       v.sess = sessionClientFactory({
         provide: stub(),
@@ -30,33 +30,33 @@ define((require, exports, module)=>{
       TH.mockConnectState(v);
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       sessState._resetPendingCount();
       sessState = null;
       v = {};
     });
 
-    test("initial KORU_APP_VERSION", ()=>{
-      after(() => window.KORU_APP_VERSION=void 0);
+    test('initial KORU_APP_VERSION', () => {
+      after(() => window.KORU_APP_VERSION = void 0);
 
-      window.KORU_APP_VERSION = "v1,hash";
+      window.KORU_APP_VERSION = 'v1,hash';
 
-       v.sess = sessionClientFactory({
-         provide: stub(),
-         _rpcs: {},
-       }, sessState);
+      v.sess = sessionClientFactory({
+        provide: stub(),
+        _rpcs: {},
+      }, sessState);
 
-      assert.same(v.sess.version, "v1");
-      assert.same(v.sess.hash, "hash");
+      assert.same(v.sess.version, 'v1');
+      assert.same(v.sess.hash, 'hash');
     });
 
-    test("version reconciliation", ()=>{
+    test('version reconciliation', () => {
       TH.noInfo();
       assert.same(v.sess.version, undefined);
       assert.same(v.sess.hash, undefined);
 
       stub(koru, 'reload');
-      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      assert.calledWith(v.sess.provide, 'X', TH.match((f) => v.X = f));
 
       v.sess.addToDict('foo'); // does nothing
 
@@ -64,8 +64,7 @@ define((require, exports, module)=>{
       message.addToDict(dict, 't1');
       message.addToDict(dict, 't2');
 
-
-      const endict = new Uint8Array(message.encodeDict(dict, []));
+      const endict = message.encodeDict(dict);
 
       v.X.call(v.sess, ['', 'h123', endict, 'dhash']);
 
@@ -73,7 +72,6 @@ define((require, exports, module)=>{
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
       assert.same(v.sess.globalDict.k2c['foo'], undefined);
       assert.same(v.sess.dictHash, 'dhash');
-
 
       refute.called(koru.reload);
       assert.same(v.sess.hash, 'h123');
@@ -83,8 +81,8 @@ define((require, exports, module)=>{
       assert.called(koru.reload);
     });
 
-    test("existing dict", ()=>{
-      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+    test('existing dict', () => {
+      assert.calledWith(v.sess.provide, 'X', TH.match((f) => v.X = f));
       message.addToDict(v.sess.globalDict, 'hello');
       v.sess.dictHash = 'orig';
 
@@ -94,8 +92,8 @@ define((require, exports, module)=>{
       assert.same(v.sess.globalDict.k2c.hello, 256);
     });
 
-    group("onmessage", ()=>{
-      beforeEach(()=>{
+    group('onmessage', () => {
+      beforeEach(() => {
         v.ws = {send: stub()};
         v.sess = {
           provide: stub(),
@@ -114,9 +112,9 @@ define((require, exports, module)=>{
 
         v.readyHeatbeat = () => {
           try {
-            let now = util.dateNow(); intercept(Date, 'now', ()=>now);
+            let now = util.dateNow(); intercept(Date, 'now', () => now);
 
-            const event = {data: v.data = "foo"};
+            const event = {data: v.data = 'foo'};
             v.ws.onmessage(event);
             now += 21000;
             v.actualConn[private$].queueHeatBeat();
@@ -128,27 +126,27 @@ define((require, exports, module)=>{
         };
       });
 
-      afterEach(()=>{
-        util.adjustTime(-util.timeAdjust);
+      afterEach(() => {
+        util.adjustTime(- util.timeAdjust);
       });
 
-      test("setup", ()=>{
+      test('setup', () => {
         assert.same(v.sess.ws, v.ws);
 
         assert(v.ws.onmessage);
 
-        const event = {data: v.data = "foo"};
+        const event = {data: v.data = 'foo'};
         v.ws.onmessage(event);
 
         assert(v.actualConn);
         assert.same(v.actualConn.ws, v.ws);
       });
 
-      test("heartbeat when idle", ()=>{
+      test('heartbeat when idle', () => {
         let now = Date.now();
-        intercept(Date, 'now', ()=>now);
+        intercept(Date, 'now', () => now);
 
-        const event = {data: v.data = "foo"};
+        const event = {data: v.data = 'foo'};
         v.ws.onmessage(event);
 
         assert.same(v.sess.heartbeatInterval, 20000);
@@ -184,20 +182,20 @@ define((require, exports, module)=>{
         assert.calledWith(koru._afTimeout, TH.match.func, 20000);
       });
 
-      test("no response close fails", ()=>{
+      test('no response close fails', () => {
         TH.noInfo();
         v.time = v.readyHeatbeat();
 
-        v.ws.close = () => {throw new Error("close fail")};
+        v.ws.close = () => {throw new Error('close fail')};
         const onclose = spy(v.ws, 'onclose');
         assert.exception(() => {
           v.actualConn[private$].queueHeatBeat();
-        }, "Error", "close fail");
+        }, 'Error', 'close fail');
 
         refute.called(onclose);
       });
 
-      test("no response close succeeds", ()=>{
+      test('no response close succeeds', () => {
         TH.noInfo();
         v.time = v.readyHeatbeat();
 
@@ -208,7 +206,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("connection cycle", ()=>{
+    test('connection cycle', () => {
       spy(sessState, 'connected');
       spy(sessState, 'retry');
       spy(sessState, 'close');
@@ -225,15 +223,14 @@ define((require, exports, module)=>{
       assert.same(v.sess._pathPrefix(), 'ws/6/dev/h123?dict=dh1234');
       assert.same(v.sess._pathPrefix({bar: 'extra bit'}), 'ws/6/dev/h123?dict=dh1234&bar=extra%20bit');
 
-
       refute.called(sessState.connected);
 
-      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      assert.calledWith(v.sess.provide, 'X', TH.match((f) => v.X = f));
       v.X.call(v.sess, ['', koru.PROTOCOL_VERSION, null]);
 
       v.ready = true;
 
-      assert.calledWith(sessState.connected, TH.match(conn => conn.ws === v.ws));
+      assert.calledWith(sessState.connected, TH.match((conn) => conn.ws === v.ws));
 
       stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
       TH.noInfo();
@@ -270,7 +267,7 @@ define((require, exports, module)=>{
       assert.called(v.afTimeoutStop);
     });
 
-    test("before connected", ()=>{
+    test('before connected', () => {
       stub(message, 'encodeMessage', (type, msg) => ['x', type, msg]);
       v.sess.sendBinary('P', [null]);
       v.sess.sendBinary('M', [1]);
@@ -279,11 +276,11 @@ define((require, exports, module)=>{
       assert.equals(v.sess._waitSends, [['P', [null]], ['M', [1]], 'SLabc']);
 
       v.sess.connect();
-      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      assert.calledWith(v.sess.provide, 'X', TH.match((f) => v.X = f));
       v.X.call(v.sess, ['', koru.PROTOCOL_VERSION, null]);
 
-      assert.calledWith(v.ws.send, ["x", "P", [null]]);
-      assert.calledWith(v.ws.send, ["x", "M", [1]]);
+      assert.calledWith(v.ws.send, ['x', 'P', [null]]);
+      assert.calledWith(v.ws.send, ['x', 'M', [1]]);
       assert.calledWith(v.ws.send, 'SLabc');
     });
   });
