@@ -77,10 +77,10 @@ define((require) => {
         if (text) {
           if (so < text.length) {
             tr.setStart(sc, so);
-            tr.setEnd(sc, so+1);
+            tr.setEnd(sc, so + 1);
             dims = tr.getBoundingClientRect();
           } else {
-            tr.setStart(sc, so-1);
+            tr.setStart(sc, so - 1);
             tr.setEnd(sc, so);
             dims = tr.getBoundingClientRect();
             result.left = dims.right;
@@ -152,13 +152,13 @@ define((require) => {
         const pDim = sp.getBoundingClientRect();
         const pBottom = pDim.top + sp.clientHeight;
         const pRight = pDim.left + sp.clientWidth;
-        const vdiff = bottom>pBottom
-              ? Math.min(bottom-pBottom, top - pDim.top)
+        const vdiff = bottom > pBottom
+              ? Math.min(bottom - pBottom, top - pDim.top)
               : top < pDim.top
               ? top - pDim.top
               : 0;
-        const hdiff = right>pRight
-              ? Math.min(right-pRight, left - pDim.left)
+        const hdiff = right > pRight
+              ? Math.min(right - pRight, left - pDim.left)
               : left < pDim.left
               ? left - pDim.left
               : 0;
@@ -193,7 +193,7 @@ define((require) => {
             .replace(/(^ | $)/g, '');
 
       elm.className = name
-        ? (classes.length ? classes + ' ' : '') + name+suffix
+        ? (classes.length ? classes + ' ' : '') + name + suffix
       : classes;
     },
 
@@ -204,7 +204,7 @@ define((require) => {
             .replace(/(^ | $)/g, '');
 
       elm.className = name
-        ? (classes.length ? classes + ' ' : '') + prefix+name
+        ? (classes.length ? classes + ' ' : '') + prefix + name
       : classes;
     },
 
@@ -254,13 +254,13 @@ define((require) => {
       if (elm == null) return;
       const elms = elm.querySelectorAll(querySelector);
       const len = elms.length;
-      for (let i = 0; i<len; ++i) func(elms[i]);
+      for (let i = 0; i < len; ++i) func(elms[i]);
     },
 
     mapToData: (list) => {
       const len = list.length;
       const result = [];
-      for (let i = 0; i<len; ++i) {
+      for (let i = 0; i < len; ++i) {
         result.push(convertToData(list[i]));
       }
       return result;
@@ -568,6 +568,9 @@ define((require) => {
       const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
       if (options.align === 'right') {
         ps.setProperty('right', (width - bbox.right) + 'px');
+      } else if (options.align === 'justify') {
+        ps.setProperty('right', (width - bbox.right) + 'px');
+        ps.setProperty('left', bbox.left + 'px');
       } else {
         ps.setProperty('left', bbox.left + 'px');
       }

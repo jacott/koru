@@ -573,7 +573,7 @@ define((require, exports, module) => {
     test('forEach', () => {
       const elm = Dom.textToHtml('<div></div>');
       document.body.appendChild(elm);
-      for (let i = 0; i<5; ++i) {
+      for (let i = 0; i < 5; ++i) {
         elm.appendChild(Dom.textToHtml('<div class="foo">' + i + '</div>'));
       }
 
@@ -877,6 +877,25 @@ define((require, exports, module) => {
         //]
       });
 
+      test('align justify', () => {
+        //[
+        const popup = Dom.h({
+          class: 'popup',
+          style: 'position:absolute;width:80px;height:10px'});
+        document.body.appendChild(popup);
+
+        // set align justify
+        Dom.reposition('above', {
+          align: 'justify',
+          popup, boundingClientRect: {left: 50, top: 100, right: 120},
+        });
+
+        const rect = popup.getBoundingClientRect();
+
+        assert.near(util.extractKeys(rect, ['right', 'top', 'left']), {right: 130, top: 90, left: 50});
+        //]
+      });
+
       test('align right', () => {
         //[
         const popup = Dom.h({
@@ -907,7 +926,7 @@ define((require, exports, module) => {
         popup.style.cssText = style + ';margin-right:-400px';
         Dom.reposition('above', {
           align: 'right',
-          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth},
+          popup, boundingClientRect: {left: winWidth - 100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
                     {right: winWidth, top: 90});
@@ -931,7 +950,7 @@ define((require, exports, module) => {
 
         popup.style.cssText = style + ';margin-left:40px';
         Dom.reposition('above', {
-          popup, boundingClientRect: {left: winWidth-100, top: 100, right: winWidth},
+          popup, boundingClientRect: {left: winWidth - 100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
                     {right: winWidth, top: 90});
