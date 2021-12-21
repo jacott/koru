@@ -129,12 +129,5 @@ define((require) => {
     },
   };
 
-  if (isTest) HttpUtil[isTest] = {
-    get https() {return https},
-    set https(v) {https = v},
-    get http() {return http},
-    set http(v) {http = v},
-  };
-
   return HttpUtil;
 });
