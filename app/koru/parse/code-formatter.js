@@ -12,7 +12,7 @@ define((require, exports, module) => {
   const WsRE = /\s+/yg;
   const SameLineWsOrSemiRE = /(?:;|[^\S\n])+/yg;
 
-  const allowedKeyRE = /^\d+$|^[A-Za-z_$][\w$]*$/;
+  const allowedKeyRE = /^\d{1,15}$|^[A-Za-z_$][\w$]*$/;
 
   const isSameEndLine = (p, c) => p.loc.end.line == c.loc.end.line;
 
