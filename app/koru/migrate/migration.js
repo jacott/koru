@@ -1,14 +1,14 @@
-const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
 const fs = require('fs');
 const Path = require('path');
-const readdir = Future.wrap(fs.readdir);
-const stat = Future.wrap(fs.stat);
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
-  const ModelMap = require('koru/model/map');
-  const koru     = require('../main');
-  const util     = require('../util');
+  const ModelMap        = require('koru/model/map');
+  const koru            = require('../main');
+  const util            = require('../util');
+
+  const readdir = util.Future.wrap(fs.readdir);
+  const stat = util.Future.wrap(fs.stat);
 
   const actions$ = Symbol();
 
@@ -43,16 +43,18 @@ define((require, exports, module)=>{
   }
 
   const createTable = (add, client, {name, fields, unlogged, indexes, primaryKey=true}) => {
-    if (Array.isArray(fields))
+    if (Array.isArray(fields)) {
       fields = buildFields(fields);
+    }
     if (add) {
       const list = primaryKey ? ['_id text collate "C" PRIMARY KEY'] : [];
       for (const col in fields) {
         const colspec = client.jsFieldToPg(col, fields[col]);
-        if (/\bprimary key\b/i.test(colspec))
+        if (/\bprimary key\b/i.test(colspec)) {
           list[0] = colspec;
-        else
+        } else {
           list.push(colspec);
+        }
       }
 
       client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
@@ -65,25 +67,27 @@ define((require, exports, module)=>{
     resetTable(name);
   };
 
-  const reversible = (add, client, options)=>{
-    if (add && options.add)
+  const reversible = (add, client, options) => {
+    if (add && options.add) {
       options.add(client);
-    if (! add && options.revert)
+    }
+    if (! add && options.revert) {
       options.revert(client);
-    util.forEach(options.resetTables, name => resetTable(name));
+    }
+    util.forEach(options.resetTables, (name) => resetTable(name));
   };
 
-  const addIndex = (add, client, {tableName, args})=>{
+  const addIndex = (add, client, {tableName, args}) => {
     let i = 0;
     const isArray = Array.isArray(args);
     const unique = isArray ? args[0] === '*unique' : !! args.unique;
-    const columns = isArray ?
-            (unique ? args.slice(1) : args)
+    const columns = isArray
+          ? (unique ? args.slice(1) : args)
           : args.columns;
     const iname = args.name ||
-            tableName+'_'+columns.map(field => field.replace(/\s.*$/, '')).join('_');
+          tableName + '_' + columns.map((field) => field.replace(/\s.*$/, '')).join('_');
     if (add) {
-      const order = columns.map(field => field.replace(/(^\S+)/, '"$1"')).join(',');
+      const order = columns.map((field) => field.replace(/(^\S+)/, '"$1"')).join(',');
       const where = args.where ? `where ${args.where}` : '';
       client.query(
         `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${tableName}"
@@ -93,44 +97,43 @@ USING btree (${order}) ${where}`);
     }
   };
 
-  const buildFields = args=>{
+  const buildFields = (args) => {
     const fields = {};
-    args.forEach(arg => {
+    args.forEach((arg) => {
       if (typeof arg === 'string') {
         const k = arg.split(':', 1)[0];
-        fields[k] = arg.slice(k.length+1)|| 'text';
-      } else
+        fields[k] = arg.slice(k.length + 1) || 'text';
+      } else {
         Object.assign(fields, arg);
+      }
     });
     return fields;
   };
 
-  const addColumns = (add, client, {tableName, args})=>{
+  const addColumns = (add, client, {tableName, args}) => {
     const fields = buildFields(args);
     if (add) {
       client.query(`ALTER TABLE "${tableName}" ${
-Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(",")
-}`);
+                   Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(',')}`);
     } else {
       client.query(`ALTER TABLE "${tableName}" ${
-Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
-}`);
+                   Object.keys(fields).map((col) => `DROP column "${col}"`).join(',')}`);
     }
     resetTable(tableName);
   };
 
-  const resetTable = tableName => {
+  const resetTable = (tableName) => {
     const model = ModelMap[tableName];
     model && model.docs._resetTable();
   };
 
-  const onlyMigrateFiles = fn => /\d.*.js$/.test(fn);
+  const onlyMigrateFiles = (fn) => /\d.*.js$/.test(fn);
 
-  const readMigration = mig =>{
-    const future = new Future;
-    const id = mig+'.js';
+  const readMigration = (mig) => {
+    const future = new util.Future();
+    const id = mig + '.js';
     try {
-      require([id], mig =>{
+      require([id], (mig) => {
         future.return(mig);
       });
       return future.wait();
@@ -157,8 +160,8 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 
       const migrations = this._getMigrations();
 
-      for(let i = 0; i < filenames.length; ++i) {
-        const row = filenames[i].replace(/\.js$/,'');
+      for (let i = 0; i < filenames.length; ++i) {
+        const row = filenames[i].replace(/\.js$/, '');
         if (! migrations[row]) {
           this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
           this._migrations[row] = true;
@@ -167,24 +170,25 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
     }
 
     migrateTo(dirPath, pos, verbose) {
-      if (! dirPath || ! pos) throw new Error("Please specifiy where to migrate to");
+      if (! dirPath || ! pos) throw new Error('Please specifiy where to migrate to');
       const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
 
       const migrations = this._getMigrations();
 
-      for(let i = 0; i < filenames.length; ++i) {
-        const row = filenames[i].replace(/\.js$/,'');
-        if (row > pos)
+      for (let i = 0; i < filenames.length; ++i) {
+        const row = filenames[i].replace(/\.js$/, '');
+        if (row > pos) {
           break;
+        }
         if (! migrations[row]) {
-          verbose && console.log("Adding " + row);
-          this.addMigration(row, readMigration(dirPath+'/'+row));
+          verbose && console.log('Adding ' + row);
+          this.addMigration(row, readMigration(dirPath + '/' + row));
         }
       }
-      util.reverseForEach(Object.keys(migrations).sort(), row => {
+      util.reverseForEach(Object.keys(migrations).sort(), (row) => {
         if (row > pos) {
-          verbose && console.log("Reverting " + row);
-          this.revertMigration(row, readMigration(dirPath+'/'+row));
+          verbose && console.log('Reverting ' + row);
+          this.revertMigration(row, readMigration(dirPath + '/' + row));
         }
       });
     }
@@ -198,13 +202,13 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
       this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
       this._migrations = Object.create(null);
       this._client.query('SELECT name FROM "Migration"').
-        forEach(row => this._migrations[row.name] = true);
+        forEach((row) => this._migrations[row.name] = true);
       return this._migrations;
     }
 
     _doMigration(add, name, callback) {
       const client = this._client;
-      client.transaction(tx => {
+      client.transaction((tx) => {
         if (this.migrationExists(name) === add) return;
 
         const mc = new Commander();

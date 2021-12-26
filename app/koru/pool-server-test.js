@@ -1,19 +1,17 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
-  const koru   = require('./main');
-  const TH     = require('./test-helper');
-  const util   = require('./util');
+  const koru            = require('./main');
+  const TH              = require('./test-helper');
+  const util            = require('./util');
 
   const {stub, spy, intercept} = TH;
-
-  const Future = requirejs.nodeRequire('fibers/future');
 
   const sut = require('./pool-server');
 
   let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v.create = cb=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
+      v.create = (cb) => {
         cb(null, v.conn);
       };
 
@@ -23,11 +21,11 @@ isServer && define((require, exports, module)=>{
       stub(global, 'clearTimeout');
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("acquire, release", ()=>{
+    test('acquire, release', () => {
       v.conn = [1];
       const pool = new sut({
         create: v.create,
@@ -37,7 +35,7 @@ isServer && define((require, exports, module)=>{
 
       let now = Date.now();
       try {
-        intercept(Date, 'now', ()=>now);
+        intercept(Date, 'now', () => now);
 
         const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
@@ -52,8 +50,8 @@ isServer && define((require, exports, module)=>{
 
         assert.same(pool.acquire(), conn1);
 
-        const future = new Future;
-        util.Fiber(()=>{
+        const future = new util.Future();
+        util.Fiber(() => {
           future.return(pool.acquire());
         }).run();
 
@@ -65,7 +63,7 @@ isServer && define((require, exports, module)=>{
       }
     });
 
-    test("destroy", ()=>{
+    test('destroy', () => {
       v.conn = [1];
       const pool = new sut({
         create: v.create,
@@ -75,7 +73,7 @@ isServer && define((require, exports, module)=>{
 
       let now = Date.now();
       try {
-        intercept(Date, 'now', ()=>now);
+        intercept(Date, 'now', () => now);
         const conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
@@ -86,7 +84,6 @@ isServer && define((require, exports, module)=>{
         assert.same(conn2, v.conn);
 
         pool.release(conn1);
-
 
         assert.calledOnceWith(global.setTimeout, TH.match.func, 30000);
 

@@ -11,7 +11,6 @@ isServer && define((require, exports, module) => {
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
-  const Fiber           = requirejs.nodeRequire('fibers');
 
   const {stub, spy, util} = TH;
 
@@ -128,9 +127,9 @@ isServer && define((require, exports, module) => {
         mutex.lock();
         lockedByMe.push(mutex.isLockedByMe);
         runInner(() => {
-          const {current} = Fiber;
+          const {current} = util.Fiber;
           koru.setTimeout(() => {current.run()});
-          Fiber.yield();
+          util.Fiber.yield();
           assert.same(counter, 1);
         });
         runInner(() => {

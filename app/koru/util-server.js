@@ -4,7 +4,6 @@ define((require) => {
   const util            = require('./util');
 
   util.engine = 'Server';
-  util.Fiber = requirejs.nodeRequire('fibers');
 
   util.waitCallback = (future, callTimeout=util.thread.callTimeout ?? 20*1000) => {
     let cto = callTimeout === 0
@@ -42,6 +41,7 @@ define((require) => {
     return response;
   };
 
+  util.Fiber = requirejs.nodeRequire('fibers');
   // Fix fibers making future enumerable
   const future = util.Future = requirejs.nodeRequire('fibers/future');
   Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});

@@ -1,13 +1,15 @@
-const Future = requirejs.nodeRequire('fibers/future');
 /**
  * Wait for turn in queue. Will block for earlier queued functions.
  *
  * Server only
  */
-define(()=> type =>{
+define((require) => (type) => {
+  'use strict';
+  const util            = require('koru/util');
+
   const queues = type === 'single' ? null : {};
 
-  const finish = queue =>{
+  const finish = (queue) => {
     queue.running = false;
     queues && delete queues[queue.name];
   };
@@ -21,7 +23,7 @@ define(()=> type =>{
     add(func) {
       if (this.running) {
         this.isPending = true;
-        if (this.queued == null)  {
+        if (this.queued == null) {
           this.queued = 1;
           this.runNext = 1;
           this.futures = {};
@@ -29,7 +31,7 @@ define(()=> type =>{
           ++this.queued;
         }
 
-        (this.futures[this.queued] = new Future).wait();
+        (this.futures[this.queued] = new util.Future()).wait();
       }
 
       this.isPending = false;
@@ -38,7 +40,7 @@ define(()=> type =>{
       let result, error;
       try {
         result = func(this);
-      } catch(ex) {
+      } catch (ex) {
         error = ex;
       }
       if (this.queued) {
@@ -57,12 +59,13 @@ define(()=> type =>{
       if (error) throw error;
       return result;
     }
-  };
+  }
 
-  if (queues)
-    return (name, func)=>{
+  if (queues) {
+    return (name, func) => {
       return (queues[name] || (queues[name] = new Queue(name))).add(func);
     };
-  else
+  } else {
     return new Queue();
+  }
 });

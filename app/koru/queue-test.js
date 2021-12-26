@@ -1,21 +1,23 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
   const koru            = require('./main');
-  const Future          = requirejs.nodeRequire('fibers/future');
 
   const {stub, spy} = TH;
 
-  const Queue           = require('./queue');
+  const {Future} = util;
+
+  const Queue = require('./queue');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       v = {};
     });
 
-    test("single", ()=>{
+    test('single', () => {
       const single = Queue('single');
       single.add(v.func = stub());
       assert.called(v.func);
@@ -23,40 +25,38 @@ isServer && define((require, exports, module)=>{
       assert.called(v.func);
     });
 
-    test("queing", ()=>{
-      const q2 = new Future;
-      const q3 = new Future;
-      const fooFin = new Future;
+    test('queing', () => {
+      const q2 = new Future();
+      const q3 = new Future();
+      const fooFin = new Future();
       const results = [];
       const queue = Queue();
 
-      const letRun = func =>{
+      const letRun = (func) => {
         koru.Fiber(func).run();
         const f = new Future();
-        setTimeout(()=>{f.return(v.q1)}, 1);
+        setTimeout(() => {f.return(v.q1)}, 1);
         f.wait();
       };
 
-      queue('foo', fooQueue =>{
+      queue('foo', (fooQueue) => {
         assert.isFalse(fooQueue.isPending);
-        letRun(()=>{
-          queue('foo', ()=>{
-            letRun(()=>{
-
+        letRun(() => {
+          queue('foo', () => {
+            letRun(() => {
               try {
-                queue('foo', ()=>{
+                queue('foo', () => {
                   results.push(3);
-                  queue('bar', ()=>{throw 'ex bar'});
+                  queue('bar', () => {throw 'ex bar'});
 
                   results.push('not me');
                 });
-              } catch(ex) {
+              } catch (ex) {
                 results.push(ex.toString());
                 q3.return();
               }
-
             });
-            results.push(queue('bar', ()=> 'bar'));
+            results.push(queue('bar', () => 'bar'));
             results.push(2);
             q2.return();
           });
@@ -68,7 +68,7 @@ isServer && define((require, exports, module)=>{
       q3.wait();
       assert.equals(results, [1, 'bar', 2, 3, 'ex bar']);
 
-      queue('foo', ()=>{v.fooNew = true});
+      queue('foo', () => {v.fooNew = true});
 
       assert.isTrue(v.fooNew);
     });

@@ -1,9 +1,8 @@
-const Fiber = requirejs.nodeRequire('fibers');
-
-define((require)=>{
+define((require) => {
   'use strict';
   const util            = require('koru/util');
 
+  const {Fiber} = util;
   const head$ = Symbol(), tail$ = Symbol();
 
   class Mutex {
@@ -26,14 +25,16 @@ define((require)=>{
 
       this[tail$] = this[tail$][1] = node;
       Fiber.yield();
-      while(this[head$][0] !== current)
+      while (this[head$][0] !== current) {
         Fiber.yield();
+      }
     }
 
     unlock() {
       const {current} = Fiber, node = this[head$];
-      if (node === void 0)
-        throw new Error("mutex not locked");
+      if (node === void 0) {
+        throw new Error('mutex not locked');
+      }
 
       const nh = this[head$] = node[1];
 

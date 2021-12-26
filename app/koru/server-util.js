@@ -1,21 +1,23 @@
-const Future = requirejs.nodeRequire('fibers/future');
 const cp = require('child_process');
 
-define((require)=>{
+define((require) => {
   'use strict';
-  const koru = require('koru');
+  const koru            = require('koru');
+  const util            = require('koru/util');
 
   const sUtil = {
-    execFile: (cmd, ...args)=>{
-      const future = new Future;
-      const callback = args.length && typeof args[args.length - 1] === 'function' ?
-            args.pop() : void 0;
+    execFile: (cmd, ...args) => {
+      const future = new util.Future();
+      const callback = args.length && typeof args[args.length - 1] === 'function'
+            ? args.pop()
+            : void 0;
 
       let options = args.length && args[args.length - 1];
-      if (options !== null && typeof options === 'object')
+      if (options !== null && typeof options === 'object') {
         args.pop();
-      else
+      } else {
         options = {};
+      }
 
       const proc = cp.execFile(cmd, args, options, (error, stdout, stderr) => {
         future.return({error, stdout, stderr});
@@ -26,18 +28,19 @@ define((require)=>{
       return future.wait();
     },
 
-    system: (cmd, ...args)=>{
+    system: (cmd, ...args) => {
       const ans = sUtil.execFile(cmd, ...args);
       if (ans.error) {
         koru.error(ans.stderr);
         throw ans.error;
-      } else
+      } else {
         return ans.stdout;
+      }
     },
 
-    sleep: ms =>{
-      const future = new Future;
-      setTimeout(()=>{future.return()}, ms);
+    sleep: (ms) => {
+      const future = new util.Future();
+      setTimeout(() => {future.return()}, ms);
       return future.wait();
     },
   };
