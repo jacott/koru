@@ -1,14 +1,14 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const SelectMenu      = require('koru/ui/select-menu');
+  const PlainText       = require('./plain-text');
+  const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
+  const Route           = require('./route');
   const Dom             = require('../dom');
   const format          = require('../format');
   const koru            = require('../main');
   const Val             = require('../model/validation');
   const util            = require('../util');
-  const PlainText       = require('./plain-text');
-  const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
-  const Route           = require('./route');
 
   const {error$} = require('koru/symbols');
 
@@ -33,9 +33,10 @@ define((require)=>{
       const elm = $.element;
       const options = this.options;
 
-      for(let attr in options) {
-        if (! (attr in IGNORE))
+      for (let attr in options) {
+        if (! (attr in IGNORE)) {
           elm.setAttribute(attr, options[attr]);
+        }
       }
     },
   };
@@ -44,7 +45,6 @@ define((require)=>{
     richTextEditor: RichTextEditorToolbar,
     plainTextEditor: PlainText.Editor,
   };
-
 
   let modalize;
 
@@ -57,8 +57,9 @@ define((require)=>{
     if (Dom.getClosest(event.target, '.anyModal')) return;
     if (event.type === 'keydown') {
       if (event.which === 27) {
-        if (Dom.contains(elm, event.target) === null)
+        if (Dom.contains(elm, event.target) === null) {
           return modalize.func.call(this, event);
+        }
 
         switch (event.target.tagName) {
         case 'INPUT':
@@ -68,22 +69,23 @@ define((require)=>{
         if (event.target.getAttribute('contenteditable') === 'true') return;
         return modalize.func.call(this, event);
       }
-    } else if (! Dom.contains(elm, event.target))
+    } else if (! Dom.contains(elm, event.target)) {
       return modalize.func.call(this, event);
-  };
+    }
+  }
 
-  const helpers = (name, funcs)=>{
+  const helpers = (name, funcs) => {
     Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
   };
 
-  const field = (doc, name, options, extend)=>{
+  const field = (doc, name, options, extend) => {
     options = options || {};
     const data = {name, doc, options};
     if ('selectList' in options) {
       return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
     }
 
-    switch(options.type || 'text') {
+    switch (options.type || 'text') {
     case 'onOff':
       return OnOff.$autoRender(data);
     default:
@@ -91,31 +93,30 @@ define((require)=>{
       if (editor) {
         if (extend) data.extend = extend;
         data.content = doc[name];
-        data.options = Object.assign({"data-errorField": name}, options);
+        data.options = Object.assign({'data-errorField': name}, options);
         return editor.$autoRender(data);
       }
 
       data.type = options.type || 'text';
       return Tpl.TextInput.$autoRender(data);
     }
-
   };
 
-  const changeColorEvent = (field, options)=> function (event) {
+  const changeColorEvent = (field, options) => function (event) {
     Dom.stopEvent();
     const doc = $.data();
 
     const fieldSpec = doc.classMethods.$fields[field];
     const alpha = fieldSpec ? fieldSpec.color === 'alpha' : false;
 
-    Dom.tpl.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: result => {
+    Dom.tpl.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: (result) => {
       if (result) {
         saveChange(doc, field, result, options);
       }
     }});
-  };
+  }
 
-  const changeFieldEvent = (field, options)=>  function (event) {
+  const changeFieldEvent = (field, options) => function (event) {
     Dom.stopEvent();
     const doc = $.data();
 
@@ -129,9 +130,9 @@ define((require)=>{
     }
 
     saveChange(doc, field, value, options);
-  };
+  }
 
-  const saveChange = (doc, field, value, options)=>{
+  const saveChange = (doc, field, value, options) => {
     const form = document.getElementById(options.template.name);
     Tpl.clearErrors(form);
     let errors;
@@ -183,7 +184,7 @@ define((require)=>{
 
     updateInput: Dom.updateInput,
 
-    submitFunc: (elmId, options)=> event =>{
+    submitFunc: (elmId, options) => (event) => {
       Dom.stopEvent();
 
       const elm = document.getElementById(elmId);
@@ -194,8 +195,9 @@ define((require)=>{
       if (! form) throw new Error('no "fields" class within ' + elmId);
       Tpl.fillDoc(doc, form);
 
-      if (options.success === undefined && options.save === undefined)
+      if (options.success === undefined && options.save === undefined) {
         options = {success: options};
+      }
 
       const result = options.save
             ? options.save(doc, form, elm)
@@ -204,7 +206,7 @@ define((require)=>{
       const successPage = options.success;
 
       if (result) {
-        switch(typeof successPage) {
+        switch (typeof successPage) {
         case 'object':
           Route.replacePath(successPage);
           break;
@@ -212,8 +214,9 @@ define((require)=>{
           successPage(doc);
           break;
         case 'string':
-          if (successPage === 'back')
+          if (successPage === 'back') {
             Route.history.back();
+          }
           break;
         }
       } else {
@@ -222,13 +225,13 @@ define((require)=>{
     },
 
     disableFields(form) {
-      Dom.forEach(form, Dom.WIDGET_SELECTOR, elm => {
+      Dom.forEach(form, Dom.WIDGET_SELECTOR, (elm) => {
         elm.setAttribute('disabled', 'disabled');
       });
     },
 
     enableFields(form) {
-      Dom.forEach(form, Dom.WIDGET_SELECTOR, elm => {
+      Dom.forEach(form, Dom.WIDGET_SELECTOR, (elm) => {
         elm.removeAttribute('disabled');
       });
     },
@@ -258,27 +261,29 @@ define((require)=>{
     },
 
     getRadioValue(elm, name) {
-      const checked = elm.querySelector('[name="'+name+'"]:checked');
+      const checked = elm.querySelector('[name="' + name + '"]:checked');
       if (checked) return checked.value;
     },
 
     fillDoc(doc, form) {
       const modelFields = doc.constructor.$fields;
       let fields = form.querySelectorAll('[name]:not([type=radio]):not(button)');
-      for(let i = 0; i < fields.length; ++i) {
+      for (let i = 0; i < fields.length; ++i) {
         const fieldElm = fields[i];
         const name = fieldElm.getAttribute('name');
-        if (modelFields === undefined || modelFields[name])
+        if (modelFields === undefined || modelFields[name]) {
           doc[name] = fieldElm.value;
+        }
       }
 
       fields = form.getElementsByClassName('radioGroup');
-      for(let i = 0; i < fields.length; ++i) {
+      for (let i = 0; i < fields.length; ++i) {
         const fieldElm = fields[i];
-        const name= field.getAttribute('data-errorField');
+        const name = field.getAttribute('data-errorField');
 
-        if (modelFields[name])
+        if (modelFields[name]) {
           doc[name] = Tpl.getRadioValue(fieldElm, name);
+        }
       }
 
       return doc;
@@ -286,7 +291,7 @@ define((require)=>{
 
     clearErrors(form) {
       const msgs = form.getElementsByClassName('error');
-      while(msgs.length) {
+      while (msgs.length) {
         Dom.removeClass(msgs[msgs.length - 1], 'error');
       }
     },
@@ -297,17 +302,16 @@ define((require)=>{
       let focus = null;
       Tpl.clearErrors(form);
 
-
       if (errors !== undefined) {
-        for(const field in errors) {
-
+        for (const field in errors) {
           const msg = Val.Error.msgFor(doc, field);
           if (msg) {
             const fieldElm = Tpl.renderError(form, field, msg);
-            if (fieldElm)
+            if (fieldElm) {
               focus = focus || fieldElm;
-            else
-              otherMsgs && otherMsgs.push([field,msg]);
+            } else {
+              otherMsgs && otherMsgs.push([field, msg]);
+            }
           }
         }
         if (otherMsgs.length > 0 && koru.unexpectedError !== void 0) {
@@ -327,7 +331,7 @@ define((require)=>{
         fieldElm = form;
         msg = field;
       } else {
-        fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
+        fieldElm = form.querySelector('[name="' + field + '"],[data-errorField="' + field + '"]');
       }
 
       msg = format.translate(msg);
@@ -353,12 +357,13 @@ define((require)=>{
         const fpos = fieldElm.getBoundingClientRect();
         ms.setProperty('position', 'absolute');
         const mpos = msgElm.getBoundingClientRect();
-        ms.setProperty('margin-top', (fpos.top-mpos.top-mpos.height)+'px');
+        ms.setProperty('margin-top', (fpos.top - mpos.top - mpos.height) + 'px');
 
         ms.setProperty('margin-left', (
           Dom.hasClass(fieldElm, 'errorRight')
-            ? fpos.right-mpos.right : fpos.left-mpos.left)+'px');
-        }
+            ? fpos.right - mpos.right
+            : fpos.left - mpos.left) + 'px');
+      }
       Dom.setClass('animate', msg, msgElm);
 
       return fieldElm;
@@ -367,7 +372,7 @@ define((require)=>{
     addChangeFields(options) {
       const action = options.action || 'change';
       const events = {};
-      for(let i= 0; i < options.fields.length; ++i) {
+      for (let i = 0; i < options.fields.length; ++i) {
         const field = options.fields[i];
         if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
           events['click [name=' + field + ']'] = changeColorEvent(field, options);
@@ -397,7 +402,6 @@ define((require)=>{
           result = options.displayValue;
           found = true;
         }
-
       } else {
         const value = this.doc[this.name];
         for (const row of this.selectList()) {
@@ -412,23 +416,27 @@ define((require)=>{
 
       if (! found) {
         const includeBlank = options.includeBlank;
-        if (typeof includeBlank === 'string')
+        if (typeof includeBlank === 'string') {
           result = includeBlank;
+        }
       }
 
       Dom.setClass('noValue', ! found);
       Dom.removeChildren(button);
       if (result && result.cloneNode) {
         button.appendChild(result.cloneNode(true));
-      } else
+      } else {
         button.textContent = result || '';
+      }
     },
   });
 
-  const selectMenuList = (list, includeBlank)=> includeBlank ? [
-    ['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
-    ...list
-  ] : list;
+  const selectMenuList = (list, includeBlank) => includeBlank
+        ? [
+          ['', Dom.h({i: typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
+          ...list,
+        ]
+        : list;
 
   Tpl.SelectMenu.$extend({
     $created(ctx, elm) {
@@ -437,15 +445,15 @@ define((require)=>{
 
       switch (typeof list) {
       case 'function':
-        data.selectList = includeBlank => selectMenuList(list(), includeBlank);
+        data.selectList = (includeBlank) => selectMenuList(list(), includeBlank);
         break;
       case 'string':
         switch (list) {
         case 'inclusionIn':
-          data.selectList = includeBlank => selectMenuList(
+          data.selectList = (includeBlank) => selectMenuList(
             data.doc.constructor.$fields[data.name].inclusion.in
-              .map(v => [v, v]),
-            includeBlank
+              .map((v) => [v, v]),
+            includeBlank,
           );
           break;
         default:
@@ -453,7 +461,7 @@ define((require)=>{
         }
         break;
       default:
-        data.selectList = includeBlank => selectMenuList(list, includeBlank);
+        data.selectList = (includeBlank) => selectMenuList(list, includeBlank);
         break;
       }
     },
@@ -486,33 +494,35 @@ define((require)=>{
     },
   });
 
-  const buildSelectList = (ctx, elm, optionFunc)=>{
+  const buildSelectList = (ctx, elm, optionFunc) => {
     const data = ctx.data;
     const value = data.doc[data.name];
     const options = data.options;
     let sl = options.selectList;
     if (! sl) throw new Error('invalid selectList for ' + data.name);
-    if ('fetch' in sl)
+    if ('fetch' in sl) {
       sl = sl.fetch();
+    }
     if (sl.length === 0) return;
     let getValue, getContent;
     if (typeof sl[0] === 'string') {
-      getValue = row => row;
+      getValue = (row) => row;
       getContent = getValue;
     } else if ('_id' in sl[0]) {
-      getValue = row => row._id;
-      getContent = row => row.name;
+      getValue = (row) => row._id;
+      getContent = (row) => row.name;
     } else {
-      getValue = row => row[0];
-      getContent = row => row[1];
+      getValue = (row) => row[0];
+      getContent = (row) => row[1];
     }
     let includeBlank = options.includeBlank;
     if (('includeBlank' in options) && includeBlank !== 'false') {
-      if (typeof includeBlank !== 'string' || includeBlank === 'true')
+      if (typeof includeBlank !== 'string' || includeBlank === 'true') {
         includeBlank = '';
+      }
       elm.appendChild(optionFunc('', includeBlank));
     }
-    util.forEach(sl, row => {
+    util.forEach(sl, (row) => {
       const rowValue = getValue(row);
       elm.appendChild(optionFunc(rowValue, getContent(row), rowValue == value));
     });
@@ -524,8 +534,9 @@ define((require)=>{
         const option = document.createElement('option');
         option.value = value;
         option.textContent = content;
-        if (selected)
+        if (selected) {
           option.setAttribute('selected', 'selected');
+        }
         return option;
       });
     },
@@ -542,14 +553,14 @@ define((require)=>{
       const Button = Tpl.Radio.Button;
       const name = ctx.data.name;
       buildSelectList(ctx, elm, (value, content, checked) => {
-        return Button.$render({name: name, value: value, label: content, checked: checked});
+        return Button.$render({name, value, label: content, checked});
       });
     },
   });
 
   Tpl.LabelField.$extend({
     $created(ctx, elm) {
-      Dom.addClass(elm, 'label_'+ctx.data.name);
+      Dom.addClass(elm, 'label_' + ctx.data.name);
     },
   });
 
@@ -565,10 +576,11 @@ define((require)=>{
     },
 
     checked(value, onClass) {
-      if ($.element.tagName === 'BUTTON')
-        Dom.setClass(onClass||'on', value);
-      else
+      if ($.element.tagName === 'BUTTON') {
+        Dom.setClass(onClass || 'on', value);
+      } else {
         Dom.setBoolean('checked', value);
+      }
     },
 
     elmId(prefix) {
@@ -603,15 +615,17 @@ define((require)=>{
       const value = document.createElement('span');
       value.className = 'value';
       const content = data[name];
-      if (content)
-        value.textContent = typeof content === 'object' ?
-        content.displayName || content.name || content : content;
+      if (content) {
+        value.textContent = typeof content === 'object'
+          ? content.displayName || content.name || content
+          : content;
+      }
 
       return Tpl.LabelField.$autoRender({
         name,
         value,
         options,
-        label: options.label ||  util.capitalize(util.humanize(name)),
+        label: options.label || util.capitalize(util.humanize(name)),
       });
     },
 
