@@ -630,7 +630,7 @@ define((require) => {
     },
 
     genderList() {
-      return [['', Dom.h({i: 'Not stated', class: 'blank'})], ["f", "Female"], ["m", "Male"], ["n", "Non binary"]];
+      return [['f', 'Female'], ['m', 'Male'], ['n', 'Non binary']];
     },
   });
 

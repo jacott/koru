@@ -154,7 +154,6 @@ isClient && define((require, exports, module) => {
 
     test('genderList', () => {
       assert.equals(Dom._helpers.genderList(), [
-        ['', m((elm) => util.deepEqual(Dom.htmlToJson(elm), {class: 'blank', i: 'Not stated'}))],
         ['f', 'Female'],
         ['m', 'Male'],
         ['n', 'Non binary'],
