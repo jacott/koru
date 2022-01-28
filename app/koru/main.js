@@ -122,14 +122,11 @@ define((require, exports, module) => {
     module.ctx.onError = (err, mod) => {
       if (err.onload) {
         const {ctx} = mod;
-        const stack = Object.keys(koru.fetchDependants(mod)).map((id) => {
-          if (id === mod.id) return '';
-          const ans = '    at ' + id + '.js:1:1';
-        }).join('\n');
+        const stack = Object.keys(koru.fetchDependants(mod)).map(
+          (id) => id === mod.id ? '' : '    at ' + id + '.js:1:1').join('\n');
         koru.error(`ERROR: failed to load module: ${mod.id}
 with dependancies:
-${stack}
-                   `);
+${stack}`);
       } else {
         const errEvent = err.event;
 
