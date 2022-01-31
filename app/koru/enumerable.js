@@ -1,14 +1,15 @@
-define(()=>{
+define(() => {
   const iter$ = Symbol();
 
   const Generator = (function *() {}).constructor;
 
   class Enumerable {
     constructor(iter) {
-      if (iter.constructor === Generator)
+      if (iter.constructor === Generator) {
         this[iter$] = {[Symbol.iterator]: iter};
-      else
+      } else {
         this[iter$] = iter;
+      }
     }
 
     count() {
@@ -57,9 +58,11 @@ define(()=>{
 
     reduce(reducer, seed) {
       for (const v of this[iter$]) {
-        if (seed === undefined) seed = v;
-        else
+        if (seed === undefined) {
+          seed = v;
+        } else {
           seed = reducer(seed, v);
+        }
       }
       return seed;
     }
@@ -74,7 +77,7 @@ define(()=>{
 
     static count(to, from=1, step=1) {
       return new Enumerable(function *() {
-        for(let i = from; i <= to; i+=step) yield i;
+        for (let i = from; i <= to; i += step) yield i;
       });
     }
 
@@ -91,6 +94,12 @@ define(()=>{
       return new Enumerable(function *() {
         for (const key in object) yield object[key];
       });
+    }
+
+    static *reverseValues(object) {
+      for (let i = object.length - 1; i >= 0; --i) {
+        yield object[i];
+      }
     }
   }
 

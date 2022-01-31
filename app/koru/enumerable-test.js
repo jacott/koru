@@ -1,17 +1,17 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Enumerable wraps iterables with Array like methods.
    **/
-  const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, util} = TH;
 
   const Enumerable = require('./enumerable');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("constructor", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('constructor', () => {
       /**
        * Create new Enumerable instance
        **/
@@ -24,13 +24,23 @@ define((require, exports, module)=>{
 
       const iter2 = new Enumerable(function *() {yield 1; yield 3; yield 5});
 
-      assert.same(iter2.filter(i => i != 3).count(), 2);
+      assert.same(iter2.filter((i) => i != 3).count(), 2);
       assert.equals(Array.from(iter2), [1, 3, 5]);
 
       //]
     });
 
-    test("every", ()=>{
+    test('reverseValues', () => {
+      /**
+       * Return an iterator for the reverse values of an array like structure
+       */
+      api.method();
+      //[
+      assert.equals(Array.from(Enumerable.reverseValues([1, 2, 3])), [3, 2, 1]);
+      //]
+    });
+
+    test('every', () => {
       /**
        * Return `true` if and only if the `test` returns a `truthy` value for every iteration.
 
@@ -40,12 +50,12 @@ define((require, exports, module)=>{
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
-      assert.isTrue(iter.every(i => i));
-      assert.isFalse(iter.every(i => i != 5));
+      assert.isTrue(iter.every((i) => i));
+      assert.isFalse(iter.every((i) => i != 5));
       //]
     });
 
-    test("some", ()=>{
+    test('some', () => {
       /**
        * Return `true` if `test` returns a `truthy` value for at least one iteration.
 
@@ -55,12 +65,12 @@ define((require, exports, module)=>{
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
-      assert.isTrue(iter.some(i => i == 5));
-      assert.isFalse(iter.some(i => false));
+      assert.isTrue(iter.some((i) => i == 5));
+      assert.isFalse(iter.some((i) => false));
       //]
     });
 
-    test("find", ()=>{
+    test('find', () => {
       /**
        * Return first iterated element that `test` returns a `truthy` value for.
 
@@ -70,12 +80,12 @@ define((require, exports, module)=>{
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 2; yield 5; yield 3}});
-      assert.equals(iter.find(i => i%2 == 1), 5);
-      assert.same(iter.find(i => i == 7), void 0);
+      assert.equals(iter.find((i) => i % 2 == 1), 5);
+      assert.same(iter.find((i) => i == 7), void 0);
       //]
     });
 
-    test("filter", ()=>{
+    test('filter', () => {
       /**
        * Filter an iterator.
 
@@ -85,27 +95,27 @@ define((require, exports, module)=>{
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
-      const mapped = iter.filter(i => i != 5);
+      const mapped = iter.filter((i) => i != 5);
       assert.equals(mapped.count(), 2);
       assert.equals(Array.from(mapped), [1, 3]);
-      assert.equals(iter.filter(i => false)[Symbol.iterator]().next(), {done: true, value: void 0});
+      assert.equals(iter.filter((i) => false)[Symbol.iterator]().next(), {done: true, value: void 0});
       //]
     });
 
-    test("mapToArray", ()=>{
+    test('mapToArray', () => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
        **/
       api.method();
       //[
-      const mapped = Enumerable.mapToArray({*[Symbol.iterator]() {yield 1; yield 5; yield 3}}, i => i == 5 ? undefined : 2*i);
+      const mapped = Enumerable.mapToArray({*[Symbol.iterator]() {yield 1; yield 5; yield 3}}, (i) => i == 5 ? undefined : 2 * i);
       assert.equals(mapped.length, 2);
       assert.equals(mapped, [2, 6]);
       //]
     });
 
-    test("map", ()=>{
+    test('map', () => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
@@ -113,26 +123,26 @@ define((require, exports, module)=>{
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
-      const mapped = iter.map(i => i == 5 ? undefined : 2*i);
+      const mapped = iter.map((i) => i == 5 ? undefined : 2 * i);
       assert.equals(mapped.count(), 2);
       assert.equals(Array.from(mapped), [2, 6]);
-      assert.equals(iter.map(i => 2*i)[Symbol.iterator]().next(), {done: false, value: 2});
+      assert.equals(iter.map((i) => 2 * i)[Symbol.iterator]().next(), {done: false, value: 2});
       //]
     });
 
-    test("reduce", ()=>{
+    test('reduce', () => {
       /**
        * Run `reducer` on each member returning a single value
        **/
       api.protoMethod();
       //[
       const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
-      assert.same(iter.reduce((sum, value) => sum+value, 5), 9);
-      assert.same(iter.reduce((sum, value) => sum-value), -2);
+      assert.same(iter.reduce((sum, value) => sum + value, 5), 9);
+      assert.same(iter.reduce((sum, value) => sum - value), -2);
       //]
     });
 
-    test("count", ()=>{
+    test('count', () => {
       /**
        * Create an iterator that counts
        **/
@@ -143,7 +153,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("propertyValues", ()=>{
+    test('propertyValues', () => {
       /**
        * Create an iterator over an object's property values
        **/
