@@ -38,9 +38,9 @@ define((require) => {
     if (ans == 0) {
       if (a == null) return 0;
       const ai = a._id || '', bi = b._id || '';
-      return ai === bi ? 0 : ai<bi ? -1 : 1;
+      return ai === bi ? 0 : ai < bi ? -1 : 1;
     }
-    return ans<0 ? -1 : 1;
+    return ans < 0 ? -1 : 1;
   }; compareByName.compareKeys = ['name', '_id'];
 
   const compareByOrder = (a, b) => {
@@ -49,9 +49,9 @@ define((require) => {
     if (ao === bo) {
       if (a == null) return 0;
       const ai = a._id || '', bi = b._id || '';
-      return ai === bi ? 0 : ai<bi ? -1 : 1;
+      return ai === bi ? 0 : ai < bi ? -1 : 1;
     } else {
-      return ao<bo ? -1 : 1;
+      return ao < bo ? -1 : 1;
     }
   }; compareByOrder.compareKeys = ['order', '_id'];
 
@@ -68,7 +68,7 @@ define((require) => {
     const m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
     if (m) {
       let i;
-      for (i = 1; i<4; ++i) {
+      for (i = 1; i < 4; ++i) {
         result.push(parseInt(m[i], 16));
       }
       result.push(m[4] ? Math.round(parseInt(m[i], 16) * 100 / 256) / 100 : 1);
@@ -77,7 +77,7 @@ define((require) => {
       const m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
       if (m) {
         let i;
-        for (i = 1; i<4; ++i) {
+        for (i = 1; i < 4; ++i) {
           result.push(parseInt(m[i]));
         }
         result.push(m[4] ? parseFloat(m[i]) : 1);
@@ -85,7 +85,7 @@ define((require) => {
       } else {
         const m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
         if (m) {
-          for (let i = 1; i<4; ++i) {
+          for (let i = 1; i < 4; ++i) {
             result.push(parseInt(m[i] + m[i], 16));
           }
           result.push(1);
@@ -118,8 +118,8 @@ define((require) => {
       if (! Array.isArray(expected)) return false;
       const len = actual.length;
       if (expected.length !== len) return false;
-      for (let i = 0; i<len; ++i) {
-        if (! deepEqual(actual[i], expected[i], maxLevel-1)) return false;
+      for (let i = 0; i < len; ++i) {
+        if (! deepEqual(actual[i], expected[i], maxLevel - 1)) return false;
       }
       return true;
     }
@@ -142,7 +142,7 @@ define((require) => {
       const vala = actual[key];
       if (is(vala, vale)) continue;
       if (vala === undefined || vale === undefined) return false;
-      if (! deepEqual(vala, vale, maxLevel-1)) {
+      if (! deepEqual(vala, vale, maxLevel - 1)) {
         return false;
       }
     }
@@ -168,8 +168,8 @@ define((require) => {
     // while the characters in oldstr and newstr are the same, increment s once for each character
     // designated by a single code point, twice for each character designated by a code point pair
     while (s <= minLast && (oldchar = oldstr.charCodeAt(s)) === newstr.charCodeAt(s)) {
-      if (oldchar >= 0xd800 && oldchar <= 0xdbff && s<minLast) {
-        if (oldstr.charCodeAt(s+1) !== newstr.charCodeAt(s+1)) break;
+      if (oldchar >= 0xd800 && oldchar <= 0xdbff && s < minLast) {
+        if (oldstr.charCodeAt(s + 1) !== newstr.charCodeAt(s + 1)) break;
         ++s;
       }
       ++s;
@@ -177,14 +177,14 @@ define((require) => {
     // s is now the index of the first non-matching chararacter in oldstr and newstr
 
     // return undefined if oldstr and newstr are the same
-    if (lastold == lastnew && s == minLast+1) return;
+    if (lastold == lastnew && s == minLast + 1) return;
 
     // starting at the end of oldstr and newstr, while the characters in oldstr
     // and newstr are the same, increment e
-    while (s <= minLast-e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e;
+    while (s <= minLast - e && oldstr.charCodeAt(lastold - e) === newstr.charCodeAt(lastnew - e)) ++e;
     // e is now the number of matching characters at the end of oldstr and newstr
 
-    return [s, oldstr.length - s-e, newstr.length - s-e];
+    return [s, oldstr.length - s - e, newstr.length - s - e];
   };
 
   const LOCAL_COMPARE_OPTS = {numeric: true};
@@ -194,7 +194,7 @@ define((require) => {
       const ans = a.localeCompare(b, undefined, LOCAL_COMPARE_OPTS);
       if (ans != 0) return ans;
     }
-    return a<b ? -1 : 1;
+    return a < b ? -1 : 1;
   };
 
   util.merge(util, {
@@ -275,7 +275,7 @@ define((require) => {
       const result = {};
       if (Array.isArray(keys)) {
         const len = keys.length;
-        for (let i = 0; i<len; ++i) {
+        for (let i = 0; i < len; ++i) {
           const key = keys[i];
           if (key in obj) {
             result[key] = obj[key];
@@ -325,7 +325,7 @@ define((require) => {
     forEach(list, visitor) {
       if (! list) return;
       const len = list.length;
-      for (let i = 0; i<len; ++i) {
+      for (let i = 0; i < len; ++i) {
         visitor(list[i], i);
       }
     },
@@ -340,7 +340,7 @@ define((require) => {
     map(list, func) {
       const len = list.length;
       const result = new Array(len);
-      for (let i = 0; i<len; ++i) {
+      for (let i = 0; i < len; ++i) {
         result[i] = func(list[i], i);
       }
       return result;
@@ -357,9 +357,9 @@ define((require) => {
     append(list, append) {
       const len = append.length;
       const dl = list.length;
-      list.length = dl+len;
-      for (let i = 0; i<len; ++i) {
-        list[dl+i] = append[i];
+      list.length = dl + len;
+      for (let i = 0; i < len; ++i) {
+        list[dl + i] = append[i];
       }
       return list;
     },
@@ -397,23 +397,23 @@ define((require) => {
         const pa = ma[1].split('.');
         const pb = mb[1].split('.');
         const len = Math.max(pa.length, pb.length);
-        for (let i = 0; i<len; ++i) {
+        for (let i = 0; i < len; ++i) {
           if (pa[i] !== pb[i]) {
             const an = + pa[i] || 0, bn = + pb[i] || 0;
             if (an !== bn) {
-              return an>bn ? 1 : -1;
+              return an > bn ? 1 : -1;
             }
           }
         }
 
         const an = + ma[2] || 0, bn = + mb[2] || 0;
         if (an !== bn) {
-          return an>bn ? 1 : -1;
+          return an > bn ? 1 : -1;
         }
 
         return ma[3] === mb[3] ? 0 : ma[3] > mb[3] ? 1 : 1;
       }
-      return a>b ? 1 : -1;
+      return a > b ? 1 : -1;
     },
 
     elemMatch(a, b) {
@@ -618,12 +618,12 @@ define((require) => {
       const result = {};
       if (Array.isArray(list)) {
         const len = list.length;
-        for (let i = 0; i<len; ++i) result[list[i]] = true;
+        for (let i = 0; i < len; ++i) result[list[i]] = true;
       }
       return result;
     },
 
-    toMap(keyName, valueName, /* lists */) {
+    toMap(keyName, valueName /* lists */) {
       if (arguments.length === 1) {
         return util.arrayToMap(keyName);
       }
@@ -672,7 +672,7 @@ define((require) => {
 
     find(list, func) {
       const len = list.length;
-      for (let i = 0; i<len; ++i) {
+      for (let i = 0; i < len; ++i) {
         const result = list[i];
         if (func(result, i)) return result;
       }
@@ -680,21 +680,21 @@ define((require) => {
 
     binarySearch: (list, compare, start=list.length >> 1, lower=0, upper=list.length) => {
       if (upper == 0) return -1;
-      if (start<lower) {
+      if (start < lower) {
         start = lower;
-      } else if (start >= upper) start = upper-1
+      } else if (start >= upper) start = upper - 1
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
-        if (upper-1 <= lower) {
-          return ans>0 && lower == 0
+        if (upper - 1 <= lower) {
+          return ans > 0 && lower == 0
             ? -1
-            : ans<0 && upper == list.length ? list.length - 1 : lower;
+            : ans < 0 && upper == list.length ? list.length - 1 : lower;
         }
-        if (ans>0) {
+        if (ans > 0) {
           upper = start;
         } else {
           lower = start;
         }
-        start = ((upper-lower) >> 1) + lower;
+        start = ((upper - lower) >> 1) + lower;
       }
 
       return start;
@@ -706,7 +706,7 @@ define((require) => {
       const internal = (a, l) => {
         util.forEach(a, (value) => {
           if (l && Array.isArray(value)) {
-            internal(value, l-1);
+            internal(value, l - 1);
           } else {
             result.push(value);
           }
@@ -784,7 +784,7 @@ define((require) => {
       }
 
       const copy = Object.create(Object.getPrototypeOf(orig));
-      for (const key in orig) copy[key] = util.deepCopy(orig[key], maxLevel-1);
+      for (const key in orig) copy[key] = util.deepCopy(orig[key], maxLevel - 1);
       return copy;
     },
 
@@ -858,15 +858,15 @@ define((require) => {
 
       name = (name || '').split(' ');
       let result = '';
-      for (let i = 0; count>1 && i < name.length - 1; ++i, --count) {
+      for (let i = 0; count > 1 && i < name.length - 1; ++i, --count) {
         result += name[i].slice(0, 1);
       }
-      if (count>0 && name.length > 0) {
+      if (count > 0 && name.length > 0) {
         result += name[name.length - 1].slice(0, 1);
       }
 
       if (result.length < 2 && abvr) {
-        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count-1);
+        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count - 1);
       }
 
       return result.toUpperCase();
@@ -893,16 +893,16 @@ define((require) => {
       for (;i <= ml; ++i) {
         if (a[i] !== b[i]) break;
       }
-      if (i>ml) {
+      if (i > ml) {
         return [a.slice(i), b.slice(i)];
       }
 
-      const le = ml-i;
+      const le = ml - i;
       let j = 0;
       for (;j <= le; ++j) {
-        if (a[al-j] !== b[bl-j]) break;
+        if (a[al - j] !== b[bl - j]) break;
       }
-      return [a.slice(i, al-j + 1), b.slice(i, bl-j + 1)];
+      return [a.slice(i, al - j + 1), b.slice(i, bl - j + 1)];
     },
 
     capitalize(value) {
@@ -939,12 +939,12 @@ define((require) => {
     },
 
     pc(fraction) {
-      return fraction*100 + '%';
+      return fraction * 100 + '%';
     },
 
     toDp(number, dp, zeroFill=false) {
       const scalar = Math.pow(10, dp);
-      let decs = '' + (Math.round(number*scalar) % scalar);
+      let decs = '' + (Math.round(number * scalar) % scalar);
 
       if (! zeroFill && ! decs) {
         return '' + number;
@@ -966,7 +966,7 @@ define((require) => {
     sansPc(value) {return sansSuffix(value, 1)},
 
     compare,
-    compareNumber: (a, b) => a-b,
+    compareNumber: (a, b) => a - b,
     compareByName,
     compareByOrder,
 
@@ -980,12 +980,12 @@ define((require) => {
         if (afield === bfield) {
           if (a == null || isSym) return 0;
           const ai = a._id || '', bi = b._id || '';
-          return ai === bi ? 0 : ai<bi ? -1 : 1;
+          return ai === bi ? 0 : ai < bi ? -1 : 1;
         }
         if (atype !== btype) {
-          return atype<btype ? -direction : direction;
+          return atype < btype ? -direction : direction;
         }
-        return ((atype !== 1 || isId) ? afield<bfield : compare(afield, bfield) < 0)
+        return ((atype !== 1 || isId) ? afield < bfield : compare(afield, bfield) < 0)
           ? -direction
           : direction;
       };
@@ -997,10 +997,10 @@ define((require) => {
       const flen = fields.length;
       const compKeys = [], compMethod = [];
 
-      for (let i = 0; i<flen; ++i) {
+      for (let i = 0; i < flen; ++i) {
         const key = fields[i];
-        const dir = i+1 == flen || typeof fields[i+1] !== 'number' ? 1 : Math.sign(fields[++i]);
-        compMethod.push(typeof key !== 'symbol' && key.slice(-3) !== '_id' ? dir*2 : dir);
+        const dir = i + 1 == flen || typeof fields[i + 1] !== 'number' ? 1 : Math.sign(fields[++i]);
+        compMethod.push(typeof key !== 'symbol' && key.slice(-3) !== '_id' ? dir * 2 : dir);
         compKeys.push(key);
       }
       const lastKey = compKeys[compKeys.length - 1];
@@ -1011,21 +1011,21 @@ define((require) => {
       const clen = compKeys.length;
       const cmp = (a, b) => {
         let dir = 1;
-        for (let i = 0; i<clen; ++i) {
+        for (let i = 0; i < clen; ++i) {
           const f = compKeys[i];
           const af = a[f], bf = b[f];
           if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
             const atype = typeorder(af), btype = typeorder(bf);
             const dir = compMethod[i];
             if (atype !== btype) {
-              return atype<btype ? -dir : dir;
+              return atype < btype ? -dir : dir;
             }
             if (af == null) return -1;
             if (bf == null) return 1;
-            if (atype == 1 && (dir < -1 || dir>1)) {
+            if (atype == 1 && (dir < -1 || dir > 1)) {
               return compare(af, bf) < 0 ? -dir : dir;
             }
-            return af<bf ? -dir : dir;
+            return af < bf ? -dir : dir;
           }
         }
         return 0;
@@ -1038,7 +1038,7 @@ define((require) => {
 
     setNestedHash(value, hash, ...keys) {
       const last = keys.length - 1;
-      for (let i = 0; i<last; ++i) {
+      for (let i = 0; i < last; ++i) {
         const key = keys[i];
         hash = hash[key] || (hash[key] = {});
       }
@@ -1048,7 +1048,7 @@ define((require) => {
 
     getNestedHash(hash, ...keys) {
       const last = keys.length - 1;
-      for (let i = 0; i<last; ++i) {
+      for (let i = 0; i < last; ++i) {
         const key = keys[i];
         hash = hash[key];
         if (! hash) return undefined;
@@ -1060,7 +1060,7 @@ define((require) => {
     deleteNestedHash(hash, ...keys) {
       let last = keys.length - 1;
       const prevs = [];
-      for (let i = 0; i<last; ++i) {
+      for (let i = 0; i < last; ++i) {
         const key = keys[i];
         prevs.push(hash);
         hash = hash[key];
@@ -1071,9 +1071,9 @@ define((require) => {
       const value = hash[keys[last]];
       delete hash[keys[last]];
 
-      for (let i = prevs.length - 1; i>0; --i) {
+      for (let i = prevs.length - 1; i > 0; --i) {
         for (const noop in prevs[i]) return value;
-        delete prevs[i-1][keys[--last]];
+        delete prevs[i - 1][keys[--last]];
       }
       return value;
     },
@@ -1181,16 +1181,22 @@ define((require) => {
       const {length} = text;
       while (true) {
         const n = text.indexOf('\n', i);
-        if (n == -1 || n>index) {
-          return [line, index-i];
+        if (n == -1 || n > index) {
+          return [line, index - i];
         }
         ++line;
-        i = n+1;
+        i = n + 1;
       }
     },
 
     voidFunc: () => {},
     trueFunc: () => true,
+
+    async asyncArrayFrom(asyncIterator) {
+      const arr = [];
+      for await (const i of asyncIterator) arr.push(i);
+      return arr;
+    },
   });
 
   return util;

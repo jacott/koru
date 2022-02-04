@@ -1651,5 +1651,20 @@ define((require, exports, module) => {
       assert.isTrue(util.trueFunc());
       assert.isTrue(util.trueFunc(false));
     });
+
+    test('asyncArrayFrom', async () => {
+      /**
+       * Convert an async iterator into an Array
+       */
+      api.method();
+      //[
+      async function *asyncIter() {
+        yield await 1;
+        yield await 2;
+      }
+
+      assert.equals(await util.asyncArrayFrom(asyncIter()), [1, 2]);
+      //]
+    });
   });
 });
