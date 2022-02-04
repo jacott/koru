@@ -214,6 +214,7 @@ define((require, exports, module) => {
 
     printForLoop(type, node) {
       this.write('for ');
+      node.await && this.write('await ');
       this.write('(');
       this.advance(node.left.start);
       this.print(node.left);

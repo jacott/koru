@@ -159,7 +159,9 @@ x()`;
       });
 
       test('for of', () => {
-        assert.equals(reformat('for (const   a   of   b  ) c\n'), `for (const a of b) c;\n`);
+        assert.equals(reformat('for\nawait\n(const   a   of  await   b  ) c\n'),
+                      `for await (const a of await b) c;\n`);
+        assert.equals(reformat('for\n(const   a   of   b  ) c\n'), `for (const a of b) c;\n`);
         assert.equals(reformat('for (b of c) {\n  d\n};\n'), `for (b of c) {\n  d;\n}\n`);
       });
 
