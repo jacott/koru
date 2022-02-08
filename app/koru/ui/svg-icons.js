@@ -9,9 +9,12 @@ define((require, exports, module) => {
 
   const use = (icon, attrs) => Dom.svgUse('#icon-'+icon, attrs);
 
-  const createIcon = (icon) => {
+  const createIcon = (icon, title) => {
     const svg = SvgElm.cloneNode(false);
     svg.setAttribute('name', icon);
+        if (title !== void 0) {
+      svg.appendChild(Dom.h({title}, Dom.SVGNS));
+    }
     svg.appendChild(use(icon));
     return svg;
   };

@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   /**
    * SvgIcons: is a helper for managing svg icons
    *
@@ -16,12 +16,12 @@ define((require, exports, module)=>{
 
   const SVGIcons = require('./svg-icons');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       document.body.textContent = '';
     });
 
-    test("use", ()=>{
+    test('use', () => {
       /**
        * create a svg use element for an icon
        */
@@ -34,7 +34,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("setIcon", ()=>{
+    test('setIcon', () => {
       /**
        * set the icon in a svg use element
        */
@@ -49,7 +49,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("createIcon", ()=>{
+    test('createIcon', () => {
       /**
        * Create an svg element that uses a icon definition.
        *
@@ -57,30 +57,33 @@ define((require, exports, module)=>{
 
        * @param icon the name of an icon to use. the `use` element `xlink:href` is set to
        * `"#icon-"+icon`.
+       * @param [title] adds a title element to the SVG.
        **/
       api.method();
       //[
       document.body.appendChild(Dom.h({
         style: 'display:hidden',
         svg: {defs: {
-          id: "icon-hamburger-menu", viewBox: "0 0 24 24",
+          id: 'icon-hamburger-menu', viewBox: '0 0 24 24',
           symbol: {
             path: [],
-            d: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
-          }
-        }}
+            d: 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z',
+          },
+        }},
       }));
-      const svg = SVGIcons.createIcon('hamburger-menu');
-      assert(svg.classList.contains("icon"));
+      const svg = SVGIcons.createIcon('hamburger-menu', 'Main menu');
+      assert(svg.classList.contains('icon'));
 
       assert.same(svg.namespaceURI, Dom.SVGNS);
+
+      assert.equals(svg.querySelector(':scope>title:first-child').textContent, 'Main menu');
 
       const use = svg.querySelector('use');
       assert.same(use.getAttributeNS(Dom.XLINKNS, 'href'), '#icon-hamburger-menu');
       //]
     });
 
-    test("add", ()=>{
+    test('add', () => {
       /**
        * Add an svg to the asset library under id `"icon-"+id`.
        *
@@ -94,21 +97,21 @@ define((require, exports, module)=>{
       api.method();
       //[
       document.body.appendChild(Dom.h({
-        id: "SVGIcons",
+        id: 'SVGIcons',
         style: 'display:hidden',
-        svg: {defs: []}
+        svg: {defs: []},
       }));
-      const d = "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z";
-      SVGIcons.add("hamburger-menu", {path: [], d});
+      const d = 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z';
+      SVGIcons.add('hamburger-menu', {path: [], d});
 
-      assert.dom('#SVGIcons>defs>symbol#icon-hamburger-menu', sym =>{
-        assert.same(sym.getAttribute('viewBox'), "0 0 24 24");
-        assert.dom('path[d="'+d+'"]');
+      assert.dom('#SVGIcons>defs>symbol#icon-hamburger-menu', (sym) => {
+        assert.same(sym.getAttribute('viewBox'), '0 0 24 24');
+        assert.dom('path[d="' + d + '"]');
       });
       //]
     });
 
-    test("selectMenuDecorator", ()=>{
+    test('selectMenuDecorator', () => {
       /**
        * selectMenuDecorator can be used as a `decorator` function option to
        * {#../select-menu.popup}. Any list item with a icon attribute will be given a svg icon with
@@ -128,7 +131,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("helper svgIcon", ()=>{
+    test('helper svgIcon', () => {
       /**
        * `{{svgIcon "name" attributes...}}` inserts an svg into an html document. The icon is only built
        * once.
@@ -146,12 +149,12 @@ define((require, exports, module)=>{
 
       let isElement = false;
       const current = {
-        isElement: ()=> isElement,
+        isElement: () => isElement,
       };
       stubProperty(Dom, 'current', {value: current});
 
-      document.body.appendChild(Dom._helpers.svgIcon("close", {class: "svgClose"}));
-      assert.dom('svg.svgClose', svg =>{
+      document.body.appendChild(Dom._helpers.svgIcon('close', {class: 'svgClose'}));
+      assert.dom('svg.svgClose', (svg) => {
         refute.className(svg, 'icon');
         assert.same(svg.querySelector('use').getAttributeNS(Dom.XLINKNS, 'href'), '#icon-close');
       });
