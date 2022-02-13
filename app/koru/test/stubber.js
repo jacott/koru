@@ -261,7 +261,7 @@ define((require) => {
       return deepEqual(list, args);
     }
 
-    yield(...args) {yieldCall(this.args, args)}
+    yield(...args) {return yieldCall(this.args, args)}
   }
 
   const yieldCall = (args, callArgs) => {

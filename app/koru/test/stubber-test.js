@@ -727,9 +727,9 @@ calls since the start of the program`});
           const aStub = stubber.stub();
           let arg2;
 
-          aStub(1, 2, (a, b)=> arg2 = b);
+          aStub(1, 2, (a, b) => arg2 = b);
 
-          aStub.firstCall.yield(4,5);
+          assert.equals(aStub.firstCall.yield(4, 5), 5);
 
           assert.same(arg2, 5);
           //]
