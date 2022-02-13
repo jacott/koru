@@ -202,6 +202,8 @@ define((require) => {
             return this.addPromise(p.then((doc) => {
               this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
             }));
+          } else {
+            doc = p;
           }
         }
         this.defaults[refId] = doc._id === void 0 ? doc : doc._id;

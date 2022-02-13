@@ -232,14 +232,16 @@ define((require, exports, module) => {
         });
 
         api.protoMethod();
+        TestFactory.last.book = void 0;
         //[
-        const book = await TestFactory.createBook();
 
         const builder1 = new TestFactory.Builder('Chapter', {number: 1})
               .addRef('book')
         ;
 
         await builder1.waitPromises();
+
+        const {book} = TestFactory.last;
 
         assert.equals(builder1.defaults, {book_id: book._id});
 
