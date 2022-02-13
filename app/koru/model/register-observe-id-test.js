@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const DocChange       = require('koru/model/doc-change');
   const dbBroker        = require('./db-broker');
@@ -7,95 +7,123 @@ define((require, exports, module)=>{
   const {stub, spy, intercept, match: m} = TH;
 
   const Model = require('./main');
-  let v= {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v.obs = [];
-      v.TestModel = Model.define('TestModel').defineFields({
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    let obs, TestModel, doc;
+    beforeEach(async () => {
+      obs = [];
+      TestModel = Model.define('TestModel').defineFields({
         name: 'string', age: 'number', toys: 'object'});
-      v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
+      doc = await TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
     });
 
-    afterEach(()=>{
-      v.obs.forEach(row => row.stop());
-      Model._destroyModel('TestModel', 'drop');
+    afterEach(async () => {
+      obs.forEach((row) => row.stop());
+      await Model._destroyModel('TestModel', 'drop');
       dbBroker.clearDbId();
-      v = {};
     });
 
-    test("observeIds", ()=>{
-      const doc2 =  v.TestModel.create({name: 'Bob', age: 35});
-      v.obs.push(v.ids = v.TestModel.observeIds([v.doc._id, doc2._id], v.ob = stub()));
+    test('observeIds', async () => {
+      const doc2 = await TestModel.create({name: 'Bob', age: 35});
+      const ob = stub();
+      const ids = TestModel.observeIds([doc._id, doc2._id], ob);
+      obs.push(ids);
 
-      const doc3 = v.TestModel.create({name: 'Helen', age: 25});
-      v.ids.replaceIds([v.doc._id, doc3._id]);
+      const doc3 = await TestModel.create({name: 'Helen', age: 25});
+      ids.replaceIds([doc._id, doc3._id]);
 
       doc3.age = 10;
-      doc3.$$save();
+      await doc3.$$save();
 
-      assert.calledWith(v.ob, DocChange.change(doc3.$reload(), {age: 25}));
+      assert.calledWith(ob, DocChange.change(doc3.$reload(), {age: 25}));
 
       doc2.age = 10;
-      doc2.$$save();
+      await doc2.$$save();
 
-      refute.calledWith(v.ob, m.any, TH.matchModel(doc2.$reload()));
+      refute.calledWith(ob, m.any, TH.matchModel(doc2.$reload()));
     });
 
-    test("multi dbs", ()=>{
-      const origId = v.dbId = dbBroker.dbId;
+    test('multi dbs', () => {
+      const origId = dbBroker.dbId;
+      let dbId = origId;
       intercept(dbBroker, 'dbId');
-      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
-      const oc = spy(v.TestModel, 'onChange');
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return dbId}});
+      const oc = spy(TestModel, 'onChange');
 
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.origOb = stub()));
-      v.dbId = 'alt';
+      const origOb = stub();
+      obs.push(TestModel.observeIds([doc._id], origOb));
+      dbId = 'alt';
       assert.same(dbBroker.dbId, 'alt');
 
-      assert.calledWith(oc, TH.match(func => v.oFunc = func));
+      let oFunc;
+      assert.calledWith(oc, TH.match((func) => oFunc = func));
       oc.reset();
-      v.obs.push(v.altHandle = v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
-      assert.calledWith(oc, TH.match(func => v.altFunc = func));
-      v.oFunc(DocChange.change(v.doc, {name: 'old'}));
-      assert.calledWith(v.origOb, DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.altOb);
+      const altOb = stub();
+      const altHandle = TestModel.observeIds([doc._id], altOb);
+      obs.push(altHandle);
+      let altFunc;
+      assert.calledWith(oc, TH.match((func) => altFunc = func));
+      oFunc(DocChange.change(doc, {name: 'old'}));
+      assert.calledWith(origOb, DocChange.change(doc, {name: 'old'}));
+      refute.called(altOb);
 
-      v.origOb.reset();
-      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
-      assert.calledWith(v.altOb, DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.origOb);
+      origOb.reset();
+      altFunc(DocChange.change(doc, {name: 'old'}));
+      assert.calledWith(altOb, DocChange.change(doc, {name: 'old'}));
+      refute.called(origOb);
 
-      v.dbId = origId;
-      v.altHandle.stop();
-      v.dbId = 'alt';
+      dbId = origId;
+      altHandle.stop();
+      dbId = 'alt';
 
-      v.altOb.reset();
-      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.altOb);
+      altOb.reset();
+      altFunc(DocChange.change(doc, {name: 'old'}));
+      refute.called(altOb);
 
       oc.reset();
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
+      obs.push(TestModel.observeIds([doc._id], stub()));
+      obs.push(TestModel.observeIds([doc._id], stub()));
       assert.calledOnce(oc);
     });
 
-    test("observeId changed", ()=>{
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob1 = stub()));
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob2 = stub()));
+    isServer && test('async observeId', async () => {
+      const ob1 = stub();
+      const ob2 = stub();
+      const ob3 = stub();
+      obs.push(
+        TestModel.observeId(doc._id, async (v) => {await 1; ob1(v)}),
+        TestModel.observeId(doc._id, ob2),
+        TestModel.onChange(ob3));
 
-      v.doc.age = 17;
-      v.doc.$$save();
+      doc.age = 17;
+      await doc.$$save();
 
-      assert.calledWith(v.ob1, DocChange.change(v.doc.$reload(), {age: 5}));
-      assert.calledWith(v.ob2, DocChange.change(v.doc.$reload(), {age: 5}));
+      assert.calledWith(ob1, DocChange.change(doc.$reload(), {age: 5}));
+      assert.calledWith(ob2, DocChange.change(doc.$reload(), {age: 5}));
+      assert(ob1.calledBefore(ob2));
+      assert(ob2.calledBefore(ob3));
     });
 
-    test("observeId removed", ()=>{
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob = stub()));
+    test('observeId changed', async () => {
+      const ob1 = stub();
+      const ob2 = stub();
+      obs.push(TestModel.observeId(doc._id, ob1));
+      obs.push(TestModel.observeId(doc._id, ob2));
 
-      v.doc.$remove();
+      doc.age = 17;
+      await doc.$$save();
 
-      assert.calledWith(v.ob, DocChange.delete(v.doc));
+      assert.calledWith(ob1, DocChange.change(doc.$reload(), {age: 5}));
+      assert.calledWith(ob2, DocChange.change(doc.$reload(), {age: 5}));
+    });
+
+    test('observeId removed', async () => {
+      const ob = stub();
+      obs.push(TestModel.observeId(doc._id, ob));
+
+      await doc.$remove();
+
+      assert.calledWith(ob, DocChange.delete(doc));
     });
   });
 });

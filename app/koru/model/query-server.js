@@ -1,48 +1,49 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Changes         = require('koru/changes');
-  const Model           = require('koru/model/map');
+  const Future          = require('koru/future');
   const DocChange       = require('koru/model/doc-change');
+  const Model           = require('koru/model/map');
   const Random          = require('koru/random');
+  const TransQueue      = require('./trans-queue');
   const koru            = require('../main');
   const util            = require('../util');
-  const TransQueue      = require('./trans-queue');
 
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
-  const notNested = (db)=> db.inTransaction ? void 0 : db;
+  const notNested = (db) => db.inTransaction ? void 0 : db;
 
-  return (Query, condition, notifyAC$)=>{
-
-    const notify = (docChange)=>{
-      Query[notifyAC$](docChange);
-      docChange.model.notify(docChange);
+  return (Query, condition, notifyAC$) => {
+    const notify = async (docChange) => {
+      await Query[notifyAC$](docChange);
+      await docChange.model.notify(docChange);
     };
 
     util.merge(Query, {
-      insert(doc) {
+      async insert(doc) {
         const model = doc.constructor;
-        TransQueue.transaction(notNested(model.db), ()=>{
-          const result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
-          if (Array.isArray(result))
+        await TransQueue.transaction(notNested(model.db), async () => {
+          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+          if (Array.isArray(result)) {
             doc.attributes._id = result[0]._id;
+          }
 
           model._$docCacheSet(doc);
           TransQueue.onAbort(() => model._$docCacheDelete(doc));
           const dc = DocChange.add(doc);
-          Model._support.callAfterLocalChange(dc);
-          TransQueue.onSuccess(()=>{notify(dc)});
+          await Model._support.callAfterLocalChange(dc);
+          await TransQueue.onSuccess(async () => {await notify(dc)});
         });
       },
 
-      _insertAttrs(model, attrs) {
+      async _insertAttrs(model, attrs) {
         if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
-        model.docs.insert(attrs);
+        await model.docs.insert(attrs);
       },
     });
 
-    const applyCursorOptions = (query, cursor)=>{
+    const applyCursorOptions = (query, cursor) => {
       query._batchSize && cursor.batchSize(query._batchSize);
       query._limit && cursor.limit(query._limit);
       query._offset && cursor.offset(query._offset);
@@ -57,12 +58,12 @@ define((require)=>{
 
       from({direction=1, values, order, excludeFirst=false}) {
         let qs = [];
-        let fdir = 1, cmp = direction*fdir == 1 ? '>' : '<';
-        order.forEach(field => {
-          switch(field) {
+        let fdir = 1, cmp = direction * fdir == 1 ? '>' : '<';
+        order.forEach((field) => {
+          switch (field) {
           case 1: case -1:
             fdir = field;
-            cmp = direction*fdir == 1 ? '>' : '<';
+            cmp = direction * fdir == 1 ? '>' : '<';
             break;
           default:
             const value = values[field];
@@ -73,14 +74,15 @@ define((require)=>{
             }
           }
         });
-        if (excludeFirst)
+        if (excludeFirst) {
           qs.push('false');
-        else if (values._id === void 0 )
+        } else if (values._id === void 0) {
           qs.push('true');
-        else
+        } else {
           qs.push(`_id ${cmp}= {$_id}`);
+        }
 
-        this.whereSql(qs.join(' ')+qs.map(() => '').join('))'), values);
+        this.whereSql(qs.join(' ') + qs.map(() => '').join('))'), values);
       },
 
       withIndex(idx, params, options) {
@@ -96,7 +98,7 @@ define((require)=>{
                        excludeFirst: excludeFrom});
           }
           if (to) {
-            this.from({direction: direction*-1, values: to, order: idx.from,
+            this.from({direction: direction * -1, values: to, order: idx.from,
                        excludeFirst: excludeTo});
           }
         }
@@ -114,33 +116,32 @@ define((require)=>{
         return this;
       },
 
-      fetch() {
+      async fetch() {
         const results = [];
-        this.forEach(doc => {results.push(doc)});
+        await this.forEach((doc) => {results.push(doc)});
         return results;
       },
 
-      waitForOne(timeout) {
-        timeout = timeout || 2000;
+      async waitForOne(timeout=2000) {
         const query = this;
-        const future = new util.Future;
-        const handle = this.model.onChange(() => {
-          const doc = query.fetchOne();
-          if (doc) future.return(doc);
+        const future = new Future();
+        const handle = this.model.onChange(async () => {
+          const doc = await query.fetchOne();
+          if (doc) future.resolve(doc);
         });
         let timer;
         try {
-          const doc = this.fetchOne();
+          const doc = await this.fetchOne();
           if (doc) return doc;
-          timer = koru.setTimeout(() => {future.return()}, timeout);
-          return future.wait();
+          timer = koru.setTimeout(() => {future.resolve()}, timeout);
+          return await future.promise;
         } finally {
           handle.stop();
           timer && koru.clearTimeout(timer);
         }
       },
 
-      fetchIds() {
+      async fetchIds() {
         if (this.singleId) throw Error('fetchIds onId not supported');
 
         const cursor = this.model.docs.find(this, {fields: {_id: 1}});
@@ -148,11 +149,11 @@ define((require)=>{
 
         const results = [];
         try {
-          for(let doc = cursor.next(); doc; doc = cursor.next()) {
+          for (let doc = await cursor.next(); doc; doc = await cursor.next()) {
             results.push(doc._id);
           }
         } finally {
-          cursor.close();
+          await cursor.close();
         }
         return results;
       },
@@ -162,10 +163,10 @@ define((require)=>{
         return this;
       },
 
-      forEach(func) {
+      async forEach(func) {
         if (this.singleId) {
-          const doc = this.fetchOne();
-          doc && func(doc);
+          const doc = await this.fetchOne();
+          doc && (await func(doc));
         } else {
           const hasFields = this._fields !== void 0;
           const {model} = this;
@@ -174,70 +175,72 @@ define((require)=>{
           const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for (let rec = cursor.next(); rec !== void 0; rec = cursor.next()) {
-              if (func(hasFields ? rec : model[makeDoc$](rec)) === true)
+            for (let rec = await cursor.next(); rec !== void 0; rec = await cursor.next()) {
+              if ((await func(hasFields ? rec : model[makeDoc$](rec))) === true) {
                 break;
+              }
             }
           } finally {
-            cursor.close();
+            await cursor.close();
           }
-
         }
         return this;
       },
 
-      map(func) {
+      async map(func) {
         const results = [];
-        this.forEach(doc => {results.push(func(doc))});
+        await this.forEach((doc) => {results.push(func(doc))});
         return results;
       },
 
-      remove() {
+      async remove() {
         let count = 0;
         const {model} = this;
         const {docs} = model;
         const onSuccess = [];
-        TransQueue.transaction(notNested(model.db), tran => {
-          this.forEach(doc => {
+        await TransQueue.transaction(notNested(model.db), async (tran) => {
+          await this.forEach(async (doc) => {
             ++count;
-            Model._support.callBeforeObserver('beforeRemove', doc);
-            docs.remove({_id: doc._id});
+            await Model._support.callBeforeObserver('beforeRemove', doc);
+            await docs.remove({_id: doc._id});
             model._$docCacheDelete(doc);
-            Model._support.callAfterLocalChange(DocChange.delete(doc));
+            await Model._support.callAfterLocalChange(DocChange.delete(doc));
             onSuccess.push(doc);
           });
-          TransQueue.onSuccess(()=>{onSuccess.forEach(doc =>{notify(DocChange.delete(doc))})});
+          TransQueue.onSuccess(() => {onSuccess.forEach((doc) => notify(DocChange.delete(doc)))});
         });
         return count;
       },
 
-      count(max) {
-        if (max == null)
-          return this.model.docs.count(this);
-        else
-          return this.model.docs.count(this, {limit: max});
+      async count(max) {
+        if (max == null) {
+          return await this.model.docs.count(this);
+        } else {
+          return await this.model.docs.count(this, {limit: max});
+        }
       },
 
       exists() {
         return this.model.docs.exists(this);
       },
 
-      update(changesOrField={}, value) {
+      async update(changesOrField={}, value) {
         const origChanges = (typeof changesOrField === 'string')
-                ? {[changesOrField]: value} : changesOrField;
+              ? {[changesOrField]: value}
+              : changesOrField;
         const {model, singleId} = this;
         Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
         let count = 0;
         let onSuccess = [], onAbort = [];
 
-        TransQueue.transaction(notNested(model.db), tran => {
+        await TransQueue.transaction(notNested(model.db), async (tran) => {
           const {docs} = model;
           TransQueue.onAbort(() => {
-            onAbort.forEach(doc => model._$docCacheDelete(doc));
+            onAbort.forEach((doc) => model._$docCacheDelete(doc));
           });
           const where = {_id: ''};
-          this.forEach(doc => {
+          await this.forEach(async (doc) => {
             let fields;
             ++count;
             const attrs = doc.attributes;
@@ -248,25 +251,27 @@ define((require)=>{
 
             const params = Changes.topLevelChanges(attrs, origChanges);
             if (util.isObjEmpty(params)) return 0;
-            docs.update({_id: doc._id}, params);
+            await docs.update({_id: doc._id}, params);
             const undo = Changes.applyAll(attrs, origChanges);
 
             if (! util.isObjEmpty(undo)) {
               onAbort.push(doc);
               model._$docCacheSet(doc);
               const dc = DocChange.change(doc, undo);
-              Model._support.callAfterLocalChange(dc);
+              await Model._support.callAfterLocalChange(dc);
               onSuccess.push(dc);
             }
           });
-          TransQueue.onSuccess(() => {
-            onSuccess.forEach(notify);
+          await TransQueue.onSuccess(async () => {
+            for (const change of onSuccess) {
+              await notify(change);
+            }
           });
         });
         return count;
       },
 
-      fetchOne() {
+      async fetchOne() {
         let rec;
         const hasFields = this._fields !== void 0;
         if (this._sort && ! this.singleId) {
@@ -275,38 +280,39 @@ define((require)=>{
           if (hasFields) options.fields = this._fields;
           let cursor = this.model.docs.find(this, options);
           try {
-            rec = cursor.next();
+            rec = await cursor.next();
           } finally {
-            cursor.close();
+            await cursor.close();
           }
         } else {
-          rec = this.model.docs.findOne(this, this._fields);
+          rec = await this.model.docs.findOne(this, this._fields);
         }
         if (rec === void 0) return;
         return hasFields ? rec : this.model[makeDoc$](rec);
       },
     });
 
-    Query.prototype[Symbol.iterator] = function *() {
-        const hasFields = this._fields !== void 0;
+    Query.prototype[Symbol.asyncIterator] = async function *() {
       if (this.singleId) {
-        const doc = this.fetchOne();
+        const doc = await this.fetchOne();
         doc && (yield doc);
       } else {
+        const hasFields = this._fields !== void 0;
         const {model} = this;
         const options = {};
         if (hasFields) options.fields = this._fields;
         const cursor = model.docs.find(this, options);
         try {
           applyCursorOptions(this, cursor);
-          for (let rec = cursor.next(); rec; rec = cursor.next()) {
-            if ((yield hasFields ? rec : model[makeDoc$](rec)) === true)
+          for (let rec = await cursor.next(); rec !== void 0; rec = await cursor.next()) {
+            if (await (yield (hasFields ? rec : model[makeDoc$](rec))) === true) {
               break;
+            }
           }
         } finally {
-          cursor.close();
+          await cursor.close();
         }
       }
-    };
+    }
   };
 });

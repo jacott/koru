@@ -14,9 +14,9 @@ define((require, exports, module) => {
     session.provide('L', (data) => {
       koru.logger('L', data);
     });
-    session.provide('E', (data) => {
+    session.provide('E', async (data) => {
       if (koru.clientErrorConvert !== undefined) {
-        data = koru.clientErrorConvert(data);
+        data = await koru.clientErrorConvert(data);
       }
       koru.logger('E', data);
     });

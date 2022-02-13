@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const session         = require('koru/session');
   const message         = require('koru/session/message');
@@ -24,15 +24,17 @@ define((require, exports, module)=>{
     }
 
     findCall(type, exp, cb) {
-      if (this.sendEncoded.callCount == 0)
+      if (this.sendEncoded.callCount == 0) {
         return false;
+      }
       for (const call of this.sendEncoded.calls) {
         const msgs = this.decodeMessage(call.args[0]);
         for (const msg of msgs) {
-          if (msg[0] === type && util.deepEqual(msg[1], exp))
+          if (msg[0] === type && util.deepEqual(msg[1], exp)) {
             return true;
+          }
         }
-        cb && cb(msgs.map(msg =>util.inspect(msg)).join("\n   ") || ' none');
+        cb && cb(msgs.map((msg) => util.inspect(msg)).join('\n   ') || ' none');
       }
       return false;
     }
@@ -40,28 +42,30 @@ define((require, exports, module)=>{
     assertAdded(doc) {
       const ans = [doc.constructor.modelName, doc.attributes];
       let msg;
-      if (! this.findCall("A", ans, r =>{msg = r}))
-        assert.fail("Expected " + util.inspect(ans) + " to be added. Found:\n   " +msg, 1);
+      if (! this.findCall('A', ans, (r) => {msg = r})) {
+        assert.fail('Expected ' + util.inspect(ans) + ' to be added. Found:\n   ' + msg, 1);
+      }
     }
 
     refuteAdded(doc) {
       const ans = [doc.constructor.modelName, doc.attributes];
-      this.findCall("A", ans) && assert.fail(
-        "Did not expect "+util.inspect(ans) + " to be added", 1);
+      this.findCall('A', ans) && assert.fail(
+        'Did not expect ' + util.inspect(ans) + ' to be added', 1);
     }
 
     assertChange({doc, changes}) {
       const ans = [doc.constructor.modelName, doc._id, changes];
       let msg;
-      if (!this.findCall("C", ans, r =>{msg = r}))
+      if (! this.findCall('C', ans, (r) => {msg = r})) {
         assert.fail(
-          "Expected " + util.inspect(ans) + " to be changed. Found:\n   " +msg, 1);
+          'Expected ' + util.inspect(ans) + ' to be changed. Found:\n   ' + msg, 1);
+      }
     }
 
     refuteChange({doc, changes}) {
       const ans = [doc.constructor.modelName, doc._id, changes];
-      this.findCall("C", ans) && assert.fail(
-        "Did not expect "+util.inspect(ans) + " to be changed", 1);
+      this.findCall('C', ans) && assert.fail(
+        'Did not expect ' + util.inspect(ans) + ' to be changed', 1);
     }
   }
 

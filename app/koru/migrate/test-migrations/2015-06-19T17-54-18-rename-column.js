@@ -1,18 +1,18 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.reversible({
-    add(client) {
-      client.query('ALTER TABLE "TestTable" RENAME COLUMN bar TO bazt');
+    async add(client) {
+      await client.query('ALTER TABLE "TestTable" RENAME COLUMN bar TO bazt');
     },
-    revert(client) {
-      client.query('ALTER TABLE "TestTable" RENAME COLUMN bazt TO bar');
-    }
+    async revert(client) {
+      await client.query('ALTER TABLE "TestTable" RENAME COLUMN bazt TO bar');
+    },
   });
   mig.reversible({
-    add(client) {
-      client.query('ALTER TABLE "TestTable" RENAME COLUMN bazt TO baz');
+    async add(client) {
+      await client.query('ALTER TABLE "TestTable" RENAME COLUMN bazt TO baz');
     },
-    revert(client) {
-      client.query('ALTER TABLE "TestTable" RENAME COLUMN baz TO bazt');
-    }
+    async revert(client) {
+      await client.query('ALTER TABLE "TestTable" RENAME COLUMN baz TO bazt');
+    },
   });
 });

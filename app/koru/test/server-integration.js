@@ -1,5 +1,6 @@
 define((require) => {
   'use strict';
+  const Future          = require('koru/future');
   const util            = require('koru/util');
   const BaseTH          = require('./main');
   const session         = require('../session/main');
@@ -10,7 +11,7 @@ define((require) => {
 
   session.provide('i', (data) => {
     clientMessage = data;
-    cmFuture && cmFuture.return('');
+    cmFuture?.resolve('');
   });
 
   return {
@@ -26,10 +27,10 @@ define((require) => {
       }
       assert(v.conn, 'should start client first');
       v.script = {
-        wait(when, func) {
+        async wait(when, func) {
           if (! clientMessage) {
-            cmFuture = new util.Future();
-            cmFuture.wait();
+            cmFuture = new Future();
+            await cmFuture.promise;
           }
           const cm = clientMessage;
           clientMessage = null;
@@ -40,7 +41,7 @@ define((require) => {
           }
 
           if (func) {
-            const response = func.apply(this, cm[1]);
+            const response = await func.apply(this, cm[1]);
 
             v.conn.sendBinary('i', [when, response]);
           }

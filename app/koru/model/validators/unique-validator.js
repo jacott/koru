@@ -1,18 +1,19 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const util  = require('koru/util');
+  const util            = require('koru/util');
 
-  const insertData = (doc, scope)=>{
+  const insertData = (doc, scope) => {
     for (let arg in scope) {
       const value = scope[arg];
-      if (typeof value === 'string')
+      if (typeof value === 'string') {
         scope[arg] = doc[value];
-      else
+      } else {
         insertData(doc, value);
+      }
     }
   };
 
-  return {unique(doc,field, options={}) {
+  return {unique(doc, field, options={}) {
     const val = doc[field];
     const query = doc.constructor.query;
     query.where(field, val);
@@ -23,9 +24,9 @@ define((require)=>{
       case 'string': query.where(scope, doc[scope]); break;
       case 'function': scope(query, doc, field, options); break;
       case 'object':
-        if (Array.isArray(scope))
-          scope.forEach(f => query.where(f, doc[f]));
-        else {
+        if (Array.isArray(scope)) {
+          scope.forEach((f) => query.where(f, doc[f]));
+        } else {
           const copy = util.deepCopy(scope);
           insertData(doc, copy);
           Object.assign(query._wheres, copy);
@@ -36,7 +37,14 @@ define((require)=>{
 
     if (! doc.$isNewRecord()) query.whereNot('_id', doc._id);
 
-    if (query.count(1) !== 0)
-      this.addError(doc,field,'not_unique');
+    const p = query.count(1);
+
+    if (p instanceof Promise) {
+      return p.then((c) => {
+        if (c !== 0) this.addError(doc, field, 'not_unique');
+      });
+    }
+
+    if (p !== 0) this.addError(doc, field, 'not_unique');
   }};
 });

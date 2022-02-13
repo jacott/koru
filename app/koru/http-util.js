@@ -1,10 +1,12 @@
 define((require) => {
   'use strict';
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const util            = require('koru/util');
-  const stream          = requirejs.nodeRequire('stream');
-  const zlib            = requirejs.nodeRequire('zlib');
-  const HttpError       = requirejs.nodeRequire('../lib/http-error');
+
+  const stream = requirejs.nodeRequire('stream');
+  const zlib = requirejs.nodeRequire('zlib');
+  const HttpError = requirejs.nodeRequire('../lib/http-error');
 
   const DAY24 = 24 * util.DAY;
 
@@ -22,22 +24,23 @@ define((require) => {
       if (config.variance == null) config.variance = 10*1000;
       const wrapper = () => {
         config.timer = 0;
-        try {
-          const ans = func();
-        } catch (ex) {
-          if (config.isRetry === undefined ? ex.statusCode >= 500 : config.isRetry(ex)) {
+        let p = Promise.resolve().then(async () => {
+          const ans = config?.onSuccess(await func());
+          if (ans instanceof Promise) await ans;
+        }).catch((err) => {
+          if (config.isRetry === undefined ? err.statusCode >= 500 : config.isRetry(err)) {
             config.timer = koru.setTimeout(
               wrapper,
               Math.min(
                 config.maxDelay,
                 (2 ** config.retryCount++) * config.minDelay + Math.floor(Math.random() * config.variance)),
             );
-          } else if (config.onFailure === undefined) {
-            throw ex;
+          } else if (config.onFailure === void 0) {
+            koru.unhandledException(err);
           } else {
-            config.onFailure(ex);
+            config.onFailure(err);
           }
-        }
+        }).catch(koru.unhandledException);
       };
       config.timer = koru.setTimeout(wrapper, 0);
     },
@@ -60,12 +63,12 @@ define((require) => {
       }));
     },
 
-    readBody: (req, {
+    readBody: async (req, {
       encoding='utf8',
       limit,
       asJson=/\bjson\b/.test(req.headers['content-type']),
     }={}) => {
-      const future = new util.Future();
+      const future = new Future();
       {
         let string = '';
         const output = HttpUtil.pipeBody(req, {limit});
@@ -75,19 +78,19 @@ define((require) => {
         });
         output.on('error', (err) => {
           if (err instanceof koru.Error) {
-            future.throw([err.error, err.reason]);
+            future.reject([err.error, err.reason]);
           } else {
-            future.throw([400, err + ' ' + util.inspect({code: err.code, errno: err.errno})]);
+            future.reject([400, err + ' ' + util.inspect({code: err.code, errno: err.errno})]);
           }
         });
         output.on('end', (data) => {
-          future.return(string);
+          future.resolve(string);
         });
       }
       let data;
       let body;
       try {
-        body = future.wait() || '{}';
+        body = (await future.promise) || '{}';
       } catch (ex) {
         throw new koru.Error(...ex);
       }

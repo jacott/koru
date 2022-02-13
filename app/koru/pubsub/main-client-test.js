@@ -1,26 +1,26 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Subscription    = require('koru/pubsub/subscription');
   const SubscriptionSession = require('koru/pubsub/subscription-session');
   const Session         = require('koru/session');
   const api             = require('koru/test/api');
 
-  return ({TH, module}) =>{
+  return ({TH, module}) => {
     const {stub, spy, util} = TH;
 
-    TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-      before(()=>{
+    TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+      before(() => {
         api.module({pseudoModule: 'Overview'});
       });
 
-      after(()=>{
+      after(() => {
         SubscriptionSession.unload(Session);
       });
 
-      test("client-subscription", ()=>{
+      test('client-subscription', () => {
         api.topic();
 
-        const lookupLastSubscribed = (sub)=>{
+        const lookupLastSubscribed = (sub) => {
           return new Date(2019, 0, 1, 20, 22, 34);
         };
 
@@ -32,7 +32,7 @@ define((require)=>{
           constructor(args) {
             super(args);
             const {shelf} = this.args;
-            this.match(Book, doc => doc.shelf === self);
+            this.match(Book, (doc) => doc.shelf === self);
           }
           async connect() {
             // step 2 from below calls this
@@ -46,12 +46,12 @@ define((require)=>{
             Book.query.forEach(Subscription.markForRemove);
           }
         }
-        LibrarySub.pubName = "Library";
+        LibrarySub.pubName = 'Library';
         //]
 
         //[
         // Step 2 - subscribe
-        const sub = LibrarySub.subscribe({shelf: 'mathematics'}, error =>{
+        const sub = LibrarySub.subscribe({shelf: 'mathematics'}, (error) => {
           // Step 4 - server has sent responses
           if (error) {
             // handle error
@@ -63,7 +63,7 @@ define((require)=>{
 
         //[
         // Listening for book changes
-        const bookHandle = Book.onChange(dc => {
+        const bookHandle = Book.onChange((dc) => {
           // Step 6 - receive book change
           if (dc.doc.name === "Euclid's Elements") {
             dc.doc.readBook();

@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * The publish subscribe systems allows clients to be informed of changes on the server.  The
@@ -38,7 +38,7 @@ define((require, exports, module)=>{
 
    * 1. {#../union} can be used to combine subscriptions to reduce traffic.
    **/
-  const TH = require('koru/test-helper');
+  const TH              = require('koru/test-helper');
 
   require('koru/env!./main-test')({TH, module});
 });

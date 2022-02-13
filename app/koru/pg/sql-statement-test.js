@@ -1,19 +1,19 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * A SQL statement with embedded parameters pre compiled to improve efficiency. Not to be confused
    * with an SQL prepared statement; this is a client side optimization only.
    **/
   const Driver          = require('koru/pg/driver');
-  const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, util} = TH;
 
   const SQLStatement = require('./sql-statement');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("constructor", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('constructor', async () => {
       /**
        * Compile a SQLStatement.
 
@@ -26,13 +26,13 @@ isServer && define((require, exports, module)=>{
       const statment = new SQLStatement(
         `SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`);
 
-      assert.equals(Driver.defaultDb.query(statment, {foo: 10, bar: 5})[0], {a: 15, b: '100'});
+      assert.equals((await Driver.defaultDb.query(statment, {foo: 10, bar: 5}))[0], {a: 15, b: '100'});
 
-      assert.equals(Driver.defaultDb.query(new SQLStatement('select 1 as a'))[0], {a: 1});
+      assert.equals((await Driver.defaultDb.query(new SQLStatement('select 1 as a')))[0], {a: 1});
       //]
     });
 
-    test("convertArgs", ()=>{
+    test('convertArgs', () => {
       /**
        * Convert key-value param to a corresponding paramter array for this statement. If an
        * `initial` parameter is supplied then parameters will be appended to that array. This
@@ -70,7 +70,7 @@ isServer && define((require, exports, module)=>{
       assert.equals(s2.text, 'SELECT $1 || $1 || $2 || $2');
     });
 
-    test("clone", ()=>{
+    test('clone', () => {
       /**
        * Clone this SQLStatement.
        **/
@@ -84,7 +84,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("append", ()=>{
+    test('append', () => {
       /**
        * Append an SQLStatement to this SQLStatement. Converts this statement.
 
@@ -106,14 +106,14 @@ isServer && define((require, exports, module)=>{
         const s2 = new SQLStatement('{$bar}');
         assert.same(s1.append(s2).append(s2), s1);
 
-        s2.convertArgs({foo: 1, bar: 2}, [1,2,3]);
+        s2.convertArgs({foo: 1, bar: 2}, [1, 2, 3]);
 
         assert.equals(s2.append(s1).text, '$1SELECT $2$1$1');
         assert.equals(s1.text, 'SELECT $1$2$2');
       }
     });
 
-    test("appendText", ()=>{
+    test('appendText', () => {
       /**
        * Append text to this SQLStatement. Converts this statement.
 

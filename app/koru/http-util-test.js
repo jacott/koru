@@ -1,12 +1,14 @@
 isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
-  const zlib            = requirejs.nodeRequire('zlib');
 
-  const {stub, spy, intercept, match} = TH;
+  const zlib = requirejs.nodeRequire('zlib');
+
+  const {stub, spy, intercept, match: m} = TH;
 
   const sut = require('./http-util');
 
@@ -44,29 +46,38 @@ isServer && define((require, exports, module) => {
         stub(koru, 'clearTimeout');
       });
 
-      test('success', () => {
+      test('success', async () => {
+        const future = new Future();
         const config = {onSuccess: stub(), onFailure: stub()};
         sut.expBackoff(() => {
+          future.resolve();
           return {statusCode: 200};
         }, config);
 
         refute.called(config.onSuccess);
 
-        assert.calledWith(koru.setTimeout, match.func, 0);
+        assert.calledWith(koru.setTimeout, m.func, 0);
         assert.equals(config.timer, 101);
         assert.equals(config.retryCount, 0);
 
         koru.setTimeout.yieldAndReset();
+        await future.promise;
+        await 1;
 
         refute.called(config.onFailure);
 
         refute.called(koru.setTimeout);
         refute.called(koru.clearTimeout);
+
+        assert.called(config.onSuccess);
       });
 
-      test('failure', () => {
+      test('failure', async () => {
         let error;
-        const config = {onSuccess: stub(), onFailure: stub()};
+        const future = new Future();
+        const config = {onSuccess: stub(), onFailure: stub((err) => {
+          future.resolve(err);
+        })};
         sut.expBackoff(() => {
           throw error = new sut.HttpError({statusCode: 400});
         }, config);
@@ -74,6 +85,7 @@ isServer && define((require, exports, module) => {
         refute.called(config.onFailure);
 
         koru.setTimeout.yieldAndReset();
+        await future.promise;
 
         assert.calledWith(config.onFailure, error);
         refute.called(config.onSuccess);
@@ -82,7 +94,7 @@ isServer && define((require, exports, module) => {
         refute.called(koru.clearTimeout);
       });
 
-      test('retry', () => {
+      test('retry', async () => {
         let error;
         const config = {onSuccess: stub(), onFailure: stub()};
         sut.expBackoff(() => {
@@ -93,11 +105,12 @@ isServer && define((require, exports, module) => {
         assert.same(config.timer, 101);
 
         koru.setTimeout.yieldAndReset();
+        for (let i = 0; i < 4; ++i) await 1;
 
         refute.called(config.onFailure);
         refute.called(config.onSuccess);
 
-        assert.calledWith(koru.setTimeout, match.func, match.between(30*1000, 40*1000));
+        assert.calledWith(koru.setTimeout, m.func, m.between(30*1000, 40*1000));
         assert.same(config.timer, 102);
         assert.same(config.retryCount, 1);
 
@@ -106,28 +119,36 @@ isServer && define((require, exports, module) => {
         let exResult, configResult;
         config.isRetry = function (ex) {exResult = ex; configResult = this; return true}
         koru.setTimeout.yieldAndReset();
+        for (let i = 0; i < 4; ++i) await 1;
 
         assert.equals(configResult, config);
         assert.equals(exResult.statusCode, 500);
 
-        assert.calledWith(koru.setTimeout, match.func, match.between(3840*1000, (3840+10) * 1000));
+        assert.calledWith(koru.setTimeout, m.func, m.between(3840*1000, (3840+10) * 1000));
+
         koru.setTimeout.yieldAndReset();
-        assert.calledWith(koru.setTimeout, match.func, match.between(90*60*1000, (90*60 + 10) * 1000));
+        for (let i = 0; i < 4; ++i) await 1;
+
+        assert.calledWith(koru.setTimeout, m.func, m.between(90*60*1000, (90*60 + 10) * 1000));
+
         koru.setTimeout.yieldAndReset();
-        assert.calledWith(koru.setTimeout, match.func, match.between(90*60*1000, (90*60 + 10) * 1000));
+        for (let i = 0; i < 4; ++i) await 1;
+
+        assert.calledWith(koru.setTimeout, m.func, m.between(90*60*1000, (90*60 + 10) * 1000));
 
         config.isRetry = () => false;
         koru.setTimeout.yieldAndReset();
+        for (let i = 0; i < 4; ++i) await 1;
 
         refute.called(koru.setTimeout);
       });
     });
 
     group('body', () => {
-      test('getBody json', () => {
+      test('readBody json', async () => {
         const rawBody = {myBody: 'json🐧'}; // 🐧 to test default encoding
 
-        assert.equals(sut.readBody(new HttpHelper.RequestStub({
+        assert.equals(await sut.readBody(new HttpHelper.RequestStub({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
           method: 'GET',
           headers: {
@@ -135,7 +156,7 @@ isServer && define((require, exports, module) => {
           },
         }, rawBody)), rawBody);
 
-        assert.equals(sut.readBody(new HttpHelper.RequestStub({
+        assert.equals(await sut.readBody(new HttpHelper.RequestStub({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
           method: 'GET',
           headers: {
@@ -143,7 +164,7 @@ isServer && define((require, exports, module) => {
           },
         }, rawBody), {asJson: true}), rawBody);
 
-        refute.equals(sut.readBody(new HttpHelper.RequestStub({
+        refute.equals(await sut.readBody(new HttpHelper.RequestStub({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
           method: 'GET',
           headers: {
@@ -151,7 +172,7 @@ isServer && define((require, exports, module) => {
           },
         }, rawBody), {encoding: 'binary'}), rawBody);
 
-        assert.equals(sut.readBody(new HttpHelper.RequestStub({
+        assert.equals(await sut.readBody(new HttpHelper.RequestStub({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
           method: 'GET',
           headers: {
@@ -159,29 +180,34 @@ isServer && define((require, exports, module) => {
           },
         }, rawBody)), JSON.stringify(rawBody));
 
-        assert.exception(() => {
-          sut.readBody(new HttpHelper.RequestStub({
+        try {
+          await sut.readBody(new HttpHelper.RequestStub({
             url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
             method: 'GET',
             headers: {
               'content-type': 'application/json;charset=UTF-8',
             },
           }, 'junk'));
-        }, {error: 400, reason: 'request body must be valid JSON'});
+          assert.fail('expect throw');
+        } catch (err) {
+          assert.exception(err, {error: 400, reason: 'request body must be valid JSON'});
+        }
       });
 
-      test('getBody limit', () => {
+      test('readBody limit', async () => {
         const rawBody = {myBody: 'json'};
 
-        assert.exception(() => {
-          sut.readBody(new HttpHelper.RequestStub({
+        try {
+          await sut.readBody(new HttpHelper.RequestStub({
             url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
             method: 'GET',
             headers: {
               'content-type': 'application/json;charset=UTF-8',
             },
           }, rawBody), {limit: 4});
-        }, {error: 413, reason: 'request body too large'});
+        } catch (err) {
+          assert.exception(err, {error: 413, reason: 'request body too large'});
+        }
       });
 
       class MyReq extends HttpHelper.RequestStub {
@@ -196,7 +222,7 @@ isServer && define((require, exports, module) => {
         }
       }
 
-      test('gzip', () => {
+      test('gzip', async () => {
         const exp = {myBody: 'json'};
         const req = new MyReq({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
@@ -206,7 +232,7 @@ isServer && define((require, exports, module) => {
             'content-encoding': 'gzip',
           },
         }, zlib.gzipSync(JSON.stringify(exp)));
-        assert.equals(sut.readBody(req), exp);
+        assert.equals(await sut.readBody(req), exp);
       });
     });
 

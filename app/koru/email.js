@@ -1,16 +1,17 @@
 define((require) => {
   'use strict';
-  const util            = require('koru/util');
+  const Future          = require('koru/future');
+
   const NodeMailer      = requirejs.nodeRequire('nodemailer');
   const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
   const urlModule       = requirejs.nodeRequire('url');
 
   const Email = {
     send(options) {
-      const future = new util.Future();
-      Email._transport.sendMail(options, future.resolver());
+      const future = new Future();
+      Email._transport.sendMail(options, future.resolve);
 
-      future.wait();
+      return future.promise;
     },
 
     initPool(urlOrTransport) {

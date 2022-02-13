@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * BaseController provides the default actions for page requests. Action controllers extend
@@ -8,6 +8,7 @@ define((require, exports, module)=>{
    * constructor when the user requests a page associated with the controller.
    *
    **/
+  const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const Template        = require('koru/dom/template');
   const HttpHelper      = require('koru/http-helper');
@@ -21,15 +22,15 @@ define((require, exports, module)=>{
 
   class Book {}
 
-  const genericApp = ()=>{
+  const genericApp = () => {
     return {defaultLayout: {$render({content}) {
       return Dom.h({body: content});
     }}};
   };
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     let v = {};
-    beforeEach(()=>{
+    beforeEach(() => {
       v.opts = {
         request: new HttpHelper.RequestStub({method: 'GET'}),
         response: {
@@ -43,15 +44,15 @@ define((require, exports, module)=>{
       stubProperty(BaseController, 'App', {get: genericApp});
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("defaultETag", ()=>{
+    test('defaultETag', () => {
       assert.match(BaseController.defaultETag, /^h[0-9]+$/);
     });
 
-    test("json body", ()=>{
+    test('json getBody', async () => {
       /**
        * The body of the request. If the content type is: `application/json` or
        * `application/x-www-form-urlencoded` then the body is converted to an object map otherwise
@@ -66,51 +67,51 @@ define((require, exports, module)=>{
       class MyController extends BaseController {
         $parser() {}
       }
-      const ctl = new MyController(v.opts);
+      const ctl = await MyController.build(v.opts);
 
-      const ans = ctl.body;
+      const ans = await ctl.getBody();
 
       assert.equals(ans, {sample: 'json'});
-      assert.same(ans, ctl.body);
+      assert.same(ans, await ctl.getBody());
     });
 
-    test("form body", ()=>{
+    test('form body', async () => {
       api.protoProperty('body');
       const {request} = v.opts;
-      request._setBody("a%20%2Bb=q%5Ba%5D&foo=bar");
+      request._setBody('a%20%2Bb=q%5Ba%5D&foo=bar');
 
       request.headers['content-type'] = 'application/x-www-form-urlencoded';
 
       class MyController extends BaseController {
         $parser() {}
       }
-      const ctl = new MyController(v.opts);
+      const ctl = await MyController.build(v.opts);
 
-      const ans = ctl.body;
+      const ans = await ctl.getBody();
 
       assert.equals(ans, {'a +b': 'q[a]', foo: 'bar'});
-      assert.same(ans, ctl.body);
+      assert.same(ans, await ctl.getBody());
     });
 
-    test("other body", ()=>{
+    test('other body', async () => {
       api.protoProperty('body');
       const {request} = v.opts;
-      request._setBody(v.exp = "a%20%2Bb=q%5Ba%5D&foo=bar");
+      request._setBody(v.exp = 'a%20%2Bb=q%5Ba%5D&foo=bar');
 
       request.headers['content-type'] = 'application/data';
 
       class MyController extends BaseController {
         $parser() {}
       }
-      const ctl = new MyController(v.opts);
+      const ctl = await MyController.build(v.opts);
 
-      const ans = ctl.body;
+      const ans = await ctl.getBody();
 
       assert.equals(ans, v.exp);
-      assert.same(ans, ctl.body);
+      assert.same(ans, await ctl.getBody());
     });
 
-    test("redirect", ()=>{
+    test('redirect', async () => {
       /**
        * Send a redirect response to the client.
 
@@ -131,14 +132,13 @@ define((require, exports, module)=>{
         }
       }
 
-      const ctl = new MyController(opts);
-
+      const ctl = await MyController.build(opts);
 
       assert.calledWith(opts.response.writeHead, 302, {Location: '/foo/1234'});
       assert.calledWithExactly(opts.response.end);
     });
 
-    test("error", ()=>{
+    test('error', async () => {
       /**
        * Send an error response to the client;
        *
@@ -155,45 +155,44 @@ define((require, exports, module)=>{
           return 'new';
         }
       }
-      const ctl = new MyController(v.opts);
-
+      const ctl = await MyController.build(v.opts);
 
       refute.called(response.writeHead);
       assert.calledOnceWith(response.end, 'Short and stout');
       assert.equals(response.statusCode, 418);
     });
 
-    test("not modified", ()=>{
+    test('not modified', async () => {
       const {opts} = v;
       opts.view = {$render(ctl) {
         return Dom.h({div: ctl.params.id});
       }};
       opts.pathParts = [];
-      opts.request.headers['if-none-match'] = '  W/"'+BaseController.defaultETag + '"\n\n';
+      opts.request.headers['if-none-match'] = '  W/"' + BaseController.defaultETag + '"\n\n';
 
       class MyController extends BaseController {
       }
-      new MyController(opts);
+      await MyController.build(opts);
 
       assert.same(opts.response.statusCode, 304);
     });
 
-    test("modified", ()=>{
+    test('modified', async () => {
       const {opts} = v;
       opts.view = {$render(ctl) {
         return Dom.h({div: ctl.params.id});
       }};
       opts.pathParts = [];
-      opts.request.headers['if-none-match'] = '  W/"x'+BaseController.defaultETag + '"\n\n';
+      opts.request.headers['if-none-match'] = '  W/"x' + BaseController.defaultETag + '"\n\n';
 
       class MyController extends BaseController {
       }
-      new MyController(opts);
+      await MyController.build(opts);
 
       assert.same(opts.response.statusCode, void 0);
     });
 
-    test("No Content", ()=>{
+    test('No Content', async () => {
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -201,13 +200,13 @@ define((require, exports, module)=>{
         foo() {return null}
       }
 
-      new MyController(v.opts);
+      await MyController.build(v.opts);
 
       assert.same(response.statusCode, 204);
       assert.calledWithExactly(response.end);
     });
 
-    test("html response", ()=>{
+    test('html response', async () => {
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -215,7 +214,7 @@ define((require, exports, module)=>{
         foo() {return Dom.h({html: {body: 'foo'}})}
       }
 
-      new MyController(v.opts);
+      await MyController.build(v.opts);
 
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'text/html; charset=utf-8',
@@ -226,7 +225,7 @@ define((require, exports, module)=>{
       assert.calledWithExactly(response.end, '<html><body>foo</body></html>');
     });
 
-    test("json response", ()=>{
+    test('json response', async () => {
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -234,7 +233,7 @@ define((require, exports, module)=>{
         foo() {return {html: {body: 'foo'}}}
       }
 
-      new MyController(v.opts);
+      await MyController.build(v.opts);
 
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'application/json; charset=utf-8',
@@ -244,7 +243,7 @@ define((require, exports, module)=>{
       assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
     });
 
-    test("unknown method", ()=>{
+    test('unknown method', async () => {
       const {opts} = v;
       opts.request.method = 'FOO';
 
@@ -254,18 +253,18 @@ define((require, exports, module)=>{
         foo() {foo(this)}
       }
 
-      const controller = new MyController(opts);
+      const controller = await MyController.build(opts);
 
       refute.called(foo);
       assert.equals(opts.response.statusCode, 404);
       assert.calledWith(opts.response.end, undefined);
     });
 
-    test("custom method", ()=>{
+    test('custom method', async () => {
       const {opts} = v;
       opts.request.method = 'FOO';
 
-      const foo = stub().invokes(call => {call.args[0].rendered = true});
+      const foo = stub().invokes((call) => {call.args[0].rendered = true});
 
       class MyController extends BaseController {
         $parser() {
@@ -276,22 +275,22 @@ define((require, exports, module)=>{
         foo() {foo(this)}
       }
 
-      const controller = new MyController(opts);
+      const controller = await MyController.build(opts);
 
       assert.calledWith(foo, controller);
     });
 
-    group("CRUD templates", ()=>{
-      beforeEach(()=>{
+    group('CRUD templates', () => {
+      beforeEach(() => {
         const {opts} = v;
-        const tpl = opts.view = {$render: ctl => Dom.h({class: 'index', div: [ctl.method]})};
-        tpl.Show = {$render: ctl => Dom.h({class: 'show', div: [ctl.params.id]})};
-        tpl.New = {$render: ctl => Dom.h({class: 'new', div: ctl.pathParts})};
-        tpl.Edit = {$render: ctl => Dom.h({class: 'edit', div: [ctl.params.id]})};
-        tpl.Create = {$render: ctl => Dom.h({class: 'create', div: [ctl.method]})};
-        tpl.Update = {$render: ctl => Dom.h({class: 'update', div: [ctl.params.id]})};
-        tpl.Destroy = {$render: ctl => Dom.h({class: 'destroy', div: [ctl.params.id]})};
-        v.run = (method, url, action, body)=>{
+        const tpl = opts.view = {$render: (ctl) => Dom.h({class: 'index', div: [ctl.method]})};
+        tpl.Show = {$render: (ctl) => Dom.h({class: 'show', div: [ctl.params.id]})};
+        tpl.New = {$render: (ctl) => Dom.h({class: 'new', div: ctl.pathParts})};
+        tpl.Edit = {$render: (ctl) => Dom.h({class: 'edit', div: [ctl.params.id]})};
+        tpl.Create = {$render: (ctl) => Dom.h({class: 'create', div: [ctl.method]})};
+        tpl.Update = {$render: (ctl) => Dom.h({class: 'update', div: [ctl.params.id]})};
+        tpl.Destroy = {$render: (ctl) => Dom.h({class: 'destroy', div: [ctl.params.id]})};
+        v.run = async (method, url, action, body) => {
           const Foo = class extends BaseController {
           };
 
@@ -299,16 +298,17 @@ define((require, exports, module)=>{
           opts.request.method = method;
 
           method === 'GET' && api.property(action === 'index'
-                                           ? 'view' : 'view.'+util.capitalize(action),
+                                           ? 'view'
+                                           : 'view.' + util.capitalize(action),
                                            {value: Template});
 
-          new Foo(opts);
+          await Foo.build(opts);
 
           assert.calledWith(opts.response.end, `<body><div class="${action}">${body}</div></body>`);
         };
       });
 
-      test("view", ()=>{
+      test('view', async () => {
         /**
          * Templete for index action. All other action templates are children of this template.
          *
@@ -317,9 +317,10 @@ define((require, exports, module)=>{
          * GET /foo
          * ```
          **/
-        v.run('GET', '/foo', 'index', 'GET');
+        await v.run('GET', '/foo', 'index', 'GET');
       });
-      test("new", ()=>{
+
+      test('new', async () => {
         /**
          * Templete for new action.
          *
@@ -328,12 +329,14 @@ define((require, exports, module)=>{
          * GET /foo/new
          * ```
          **/
-        v.run('GET', '/foo/new', 'new', 'new');
+        await v.run('GET', '/foo/new', 'new', 'new');
       });
-      test("create", ()=>{
-        v.run('POST', '/foo/new', 'create', 'POST');
+
+      test('create', async () => {
+        await v.run('POST', '/foo/new', 'create', 'POST');
       });
-      test("show", ()=>{
+
+      test('show', async () => {
         /**
          * Templete for show action.
          *
@@ -342,9 +345,10 @@ define((require, exports, module)=>{
          * GET /foo/:id
          * ```
          **/
-        v.run('GET', '/foo/1234', 'show', '1234');
+        await v.run('GET', '/foo/1234', 'show', '1234');
       });
-      test("edit", ()=>{
+
+      test('edit', async () => {
         /**
          * Templete for edit action.
          *
@@ -353,26 +357,31 @@ define((require, exports, module)=>{
          * GET /foo/:id/edit
          * ```
          **/
-        v.run('GET', '/foo/1234/edit', 'edit', '1234');
+        await v.run('GET', '/foo/1234/edit', 'edit', '1234');
       });
-      test("update;patch", ()=>{
-        v.run('PATCH', '/foo/1234', 'update', '1234');
+
+      test('update;patch', async () => {
+        await v.run('PATCH', '/foo/1234', 'update', '1234');
       });
-      test("update;put", ()=>{
-        v.run('PUT', '/foo/1234', 'update', '1234');
+
+      test('update;put', async () => {
+        await v.run('PUT', '/foo/1234', 'update', '1234');
       });
-      test("destroy", ()=>{
-        v.run('DELETE', '/foo/1234', 'destroy', '1234');
+
+      test('destroy', async () => {
+        await v.run('DELETE', '/foo/1234', 'destroy', '1234');
       });
     });
 
-    group("CRUD actions", ()=>{
-      beforeEach(()=>{
+    group('CRUD actions', () => {
+      beforeEach(() => {
         const {opts} = v;
+
         spy(BaseController.prototype, 'error');
-        v.run = (action, url, method='GET')=>{
+
+        v.run = async (action, url, method='GET') => {
           const Foo = class extends BaseController {
-            [action]() {this.error(418, 'teapot')};
+            [action]() {this.error(418, 'teapot')}
           };
 
           api.customIntercept(Foo.prototype, {
@@ -380,13 +389,13 @@ define((require, exports, module)=>{
 
           opts.pathParts = url.split('/').slice(2);
           opts.request.method = method;
-          new Foo(opts);
+          await Foo.build(opts);
 
           assert.calledWith(opts.response.end, 'teapot');
         };
       });
 
-      test("index", ()=>{
+      test('index', async () => {
         /**
          * Implement this action to control index requests:
          *
@@ -399,9 +408,10 @@ define((require, exports, module)=>{
           }
         }
         //]
-        v.run('index', '/foo');
+        await v.run('index', '/foo');
       });
-      test("new", ()=>{
+
+      test('new', async () => {
         /**
          * Implement this action to control new requests:
          *
@@ -414,9 +424,10 @@ define((require, exports, module)=>{
           }
         }
         //]
-        v.run('new', '/foo/new');
+        await v.run('new', '/foo/new');
       });
-      test("create", ()=>{
+
+      test('create', async () => {
         /**
          * Implement this action to process create requests.
          *
@@ -424,15 +435,16 @@ define((require, exports, module)=>{
          **/
         //[
         class Books extends BaseController {
-          create() {
-            const book = Book.create(this.body);
-            this.redirect('/books/'+book._id);
+          async create() {
+            const book = await Book.create(await this.getBody());
+            this.redirect('/books/' + book._id);
           }
         }
         //]
-        v.run('create', '/foo', 'POST');
+        await v.run('create', '/foo', 'POST');
       });
-      test("show", ()=>{
+
+      test('show', async () => {
         /**
          * Implement this action to control show requests:
          *
@@ -445,9 +457,10 @@ define((require, exports, module)=>{
           }
         }
         //]
-        v.run('show', '/foo/1234');
+        await v.run('show', '/foo/1234');
       });
-      test("edit", ()=>{
+
+      test('edit', async () => {
         /**
          * Implement this action to control show requests:
          *
@@ -460,9 +473,10 @@ define((require, exports, module)=>{
           }
         }
         //]
-        v.run('edit', '/foo/1234/edit');
+        await v.run('edit', '/foo/1234/edit');
       });
-      test("update", ()=>{
+
+      test('update', async () => {
         /**
          * Implement this action to process update requests.
          *
@@ -474,13 +488,14 @@ define((require, exports, module)=>{
             const book = Book.findById(this.params.id);
             book.changes = this.body;
             book.$$save();
-            this.redirect('/books/'+book._id);
+            this.redirect('/books/' + book._id);
           }
         }
         //]
-        v.run('update', '/foo/1234', 'PUT');
+        await v.run('update', '/foo/1234', 'PUT');
       });
-      test("delete", ()=>{
+
+      test('delete', async () => {
         /**
          * Implement this action to process destroy requests.
          *
@@ -495,11 +510,11 @@ define((require, exports, module)=>{
           }
         }
         //]
-        v.run('destroy', '/foo/1234', 'DELETE');
+        await v.run('destroy', '/foo/1234', 'DELETE');
       });
     });
 
-    test("aroundFilter", ()=>{
+    test('aroundFilter', async () => {
       /**
        * An aroundFiler runs "around" an action controller. It is called are the {##$parser} has
        * run. You can control which action is called by changing the the value of `this.action`.
@@ -511,32 +526,32 @@ define((require, exports, module)=>{
       let testDone = false;
       //[
       class Foo extends BaseController {
-        aroundFilter(callback) {
+        async aroundFilter(callback) {
           this.params.userId = 'uid123';
           if (this.action == 'edit' && this.pathParts[0] == '1234') {
             this.action = 'specialEdit';
           }
-          callback();
+          await callback(this);
           testDone = this.rendered;
         }
 
         specialEdit() {
           this.renderHTML(Dom.h({div: this.params.userId}));
         }
-      };
+      }
       //]
 
       api.customIntercept(Foo.prototype, {
         name: 'aroundFilter', sig: '<class extends BaseController>#'});
 
       opts.pathParts = ['1234', 'edit'];
-      new Foo(opts);
+      await Foo.build(opts);
 
       assert.calledWith(opts.response.end, '<div>uid123</div>');
       assert.isTrue(testDone);
     });
 
-    test("override $parser", ()=>{
+    test('override $parser', async () => {
       /**
        * The default request parser. Override this method for full control of the request.
        **/
@@ -550,21 +565,21 @@ define((require, exports, module)=>{
       class Books extends BaseController {
         $parser() {
           if (this.method === 'DELETE' && ! Auth.canDelete(this)) {
-            this.error(403, "You do not have delete access");
+            this.error(403, 'You do not have delete access');
             return;
           }
 
           super.$parser();
         }
-      };
+      }
       //]
 
-      new Books(opts);
+      await Books.build(opts);
 
       assert.calledWith(opts.response.end, 'You do not have delete access');
     });
 
-    test("render", ()=>{
+    test('render', async () => {
       /**
        * Respond to the client with the rendered content wrapped in the specified layoyut.
        *
@@ -583,17 +598,17 @@ define((require, exports, module)=>{
             return Dom.h({html: [{head: {title: 'My First App'}}, {body: content}]});
           }}});
         }
-      };
+      }
       //]
 
-      new HelloController(opts);
+      await HelloController.build(opts);
 
       assert.calledWith(
         opts.response.end,
         '<html><head><title>My First App</title></head><body><div>Hello world</div></body></html>');
     });
 
-    test("renderHTML", ()=>{
+    test('renderHTML', async () => {
       /**
        * Respond to the client with the rendered HTML content.
        *
@@ -604,26 +619,26 @@ define((require, exports, module)=>{
 
       //[
       class HelloController extends BaseController {
-        $parser() {
-          this.renderHTML(Dom.h({div: 'Hello world'}));
+        async $parser() {
+          await this.renderHTML(Dom.h({div: 'Hello world'}));
         }
-      };
+      }
       //]
 
-      new HelloController(opts);
+      await HelloController.build(opts);
 
       assert.calledWith(
         opts.response.end,
         '<div>Hello world</div>');
     });
 
-    test("$parser, render", ()=>{
+    test('$parser, render', async () => {
       const {opts} = v;
       opts.pathParts = ['foo', '123'];
 
       class MyController extends BaseController {
         $parser() {
-          return "foo";
+          return 'foo';
         }
 
         foo() {
@@ -633,7 +648,7 @@ define((require, exports, module)=>{
         }
       }
 
-      const controller = new MyController(opts);
+      const controller = await MyController.build(opts);
 
       assert.same(controller.request, opts.request);
       assert.same(controller.response, opts.response);
@@ -649,33 +664,33 @@ define((require, exports, module)=>{
       assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
     });
 
-    test("Index template", ()=>{
+    test('Index template', async () => {
       const {opts} = v;
       opts.view = {$render(ctl) {
         return Dom.h({div: 'index'});
       }};
 
       class Root extends BaseController {
-      };
+      }
 
-      new Root(opts);
+      await Root.build(opts);
 
       assert.calledWith(opts.response.end, '<body><div>index</div></body>');
     });
 
-    test("DOCTYPE supplied", ()=>{
+    test('DOCTYPE supplied', async () => {
       const {opts} = v;
       opts.pathParts = [];
 
       class MyController extends BaseController {
         index() {
           this.render(Dom.h({body: ['x']}), {layout: {$render({content}) {
-            return {outerHTML: '<!CUSTOM>'+content.outerHTML};
+            return {outerHTML: '<!CUSTOM>' + content.outerHTML};
           }}});
         }
       }
 
-      const controller = new MyController(opts);
+      const controller = await MyController.build(opts);
 
       assert.same(controller.request, opts.request);
       assert.same(controller.response, opts.response);

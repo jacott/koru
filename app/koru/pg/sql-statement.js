@@ -1,8 +1,8 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const cache$ = Symbol();
 
-  const makeText = (parts, posMap, pos)=>{
+  const makeText = (parts, posMap, pos) => {
     let text = '';
     const last = parts.length - 1;
     ++pos;
@@ -12,9 +12,9 @@ define((require)=>{
     return text;
   };
 
-  const setParams = (pos, parts, paramMap, posMap)=>{
-    const last = parts.length-1;
-    for (let i = 1; i < last; i+=2) {
+  const setParams = (pos, parts, paramMap, posMap) => {
+    const last = parts.length - 1;
+    for (let i = 1; i < last; i += 2) {
       const key = parts[i];
       if (posMap[key] === void 0) {
         posMap[key] = pos;
@@ -22,7 +22,6 @@ define((require)=>{
       }
     }
   };
-
 
   class SQLStatement {
     constructor(text='') {
@@ -38,7 +37,7 @@ define((require)=>{
         cache.text = makeText(cache.parts, cache.posMap, cache.pos = initial.length);
       }
       const {paramMap} = cache;
-      for(let i = 0; i < paramMap.length; ++i) {
+      for (let i = 0; i < paramMap.length; ++i) {
         initial.push(params[paramMap[i]]);
       }
       return initial;
@@ -64,7 +63,7 @@ define((require)=>{
 
     append(value) {
       const vcache = value[cache$];
-      if (vcache === void 0) throw new Error("Illegal argument");
+      if (vcache === void 0) throw new Error('Illegal argument');
       if (vcache.parts.length == 0) return this;
       const cache = this[cache$];
       const {parts} = cache;
@@ -80,7 +79,7 @@ define((require)=>{
     appendText(text) {
       const cache = this[cache$];
       const {parts} = cache;
-      parts[parts.length-1] += text;
+      parts[parts.length - 1] += text;
       cache.pos = -1;
       return this;
     }

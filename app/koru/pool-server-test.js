@@ -1,35 +1,29 @@
-isServer && define((require, exports, module) => {
+define((require, exports, module) => {
   'use strict';
+  const Future          = require('koru/future');
   const koru            = require('./main');
   const TH              = require('./test-helper');
   const util            = require('./util');
 
-  const {stub, spy, intercept} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
-  const sut = require('./pool-server');
+  const PoolServer = require('./pool-server');
 
-  let v = {};
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    let create, conn, destroy;
     beforeEach(() => {
-      v.create = (cb) => {
-        cb(null, v.conn);
-      };
-
-      v.destroy = stub();
+      create = (cb) => {cb(null, conn)};
+      destroy = stub();
 
       stub(global, 'setTimeout').returns(123);
       stub(global, 'clearTimeout');
     });
 
-    afterEach(() => {
-      v = {};
-    });
-
-    test('acquire, release', () => {
-      v.conn = [1];
-      const pool = new sut({
-        create: v.create,
-        destroy: v.destroy,
+    test('acquire, release', async () => {
+      conn = [1];
+      const pool = new PoolServer({
+        create,
+        destroy,
         max: 2,
       });
 
@@ -37,55 +31,59 @@ isServer && define((require, exports, module) => {
       try {
         intercept(Date, 'now', () => now);
 
-        const conn1 = pool.acquire();
-        assert.same(conn1, v.conn);
+        const conn1 = await pool.acquire();
+        assert.same(conn1, conn);
 
-        v.conn = [2];
+        conn = [2];
 
         util.thread.date += 10000;
-        const conn2 = pool.acquire();
-        assert.same(conn2, v.conn);
+        const conn2 = await pool.acquire();
+        assert.same(conn2, conn);
 
         pool.release(conn1);
 
         assert.same(pool.acquire(), conn1);
 
-        const future = new util.Future();
-        util.Fiber(() => {
-          future.return(pool.acquire());
-        }).run();
+        const future = new Future();
+        koru.runFiber(() => {
+          future.resolve(pool.acquire());
+        });
 
         pool.release(conn2);
-        assert.same(future.wait(), conn2);
+        assert.same(await future.promise, conn2);
       } finally {
         Date.now.restore();
         util.thread.date = void 0;
       }
     });
 
-    test('destroy', () => {
-      v.conn = [1];
-      const pool = new sut({
-        create: v.create,
-        destroy: v.destroy,
+    test('destroy', async () => {
+      conn = [1];
+      const pool = new PoolServer({
+        create,
+        destroy,
         max: 2,
       });
 
       let now = Date.now();
       try {
         intercept(Date, 'now', () => now);
-        const conn1 = pool.acquire();
-        assert.same(conn1, v.conn);
+        const conn1 = await pool.acquire();
+        assert.same(conn1, conn);
 
-        v.conn = [2];
+        conn = [2];
 
         now += 10000;
-        const conn2 = pool.acquire();
-        assert.same(conn2, v.conn);
+
+        assert.calledOnceWith(global.setTimeout, m.func, 2000);
+        global.setTimeout.reset();
+
+        const conn2 = await pool.acquire();
+        assert.same(conn2, conn);
 
         pool.release(conn1);
 
-        assert.calledOnceWith(global.setTimeout, TH.match.func, 30000);
+        assert.calledOnceWith(global.setTimeout, m.func, 30000);
 
         const tofunc = global.setTimeout.args(0, 0);
         global.setTimeout.reset();
@@ -94,14 +92,14 @@ isServer && define((require, exports, module) => {
 
         tofunc();
 
-        refute.called(v.destroy);
+        refute.called(destroy);
         assert.calledWith(global.setTimeout, tofunc, 10000);
 
         now += 10000;
 
         tofunc();
 
-        assert.calledWith(v.destroy, conn1);
+        assert.calledWith(destroy, conn1);
       } finally {
         Date.now.restore();
       }

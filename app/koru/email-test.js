@@ -22,19 +22,19 @@ isServer && define((require, exports, module) => {
       v = {};
     });
 
-    test('send', () => {
+    test('send', async () => {
       Email._transport = {
         sendMail(options, callback) {
           v.sendOpts = options;
           callback();
         },
       };
-      Email.send(v.options = {from: 'foo@vimaly.com'});
+      await Email.send(v.options = {from: 'foo@vimaly.com'});
 
       assert.same(v.sendOpts, v.options);
     });
 
-    test('initPool to stub', () => {
+    test('initPool to stub', async () => {
       const stub = SmtpStub();
       let logCount = 0;
       stub.on('log', function (info) {
@@ -43,7 +43,7 @@ isServer && define((require, exports, module) => {
       });
 
       Email.initPool(stub);
-      Email.send(v.options = {
+      await Email.send(v.options = {
         from: 'foo@vimaly.com',
         to: 'bar@vimaly.com',
         subject: 'The subject',

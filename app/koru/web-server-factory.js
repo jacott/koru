@@ -1,7 +1,6 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Compilers       = require('koru/compilers');
-  const fst             = require('./fs-tools');
   const IdleCheck       = require('./idle-check').singleton;
   const koru            = require('./main');
   const util            = require('./util');
@@ -9,19 +8,19 @@ define((require, exports, module)=>{
   const parseurl        = requirejs.nodeRequire('parseurl');
   const Path            = requirejs.nodeRequire('path');
 
-  let send      = requirejs.nodeRequire('send');
+  let send = requirejs.nodeRequire('send');
 
   function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
     const koruParent = Path.join(koru.libDir, 'app');
 
     const handlers = {};
 
-    const notFound = res =>{
+    const notFound = (res) => {
       res.statusCode = 404;
       res.end('NOT FOUND');
     };
 
-    const sendError = (res, err, msg='')=>{
+    const sendError = (res, err, msg='') => {
       if (err == null) {
         notFound(res);
       } else {
@@ -46,60 +45,62 @@ define((require, exports, module)=>{
       }
     };
 
-    const compileTemplate = (res, type, path, suffix)=>{
+    const compileTemplate = async (res, type, path, suffix) => {
       if (! Compilers.has(type)) return;
 
       const paths = path.split('.build/');
-      const outPath = path+suffix;
+      const outPath = path + suffix;
       try {
-        return Compilers.compile(type, paths.join(''), outPath);
+        return await Compilers.compile(type, paths.join(''), outPath);
       } catch (err) {
-        if (err.error === 404)
+        if (err.error === 404) {
           notFound(res);
-        else
+        } else {
           sendError(res, err);
+        }
         return true;
       }
     };
 
-    const requestListener = (req, res)=>{
-      koru.runFiber(()=>{
-        const error = (err, msg)=>{sendError(res, err, msg)};
+    const requestListener = (req, res) => {
+      koru.runFiber(async () => {
+        const error = (err, msg) => {sendError(res, err, msg)};
         IdleCheck.inc();
         try {
           let path = parseurl(req).pathname;
           let reqRoot = root;
 
-          if (path === '/')
+          if (path === '/') {
             path = DEFAULT_PAGE;
+          }
 
           let m = /^\/([^/]+)(.*)$/.exec(path);
           if (m !== null) {
             const handler = handlers[m[1]];
             if (handler !== undefined) {
-              handler(req, res, m[2], error, m[1]);
+              await handler(req, res, m[2], error, m[1]);
               return;
             }
             const special = SPECIALS[m[1]];
 
             if (special !== undefined) {
-              const pr = typeof special === 'function' ? special(m) : special;
+              const pr = typeof special === 'function' ? await special(m) : special;
               path = pr[0]; reqRoot = pr[1];
             }
           }
 
           m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
-          if (! (m && compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
+          if (m === null || await compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]) === void 0) {
             if (handlers.DEFAULT === undefined ||
-                handlers.DEFAULT(req, res, path, error) === false) {
+                await handlers.DEFAULT(req, res, path, error) === false) {
               send(req, path, {root: reqRoot, index: false})
                 .on('error', error)
                 .on('directory', error)
                 .pipe(res);
             }
           }
-        } catch(ex) {
+        } catch (ex) {
           error(ex);
         } finally {
           IdleCheck.dec();
@@ -111,7 +112,7 @@ define((require, exports, module)=>{
 
     const webServer = {
       start() {
-        util.Future.wrap(server.listen).call(server, port, host).wait();
+        server.listen(port, host);
       },
 
       stop() {
@@ -139,7 +140,7 @@ define((require, exports, module)=>{
           func = key;
           key = module;
         } else {
-          koru.onunload(module, ()=>{webServer.deregisterHandler(key)});
+          koru.onunload(module, () => {webServer.deregisterHandler(key)});
         }
         if (handlers[key] !== void 0) throw new Error(key + ' already registered as a web-server hander');
         handlers[key] = func;
@@ -155,7 +156,7 @@ define((require, exports, module)=>{
     };
 
     return webServer;
-  };
+  }
 
   return WebServerFactory;
 });

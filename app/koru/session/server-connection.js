@@ -1,40 +1,41 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const IdleCheck       = require('koru/idle-check').singleton;
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const message         = require('koru/session/message');
   const util            = require('koru/util');
 
-  const crypto          = requirejs.nodeRequire('crypto');
+  const crypto = requirejs.nodeRequire('crypto');
 
   const onClose$ = Symbol(), batch$ = Symbol(), userId$ = Symbol();
 
   const BINARY = {binary: true};
 
-  const filterAttrs = (attrs, filter)=>{
+  const filterAttrs = (attrs, filter) => {
     if (filter === void 0) return attrs;
 
     const result = {};
 
-    for(const key in attrs) {
+    for (const key in attrs) {
       if (filter[key] === void 0) result[key] = attrs[key];
     }
     return result;
   };
 
-  const startBatch = (conn, map, thread)=>{
+  const startBatch = (conn, map, thread) => {
     const {push, encode} = message.openEncoder('W', conn._session.globalDict);
 
     map.set(thread, push);
 
-    const finish = ()=>{
+    const finish = () => {
       map.delete(thread);
       if (map.size == 0) conn[batch$] = null;
     };
 
-    TransQueue.onSuccess(()=>{
+    TransQueue.onSuccess(() => {
       finish();
       conn.sendEncoded(encode());
     });
@@ -55,9 +56,8 @@ define((require, exports, module)=>{
         const subs = this._subs;
         this._subs = null;
         this.ws = null;
-        for(const key in subs) {
-          try {subs[key].stop();}
-          catch(ex) {koru.unhandledException(ex);}
+        for (const key in subs) {
+          try {subs[key].stop()} catch (ex) {koru.unhandledException(ex)}
         }
         if (this[onClose$] !== null) {
           this[onClose$].notify(this);
@@ -70,11 +70,11 @@ define((require, exports, module)=>{
       this.sessAuth = null;
       this[batch$] = null;
 
-      ws.on('error', err => koru.fiberConnWrapper(()=>{
+      ws.on('error', (err) => koru.fiberConnWrapper(() => {
         koru.info('web socket error', err);
         this.close();
       }, this));
-      ws.on('close', () => koru.fiberConnWrapper(()=>this.close(), this));
+      ws.on('close', () => koru.fiberConnWrapper(() => this.close(), this));
     }
 
     onClose(func) {
@@ -85,7 +85,7 @@ define((require, exports, module)=>{
     send(type, data) {
       try {
         this.ws === null || this.ws.send(type + (data === void 0 ? '' : data));
-      } catch(ex) {
+      } catch (ex) {
         koru.info('send exception', ex);
         this.close();
       }
@@ -95,8 +95,8 @@ define((require, exports, module)=>{
       if (this.ws === null) return;
       try {
         this.ws.send(msg, BINARY);
-      } catch(ex) {
-        koru.info('Websocket exception for connection: '+this.sessId, ex);
+      } catch (ex) {
+        koru.info('Websocket exception for connection: ' + this.sessId, ex);
         this.close();
       }
     }
@@ -110,8 +110,9 @@ define((require, exports, module)=>{
     }
 
     batchMessage(type, data) {
-      if (! TransQueue.isInTransaction())
-        throw new Error("batchMessage called when not in transaction");
+      if (! TransQueue.isInTransaction()) {
+        throw new Error('batchMessage called when not in transaction');
+      }
 
       const map = this[batch$] || (this[batch$] = new Map());
       const {thread} = util;
@@ -120,28 +121,29 @@ define((require, exports, module)=>{
 
     onMessage(data, isBinary) {
       if (! isBinary) data = data.toString();
-      if (data[0] === 'H')
+      if (data[0] === 'H') {
         return void this.send(`K${Date.now()}`);
+      }
 
       if (this._last !== null) {
         this._last = this._last[1] = [data, null];
         return;
       }
 
-      const process = current => {
+      const process = (current) => {
         this._session.execWrapper(() => {
           IdleCheck.inc();
           try {
             this._session._onMessage(this, current[0]);
-          } catch(ex) {
+          } catch (ex) {
             koru.unhandledException(ex);
           } finally {
             IdleCheck.dec();
 
             const nextMsg = current[1];
-            if (nextMsg)
+            if (nextMsg) {
               process(nextMsg);
-            else {
+            } else {
               this._last = null;
             }
           }
@@ -163,18 +165,21 @@ define((require, exports, module)=>{
       this.sendBinary('R', [name, id, flag]);
     }
 
-    set userId(userId) {
+    async setUserId(userId) {
       const oldId = this[userId$];
       if (! userId) userId = this._session.DEFAULT_USER_ID;
       this[userId$] = userId;
       util.thread.userId = userId;
       if (userId !== this._session.DEFAULT_USER_ID) {
-        const future = new util.Future;
+        const future = new Future();
         crypto.randomBytes(36, (err, ans) => {
-          if (err) future.throw(err);
-          else future.return(ans);
+          if (err) {
+            future.reject(err);
+          } else {
+            future.resolve(ans);
+          }
         });
-        this.sessAuth = this.sessId+'|'+future.wait().toString('base64')
+        this.sessAuth = this.sessId + '|' + (await future.promise).toString('base64')
           .replace(/\=+$/, ''); // js2-mode doesn't like /=.../
         this.send('VS', `${userId}:${this.sessAuth}`);
       } else {
@@ -182,21 +187,22 @@ define((require, exports, module)=>{
         this.sessAuth = null;
       }
       const subs = this._subs;
-      for(const key in subs) {
-        subs[key].userIdChanged(userId, oldId);
+      for (const key in subs) {
+        await subs[key].userIdChanged(userId, oldId);
       }
       this.send('VC');
     }
 
     get userId() {return this[userId$]}
+    set userId(v) {throw new Error('use setUserId');}
 
     static buildUpdate(dc) {
       const {doc, model: {modelName}} = dc;
-      if (dc.isAdd)
+      if (dc.isAdd) {
         return ['A', [modelName, doc.attributes]];
-      else if (dc.isDelete)
+      } else if (dc.isDelete) {
         return ['R', [modelName, doc._id, dc.flag]];
-      else  {
+      } else {
         return ['C', [modelName, doc._id, dc.changes]];
       }
     }
@@ -204,7 +210,7 @@ define((require, exports, module)=>{
 
   ServerConnection.filterAttrs = filterAttrs;
 
-  ServerConnection.filterDoc = (doc, filter)=>({
+  ServerConnection.filterDoc = (doc, filter) => ({
     _id: doc._id, constructor: doc.constructor,
     attributes: filterAttrs(doc.attributes, filter)});
 

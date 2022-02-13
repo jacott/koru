@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * ServerConnection is the server side of a client-server webSocket connection.
@@ -15,7 +15,7 @@ isServer && define((require, exports, module)=>{
   const util            = require('koru/util');
   const message         = require('./message');
 
-  const crypto      = requirejs.nodeRequire('crypto');
+  const crypto = requirejs.nodeRequire('crypto');
 
   const {stub, spy, intercept, match: m, stubProperty} = TH;
 
@@ -24,14 +24,14 @@ isServer && define((require, exports, module)=>{
   const ServerConnection = require('./server-connection');
 
   let v = {};
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
     let conn;
-    beforeEach(()=>{
+    beforeEach(() => {
       conn = v.conn = new ServerConnection(session, v.ws = {
         send: stub(), close: stub(), on: stub(),
       }, {}, 123, v.sessClose = stub());
       stub(v.conn, 'sendBinary');
-      intercept(session, 'execWrapper', (func, conn)=>{
+      intercept(session, 'execWrapper', (func, conn) => {
         const thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
@@ -40,12 +40,12 @@ isServer && define((require, exports, module)=>{
       session.globalDict = baseSession.globalDict;
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    group("onMessage", ()=>{
-      beforeEach(()=>{
+    group('onMessage', () => {
+      beforeEach(() => {
         v.tStub = stub();
         session.provide('t', v.tFunc = function (...args) {
           v.tStub.apply(this, args);
@@ -54,25 +54,25 @@ isServer && define((require, exports, module)=>{
         TH.stubProperty(util, 'thread', {get() {return v.thread}});
       });
 
-      afterEach(()=>{
+      afterEach(() => {
         delete session._commands.t;
       });
 
-      test("heartbeat response", ()=>{
+      test('heartbeat response', () => {
         const now = Date.now();
-        intercept(Date, 'now', ()=>now);
+        intercept(Date, 'now', () => now);
 
         v.conn.onMessage('H junk');
 
-        assert.calledWith(v.ws.send, 'K'+now);
+        assert.calledWith(v.ws.send, 'K' + now);
       });
 
-      test("waitIdle", ()=>{
+      test('waitIdle', () => {
         spy(IdleCheck, 'inc');
         spy(IdleCheck, 'dec');
         stub(koru, 'error');
         let success = false, err;
-        stub(session, '_onMessage', conn =>{
+        stub(session, '_onMessage', (conn) => {
           if (! success) {
             try {
               assert.calledOnce(IdleCheck.inc);
@@ -84,23 +84,22 @@ isServer && define((require, exports, module)=>{
             }
             success = true;
           }
-          throw new Error("I can handle this");
+          throw new Error('I can handle this');
         });
         v.conn.onMessage('t123');
         if (err) throw err;
         assert.calledTwice(IdleCheck.inc);
         assert.calledTwice(IdleCheck.dec);
         assert(success);
-
       });
 
-      test("thread vars", ()=>{
-        v.tStub = ()=>{
+      test('thread vars', async () => {
+        v.tStub = () => {
           v.threadUserId = util.thread.userId;
           v.threadConnection = util.thread.connection;
         };
 
-        v.conn.userId = 'tcuid';
+        await v.conn.setUserId('tcuid');
 
         v.conn.onMessage('t123');
 
@@ -108,20 +107,20 @@ isServer && define((require, exports, module)=>{
         assert.same(v.thread.userId, 'tcuid');
       });
 
-      test("queued", ()=>{
+      test('queued', () => {
         v.calls = [];
         let error;
         let token = 'first';
         session.execWrapper.restore();
-        intercept(session, 'execWrapper', (func, conn)=>{
+        intercept(session, 'execWrapper', (func, conn) => {
           v.calls.push(token);
           func(conn);
         });
-        intercept(session, '_onMessage', (conn, data)=>{
+        intercept(session, '_onMessage', (conn, data) => {
           token = 'second';
           try {
             v.calls.push(data);
-            switch(data) {
+            switch (data) {
             case 't123':
               assert.equals(v.conn._last, ['t123', null]);
               v.conn.onMessage('t456');
@@ -132,7 +131,7 @@ isServer && define((require, exports, module)=>{
               assert.equals(v.conn._last, ['t456', null]);
               break;
             }
-          } catch(ex) {
+          } catch (ex) {
             error = error || ex;
           }
         });
@@ -145,25 +144,25 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("sendEncoded", ()=>{
+    test('sendEncoded', () => {
       /**
        * Send a pre encoded binary {#../message} to the client.
        **/
       api.protoMethod();
       //[
-      conn.sendEncoded("myMessage");
+      conn.sendEncoded('myMessage');
       assert.calledWith(conn.ws.send, 'myMessage', {binary: true});
       //]
-      const error = new Error("an error");
+      const error = new Error('an error');
       conn.ws.send.throws(error);
 
       stub(koru, 'info');
-      conn.sendEncoded("got error");
+      conn.sendEncoded('got error');
       assert.same(conn.ws, null);
       assert.calledWith(koru.info, 'Websocket exception for connection: 123', error);
     });
 
-    test("send", ()=>{
+    test('send', () => {
       /**
        * Send a text message to the client.
        *
@@ -178,7 +177,7 @@ isServer && define((require, exports, module)=>{
       //]
 
       stub(koru, 'info');
-      refute.exception(()=>{
+      refute.exception(() => {
         conn.ws.send = stub().throws(v.error = new Error('foo'));
         conn.send('X', 'FOO');
       });
@@ -189,7 +188,7 @@ isServer && define((require, exports, module)=>{
       v.sessClose.reset();
       koru.info.reset();
       conn.ws = null;
-      refute.exception(()=>{
+      refute.exception(() => {
         conn.send('X', 'FOO');
       });
 
@@ -197,7 +196,7 @@ isServer && define((require, exports, module)=>{
       refute.called(koru.info);
     });
 
-    test("sendBinary", ()=>{
+    test('sendBinary', () => {
       /**
        * Send a object to client as a binary message.
 
@@ -209,17 +208,17 @@ isServer && define((require, exports, module)=>{
       const {conn} = v;
       conn.sendBinary.restore();
       //[
-      conn.sendBinary('M', [1,2,3]);
+      conn.sendBinary('M', [1, 2, 3]);
       //]
 
-      assert.calledWith(v.ws.send, m(data =>{
+      assert.calledWith(v.ws.send, m((data) => {
         assert.same(data[0], 'M'.charCodeAt(0));
-        assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3]);
+        assert.equals(message.decodeMessage(data.subarray(1)), [1, 2, 3]);
         return true;
       }, {binary: true, mask: true}));
 
       stub(koru, 'info');
-      refute.exception(()=>{
+      refute.exception(() => {
         conn.ws.send = stub().throws(v.error = new Error('foo'));
         conn.sendBinary('X', ['FOO']);
       });
@@ -228,7 +227,7 @@ isServer && define((require, exports, module)=>{
 
       koru.info.reset();
       conn.ws = null;
-      refute.exception(()=>{
+      refute.exception(() => {
         conn.sendBinary('X', ['FOO']);
       });
 
@@ -239,7 +238,7 @@ isServer && define((require, exports, module)=>{
       assert.calledWith(conn.ws.send, 'OneArg', {binary: true});
     });
 
-    test("batchMessage", ()=>{
+    test('batchMessage', () => {
       /**
        * Batch a binary message and send once current transaction completes successfully. The
        * message is encoded immediately.
@@ -253,22 +252,22 @@ isServer && define((require, exports, module)=>{
       stub(conn, 'sendEncoded');
       let finished = false;
       //[
-      TransQueue.transaction(()=>{
+      TransQueue.transaction(() => {
         conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
         conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
-        koru.runFiber(()=>{
-          TransQueue.transaction(()=>{
+        koru.runFiber(() => {
+          TransQueue.transaction(() => {
             conn.batchMessage('R', ['Bar', {_id: 'bar1'}]);
           });
         });
-        koru.runFiber(()=>{
+        koru.runFiber(() => {
           try {
-            TransQueue.transaction(()=>{
+            TransQueue.transaction(() => {
               conn.batchMessage('R', ['Nat', {_id: 'nat1'}]);
-              throw "abort";
+              throw 'abort';
             });
-          } catch(ex) {
-            if (ex !== "abort") throw ex;//]
+          } catch (ex) {
+            if (ex !== 'abort') throw ex;//]
             finished = true;//[#
           }
         });
@@ -284,29 +283,28 @@ isServer && define((require, exports, module)=>{
 
       conn.sendEncoded.reset();
       try {
-        TransQueue.transaction(()=>{
+        TransQueue.transaction(() => {
           conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
           conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
-          throw "abort";
+          throw 'abort';
         });
-
-      } catch(e) {
-        if (e !== "abort") throw e;
+      } catch (e) {
+        if (e !== 'abort') throw e;
       }
       refute.called(conn.sendEncoded);
 
-      assert.exception(()=>{
+      assert.exception(() => {
         conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
       }, {message: 'batchMessage called when not in transaction'});
     });
 
-    test("when closed sendBinary", ()=>{
+    test('when closed sendBinary', () => {
       conn.ws = null;
       conn.sendBinary.restore();
-      refute.exception(() => conn.sendBinary('M', [1,2,3]));
+      refute.exception(() => conn.sendBinary('M', [1, 2, 3]));
     });
 
-    test("set userId and DEFAULT_USER_ID", ()=>{
+    test('set userId and DEFAULT_USER_ID', async () => {
       stubProperty(session, 'DEFAULT_USER_ID', {value: 'public'});
       const conn = new ServerConnection(session, v.ws, {}, 888, v.sessClose = stub());
       stub(crypto, 'randomBytes').yields(null, {
@@ -315,7 +313,7 @@ isServer && define((require, exports, module)=>{
       const sendUidCompleted = v.ws.send.withArgs('VC');
       conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
 
-      conn.userId = 'u456';
+      await conn.setUserId('u456');
 
       assert.same(util.thread.userId, 'u456');
       assert.same(conn.userId, 'u456');
@@ -330,13 +328,13 @@ isServer && define((require, exports, module)=>{
       assert(sendUid.calledBefore(v.s1));
       assert(sendUidCompleted.calledAfter(v.s2));
 
-      conn.userId = null;
+      await conn.setUserId(null);
 
       assert.same(util.thread.userId, 'public');
       assert.calledWith(v.s1, 'public', 'u456');
     });
 
-    test("filterDoc", ()=>{
+    test('filterDoc', () => {
       /**
        * Filter out attributes from a doc. The filtered attributes are shallow copied.
        *
@@ -351,19 +349,19 @@ isServer && define((require, exports, module)=>{
       //[
       const doc = {
         _id: 'book1', constructor: {modelName: 'Book'}, other: 123,
-        attributes: {name: 'The little yellow digger', wholesalePrice: 1095}
+        attributes: {name: 'The little yellow digger', wholesalePrice: 1095},
       };
 
       const filteredDoc = ServerConnection.filterDoc(doc, {wholesalePrice: true});
       assert.equals(filteredDoc, {
         _id: 'book1',
         constructor: {modelName: 'Book'},
-        attributes: {name: 'The little yellow digger'}
+        attributes: {name: 'The little yellow digger'},
       });
       //]
     });
 
-    test("buildUpdate", ()=>{
+    test('buildUpdate', async () => {
       /**
        * BuildUpdate converts a {#koru/model/doc-change} object into a update command to send to
        * clients.
@@ -381,13 +379,13 @@ isServer && define((require, exports, module)=>{
       api.method();
       const db = new MockDB(['Book']);
       const {Book} = db.models;
-      const book1 = Book.create();
+      const book1 = await Book.create();
 
       //[
       assert.equals(ServerConnection.buildUpdate(DocChange.add(book1)),
                     ['A', ['Book', {_id: 'book1', name: 'Book 1'}]]);
       //]
-      book1.attributes.name = "new name";//[#
+      book1.attributes.name = 'new name';//[#
       assert.equals(ServerConnection.buildUpdate(DocChange.change(book1, {name: 'old name'})),
                     ['C', ['Book', 'book1', {name: 'new name'}]]);
 
@@ -399,7 +397,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("added", ()=>{
+    test('added', () => {
       /**
        * Send a document added message to client with an optional attribute remove filter
        */
@@ -416,7 +414,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("changed", ()=>{
+    test('changed', () => {
       /**
        * Send a document changed message to client with an optional attribute remove filter.
        */
@@ -432,15 +430,15 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    group("removed", ()=>{
+    group('removed', () => {
       /**
        * Send a document removed message to client
        */
-      beforeEach(()=>{
+      beforeEach(() => {
         api.protoMethod();
       });
 
-      test("removed noarg", ()=>{
+      test('removed noarg', () => {
         //[
         conn.removed('Book', 'id123');
 
@@ -448,7 +446,7 @@ isServer && define((require, exports, module)=>{
         //]
       });
 
-      test("removed stopped", ()=>{
+      test('removed stopped', () => {
         //[
         conn.removed('Book', 'id123', 'stopped');
 
@@ -457,7 +455,7 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("closed", ()=>{
+    test('closed', () => {
       conn.onClose(v.close1 = stub());
       conn.onClose(v.close2 = stub());
       conn._subs.t1 = {stop: v.t1 = stub()};

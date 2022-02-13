@@ -1,14 +1,12 @@
-const fs = require('fs');
+const fsp = require('fs/promises');
 const Path = require('path');
 
 define((require, exports, module) => {
   'use strict';
+  const Enumerable      = require('koru/enumerable');
   const ModelMap        = require('koru/model/map');
   const koru            = require('../main');
   const util            = require('../util');
-
-  const readdir = util.Future.wrap(fs.readdir);
-  const stat = util.Future.wrap(fs.stat);
 
   const actions$ = Symbol();
 
@@ -42,7 +40,7 @@ define((require, exports, module) => {
     }
   }
 
-  const createTable = (add, client, {name, fields, unlogged, indexes, primaryKey=true}) => {
+  const createTable = async (add, client, {name, fields, unlogged, indexes, primaryKey=true}) => {
     if (Array.isArray(fields)) {
       fields = buildFields(fields);
     }
@@ -57,27 +55,27 @@ define((require, exports, module) => {
         }
       }
 
-      client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
+      await client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
       if (indexes) {
-        for (const args of indexes) addIndex(true, client, {tableName: name, args});
+        for (const args of indexes) await addIndex(true, client, {tableName: name, args});
       }
     } else {
-      client.query(`DROP TABLE IF EXISTS "${name}"`);
+      await client.query(`DROP TABLE IF EXISTS "${name}"`);
     }
     resetTable(name);
   };
 
-  const reversible = (add, client, options) => {
+  const reversible = async (add, client, options) => {
     if (add && options.add) {
-      options.add(client);
+      await options.add(client);
     }
     if (! add && options.revert) {
-      options.revert(client);
+      await options.revert(client);
     }
     util.forEach(options.resetTables, (name) => resetTable(name));
   };
 
-  const addIndex = (add, client, {tableName, args}) => {
+  const addIndex = async (add, client, {tableName, args}) => {
     let i = 0;
     const isArray = Array.isArray(args);
     const unique = isArray ? args[0] === '*unique' : !! args.unique;
@@ -89,11 +87,11 @@ define((require, exports, module) => {
     if (add) {
       const order = columns.map((field) => field.replace(/(^\S+)/, '"$1"')).join(',');
       const where = args.where ? `where ${args.where}` : '';
-      client.query(
+      await client.query(
         `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${tableName}"
 USING btree (${order}) ${where}`);
     } else {
-      client.query(`DROP INDEX "${iname}"`);
+      await client.query(`DROP INDEX "${iname}"`);
     }
   };
 
@@ -110,14 +108,14 @@ USING btree (${order}) ${where}`);
     return fields;
   };
 
-  const addColumns = (add, client, {tableName, args}) => {
+  const addColumns = async (add, client, {tableName, args}) => {
     const fields = buildFields(args);
     if (add) {
-      client.query(`ALTER TABLE "${tableName}" ${
-                   Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(',')}`);
+      await client.query(`ALTER TABLE "${tableName}"
+${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(',')}`);
     } else {
-      client.query(`ALTER TABLE "${tableName}" ${
-                   Object.keys(fields).map((col) => `DROP column "${col}"`).join(',')}`);
+      await client.query(`ALTER TABLE "${tableName}" ${
+                         Object.keys(fields).map((col) => `DROP column "${col}"`).join(',')}`);
     }
     resetTable(tableName);
   };
@@ -129,14 +127,10 @@ USING btree (${order}) ${where}`);
 
   const onlyMigrateFiles = (fn) => /\d.*.js$/.test(fn);
 
-  const readMigration = (mig) => {
-    const future = new util.Future();
+  const readMigration = async (mig) => {
     const id = mig + '.js';
     try {
-      require([id], (mig) => {
-        future.return(mig);
-      });
-      return future.wait();
+      return await new Promise((resolve, reject) => {require([id], resolve)});
     } finally {
       koru.unload(id);
     }
@@ -147,33 +141,33 @@ USING btree (${order}) ${where}`);
       this._client = client;
     }
 
-    addMigration(name, callback) {
-      this._doMigration(true, name, callback);
+    async addMigration(name, callback) {
+      await this._doMigration(true, name, callback);
     }
 
-    revertMigration(name, callback) {
-      this._doMigration(false, name, callback);
+    async revertMigration(name, callback) {
+      await this._doMigration(false, name, callback);
     }
 
-    recordAllMigrations(dirPath) {
-      const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
+    async recordAllMigrations(dirPath) {
+      const filenames = (await fsp.readdir(dirPath)).filter(onlyMigrateFiles).sort();
 
-      const migrations = this._getMigrations();
+      const migrations = await this._getMigrations();
 
       for (let i = 0; i < filenames.length; ++i) {
         const row = filenames[i].replace(/\.js$/, '');
         if (! migrations[row]) {
-          this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
+          await this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
           this._migrations[row] = true;
         }
       }
     }
 
-    migrateTo(dirPath, pos, verbose) {
+    async migrateTo(dirPath, pos, verbose) {
       if (! dirPath || ! pos) throw new Error('Please specifiy where to migrate to');
-      const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
+      const filenames = (await fsp.readdir(dirPath)).filter(onlyMigrateFiles).sort();
 
-      const migrations = this._getMigrations();
+      const migrations = await this._getMigrations();
 
       for (let i = 0; i < filenames.length; ++i) {
         const row = filenames[i].replace(/\.js$/, '');
@@ -182,44 +176,48 @@ USING btree (${order}) ${where}`);
         }
         if (! migrations[row]) {
           verbose && console.log('Adding ' + row);
-          this.addMigration(row, readMigration(dirPath + '/' + row));
+          await this.addMigration(row, await readMigration(dirPath + '/' + row));
         }
       }
-      util.reverseForEach(Object.keys(migrations).sort(), (row) => {
+      for (const row of Enumerable.reverseValues(Object.keys(migrations).sort())) {
         if (row > pos) {
           verbose && console.log('Reverting ' + row);
-          this.revertMigration(row, readMigration(dirPath + '/' + row));
+          await this.revertMigration(row, await readMigration(dirPath + '/' + row));
         }
-      });
+      }
     }
 
-    migrationExists(name) {
-      return !! this._getMigrations()[name];
+    async migrationExists(name) {
+      return !! (await this._getMigrations())[name];
     }
 
-    _getMigrations() {
+    async _getMigrations() {
       if (this._migrations) return this._migrations;
       this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
       this._migrations = Object.create(null);
-      this._client.query('SELECT name FROM "Migration"').
+      (await this._client.query('SELECT name FROM "Migration"')).
         forEach((row) => this._migrations[row.name] = true);
       return this._migrations;
     }
 
-    _doMigration(add, name, callback) {
+    async _doMigration(add, name, callback) {
       const client = this._client;
-      client.transaction((tx) => {
-        if (this.migrationExists(name) === add) return;
+      await client.transaction(async (tx) => {
+        if ((await this.migrationExists(name)) === add) return;
 
         const mc = new Commander();
-        callback(mc);
+        {const p = callback(mc); if (p instanceof Promise) await p}
         if (add) {
-          mc[actions$].forEach(({action, args}) => {action(add, client, args)});
-          client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
+          for (const {action, args} of mc[actions$]) {
+            await action(add, client, args);
+          }
+          await client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
           this._migrations[name] = true;
         } else {
-          mc[actions$].reverse().forEach(({action, args}) => {action(add, client, args)});
-          client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
+          for (const {action, args} of Enumerable.reverseValues(mc[actions$])) {
+            await action(add, client, args);
+          }
+          await client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
           delete this._migrations[name];
         }
       });

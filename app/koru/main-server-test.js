@@ -1,22 +1,23 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const Future          = require('koru/future');
   const dbBroker        = require('koru/model/db-broker');
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
   const {stub, spy, match: m, intercept} = TH;
 
-  const koru     = require('./main');
+  const koru = require('./main');
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       cleanup();
       v = {};
     });
 
-    group("afTimeout", ()=>{
-      test("lt 24 DAYS", ()=>{
+    group('afTimeout', () => {
+      test('lt 24 DAYS', () => {
         const cb = stub();
         stub(koru, 'setTimeout').returns(123);
         const stop = koru._afTimeout(cb, 1000);
@@ -28,18 +29,18 @@ define((require, exports, module)=>{
         assert.calledWith(global.clearTimeout, 123);
       });
 
-      test("cancel gt 24 days", ()=>{
+      test('cancel gt 24 days', () => {
         const cb = stub();
         let handle = 100;
-        const incCounter = ()=> ++handle;
+        const incCounter = () => ++handle;
         stub(koru, 'setTimeout').invokes(incCounter);
         stub(global, 'setTimeout').invokes(incCounter);
         stub(global, 'clearTimeout');
-        let now = Date.now(); intercept(Date, 'now', ()=>now);
+        let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45*util.DAY);
+        const stop = koru._afTimeout(cb, 45 * util.DAY);
 
-        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
+        assert.calledWith(global.setTimeout, m.func, 20 * util.DAY);
         global.setTimeout.yieldAndReset();
 
         stop();
@@ -47,27 +48,27 @@ define((require, exports, module)=>{
         assert.calledWith(global.clearTimeout, 102);
       });
 
-      test("gt 24 days", ()=>{
+      test('gt 24 days', () => {
         const cb = stub();
         let handle = 100;
-        const incCounter = ()=> ++handle;
+        const incCounter = () => ++handle;
         stub(koru, 'setTimeout').invokes(incCounter);
         stub(global, 'setTimeout').invokes(incCounter);
         stub(global, 'clearTimeout');
-        let now = Date.now(); intercept(Date, 'now', ()=>now);
+        let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45*util.DAY);
+        const stop = koru._afTimeout(cb, 45 * util.DAY);
 
-        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
-        now+=20*util.DAY;
+        assert.calledWith(global.setTimeout, m.func, 20 * util.DAY);
+        now += 20 * util.DAY;
         global.setTimeout.yieldAndReset();
 
-        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
-        now+=21*util.DAY;
+        assert.calledWith(global.setTimeout, m.func, 20 * util.DAY);
+        now += 21 * util.DAY;
         refute.called(koru.setTimeout);
         global.setTimeout.yieldAndReset();
 
-        assert.calledOnceWith(koru.setTimeout, m.func, 4*util.DAY);
+        assert.calledOnceWith(koru.setTimeout, m.func, 4 * util.DAY);
         assert.same(koru.setTimeout.firstCall.returnValue, 103);
 
         stop();
@@ -82,56 +83,74 @@ define((require, exports, module)=>{
       });
     });
 
-    test("runFiber", ()=>{
-      stub(util, 'Fiber').returns({run: v.run = stub()});
+    test('runFiber', async () => {
+      stub(koru, 'unhandledException');
+      let innerThread;
+      let future = new Future();
+      const prog = async () => {
+        await future.promise;
+        return innerThread = util.thread;
+      };
+      const ans = koru.runFiber(prog);
+      assert.same(innerThread, void 0);
 
-      koru.runFiber(() => {v.success = true});
-      assert.called(v.run);
-      util.Fiber.args(0, 0)();
-      assert(v.success);
+      future.resolve();
+      await 1;
+      assert.equals(innerThread, {});
+      refute.same(util.thread, innerThread);
+      assert.same(await ans, innerThread);
 
-      util.Fiber.reset();
-      stub(koru, 'error');
-      koru.runFiber(()=>{throw new Error("Foo")});
-      util.Fiber.args(0, 0)();
-      assert.calledWith(koru.error, TH.match(/Foo/));
+      future = new Future();
 
-      /** can't restart fiber **/
-      koru.error.reset();
-      util.Fiber.args(0, 0)();
-      refute.called(koru.error);
+      koru.runFiber(prog);
+      await 1;
+
+      refute.called(koru.unhandledException);
+      future.reject('reject');
+
+      await 1; await 2;
+      assert.calledWith(koru.unhandledException, 'reject');
     });
 
-    test("fiberConnWrapper", ()=>{
-      stub(util, 'Fiber').returns({run: v.run = stub()});
+    test('fiberConnWrapper', async () => {
+      stub(koru, 'unhandledException');
+      let innerThread;
+      let future = new Future();
 
-      koru.fiberConnWrapper((conn, data)=>{
-        v.thread = util.merge({This: conn, data: data}, util.thread);
-      }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
-      assert.called(v.run);
-      util.Fiber.args(0, 0)();
-      assert(v.thread);
+      const mydb = {id: 'mydb'};
+      const conn = {userId: 'u123', db: mydb};
+      const data = [1, 2];
 
-      assert.equals(v.thread.userId, "u123");
-      assert.same(v.thread.db, v.mydb);
-      assert.same(v.thread.connection, v.conn);
-      assert.same(v.thread.This, v.conn);
-      assert.same(v.thread.data, v.data);
+      const prog = async (conn, data) => {
+        await future.promise;
+        return innerThread = Object.assign(util.thread, {args: {conn, data}});
+      };
 
-      util.Fiber.reset();
-      stub(koru, 'error');
-      koru.fiberConnWrapper(()=>{throw new Error("Foo")}, v.conn, v.data);
-      util.Fiber.args(0, 0)();
-      assert.calledWith(koru.error, TH.match(/Foo/));
+      koru.fiberConnWrapper(prog, conn, data);
 
-      /** can't restart fiber **/
-      koru.error.reset();
-      util.Fiber.args(0, 0)();
-      refute.called(koru.error);
+      future.resolve();
+      await 1;
+
+      assert.equals(innerThread, {
+        userId: 'u123', connection: conn, db: mydb, dbId: void 0,
+        args: {conn, data}});
+
+      refute.same(innerThread, util.thread);
+
+      future = new Future();
+
+      koru.runFiber(prog);
+      await 1;
+
+      refute.called(koru.unhandledException);
+      future.reject('reject');
+
+      await 1; await 2;
+      assert.calledWith(koru.unhandledException, 'reject');
     });
   });
 
-  const cleanup = ()=>{
+  const cleanup = () => {
     dbBroker.db = util.thread.connection = util.thread.userId = void 0;
   };
 });

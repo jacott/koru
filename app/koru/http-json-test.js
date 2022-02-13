@@ -16,14 +16,13 @@ isServer && define((require, exports, module) => {
     let httpsStub, httpStub, req;
 
     const requestWrap = (...args) => {
-      let future = new util.Future();
-      koru.runFiber(() => {
-        try {
-          future.return(HttpJson.request(...args));
-        } catch (err) {future.throw(err)}
+      return new Promise((resolve, reject) => {
+        koru.runFiber(() => {
+          try {
+            resolve(HttpJson.request(...args));
+          } catch (err) {reject(err)}
+        });
       });
-
-      return future;
     };
 
     beforeEach(() => {
@@ -63,43 +62,51 @@ isServer && define((require, exports, module) => {
     });
 
     group('errors', () => {
-      test('throw ECONNREFUSED', () => {
+      test('throw ECONNREFUSED', async () => {
         const onError = req.on.withArgs('error');
 
-        let future = requestWrap({method: 'HEAD', url: 'http://locahost::3000'});
+        let promise = requestWrap({method: 'HEAD', url: 'http://locahost::3000'});
 
         assert.called(onError);
         onError.yield({code: 'ECONNREFUSED'});
 
-        assert.exception(
-          () => {future.wait()},
-          {message: 'Connection Refused [503]', statusCode: 503});
+        try {
+          await promise;
+          assert.fail('exception not thrown');
+        } catch (err) {
+          assert.exception(err, {message: 'Connection Refused [503]', statusCode: 503});
+        }
       });
 
-      test('return ECONNREFUSED', () => {
+      test('return ECONNREFUSED', async () => {
         const onError = req.on.withArgs('error');
 
-        let future = requestWrap({method: 'HEAD', url: 'http://locahost::3000'}, {serverError: 'return'});
+        let promise = requestWrap({method: 'HEAD', url: 'http://locahost::3000'}, {serverError: 'return'});
         assert.called(onError);
 
         onError.yield({code: 'ECONNREFUSED'});
 
-        assert.equals(future.wait(), {message: 'Connection Refused', statusCode: 503});
+        assert.equals(await promise, {message: 'Connection Refused', statusCode: 503});
       });
 
-      test('general error', () => {
+      test('general error', async () => {
         const onError = req.on.withArgs('error');
 
-        let future = requestWrap({method: 'HEAD', url: 'http://locahost::3000'});
+        let promise = requestWrap({method: 'HEAD', url: 'http://locahost::3000'});
 
         assert.called(onError);
         onError.yield(new Error('foo'));
-        assert.exception(() => {future.wait()}, {message: 'foo [500]', statusCode: 500});
+        try {
+          await promise;
+          assert.fail('exception not thrown');
+        } catch (err) {
+          assert.exception(err, {message: 'foo [500]', statusCode: 500});
+        }
       });
 
-      test('timeout', () => {
+      test('timeout', async () => {
         const onError = req.on.withArgs('error');
-        let future = requestWrap({method: 'HEAD', url: 'http://locahost::3000', timeout: 21234});
+        let promise = requestWrap({method: 'HEAD', url: 'http://locahost::3000', timeout: 21234});
 
         assert.calledWith(onError, 'error', m.func);
 
@@ -110,12 +117,17 @@ isServer && define((require, exports, module) => {
 
         onError.yield({code: 'ETIMEDOUT', message: 'Timeout'});
 
-        assert.exception(() => {future.wait()}, {message: 'Timeout [504]', statusCode: 504});
+        try {
+          await promise;
+          assert.fail('exception not thrown');
+        } catch (err) {
+          assert.exception(err, {message: 'Timeout [504]', statusCode: 504});
+        }
       });
     });
 
-    test('success https', () => {
-      let future = requestWrap({method: 'GET', url: 'https://locahost::3000'});
+    test('success https', async () => {
+      let promise = requestWrap({method: 'GET', url: 'https://locahost::3000'});
 
       assert.calledWith(httpsStub.request, 'https://locahost::3000', {
         method: 'GET',
@@ -133,14 +145,14 @@ isServer && define((require, exports, module) => {
 
       onEnd.yield();
 
-      const ans = future.wait();
+      const ans = await promise;
       assert.equals(ans.statusCode, 200);
       assert.equals(ans.body, {a: 123});
       assert.same(ans.response, res);
     });
 
-    test('response too large', () => {
-      let future = requestWrap({method: 'GET', url: 'http://locahost::3000', maxContentSize: 3});
+    test('response too large', async () => {
+      let promise = requestWrap({method: 'GET', url: 'http://locahost::3000', maxContentSize: 3});
 
       assert.calledWith(httpStub.request, 'http://locahost::3000', {
         method: 'GET',
@@ -156,7 +168,7 @@ isServer && define((require, exports, module) => {
       onData.yield('{"a"');
       onData.yield(':123}');
 
-      assert.equals(future.wait(), {statusCode: 400, message: 'Response too large'});
+      assert.equals(await promise, {statusCode: 400, message: 'Response too large'});
     });
 
     test('send body', () => {
@@ -171,11 +183,11 @@ isServer && define((require, exports, module) => {
       assert.calledWith(req.end, '{"a":123}');
     });
 
-    test('return 404, else throw', () => {
+    test('return 404, else throw', async () => {
       const response = {statusCode: 404, headers: {}, on: void 0};
       const testResponse = (type) => {
         httpStub.request.reset();
-        let future = requestWrap({method: 'POST', url: 'http://locahost::3000'}, type);
+        let promise = requestWrap({method: 'POST', url: 'http://locahost::3000'}, type);
 
         response.on = stub();
         const onEnd = response.on.withArgs('end');
@@ -183,32 +195,23 @@ isServer && define((require, exports, module) => {
 
         onEnd.yield();
 
-        return future.wait();
+        return promise;
       };
 
       const ret404 = {404: 'return', clientError: 'throw'};
 
-      assert.equals(testResponse(), {statusCode: 404, response, body: ''});
-      assert.equals(testResponse(ret404), {statusCode: 404, response, body: ''});
+      assert.equals(await testResponse(), {statusCode: 404, response, body: ''});
+      assert.equals(await testResponse(ret404), {statusCode: 404, response, body: ''});
 
       response.statusCode = 409;
-      assert.equals(testResponse(), {statusCode: 409, response, body: ''});
-      assert.exception(() => {
-        testResponse(ret404);
-      }, {statusCode: 409});
-    });
+      assert.equals(await testResponse(), {statusCode: 409, response, body: ''});
 
-    test('kill fiber', () => {
-      let fib, ans;
-      koru.runFiber(() => {
-        fib = util.Fiber.current;
-        ans = HttpJson.request({method: 'HEAD', url: 'http://locahost::3000'});
-      });
-
-      fib.throwInto('testing 123');
-
-      assert.equals(ans, {interrupt: 'testing 123'});
-      assert.called(req.destroy);
+      try {
+        await testResponse(ret404);
+        assert.fail('exception not thrown');
+      } catch (err) {
+        assert.exception(err, {statusCode: 409});
+      }
     });
   });
 });

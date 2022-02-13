@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const ModelMap        = require('koru/model/map');
@@ -17,30 +17,29 @@ define((require, exports, module)=>{
 
   const dbs = createDictionary();
 
-  const newDB = (name)=>{
+  const newDB = (name) => {
     const db = dbs[name] = {};
     Object.defineProperty(db, 'name', {
-      enumerable: false, configurable: true, value: name
+      enumerable: false, configurable: true, value: name,
     });
 
     return db;
   };
 
-
   Object.defineProperty(ModelMap, 'db', {
     enumerable: false, configurable: true,
     get: () => dbs[dbBroker.dbId] || newDB(dbBroker.dbId),
-    set: (db) => dbBroker.dbId = db.name
+    set: (db) => dbBroker.dbId = db.name,
   });
 
-  const getProp = (dbId, modelName, prop)=>{
+  const getProp = (dbId, modelName, prop) => {
     const obj = dbs[dbId];
     if (obj === undefined) return undefined;
     const map = obj[modelName];
     return map === undefined ? undefined : map[prop];
   };
 
-  const getSetProp = (dbId, modelName, prop, setter)=>{
+  const getSetProp = (dbId, modelName, prop, setter) => {
     const obj = dbs[dbId] === undefined ? newDB(dbId) : dbs[dbId];
     const map = obj[modelName] ? obj[modelName] : (obj[modelName] = {});
     const ans = map[prop];
@@ -49,7 +48,7 @@ define((require, exports, module)=>{
 
   function findById(id) {return this.docs[id]}
 
-  const localInsert = (doc, userId)=>{
+  const localInsert = (doc, userId) => {
     const model = doc.constructor;
     const changes = doc.attributes;
     const now = util.newDate();
@@ -57,20 +56,20 @@ define((require, exports, module)=>{
 
     _support._addUserIds(doc.attributes, model.userIds, userId);
     _support._updateTimestamps(changes, model.createTimestamps, now);
-    _support.performInsert(doc);
+    return _support.performInsert(doc);
   };
 
-  const localUpdate = (doc, changes, userId)=>{
+  const localUpdate = (doc, changes, userId) => {
     const model = doc.constructor;
     const now = util.newDate();
     _support.performUpdate(doc, changes);
   };
 
-  const save = (doc, callback=koru.globalCallback)=>{
+  const save = (doc, callback=koru.globalCallback) => {
     let _id = doc.attributes._id;
     const model = doc.constructor;
 
-    if(_id == null) {
+    if (_id == null) {
       if (! doc.changes._id) doc.changes._id = Random.id();
       _id = doc.changes._id;
       if (model.docs[_id] !== undefined) throw new koru.Error(400, {_id: [['not_unique']]});
@@ -80,21 +79,23 @@ define((require, exports, module)=>{
         localInsert(doc, koru.userId());
       } else {
         model.docs[_id] = doc;
-        session.rpc("save", model.modelName, null, doc.changes, callback);
+        session.rpc('save', model.modelName, null, doc.changes, callback);
       }
-    } else for(let noop in doc.changes) {
-      // only call if at least one change
-      const changes = doc.changes;
-      doc.changes = {}; // reset changes here for callbacks
-      if (doc[stopGap$] !== undefined)
-        localUpdate(doc, changes, koru.userId());
-      else
-        session.rpc("save", model.modelName, _id, changes, callback);
-      break;
+    } else {
+      for (let noop in doc.changes) {
+        // only call if at least one change
+        const changes = doc.changes;
+        doc.changes = {}; // reset changes here for callbacks
+        if (doc[stopGap$] !== undefined) {
+          localUpdate(doc, changes, koru.userId());
+        } else {
+          session.rpc('save', model.modelName, _id, changes, callback);
+        }
+        break;
+      }
     }
     doc.$reload();
   };
-
 
   const ModelEnv = {
     save,
@@ -135,7 +136,7 @@ define((require, exports, module)=>{
 
       util.merge(BaseModel.prototype, {
         $remove() {
-          session.rpc("remove", this.constructor.modelName, this._id,
+          session.rpc('remove', this.constructor.modelName, this._id,
                       koru.globalCallback);
         },
 
@@ -150,15 +151,14 @@ define((require, exports, module)=>{
           if (this[error$] !== undefined) this[error$] = undefined;
           this.$clearCache();
           return this;
-        }
+        },
       });
 
-      session.defineRpc("save", function (modelName, id, changes) {
+      session.defineRpc('save', function (modelName, id, changes) {
         const model = ModelMap[modelName],
-            docs = model.docs,
-            doc = docs[id || changes._id],
-            now = util.newDate();
-
+              docs = model.docs,
+              doc = docs[id || changes._id],
+              now = util.newDate();
 
         if (doc !== undefined) {
           if (id) {
@@ -172,18 +172,18 @@ define((require, exports, module)=>{
         }
       });
 
-      session.defineRpc("remove", (modelName, id)=>{
+      session.defineRpc('remove', (modelName, id) => {
         return new Query(ModelMap[modelName]).onId(id).remove();
       });
 
-      session.defineRpc("bumpVersion", (modelName, id, version)=>{
+      session.defineRpc('bumpVersion', (modelName, id, version) => {
         _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
       util.merge(_support, {
         resetDocs() {},
         bumpVersion() {
-          session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
+          return session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
         },
 
         transaction(model, func) {
@@ -200,7 +200,7 @@ define((require, exports, module)=>{
       const modelName = model.modelName;
       let dbId = '', docs = null;
 
-      const chkdb = ()=>{
+      const chkdb = () => {
         const tdbId = dbBroker.dbId;
         if (tdbId !== dbId) {
           docs = null;
@@ -214,16 +214,17 @@ define((require, exports, module)=>{
       const anyChange = new Observable();
 
       Object.defineProperty(model, 'docs', {
-        get: ()=>{
+        get: () => {
           chkdb();
           if (docs != null) return docs;
           docs = getSetProp(dbId, modelName, 'docs', createDictionary);
           return docs;
         },
-        set: (value)=>{
+        set: (value) => {
           chkdb();
-          if (docs == null)
-            docs = getSetProp(dbId, modelName, 'docs', ()=> value);
+          if (docs == null) {
+            docs = getSetProp(dbId, modelName, 'docs', () => value);
+          }
           dbs[dbId][modelName].docs = value;
           docs = value;
           model._indexUpdate.reloadAll();
@@ -235,12 +236,13 @@ define((require, exports, module)=>{
         notify(...args) {
           chkdb();
           const subject = getProp(dbId, modelName, 'notify');
-          if (subject)
+          if (subject) {
             subject.notify(...args);
+          }
 
           anyChange.notify(...args);
         },
-        onAnyChange: callback => anyChange.add(callback),
+        onAnyChange: (callback) => anyChange.add(callback),
         onChange(callback) {
           chkdb();
           const subject = getSetProp(dbId, modelName, 'notify', () => new Observable());

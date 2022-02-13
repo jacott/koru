@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const dbBroker        = require('koru/model/db-broker');
@@ -8,7 +8,7 @@ define((require, exports, module)=>{
 
   const {hasOwn} = util;
 
-  const timer$ = Symbol(), retryInterval$ = Symbol(),
+  const timer$ = Symbol(), ready$ = Symbol(), retryInterval$ = Symbol(),
         action$ = Symbol(), dbs$ = Symbol(), queue$ = Symbol();
 
   const DEFAULT_INTERVAL = 60*1000;
@@ -44,74 +44,78 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
     message: 'jsonb',
   };
 
-  const action = mq=>{
+  const action = async (mq) => {
+    dbBroker.db = mq.mqdb.table._client;
     const {name, [timer$]: timer,
            mqdb: {[action$]: actions, [retryInterval$]: retryIntervals}} = mq;
-    timer.handle = -1; timer.ts = 0;
-    mq.error = undefined;
+    timer.handle = void 0; timer.ts = 0;
+    mq.error = void 0;
     try {
-      const rec = mq.peek(1, util.newDate())[0];
-      if (rec !== undefined) {
-        actions[name]({_id: rec._id, dueAt: rec.dueAt, message: rec.message}, mq);
-        mq.remove(rec._id);
+      const [rec] = await mq.peek(1, util.newDate());
+      if (rec !== void 0) {
+        await actions[name]({_id: rec._id, dueAt: rec.dueAt, message: rec.message}, mq);
+        await mq.remove(rec._id);
       }
 
-      queueNext(mq);
-    } catch(ex) {
+      return await queueNext(mq);
+    } catch (ex) {
       const retryInterval = typeof ex.retryAfter === 'number'
-            ? ex.retryAfter : retryIntervals[name] || DEFAULT_INTERVAL;
+            ? ex.retryAfter
+            : retryIntervals[name] || DEFAULT_INTERVAL;
       if (ex.stack) koru.unhandledException(ex);
       if (retryInterval !== -1) {
-        timer.handle = 0;
-        queueFor(mq, new Date(util.dateNow()+retryInterval));
+        timer.handle = void 0;
+        queueFor(mq, new Date(util.dateNow() + retryInterval));
         mq.error = ex;
       }
     }
   };
 
-  const queueNext = (mq, minStart)=>{
+  const queueNext = async (mq, minStart) => {
     const {mqdb: {table}, name, [timer$]: timer} = mq;
 
-    const nrec = table._client.query(`
+    const nrec = (await table._client.query(`
 select "dueAt" from "${table._name}" where name = $1
   order by "dueAt",_id limit 1;
-`, [name])[0];
+`, [name]))[0];
 
-    timer.handle = 0;
-    if (nrec !== undefined) {
-      queueFor(mq, minStart === undefined ? nrec.dueAt : Math.max(+minStart, +nrec.dueAt));
+    if (nrec !== void 0) {
+      queueFor(mq, minStart === void 0 ? nrec.dueAt : Math.max(+minStart, + nrec.dueAt));
     }
   };
 
-  const queueFor = (mq, dueAt)=>{
-    if (mq.error !== undefined) return;
+  const queueFor = (mq, dueAt) => {
+    if (mq.error !== void 0) return;
     const ts = +dueAt;
-    if (ts !== ts || ts <= 0) throw new Error("Invalid dueAt");
+    if (ts !== ts || ts <= 0) throw new Error('Invalid dueAt');
     const timer = mq[timer$];
-    if (timer.handle !== 0) {
+    if (timer.handle !== void 0) {
       if (timer.ts > ts) {
         koru.clearTimeout(timer.handle);
-        timer.handle = 0;
-      } else
+      } else {
         return;
+      }
     }
-    if (timer.handle === 0) {
-      timer.ts = ts;
-      timer.handle = koru.setTimeout(()=>{
-        dbBroker.db = mq.mqdb.table._client;
-        action(mq);
-      }, Math.min(util.DAY, Math.max(0, +dueAt-util.dateNow())));
-    }
+    timer.ts = ts;
+    timer.handle = koru.setTimeout(
+      () => action(mq), Math.min(util.DAY, Math.max(0, +dueAt - util.dateNow())));
   };
 
   class MQ {
     constructor(mqdb, name) {
       this.mqdb = mqdb;
       this.name = name;
-      this[timer$] = {handle: 0, dueAt: 0};
-      this.error = undefined;
-      const retryInterval = this.mqdb[retryInterval$][name];
-      queueNext(this, (retryInterval === undefined ? DEFAULT_INTERVAL : retryInterval) + util.dateNow());
+      this[timer$] = {handle: void 0, dueAt: 0};
+      this.error = void 0;
+      this[ready$] = false;
+    }
+
+    async init() {
+      if (this[ready$]) return;
+      this[ready$] = true;
+      this.mqdb[ready$] || await initTable(this.mqdb);
+      const retryInterval = this.mqdb[retryInterval$][this.name];
+      await queueNext(this, (retryInterval === void 0 ? DEFAULT_INTERVAL : retryInterval) + util.dateNow());
     }
 
     deregister() {
@@ -119,9 +123,9 @@ select "dueAt" from "${table._name}" where name = $1
       const {[action$]: actions, [retryInterval$]: retryIntervals} = this.mqdb;
       const timer = this[timer$];
 
-      if (timer.handle !== 0) {
+      if (timer.handle !== void 0) {
         koru.clearTimeout(timer.handle);
-        timer.handle = 0;
+        timer.handle = void 0;
       }
 
       if (hasOwn(actions, name)) {
@@ -132,22 +136,24 @@ select "dueAt" from "${table._name}" where name = $1
       delete this.mqdb[queue$][name];
     }
 
-    purge() {
+    async purge() {
       this.deregister();
-      this.mqdb.table.remove({name: this.name});
+      await this.mqdb.table.remove({name: this.name});
     }
 
-    add({dueAt=util.newDate(), message}) {
+    async add({dueAt=util.newDate(), message}) {
+      this[ready$] || await this.init();
       const {mqdb, name} = this;
       const now = util.dateNow();
-      mqdb.table.insert({name, dueAt, message});
-      mqdb.table._client.onCommit(()=>{queueFor(this, dueAt)});
+      await mqdb.table.insert({name, dueAt, message});
+      queueFor(this, dueAt);
     }
 
-    peek(maxResults=1, dueBefore) {
-      const extra = dueBefore === undefined ? '' : `and "dueAt" <= '${dueBefore.toISOString()}'`;
+    async peek(maxResults=1, dueBefore) {
+      this[ready$] || await this.init();
+      const extra = dueBefore === void 0 ? '' : `and "dueAt" <= '${dueBefore.toISOString()}'`;
       const {table} = this.mqdb;
-      return table._client.query(`
+      return await table._client.query(`
 select _id,"dueAt",message from "${table._name}"
   where name = $1 ${extra}
   order by "dueAt",_id limit ${maxResults};
@@ -156,25 +162,31 @@ select _id,"dueAt",message from "${table._name}"
 
     remove(_id) {
       const {table} = this.mqdb;
-      table._client.query(`delete from "${table._name}" where _id = $1`, [_id]);
+      return table._client.query(`delete from "${table._name}" where _id = $1`, [_id]);
     }
   }
+
+  const initTable = async (mqdb) => {
+    mqdb[ready$] = true;
+    const {table} = mqdb;
+    await table._ensureTable();
+    if (table._columns.length == 0) {
+      await dbBroker.db.query(TABLE_SCHEMA.replace(/_message_queue/g, table._name));
+    }
+  };
 
   class MQDB {
     constructor(tableName, actions, retryIntervals) {
       const {db} = dbBroker;
       this[action$] = Object.create(actions);
       this[retryInterval$] = Object.create(retryIntervals);
-      const table = this.table = db.table(tableName, fields);
-      table._ensureTable();
-      if (table._columns.length == 0) {
-        db.query(TABLE_SCHEMA.replace(/_message_queue/g, tableName));
-      }
-
+      this.table = db.table(tableName, fields);
+      this[ready$] = false;
       this[queue$] = {};
     }
+
     getQueue(name) {
-      if (this[action$][name] === undefined) return;
+      if (this[action$][name] === void 0) return;
       return this[queue$][name] || (this[queue$][name] = new MQ(this, name));
     }
 
@@ -182,20 +194,23 @@ select _id,"dueAt",message from "${table._name}"
       const queue = this[queue$];
       for (const name in queue) {
         const timers = queue[name][timer$];
-        if (timers.handle !== 0) {
+        if (timers.handle !== void 0) {
           koru.clearTimeout(timers.handle);
-          timers.handle = timers.ts = 0;
+          timers.handle = void 0;
+          timers.ts = 0;
         }
       }
     }
 
     registerQueue({name, action, retryInterval}) {
       const {[action$]: actions, [retryInterval$]: retryIntervals} = this;
-      if (hasOwn(actions, name))
+      if (hasOwn(actions, name)) {
         throw new Error(`Message queue '${name}' already registered`);
+      }
       actions[name] = action;
-      if (retryInterval !== undefined)
+      if (retryInterval !== void 0) {
         retryIntervals[name] = retryInterval;
+      }
     }
   }
 
@@ -206,14 +221,14 @@ select _id,"dueAt",message from "${table._name}"
         MQDB,
         tableName,
         this[action$] = Object.create(null),
-        this[retryInterval$] = Object.create(null)
+        this[retryInterval$] = Object.create(null),
       );
     }
 
-    start() {
+    async start() {
       const mqdb = this[dbs$].current;
       for (const name in mqdb[action$]) {
-        mqdb.getQueue(name);
+        await mqdb.getQueue(name).init();
       }
     }
 
@@ -225,12 +240,14 @@ select _id,"dueAt",message from "${table._name}"
       if (local) {
         this[dbs$].current.registerQueue({name, action, retryInterval});
       } else {
-        if (this[action$][name] !== undefined)
+        if (this[action$][name] !== void 0) {
           throw new Error(`MessageQueue '${name}' already registered`);
+        }
         this[action$][name] = action;
-        if (retryInterval !== undefined)
+        if (retryInterval !== void 0) {
           this[retryInterval$][name] = retryInterval;
-        module === undefined || module.onUnload(()=>{this.deregisterQueue(name)});
+        }
+        module === void 0 || module.onUnload(() => {this.deregisterQueue(name)});
       }
     }
 
@@ -242,10 +259,10 @@ select _id,"dueAt",message from "${table._name}"
     getQueue(name) {
       return this[dbs$].current.getQueue(name);
     }
-  };
+  }
 
   MQFactory[private$] = {
-    MQ
+    MQ,
   };
 
   return MQFactory;

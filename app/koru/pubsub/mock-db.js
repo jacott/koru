@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Changes         = require('koru/changes');
   const makeSubject     = require('koru/make-subject');
@@ -27,8 +27,9 @@ define((require, exports, module)=>{
 
     static get _indexUpdate() {return noIndex}
 
-    static create(opts) {
-      const _id = this.modelName.toLowerCase()+(++this.seq);
+    static async create(opts) {
+      await 1;
+      const _id = this.modelName.toLowerCase() + (++this.seq);
       let name, attrs;
       if (typeof opts !== 'object') {
         name = opts;
@@ -38,9 +39,9 @@ define((require, exports, module)=>{
         name = attrs.name;
         if (attrs._id === void 0) attrs._id = _id;
       }
-      if (attrs.name === void 0) attrs.name = this.modelName+' '+this.seq;
+      if (attrs.name === void 0) attrs.name = this.modelName + ' ' + this.seq;
       const doc = this.docs[_id] = new this(attrs);
-      this.notify(DocChange.add(doc));
+      await this.notify(DocChange.add(doc));
       return doc;
     }
   }
@@ -57,38 +58,41 @@ define((require, exports, module)=>{
         makeSubject(model);
         model.seq = 0;
         model.query = {
-          forEach: func =>{
+          forEach: async (func) => {
             for (const _id in model.docs) {
-              func(model.docs[_id]);
+              await func(model.docs[_id]);
             }
-          }
+          },
         };
 
         this.models[name] = ModelMap[name] = model;
       }
 
-      after(()=>{
+      after(() => {
         for (const name of models) {
           const orig = this.origModels[name];
-          if (orig === void 0)
+          if (orig === void 0) {
             delete ModelMap[name];
-          else
+          } else {
             ModelMap[name] = orig;
+          }
         }
       });
     }
 
-    change(doc) {
+    async change(doc) {
+      await 1;
       const undo = {name: doc.name};
-      const name = doc.attributes.name = "name change";
-      ModelMap[doc.constructor.modelName].notify(DocChange.change(doc, undo));
+      const name = doc.attributes.name = 'name change';
+      await ModelMap[doc.constructor.modelName].notify(DocChange.change(doc, undo));
       return {doc, changes: {name}};
     }
 
-    remove(doc) {
+    async remove(doc) {
+      await 1;
       const model = ModelMap[doc.constructor.modelName];
       delete model.docs[doc._id];
-      model.notify(DocChange.delete(doc));
+      await model.notify(DocChange.delete(doc));
     }
   }
 

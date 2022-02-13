@@ -1,11 +1,7 @@
-isServer && define((require, exports, module) => {
+define((require, exports, module) => {
   'use strict';
   /**
-   * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)). It
-   * works by yielding the current
-
-   * [Fiber thread](https://github.com/laverdet/node-fibers#api-documentation), if the mutex is
-   * locked, and resuming the thread when the mutex is unlocked.
+   * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)).
    *
    **/
   const koru            = require('koru');
@@ -17,7 +13,7 @@ isServer && define((require, exports, module) => {
   const Mutex = require('./mutex');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
-    test('constructor', () => {
+    test('constructor', async () => {
       /**
        * Construct a Mutex.
        **/
@@ -29,19 +25,17 @@ isServer && define((require, exports, module) => {
       let counter = 0;
 
       try {
-        mutex.lock();
-        koru.runFiber(() => {
-          mutex.lock();
-          ++counter;
+        await mutex.lock();
+        koru.runFiber(async () => {
+          await mutex.lock();
+          counter = 1;
           mutex.unlock();
         });
-        assert.same(counter, 0);
       } finally {
         mutex.unlock();
       }
-      assert.same(counter, 1);
 
-      mutex.lock();
+      await mutex.lock();
       try {
         assert.same(counter, 1);
       } finally {
@@ -50,7 +44,7 @@ isServer && define((require, exports, module) => {
       //]
     });
 
-    test('lock', () => {
+    test('lock', async () => {
       /**
        * Aquire a lock on the mutex. Will pause until the mutex is unlocked
        **/
@@ -60,19 +54,19 @@ isServer && define((require, exports, module) => {
 
       assert.isFalse(mutex.isLocked);
 
-      mutex.lock();
+      await mutex.lock();
       assert.isTrue(mutex.isLocked);
       //]
     });
 
-    test('unlock', () => {
+    test('unlock', async () => {
       /**
        * Release a lock on the mutex. Will allow another fiber to aquire the lock
        **/
       api.protoMethod();
       //[
       const mutex = new Mutex();
-      mutex.lock();
+      await mutex.lock();
       assert.isTrue(mutex.isLocked);
 
       mutex.unlock();
@@ -80,78 +74,46 @@ isServer && define((require, exports, module) => {
       //]
     });
 
-    test('sequencing', () => {
+    test('isLocked', async () => {
       const mutex = new Mutex();
 
       api.protoProperty('isLocked', {info: `true if mutex is locked`});
       assert.isFalse(mutex.isLocked);
 
-      mutex.lock();
+      await mutex.lock();
 
-      api.protoProperty('isLockedByMe', {info: `true if mutex is locked by the current thread`});
-      assert.isTrue(mutex.isLockedByMe);
+      assert.isTrue(mutex.isLocked);
 
       mutex.unlock();
+      assert.isFalse(mutex.isLocked);
       api.done();
+    });
 
-      let lockedByMe = [];
+    test('multiple waits', async () => {
+      const mutex = new Mutex();
 
-      let ex;
-      let counter = 0;
+      let ans = [];
 
-      const runInner = (cb) => {
-        koru.runFiber(() => {
-          lockedByMe.push(mutex.isLockedByMe);
-          if (ex !== void 0) return;
-          try {
-            mutex.lock();
-            cb();
-            ++counter;
-          } catch (e) {
-            if (ex === void 0) ; {
-              ex = e;
-            }
-          } finally {
-            try {
-              mutex.unlock();
-            } catch (e) {
-              if (ex === void 0) ; {
-                ex = e;
-              }
-            }
-          }
+      const runInner = (id) => {
+        koru.runFiber(async () => {
+          await mutex.lock();
+          ans.push(id);
+          mutex.unlock();
         });
       };
 
-      try {
-        mutex.lock();
-        lockedByMe.push(mutex.isLockedByMe);
-        runInner(() => {
-          const {current} = util.Fiber;
-          koru.setTimeout(() => {current.run()});
-          util.Fiber.yield();
-          assert.same(counter, 1);
-        });
-        runInner(() => {
-          assert.same(counter, 2);
-        });
-        assert.same(counter, 0);
-        ++counter;
-      } finally {
-        mutex.unlock();
-      }
+      await mutex.lock();
 
-      mutex.lock();
+      runInner(1);
+      runInner(2);
+      runInner(3);
+      assert.equals(ans, []);
       mutex.unlock();
-      if (ex) throw ex;
 
-      assert.same(counter, 3);
+      assert.equals(await ans, [1]);
 
-      assert.exception(() => {
-        mutex.unlock();
-      }, {message: 'mutex not locked'});
-
-      assert.equals(lockedByMe, [true, false, false]);
+      await mutex.lock();
+      assert.equals(ans, [1, 2, 3]);
     });
   });
 });

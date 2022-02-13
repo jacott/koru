@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const {inspect$}      = require('koru/symbols');
@@ -15,27 +15,29 @@ define((require, exports, module)=>{
 
   const origAfTimeout = Core._origAfTimeout = koru.afTimeout;
 
-  const restorSpy = spy => ()=>{spy.restore && spy.restore()};
-  const after = callback => Core.test.after(callback);
-  const stub = (...args)=>Core.test.stub(...args);
-  const spy = (...args)=>Core.test.spy(...args);
+  const restorSpy = (spy) => () => {spy.restore && spy.restore()};
+  const after = (callback) => Core.test.after(callback);
+  const stub = (...args) => Core.test.stub(...args);
+  const spy = (...args) => Core.test.spy(...args);
 
-  const intercept = (...args)=>{
+  const intercept = (...args) => {
     const spy = stubber.intercept(...args);
     Core.test.after(restorSpy(spy));
     return spy;
   };
 
-  const stubProperty = (object, prop, newValue)=>{
-    if (typeof newValue !== 'object')
+  const stubProperty = (object, prop, newValue) => {
+    if (typeof newValue !== 'object') {
       newValue = {value: newValue};
+    }
     const oldValue = util.setProperty(object, prop, newValue);
 
-    const restore = ()=>{
-      if (oldValue !== void 0)
+    const restore = () => {
+      if (oldValue !== void 0) {
         Object.defineProperty(object, prop, oldValue);
-      else
+      } else {
         delete object[prop];
+      }
     };
 
     Core.test.after(restore);
@@ -48,23 +50,24 @@ define((require, exports, module)=>{
   const {match} = Core;
 
   const withinDelta = (
-    actual, expected, delta
-  )=> actual > expected-delta && actual < expected+delta;
+    actual, expected, delta,
+  ) => actual > expected - delta && actual < expected + delta;
 
-  match.near = (expected, delta=1)=> match(
-    actual => {
-      switch(typeof expected) {
+  match.near = (expected, delta=1) => match(
+    (actual) => {
+      switch (typeof expected) {
       case 'string':
-        if (typeof actual === 'number') actual = ''+actual;
-        if (typeof actual !== 'string')
+        if (typeof actual === 'number') actual = '' + actual;
+        if (typeof actual !== 'string') {
           return false;
+        }
         const expParts = expected.split(NUMBER_RE);
         const actParts = actual.split(NUMBER_RE);
-        for(let i = 0; i < expParts.length; ++i) {
+        for (let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
-          if (i%2) {
-            const f = e.split('.')[1]||'';
-            const delta = 1/Math.pow(10, f.length);
+          if (i % 2) {
+            const f = e.split('.')[1] || '';
+            const delta = 1 / Math.pow(10, f.length);
 
             if (! withinDelta(+a, +e, delta)) {
               return false;
@@ -74,7 +77,6 @@ define((require, exports, module)=>{
           }
         }
         return true;
-
       case 'object':
         for (let key in expected) {
           if (! withinDelta(actual[key], expected[key], delta)) {
@@ -84,11 +86,11 @@ define((require, exports, module)=>{
         return true;
       default:
         return withinDelta(actual, expected, delta);
-      }}, "match.near(" + expected + ", delta=" + delta + ")");
+      }}, 'match.near(' + expected + ', delta=' + delta + ')');
 
-  match.field= (name, value)=> match(
-    actual => actual && Core.deepEqual(actual[name], value),
-    "match.field(" + name + ", " + value + ")");
+  match.field = (name, value) => match(
+    (actual) => actual && Core.deepEqual(actual[name], value),
+    'match.field(' + name + ', ' + value + ')');
 
   Error.stackTraceLimit = 100;
 
@@ -114,30 +116,31 @@ define((require, exports, module)=>{
     [inspect$]() {return `Module("${this.id}")`}
   }
 
-  const warnFullPageReload = ()=>{
-    Main.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
+  const warnFullPageReload = () => {
+    Main.logHandle('\n\n*** ERROR: Some tests did a Full Page Reload ***\n');
   };
 
-  const recordTCTime = ()=>{
+  const recordTCTime = () => {
     if (lastTest !== undefined) {
       const {topTC} = lastTest;
       topTC.duration += timer;
     }
   };
 
-  const endRun = ()=>{
+  const endRun = () => {
     recordTCTime();
-    if (koru.afTimeout !== origAfTimeout)
+    if (koru.afTimeout !== origAfTimeout) {
       koru.afTimeout = origAfTimeout;
+    }
     timer = lastTest = undefined;
     if (Core.testCount === 0) {
       errorCount = 1;
-      Main.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+      Main.testHandle('R', "No Tests!\u0000" + [0, 0, 0, 0, Date.now() - timer].join(' '));
     }
 
     if (isClient) {
       topDoc.title = topDoc.title.replace(/Running:\s*/, '');
-      window.onbeforeunload === warnFullPageReload && window.setTimeout(()=>{
+      window.onbeforeunload === warnFullPageReload && window.setTimeout(() => {
         window.onbeforeunload = null;
       }, 1);
     }
@@ -178,9 +181,9 @@ define((require, exports, module)=>{
       Core.runArg = pattern || undefined;
       count = errorCount = 0;
 
-      require(tests, (...args)=>{
-        koru.runFiber(() => {Core.start(Core.testCases=args)});
-      }, err => {
+      require(tests, (...args) => {
+        koru.runFiber(() => {Core.start(Core.testCases = args)});
+      }, (err) => {
         ++errorCount;
         if (err.module) {
           koru.error(`Error loading dependancies:
@@ -195,22 +198,22 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     },
 
     normHTMLStr(html) {
-      return html.replace(/(<[^>]+)>/g, (m, m1)=>{
+      return html.replace(/(<[^>]+)>/g, (m, m1) => {
         if (m[1] === '/') return m;
-        let parts = m1.replace(/="[^"]*"/g, m => m.replace(/ /g, '\xa0')).split(' ');
+        let parts = m1.replace(/="[^"]*"/g, (m) => m.replace(/ /g, '\xa0')).split(' ');
         if (parts.length === 1) return m;
         const p1 = parts[0];
         parts = parts.slice(1).sort();
         return `${p1} ${parts.join(' ').replace(/\xa0/g, ' ')}>`;
       });
-    }
+    },
   };
 
-  Core.abort = ex => {
+  Core.abort = (ex) => {
     const {name, location: {name: fn, line}} = Core.test;
     Main.logHandle(
       'E', (typeof ex === 'string' ? ex : koru.util.extractError(ex)) +
-        "\n\n**** Tests aborted! *****\n" +
+        '\n\n**** Tests aborted! *****\n' +
         name +
         `\n     at - ${fn}.js:${line}`);
     Core.abortMode = 'reload';
@@ -218,18 +221,18 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     Core.runCallBacks('abort', Core.test);
   };
 
-  Core.worstTCS = ()=> Core.testCases
-    .sort((a,b) => b.duration - a.duration)
-    .map(a => a && a.name+': '+a.duration);
+  Core.worstTCS = () => Core.testCases
+    .sort((a, b) => b.duration - a.duration)
+    .map((a) => a && a.name + ': ' + a.duration);
 
-  koru.logger = (type, ...args)=>{
+  koru.logger = (type, ...args) => {
     console.log(...args);
     Main.logHandle(type, (type === 'D' ? util.inspect(args, 7) : args.join(' ')));
   };
 
   Core.onEnd(endRun);
 
-  Core.onTestStart(test=>{
+  Core.onTestStart((test) => {
     if (timer === undefined) {
       timer = Date.now();
       koru.afTimeout = origAfTimeout;
@@ -240,17 +243,17 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       recordTCTime();
     }
     lastTest = test;
-    if (isClient) koru.afTimeout = ()=> util.voidFunc;
+    if (isClient) koru.afTimeout = () => util.voidFunc;
   });
 
-  Core.onTestEnd(test=>{
+  Core.onTestEnd((test) => {
     if (test.errors) {
       ++errorCount;
 
       let result = `${test.name}\x00`;
       const {errors} = test;
-      for(let i = 0; i < errors.length; ++i) {
-        result += errors[i]+"\n";
+      for (let i = 0; i < errors.length; ++i) {
+        result += errors[i] + '\n';
       }
       Main.testHandle('E', result);
     }
@@ -259,7 +262,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     const now = Date.now();
 
     Main.testHandle('R', `${test.name}\x00` + [
-      count,Core.testCount,errorCount,Core.skipCount,now - timer].join(' '));
+      count, Core.testCount, errorCount, Core.skipCount, now - timer].join(' '));
 
     timer = now;
   });

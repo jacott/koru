@@ -2,13 +2,15 @@ define((require, exports, module) => {
   'use strict';
   const SRP             = require('koru/crypto/srp');
   const Email           = require('koru/email');
+  const Future          = require('koru/future');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');
   const Val             = require('koru/model/validation');
   const Random          = require('koru/random').global;
   const session         = require('koru/session');
   const util            = require('koru/util');
-  const crypto          = requirejs.nodeRequire('crypto');
+
+  const crypto = requirejs.nodeRequire('crypto');
 
   let emailConfig;
 
@@ -27,7 +29,7 @@ define((require, exports, module) => {
       const keyVal = [];
       for (let key in tokens) {
         const time = tokens[key];
-        if (time>now) {
+        if (time > now) {
           keyVal.push(time + '|' + key);
         }
       }
@@ -79,19 +81,19 @@ define((require, exports, module) => {
     }
   };
 
-  const makeScrypt = (password, salt=crypto.randomBytes(16)) => {
-    const future = new util.Future();
+  const makeScrypt = async (password, salt=crypto.randomBytes(16)) => {
+    const future = new Future();
     crypto.scrypt(
       password, salt, 64,
       void 0, (err, key) => {
         if (err) {
-          future.throw(err);
+          future.reject(err);
         } else {
-          future.return(key);
+          future.resolve(key);
         }
       });
 
-    const key = future.wait().toString('hex');
+    const key = (await future.promise).toString('hex');
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
@@ -121,13 +123,13 @@ define((require, exports, module) => {
 
     makeScryptPassword: makeScrypt,
 
-    resetPassword(token, password) {
+    async resetPassword(token, password) {
       Val.ensureString(token);
       const parts = token.split('-');
-      const lu = UserLogin.findById(parts[0]);
+      const lu = await UserLogin.findById(parts[0]);
       if (lu !== void 0) {
         if (lu.password !== void 0 && lu.password.type === 'scrypt') {
-          password = makeScrypt(password);
+          password = await makeScrypt(password);
         } else {
           Val.assertCheck(password, VERIFIER_SPEC);
         }
@@ -136,20 +138,20 @@ define((require, exports, module) => {
           lu.password = password;
           lu.resetToken = lu.resetTokenExpire = void 0;
           const loginToken = lu.makeToken();
-          lu.$$save();
+          await lu.$$save();
           return [lu, loginToken];
         }
       }
       throw new koru.Error(404, 'Expired or invalid reset request');
     },
 
-    verifyClearPassword(email, password) {
-      const doc = UserLogin.findBy('email', email);
+    async verifyClearPassword(email, password) {
+      const doc = await UserLogin.findBy('email', email);
       if (doc === void 0 || doc.password === void 0) return;
 
       if (doc.password.type === 'scrypt') {
         try {
-          assertScryptPassword(doc, password);
+          await assertScryptPassword(doc, password);
         } catch (err) {
           if (err.error == 403) {
             return;
@@ -169,28 +171,28 @@ define((require, exports, module) => {
         }
       }
       const token = doc.makeToken();
-      doc.$$save();
+      await doc.$$save();
       return [doc, token];
     },
 
-    verifyToken(emailOrId, token) {
+    async verifyToken(emailOrId, token) {
       const doc = emailOrId.indexOf('@') === -1
-            ? UserLogin.findById(emailOrId)
-            : UserLogin.findBy('email', emailOrId);
+            ? await UserLogin.findById(emailOrId)
+            : await UserLogin.findBy('email', emailOrId);
       if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0) {
         return doc;
       }
     },
 
-    createUserLogin(attrs) {
+    async createUserLogin(attrs) {
       let password;
       if (attrs.scrypt) {
-        password = makeScrypt(attrs.password);
+        password = await makeScrypt(attrs.password);
       } else {
         password = attrs.password && SRP.generateVerifier(attrs.password);
       }
 
-      return UserLogin.create({
+      return await UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
@@ -198,20 +200,20 @@ define((require, exports, module) => {
       });
     },
 
-    makeResetPasswordKey(user) {
-      const lu = UserLogin.findBy('userId', user._id);
+    async makeResetPasswordKey(user) {
+      const lu = await UserLogin.findBy('userId', user._id);
 
       lu.resetToken = Random.id() + Random.id();
       lu.resetTokenExpire = util.dateNow() + 24*60*60*1000;
-      lu.$$save();
+      await lu.$$save();
 
       return lu;
     },
 
-    sendResetPasswordEmail(user) {
+    async sendResetPasswordEmail(user) {
       emailConfig || configureEmail();
 
-      const lu = this.makeResetPasswordKey(user);
+      const lu = await this.makeResetPasswordKey(user);
 
       Email.send({
         from: emailConfig.from,
@@ -222,8 +224,8 @@ define((require, exports, module) => {
       });
     },
 
-    updateOrCreateUserLogin(attrs) {
-      const lu = UserLogin.findBy('userId', attrs.userId);
+    async updateOrCreateUserLogin(attrs) {
+      const lu = await UserLogin.findBy('userId', attrs.userId);
       if (! lu) return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
@@ -235,7 +237,7 @@ define((require, exports, module) => {
 
       if (attrs.email) update.email = attrs.email;
       if (attrs.password) update.password = attrs.password;
-      util.isObjEmpty(update) || lu.$update(update);
+      util.isObjEmpty(update) || await lu.$update(update);
       return lu;
     },
 
@@ -251,63 +253,65 @@ define((require, exports, module) => {
       return SRPLogin.call(state, response);
     },
 
-    logout(_id, token) {
-      UserLogin.onId(_id).update({$partial: {tokens: [token, null]}});
+    async logout(_id, token) {
+      await UserLogin.onId(_id).update({$partial: {tokens: [token, null]}});
     },
 
-    logoutOtherClients(_id, token) {
-      const lu = UserLogin.findById(_id);
+    async logoutOtherClients(_id, token) {
+      const lu = await UserLogin.findById(_id);
       if (lu !== void 0) {
         const mod = {};
         if (lu.tokens[token] !== void 0) {
           mod[token] = lu.tokens[token];
-          UserLogin.where({_id: lu._id}).update('tokens', mod);
+          await UserLogin.where({_id: lu._id}).update('tokens', mod);
           return lu;
         }
       }
     },
   };
 
-  const assertScryptPassword = (doc, password) => {
+  const assertScryptPassword = async (doc, password) => {
     if (doc === void 0 || doc.password == null ||
         doc.password.type !== 'scrypt') {
       throw new koru.Error(403, 'failure');
     }
 
-    if (makeScrypt(password, Buffer.from(doc.password.salt, 'hex')).key !== doc.password.key) {
+    if ((await makeScrypt(password, Buffer.from(doc.password.salt, 'hex'))).key !== doc.password.key) {
       throw new koru.Error(403, 'Invalid password');
     }
   };
 
   session.defineRpc('UserAccount.changePassword', changePassword);
 
-  function changePassword(email, oldPassword, newPassword) {
-    const doc = UserLogin.findBy('email', email);
-    assertScryptPassword(doc, oldPassword);
+  async function changePassword(email, oldPassword, newPassword) {
+    const doc = await UserLogin.findBy('email', email);
+    await assertScryptPassword(doc, oldPassword);
 
-    doc.$update('password', makeScrypt(newPassword));
+    await doc.$update('password', await makeScrypt(newPassword));
   }
 
   session.defineRpc('UserAccount.loginWithPassword', loginWithPassword);
 
-  function loginWithPassword(email, password) {
-    const doc = UserLogin.findBy('email', email);
-    assertScryptPassword(doc, password);
+  async function loginWithPassword(email, password) {
+    const doc = await UserLogin.findBy('email', email);
+    await assertScryptPassword(doc, password);
 
     const token = doc.makeToken();
-    doc.$$save();
+    await doc.$$save();
+
+    await this.setUserId(doc.userId);
 
     return {
-      userId: this.userId = doc.userId,
+      userId: doc.userId,
       loginToken: doc._id + '|' + token,
     };
   }
 
   session.defineRpc('UserAccount.secureCall', secureCall);
 
-  function secureCall(method, email, password, args) {
-    const doc = UserLogin.findBy('email', email);
-    assertScryptPassword(doc, password);
+  async function secureCall(method, email, password, args) {
+    const doc = await UserLogin.findBy('email', email);
+    await assertScryptPassword(doc, password);
 
     try {
       this.secure = doc;
@@ -319,8 +323,8 @@ define((require, exports, module) => {
 
   session.defineRpc('SRPBegin', SRPBegin);
 
-  function SRPBegin(request) {
-    const doc = UserLogin.findBy('email', request.email);
+  async function SRPBegin(request) {
+    const doc = await UserLogin.findBy('email', request.email);
     if (doc === void 0 || doc.password == null) throw new koru.Error(403, 'failure');
     const srp = new SRP.Server(doc.password);
     this.$srp = srp;
@@ -330,14 +334,19 @@ define((require, exports, module) => {
 
   session.defineRpc('SRPLogin', SRPLogin);
 
-  function SRPLogin(response) {
+  async function SRPLogin(response) {
     UserAccount.assertResponse(this, response);
     const doc = this.$srpUserAccount;
     const token = doc.makeToken();
-    doc.$$save();
+    await doc.$$save();
+    if (typeof this.setUserId === 'function') {
+      await this.setUserId(doc.userId);
+    } else {
+      this.userId = doc.userId;
+    }
     const result = {
       HAMK: this.$srp && this.$srp.HAMK,
-      userId: this.userId = doc.userId,
+      userId: doc.userId,
       loginToken: doc._id + '|' + token,
     };
     this.$srp = null;
@@ -348,15 +357,15 @@ define((require, exports, module) => {
   const VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {
     identity: 'string', salt: 'string', verifier: 'string'};
 
-  session.defineRpc('SRPChangePassword', function (response) {
+  session.defineRpc('SRPChangePassword', async function (response) {
     UserAccount.assertResponse(this, response);
 
     Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
-    if (UserAccount.interceptChangePassword) {
-      UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
+    if (UserAccount.interceptChangePassword !== void 0) {
+      await UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
     } else {
-      this.$srpUserAccount.$update({password: response.newPassword});
+      await this.$srpUserAccount.$update({password: response.newPassword});
     }
 
     const result = {
@@ -367,51 +376,51 @@ define((require, exports, module) => {
     return result;
   });
 
-  session.defineRpc('resetPassword', function (token, passwordHash) {
-    const result = UserAccount.resetPassword(token, passwordHash);
+  session.defineRpc('resetPassword', async function (token, passwordHash) {
+    const result = await UserAccount.resetPassword(token, passwordHash);
     const lu = result[0];
     this.send('VT', lu._id + '|' + result[1]);
-    this.userId = lu.userId;
+    this.setUserId(lu.userId);
     this.loginToken = result[1];
   });
 
-  session.defineRpc('logoutOtherClients', function (data) {
+  session.defineRpc('logoutOtherClients', async function (data) {
     if (this.userId === this._session.DEFAULT_USER_ID) return;
     const [_id, token] = getToken(data);
-    if (token !== void 0 && UserAccount.logoutOtherClients(_id, token)) {
+    if (token !== void 0 && await UserAccount.logoutOtherClients(_id, token)) {
       const conns = session.conns;
       for (let sessId in conns) {
         if (sessId === this.sessId) continue;
         const curr = conns[sessId];
 
         if (curr.userId === this.userId) {
-          curr.userId = void 0;
+          curr.setUserId(void 0);
         }
       }
     }
   });
 
-  function onMessage(data) {
+  async function onMessage(data) {
     const conn = this;
     const cmd = data[0];
     let token;
     switch (cmd) {
     case 'L': {
       const [_id, token] = getToken(data.slice(1));
-      const lu = _id && UserLogin.findById(_id);
+      const lu = _id && await UserLogin.findById(_id);
 
       if (lu && lu.unexpiredTokens()[token]) {
-        conn.userId = lu.userId; // will send a VS + VC. See server-connection
+        conn.setUserId(lu.userId); // will send a VS + VC. See server-connection
         conn.loginToken = token;
       } else {
         conn.send('VF');
       }
-    }; break;
+    } break;
     case 'X': { // logout me
       const [_id, token] = getToken(data.slice(1));
-      token && UserAccount.logout(_id, token);
-      conn.userId = void 0; // will send a VS + VC. See server-connection
-    }; break;
+      token && await UserAccount.logout(_id, token);
+      await conn.setUserId(void 0); // will send a VS + VC. See server-connection
+    } break;
     }
   }
 

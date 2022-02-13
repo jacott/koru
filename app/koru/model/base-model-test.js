@@ -10,6 +10,7 @@ define((require, exports, module) => {
   const DocChange       = require('koru/model/doc-change');
   const RequiredValidator = require('koru/model/validators/required-validator');
   const TextValidator   = require('koru/model/validators/text-validator');
+  const ValidateValidator = require('koru/model/validators/validate-validator');
   const ValidatorHelper = require('koru/model/validators/validator-helper');
   const session         = require('koru/session');
   const api             = require('koru/test/api');
@@ -34,16 +35,15 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     before(() => {
-      api.module();
-
       Val.register({onUnload: after}, {
         RequiredValidator,
         TextValidator,
+        ValidateValidator,
       });
     });
 
-    afterEach(() => {
-      Model._destroyModel('Book', 'drop');
+    afterEach(async () => {
+      await Model._destroyModel('Book', 'drop');
       v = {};
     });
 
@@ -68,7 +68,7 @@ define((require, exports, module) => {
       }
       Book.define({module, fields: {
         title: 'text',
-        pages: {type: 'number', number: {'>': 0}}
+        pages: {type: 'number', number: {'>': 0}},
       }});
       assert.same(Model.Book, Book);
 
@@ -139,7 +139,7 @@ define((require, exports, module) => {
 
       Book.defineFields({
         title: 'text',
-        pages: {type: 'number', number: {'>': 0}}
+        pages: {type: 'number', number: {'>': 0}},
       });
 
       const book = new Book();
@@ -177,6 +177,34 @@ define((require, exports, module) => {
       //]
     });
 
+    test('$isValid async', async () => {
+      /**
+       * Check if a document is valid
+       */
+      api.protoMethod();
+      const module = newBookModule();
+      //[
+      class Book extends BaseModel {
+      }
+      Book.define({
+        module,
+        fields: {
+          pages: {type: 'number', async validate(field) {
+            await 1;
+            return 'is_invalid';
+          }, changesOnly: true},
+        },
+      });
+      const book = new Book();
+      book.attributes.pages = -1;
+
+      // original$ exists
+      book[original$] = void 0;
+      refute(await book.$isValid());
+      assert.equals(book[error$], {pages: [['is_invalid']]});
+      //]
+    });
+
     group('validation', () => {
       class Book extends ValidatorHelper.ModelStub {
       }
@@ -193,7 +221,7 @@ define((require, exports, module) => {
         api.topic();
         //[
         Book.defineFields({
-          pages: {type: 'number', number: {'>': 0}, changesOnly: true}
+          pages: {type: 'number', number: {'>': 0}, changesOnly: true},
         });
         const book = Book.build();
         book.attributes.pages = -1;
@@ -211,7 +239,7 @@ define((require, exports, module) => {
 
       test('changesOnly original$', () => {
         Book.defineFields({
-          pages: {type: 'number', number: {'>': 0}, changesOnly: true}
+          pages: {type: 'number', number: {'>': 0}, changesOnly: true},
         });
         const book = new Book();
         book.attributes.pages = -1;
@@ -237,7 +265,7 @@ define((require, exports, module) => {
         Book.define({
           name: 'Book',
           inspectField: 'title',
-          fields: {title: 'text', pages: 'jsonb', pageCount: 'number'}
+          fields: {title: 'text', pages: 'jsonb', pageCount: 'number'},
         });
         v.Book = Book;
       });
@@ -251,15 +279,16 @@ define((require, exports, module) => {
                   assert.isTrue(v.Book.isLocked('a'));
                   throw new Error('catch me');
                 });
-              } catch(ex) {
+              } catch (ex) {
                 assert.isTrue(v.Book.isLocked('a'));
                 throw ex;
               }
               assert.fail('should not reach here');
             });
           } catch (ex) {
-            if (ex.message !== 'catch me')
+            if (ex.message !== 'catch me') {
               throw ex;
+            }
           }
 
           assert.isFalse(v.Book.isLocked('a'));
@@ -272,8 +301,9 @@ define((require, exports, module) => {
               throw new Error('catch me');
             });
           } catch (ex) {
-            if (ex.message !== 'catch me')
+            if (ex.message !== 'catch me') {
               throw ex;
+            }
           }
 
           assert.isFalse(v.Book.isLocked('a'));
@@ -301,7 +331,7 @@ define((require, exports, module) => {
         assert.same(book.title, undefined);
       });
 
-      test('onChange', () => {
+      test('onChange', async () => {
         /**
          * Observe changes to model records.
          *
@@ -315,14 +345,14 @@ define((require, exports, module) => {
         const observer = stub();
         after(Book.onChange(observer));
 
-        const Oasis = Book.create({_id: 'm123', title: 'Oasis', pageCount: 425});
+        const Oasis = await Book.create({_id: 'm123', title: 'Oasis', pageCount: 425});
         const matchOasis = m.field('_id', Oasis._id);
         assert.calledWith(observer, DocChange.add(Oasis));
 
-        Oasis.$update('pageCount', 420);
+        await Oasis.$update('pageCount', 420);
         assert.calledWith(observer, DocChange.change(matchOasis, {pageCount: 425}));
 
-        Oasis.$remove();
+        await Oasis.$remove();
         assert.calledWith(observer, DocChange.delete(matchOasis));
         //]
       });
@@ -376,7 +406,7 @@ define((require, exports, module) => {
           }}},
           luckyNumber: ({type: 'number', accessor: {set(value) {
             Book.setField(this, 'luckyNumber', value === 13 ? 7 : value);
-          }}})
+          }}}),
         });
 
         const sut = Book.build();
@@ -416,13 +446,13 @@ define((require, exports, module) => {
         assert.same(doc._id, 'chgId');
       });
 
-      test('exists', () => {
+      test('exists', async () => {
         const {Book} = v;
-        const doc = Book.create({title: 'foo'});
+        const doc = await Book.create({title: 'foo'});
 
-        assert.isTrue(Book.exists(doc._id));
+        assert.isTrue(await Book.exists(doc._id));
 
-        assert.isFalse(Book.exists('bad'));
+        assert.isFalse(await Book.exists('bad'));
       });
 
       test('query', () => {
@@ -432,9 +462,9 @@ define((require, exports, module) => {
         assert.same(query.model, Book);
       });
 
-      test('$onThis', () => {
+      test('$onThis', async () => {
         const {Book} = v;
-        const sut = Book.create();
+        const sut = await Book.create();
 
         const query = sut.$onThis;
 
@@ -450,7 +480,7 @@ define((require, exports, module) => {
         assert.equals(query._wheres, {t1: 123});
       });
 
-      test('findById', () => {
+      test('findById', async () => {
         /**
          * Find a document by its `_id`. Returns the same document each time if called from same
          * thread.
@@ -458,18 +488,18 @@ define((require, exports, module) => {
         const {Book} = v;
         api.method();
         //[
-        const doc = Book.create({title: 'Emma', pageCount: 342});
+        const doc = await Book.create({title: 'Emma', pageCount: 342});
 
-        assert.same(Book.findById(doc._id), doc);
+        assert.same(await Book.findById(doc._id), doc);
         //]
       });
 
-      test('findBy', () => {
+      test('findBy', async () => {
         const {Book} = v;
-        const doc = Book.create({
+        const doc = await Book.create({
           title: 'Pride and Prejudice', pages: ['It is a truth universally acknowledged...']});
 
-        assert.same(Book.findBy('title', {$regex: 'Pr'}).attributes, doc.attributes);
+        assert.same((await Book.findBy('title', {$regex: 'Pr'})).attributes, doc.attributes);
       });
 
       test('$withChanges', () => {
@@ -495,7 +525,7 @@ define((require, exports, module) => {
 
         let undo = {$partial: {
           pages: [
-            'bar.baz.$partial', ['$match', 'new val', '$patch', [0,3,'orig']],
+            'bar.baz.$partial', ['$match', 'new val', '$patch', [0, 3, 'orig']],
             'bar.buzz', 2,
             'fnord.a', 2],
           author: ['$replace', 'H. G. Wells'],
@@ -549,9 +579,9 @@ define((require, exports, module) => {
         assert.equals(doc.attributes, {_id: '1', a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
       });
 
-      test('change', () => {
+      test('change', async () => {
         const {Book} = v;
-        const doc = Book.create({pages: {bar: {baz: 'orig'}}});
+        const doc = await Book.create({pages: {bar: {baz: 'orig'}}});
 
         doc.$change('pages').bar.baz = 'new';
 
@@ -569,7 +599,7 @@ define((require, exports, module) => {
         assert.equals(doc.attributes.pages, {bar: {baz: 'orig'}});
       });
 
-      test('$assertValid', () => {
+      test('$assertValid', async () => {
         /**
          * Validate the document and throw an error if invalid
          **/
@@ -580,16 +610,16 @@ define((require, exports, module) => {
         const book = Book.build();
 
         try {
-          book.$assertValid();
+          await book.$assertValid();
           assert.fail('Should not have succeeded');
-        } catch(err) {
+        } catch (err) {
           assert.same(err.constructor, koru.Error);
           assert.equals(err.error, 400);
           assert.equals(err.reason, {author: [['is_required']]});
         }
 
         book.author = 'T & T';
-        book.$assertValid();
+        await book.$assertValid();
         assert.same(book[error$], void 0);
         //]
       });
@@ -607,25 +637,25 @@ define((require, exports, module) => {
           api.protoMethod();
         });
 
-        test('normal mode', () => {
+        test('normal mode', async () => {
           const {Book} = v;
           //[
           // normal (undefined) mode
           Book.defineFields({author: {type: 'text', required: true}});
           const book = Book.build();
 
-          assert.isFalse(book.$save());
+          assert.isFalse(await book.$save());
           assert.equals(book[error$], {author: [['is_required']]});
 
           book.author = 'T & T';
-          assert.isTrue(book.$save());
+          assert.isTrue(await book.$save());
           assert.same(book[error$], void 0);
 
-          assert.same(book.$reload().author, 'T & T');
+          assert.same((await book.$reload(true)).author, 'T & T');
           //]
         });
 
-        test("mode 'force'", () => {
+        test("mode 'force'", async () => {
           const {Book} = v;
           //[
           // "force" mode
@@ -634,15 +664,15 @@ define((require, exports, module) => {
 
           spy(book, '$isValid');
 
-          book.$save('force');
+          await book.$save('force');
 
           assert.called(book.$isValid); // assert validation methods were run
 
-          assert(Book.findById(book._id));
+          assert(await Book.findById(book._id));
           //]
         });
 
-        test('mode assert', () => {
+        test('mode assert', async () => {
           TH.noInfo();
           const {Book} = v;
           //[
@@ -651,24 +681,24 @@ define((require, exports, module) => {
           const book = Book.build();
 
           try {
-            book.$save('assert');
+            await book.$save('assert');
             assert.fail('Should not have saved');
-          } catch(err) {
+          } catch (err) {
             assert.same(err.constructor, koru.Error);
             assert.equals(err.error, 400);
             assert.equals(err.reason, {author: [['is_required']]});
           }
 
           book.author = 'T & T';
-          book.$save('assert');
+          await book.$save('assert');
           assert.same(book[error$], void 0);
 
-          assert.same(book.$reload().author, 'T & T');
+          assert.same((await book.$reload(true)).author, 'T & T');
           //]
         });
       });
 
-      test('$$save', () => {
+      test('$$save', async () => {
         /**
          * Is shorthand for {##$save;("assert")}
          **/
@@ -679,67 +709,71 @@ define((require, exports, module) => {
         Book.defineFields({author: {type: 'text', required: true}});
         const book = Book.build();
 
-        assert.invalidRequest(() => {book.$$save()});
+        try {
+          await book.$$save();
+          assert.fail('expect throw');
+        } catch (err) {
+          assert.equals(err.error, 400);
+          assert.equals(err.reason, {author: [['is_required']]});
+        }
 
         book.author = 'T & T';
-        book.$$save();
+        await book.$$save();
 
-        assert.same(book.$reload().author, 'T & T');
+        assert.same((await book.$reload(true)).author, 'T & T');
         //]
       });
-      test('timestamps', () => {
+
+      test('timestamps', async () => {
         const {Book} = v;
-        Book.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
+        Book.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp'});
 
         assert.equals(Book.createTimestamps, {createdAt: true});
         assert.equals(Book.updateTimestamps, {updatedAt: true});
 
-        v.now = Date.now()+1234;
+        v.now = Date.now() + 1234;
         intercept(util, 'dateNow', () => v.now);
 
-        const doc = Book.create({title: 'testing'});
+        const doc = await Book.create({title: 'testing'});
 
         assert(doc._id);
 
-        assert.same(+doc.createdAt, v.now);
+        assert.same(+ doc.createdAt, v.now);
 
         const oldCreatedAt = v.now - 2000;
 
         doc.createdAt = oldCreatedAt;
         doc.updatedAt = oldCreatedAt;
-        doc.$$save();
+        await doc.$$save();
 
         doc.$reload();
 
         doc.title = 'changed';
-        doc.$save();
+        await doc.$save();
 
         doc.$reload();
 
-        assert.same(+doc.createdAt, +oldCreatedAt);
-        refute.same(+doc.updatedAt, +oldCreatedAt);
+        assert.same(+ doc.createdAt, +oldCreatedAt);
+        refute.same(+ doc.updatedAt, +oldCreatedAt);
 
         v.now += 4000;
-        doc.$update({title: 'changed again'});
+        await doc.$update({title: 'changed again'});
 
-        doc.$reload(true);
+        await doc.$reload(true);
 
-        assert.same(+doc.createdAt, +oldCreatedAt);
-        assert.same(+doc.updatedAt, v.now);
+        assert.same(+ doc.createdAt, +oldCreatedAt);
+        assert.same(+ doc.updatedAt, v.now);
       });
 
       group('belongs_to', () => {
         let Publisher;
         beforeEach(() => {
           Publisher = Model.define('Publisher').defineFields({name: 'text'});
-          after(() => {Model._destroyModel('Publisher', 'drop')});
         });
 
-        afterEach(() => {
-          //          Model._destroyModel('Publisher', 'drop');
-        });
+        afterEach(() => Model._destroyModel('Publisher', 'drop'));
 
-        test('belongs_to_dbId', () => {
+        test('belongs_to_dbId', async () => {
           /**
            * A `pseudo_field` synced to the {#../db-broker;.dbId}. It defines a model getter like
            * `belongs_to` does. It can only be defined once per model.
@@ -754,11 +788,11 @@ define((require, exports, module) => {
             title: 'text',
           });
 
-          const book = Book.create({title: 'White Fang'});
-          assert.equals(book.$reload().attributes, {title: 'White Fang', _id: m.id});
+          const book = await Book.create({title: 'White Fang'});
+          assert.equals((await book.$reload(true)).attributes, {title: 'White Fang', _id: m.id});
           assert.same(book.publisher_id, dbBroker.dbId);
 
-          Publisher.create({name: 'Macmillan', _id: 'default'});
+          await Publisher.create({name: 'Macmillan', _id: 'default'});
 
           assert.same(book.publisher.name, 'Macmillan');
           //]
@@ -773,11 +807,11 @@ define((require, exports, module) => {
           assert.same(sut.changes.publisher_id, undefined);
         });
 
-        test('belongs_to auto', () => {
+        test('belongs_to auto', async () => {
           const {Book} = v;
           Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
-          const publisher = Publisher.create({name: 'Macmillan'});
+          const publisher = await Publisher.create({name: 'Macmillan'});
           const sut = Book.build({publisher_id: publisher._id});
 
           const cached = sut.publisher;
@@ -786,21 +820,21 @@ define((require, exports, module) => {
           assert.same(Book.$fields.publisher_id.model, Publisher);
         });
 
-        test('belongs_to manual name', () => {
+        test('belongs_to manual name', async () => {
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', modelName: 'Publisher'}});
 
-          const publisher = Publisher.create({name: 'Macmillan'});
+          const publisher = await Publisher.create({name: 'Macmillan'});
           const sut = Book.build({baz_id: publisher._id});
 
           assert.same(sut.baz.name, 'Macmillan');
         });
 
-        test('belongs_to manual model', () => {
+        test('belongs_to manual model', async () => {
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', model: Publisher}});
 
-          const publisher = Publisher.create({name: 'Macmillan'});
+          const publisher = await Publisher.create({name: 'Macmillan'});
           const sut = Book.build({baz_id: publisher._id});
 
           assert.same(sut.baz.name, 'Macmillan');
@@ -824,29 +858,26 @@ define((require, exports, module) => {
         assert.same(v.doc, sut);
       });
 
-      test('user_id_on_create', () => {
+      test('user_id_on_create', async () => {
         const {Book} = v;
         v.User = Model.define('User');
-        after(function () {
-          Model._destroyModel('User', 'drop');
-        });
+        after(() => Model._destroyModel('User', 'drop'));
         Book.defineFields({user_id: 'user_id_on_create'});
 
-        assert.equals(Book.userIds, { user_id: 'create' });
+        assert.equals(Book.userIds, {user_id: 'create'});
 
-        TH.login('u1234', function () {
-          const doc = Book.create({title: 'testing'});
+        TH.login('u1234');
+        const doc = await Book.create({title: 'testing'});
 
-          assert(doc._id);
+        assert(doc._id);
 
-          assert.same(doc.user_id, util.thread.userId);
+        assert.same(doc.user_id, util.thread.userId);
 
-          let id;
-          session.rpc('save', 'Book', null, {_id: id = '123456', title: 'testing'} );
-          assert.same(Book.findById(id).user_id, util.thread.userId);
+        let id;
+        await session.rpc('save', 'Book', null, {_id: id = '123456', title: 'testing'});
+        assert.same((await Book.findById(id)).user_id, util.thread.userId);
 
-          assert.same(Book.create({user_id: 'override'}).$reload().user_id, 'override');
-        });
+        assert.same((await Book.create({user_id: 'override'})).$reload().user_id, 'override');
       });
 
       test('field accessor false', () => {
@@ -866,7 +897,7 @@ define((require, exports, module) => {
               b = new Book(),
               c = new OtherClass();
 
-        after(function () {Model._destroyModel('OtherClass', 'drop')});
+        after(() => Model._destroyModel('OtherClass', 'drop'));
 
         refute.isTrue(a.$equals(b));
 
@@ -882,37 +913,33 @@ define((require, exports, module) => {
         refute.isTrue(a.$equals(null));
       });
 
-      test('create', () => {
+      test('create', async () => {
         const {Book} = v;
         const attrs = {title: 'testing'};
 
-        isClient && spy(session, 'rpc');
-        const doc = Book.create(attrs);
-        refute.same(doc.changes,doc.attributes);
-        assert.equals(doc.changes,{});
+        const doc = await Book.create(attrs);
+        refute.same(doc.changes, doc.attributes);
+        assert.equals(doc.changes, {});
 
         attrs._id = doc._id;
 
         assert.same(doc.attributes,
-                    Book.findById(doc._id).attributes);
-
-        if(isClient)
-          assert.calledOnceWith(session.rpc, 'save', 'Book', null, {
-            _id: doc._id, title: 'testing'});
+                    await Book.findById(doc._id).attributes);
       });
 
-      test('$partial in $isValid', () => {
+      test('$partial in $isValid', async () => {
         const {Book} = v;
-        const doc = Book.create({_id: '123', title: 'testing'});
-        doc.validate = function () {
+        const doc = await Book.create({_id: '123', title: 'testing'});
+        doc.validate = async function () {
+          await 1;
           v.changes = this.changes;
           v.original = Changes.original(v.changes);
 
           this.pages.baz = 1;
           this[error$] = v.errors;
-        };
+        }
         doc.changes = {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}};
-        assert.isTrue(doc.$isValid());
+        assert.isTrue(await doc.$isValid());
 
         assert.equals(doc.changes, {
           pages: {bar: 'abc', baz: 1}, $partial: {title: ['$append', '.sfx']}});
@@ -922,37 +949,37 @@ define((require, exports, module) => {
 
         v.errors = {};
         doc.changes = {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}};
-        assert.isFalse(doc.$isValid());
+        assert.isFalse(await doc.$isValid());
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
 
-      test('$save with partial', () => {
+      test('$save with partial', async () => {
         const {Book} = v;
-        const doc = Book.create({_id: '123', title: 'testing'});
+        const doc = await Book.create({_id: '123', title: 'testing'});
 
         doc.changes.$partial = {title: ['$append', ' 123']};
-        doc.$$save();
+        await doc.$$save();
 
         assert.equals(doc.title, 'testing 123');
-        assert.equals(doc.$reload(true).title, 'testing 123');
+        assert.equals((await doc.$reload(true)).title, 'testing 123');
       });
 
-      test('$savePartial calls save', () => {
+      test('$savePartial calls save', async () => {
         const {Book} = v;
-        const doc = Book.create({_id: '123', title: 'testing'});
-        stub(doc, '$save').returns('answer');
-        const ans = doc.$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
+        const doc = await Book.create({_id: '123', title: 'testing'});
+        stub(doc, '$save').returns(Promise.resolve('answer'));
+        const ans = await doc.$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
         assert.equals(ans, 'answer');
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
 
-      test('$$savePartial calls save', () => {
+      test('$$savePartial calls save', async () => {
         const {Book} = v;
-        const doc = Book.create({_id: '123', title: 'testing'});
-        const assertSave = stub(doc, '$save').withArgs('assert').returns(true);
-        const ans = doc.$$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
+        const doc = await Book.create({_id: '123', title: 'testing'});
+        const assertSave = stub(doc, '$save').withArgs('assert').returns(Promise.resolve(true));
+        const ans = await doc.$$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
         assert.same(ans, doc);
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
@@ -965,7 +992,7 @@ define((require, exports, module) => {
         const {Book} = v;
         const doc = new Book({_id: 't123', pages: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {pages: [
-          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1,2,3]]}};
+          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1, 2, 3]]}};
 
         assert.isTrue(doc.$hasChanged('pages'));
         assert.isFalse(doc.$hasChanged('bar'));
@@ -984,7 +1011,7 @@ define((require, exports, module) => {
         const {Book} = v;
         const doc = new Book({_id: 't123', pages: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {pages: [
-          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1,2,3]]}};
+          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1, 2, 3]]}};
 
         doc.validate = function () {
           assert.equals(doc.changes.pages, {
@@ -992,28 +1019,37 @@ define((require, exports, module) => {
           assert.equals(doc.$fieldDiff('pages'), {
             one: null,
             two: 'a string.sfx',
-            four: [1,2,3],
+            four: [1, 2, 3],
           });
-        };
+        }
         doc.$isValid();
       });
 
-      test('duplicate id', () => {
+      test('duplicate id', async () => {
         const {Book} = v;
-        const doc = Book.create({_id: '123', title: 'testing'});
+        const doc = await Book.create({_id: '123', title: 'testing'});
 
-        assert.exception(() => {
-          Book.create({_id: '123', title: 'testing2'});
-        });
+        try {
+          await Book.create({_id: '123', title: 'testing2'});
+          assert.fail('throw err');
+        } catch (err) {
+          if (isClient) {
+            assert.equals(err.error, 400);
+            assert.equals(err.reason, {_id: [['not_unique']]});
+          } else {
+            assert.equals(err.error, 409);
+            assert.equals(err.reason, m(/duplicate key/));
+          }
+        }
       });
 
-      test('$reload on removed doc', () => {
+      test('$reload on removed doc', async () => {
         const {Book} = v;
-        const doc = Book.create({title: 'old'});
+        const doc = await Book.create({title: 'old'});
 
-        doc.$remove();
+        await doc.$remove();
 
-        assert.same(doc.$reload(true), doc);
+        assert.same(await doc.$reload(true), doc);
 
         assert.equals(doc.attributes, {});
       });
@@ -1036,35 +1072,36 @@ define((require, exports, module) => {
         assert(util.isObjEmpty(doc.changes));
       });
 
-      test('update', () => {
+      test('update', async () => {
         const {Book} = v;
-        const doc = Book.create({title: 'old'});
+        const doc = await Book.create({title: 'old'});
 
         isClient && spy(session, 'rpc');
 
         doc.title = 'new';
-        doc.$save();
+        await doc.$save();
         assert.same(doc.title, 'new');
 
         doc.$reload();
         assert.same(doc.title, 'new');
-        assert.equals(doc.changes,{});
+        assert.equals(doc.changes, {});
 
-        assert.same(doc.attributes, Book
+        assert.same(doc.attributes, await Book
                     .findById(doc._id).attributes);
 
-        if(isClient)
-          assert.calledOnceWith(session.rpc,'save', 'Book', doc._id, {title: 'new'});
+        if (isClient) {
+          assert.calledOnceWith(session.rpc, 'save', 'Book', doc._id, {title: 'new'});
+        }
       });
 
-      test('build', () => {
+      test('build', async () => {
         /**
          * Build a new model. Does not copy _id from attributes.
          */
         api.method();
         const {Book} = v;
         //[
-        const doc = Book.create();
+        const doc = await Book.create();
         const copy = Book.build(doc.attributes);
 
         refute.same(doc.attributes, copy.changes);
@@ -1080,15 +1117,15 @@ define((require, exports, module) => {
         Book.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
         const sut = new Book();
 
-        const result = sut.$setFields(['a','d','notdefined','_id', '_version'],{
-          a: 'aa',d: 'dd', notdefined: 'set', notme: 'nm', _id: 'noset', _version: 5,
+        const result = sut.$setFields(['a', 'd', 'notdefined', '_id', '_version'], {
+          a: 'aa', d: 'dd', notdefined: 'set', notme: 'nm', _id: 'noset', _version: 5,
         });
 
         assert.same(result, sut);
 
-        assert.equals(sut.changes,{a: 'aa',d: 'dd'});
+        assert.equals(sut.changes, {a: 'aa', d: 'dd'});
 
-        assert.same(sut.notdefined,'set');
+        assert.same(sut.notdefined, 'set');
       });
 
       test('inspect$', () => {

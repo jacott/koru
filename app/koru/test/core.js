@@ -16,10 +16,11 @@ define((require) => {
   class AssertionError extends Error {
     constructor(message, elidePoint=0) {
       super(message);
-      if (typeof elidePoint === 'number')
+      if (typeof elidePoint === 'number') {
         stacktrace.elideFrames(this, elidePoint);
-      else
+      } else {
         stacktrace.replaceStack(this, elidePoint);
+      }
     }
 
     get name() {return 'AssertionError'}
@@ -28,7 +29,7 @@ define((require) => {
   let elidePoint = void 0;
 
   const fail = (message='failed', elidePoint=0) => {
-    throw new AssertionError(message, typeof elidePoint === 'number' ? elidePoint+1 : elidePoint);
+    throw new AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
   };
 
   const assert = (truth, msg) => {
@@ -52,15 +53,16 @@ define((require) => {
   assert.elide = (body, adjust=0) => {
     try {
       return body();
-    } catch(ex) {
-      if (ex.name === 'AssertionError')
-        assert.fail(ex.message, adjust+2);
+    } catch (ex) {
+      if (ex.name === 'AssertionError') {
+        assert.fail(ex.message, adjust + 2);
+      }
       throw ex;
     }
   };
 
   const refute = (truth, msg) => {
-    Core.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
+    Core.assert(! truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
   function getElideFromStack() {
@@ -74,15 +76,28 @@ define((require) => {
   refute.msg = (msg) => (Core.__msg = msg, refute);
 
   const compileOptions = (options) => {
-    if (! options.assertMessage)
+    if (! options.assertMessage) {
       options.assertMessage = 'Expected ' + (options.message || 'success');
+    }
 
-    if (! options.refuteMessage)
+    if (! options.refuteMessage) {
       options.refuteMessage = 'Did not Expect ' + (options.message || 'success');
+    }
 
     options.assertMessage = format.compile(options.assertMessage);
     options.refuteMessage = format.compile(options.refuteMessage);
     return options;
+  };
+
+  const assertAsyncFunc = async (pass, options, args, sideAffects, p) => {
+    if (pass === ! await p) {
+      args.push(sideAffects);
+      Core.assert(false, format(
+        pass ? options.assertMessage : options.refuteMessage, ...args));
+    } else {
+      Core.assert(true);
+    }
+    return pass ? assert : refute;
   };
 
   const assertFunc = (pass, options) => {
@@ -90,12 +105,19 @@ define((require) => {
     return (...args) => {
       const sideAffects = {_asserting: pass};
 
-      if (pass === ! func.apply(sideAffects, args)) {
+      const p = func.apply(sideAffects, args);
+
+      if (p instanceof Promise) {
+        return assertAsyncFunc(pass, options, args, sideAffects, p);
+      }
+
+      if (pass === ! p) {
         args.push(sideAffects);
         Core.assert(false, format(
           pass ? options.assertMessage : options.refuteMessage, ...args));
-      } else
+      } else {
         Core.assert(true);
+      }
       return pass ? assert : refute;
     };
   };
@@ -103,12 +125,12 @@ define((require) => {
   const MultiStringJoin = ' +\n    ';
   const MultiStringNE = '\n != ';
 
-  const inspectStringArray = (str) =>  str.map(qstr).join(MultiStringJoin);
+  const inspectStringArray = (str) => str.map(qstr).join(MultiStringJoin);
 
   const splitMulti = (str) => {
     const ans = [];
-    let i = str.indexOf('\n')+1, j = 0;
-    for (;i != 0 ; j = i, i = str.indexOf('\n', i)+1) {
+    let i = str.indexOf('\n') + 1, j = 0;
+    for (;i != 0; j = i, i = str.indexOf('\n', i) + 1) {
       ans.push(str.slice(j, i));
     }
     if (j < str.length) ans.push(str.slice(j));
@@ -116,8 +138,9 @@ define((require) => {
   };
 
   const formatStringDiff = (as, bs) => {
-    if (Math.min(as.length, bs.length) < 20)
+    if (Math.min(as.length, bs.length) < 20) {
       return format('{i0}\n != {i1}', as, bs);
+    }
 
     let a = splitMulti(as), b = splitMulti(bs);
 
@@ -141,8 +164,8 @@ define((require) => {
     }
 
     let del = -1;
-    for(let i = 0; i < minl ; ++i) {
-      if (a[la-i] !== b[lb-i]) {
+    for (let i = 0; i < minl; ++i) {
+      if (a[la - i] !== b[lb - i]) {
         del = i;
         break;
       }
@@ -158,7 +181,7 @@ define((require) => {
 
     const minq = Math.min(a.length, b.length);
 
-    for(let i = dsl; i < minq; ++i) {
+    for (let i = dsl; i < minq; ++i) {
       let ad = qstr(a[i]), bd = qstr(b[i]);
       if (ad !== bd) {
         if (ad[0] !== '"') ad = JSON.stringify(a[i]);
@@ -169,8 +192,8 @@ define((require) => {
       if (i == dsl) {
         const len = Math.min(ad.length, bd.length);
         let s = 0;
-        while(s < len && ad[s] === bd[s]) ++s;
-        bq += '\n' + '-'.repeat(s+4) +'^ here';
+        while (s < len && ad[s] === bd[s]) ++s;
+        bq += '\n' + '-'.repeat(s + 4) + '^ here';
       }
     }
 
@@ -194,27 +217,28 @@ define((require) => {
       const prev = hint[hintField];
 
       hint[hintField] = (prefix || '') + '\n    ' +
-        (typeof aobj === 'string' && typeof eobj === 'string' ?
-         formatStringDiff(aobj, eobj) :
-         format('{i0}\n != {i1}', aobj, eobj)
-        ) + (prev ? '\n' + prev : '');
+        (typeof aobj === 'string' && typeof eobj === 'string'
+         ? formatStringDiff(aobj, eobj)
+         : format('{i0}\n != {i1}', aobj, eobj)) + (prev ? '\n' + prev : '');
       return false;
     };
 
-    if (match.isMatch(expected))
+    if (match.isMatch(expected)) {
       return match.test(expected, actual) || setHint();
+    }
 
     const badKey = (key) => {
       if (hint) {
-        hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField]||''}`;
+        hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField] || ''}`;
         setHint();
       }
       return false;
     };
 
     if (typeof actual !== 'object' || typeof expected !== 'object') {
-      if ((actual === void 0 || expected === void 0) && actual == expected)
+      if ((actual === void 0 || expected === void 0) && actual == expected) {
         return true;
+      }
       if (hint) {
         setHint();
       }
@@ -224,49 +248,56 @@ define((require) => {
     if (actual == null || expected == null) return setHint();
 
     if (Object.getPrototypeOf(actual) === Object.getPrototypeOf(expected)) {
-      if (actual instanceof Date)
+      if (actual instanceof Date) {
         return actual.getTime() === expected.getTime() || setHint();
+      }
 
       if (actual instanceof RegExp) {
         return actual.source === expected.source && actual.flags === expected.flags;
       }
     }
 
-    if (maxLevel == 0)
+    if (maxLevel == 0) {
       throw new Error('deepEqual maxLevel exceeded');
+    }
 
     if (Array.isArray(actual)) {
-      if (! Array.isArray(expected))
+      if (! Array.isArray(expected)) {
         return setHint();
+      }
       const len = actual.length;
-      if (expected.length !== len)
+      if (expected.length !== len) {
         return hint ? setHint(actual, expected, ' lengths differ: ' + actual.length + ' != ' + expected.length) : false;
-      for(let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i], hint, hintField, maxLevel-1)) return setHint();
+      }
+      for (let i = 0; i < len; ++i) {
+        if (! deepEqual(actual[i], expected[i], hint, hintField, maxLevel - 1)) return setHint();
       }
       return true;
-    } else if (Array.isArray(expected))
+    } else if (Array.isArray(expected)) {
       return setHint(actual, expected);
+    }
 
     const akeys = Object.keys(actual);
     const ekeys = Object.keys(expected);
     if (ekeys.length !== akeys.length) {
       const [ta, tb] = util.trimMatchingSeq(akeys.sort(), ekeys.sort());
-      return hint ?
-        setHint(actual, expected, ' keys differ:\n    ' +
-                formatStringDiff(ta.join(', '), tb.join(', ')))
+      return hint
+        ? setHint(actual, expected, ' keys differ:\n    ' +
+                  formatStringDiff(ta.join(', '), tb.join(', ')))
         : false;
     }
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key], hint, hintField, maxLevel-1))
+      if (! deepEqual(actual[key], expected[key], hint, hintField, maxLevel - 1)) {
         return badKey(key);
+      }
     }
     for (let i = 0; i < akeys.length; ++i) {
       const key = akeys[i];
-      if (! hasOwn(expected, key))
+      if (! hasOwn(expected, key)) {
         return badKey(key);
+      }
     }
     return true;
   };

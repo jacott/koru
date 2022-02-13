@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Observable      = require('koru/observable');
   const Subscription    = require('koru/pubsub/subscription');
@@ -14,8 +14,9 @@ define((require, exports, module)=>{
     onConnect(callback) {
       if (this.state === 'active' || this.state === 'stopped') {
         super.onConnect(callback);
-      } else
+      } else {
         return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+      }
     }
 
     get state() {
@@ -65,7 +66,7 @@ define((require, exports, module)=>{
         if (nextAction !== 'waitServer') {
           finished(null);
         }
-      } catch(err) {
+      } catch (err) {
         finished(err);
       }
     }

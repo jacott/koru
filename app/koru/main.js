@@ -21,15 +21,11 @@ define((require, exports, module) => {
     subm.onUnload(callback);
   };
 
-  const fetchDependants = (mod, result) => {
-    if (! result) result = {};
-    if (! mod || result[mod.id]) return result;
-    result[mod.id] = true;
-    const modules = mod.ctx.modules;
-    const deps = mod._requiredBy;
-    for (let id in deps) {
-      const map = {};
-      fetchDependants(modules[id], result);
+  const fetchDependants = (mod, result={}) => {
+    if (mod !== void 0 && result[mod.id] === void 0) {
+      result[mod.id] = true;
+      const {modules} = mod.ctx;
+      for (let id in mod._requiredBy) fetchDependants(modules[id], result);
     }
     return result;
   };
@@ -58,6 +54,11 @@ define((require, exports, module) => {
     },
 
     config: module.config(),
+
+    setTimeout: (func, duration) => {
+      if (duration > 2147483640) throw new Error('duration too big');
+      return setTimeout(() => {koru.runFiber(func)}, duration);
+    },
 
     throwConfigMissing: (name) => {
       throw new Error(module.id + ' config is missing for: ' + name);

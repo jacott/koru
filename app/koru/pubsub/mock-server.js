@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
 
   class MockServer {
@@ -6,10 +6,9 @@ define((require, exports, module)=>{
       this.session = session;
     }
     sendSubResponse(args) {
-      this.session._commands.Q.call(this.session, args);
+      return this.session._commands.Q.call(this.session, args);
     }
   }
 
   return MockServer;
-
 });

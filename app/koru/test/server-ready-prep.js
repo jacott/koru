@@ -1,8 +1,8 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
-  return (koru, BuildCmd)=>{
-    koru.onunload(module, ()=>{
-      BuildCmd.serverReady && BuildCmd.serverReady.return('ready');
+  return (koru, BuildCmd) => {
+    koru.onunload(module, () => {
+      BuildCmd.serverReady?.();
     });
   };
 });

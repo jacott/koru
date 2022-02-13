@@ -1,10 +1,10 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const ModelEnv        = require('koru/env!./main');
   const BaseModel       = require('koru/model/base-model');
+  const ModelMap        = require('./map');
   const koru            = require('../main');
   const util            = require('../util');
-  const ModelMap        = require('./map');
 
   const {private$} = require('koru/symbols');
 
@@ -30,7 +30,7 @@ define((require, exports, module)=>{
           name = module;
           module = void 0;
         }
-        switch(typeof name) {
+        switch (typeof name) {
         case 'string':
           break;
         case 'function':
@@ -46,8 +46,9 @@ define((require, exports, module)=>{
 
       module && koru.onunload(module, () => ModelMap._destroyModel(name));
 
-      if (! name)
-        name =  moduleName(module);
+      if (! name) {
+        name = moduleName(module);
+      }
 
       if (! model) {
         model = {[name]: class extends BaseModel {}}[name];
@@ -64,14 +65,16 @@ define((require, exports, module)=>{
       const model = ModelMap[name];
       if (! model) return;
 
-      ModelEnv.destroyModel(model, drop);
-
+      const p = ModelEnv.destroyModel(model, drop);
+      if (p instanceof Promise) return p.then(() => {
+        delete ModelMap[name];
+      });
       delete ModelMap[name];
     },
   });
 
-  const moduleName = module => module && util.capitalize(util.camelize(
-    module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')
+  const moduleName = (module) => module && util.capitalize(util.camelize(
+    module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''),
   ));
 
   return ModelMap;

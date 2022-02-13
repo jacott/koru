@@ -1,24 +1,25 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const Mutex           = require('koru/mutex');
   const TH              = require('./test-helper');
+  const fsp             = requirejs.nodeRequire('fs/promises');
 
   const {SourceMapGenerator, SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
-  const {stub, spy, util} = TH;
+  const {stub, spy} = TH;
 
   const StackErrorConvert = require('./stack-error-convert');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       StackErrorConvert.stop();
     });
 
-    test("koru.clientErrorConvert", ()=>{
+    test('koru.clientErrorConvert', async () => {
       const map = new SourceMapGenerator({
-        file: "index.js",
+        file: 'index.js',
         skipValidation: true,
       });
 
@@ -27,12 +28,12 @@ isServer && define((require, exports, module)=>{
           line: 1,
           column: 170040,
         },
-        source: "/file1.js",
+        source: '/file1.js',
         original: {
           line: 13,
           column: 23,
         },
-        name: "christopher"
+        name: 'christopher',
       });
 
       map.addMapping({
@@ -40,24 +41,25 @@ isServer && define((require, exports, module)=>{
           line: 13,
           column: 20,
         },
-        source: "/nested/file2.js",
+        source: '/nested/file2.js',
         original: {
           line: 4,
           column: 1,
         },
-        name: "robin"
+        name: 'robin',
       });
 
-      stub(fst, 'stat').invokes(c => /index/.test(c.args[0]) ? {} : undefined);
-      stub(fst, 'readFile').withArgs('test/maps/index.js.map').returns(Buffer.from(map.toString()));
+      stub(fst, 'stat').invokes((c) => Promise.resolve(/index/.test(c.args[0]) ? {} : undefined));
+      stub(fsp, 'readFile').withArgs('test/maps/index.js.map')
+        .returns(Promise.resolve(Buffer.from(map.toString())));
 
       StackErrorConvert.start({
         sourceMapDir: 'test/maps',
-        prefix: "myPrefix",
+        prefix: 'myPrefix',
         lineAdjust: -1,
       });
 
-      const consumer = util.Future.fromPromise(new SourceMapConsumer(map.toString())).wait();
+      const consumer = await new SourceMapConsumer(map.toString());
       consumer.destroy();
 
       const BasicSourceMapConsumer = consumer.constructor;
@@ -67,7 +69,7 @@ isServer && define((require, exports, module)=>{
       const destroy = spy(BasicSourceMapConsumer.prototype, 'destroy');
 
       assert.equals(
-        koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
+        await koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne (index.js:2:170049)
     at nasty (index.js/../index.js:4:334)
@@ -78,7 +80,7 @@ Cannot read property 'class' of undefined
     at - j.ne christopher (myPrefix/file1.js:13:23)
     at nasty (index.js/../index.js:4:334)
     at missing (nofound.js:4:334)
-    at j.toChildren robin (myPrefix/nested/file2.js:4:1)`
+    at j.toChildren robin (myPrefix/nested/file2.js:4:1)`,
       );
 
       assert.calledOnce(lock);
@@ -89,10 +91,10 @@ Cannot read property 'class' of undefined
       StackErrorConvert.stop();
       StackErrorConvert.start({sourceMapDir: 'test/maps'});
 
-      assert.equals(koru.clientErrorConvert(
+      assert.equals(await koru.clientErrorConvert(
         `while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
-    at - j.ne (index.js:1:170100)`
+    at - j.ne (index.js:1:170100)`,
       ), `while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne christopher (file1.js:13:23)`);

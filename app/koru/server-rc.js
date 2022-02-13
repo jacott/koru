@@ -26,7 +26,7 @@ define((require, exports, module) => {
     let clientCount = 0;
 
     const logHandle = (msg) => {
-      const {connection} = util.thread;
+      const connection = util.thread?.connection;
       const key = connection === void 0 ? 'Server' : connection.engine;
       if (connection !== void 0) msg = connection.sessId + ': ' + msg;
       console.log(key + ' ' + msg);
@@ -78,16 +78,16 @@ define((require, exports, module) => {
           for (const key in clients) {
             const cs = clients[key], {conns} = cs;
             const len = conns.size;
-            if (len<2) {
+            if (len < 2) {
               cs.pendingTests = [apt];
             } else {
               const pt = cs.pendingTests = [];
-              for (let i = 0; i<len; ++i)
+              for (let i = 0; i < len; ++i)
                 pt.push([]);
 
               const ctLen = apt.length;
-              for (let i = 0; i<ctLen; ++i) {
-                pt[i%len].push(apt[i]);
+              for (let i = 0; i < ctLen; ++i) {
+                pt[i % len].push(apt[i]);
               }
             }
 
@@ -123,9 +123,9 @@ define((require, exports, module) => {
       case 'T':
         const [type, pattern, count] = data.slice(cmd.length + 1).split('\t', 3);
         testClientCount = +count;
-        koru.runFiber(() => {
+        koru.runFiber(async () => {
           try {
-            buildCmd.runTests(session, type, pattern, (mode, exec) => {
+            await buildCmd.runTests(session, type, pattern, (mode, exec) => {
               testMode = mode;
               testExec = exec;
               if (mode === 'client') {
@@ -147,7 +147,7 @@ define((require, exports, module) => {
       case 'I':
         const idx = data.indexOf('\t', cmd.length + 2);
         if (idx != -1) {
-          actions.handle(data.slice(cmd.length + 1, idx), ws, clients, data.slice(idx+1));
+          actions.handle(data.slice(cmd.length + 1, idx), ws, clients, data.slice(idx + 1));
         }
         break;
       }
@@ -194,13 +194,13 @@ define((require, exports, module) => {
       const sent = (type !== 'R' && type !== 'F') || cs === undefined || cs.conns.size === 1;
       if (sent) {
         const now = Date.now();
-        if (type !== 'R' || now-50 > lastSent) {
+        if (type !== 'R' || now - 50 > lastSent) {
           lastSent = now;
           lastMsg !== '' && ws.send('R' + engine + '\x00' + lastMsg);
           if (type === 'R') {
             lastMsg = msg;
           } else {
-            ws.send(type+engine + '\x00' + msg);
+            ws.send(type + engine + '\x00' + msg);
             lastMsg = '';
           }
         } else {
@@ -222,7 +222,7 @@ define((require, exports, module) => {
             }
           }
         }
-        ws.send(type+engine + '\x00' + parts[0] + '\x00' + ans.join(' '));
+        ws.send(type + engine + '\x00' + parts[0] + '\x00' + ans.join(' '));
       }
 
       if (type === 'F') {
@@ -232,7 +232,7 @@ define((require, exports, module) => {
           readyForTests(conn);
           if (--cs.runCount == 0) {
             sent || ws.send(
-              type+engine + '\x00' +
+              type + engine + '\x00' +
                 (cs.results === undefined || cs.results[2] !== 0 ||
                  cs.results[1] !== cs.results[2] ? '1' : '0'));
 

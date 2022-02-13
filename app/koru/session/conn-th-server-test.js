@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * A Helper for Publication tests.
@@ -14,12 +14,12 @@ define((require, exports, module)=>{
 
   const ConnTH = require('koru/session/conn-th-server');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module({subjectName: 'ConnTH'});
     });
 
-    test("mockConnection", ()=>{
+    test('mockConnection', async () => {
       /**
        * Create a connection useful for testing publications.
        **/
@@ -30,14 +30,14 @@ define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      const sub1 = conn.onSubscribe("sub1", 1, 'Library');
+      const sub1 = await conn.onSubscribe('sub1', 1, 'Library');
       after(() => {ConnTH.stopAllSubs(conn)});
 
       assert.same(sub1.conn, conn);
       //]
     });
 
-    test("stopAllSubs", ()=>{
+    test('stopAllSubs', async () => {
       /**
        * Stop all stubs for a connection. Useful in test teardown to ensure observers have stopped.
        **/
@@ -48,7 +48,7 @@ define((require, exports, module)=>{
       }
       Library.pubName = 'Library';
 
-      const sub1 = conn.onSubscribe("sub1", 1, 'Library');
+      const sub1 = await conn.onSubscribe('sub1', 1, 'Library');
       const stop = spy(sub1, 'stop');
 
       ConnTH.stopAllSubs(conn);
@@ -57,7 +57,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("decodeEncodedCall", ()=>{
+    test('decodeEncodedCall', async () => {
       /**
        * convert an encoded call back to objects
        **/
@@ -67,29 +67,29 @@ define((require, exports, module)=>{
       const {Book} = db.models;
       //[
       const conn = ConnTH.mockConnection();
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       class MyUnion extends Union {
-        loadInitial(encoder, discreteLastSubscribed) {
-          Book.query.forEach(doc =>{encoder.addDoc(doc)});
+        async loadInitial(encoder, discreteLastSubscribed) {
+          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion();
 
       const sub = new Publication({id: 'sub1', conn});
-      union.addSub(sub);
+      await union.addSub(sub);
 
       assert.equals(ConnTH.decodeEncodedCall(conn, conn.sendEncoded.firstCall), {
         type: 'W',
         data: [
           ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
-          ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
+          ['A', ['Book', {_id: 'book2', name: 'Book 2'}]],
         ]});
       //]
     });
 
-    test("assert.encodedCall", ()=>{
+    test('assert.encodedCall', async () => {
       /**
        * `assert.encodedCall` can be used for determining if a {#../union} batchUpdate was called.
        **/
@@ -102,18 +102,18 @@ define((require, exports, module)=>{
       const {Book} = db.models;
       //[
       const conn = ConnTH.mockConnection();
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       class MyUnion extends Union {
-        loadInitial(encoder, discreteLastSubscribed) {
-          Book.query.forEach(doc =>{encoder.addDoc(doc)});
+        async loadInitial(encoder, discreteLastSubscribed) {
+          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion();
 
       const sub = new Publication({id: 'sub1', conn});
-      union.addSub(sub);
+      await union.addSub(sub);
 
       assert.encodedCall(conn, 'A', ['Book', {_id: 'book1', name: 'Book 1'}]);
       //]

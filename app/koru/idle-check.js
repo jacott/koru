@@ -1,88 +1,99 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const koru = require('koru');
-  const util = require('koru/util');
-
-  const {Fiber} = util;
-  const timeout$ = Symbol();
+  const util            = require('koru/util');
 
   class IdleCheck {
     constructor() {
       this._count = 0;
       this._waitIdle = null;
-      this.fibers = new Map();
+      this.threads = new Map();
       this.onDec = null;
       this.alertTime = this.maxTime = null;
     }
 
-    get count() {return this._count;}
+    get count() {return this._count}
+    get info() {return this.threads.get(util.thread)}
 
     waitIdle(func) {
-      if (this._count === 0) func();
-      else {
-        if (! this._waitIdle)
+      if (this._count === 0) {
+        func();
+      } else {
+        if (! this._waitIdle) {
           this._waitIdle = [func];
-        else
+        } else {
           this._waitIdle.push(func);
+        }
       }
     }
 
     inc() {
-      const fiber = Fiber.current;
-      if (! fiber)
-        throw new Error('IdleCheck used outside of fiber');
-      if (this.fibers.get(fiber))
-        throw new Error('IdleCheck.inc called twice on fiber');
-      this.fibers.set(fiber, Date.now());
+      const {thread} = util;
+      if (thread === void 0) {
+        throw new Error('IdleCheck used outside of async thread');
+      }
+      if (this.threads.get(thread)) {
+        throw new Error('IdleCheck.inc called twice on thread');
+      }
+      const info = {timeout: void 0, start: Date.now()};
+      this.threads.set(thread, info);
       if (this.maxTime !== null || this.alertTime !== null) {
         let func = () => {
-          const {appThread={}} = fiber;
-
           console.error(
-            `${func === void 0 ? "ABORTED; timed out" : "long running"}. dbId: ${appThread.dbId}, userId: ${appThread.userId} `+
-              (appThread.action || ''));
-          if (func === void 0)
-            fiber.reset();
-          else {
-            this.maxTime && (fiber[timeout$] = setTimeout(func, this.maxTime));
+            `${func === void 0
+            ? 'ABORTED; timed out'
+            : 'long running'}. dbId: ${thread.dbId}, userId: ${thread.userId} ${thread.action ?? ''}`);
+          if (func === void 0) {
+            globalThis.__koruThreadLocal.enterWith(thread);
+            this.abortThread('timeout');
+          } else {
+            if (this.maxTime !== null) info.timeout = setTimeout(func, this.maxTime);
             func = void 0;
           }
         };
-        fiber[timeout$] = setTimeout(func, this.alertTime || this.maxTime);
+        info.timeout = setTimeout(func, this.alertTime || this.maxTime);
         if (this.alertTime === null) func = void 0;
       }
       return ++this._count;
     }
 
     dec() {
-      const fiber = Fiber.current;
-      const cto = fiber[timeout$];
-      cto && clearTimeout(cto);
-      const start = this.fibers.get(fiber);
-      if (! start)
+      const {thread} = util;
+      const info = this.threads.get(thread);
+      --this._count;
+      if (info === void 0) {
         throw new Error('IdleCheck.dec called with no corresponding inc');
-      this.fibers.delete(fiber);
-      this.onDec && this.onDec(fiber, start);
-      if (--this._count === 0 & this._waitIdle !== null) {
+      }
+      const {timeout} = info;
+      timeout !== void 0 && clearTimeout(timeout);
+      this.threads.delete(thread);
+      this.onDec?.(thread, info.start);
+      if (this._count === 0 & this._waitIdle !== null) {
         const funcs = this._waitIdle;
         this._waitIdle = null;
-        util.forEach(funcs, func =>{func()});
+        for (const func of funcs) func();
       }
     }
 
+    abortThread(err) {
+      const {__koruThreadLocal: tl} = globalThis;
+      const {info} = this;
+      if (info === void 0) return false;
+      info.abort?.(err);
+      return true;
+    }
+
     exitProcessWhenIdle({forceAfter=20*1000, abortTxAfter=10*1000}={}) {
-      const shutdown = ()=>{
+      const shutdown = () => {
         console.log('=> Shutdown');
         process.exit(0);
       };
       setTimeout(shutdown, forceAfter);
       setTimeout(() => {
-        for (const [fiber] of this.fibers) {
-          try {
-            fiber.reset();
-          } catch(ex) {
-            console.log(util.extractError(ex));
-          }
+        const timedOut = new Error('Aborted');
+        const {__koruThreadLocal: tl} = globalThis;
+        for (const thread of this.threads.keys()) {
+          tl.enterWith(thread);
+          this.abortThread(timedOut);
         }
       }, abortTxAfter);
 

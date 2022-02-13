@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * Manage Subscription connections
@@ -33,21 +33,21 @@ isClient && define((require, exports, module)=>{
 
   class Library extends Subscription {}
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     const origState = Session.state, origSendBinary = Session.sendBinary;
-    beforeEach(()=>{
+    beforeEach(() => {
       Session.state = new (origState.constructor)();
       Session.state._state = 'ready';
       Session.sendBinary = stub();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       SubscriptionSession.unload(Session);
       Session.state = origState;
       Session.sendBinary = origSendBinary;
     });
 
-    test("reconnecting", ()=>{
+    test('reconnecting', () => {
       const reconnecting = stub(Library.prototype, 'reconnecting');
       const sub1 = Library.subscribe([123, 456]);
 
@@ -59,7 +59,7 @@ isClient && define((require, exports, module)=>{
       assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
     });
 
-    test("reconnecting stopped", ()=>{
+    test('reconnecting stopped', () => {
       const reconnecting = stub(Library.prototype, 'reconnecting', function () {this.stop()});
       const sub1 = Library.subscribe([123, 456]);
 
@@ -70,7 +70,7 @@ isClient && define((require, exports, module)=>{
       assert.calledOnceWith(Session.sendBinary, 'Q', ['1']);
     });
 
-    test("postMessage", ()=>{
+    test('postMessage', () => {
       const {state} = Session;
       const sub1 = Library.subscribe([123, 456]);
       Session.sendBinary.reset();
@@ -93,7 +93,7 @@ isClient && define((require, exports, module)=>{
       assert.same(state.pendingCount(), 1);
 
       mockServer.sendSubResponse([sub1._id, 3, -400, {added: 'is_invalid'}]);
-      assert.calledWith(callback2, m(err => err.error == 400 && err.reason.added === 'is_invalid'));
+      assert.calledWith(callback2, m((err) => err.error == 400 && err.reason.added === 'is_invalid'));
 
       assert.same(state.pendingCount(), 0);
 
@@ -106,7 +106,7 @@ isClient && define((require, exports, module)=>{
       assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
     });
 
-    test("postMessage error", ()=>{
+    test('postMessage error', () => {
       const {state} = Session;
       const sub1 = Library.subscribe([123, 456]);
       Session.sendBinary.reset();
@@ -118,7 +118,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(callback, 'myError');
     });
 
-    test("postMessage before Session ready", ()=>{
+    test('postMessage before Session ready', () => {
       const {state} = Session;
       Session.state._state = 'startup';
       const sub1 = Library.subscribe([123, 456]);
@@ -135,7 +135,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(callback, null);
     });
 
-    test("postMessage error before Session ready", ()=>{
+    test('postMessage error before Session ready', () => {
       const {state} = Session;
       Session.state._state = 'startup';
       const sub1 = Library.subscribe([123, 456]);
@@ -148,7 +148,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(callback, 'myError');
     });
 
-    test("not Ready", ()=>{
+    test('not Ready', () => {
       const {state} = Session;
       state.connected(Session);
       state.close(false);
@@ -163,14 +163,14 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(Session.sendBinary, 'Q', [sub1._id, 1, 'Library', [1, 2], 5432]);
     });
 
-    test("change userId", ()=>{
-      after(()=>{util.thread.userId = void 0});
-      login.setUserId(Session, "user123"); // no userId change
+    test('change userId', () => {
+      after(() => {util.thread.userId = void 0});
+      login.setUserId(Session, 'user123'); // no userId change
       const sub = new Library(1, Session);
       const sub2 = new Library(2, Session);
 
       const ss = SubscriptionSession.get(Session);
-      assert.same(ss.userId, "user123");
+      assert.same(ss.userId, 'user123');
 
       sub2.connect();
 
@@ -179,9 +179,8 @@ isClient && define((require, exports, module)=>{
       login.setUserId(Session, util.thread.userId); // no userId change
       refute.called(Session.sendBinary);
 
-
       stub(sub2, 'userIdChanged');
-      login.setUserId(Session, "user456");
+      login.setUserId(Session, 'user456');
 
       assert.calledWith(sub2.userIdChanged, 'user456');
       refute.called(Session.sendBinary);
@@ -189,17 +188,17 @@ isClient && define((require, exports, module)=>{
 
       sub2.stop();
 
-      login.setUserId(Session, "user123");
+      login.setUserId(Session, 'user123');
 
       refute.called(sub2.userIdChanged);
       assert.calledOnceWith(Session.sendBinary, 'Q', ['2']);
     });
 
-    test("filterModels", ()=>{
+    test('filterModels', () => {
       const ss = SubscriptionSession.get(Session);
       let count = 0;
-      stub(ss, 'filterDoc', ()=>{TransQueue.isInTransaction() && ++count});
-      after(()=>{
+      stub(ss, 'filterDoc', () => {TransQueue.isInTransaction() && ++count});
+      after(() => {
         delete ModelMap.Foo;
         delete ModelMap.Bar;
       });
@@ -213,12 +212,12 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(ss.filterDoc, ModelMap.Bar.docs.bar2);
     });
 
-    group("query updates", ()=>{
+    group('query updates', () => {
       let Foo, fooSess, ss;
 
       const sendMsg = (type, ...args) => {fooSess._commands[type].call(fooSess, args)};
 
-      beforeEach(()=>{
+      beforeEach(() => {
         Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
         fooSess = new (Session.constructor)('foo01');
         fooSess.state = new State();
@@ -226,21 +225,21 @@ isClient && define((require, exports, module)=>{
         ss = SubscriptionSession.get(fooSess);
       });
 
-      afterEach(()=>{
+      afterEach(() => {
         SubscriptionSession.unload(fooSess);
         Model._destroyModel('Foo', 'drop');
         dbBroker.clearDbId();
         delete Model._databases.foo01;
       });
 
-      test("filterDoc", ()=>{
+      test('filterDoc', () => {
         const bob = Foo.findById(Foo._insertAttrs({_id: 'bob'}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'sam'}));
         const sue = Foo.findById(Foo._insertAttrs({_id: 'sue'}));
         const onChange = stub();
         after(Foo.onChange(onChange));
         const has = {bob: true, sam: false};
-        ss.match.register('Foo', doc => has[doc._id]);
+        ss.match.register('Foo', (doc) => has[doc._id]);
 
         assert.isFalse(ss.filterDoc(void 0));
 
@@ -257,8 +256,8 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(onChange, DocChange.delete(sue, 'stopped'));
       });
 
-      test("added", ()=>{
-        ss.match.register('Foo', doc => doc.age > 4);
+      test('added', () => {
+        ss.match.register('Foo', (doc) => doc.age > 4);
         const insertSpy = spy(Query, 'insertFromServer');
         const attrs = {_id: 'f123', name: 'bob', age: 5};
         sendMsg('A', 'Foo', attrs);
@@ -273,10 +272,10 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(insertSpy, Foo, attrs);
       });
 
-      test("added no match", ()=>{
+      test('added no match', () => {
         dbBroker.dbId = 'foo01';
 
-        ss.match.register('Foo', doc => doc.age < 4);
+        ss.match.register('Foo', (doc) => doc.age < 4);
         const insertSpy = spy(Query, 'insertFromServer');
         const attrs = {_id: 'f123', name: 'bob', age: 5};
         sendMsg('A', 'Foo', attrs);
@@ -284,8 +283,8 @@ isClient && define((require, exports, module)=>{
         refute(Foo.findById('f123'));
       });
 
-      test("changed", ()=>{
-        ss.match.register('Foo', doc => doc.age > 4);
+      test('changed', () => {
+        ss.match.register('Foo', (doc) => doc.age > 4);
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
@@ -298,8 +297,8 @@ isClient && define((require, exports, module)=>{
         assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 9});
       });
 
-      test("changed no match", ()=>{
-        const handle = ss.match.register('Foo', doc => doc.age > 4 ? doc.age < 10 : void 0);
+      test('changed no match', () => {
+        const handle = ss.match.register('Foo', (doc) => doc.age > 4 ? doc.age < 10 : void 0);
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
@@ -330,13 +329,13 @@ isClient && define((require, exports, module)=>{
         assert.calledOnceWith(onChange, DocChange.delete(sam, 'stopped'));
       });
 
-      test("remove", ()=>{
+      test('remove', () => {
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         const sam = Foo.findById(Foo._insertAttrs({_id: 'f333', name: 'sam', age: 5}));
 
         let flag;
-        after(Foo.onChange(dc => {
+        after(Foo.onChange((dc) => {
           flag = dc.flag;
         }));
 
@@ -353,12 +352,12 @@ isClient && define((require, exports, module)=>{
         assert.same(flag, 'stopped');
       });
 
-      test("alt session", ()=>{
+      test('alt session', () => {
         dbBroker.dbId = 'foo01';
         const bob = Foo.findById(Foo._insertAttrs({_id: 'f222', name: 'bob', age: 5}));
         fooSess.state.connected(fooSess);
 
-        const fooMatch = ss.match.register('Foo', doc => true);
+        const fooMatch = ss.match.register('Foo', (doc) => true);
         const sub = new Library(null, fooSess);
         sub.connect();
 

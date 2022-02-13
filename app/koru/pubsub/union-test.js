@@ -1,10 +1,11 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * Union is an interface used to combine server subscriptions to minimise work on the server.
    *
    **/
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const TransQueue      = require('koru/model/trans-queue');
@@ -20,19 +21,38 @@ isServer && define((require, exports, module)=>{
 
   const Union = require('./union');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    let conn, origQ;
-    beforeEach(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    let conn, origQ, events;
+
+    const syncPoint = async (marker, lookfor) => {
+      events.push(marker);
+      let j = 0;
+      let i = events.length;
+      while (true) {
+        while (events.length == i) {
+          if (++j > 100) {
+            koru.info('events: ' + events.join('\n'));
+            throw new Error('Event not found: ' + lookfor);
+          }
+          await 1;
+        }
+        for (;i < events.length; ++i) {
+          if (events[i] === lookfor) return;
+        }
+      }
+    };
+
+    beforeEach(() => {
       origQ = Session._commands.Q;
-      conn = ConnTH.mockConnection("conn1");
+      conn = ConnTH.mockConnection('conn1');
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       ConnTH.stopAllSubs(conn);
       Session._commands.Q = origQ;
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Create a Union instance
        **/
@@ -50,7 +70,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("addSub", ()=>{
+    test('addSub', async () => {
       /**
        * Add a subscriber to a union. This will cause {##loadInitial} to be run for the subscriber.
        *
@@ -78,44 +98,44 @@ isServer && define((require, exports, module)=>{
       Book.where = stub().returns(Book.query);
 
       //[
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       class MyUnion extends Union {
         constructor(author_id) {
           super();
           this.author_id = author_id;
         }
-        loadInitial(encoder) {
-          Book.where('author_id', this.author_id).forEach(doc =>{encoder.addDoc(doc)});
+        async loadInitial(encoder) {
+          await Book.where('author_id', this.author_id).forEach((doc) => {encoder.addDoc(doc)});
         }
       }
       const union = new MyUnion('a123');
 
       const sub = new Publication({id: 'sub1', conn, lastSubscribed: void 0});
       /** ⏿ ⮧ here we add the sub **/
-      union.addSub(sub);
+      await union.addSub(sub);
 
       const msgs = mc.decodeLastSend();
 
       assert.equals(msgs, [
         ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
-        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]]
+        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]],
       ]);
       //]
 
       {
         const loadInitial = stub(MyUnion.prototype, 'loadInitial');
         const now = Date.now();
-        const sub = new Publication({id: 'sub1', conn, lastSubscribed: now - 2*util.DAY});
-        const lastSubscribed = now - 1*util.DAY;
-        union.addSub(sub, lastSubscribed);
+        const sub = new Publication({id: 'sub1', conn, lastSubscribed: now - 2 * util.DAY});
+        const lastSubscribed = now - 1 * util.DAY;
+        await union.addSub(sub, lastSubscribed);
 
-        assert.calledWith(loadInitial, m(e => e.encode), lastSubscribed);
+        assert.calledWith(loadInitial, m((e) => e.encode), lastSubscribed);
       }
     });
 
-    test("addSubByToken", ()=>{
+    test('addSubByToken', async () => {
       /**
        * Like {##addSub} but instead of using lastSubscribed to group for {##loadInitial} the token
        * is used to group for {##loadByToken}. The token can be anything is compared sameness.
@@ -133,24 +153,24 @@ isServer && define((require, exports, module)=>{
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const forEach = (callback) => {callback(book2)};
+      const forEach = async (callback) => {await callback(book2)};
       const whereNot = stub().returns({forEach});
       Book.where = stub().returns({whereNot});
 
       //[
-      const book1 = Book.create({genre_ids: ['drama', 'comedy']});
-      const book2 = Book.create({genre_ids: ['drama']});
+      const book1 = await Book.create({genre_ids: ['drama', 'comedy']});
+      const book2 = await Book.create({genre_ids: ['drama']});
 
       class MyUnion extends Union {
         constructor(genre_id) {
           super();
           this.genre_id = genre_id;
         }
-        loadByToken(encoder, oldUnion) {
-          Book
+        async loadByToken(encoder, oldUnion) {
+          await Book
             .where('genre_ids', this.genre_id)
             .whereNot('genre_ids', oldUnion.genre_id)
-            .forEach(doc =>{encoder.addDoc(doc)});
+            .forEach((doc) => {encoder.addDoc(doc)});
         }
       }
       const oldUnion = new MyUnion('comedy');
@@ -158,69 +178,59 @@ isServer && define((require, exports, module)=>{
 
       const sub = new Publication({id: 'sub1', conn, lastSubscribed: void 0});
       /** ⏿ ⮧ here we add the sub **/
-      union.addSubByToken(sub, oldUnion);
+      await union.addSubByToken(sub, oldUnion);
 
       const msgs = mc.decodeLastSend();
 
       assert.equals(msgs, [
-        ['A', ['Book', book2.attributes]]
+        ['A', ['Book', book2.attributes]],
       ]);
       //]
       assert.calledWith(Book.where, 'genre_ids', 'drama');
       assert.calledWith(whereNot, 'genre_ids', 'comedy');
     });
 
-    test("addSub partitions based on discreteLastSubscribed", ()=>{
-      let now = +new Date(2019, 1, 1); intercept(util, 'dateNow', ()=>now);
+    test('addSub partitions based on discreteLastSubscribed', async () => {
+      let now = + new Date(2019, 1, 1); intercept(util, 'dateNow', () => now);
 
-      now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
       const conn1 = conn;
-      const conn2 = ConnTH.mockConnection("conn2");
-      const conn3 = ConnTH.mockConnection("conn3");
-      const conn4 = ConnTH.mockConnection("conn4");
-      const conn5 = ConnTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection('conn2');
+      const conn3 = ConnTH.mockConnection('conn3');
+      const conn4 = ConnTH.mockConnection('conn4');
+      const conn5 = ConnTH.mockConnection('conn5');
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
-      const events = [];
+      events = [];
 
       class MyUnion extends Union {
         constructor() {
           super();
-          this.queryFuture = new util.Future;
         }
-        loadInitial(encoder, minLastSubscribed) {
-          events.push(`li`, minLastSubscribed);
-          this.queryFuture.wait();
-          Book.query.forEach(doc =>{encoder.addDoc(doc)});
+
+        async loadInitial(encoder, minLastSubscribed) {
+          events.push(`li`, minLastSubscribed - now);
+          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
           events.push(`liDone`);
         }
       }
       const union = new MyUnion();
-      after(()=>{union.queryFuture.isResolved() || union.queryFuture.return()});
 
-      const newSub = (id, conn, lastSubscribed)=>{
+      const newSub = (id, conn, lastSubscribed) => {
         const sub = new Publication({id, conn, lastSubscribed});
 
-        koru.runFiber(()=>{
-          union.addSub(sub);
-          events.push('done'+sub.id);
+        koru.runFiber(async () => {
+          await union.addSub(sub);
+          events.push('done' + sub.id);
         });
         return sub;
       };
-
-      const completeQuery = ()=>{
-        events.push('completeQuery');
-        const {queryFuture} = union;
-        union.queryFuture = new util.Future;
-        queryFuture.return();
-      };
-
 
       const sub1 = newSub('sub1', conn1, now);
       const sub2 = newSub('sub2', conn2, now + 30000);
@@ -230,42 +240,44 @@ isServer && define((require, exports, module)=>{
 
       assert.same(union.count, 5);
 
+      await syncPoint('wait1', 'liDone');
       refute.called(conn1.sendEncoded);
       refute.called(conn2.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait2', 'donesub1');
       assert.called(conn1.sendEncoded);
       assert.called(conn2.sendEncoded);
       refute.called(conn3.sendEncoded);
       refute.called(conn4.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait3', 'donesub3');
       assert.called(conn3.sendEncoded);
       assert.called(conn4.sendEncoded);
       refute.called(conn5.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait4', 'donesub5');
       assert.calledOnce(conn1.sendEncoded);
       assert.calledOnce(conn3.sendEncoded);
       assert.called(conn5.sendEncoded);
 
       assert.equals(events, [
-        'li', now,
-        'completeQuery',
+        'wait1',
+        'li', 0,
         'liDone',
+        'wait2',
+
+        'li', -60000,
         'donesub2',
 
-        'li', now - 60000,
+        'liDone',
         'donesub1',
-
-        'completeQuery',
-        'liDone',
+        'wait3',
+        'li', -1 - Publication.lastSubscribedInterval,
         'donesub3',
-        'li', now - 1 - Publication.lastSubscribedInterval,
-        'donesub4',
 
-        'completeQuery',
         'liDone',
+        'donesub4',
+        'wait4',
         'donesub5']);
 
       union.removeSub(sub1);
@@ -276,53 +288,39 @@ isServer && define((require, exports, module)=>{
       assert.same(union.count, 3);
     });
 
-    test("addSubByToken partitions based on token", ()=>{
+    test('addSubByToken partitions based on token', async () => {
       const conn1 = conn;
-      const conn2 = ConnTH.mockConnection("conn2");
-      const conn3 = ConnTH.mockConnection("conn3");
-      const conn4 = ConnTH.mockConnection("conn4");
-      const conn5 = ConnTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection('conn2');
+      const conn3 = ConnTH.mockConnection('conn3');
+      const conn4 = ConnTH.mockConnection('conn4');
+      const conn5 = ConnTH.mockConnection('conn5');
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
-      const events = [];
+      events = [];
 
       class MyUnion extends Union {
-        constructor() {
-          super();
-          this.future = new util.Future;
-        }
-        loadByToken(encoder, token) {
+        async loadByToken(encoder, token) {
           events.push(`li`, token);
-          this.future.wait();
-          Book.query.forEach(encoder.addDoc.bind(encoder));
+          await Book.query.forEach(encoder.addDoc.bind(encoder));
           events.push(`liDone`);
         }
       }
       const union = new MyUnion();
-      after(()=>{union.future.isResolved() || union.future.return()});
 
-      const newSub = (id, conn, token)=>{
+      const newSub = (id, conn, token) => {
         const sub = new Publication({id, conn});
-        koru.runFiber(()=>{
-          union.addSubByToken(sub, token);
-          events.push('done'+sub.id);
+        koru.runFiber(async () => {
+          await union.addSubByToken(sub, token);
+          events.push('done' + sub.id);
         });
         return sub;
       };
-
-      const completeQuery = ()=>{
-        events.push('completeQuery');
-        const future = union.future;
-        union.future = new util.Future;
-        future.return();
-      };
-
 
       const sub1 = newSub('sub1', conn1, 'token1');
       const sub2 = newSub('sub2', conn2, 'token1');
@@ -332,42 +330,46 @@ isServer && define((require, exports, module)=>{
 
       assert.same(union.count, 5);
 
+      await syncPoint('wait1', 'liDone');
+
       refute.called(conn1.sendEncoded);
       refute.called(conn2.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait2', 'donesub1');
       assert.called(conn1.sendEncoded);
       assert.called(conn2.sendEncoded);
       refute.called(conn3.sendEncoded);
       refute.called(conn4.sendEncoded);
 
-      completeQuery();
-      assert.called(conn3.sendEncoded);
+      await syncPoint('wait3', 'donesub3');
       assert.called(conn4.sendEncoded);
+      assert.called(conn3.sendEncoded);
       refute.called(conn5.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait4', 'donesub5');
       assert.calledOnce(conn1.sendEncoded);
       assert.calledOnce(conn3.sendEncoded);
       assert.called(conn5.sendEncoded);
 
       assert.equals(events, [
+        'wait1',
         'li', 'token1',
-        'completeQuery',
         'liDone',
-        'donesub2',
+        'wait2',
 
         'li', 'token2',
+        'donesub2',
+
+        'liDone',
         'donesub1',
 
-        'completeQuery',
-        'liDone',
-        'donesub4',
+        'wait3',
         'li', 'token3',
-        'donesub3',
+        'donesub4',
 
-        'completeQuery',
         'liDone',
+        'donesub3',
+        'wait4',
         'donesub5']);
 
       union.removeSub(sub5);
@@ -376,7 +378,7 @@ isServer && define((require, exports, module)=>{
       assert.same(union.count, 4);
     });
 
-    test("removeSub", ()=>{
+    test('removeSub', async () => {
       /**
        * Remove a subscriber from a union. When all subscriber have been removed from the union
        * {##onEmpty} will be called
@@ -390,8 +392,8 @@ isServer && define((require, exports, module)=>{
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       let onEmptyCalled = false;
       class MyUnion extends Union {
@@ -406,7 +408,6 @@ isServer && define((require, exports, module)=>{
       class MyPub extends Publication {
         constructor(options) {
           super(options);
-          union.addSub(this);
         }
 
         stop() {
@@ -417,6 +418,7 @@ isServer && define((require, exports, module)=>{
       }
 
       const sub = new MyPub({id: 'sub1', conn, lastSubscribed: void 0});
+      await union.addSub(sub);
 
       sub.stop();
 
@@ -424,7 +426,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("onEmpty", ()=>{
+    test('onEmpty', async () => {
       /**
        * This method is called when all subscribers have been removed from the union. It stops any
        * handles that have been pushed on to `#handles` and resets `#handles` length to 0. If
@@ -443,13 +445,13 @@ isServer && define((require, exports, module)=>{
       //[
       const union = new Union();
       const onEmpty = spy(union, 'onEmpty');
-      union.addSub(sub);
+      await union.addSub(sub);
       union.removeSub(sub);
       assert.called(onEmpty);
       //]
     });
 
-    test("initObservers", ()=>{
+    test('initObservers', async () => {
       /**
        * Override this method to start observers when one or more subscribers are added.  the
        * {##onEmpty} method should be overriden to stop any handles not stored in the
@@ -465,7 +467,7 @@ isServer && define((require, exports, module)=>{
       const {Book} = db.models;
 
       const conn1 = conn;
-      const conn2 = ConnTH.mockConnection("conn2");
+      const conn2 = ConnTH.mockConnection('conn2');
 
       //[
       class MyUnion extends Union {
@@ -487,9 +489,9 @@ isServer && define((require, exports, module)=>{
       const onEmpty = spy(union, 'onEmpty');
 
       const sub1 = new Publication({id: 'sub1', conn: conn1});
-      union.addSub(sub1);
+      await union.addSub(sub1);
       const sub2 = new Publication({id: 'sub2', conn: conn2});
-      union.addSub(sub2);
+      await union.addSub(sub2);
 
       union.removeSub(sub1);
 
@@ -500,13 +502,13 @@ isServer && define((require, exports, module)=>{
       assert.calledOnce(onEmpty);
       //]
 
-      union.addSub(sub2);
+      await union.addSub(sub2);
       assert.calledTwice(initObservers);
       union.removeSub(sub2);
       assert.calledTwice(onEmpty);
     });
 
-    test("loadInitial", ()=>{
+    test('loadInitial', async () => {
       /**
        * Override this method to select the initial documents to download when a new group of
        * subscribers is added. Subscribers are partitioned by their
@@ -517,7 +519,7 @@ isServer && define((require, exports, module)=>{
        * * `addDoc` is a function to call with a doc to be added to the subscribers.
 
        * * `chgDoc` is a function to call with a doc and change object (listing the fields that have
-           changed) to be changed to the subscribers.
+       changed) to be changed to the subscribers.
 
        * * `remDoc` a function to call with a doc (and optional flag) to be removed from the
        * subscribers. The flag is sent to the client as a {#koru/model/doc-change;#flag} which
@@ -535,33 +537,33 @@ isServer && define((require, exports, module)=>{
       api.protoMethod();
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
-      const conn2 = ConnTH.mockConnection("conn2");
+      const conn2 = ConnTH.mockConnection('conn2');
       const mc2 = new MockConn(conn2);
 
       const {Book} = db.models;
       let now = Date.now();
       //[
-      const book1 = Book.create({updatedAt: new Date(now - 80000)});
-      const book2 = Book.create({updatedAt: new Date(now - 40000)});
-      const book3 = Book.create({updatedAt: new Date(now - 50000), state: 'D'});
-      const book4 = Book.create({updatedAt: new Date(now - 31000), state: 'C'});//]
-      Book.whereNot = stub().returns({forEach: (cb) => {
+      const book1 = await Book.create({updatedAt: new Date(now - 80000)});
+      const book2 = await Book.create({updatedAt: new Date(now - 40000)});
+      const book3 = await Book.create({updatedAt: new Date(now - 50000), state: 'D'});
+      const book4 = await Book.create({updatedAt: new Date(now - 31000), state: 'C'});//]
+      Book.whereNot = stub().returns({async forEach(cb) {
         cb(book1); cb(book2); cb(book4);
       }});
-      Book.where = stub().returns({forEach: (cb) => {
+      Book.where = stub().returns({async forEach(cb) {
         cb(book2); cb(book3); cb(book4);
       }});
       //[#
 
       class MyUnion extends Union {
-        loadInitial(encoder, minLastSubscribed) {
+        async loadInitial(encoder, minLastSubscribed) {
           const addDoc = encoder.addDoc.bind(encoder);
           const chgDoc = encoder.chgDoc.bind(encoder);
           const remDoc = encoder.remDoc.bind(encoder);
-          if (minLastSubscribed == 0)
-            Book.whereNot({state: 'D'}).forEach(addDoc);
-          else {
-            Book.where({updatedAt: {$gte: new Date(minLastSubscribed)}}).forEach(doc => {
+          if (minLastSubscribed == 0) {
+            await Book.whereNot({state: 'D'}).forEach(addDoc);
+          } else {
+            await Book.where({updatedAt: {$gte: new Date(minLastSubscribed)}}).forEach((doc) => {
               switch (doc.state) {
               case 'D': remDoc(doc); break;
               case 'C': chgDoc(doc, {state: doc.state}); break;
@@ -574,18 +576,18 @@ isServer && define((require, exports, module)=>{
       const union = new MyUnion();
 
       const sub1 = new Publication({id: 'sub1', conn}); // no lastSubscribed
-      union.addSub(sub1);
+      await union.addSub(sub1);
 
       assert.equals(mc.decodeLastSend(), [
         ['A', ['Book', book1.attributes]],
         ['A', ['Book', book2.attributes]],
-        ['A', ['Book', book4.attributes]]
+        ['A', ['Book', book4.attributes]],
       ]);
 
       const lastSubscribed = now - 600000;
 
       const sub2 = new Publication({id: 'sub2', conn: conn2, lastSubscribed});
-      union.addSub(sub2);
+      await union.addSub(sub2);
       assert.equals(mc2.decodeLastSend(), [
         ['A', ['Book', book2.attributes]],
         ['R', ['Book', 'book3', void 0]],
@@ -594,22 +596,21 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("loadInitial change with no send", ()=>{
+    test('loadInitial change with no send', async () => {
       class MyUnion extends Union {
-        loadInitial(encoder) {
-        }
+        loadInitial(encoder) {}
       }
 
       const union = new MyUnion();
 
       const sub1 = new Publication({id: 'sub1', conn});
 
-      union.addSub(sub1);
+      await union.addSub(sub1);
 
       refute.called(sub1.conn.sendEncoded);
     });
 
-    test("loadByToken", ()=>{
+    test('loadByToken', async () => {
       /**
        * Like {##loadInitial} but instead of using minLastSubscribed passes the token from
        * {##addSubByToken} to calculate which documents to load.
@@ -625,14 +626,14 @@ isServer && define((require, exports, module)=>{
 
       const {Book} = db.models;
 
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       //[
       // see addSubByToken for better example
       class MyUnion extends Union {
         /** ⏿ ⮧ here we loadByToken **/
-        loadByToken(encoder, token) {
+        async loadByToken(encoder, token) {
           if (token === 'myToken') {
             encoder.addDoc(book1);
             encoder.remDoc(book2, 'stopped');
@@ -644,76 +645,74 @@ isServer && define((require, exports, module)=>{
 
       const sub1 = new Publication({id: 'sub1', conn});
 
-      union.addSubByToken(sub1, 'myToken');
+      await union.addSubByToken(sub1, 'myToken');
 
       const msgs = mc.decodeLastSend();
 
       assert.equals(msgs, [
         ['A', ['Book', book1.attributes]],
-        ['R', ['Book', book2._id, 'stopped']]
+        ['R', ['Book', book2._id, 'stopped']],
       ]);
       //]
     });
 
-    test("loadByToken change with no send", ()=>{
+    test('loadByToken change with no send', async () => {
       class MyUnion extends Union {
-        loadByToken(encoder, token) {
-        }
+        loadByToken(encoder, token) {}
       }
 
       const union = new MyUnion();
 
       const sub1 = new Publication({id: 'sub1', conn});
 
-      union.addSubByToken(sub1, 'myToken');
+      await union.addSubByToken(sub1, 'myToken');
 
       refute.called(sub1.conn.sendEncoded);
     });
 
-
-
-    test("loadInitial queues batchUpdates", ()=>{
+    test('loadInitial queues batchUpdates', async () => {
       let now = util.dateNow();
-      now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
-      const events = [];
+      events = [];
 
       class MyUnion extends Union {
         constructor() {
           super();
-          this.future = new util.Future;
+          this.future = new Future();
         }
         initObservers() {
           this.handles.push(Book.onChange(this.batchUpdate));
         }
-        loadInitial(encoder) {
+        async loadInitial(encoder) {
           events.push(`li`);
-          this.future.wait();
-          Book.query.forEach(doc =>{encoder.addDoc(doc)});
+          await this.future.promise;
+          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
           events.push(`liDone`);
         }
       }
       const union = new MyUnion();
-      after(()=>{union.future.isResolved() || union.future.return()});
 
       const sub = new Publication({id: 'sub1', conn});
-      koru.runFiber(()=>{
-        union.addSub(sub);
-        events.push('done'+sub.id);
+      koru.runFiber(async () => {
+        await union.addSub(sub);
+        events.push('done' + sub.id);
       });
 
-      db.change(book1);
+      await db.change(book1);
 
       refute.called(conn.sendEncoded);
 
-      union.future.return();
+      union.future.resolve();
+
+      await syncPoint('wait1', 'donesub1');
 
       assert.calledTwice(conn.sendEncoded);
       assert.equals(mc.decodeMessage(conn.sendEncoded.firstCall.args[0]), [
@@ -725,102 +724,94 @@ isServer && define((require, exports, module)=>{
         'Book', 'book1', {name: 'name change'}]);
     });
 
-    test("addSub adds to running partition", ()=>{
-      let now = +new Date(2019, 1, 1); intercept(util, 'dateNow', ()=>now);
+    test('addSub adds to running partition', async () => {
+      let now = + new Date(2019, 1, 1); intercept(util, 'dateNow', () => now);
 
-      now  = Math.floor(now/Publication.lastSubscribedInterval)*Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
       const conn1 = conn;
-      const conn2 = ConnTH.mockConnection("conn2");
-      const conn3 = ConnTH.mockConnection("conn3");
-      const conn4 = ConnTH.mockConnection("conn4");
-      const conn5 = ConnTH.mockConnection("conn5");
+      const conn2 = ConnTH.mockConnection('conn2');
+      const conn3 = ConnTH.mockConnection('conn3');
+      const conn4 = ConnTH.mockConnection('conn4');
+      const conn5 = ConnTH.mockConnection('conn5');
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
-      const events = [];
+      events = [];
 
       class MyUnion extends Union {
         constructor() {
           super();
-          this.future = new util.Future;
         }
-        loadInitial(encoder, minLastSubscribed) {
-          events.push(`li`, minLastSubscribed);
-          this.future.wait();
-          Book.query.forEach(encoder.addDoc.bind(encoder));
+        async loadInitial(encoder, minLastSubscribed) {
+          events.push(`li`, minLastSubscribed - now);
+          await Book.query.forEach(encoder.addDoc.bind(encoder));
           events.push(`liDone`);
         }
       }
       const union = new MyUnion();
-      after(()=>{union.future.isResolved() || union.future.return()});
 
-      const newSub = (id, conn, lastSubscribed)=>{
+      const newSub = (id, conn, lastSubscribed) => {
         const sub = new Publication({id, conn, lastSubscribed});
-        koru.runFiber(()=>{
-          union.addSub(sub);
-          events.push('done'+sub.id);
+        koru.runFiber(async () => {
+          await union.addSub(sub);
+          events.push('done' + sub.id);
         });
         return sub;
       };
 
-      const completeQuery = ()=>{
-        events.push('completeQuery');
-        const future = union.future;
-        union.future = new util.Future;
-        future.return();
-      };
-
-
       newSub('sub1', conn1, now + 10000);
       newSub('sub2', conn2, now + 30000);
-      newSub('sub3', conn3, now +  5000);
+      newSub('sub3', conn3, now + 5000);
       newSub('sub4', conn4, now - 60000);
-      newSub('sub5', conn5, now +  4000);
+      newSub('sub5', conn5, now + 4000);
+
+      await syncPoint('wait1', 'liDone');
 
       refute.called(conn1.sendEncoded);
       refute.called(conn2.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait2', 'donesub2');
       assert.called(conn1.sendEncoded);
       assert.called(conn2.sendEncoded);
       refute.called(conn3.sendEncoded);
       refute.called(conn4.sendEncoded);
       refute.called(conn5.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait3', 'donesub5');
       assert.called(conn3.sendEncoded);
       assert.called(conn5.sendEncoded);
       refute.called(conn4.sendEncoded);
 
-      completeQuery();
+      await syncPoint('wait4', 'donesub4');
       assert.called(conn4.sendEncoded);
 
       assert.equals(events, [
-        'li', now + 10000,
-        'completeQuery',
+        'wait1',
+        'li', 10000,
         'liDone',
+        'wait2',
+
+        'li', 4000,
         'donesub2',
 
-        'li', now + 4000,
+        'liDone',
         'donesub1',
-
-        'completeQuery',
-        'liDone',
+        'wait3',
+        'li', -60000,
         'donesub3',
-        'li', now - 60000,
-        'donesub5',
 
-        'completeQuery',
         'liDone',
+        'donesub5',
+        'wait4',
         'donesub4']);
     });
 
-    test("encodeUpdate", ()=>{
+    test('encodeUpdate', async () => {
       /**
        * encode a {#koru/model/doc-change} ready for sending via {##sendEncoded} or
        * {##sendEncodedWhenIdle}.
@@ -840,17 +831,17 @@ isServer && define((require, exports, module)=>{
 
       //[
       const sub1 = new Publication({id: 'sub123', conn});
-      union.addSub(sub1);
-      const book1 = Book.create();
+      await union.addSub(sub1);
+      const book1 = await Book.create();
 
       const msg = union.encodeUpdate(DocChange.change(book1, {name: 'old name'}));
 
-      assert.equals(msg[0], 67 /* 'C' */); // is a Change command
+      assert.equals(msg[0], 67); /* 'C' */ // is a Change command
       assert.equals(ConnTH.decodeMessage(msg, conn), ['Book', 'book1', {name: 'Book 1'}]);
       //]
     });
 
-    test("sendEncoded", ()=>{
+    test('sendEncoded', async () => {
       /**
        * Send a pre-encoded {#koru/session/message} to all subscribers. Called by {##batchUpdate}.
        *
@@ -866,10 +857,10 @@ isServer && define((require, exports, module)=>{
 
       //[
       const sub1 = new Publication({id: 'sub123', conn});
-      union.addSub(sub1);
+      await union.addSub(sub1);
       const sub2 = new Publication({id: 'sub124', conn: conn2});
-      union.addSub(sub1);
-      union.addSub(sub2);
+      await union.addSub(sub1);
+      await union.addSub(sub2);
 
       union.sendEncoded('myEncodedMessage');
 
@@ -878,7 +869,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("sendEncodedWhenIdle", ()=>{
+    test('sendEncodedWhenIdle', async () => {
       /**
        * Delays calling {##sendEncoded} until {##loadInitial} and {##loadByToken} have finished
        **/
@@ -888,13 +879,13 @@ isServer && define((require, exports, module)=>{
       union.sendEncoded = stub();
       let callCount;
 
-      union.loadInitial = ()=>{
+      union.loadInitial = () => {
         union.sendEncodedWhenIdle('msg1');
         callCount = union.sendEncoded.callCount;
       };
 
       const sub1 = new Publication({id: 'sub123', conn});
-      union.addSub(sub1);
+      await union.addSub(sub1);
 
       assert.same(callCount, 0);
       assert.calledOnceWith(union.sendEncoded, 'msg1');
@@ -904,7 +895,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("subs", ()=>{
+    test('subs', async () => {
       /**
        * Return an iterator over the union's subs.
        *
@@ -917,15 +908,15 @@ isServer && define((require, exports, module)=>{
 
       //[
       const sub1 = new Publication({id: 'sub123', conn});
-      union.addSub(sub1);
+      await union.addSub(sub1);
       const sub2 = new Publication({id: 'sub124', conn: conn2});
-      union.addSub(sub2);
+      await union.addSub(sub2);
 
       assert.equals(Array.from(union.subs()), [sub1, sub2]);
       //]
     });
 
-    test("buildUpdate", ()=>{
+    test('buildUpdate', async () => {
       /**
        * Override this to manipulate the document sent to clients. By default calls
        * {#koru/session/server-connection.buildUpdate}.
@@ -940,22 +931,23 @@ isServer && define((require, exports, module)=>{
       class MyUnion extends Union {
         buildUpdate(dc) {
           const upd = super.buildUpdate(dc);
-          if (upd[0] === 'C')
+          if (upd[0] === 'C') {
             upd[1][2].name = 'filtered';
+          }
           return upd;
         }
       }
       const union = new MyUnion();
-      const book1 = Book.create();
+      const book1 = await Book.create();
 
       assert.equals(
         union.buildUpdate(DocChange.change(book1, {name: 'old name'})),
-        ['C', ['Book', 'book1', {name: 'filtered'}]]
+        ['C', ['Book', 'book1', {name: 'filtered'}]],
       );
       //]
     });
 
-    test("buildBatchUpdate", ()=>{
+    test('buildBatchUpdate', () => {
       /**
        * buildBatchUpdate builds the {##batchUpdate} function that can be used to broadcast document
        * updates to multiple client subscriptions. It is called during Union construction.
@@ -969,7 +961,7 @@ isServer && define((require, exports, module)=>{
       //]
     });
 
-    test("batchUpdate", ()=>{
+    test('batchUpdate', async () => {
       /**
        * The batchUpdate function is built by the {##buildBatchUpdate} method on Union
        * construction. It is used to broadcast document updates to multiple client subscriptions. It
@@ -988,8 +980,8 @@ isServer && define((require, exports, module)=>{
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       class MyUnion extends Union {
         initObservers() {
@@ -1000,12 +992,12 @@ isServer && define((require, exports, module)=>{
       const union = new MyUnion();
 
       const sub = new Publication({id: 's123', conn});
-      union.addSub(sub);
+      await union.addSub(sub);
 
-      TransQueue.transaction(()=>{
-        db.change(book1);
-        Book.create();
-        db.remove(book2);
+      await TransQueue.transaction(async () => {
+        await db.change(book1);
+        await Book.create();
+        await db.remove(book2);
       });
 
       const msgs = mc.decodeLastSend();
@@ -1013,19 +1005,19 @@ isServer && define((require, exports, module)=>{
       assert.equals(msgs, [
         ['C', ['Book', 'book1', {name: 'name change'}]],
         ['A', ['Book', {_id: 'book3', name: 'Book 3'}]],
-        ['R', ['Book', 'book2', void 0]]
+        ['R', ['Book', 'book2', void 0]],
       ]);
       //]
     });
 
-    test("multiple unions on one sub", ()=>{
+    test('multiple unions on one sub', async () => {
       const empty = [];
       class Union1 extends Union {
-        onEmpty() {empty.push("union1")}
+        onEmpty() {empty.push('union1')}
       }
 
       class Union2 extends Union {
-        onEmpty() {empty.push("union2")}
+        onEmpty() {empty.push('union2')}
       }
 
       const union11 = new Union1();
@@ -1033,9 +1025,9 @@ isServer && define((require, exports, module)=>{
       const union2 = new Union2();
       const sub = new Publication({id: 's123', conn});
 
-      union11.addSub(sub);
-      union12.addSub(sub);
-      union2.addSub(sub);
+      await union11.addSub(sub);
+      await union12.addSub(sub);
+      await union2.addSub(sub);
 
       union12.removeSub(sub);
       union2.removeSub(sub);

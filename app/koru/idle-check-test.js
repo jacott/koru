@@ -1,26 +1,25 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * IdleCheck keeps count of usage and notifies when idle.
    *
    **/
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy} = TH;
-  const {Fiber} = util;
+  const {stub, spy, match: m} = TH;
 
   const IdleCheck = require('./idle-check');
 
-  let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
-      v = {};
-    });
+  const sleep = (n) => new Promise((resolve, reject) => {
+    setTimeout(resolve, n);
+  });
 
-    test("singleton", ()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('singleton', () => {
       /**
        * The default `IdleCheck`. It is used by
        * {#koru/web-server-factory} and
@@ -31,188 +30,242 @@ isServer && define((require, exports, module)=>{
       assert(IdleCheck.singleton instanceof IdleCheck);
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       const IdleCheck = api.class();
       assert(new IdleCheck() instanceof IdleCheck);
     });
 
-    group("fiber timeout", ()=>{
-      beforeEach(()=>{
-        v.idleCheck = new IdleCheck();
-        v.idleCheck.maxTime = 1*60*1000;
-        v.idleCheck.alertTime = 500;
+    group('fiber timeout', () => {
+      let idleCheck, f2, err;
+      beforeEach(() => {
+        idleCheck = new IdleCheck();
+        idleCheck.maxTime = 1*60*1000;
+        idleCheck.alertTime = 500;
         stub(global, 'setTimeout').returns(112233);
         stub(global, 'clearTimeout');
-        v.f2 = () => Fiber(() => {
-          util.thread.action = "testAction";
-          v.idleCheck.inc();
-          try {
-            Fiber.yield();
-          } catch(ex) {
-            v.ex = ex;
-          }
-          v.idleCheck.dec();
-        });
-
+        err = void 0;
+        f2 = (future) => {
+          let thread;
+          koru.runFiber(async () => {
+            thread = util.thread;
+            thread.action = 'testAction';
+            idleCheck.inc();
+            idleCheck.info.abort = (err) => {future.reject(err)};
+            try {
+              await future.promise;
+            } catch (_err) {
+              err = _err;
+            }
+            idleCheck.dec();
+          });
+          return thread;
+        };
       });
 
-      test("running too long", ()=>{
-        const thread = v.f2();
-        thread.appThread = {dbId: 'foo1', userId: 'u123'};
-
-        thread.run();
+      test('running too long', async () => {
+        const future = new Future();
+        const thread = f2(future);
+        Object.assign(thread, {dbId: 'foo1', userId: 'u123'});
 
         stub(console, 'error');
+        stub(idleCheck, 'dec');
 
-        assert.calledOnceWith(global.setTimeout, TH.match(f => v.func = f), 500);
+        let func;
+        assert.calledOnceWith(global.setTimeout, m((f) => func = f), 500);
 
-        v.func();
+        func();
 
-        assert.same(v.ex, void 0);
+        await 1;
+
+        assert.same(err, void 0);
         assert.calledWith(console.error, 'long running. dbId: foo1, userId: u123 testAction');
 
-        assert.calledWith(global.setTimeout, v.func, 1*60*1000);
+        assert.calledWith(global.setTimeout, func, 1*60*1000);
 
-        v.func();
+        func();
 
-        assert.equals(v.ex.message, 'This Fiber is a zombie');
+        refute.called(idleCheck.dec);
+
+        await 1;
+
+        assert.equals(err, 'timeout');
         assert.calledWith(console.error, 'ABORTED; timed out. dbId: foo1, userId: u123 testAction');
+
+        assert.called(idleCheck.dec);
       });
 
-      test("finish in time", ()=>{
-        v.idleCheck.alertTime = null;
-        const thread = v.f2();
-        thread.run();
+      test('finish in time', async () => {
+        idleCheck.alertTime = null;
+        const future = new Future();
+        const thread = f2(future);
 
-        assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+        await 1;
+
+        assert.calledWith(global.setTimeout, m.func, 1*60*1000);
 
         refute.called(global.clearTimeout);
 
-        thread.run();
+        future.resolve(); await 1;
 
-        refute(v.ex);
+        refute(err);
 
         assert.calledWith(global.clearTimeout, 112233);
       });
     });
 
-    group("waitIdle", ()=>{
-      test("already Idle", ()=>{
+    group('waitIdle', () => {
+      test('already Idle', () => {
         /**
          * waitIdle waits until `this.count` drops to zero.
          **/
         api.protoMethod('waitIdle');
         //[
         const check = new IdleCheck();
-        check.waitIdle(v.stub = stub());
-        assert.called(v.stub);
+        const callback = stub();
+        check.waitIdle(callback);
+        assert.called(callback);
         //]
       });
 
-      test("multiple listeners", ()=>{
+      test('multiple listeners', async () => {
         const start = Date.now();
-        v.idleCheck = new IdleCheck();
-        v.idleCheck.onDec = stub();
-        v.idleCheck.inc();
-        const f2 = Fiber(() => {
-          v.idleCheck.inc();
-          Fiber.yield();
-          v.idleCheck.dec();
+        const idleCheck = new IdleCheck();
+        idleCheck.onDec = stub();
+        idleCheck.inc();
+        await sleep(1);
+        const future = new Future();
+        let f2;
+        koru.runFiber(async () => {
+          f2 = util.thread;
+          idleCheck.inc();
+          await future.promise;
+          idleCheck.dec();
         });
 
-        f2.run();
-
-        const cStart = v.idleCheck.fibers.get(Fiber.current);
-        const f2Start = v.idleCheck.fibers.get(f2);
+        const cStart = idleCheck.info.start;
+        const f2Start = idleCheck.threads.get(f2).start;
 
         assert.between(cStart, start, Date.now());
         assert.between(f2Start, start, Date.now());
 
-        v.idleCheck.waitIdle(v.stub1 = stub());
-        v.idleCheck.waitIdle(v.stub2 = stub());
+        const cb1 = stub();
+        idleCheck.waitIdle(cb1);
+        const cb2 = stub();
+        idleCheck.waitIdle(cb2);
 
-        v.idleCheck.dec();
+        idleCheck.dec();
 
-        refute(v.idleCheck.fibers.get(Fiber.current));
+        refute(idleCheck.info);
 
-        refute.called(v.stub1);
-        refute.called(v.stub2);
-        f2.run();
+        refute.called(cb1);
+        refute.called(cb2);
 
-        assert.equals(Array.from(v.idleCheck.fibers.values()), []);
+        future.resolve(); await 1;
 
-        assert.called(v.stub1);
-        assert.called(v.stub2);
+        assert.equals(Array.from(idleCheck.threads.values()), []);
 
-        v.idleCheck.inc();
+        assert.called(cb1);
+        assert.called(cb2);
 
-        v.idleCheck.waitIdle(v.stub3 = stub());
-        v.idleCheck.dec();
+        idleCheck.inc();
 
-        assert.calledOnce(v.stub1);
-        assert.calledOnce(v.stub3);
+        const {info} = idleCheck;
 
-        assert.calledWith(v.idleCheck.onDec, Fiber.current, cStart);
-        assert.calledWith(v.idleCheck.onDec, f2, f2Start);
+        const cb3 = stub();
+        idleCheck.waitIdle(cb3);
+        idleCheck.dec();
+
+        assert.calledOnce(cb1);
+        assert.calledOnce(cb3);
+
+        assert.calledWith(idleCheck.onDec, util.thread, cStart);
+        assert.calledWith(idleCheck.onDec, f2, f2Start);
       });
     });
 
-    group("exitProcessWhenIdle", ()=>{
-      beforeEach(()=>{
+    group('exitProcessWhenIdle', () => {
+      let idleCheck, f2, future, finished, err;
+
+      const startF2 = () => {
+        koru.runFiber(async () => {
+          f2 = util.thread;
+          idleCheck.inc();
+          idleCheck.info.abort = (err) => {
+            future.reject(err);
+            future = void 0;
+          };
+          try {
+            await future.promise;
+          } catch (_err) {
+            err = _err;
+          } finally {
+            try {
+              idleCheck?.dec();
+              finished.resolve();
+            } catch (err) {
+              koru.unhandledException(err);
+              finished.reject(err);
+            }
+          }
+        });
+      };
+
+      beforeEach(() => {
         stub(process, 'exit');
         stub(global, 'setTimeout');
-        v.idleCheck = new IdleCheck();
-        v.f2 = Fiber(() => {
-          if (! (v && v.idleCheck)) return;
-          v.idleCheck.inc();
-          try {
-            Fiber.yield();
-          } catch(ex) {
-            v.ex = ex;
-          }
-          v.idleCheck && v.idleCheck.dec();
-        });
+        idleCheck = new IdleCheck();
+        future = new Future();
+        finished = new Future();
         stub(console, 'log');
       });
 
-      afterEach(()=>{
-        v.idleCheck = null;
-        v.f2.run();
+      afterEach(() => {
+        idleCheck = null;
       });
 
-
-      test("idle", ()=>{
-        v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000, abortTxAfter: 10*1000});
+      test('idle', () => {
+        idleCheck.exitProcessWhenIdle({forceAfter: 20*1000, abortTxAfter: 10*1000});
         assert.called(process.exit);
         assert.calledWith(console.log, '=> Shutdown');
       });
 
-      test("forceAfter", ()=>{
-        v.f2.run();
-        v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000});
+      test('forceAfter', async () => {
+        startF2();
+        idleCheck.exitProcessWhenIdle({forceAfter: 20*1000});
 
-        assert.calledWith(global.setTimeout, TH.match(f => v.force = f), 20*1000);
-        assert.calledWith(global.setTimeout, TH.match.func, 10*1000);
+        let force;
+
+        assert.calledWith(global.setTimeout, m((f) => force = f), 20*1000);
+        assert.calledWith(global.setTimeout, m.func, 10*1000);
 
         refute.called(process.exit);
-        v.force();
+        force();
         assert.called(process.exit);
+
+        future?.resolve();
+        await finished.promise;
       });
 
-      test("abortTxAfter", ()=>{
-        v.f2.run();
-        v.idleCheck.exitProcessWhenIdle({abortTxAfter: 10*1000});
+      test('abortTxAfter', async () => {
+        startF2();
+        idleCheck.exitProcessWhenIdle({abortTxAfter: 10*1000});
 
-        assert.calledWith(global.setTimeout, TH.match.func, 20*1000);
-        assert.calledWith(global.setTimeout, TH.match(f => v.abort = f), 10*1000);
+        assert.calledWith(global.setTimeout, m.func, 20*1000);
+        let abort;
+        assert.calledWith(global.setTimeout, m((f) => abort = f), 10*1000);
 
         refute.called(process.exit);
 
-        v.abort();
+        abort();
 
-        assert.equals(v.ex.message, 'This Fiber is a zombie');
+        await 1;
+
+        assert.equals(err.message, 'Aborted');
 
         assert.called(process.exit);
+
+        future?.resolve();
+        await finished.promise;
       });
     });
   });

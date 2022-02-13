@@ -1,9 +1,10 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const util            = require('koru/util');
   const queue           = require('./queue')();
+  const fsp             = requirejs.nodeRequire('fs/promises');
 
   const Path = requirejs.nodeRequire('path');
 
@@ -13,29 +14,30 @@ define((require)=>{
     set(type, compiler) {types[type] = compiler},
     has(type) {return types[type] !== undefined},
 
-    compile(type, path, outPath) {
+    async compile(type, path, outPath) {
       const compiler = types[type];
       if (compiler === undefined) return;
 
-      return queue(path, ()=>{
-        const srcSt = fst.stat(path);
-        const jsSt = fst.stat(outPath);
+      return await queue(path, async () => {
+        const srcSt = await fst.stat(path);
+        const outSt = await fst.stat(outPath);
 
-        if (srcSt === undefined)
-          throw new koru.Error(404, outPath + ' not found');
+        if (srcSt === undefined) {
+          throw new koru.Error(404, path + ' not found');
+        }
 
-        if (jsSt === undefined) fst.mkdir(Path.dirname(outPath));
+        if (outSt === undefined) await fst.mkdir_p(Path.dirname(outPath));
 
-        if (jsSt === undefined || +jsSt.mtime < +srcSt.mtime) {
-          compiler(type, path, outPath);
+        if (outSt === undefined || + outSt.mtime < + srcSt.mtime) {
+          await compiler(type, path, outPath);
         }
       });
     },
 
-    read(type, path, outPath) {
-      this.compile(type, path, outPath);
-      return fst.readFile(outPath).toString();
-    }
+    async read(type, path, outPath) {
+      await this.compile(type, path, outPath);
+      return (await fsp.readFile(outPath)).toString();
+    },
   };
 
   return Compilers;

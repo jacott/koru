@@ -1,18 +1,18 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const util            = require('./util-server');
 
-  const TWENTY_DAYS = 20*util.DAY;
+  const TWENTY_DAYS = 20 * util.DAY;
 
-  return koru =>{
+  return (koru) => {
     koru.onunload(module, 'reload');
 
     let dbBroker = null;
 
     {
-      const versionParts = (process.env.KORU_APP_VERSION || 'dev,h'+util.dateNow()).split(',');
+      const versionParts = (process.env.KORU_APP_VERSION || 'dev,h' + util.dateNow()).split(',');
       koru.version = versionParts[0];
       koru.versionHash = versionParts[1];
     }
@@ -26,27 +26,26 @@ define((require, exports, module)=>{
         try {
           requirejs.nodeRequire('../build/Release/koru_restart.node')
             .execv(process.execPath, argv);
-        } catch(err) {
+        } catch (err) {
           console.log(`=> Reload not supported`);
           process.exit(1);
         }
       },
 
-      Fiber: util.Fiber,
-
-      appDir: koru.config.appDir || module.toUrl('').slice(0,-1),
+      appDir: koru.config.appDir || module.toUrl('').slice(0, -1),
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
 
-      logger: (type, ...args)=>{
+      logger: (type, ...args) => {
         if (type === 'D') {
-          console.log('D> '+util.inspect(args));
+          console.log('D> ' + util.inspect(args));
         } else if (type === 'C') {
           const {connection} = util.thread;
           console.log((connection === void 0
-                       ? '' : connection.engine + ' ' + connection.sessId + ": ")+
+                       ? ''
+                       : connection.engine + ' ' + connection.sessId + ': ') +
                       args[0]);
         } else {
-          console.log(type+'> '+args.join(' '));
+          console.log(type + '> ' + args.join(' '));
         }
       },
 
@@ -54,12 +53,13 @@ define((require, exports, module)=>{
         let cancel = 0;
         if (duration > TWENTY_DAYS) {
           const endTime = Date.now() + duration;
-          const loop = ()=>{
+          const loop = () => {
             const now = Date.now();
-            if (endTime - now > TWENTY_DAYS)
+            if (endTime - now > TWENTY_DAYS) {
               cancel = setTimeout(loop, TWENTY_DAYS);
-            else
+            } else {
               cancel = koru.setTimeout(func, Math.max(endTime - now, 0));
+            }
           };
 
           cancel = setTimeout(loop, TWENTY_DAYS);
@@ -72,41 +72,28 @@ define((require, exports, module)=>{
         };
       },
 
-      setTimeout(func, duration) {
-        if (duration > 2147483640) throw new Error('duration too big');
-        return setTimeout(() => koru.runFiber(func), duration);
-      },
-
       runFiber(func) {
-        let restart = false;
-        util.Fiber(()=>{
-          if (restart) return;
-          restart = true;
-          try {
-            func();
-          } catch(ex) {
-            koru.unhandledException(ex);
+        return globalThis.__koruThreadLocal.run({}, () => {
+          const ans = func();
+          if (ans instanceof Promise) {
+            ans.catch((err) => {koru.unhandledException(err)});
           }
-        }).run();
+          return ans;
+        });
       },
 
       fiberConnWrapper(func, conn, data) {
-        dbBroker !== null || require(['koru/model/db-broker'], value => dbBroker = value);
-        let restart = false;
-        util.Fiber(() => {
-          if (restart) return;
-          restart = true;
-          try {
-            const thread = util.thread;
-            thread.userId = conn.userId;
-            thread.connection = conn;
-            dbBroker.db = conn.db;
+        dbBroker !== null || require(['koru/model/db-broker'], (value) => dbBroker = value);
+        const thread = {userId: conn.userId, connection: conn};
 
-            func(conn, data);
-          } catch(ex) {
-            koru.unhandledException(ex);
+        return globalThis.__koruThreadLocal.run(thread, () => {
+          dbBroker.db = conn.db;
+          const ans = func(conn, data);
+          if (ans instanceof Promise) {
+            ans.catch((err) => {koru.unhandledException(err)});
           }
-        }).run();
+          return ans;
+        });
       },
     });
 

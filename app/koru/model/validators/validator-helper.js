@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   const BaseModel       = require('koru/model/base-model');
   const util            = require('koru/util');
 
@@ -21,7 +21,7 @@ define((require, exports, module)=>{
         for (const val in opts) {
           const valFunc = this[validator$][val];
           if (valFunc !== undefined) {
-            vf[val]=[valFunc, opts[val], opts];
+            vf[val] = [valFunc, opts[val], opts];
           }
         }
         Object.defineProperty(proto, field, {
@@ -40,7 +40,7 @@ define((require, exports, module)=>{
               changes[field] = value;
             }
             return value;
-          }
+          },
         });
       }
     }
@@ -64,5 +64,4 @@ define((require, exports, module)=>{
   return {
     ModelStub,
   };
-
 });

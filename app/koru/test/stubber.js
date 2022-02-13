@@ -103,24 +103,33 @@ define((require) => {
         assert.fail("Can't yield; stub has not been called", 1);
       }
       const {length} = calls;
-      for (let i = 0; i<length; ++i) {
-        calls[i].yield(...args);
+      let ans;
+      for (let i = 0; i < length; ++i) {
+        const p = calls[i].yield(...args);
+        if (p instanceof Promise) {
+          if (ans === void 0) {
+            ans = [p];
+          } else {
+            ans.push(p);
+          }
+        }
       }
-      return this;
+      if (ans === void 0) return this;
+      return Promise.all(ans).then(() => this);
     }
 
     reset() {this.calls = void 0}
 
     getCall(index) {
       const {calls} = this;
-      return calls && calls[index<0 ? calls.length + index : index];
+      return calls && calls[index < 0 ? calls.length + index : index];
     }
 
     args(callIndex, index) {
       const {calls} = this;
       if (calls === void 0) return;
-      const call = calls[callIndex<0 ? calls.length + callIndex : callIndex];
-      return call && call.args[index<0 ? call.args.length + index : index];
+      const call = calls[callIndex < 0 ? calls.length + callIndex : callIndex];
+      return call && call.args[index < 0 ? call.args.length + index : index];
     }
 
     get firstCall() {
@@ -280,7 +289,7 @@ define((require) => {
       const listener = listeners[i];
       const spyCount = listener.spyCount;
       if (spyCount !== void 0) {
-        spyCount+1 === proxy.calls.length && listener.invoke(call);
+        spyCount + 1 === proxy.calls.length && listener.invoke(call);
       } else {
         let j;
         if (args !== void 0) {

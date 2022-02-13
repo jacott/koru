@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const util            = require('koru/util');
   const dbBroker        = require('./db-broker');
@@ -24,13 +24,14 @@ define((require, exports, module)=>{
       Model.db = db;
 
       const tc = db[tranCount$];
-      if (tc === undefined)
-        throw new Error("NO Transaction is in progress!");
+      if (tc === undefined) {
+        throw new Error('NO Transaction is in progress!');
+      }
 
       if (tc == 1) {
         db[tranCount$] = undefined;
         Factory.clear();
-        for(const name in db) {
+        for (const name in db) {
           Model[name].docs = undefined;
         }
       } else {

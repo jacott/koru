@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const DLinkedList     = require('koru/dlinked-list');
@@ -34,10 +34,10 @@ define((require, exports, module)=>{
       return model.onChange(batchUpdate);
     }
 
-    loadInitial(encoder) {
+    async loadInitial(encoder) {
       const addDoc = encoder.addDoc.bind(encoder);
       for (const model of this.pubClass.includedModels()) {
-        model.query.forEach(addDoc);
+        await model.query.forEach(addDoc);
       }
     }
   }
@@ -49,11 +49,10 @@ define((require, exports, module)=>{
       constructor.requireUserId && Val.allowAccessIf(this.userId);
     }
 
-    init() {
+    async init() {
       const {constructor} = this;
-      (constructor.union ||
-       (constructor.union = new constructor.Union(constructor))
-      ).addSub(this);
+      await (constructor.union ||
+             (constructor.union = new constructor.Union(constructor))).addSub(this);
     }
 
     stop() {

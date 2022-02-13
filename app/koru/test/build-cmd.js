@@ -1,4 +1,5 @@
 const fs = require('fs');
+const {readdir} = require('fs/promises');
 const Path = require('path');
 
 define((require, exports, module) => {
@@ -7,14 +8,12 @@ define((require, exports, module) => {
   const koru            = require('../main');
   const util            = require('../util');
 
-  const {Future} = util, wait = Future.wait;
-
   const topDir = koru.appDir;
-  const readdir = Future.wrap(fs.readdir);
-  const stat = Future.wrap(fs.stat);
+
+  const {stat} = fst;
 
   const BuildCmd = {
-    runTests(session, type, pattern='', callback) {
+    async runTests(session, type, pattern='', callback) {
       const cTests = type !== 'server' ? [] : null;
       const sTests = type !== 'client' ? [] : null;
 
@@ -23,19 +22,17 @@ define((require, exports, module) => {
         sTests !== null && ! path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
       };
 
-      const findAll = (dir, exDirs) => {
+      const findAll = async (dir, exDirs) => {
         const dirPath = Path.join(topDir, dir);
-        const filenames = readdir(dirPath).wait().filter((fn) => (
+        const filenames = (await readdir(dirPath)).filter((fn) => (
           (exDirs === undefined || exDirs[fn] === undefined) &&
             (fn.endsWith('-test.js') || ! fn.endsWith('.js'))));
         const stats = filenames.map((filename) => stat(Path.join(dirPath, filename)));
 
-        wait(stats);
-
         for (let i = 0; i < filenames.length; ++i) {
           try {
-            if (stats[i].get().isDirectory()) {
-              findAll(Path.join(dir, filenames[i]));
+            if ((await stats[i]).isDirectory()) {
+              await findAll(Path.join(dir, filenames[i]));
             } else if (filenames[i].endsWith('-test.js')) {
               pushPath(Path.join(dir, filenames[i].slice(0, -3)));
             }
@@ -60,7 +57,9 @@ define((require, exports, module) => {
         // all
         const config = module.config();
         const exDirs = koru.util.toMap(config.excludeDirs || []);
-        util.forEach(config.testDirs || ['.'], (dir) => {findAll(dir, exDirs)});
+        for (const dir of config.testDirs || ['.']) {
+          await findAll(dir, exDirs);
+        }
       } else {
         // one
         const idx = pattern.indexOf(' ');
@@ -84,9 +83,10 @@ define((require, exports, module) => {
       if (type !== 'client') {
         const dest = module.toUrl('test/server-ready.js');
         if (module.ctx.modules['test/server-ready']) {
-          BuildCmd.serverReady = new Future();
-          fs.unlinkSync(dest);
-          BuildCmd.serverReady.wait();
+          await new Promise((resolve, reject)=>{
+            BuildCmd.serverReady = resolve;
+            fs.unlinkSync(dest);
+          });
           BuildCmd.serverReady = null;
         }
         try {

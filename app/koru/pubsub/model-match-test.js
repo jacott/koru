@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * A class to create a match registry that compares a {#koru/model/main} document to a set of
@@ -14,7 +14,7 @@ define((require, exports, module)=>{
 
   const ModelMatch = require('./model-match');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     class Book extends BaseModel {
       static get modelName() {return 'Book'}
       static fetch() {
@@ -22,7 +22,7 @@ define((require, exports, module)=>{
       }
     }
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Create a ModelMatch registry.
        **/
@@ -33,7 +33,7 @@ define((require, exports, module)=>{
       assert(myMatch.register);
     });
 
-    test("register", ()=>{
+    test('register', () => {
       /**
        * Register a matcher agains a model.
        *
@@ -54,7 +54,7 @@ define((require, exports, module)=>{
       const book2 = Book.fetch();
       const book3 = Book.fetch();
 
-      const comparator = doc => doc === book1 || (doc === book2 ? false : void 0);
+      const comparator = (doc) => doc === book1 || (doc === book2 ? false : void 0);
       const m1 = myMatch.register('Book', comparator);
 
       assert.isTrue(myMatch.has(book1));
@@ -63,7 +63,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("has", ()=>{
+    test('has', () => {
       /**
        * Test if a document matches a matcher. See {##register}.
 
@@ -93,15 +93,15 @@ define((require, exports, module)=>{
 
       assert.same(myMatch.has(book1), void 0);
 
-      const m1 = myMatch.register('Book', doc =>{});
+      const m1 = myMatch.register('Book', (doc) => {});
 
       assert.same(myMatch.has(book1), void 0);
 
-      const m2 = myMatch.register('Book', doc =>{
+      const m2 = myMatch.register('Book', (doc) => {
         return doc === book1 ? true : void 0;
       });
 
-      const m3 = myMatch.register('Book', doc => {
+      const m3 = myMatch.register('Book', (doc) => {
         return doc === book2;
       });
 

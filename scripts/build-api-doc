@@ -22,5 +22,5 @@ fi
 name=$(pwd -P)/doc/api.html
 cd app
 echo "building html..."
-node --es_staging ../lib/api-to-html.js test
+node ../lib/api-to-html.js test
 echo "ready - file://$name"

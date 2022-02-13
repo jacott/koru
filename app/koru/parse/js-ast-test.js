@@ -1,8 +1,8 @@
 isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
-  const fst             = require('koru/fs-tools');
   const TH              = require('koru/test');
+  const fs              = requirejs.nodeRequire('fs');
 
   const {stub, spy, util} = TH;
 
@@ -36,8 +36,8 @@ isServer && define((require, exports, module) => {
         while (sidx != -1) {
           sidx = text.indexOf('assert(', sidx);
           if (sidx == -1) break;
-          const eidx = text.indexOf(')', sidx+5);
-          asserts[sidx] = {text: 'fail.notFound' + text.slice(sidx+6, eidx+1)};
+          const eidx = text.indexOf(')', sidx + 5);
+          asserts[sidx] = {text: 'fail.notFound' + text.slice(sidx + 6, eidx + 1)};
           sidx = eidx;
         }
         JsAst.scopeWalk(JsAst.parse(text), (node, scope) => {
@@ -153,7 +153,7 @@ isServer && define((require, exports, module) => {
 
       test('for', () => {
         assertScope((() => {
-          for (let i = assert(! i), j = assert(i, ! j); assert(i, j), i<10; ++i, assert(i, j)) {
+          for (let i = assert(! i), j = assert(i, ! j); assert(i, j), i < 10; ++i, assert(i, j)) {
             assert(i, j);
           }
           assert();
@@ -173,7 +173,7 @@ isServer && define((require, exports, module) => {
           let z = 0;
           assert(q, z);
           const {aa, a: {c=(() => {
-            let e = 123+c;
+            let e = 123 + c;
             assert(e, q, z, aa, ! c);
           })()}, d: [f, [g=(assert(q, z, aa, c, f, ! g), 456)]]} = {};
           assert(q, z, aa, c, f, g);
@@ -181,6 +181,7 @@ isServer && define((require, exports, module) => {
       });
 
       test('class and functions', () => {
+        let e;
         assertScope(() => {
           assert(f, d);
           const a = 1;
@@ -214,7 +215,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('inferVisitorKeys', () => {
-      const code = fst.readFile(module._dir + '../../../lib/sample-full-grammar.js').toString();
+      const code = fs.readFileSync(module._dir + '../../../lib/sample-full-grammar.js').toString();
 
       const inferredKeys = {};
 

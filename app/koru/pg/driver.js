@@ -1,5 +1,6 @@
 define((require, exports, module) => {
   'use strict';
+  const Future          = require('koru/future');
   const Observable      = require('koru/observable');
   const SQLStatement    = require('koru/pg/sql-statement');
   const Libpq           = requirejs.nodeRequire('pg-libpq');
@@ -7,8 +8,6 @@ define((require, exports, module) => {
   const match           = require('../match');
   const Pool            = require('../pool-server');
   const util            = require('../util');
-
-  const {Future} = util;
 
   const {private$, inspect$} = require('koru/symbols');
 
@@ -23,7 +22,7 @@ define((require, exports, module) => {
     '<=': '<=',
   };
 
-  const onCommit$ = Symbol(), pool$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
+  const pool$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
 
   let clientCount = 0;
@@ -37,7 +36,7 @@ define((require, exports, module) => {
   const regexToText = (re) => {
     const text = re.toString();
     const idx = text.lastIndexOf('/');
-    return [text.slice(1, idx-1), text.slice(idx+1)];
+    return [text.slice(1, idx - 1), text.slice(idx + 1)];
   };
 
   const closeDefaultDb = () => {
@@ -47,18 +46,11 @@ define((require, exports, module) => {
 
   const aryToSqlStr = Libpq.sqlArray;
 
-  const getConn = (client) => {
+  const getConn = async (client) => {
     const {thread} = util, sym = client[tx$];
-    const tx = thread[sym] ?? (thread[sym] = fetchPool(client).acquire());
-    if (tx.conn.isClosed()) {
-      try {
-        const future = new Future();
-        tx.conn = new Libpq(client._url, wait(future));
-        future.wait();
-      } catch (ex) {
-        koru.unhandledException(ex);
-        throw ex;
-      }
+    const tx = thread[sym] ?? (thread[sym] = await fetchPool(client).acquire());
+    if (tx.conn === void 0 || tx.conn.isClosed()) {
+      tx.conn = await Libpq.connect(client._url);
     }
 
     ++tx.count;
@@ -91,27 +83,13 @@ define((require, exports, module) => {
     });
   };
 
-  const runOnAborts = (tx, command) => {
-    let onAborts = tx[onAbort$];
-    if (onAborts) {
-      tx[onAbort$] = null;
-      if (command === 'ROLLBACK') {
-        for (;onAborts; onAborts = onAborts.next)
-          onAborts.func();
-      }
-    }
-  };
-
-  const query = (conn, text, params) => {
+  const query = async (conn, text, params) => {
     try {
-      const future = new Future();
       if (params !== void 0) {
-        conn.execParams(text, params, wait(future));
+        return await conn.execParams(text, params);
       } else {
-        conn.exec(text, wait(future));
+        return await conn.exec(text);
       }
-
-      return future.wait();
     } catch (ex) {
       if (ex.sqlState === void 0) {
         conn.finish();
@@ -132,7 +110,7 @@ define((require, exports, module) => {
 
     const set = toColumns(table, params);
     return {
-      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"' + col + '"=$' + (i+1)).join(',')}`,
+      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"' + col + '"=$' + (i + 1)).join(',')}`,
       set,
     };
   };
@@ -200,20 +178,20 @@ define((require, exports, module) => {
     constructor(url, name) {
       this[tx$] = Symbol();
       this._url = url;
-      this.name = name || this.schemaName;
+      this.name = name;
     }
 
     [inspect$]() {
       return `Pg.Driver("${this.name}")`;
     }
 
-    jsFieldToPg(col, type) {
+    jsFieldToPg(col, type, conn) {
       return jsFieldToPg(col, type, this);
     }
 
-    get schemaName() {
-      if (! this._schemaName) {
-        this._schemaName = this.query('SELECT current_schema')[0].current_schema;
+    async schemaName() {
+      if (this._schemaName === void 0) {
+        this._schemaName = (await this.query('SELECT current_schema'))[0].current_schema;
       }
       return this._schemaName;
     }
@@ -226,15 +204,6 @@ define((require, exports, module) => {
       this[pool$] = void 0;
     }
 
-    onCommit(action) {
-      const tx = util.thread[this[tx$]];
-      if (tx === void 0 || tx.transaction === void 0) {
-        action();
-      } else if (tx.transaction === 'COMMIT') {
-        tx[onCommit$] = {action, next: tx[onCommit$]};
-      }
-    }
-
     _getConn() {
       return getConn(this);
     }
@@ -243,20 +212,20 @@ define((require, exports, module) => {
       return releaseConn(this);
     }
 
-    withConn(func) {
+    async withConn(func) {
       const tx = util.thread[this[tx$]];
-      if (tx) {
-        return func.call(this, tx.conn);
+      if (tx !== void 0) {
+        return await func.call(this, tx.conn);
       }
       try {
-        return func.call(this, getConn(this));
+        return await func.call(this, await getConn(this));
       } finally {
         releaseConn(this);
       }
     }
 
-    findOne(text, params) {
-      return this.query(text, params).rows[0];
+    async findOne(text, params) {
+      return (await this.query(text, params)).rows[0];
     }
 
     query(text, ...args) {
@@ -264,18 +233,19 @@ define((require, exports, module) => {
       return this.withConn((conn) => query(conn, tp[0], tp[1]));
     }
 
-    explainQuery(text, ...args) {
+    async explainQuery(text, ...args) {
       const tp = normalizeQuery(text, args);
-      return this.withConn((conn) => query(conn, 'EXPLAIN ANALYZE ' + tp[0], tp[1])
-                           .map((d) => d['QUERY PLAN']).join('\n'));
+      return (await this.withConn((conn) => query(conn, 'EXPLAIN ANALYZE ' + tp[0], tp[1])))
+        .map((d) => d['QUERY PLAN']).join('\n');
     }
 
-    timeLimitQuery(text, params, {timeout=20000, timeoutMessage='Query took too long to run'}={}) {
-      return this.transaction((tx) => {
+    async timeLimitQuery(text, params, {timeout=20000, timeoutMessage='Query took too long to run'}={}) {
+      return await this.transaction(async (tx) => {
         try {
-          query(tx.conn, 'set local statement_timeout to ' + timeout);
+          const {conn} = tx;
+          await query(conn, 'set local statement_timeout to ' + timeout);
           const tp = normalizeQuery(text, [params]);
-          return query(tx.conn, tp[0], tp[1]);
+          return await query(conn, tp[0], tp[1]);
         } catch (ex) {
           if (ex.sqlState === '57014') {
             throw new koru.Error(504, timeoutMessage);
@@ -286,19 +256,11 @@ define((require, exports, module) => {
     }
 
     prepare(name, command) {
-      return this.withConn((conn) => {
-        const future = new Future();
-        conn.prepare(name, command, wait(future));
-        return future.wait();
-      });
+      return this.withConn((conn) => conn.prepare(name, command));
     }
 
     execPrepared(name, params) {
-      return this.withConn((conn) => {
-        const future = new Future();
-        conn.execPrepared(name, params, wait(future));
-        return future.wait();
-      });
+      return this.withConn((conn) => conn.execPrepared(name, params));
     }
 
     table(name, schema) {
@@ -306,28 +268,25 @@ define((require, exports, module) => {
     }
 
     dropTable(name) {
-      this.query(`DROP TABLE IF EXISTS "${name}"`);
+      return this.query(`DROP TABLE IF EXISTS "${name}"`);
     }
 
     get inTransaction() {return util.thread[this[tx$]]?.transaction === 'COMMIT'}
 
-    startTransaction() {
-      getConn(this); // ensure connection
+    async startTransaction() {
+      await getConn(this); // ensure connection
       const tx = util.thread[this[tx$]];
       if (tx.transaction !== null) {
-        const onAborts = tx[onAbort$];
-        tx[onAbort$] = null;
         ++tx.savepoint;
-        let ex;
-        query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
+        await query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
       } else {
         tx.transaction = 'COMMIT';
-        query(tx.conn, 'BEGIN');
+        await query(tx.conn, 'BEGIN');
       }
       return tx;
     }
 
-    endTransaction(abort) {
+    async endTransaction(abort) {
       const tx = util.thread[this[tx$]];
       if (tx == null || tx.transaction === null) {
         throw new Error('No transaction in progress!');
@@ -338,23 +297,15 @@ define((require, exports, module) => {
         if (savepoint != 0) {
           --tx.savepoint;
           if (isAbort) {
-            tx.conn.isClosed() || query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + savepoint);
+            tx.conn.isClosed() || await query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + savepoint);
           } else {
-            query(tx.conn, 'RELEASE SAVEPOINT s' + savepoint);
+            await query(tx.conn, 'RELEASE SAVEPOINT s' + savepoint);
           }
         } else {
-          const onCommits = tx[onCommit$];
-          tx[onCommit$] = void 0;
           const command = isAbort ? 'ROLLBACK' : 'COMMIT';
           tx.transaction = null;
           if (! tx.conn.isClosed()) {
-            query(tx.conn, command);
-            runOnAborts(tx, command);
-            if (! isAbort) {
-              runOnCommit(onCommits);
-            }
-          } else {
-            runOnAborts(tx, command);
+            await query(tx.conn, command);
           }
         }
       } finally {
@@ -363,56 +314,43 @@ define((require, exports, module) => {
       return savepoint;
     }
 
-    transaction(func) {
-      getConn(this); // ensure connection
+    async transaction(func) {
+      await getConn(this); // ensure connection
       const tx = util.thread[this[tx$]];
       try {
         if (tx.transaction !== null) {
-          const onAborts = tx[onAbort$];
-          tx[onAbort$] = null;
           ++tx.savepoint;
           let ex;
           try {
-            query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
-            const result = func.call(this, tx);
-            query(tx.conn, 'RELEASE SAVEPOINT s' + tx.savepoint);
+            await query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
+            const result = await func.call(this, tx);
+            await query(tx.conn, 'RELEASE SAVEPOINT s' + tx.savepoint);
             return result;
           } catch (ex1) {
             ex = ex1;
-            tx.conn.isClosed() || query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + tx.savepoint);
-            runOnAborts(tx, 'ROLLBACK');
+            tx.conn.isClosed() || await query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + tx.savepoint);
             if (ex === 'abort') {
               ex = null;
             }
           } finally {
             --tx.savepoint;
-            tx[onAbort$] = onAborts;
             if (ex) throw ex;
           }
         } else {
           try {
             tx.transaction = 'COMMIT';
-            query(tx.conn, 'BEGIN');
-            return func.call(this, tx);
+            await query(tx.conn, 'BEGIN');
+            return await func.call(this, tx);
           } catch (ex) {
             tx.transaction = 'ROLLBACK';
             if (ex !== 'abort') {
               throw ex;
             }
           } finally {
-            const onCommits = tx[onCommit$];
-
-            tx[onCommit$] = void 0;
             const command = tx.transaction;
             tx.transaction = null;
             if (! tx.conn.isClosed()) {
-              query(tx.conn, command);
-              runOnAborts(tx, command);
-              if (command === 'COMMIT') {
-                runOnCommit(onCommits);
-              }
-            } else {
-              runOnAborts(tx, command);
+              await query(tx.conn, command);
             }
           }
         }
@@ -436,57 +374,75 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       this.savepoint = 0;
       this.transaction = null;
     }
-
-    onAbort(func) {
-      this[onAbort$] = {func, next: this[onAbort$]};
-    }
   }
 
+  const queryWhere = async (table, sql, where, suffix) => {
+    table._ready !== true && await table._ensureTable();
+
+    let values;
+    if (where) {
+      values = [];
+      where = table.where(where, values);
+    }
+    if (where === void 0) {
+      if (suffix) sql += suffix;
+      return table._client.query(sql);
+    }
+
+    sql = sql + ' WHERE ' + where;
+    if (suffix) sql += suffix;
+
+    return await table._client.query(sql, values);
+  };
+
   class Table {
+    #schema = void 0;
     constructor(name, schema, client) {
       this._name = name;
       this._client = client;
-      this.ready = void 0;
-      Object.defineProperty(this, 'schema', {
-        configurable: true,
-        get: () => schema,
-        set: (value) => {
-          this._ensureTable();
-          schema = value;
-          if (this._ready) {
-            updateSchema(this, schema);
-          }
-        },
-      });
+      this._ready = void 0;
+      this.#schema = schema;
     }
 
     [inspect$]() {return `PgTable("${this._name}")`}
+
+    get schema() {
+      return this.#schema;
+    }
+
+    async updateSchema(schema) {
+      this.#schema = schema;
+      this._ready !== true && await this._ensureTable();
+      if (this._ready) {
+        await updateSchema(this, schema);
+      }
+    }
 
     _resetTable() {
       this._ready = void 0;
     }
 
-    _ensureTable() {
+    async _ensureTable() {
       if (this._ready === true) return;
 
       if (typeof this._ready === 'object') {
         if (this._ready === null) this._ready = new Observable();
         const future = new Future();
-        const handle = this._ready.add(() => future.return());
+        const handle = this._ready.add(() => future.resolve());
         try {
-          future.wait();
+          await future.promise;
         } finally {
           handle.stop();
         }
-        return this._ensureTable();
+        return await this._ensureTable();
       }
 
       this._ready = null;
 
       if (autoSchema) {
-        this.autoCreate();
+        await this.autoCreate();
       } else {
-        readColumns(this);
+        await readColumns(this);
       }
       const subject = this._ready;
       this._ready = true;
@@ -499,8 +455,8 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return pgFieldType(this.schema[col]);
     }
 
-    autoCreate() {
-      readColumns(this);
+    async autoCreate() {
+      await readColumns(this);
       const {schema} = this;
       if (this._columns.length === 0) {
         const fields = ['_id text collate "C" PRIMARY KEY'];
@@ -515,10 +471,10 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           }
         }
 
-        this._client.query(`CREATE TABLE IF NOT EXISTS "${this._name}" (${fields.join(',')})`);
-        readColumns(this);
+        await this._client.query(`CREATE TABLE IF NOT EXISTS "${this._name}" (${fields.join(',')})`);
+        await readColumns(this);
       } else if (schema) {
-        updateSchema(this, schema);
+        await updateSchema(this, schema);
       }
     }
 
@@ -526,18 +482,18 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return this._client.transaction((tx) => func.call(this, tx));
     }
 
-    insert(params, suffix) {
-      this._ensureTable();
+    async insert(params, suffix) {
+      this._ready !== true && await this._ensureTable();
 
       params = toColumns(this, params);
 
       let sql = `INSERT INTO "${this._name}" (${params.cols.map((col) => '"' + col + '"')
-                                                .join(',')}) values (${params.cols.map((c, i) => '$' + (i+1)).join(',')})`;
+      .join(',')}) values (${params.cols.map((c, i) => '$' + (i + 1)).join(',')})`;
 
       if (suffix) sql += ` ${suffix}`;
 
       try {
-        return performTransaction(this, sql, params);
+        return await performTransaction(this, sql, params);
       } catch (ex) {
         if (ex.sqlState === '23505') {
           throw new koru.Error(409, ex.message);
@@ -546,20 +502,20 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       }
     }
 
-    values(rowSet, cols) {
-      this._ensureTable();
+    async values(rowSet, cols) {
+      this._ready !== true && await this._ensureTable();
       return toColumns(this, rowSet, cols).values;
     }
 
-    ensureIndex(keys, options={}) {
+    async ensureIndex(keys, options={}) {
       this._ensureTable();
       let cols = Object.keys(keys);
       const name = this._name + '_' + cols.join('_');
       cols = cols.map((col) => '"' + col + (keys[col] === -1 ? '" DESC' : '"'));
       const unique = options.unique ? 'UNIQUE ' : '';
       try {
-        this._client.query('CREATE ' + unique + 'INDEX "' +
-                           name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
+        await this._client.query('CREATE ' + unique + 'INDEX "' +
+                                 name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
       } catch (ex) {
         if (ex.sqlState !== '42P07') {
           throw ex;
@@ -649,7 +605,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           const value = fields[key];
           const splitIndex = key.indexOf('.');
           if (splitIndex !== -1) {
-            const remKey = key.slice(splitIndex+1);
+            const remKey = key.slice(splitIndex + 1);
             key = key.slice(0, splitIndex);
             qkey = `"${key}"`;
             remKey.split('.').forEach((p) => {qkey += `->'${p}'`});
@@ -750,7 +706,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
                 for (const vk in value) {
                   const op = OPS[vk];
                   if (op !== void 0) {
-                    result.push(qkey+op + '$' + ++count);
+                    result.push(qkey + op + '$' + ++count);
                     whereValues.push(value[vk]);
                     continue;
                   } else {
@@ -836,14 +792,17 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return queryWhere(this, 'SELECT * FROM "' + this._name + '"', where);
     }
 
-    findOne(where, fields) {
-      return queryWhere(this, 'SELECT ' + selectFields(this, fields) + ' FROM "' + this._name + '"',
-                        where, ' LIMIT 1')[0];
+    async findById(id) {
+      this._ready !== true && await this._ensureTable();
+      return (await this._client.query('SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1', [id]))[0];
+    }
+
+    async findOne(where, fields) {
+      return (await queryWhere(this, 'SELECT ' + selectFields(this, fields) + ' FROM "' + this._name + '"',
+                               where, ' LIMIT 1'))[0];
     }
 
     find(where, options) {
-      this._ensureTable();
-
       const table = this;
       let sql = 'SELECT ' + selectFields(this, options?.fields) + ' FROM "' + this._name + '"';
 
@@ -866,14 +825,13 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return ` WHERE ${this.where(where, values)} (${util.inspect(values)})`;
     }
 
-    exists(where) {
-      return queryWhere(this, `SELECT EXISTS (SELECT 1 FROM "${this._name}"`,
-                        where, ')')[0].exists;
+    async exists(where) {
+      return (await queryWhere(this, `SELECT EXISTS (SELECT 1 FROM "${this._name}"`,
+                               where, ')'))[0].exists;
     }
 
-    count(where) {
-      return + queryWhere(this, `SELECT count(*) FROM "${this._name}"`,
-                          where)[0].count;
+    async count(where) {
+      return + (await queryWhere(this, `SELECT count(*) FROM "${this._name}"`, where))[0].count;
     }
 
     remove(where) {
@@ -881,16 +839,14 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     }
 
     truncate() {
-      if (this._ready !== true) return;
-
-      this._client.withConn((conn) => this._client.query(`TRUNCATE TABLE "${this._name}"`));
+      return this._client.withConn((conn) => this._client.query(`TRUNCATE TABLE "${this._name}"`));
     }
   }
 
   Table.prototype.aryToSqlStr = aryToSqlStr;
 
-  const initCursor = (cursor) => {
-    if (cursor._name != null) return;
+  const initCursor = async (cursor) => {
+    if (cursor.table._ready !== true) await cursor.table._ensureTable();
     const client = cursor.table._client;
     const tx = util.thread[client[tx$]];
     let sql = cursor._sql;
@@ -898,7 +854,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     if (cursor._sort) {
       let sort = '';
       const {_sort} = cursor, len = _sort.length;
-      for (let i = 0; i<len; ++i) {
+      for (let i = 0; i < len; ++i) {
         let val = _sort[i];
         if (typeof val === 'string') {
           if (val[0] !== '(') val = `"${val}"`;
@@ -916,16 +872,16 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       const cname = 'c' + (++cursorCount).toString(36);
       if (tx !== void 0 && tx.transaction !== null) {
         cursor._inTran = true;
-        client.query('DECLARE ' + cname + ' CURSOR FOR ' + sql, cursor._values);
+        await client.query('DECLARE ' + cname + ' CURSOR FOR ' + sql, cursor._values);
       } else {
-        client.transaction(() => {
-          getConn(client); // so cursor is valid outside transaction
-          client.query('DECLARE ' + cname + ' CURSOR WITH HOLD FOR ' + sql, cursor._values);
+        await client.transaction(async () => {
+          await getConn(client); // so cursor is valid outside transaction
+          await client.query('DECLARE ' + cname + ' CURSOR WITH HOLD FOR ' + sql, cursor._values);
         });
       }
       cursor._name = cname;
     } else {
-      cursor._rows = client.query(sql, cursor._values);
+      cursor._rows = await client.query(sql, cursor._values);
       cursor._index = 0;
       cursor._name = 'all';
     }
@@ -936,6 +892,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       this.table = table;
       this._sql = sql;
       this._values = values;
+      this._name = void 0;
 
       if (options) for (const op in options) {
         const func = this[op];
@@ -945,12 +902,12 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       }
     }
 
-    close() {
-      if (this._name && this._name !== 'all') {
+    async close() {
+      if (this._name !== void 0 && this._name !== 'all') {
         try {
-          this.table._client.query('CLOSE ' + this._name);
+          await this.table._client.query('CLOSE ' + this._name);
         } finally {
-          this._name = null;
+          this._name = void 0;
           if (this._inTran) {
             this._inTran = null;
           } else {
@@ -960,8 +917,8 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       }
     }
 
-    next(count) {
-      initCursor(this);
+    async next(count) {
+      if (this._name === void 0) await initCursor(this);
       if (this._index !== void 0) {
         if (count === void 0) {
           if (this._index >= this._rows.length) {
@@ -975,7 +932,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
         }
       } else {
         const c = count === void 0 ? 1 : count;
-        const result = this.table._client.query('FETCH ' + c + ' ' + this._name);
+        const result = await this.table._client.query('FETCH ' + c + ' ' + this._name);
         return count === void 0 ? result[0] : result;
       }
     }
@@ -1000,42 +957,23 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return this;
     }
 
-    forEach(func) {
+    async forEach(func) {
       try {
         for (let doc = this.next(); doc; doc = this.next()) {
-          func(doc);
+          await func(doc);
         }
       } finally {
-        this.close();
+        await this.close();
       }
     }
   }
-
-  const queryWhere = (table, sql, where, suffix) => {
-    table._ensureTable();
-
-    let values;
-    if (where) {
-      values = [];
-      where = table.where(where, values);
-    }
-    if (where === void 0) {
-      if (suffix) sql += suffix;
-      return table._client.query(sql);
-    }
-
-    sql = sql + ' WHERE ' + where;
-    if (suffix) sql += suffix;
-
-    return table._client.query(sql, values);
-  };
 
   const toColumns = (table, params, cols=Object.keys(params)) => {
     const needCols = autoSchema ? {} : void 0;
     const values = new Array(cols.length);
     const colMap = table._colMap;
 
-    util.forEach(cols, (col, i) => {
+    cols.forEach((col, i) => {
       let value = params[col];
       if (value === void 0) value = null;
       const desc = colMap[col];
@@ -1078,14 +1016,12 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
 
   const performTransaction = (table, sql, params) => {
     if (table.schema || util.isObjEmpty(params.needCols)) {
-      return table._client.withConn(function (conn) {
-        return this.query(sql, params.values);
-      });
+      return table._client.withConn((conn) => query(conn, sql, params.values));
     }
 
-    return table._client.transaction(function (conn) {
-      addColumns(table, params.needCols);
-      return this.query(sql, params.values);
+    return table._client.transaction(async (conn) => {
+      await addColumns(table, params.needCols);
+      return await table._client.query(sql, params.values);
     });
   };
 
@@ -1162,25 +1098,24 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     const type = pgFieldType(richType);
 
     if (typeof colSchema === 'object' && colSchema.default != null) {
+      const tx = util.thread[client[tx$]];
       let literal = colSchema.default;
-      client.withConn((conn) => {
-        if (type === 'jsonb') {
-          literal = conn.escapeLiteral(JSON.stringify(literal)) + '::jsonb';
-        } else {
-          switch (typeof literal) {
-          case 'number':
-          case 'boolean':
+      if (type === 'jsonb') {
+        literal = tx.conn.escapeLiteral(JSON.stringify(literal)) + '::jsonb';
+      } else {
+        switch (typeof literal) {
+        case 'number':
+        case 'boolean':
+          break;
+        case 'object':
+          if (Array.isArray(literal)) {
+            literal = tx.conn.escapeLiteral(aryToSqlStr(literal)) + '::' + type;
             break;
-          case 'object':
-            if (Array.isArray(literal)) {
-              literal = conn.escapeLiteral(aryToSqlStr(literal)) + '::' + type;
-              break;
-            }
-          default:
-            literal = conn.escapeLiteral(literal) + '::' + type;
           }
+        default:
+          literal = tx.conn.escapeLiteral(literal) + '::' + type;
         }
-      });
+      }
       defaultVal = ` DEFAULT ${literal}`;
     }
     const collate = (type === 'text' && richType !== 'text' || richType === 'has_many')
@@ -1189,43 +1124,33 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     return `"${col}" ${type}${collate}${defaultVal}`;
   };
 
-  const updateSchema = (table, schema) => {
+  const updateSchema = async (table, schema) => {
     const needCols = {};
     const colMap = table._colMap;
     for (let col in schema) {
-      hasOwn(colMap, col) ||
+      hasOwn(colMap, col) || await table._client.withConn((conn) => {
         (needCols[col] = jsFieldToPg(col, schema[col], table._client));
+      });
     }
 
     util.isObjEmpty(needCols) ||
-      table.transaction(() => {addColumns(table, needCols)});
+      await table.transaction(() => addColumns(table, needCols));
   };
 
-  const addColumns = (table, needCols) => {
+  const addColumns = async (table, needCols) => {
     const prefix = `ALTER TABLE "${table._name}" ADD COLUMN `;
     const client = table._client;
 
-    client.query(Object.keys(needCols).map((col) => prefix + needCols[col]).join(';'));
+    await client.query(Object.keys(needCols).map((col) => prefix + needCols[col]).join(';'));
 
-    readColumns(table);
+    await readColumns(table);
   };
 
-  const readColumns = (table) => {
+  const readColumns = async (table) => {
     const colQuery = `SELECT * FROM information_schema.columns
-WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaName}'`;
-    table._columns = table._client.query(colQuery);
+WHERE table_name = '${table._name}' AND table_schema = '${await table._client.schemaName()}'`;
+    table._columns = await table._client.query(colQuery);
     table._colMap = util.toMap('column_name', null, table._columns);
-  };
-
-  const wait = (future) => (err=null, result) => {
-    if (err !== null && typeof err === 'object') {
-      if (typeof err.message === 'string') {
-        err.message = err.message.replace(/^ERROR:\s*/, '');
-      }
-      future.throw(err);
-    } else {
-      future.return(result);
-    }
   };
 
   const Driver = {
@@ -1251,7 +1176,7 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
     get config() {return module.config()},
   };
 
-  koru.onunload(module, closeDefaultDb);
+  module.onUnload(closeDefaultDb);
 
   return Driver;
 });

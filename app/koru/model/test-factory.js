@@ -7,6 +7,8 @@ define((require) => {
   const Model           = require('./main');
   const util            = require('../util');
 
+  const promises$ = Symbol();
+
   const {hasOwn, deepCopy} = util;
 
   const traits = {};
@@ -88,6 +90,64 @@ define((require) => {
     }
   }
 
+  const insertNotify = (self, doc) => {
+    if (doc == null) {
+      throw Error('Factory insert failed! ' + this.model.modelName + ': ' + id);
+    }
+    const insertNotify_3 = () => {
+      const p = self.model.notify(dc);
+      if (p instanceof Promise) return p.then(() => doc);
+      return doc;
+    };
+
+    const insertNotify_2 = () => {
+      const p = Model._support.callAfterLocalChange(dc);
+      if (p instanceof Promise) return p.then(insertNotify_3);
+      return insertNotify_3();
+    };
+
+    const dc = DocChange.add(doc);
+    if (isClient) {
+      const p = self.model._indexUpdate.notify(dc);
+      if (p instanceof Promise) return p.then(insertNotify_2);
+    }
+    return insertNotify_2();
+  };
+
+  const asyncInsert = async (self, p) => {
+    const id = await p;
+    const doc = await self.model.findById(id);
+    if (doc == null) {
+      throw Error('Factory insert failed! ' + self.model.modelName + ': ' + id);
+    }
+
+    return insertNotify(self, doc);
+  };
+
+  const asyncAddRef = async (self, p, ref, refId, modelName) => {
+    const doc = await p;
+    if (doc === void 0) {
+      doc = last[ref] || last[util.uncapitalize(modelName)];
+    }
+    if (doc == null) {
+      const func = Factory['create' + util.capitalize(ref)] || Factory['create' + modelName];
+      if (func === void 0) {
+        throw new Error("can't find factory create for " + modelName);
+      }
+      doc = await func();
+    }
+    self.defaults[refId] = doc._id === void 0 ? doc : doc._id;
+    return self;
+  };
+
+  const asyncAfterCreate = (self, doc) => {
+    if (self._afterCreate !== void 0) {
+      const p = self._afterCreate.notify(doc, self);
+      if (p instanceof Promise) return p.then(() => doc);
+    }
+    return doc;
+  };
+
   class Builder extends BaseBuilder {
     constructor(modelName, attributes, defaults={}) {
       super(attributes, {});
@@ -95,6 +155,24 @@ define((require) => {
       this._useSave = '';
       if (! this.model) throw new Error('Model: "' + modelName + '" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
+    }
+
+    addPromise(p) {
+      if (this[promises$] === void 0) {
+        this[promises$] = [p];
+      } else {
+        this[promises$].push(p);
+      }
+
+      return this;
+    }
+
+    waitPromises() {
+      const promises = this[promises$];
+      if (promises !== void 0) {
+        this[promises$] = void 0;
+        return Promise.all(promises);
+      }
     }
 
     addRef(ref, doc) {
@@ -105,7 +183,11 @@ define((require) => {
           `model not found for reference: ${refId} in model ${this.model.modelName}`);
         const {modelName} = model;
         if (typeof doc === 'function') {
-          doc = doc(this);
+          const p = doc(this);
+          if (p instanceof Promise) {
+            return this.addPromise(asyncAddRef(this, p, ref, refId, modelName));
+          }
+          doc = p;
         }
         if (doc === void 0) {
           doc = last[ref] || last[util.uncapitalize(modelName)];
@@ -115,7 +197,12 @@ define((require) => {
           if (func === void 0) {
             throw new Error("can't find factory create for " + modelName);
           }
-          doc = func();
+          const p = func();
+          if (p instanceof Promise) {
+            return this.addPromise(p.then((doc) => {
+              this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
+            }));
+          }
         }
         this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
       }
@@ -137,35 +224,52 @@ define((require) => {
 
     insert() {
       const id = this.model._insertAttrs(this.makeAttributes());
-      const doc = this.model.findById(id);
-      if (doc == null) {
-        throw Error('Factory insert failed! ' + this.model.modelName + ': ' + id);
+      if (id instanceof Promise) {
+        return asyncInsert(this, id);
       }
 
-      const dc = DocChange.add(doc);
-      isClient && this.model._indexUpdate.notify(dc);
-      Model._support.callAfterLocalChange(dc);
-      this.model.notify(dc);
-      return doc;
+      const p = this.model.findById(id);
+      if (p instanceof Promise) {
+        return p.then(insertNotify);
+      }
+      return insertNotify(this, p);
     }
 
     build() {
       const doc = new this.model();
       Object.assign(doc.changes, this.makeAttributes());
+      const p = this.waitPromises();
+      if (p !== void 0) return p.then(() => doc);
       return doc;
     }
 
     create() {
       let doc;
+      let p = this.waitPromises();
       if (this._useSave !== '') {
         doc = this.model.build({});
         doc.changes = this.makeAttributes();
-        doc.$save(this._useSave);
+        if (p !== void 0) {
+          p = p.then(() => doc.$save(this._useSave));
+        } else {
+          p = doc.$save(this._useSave);
+        }
+        if (p instanceof Promise) {
+          return p.then(() => asyncAfterCreate(this, doc));
+        }
       } else {
-        doc = this.insert();
+        if (p !== void 0) {
+          p = p.then(() => doc.$save(this._useSave));
+        } else {
+          p = this.insert();
+        }
+        if (p instanceof Promise) {
+          return p.then((doc) => asyncAfterCreate(this, doc));
+        }
+        doc = p;
       }
 
-      this._afterCreate && this._afterCreate.notify(doc, this);
+      this._afterCreate?.notify(doc, this);
       return doc;
     }
 
@@ -186,7 +290,8 @@ define((require) => {
     endTransaction() {
       checkDb();
       if (tx.length === 0) {
-        throw new Error('No transaction in progress!');
+        //        throw new Error('No transaction in progress!');
+        return;
       }
       [last, seqGen] = tx.pop();
       dbVars.seqGen = seqGen;
@@ -238,7 +343,7 @@ define((require) => {
         args.push({});
       }
 
-      for (let i = 0; i<number; ++i) {
+      for (let i = 0; i < number; ++i) {
         func && func.apply(args, [i, args[args.length - 1]]);
         list.push(this[creator].apply(this, args));
       }
@@ -293,9 +398,21 @@ define((require) => {
       Factory, buildAttributes(key, traitsAndAttributes)).build();
   };
 
+  const asyncCreate = async (p, key, traitsAndAttributes) => {
+    const result = await p;
+    if (postCreate[key] !== void 0) {
+      return postCreate[key](result, key, traitsAndAttributes);
+    } else {
+      return last[key.substring(0, 1).toLowerCase() + key.substring(1)] = result;
+    }
+  };
+
   const createFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
     const result = def.call(Factory, buildAttributes(key, traitsAndAttributes)).create();
+    if (result instanceof Promise) {
+      return asyncCreate(result, key, traitsAndAttributes);
+    }
 
     if (postCreate[key] !== void 0) {
       return postCreate[key](result, key, traitsAndAttributes);

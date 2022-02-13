@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * The default web-server created from {#koru/web-server-factory}.  {#koru/idle-check} is used to
@@ -22,6 +22,7 @@ isServer && define((require, exports, module)=>{
    *
    **/
   const Compilers       = require('koru/compilers');
+  const Future          = require('koru/future');
   const koru            = require('koru/main');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -29,16 +30,15 @@ isServer && define((require, exports, module)=>{
   const WebServerFactory = require('koru/web-server-factory');
   const fst             = require('./fs-tools');
   const IdleCheck       = require('./idle-check').singleton;
+  const fs              = requirejs.nodeRequire('fs');
 
-  const {stub, spy} = TH;
-
-  const {Future} = util;
+  const {stub, spy, intercept} = TH;
 
   const webServer = require('./web-server');
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
     let v = {};
-    beforeEach(()=>{
+    beforeEach(() => {
       v.future = new Future();
       v.req = {
         headers: {},
@@ -53,50 +53,50 @@ isServer && define((require, exports, module)=>{
         write: stub(),
         writeHead: stub(),
         end(data) {
-          v.future.return(data);
+          v.future?.resolve(data);
         },
       };
       v.origSend = webServer.send;
 
-      v.replaceSend = func =>{
+      v.replaceSend = (func) => {
         v.sendRet = {
           pipe(res) {
-            v.future.return(res);
+            v.future.resolve(res);
           },
         };
 
         v.sendRet.on = stub().returns(v.sendRet);
 
         webServer._replaceSend(v.send = function (...args) {
-          func && func.apply(this, args);
+          func?.apply(this, args);
           return v.sendRet;
         });
       };
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       webServer._replaceSend(v.origSend);
       v = {};
     });
 
-    test("not found html", ()=>{
+    test('not found html', async () => {
       v.req.url = '/koru/.build/notFound.html.js';
 
       v.replaceSend();
 
       webServer.requestListener(v.req, v.res);
 
-      assert.same(v.future.wait(), "NOT FOUND");
+      assert.same(await v.future.promise, 'NOT FOUND');
       assert.same(v.res.statusCode, 404);
     });
 
-    test("waitIdle", ()=>{
-      webServer.registerHandler('foox', (req, res, error)=>{
+    test('waitIdle', async () => {
+      webServer.registerHandler('foox', (req, res, error) => {
         assert.called(IdleCheck.inc);
         refute.called(IdleCheck.dec);
-        IdleCheck.waitIdle(()=>{v.res.end('success')});
+        IdleCheck.waitIdle(() => {v.res.end('success')});
       });
-      after(()=>{webServer.deregisterHandler('foox')});
+      after(() => {webServer.deregisterHandler('foox')});
 
       v.req.url = '/foox/bar';
       spy(IdleCheck, 'inc');
@@ -105,33 +105,33 @@ isServer && define((require, exports, module)=>{
       v.replaceSend();
 
       webServer.requestListener(v.req, v.res);
-      assert.same(v.future.wait(), 'success');
+      assert.same(await v.future.promise, 'success');
       assert.called(IdleCheck.dec);
     });
 
-
-    test("compilation no build", ()=>{
-      stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});
-      stub(fst, 'mkdir');
+    test('compilation no build', async () => {
+      stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns(Promise.resolve({mtime: 1243}));
+      stub(fst, 'mkdir_p').returns(Promise.resolve());
       const foo = stub();
       Compilers.set('foo', foo);
-      after(()=>{Compilers.set('foo', undefined)});
+      after(() => {Compilers.set('foo', undefined)});
 
       v.req.url = '/koru/.build/web-server-test.foo.bar';
 
       v.replaceSend();
 
       webServer.requestListener(v.req, v.res);
+      await v.future.promise;
 
-      assert.calledWith(fst.mkdir, koru.appDir+"/koru/.build");
+      assert.calledWith(fst.mkdir_p, koru.appDir + '/koru/.build');
 
-      assert.calledWith(foo, 'foo', koru.appDir+"/koru/web-server-test.foo",
-                        koru.appDir+"/koru/.build/web-server-test.foo.bar");
+      assert.calledWith(foo, 'foo', koru.appDir + '/koru/web-server-test.foo',
+                        koru.appDir + '/koru/.build/web-server-test.foo.bar');
     });
 
-    group("error", ()=>{
-      beforeEach(()=>{
-        webServer.registerHandler('foo', (req, res, path, error)=>{
+    group('error', () => {
+      beforeEach(() => {
+        webServer.registerHandler('foo', (req, res, path, error) => {
           v.res.called = true;
           v.req.called = true;
           error(406, v.msg);
@@ -141,14 +141,15 @@ isServer && define((require, exports, module)=>{
         v.replaceSend();
       });
 
-      afterEach(()=>{
+      afterEach(() => {
         webServer.deregisterHandler('foo');
       });
 
-      test("string", ()=>{
+      test('string', async () => {
         v.msg = 'my message';
 
         webServer.requestListener(v.req, v.res);
+        await v.future.promise;
         assert.calledWith(v.res.writeHead, 406, {
           'Content-Length': 10,
         });
@@ -156,10 +157,12 @@ isServer && define((require, exports, module)=>{
         assert.calledWith(v.res.end, 'my message');
       });
 
-      test("json", ()=>{
+      test('json', async () => {
         v.msg = {json: 'object'};
 
         webServer.requestListener(v.req, v.res);
+        await v.future.promise;
+
         assert.calledWith(v.res.end, JSON.stringify(v.msg));
         assert.calledWith(v.res.writeHead, 406, {
           'Content-Type': 'application/json',
@@ -168,22 +171,22 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("usage", ()=>{
+    test('usage', () => {
       api.method('start');
 
       const webServerModule = module.ctx.modules['koru/web-server'];
 
-      api.example(() => {
-        const {Server} = requirejs.nodeRequire('http');
+      //[
+      const {Server} = requirejs.nodeRequire('http');
 
-        const listen = stub(Server.prototype, 'listen').yields();
-        webServer.start();
-        assert.calledWith(listen, webServerModule.config().port);
-      });
+      const listen = stub(Server.prototype, 'listen').yields();
+      webServer.start();
+      assert.calledWith(listen, webServerModule.config().port);
+      //]
     });
 
-    test("DEFAULT handler", ()=>{
-      after(_=>{webServer.deregisterHandler('DEFAULT')});
+    test('DEFAULT handler', async () => {
+      after((_) => {webServer.deregisterHandler('DEFAULT')});
       webServer.registerHandler('DEFAULT', v.stub = stub());
 
       v.req.url = '/foo/bar';
@@ -193,14 +196,14 @@ isServer && define((require, exports, module)=>{
       assert.calledWith(v.stub, v.req, v.res, '/foo/bar', TH.match.func);
     });
 
-    test("exception", ()=>{
+    test('exception', () => {
       stub(koru, 'error');
-      webServer.registerHandler('foo', (req, res, path, error)=>{
+      webServer.registerHandler('foo', (req, res, path, error) => {
         v.res.called = true;
         v.req.called = true;
-        throw new Error("Foo");
+        throw new Error('Foo');
       });
-      after(()=>{webServer.deregisterHandler('foo')});
+      after(() => {webServer.deregisterHandler('foo')});
 
       v.req.url = '/foo/bar';
 
@@ -217,19 +220,19 @@ isServer && define((require, exports, module)=>{
       assert.isTrue(v.req.called);
     });
 
-    test("found html", ()=>{
+    test('found html', async () => {
       v.req.url = '/koru/.build/web-server-test.html.js';
 
-      v.replaceSend((req, path, options)=>{
+      v.replaceSend(async (req, path, options) => {
         assert.same(req, v.req);
 
-        assert.same(fst.readFile(options.root + path).toString(),
+        assert.same(fs.readFileSync(options.root + path).toString(),
                     'define({"name":"Test.WebServer","nodes":[{"name":"div","children":[["","hello"]]}]})');
       });
 
       webServer.requestListener(v.req, v.res);
 
-      assert.same(v.future.wait(), v.res);
+      assert.same(await v.future.promise, v.res);
 
       assert.calledWith(v.sendRet.on, 'error', TH.match.func);
       assert.calledWith(v.sendRet.on, 'directory', TH.match.func);

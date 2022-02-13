@@ -114,9 +114,6 @@ define((require) => {
   Dom.dontFocus = false; // override in app logic
 
   util.merge(Dom, {
-    Ctx,
-    current: Ctx.current,
-
     supportsPassiveEvents,
 
     captureEventOption,

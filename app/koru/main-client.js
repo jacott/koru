@@ -1,11 +1,11 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const pep             = require('koru/polyfill/maybe-pep');
   const util            = require('./util-client');
 
-  const TWENTY_DAYS = 20*util.DAY;
+  const TWENTY_DAYS = 20 * util.DAY;
 
-  return koru =>{
+  return (koru) => {
     koru.onunload(module, 'reload');
 
     util.merge(koru, {
@@ -15,23 +15,12 @@ define((require, exports, module)=>{
         (window.top || window).location.reload(true);
       },
 
-      appDir: module.toUrl('').slice(0,-1),
-
-      setTimeout(func, duration) {
-        if (duration > 2147483640) throw new Error('duration too big');
-        return setTimeout(()=> {
-          try {
-            func();
-          } catch(ex) {
-            koru.unhandledException(ex);
-          }
-        }, duration);
-      },
+      appDir: module.toUrl('').slice(0, -1),
 
       runFiber(func) {
         try {
           func();
-        } catch(ex) {
+        } catch (ex) {
           koru.unhandledException(ex);
         }
       },
@@ -39,7 +28,7 @@ define((require, exports, module)=>{
       fiberConnWrapper(func, conn, data) {
         try {
           func(conn, data);
-        } catch(ex) {
+        } catch (ex) {
           koru.unhandledException(ex);
         }
       },
@@ -51,9 +40,10 @@ define((require, exports, module)=>{
       afTimeout(func, duration) {
         let af = null;
         let cancel;
-        const endTime = duration > TWENTY_DAYS ?
-              Date.now() + duration : 0;
-        const inner = ()=>{
+        const endTime = duration > TWENTY_DAYS
+              ? Date.now() + duration
+              : 0;
+        const inner = () => {
           if (endTime !== 0) {
             const now = Date.now();
             if (endTime > now) {
@@ -66,18 +56,19 @@ define((require, exports, module)=>{
             af = null;
             try {
               func();
-            } catch(ex) {
+            } catch (ex) {
               koru.unhandledException(ex);
             }
           });
         };
 
-        if (duration !== undefined && duration > 0)
+        if (duration !== undefined && duration > 0) {
           cancel = setTimeout(inner, endTime === 0 ? duration : TWENTY_DAYS);
-        else
+        } else {
           inner();
+        }
 
-        return ()=>{
+        return () => {
           if (cancel !== 0) {
             window.clearTimeout(cancel);
             cancel = 0;

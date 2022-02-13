@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const TransQueue      = require('koru/model/trans-queue');
@@ -12,11 +12,11 @@ define((require, exports, module)=>{
 
   const _pubs = Object.create(null);
 
-  const deletePublication = (name)=>{
+  const deletePublication = (name) => {
     delete _pubs[name];
   };
 
-  const stopped = (sub)=>{
+  const stopped = (sub) => {
     sub[stopped$] = true;
     if (sub.conn._subs !== null) delete sub.conn._subs[sub.id];
   };
@@ -27,8 +27,9 @@ define((require, exports, module)=>{
       this.id = id;
       this.lastSubscribed = +lastSubscribed || 0;
       if (this.lastSubscribed != 0 &&
-          util.dateNow() - this.constructor.lastSubscribedMaximumAge > this.lastSubscribed)
-        throw new koru.Error(400, {lastSubscribed: "too_old"});
+          util.dateNow() - this.constructor.lastSubscribedMaximumAge > this.lastSubscribed) {
+        throw new koru.Error(400, {lastSubscribed: 'too_old'});
+      }
       this[stopped$] = false;
     }
 
@@ -49,17 +50,19 @@ define((require, exports, module)=>{
     get isStopped() {return this[stopped$]}
 
     get userId() {return this.conn.userId}
-    set userId(v) {this.conn.userId = v}
+    set userId(v) {throw new Error('use setUserId')}
+    setUserId(v) {return this.conn.setUserId(v)}
 
     static discreteLastSubscribed(time) {
       const {lastSubscribedInterval} = this;
-      return Math.floor(time/lastSubscribedInterval)*lastSubscribedInterval;
+      return Math.floor(time / lastSubscribedInterval) * lastSubscribedInterval;
     }
 
     static get pubName() {return this[pubName$]}
     static set pubName(v) {
-      if (Session._commands.Q !== onSubscribe)
+      if (Session._commands.Q !== onSubscribe) {
         Session.provide('Q', onSubscribe);
+      }
 
       if (this[pubName$] !== void 0) {
         delete _pubs[this[pubName$]];
@@ -73,7 +76,7 @@ define((require, exports, module)=>{
     static set module(module) {
       this[module$] = module;
       const name = this.pubName = util.moduleName(module).replace(/Pub(?:lication)?$/, '');
-      module.onUnload(()=>{deletePublication(name)});
+      module.onUnload(() => {deletePublication(name)});
     }
 
     static get module() {return this[module$]}
@@ -81,13 +84,13 @@ define((require, exports, module)=>{
     [inspect$]() {return `${this.constructor.pubName}Pub("${this.id}")`}
   }
 
-  Publication.lastSubscribedInterval = 5 * 60*1000;
+  Publication.lastSubscribedInterval = 5*60*1000;
   Publication.lastSubscribedMaximumAge = 180 * util.DAY;
 
   Publication.delete = deletePublication;
 
-  function onSubscribe([id, msgId, name, args, lastSubscribed]) {
-    util.thread.action = 'subscribe '+name;
+  async function onSubscribe([id, msgId, name, args, lastSubscribed]) {
+    util.thread.action = 'subscribe ' + name;
     const subs = this._subs;
     if (subs == null) return; // we are closed
 
@@ -104,17 +107,18 @@ define((require, exports, module)=>{
       const sub = subs[id];
       if (sub === void 0) return;
       try {
-        this.sendBinary('Q', [id, msgId, 0, TransQueue.transaction(()=> sub.onMessage(args))]);
-      } catch(ex) {
+        this.sendBinary('Q', [id, msgId, 0, await TransQueue.transaction(() => sub.onMessage(args))]);
+      } catch (ex) {
         if (ex.error === void 0) {
           koru.unhandledException(ex);
           this.sendBinary('Q', [id, msgId, 500, ex.toString()]);
         } else {
-          this.sendBinary('Q', [id, msgId, -ex.error, ex.reason]);
+          this.sendBinary('Q', [id, msgId, - ex.error, ex.reason]);
         }
       }
       return;
     }
+
     const Sub = _pubs[name];
     if (Sub === void 0) {
       const msg = 'unknown publication: ' + name;
@@ -124,10 +128,10 @@ define((require, exports, module)=>{
       let sub;
       try {
         let subStartTime;
-        TransQueue.transaction(()=>{
+        await TransQueue.transaction(() => {
           subStartTime = util.dateNow();
           sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
-          sub.init(args);
+          return sub.init(args);
         });
         subs[id] !== void 0 && this.sendBinary('Q', [
           id, msgId, 200, sub.lastSubscribed = subStartTime]); // ready

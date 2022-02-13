@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Object persistence manager. Defines application models.
@@ -13,36 +13,36 @@ define((require, exports, module)=>{
   const {stub, spy, util, match: m, matchModel: mModel} = TH;
   const Module = module.constructor;
 
-  const Model    = require('./main');
+  const Model = require('./main');
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module({subjectName: 'Model'});
     });
 
-    afterEach(()=>{
-      Model._destroyModel('Book', 'drop');
-      Model._destroyModel('TestModel', 'drop');
+    afterEach(async () => {
+      await Model._destroyModel('Book', 'drop');
+      await Model._destroyModel('TestModel', 'drop');
       v = {};
     });
 
-    test("only models enumerable", ()=>{
+    test('only models enumerable', () => {
       for (const key in Model) {
         assert.same(Object.getPrototypeOf(Model[key]), BaseModel);
       }
       assert(true);
     });
 
-    test("auto define", ()=>{
+    test('auto define', async () => {
       const onUnload = stub();
 
       const TestModel = Model.define({
         module: v.mod = {id: 'test-model', onUnload},
         fields: {name: 'text'},
         proto: {
-          foo() {return this.name;}
+          foo() {return this.name;},
         },
       });
 
@@ -52,46 +52,45 @@ define((require, exports, module)=>{
       assert.same(TestModel.modelName, 'TestModel');
       isServer && assert.same(TestModel.name, 'TestModel');
 
-
-      let tm = TestModel.create({name: 'my name'});
+      let tm = await TestModel.create({name: 'my name'});
 
       assert.same(tm.foo(), 'my name');
       onUnload.yieldAll();
       refute(Model.TestModel);
 
-      ModelEnv.destroyModel(TestModel, 'drop');
-
+      await ModelEnv.destroyModel(TestModel, 'drop');
     });
 
-    group("observering", ()=>{
-      beforeEach(()=>{
+    group('observering', () => {
+      beforeEach(async () => {
         v.Book = Model.define('Book').defineFields({name: 'text'});
-        v.tc = v.Book.create({name: 'foo'});
+        v.tc = await v.Book.create({name: 'foo'});
 
         v.obs = {};
-        const obCalled = (doc, type, partials)=>{
+        const obCalled = (doc, type, partials) => {
           const args = [util.merge({}, doc.attributes), util.merge({}, doc.changes)];
-          if (partials !== undefined)
+          if (partials !== undefined) {
             args.push(util.merge({}, partials));
+          }
           (v.obs[type] = v.obs[type] || []).push(args);
         };
         after(v.Book.beforeCreate(obCalled));
         after(v.Book.beforeUpdate(obCalled));
         after(v.Book.beforeSave(obCalled));
-        after(v.Book.afterLocalChange(({type, doc, undo})=>{
+        after(v.Book.afterLocalChange(({type, doc, undo}) => {
           (v.obs.afterLocalChange = v.obs.afterLocalChange || [])
             .push([type, Object.assign({}, doc.attributes), undo]);
         }));
-        after(v.Book.whenFinally((doc, ex)=>{
+        after(v.Book.whenFinally((doc, ex) => {
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
         }));
       });
 
-      test("remove calls", ()=>{
+      test('remove calls', async () => {
         after(v.Book.onChange(v.onChange = stub()));
         after(v.Book.afterLocalChange(v.afterLocalChange = stub()));
 
-        v.tc.$onThis.remove();
+        await v.tc.$onThis.remove();
 
         assert.calledOnceWith(v.afterLocalChange, DocChange.delete(v.tc));
         assert.calledOnceWith(v.onChange, DocChange.delete(v.tc));
@@ -100,15 +99,15 @@ define((require, exports, module)=>{
         assert.equals(v.obs.afterLocalChange, [['del', {name: 'foo', _id: v.tc._id}, 'add']]);
       });
 
-      test("update calls", ()=>{
-        after(v.Book.onChange(({type, doc, undo})=>{
+      test('update calls', async () => {
+        after(v.Book.onChange(({type, doc, undo}) => {
           refute(v.docAttrs);
           v.docAttrs = Object.assign({}, doc.attributes);
           v.docChanges = Object.assign({}, undo);
         }).stop);
 
         v.tc.name = 'bar';
-        v.tc.$save();
+        await v.tc.$save();
 
         assert.equals(v.docAttrs, {name: 'bar', _id: v.tc._id});
         assert.equals(v.docChanges, {name: 'foo'});
@@ -118,15 +117,14 @@ define((require, exports, module)=>{
         assert.equals(v.obs.afterLocalChange, [['chg', {name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
         assert.equals(v.obs.whenFinally, [[mModel(v.tc), undefined]]);
 
-
         refute(v.obs.beforeCreate);
       });
 
-      test("create calls", ()=>{
+      test('create calls', async () => {
         after(v.Book.onChange(v.onChange = stub()).stop);
 
-        v.tc = v.Book.create({name: 'foo'});
-        assert.calledOnceWith(v.onChange, DocChange.add(m(doc => doc.attributes === v.tc.attributes)));
+        v.tc = await v.Book.create({name: 'foo'});
+        assert.calledOnceWith(v.onChange, DocChange.add(m((doc) => doc.attributes === v.tc.attributes)));
 
         assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
@@ -136,87 +134,85 @@ define((require, exports, module)=>{
         refute(v.obs.beforeUpdate);
       });
 
-      test("create exception", ()=>{
-        after(v.Book.beforeCreate(()=>{throw v.ex = new Error("tex")}));
+      test('create exception', async () => {
+        after(v.Book.beforeCreate(() => {throw v.ex = new Error('tex')}));
 
-        assert.exception(()=>{
-          v.tc = v.Book.create({name: 'foo'});
-        }, 'Error', 'tex');
+        await assert.exception(() => v.Book.create({name: 'foo'}), 'Error', 'tex');
 
-        assert.equals(v.obs.whenFinally, [[m(x => x.name === 'foo'), v.ex]]);
+        assert.equals(v.obs.whenFinally, [[m((x) => x.name === 'foo'), v.ex]]);
       });
 
-      test("update exception", ()=>{
-        after(v.Book.beforeUpdate(()=>{throw v.ex = new Error("tex")}));
+      test('update exception', async () => {
+        after(v.Book.beforeUpdate(() => {throw v.ex = new Error('tex')}));
 
-        assert.exception(()=>{
+        await assert.exception(async () => {
           v.tc.name = 'bar';
-          v.tc.$save();
+          await v.tc.$save();
         }, 'Error', 'tex');
 
         assert.equals(v.obs.whenFinally, [[mModel(v.tc), v.ex]]);
       });
     });
 
-    group("versioning", ()=>{
-      before(()=>{
+    group('versioning', () => {
+      before(() => {
         v.Book = Model.define('Book').defineFields({name: 'text'});
       });
 
-      test("no _version", ()=>{
-        const tc = v.Book.create({name: 'foo'});
+      test('no _version', async () => {
+        const tc = await v.Book.create({name: 'foo'});
 
         assert.same(tc._version, undefined);
       });
 
-      test("updating", ()=>{
+      test('updating', async () => {
         v.Book.addVersioning();
 
-        const tc = v.Book.create({name: 'foo'});
+        const tc = await v.Book.create({name: 'foo'});
 
         assert.same(tc._version, 1);
 
         tc.name = 'bar';
-        tc.$save();
+        await tc.$save();
 
         assert.same(tc.$reload()._version, 2);
       });
 
-      test("bumping", ()=>{
+      test('bumping', async () => {
         v.Book.addVersioning();
 
-        const tc = v.Book.create({name: 'foo'});
+        const tc = await v.Book.create({name: 'foo'});
 
-        tc.$bumpVersion();
+        await tc.$bumpVersion();
 
         assert.same(tc.$reload()._version, 2);
 
-        tc.$bumpVersion();
+        await tc.$bumpVersion();
         assert.same(tc.$reload()._version, 3);
       });
     });
 
-    test("ref cache", ()=>{
+    test('ref cache', async () => {
       const Book = Model.define('Book').defineFields({name: 'text'});
-      const foo = Book.create();
+      const foo = await Book.create();
 
-      foo.$cacheRef('bin')["123"] = 5;
+      foo.$cacheRef('bin')['123'] = 5;
 
-      assert.same(foo.$cacheRef('bin')["123"], 5);
+      assert.same(foo.$cacheRef('bin')['123'], 5);
 
-      assert.same(foo.$reload().$cacheRef('bin')["123"], undefined);
+      assert.same(foo.$reload().$cacheRef('bin')['123'], undefined);
 
-      foo.$cacheRef('bin')["123"] = 7;
-      assert.same(foo.$cacheRef('bin')["123"], 7);
+      foo.$cacheRef('bin')['123'] = 7;
+      assert.same(foo.$cacheRef('bin')['123'], 7);
 
       foo.$clearCache();
 
-      assert.same(foo.$reload().$cacheRef('bin')["123"], undefined);
+      assert.same(foo.$reload().$cacheRef('bin')['123'], undefined);
     });
 
-    test("cache", ()=>{
+    test('cache', async () => {
       const Book = Model.define('Book').defineFields({name: 'text'});
-      const foo = Book.create();
+      const foo = await Book.create();
 
       assert.same(foo, Book.findById(foo._id));
 
@@ -227,51 +223,51 @@ define((require, exports, module)=>{
       assert.same(foo.$reload().$cache.boo, undefined);
     });
 
-    test("change recording", ()=>{
+    test('change recording', () => {
       const Book = Model.define('Book').
-              defineFields({
-                name: 'text',
-                other: 'number'
-              });
+            defineFields({
+              name: 'text',
+              other: 'number',
+            });
 
       const testAttrs = {_id: 123, name: 'orig name'};
       const tsc = new Book(testAttrs);
 
       tsc.name = 'orig name';
-      assert.equals(tsc.changes,{});
+      assert.equals(tsc.changes, {});
 
       tsc.name = 'new name';
-      assert.equals(tsc.changes,{name: 'new name'});
+      assert.equals(tsc.changes, {name: 'new name'});
 
       tsc.name = 'another';
-      assert.equals(tsc.changes,{name: 'another'});
+      assert.equals(tsc.changes, {name: 'another'});
 
       tsc.other = 'new other';
-      assert.equals(tsc.changes,{name: 'another', other: 'new other'});
+      assert.equals(tsc.changes, {name: 'another', other: 'new other'});
 
       tsc.name = 'orig name';
-      assert.equals(tsc.changes,{other: 'new other'});
+      assert.equals(tsc.changes, {other: 'new other'});
 
-      assert.same(tsc.attributes,testAttrs);
+      assert.same(tsc.attributes, testAttrs);
 
       tsc.name = undefined;
 
       assert.same(tsc.name, undefined);
     });
 
-    test("remove", ()=>{
+    test('remove', async () => {
       const Book = Model.define('Book');
       Book.defineFields({name: 'text'});
-      const doc = Book.build({name: 'foo'}).$$save();
+      const doc = await Book.build({name: 'foo'}).$$save();
 
-      assert.isTrue(Book.exists({_id: doc._id}));
+      assert.isTrue(await Book.exists({_id: doc._id}));
 
-      doc.$remove();
+      await doc.$remove();
 
-      assert.same(Book.findById(doc._id), undefined);
+      assert.same(await Book.findById(doc._id), undefined);
     });
 
-    test("define via module", ()=>{
+    test('define via module', () => {
       /**
        * Define a new model.
        * define(options) or
@@ -292,7 +288,7 @@ define((require, exports, module)=>{
       refute(Model.Book);
     });
 
-    test("define with name", ()=>{
+    test('define with name', () => {
       const Book = Model.define('Book', {t1: 123});
 
       const testAttrs = {_id: 123, name: 'orig name'};
@@ -318,8 +314,8 @@ define((require, exports, module)=>{
       tsc.attributes.level = 4;
       tsc.withDef = 'set';
 
-      assert.same(tsc.level,4);
-      assert.same(tsc.withDef,'set');
+      assert.same(tsc.level, 4);
+      assert.same(tsc.withDef, 'set');
 
       tsc.withDef = null;
       assert.same(tsc.withDef, 0);

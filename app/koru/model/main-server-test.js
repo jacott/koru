@@ -1,5 +1,6 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const Future          = require('koru/future');
   const koru            = require('koru/main');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
@@ -12,42 +13,41 @@ define((require, exports, module)=>{
   const Val             = require('./validation');
 
   const {stub, spy, match: m, matchModel: mm} = TH;
-  const {Future}   = util;
 
   const Model = require('./main');
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       TH.noInfo();
     });
 
-    afterEach(()=>{
-      Model._destroyModel('TestModel', 'drop');
+    afterEach(async () => {
+      await Model._destroyModel('TestModel', 'drop');
       v = {};
     });
 
-    group("$docCache", ()=>{
-      beforeEach(()=>{
+    group('$docCache', () => {
+      beforeEach(async () => {
         v.defDb = Driver.defaultDb;
-        v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
-        v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
+        v.altDb = await Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
+        await v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
       });
 
-      afterEach(()=>{
+      afterEach(async () => {
         if (v.altDb) {
-          v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
+          await v.altDb.query('DROP SCHEMA IF EXISTS alt CASCADE');
           dbBroker.clearDbId();
         }
       });
 
-      test("switching db", ()=>{
+      test('switching db', async () => {
         const TestModel = Model.define('TestModel').defineFields({
           name: 'text',
         });
         assert.same(TestModel._$docCacheGet('fooId'), undefined);
-        TestModel.create({_id: 'fooId', name: 'foo'});
+        await TestModel.create({_id: 'fooId', name: 'foo'});
         assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
         dbBroker.db = v.altDb;
         assert.same(Model.db, v.altDb);
@@ -55,52 +55,49 @@ define((require, exports, module)=>{
         assert.same(TestModel._$docCacheGet('fooId'), undefined);
         dbBroker.db = v.defDb;
         assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
-        const future = new Future;
-        koru.fiberConnWrapper(() => {
-          try {
-            v.ans = TestModel._$docCacheGet('fooId');
-            future.return('success');
-          } catch(ex) {
-            future.throw(ex);
-          }
+        const ans = await koru.fiberConnWrapper(async () => {
+          v.ans = TestModel._$docCacheGet('fooId');
+          return 'success';
         }, v.conn = {});
-        assert.same(future.wait(), 'success');
+        assert.same(ans, 'success');
         assert.same(v.ans, undefined);
-
       });
     });
 
-    test("auto Id", ()=>{
+    test('auto Id', async () => {
       const TestModel = Model.define('TestModel');
       TestModel.defineFields({
         _id: {type: 'serial', auto: true},
         name: 'text',
       });
 
-      TestModel.create({name: 'foo'});
-      const bar = TestModel.create({name: 'bar'});
+      await TestModel.create({name: 'foo'});
+      const bar = await TestModel.create({name: 'bar'});
       assert.same(bar._id, 2);
 
-      const doc = TestModel.findBy('name', 'bar');
+      const doc = await TestModel.findBy('name', 'bar');
       assert(doc);
       assert.same(doc._id, 2);
     });
 
-    test("invalid findById", ()=>{
+    test('invalid findById', async () => {
       const TestModel = Model.define('TestModel');
 
-      assert.same(TestModel.findById(null), undefined);
+      assert.same(await TestModel.findById(null), undefined);
 
-      assert.exception(()=>{
-        TestModel.findById({});
-      }, 'Error', 'invalid id: [object Object]');
+      try {
+        await TestModel.findById({});
+        assert.fail('throw exception');
+      } catch (err) {
+        assert.exception(err, 'Error', 'invalid id: [object Object]');
+      }
     });
 
-    test("globalDictAdders", ()=>{
+    test('globalDictAdders', () => {
       const adder = session._globalDictAdders[koru.absId(require, './main-server')];
       assert.isFunction(adder);
 
-      const TestModel = Model.define('TestModel').defineFields({name: 'text', 'age': 'number'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number'});
 
       adder(v.stub = stub());
 
@@ -109,21 +106,21 @@ define((require, exports, module)=>{
       assert.calledWith(v.stub, 'age');
     });
 
-    test("remote", ()=>{
+    test('remote', async () => {
       const TestModel = Model.define('TestModel');
 
       TestModel.remote({foo: v.foo = stub().returns('result')});
 
       const transaction = spy(TestModel.db, 'transaction');
 
-      assert.accessDenied(()=>{
+      assert.accessDenied(() => {
         session._rpcs['TestModel.foo'].call({userId: null});
       });
 
       refute.called(transaction);
       refute.called(v.foo);
 
-      assert.same(session._rpcs['TestModel.foo'].call(v.conn = {userId: "uid"}, 1, 2),
+      assert.same(await session._rpcs['TestModel.foo'].call(v.conn = {userId: 'uid'}, 1, 2),
                   'result');
 
       assert.calledOnce(v.foo);
@@ -133,92 +130,92 @@ define((require, exports, module)=>{
       assert.called(transaction);
     });
 
-    test("when no changes in save", ()=>{
+    test('when no changes in save', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
-      v.doc = TestModel.create({name: 'foo'});
+      v.doc = await TestModel.create({name: 'foo'});
       after(TestModel.onChange(v.onChange = stub()));
       after(TestModel.beforeSave(v.beforeSave = stub()));
 
-      v.doc.$save();
-      TestModel.query.onId(v.doc._id).update({});
+      await v.doc.$save();
+      await TestModel.query.onId(v.doc._id).update({});
 
       assert.same(v.doc.$reload().name, 'foo');
+      assert.same((await v.doc.$reload(true)).name, 'foo');
       refute.called(v.onChange);
       refute.called(v.beforeSave);
     });
 
-    test("reload and caching", ()=>{
+    test('reload and caching', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
-      v.doc = TestModel.create({name: 'foo'});
+      v.doc = await TestModel.create({name: 'foo'});
 
       v.doc.attributes.name = 'baz';
       v.doc.name = 'bar';
 
-      let retFut = new Future;
-      let waitFut = new Future;
+      let retFut = new Future();
+      let waitFut = new Future();
 
-      util.Fiber(()=>{
+      globalThis.__koruThreadLocal.run({}, async () => {
         try {
-          while(retFut) {
-            const what= retFut.wait();
-            waitFut.return(what && what());
+          while (retFut != null) {
+            const what = await retFut.promise;
+            waitFut.resolve(await what?.());
           }
-        } catch(ex) {
+        } catch (ex) {
           koru.unhandledException(ex);
-          waitFut.throw(ex);
+          waitFut.reject(ex);
         }
-      }).run();
+      });
 
-      retFut.return(()=>{
-        retFut = new Future;
-        const doc = TestModel.findById(v.doc._id);
+      retFut.resolve(async () => {
+        retFut = new Future();
+        const doc = await TestModel.findById(v.doc._id);
         doc.attributes.name = 'cache foo';
       });
-      waitFut.wait();
+      await waitFut.promise;
 
-      TestModel.docs.updateById(v.doc._id, {name: 'fuz'});
+      await TestModel.docs.updateById(v.doc._id, {name: 'fuz'});
 
       assert.same(v.doc.$reload(), v.doc);
       assert.same(v.doc.name, 'baz');
-      assert.same(v.doc.$reload(true), v.doc);
+      assert.same((await v.doc.$reload(true)), v.doc);
       assert.same(v.doc.name, 'fuz');
 
-      waitFut = new Future;
-      retFut.return(()=>{
+      waitFut = new Future();
+      retFut.resolve(() => {
         retFut = null;
         return TestModel.findById(v.doc._id);
       });
-      ;
-      assert.same(waitFut.wait().name, 'cache foo');
+      assert.same((await waitFut.promise).name, 'cache foo');
 
-      TestModel.docs.updateById(v.doc._id, {name: 'doz'});
+      await TestModel.docs.updateById(v.doc._id, {name: 'doz'});
       assert.same(v.doc.$reload().name, 'fuz');
     });
 
-    test("overrideSave", ()=>{
+    test('overrideSave', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       TestModel.overrideSave = stub();
 
       const saveSpy = spy(TestModel.prototype, '$save');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'fooid', {name: 'bar'});
 
-      assert.calledWith(TestModel.overrideSave, "fooid", {name: 'bar'}, 'u123');
+      assert.calledWith(TestModel.overrideSave, 'fooid', {name: 'bar'}, 'u123');
 
       refute.called(saveSpy);
     });
 
-    test("overrideRemove", ()=>{
+    test('overrideRemove', async () => {
       const TestModel = Model.define('TestModel', {
-        overrideRemove: v.overrideRemove = stub()
+        overrideRemove: v.overrideRemove = stub(),
       }).defineFields({name: 'text'});
 
       const removeSpy = spy(TestModel.prototype, '$remove');
-      const doc = TestModel.create({name: 'remove me'});
+      const doc = await TestModel.create({name: 'remove me'});
 
-      session._rpcs.remove.call({userId: 'u123'}, "TestModel", doc._id);
+      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', doc._id);
 
       assert.calledWith(v.overrideRemove, 'u123');
       const model = v.overrideRemove.firstCall.thisValue;
@@ -228,57 +225,55 @@ define((require, exports, module)=>{
       refute.called(removeSpy);
     });
 
-    test("$save with callback", ()=>{
+    test('$save with callback', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       const doc = TestModel.build({name: 'foo'});
-      doc.$save({callback: v.callback = stub()});
+      await doc.$save({callback: v.callback = stub()});
 
       assert.calledWith(v.callback, doc);
     });
 
-    test("defaults for saveRpc new", ()=>{
+    test('defaults for saveRpc new', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(),
       }).defineFields({name: 'text', language: {type: 'text', default: 'en'}});
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {
-        _id: "fooid", name: 'Mel'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {
+        _id: 'fooid', name: 'Mel'});
 
-      const mel = TestModel.findById("fooid");
+      const mel = await TestModel.findById('fooid');
 
       assert.same(mel.language, 'en');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {
-        _id: "barid", name: 'Jen', language: 'no'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {
+        _id: 'barid', name: 'Jen', language: 'no'});
 
-      const jen = TestModel.findById('barid');
+      const jen = await TestModel.findById('barid');
 
       assert.same(jen.language, 'no');
     });
 
-    test("saveRpc new", ()=>{
+    test('saveRpc new', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(async () => {await 1}),
       }).defineFields({name: 'text'});
-
 
       spy(TestModel.db, 'transaction');
       TestModel.onChange(v.onChangeSpy = stub());
 
-      assert.accessDenied(()=>{
-        session._rpcs.save.call({userId: null}, "TestModel", null, {_id: "fooid", name: 'bar'});
-      });
+      await assert.accessDenied(async () => session._rpcs.save.call(
+        {userId: null}, 'TestModel', null, {_id: 'fooid', name: 'bar'}));
 
-      refute(TestModel.exists("fooid"));
+      refute(await TestModel.exists('fooid'));
 
       spy(Val, 'assertCheck');
 
       spy(TransQueue, 'onSuccess');
       spy(TransQueue, 'onAbort');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {_id: 'fooid', name: 'bar'});
 
-      v.doc = TestModel.findById("fooid");
+      v.doc = await TestModel.findById('fooid');
 
       assert.same(v.doc.name, 'bar');
 
@@ -286,75 +281,73 @@ define((require, exports, module)=>{
 
       assert(TransQueue.onAbort.calledBefore(TransQueue.onSuccess));
 
-      TransQueue.onSuccess.yield();
+      await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
-      assert.calledWithExactly(v.auth, "u123");
+      assert.calledWithExactly(v.auth, 'u123');
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
 
-      assert.calledWith(Val.assertCheck, null, "string", {baseName: "_id"});
+      assert.calledWith(Val.assertCheck, null, 'string', {baseName: '_id'});
 
       assert.calledOnce(TestModel.db.transaction);
 
       stub(TestModel, '_$docCacheDelete');
-      TransQueue.onAbort.yield();
+      await TransQueue.onAbort.yield();
       assert.calledWith(TestModel._$docCacheDelete, m.field('_id', 'fooid'));
 
       v.auth.reset();
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar2'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {_id: 'fooid', name: 'bar2'});
 
       refute.called(v.auth);
     });
 
-    test("saveRpc existing", ()=>{
+    test('saveRpc existing', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(),
       }).defineFields({name: 'text'});
 
-      v.doc = TestModel.create({name: 'foo'});
+      v.doc = await TestModel.create({name: 'foo'});
 
       TestModel.onChange(v.onChangeSpy = stub());
 
-      assert.accessDenied(()=>{
-        session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
-      });
+      await assert.accessDenied(
+        () => session._rpcs.save.call({userId: null}, 'TestModel', v.doc._id, {name: 'bar'}));
 
-      assert.exception(()=>{
-        session._rpcs.save.call({userId: 'u123'}, "TestModel", 'x'+v.doc._id, {name: 'bar'});
-      }, {error: 404, reason: {_id: [['not_found']]}});
+      await assert.exception(() =>
+        session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'x' + v.doc._id, {name: 'bar'}),
+        {error: 404, reason: {_id: [['not_found']]}});
 
       assert.same(v.doc.$reload().name, 'foo');
 
       spy(TransQueue, 'onSuccess');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {name: 'bar'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {name: 'bar'});
 
       assert.same(v.doc.$reload().name, 'bar');
 
       assert.calledOnce(v.onChangeSpy);
-      TransQueue.onSuccess.yield();
+      await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
-      assert.calledWithExactly(v.auth, "u123");
+      assert.calledWithExactly(v.auth, 'u123');
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
     });
 
-    test("saveRpc partial no modification", ()=>{
+    test('saveRpc partial no modification', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(),
       }).defineFields({name: 'text', html: 'object'});
 
-
-      v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
+      v.doc = await TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
 
       TestModel.onChange(v.onChangeSpy = stub());
 
       spy(TransQueue, 'onSuccess');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {$partial: {
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {$partial: {
         html: [
-          'div.2', 'baz'
-        ]
+          'div.2', 'baz',
+        ],
       }});
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
@@ -362,85 +355,86 @@ define((require, exports, module)=>{
       assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {$partial: {
         html: [
           'div.2', null,
-        ]
+        ],
       }}));
-      TransQueue.onSuccess.yield();
+      await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
-      assert.calledWithExactly(v.auth, "u123");
+      assert.calledWithExactly(v.auth, 'u123');
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
     });
 
-    test("saveRpc partial validate modifies", ()=>{
+    test('saveRpc partial validate modifies', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(),
       }).defineFields({name: 'text', html: 'object'});
 
-      TestModel.prototype.validate = function () {
+      TestModel.prototype.validate = async function () {
+        await 1;
         if (this.changes.html.div[2] === 3) {
           this.changes.html.div[2] = 'three';
         }
-      };
+      }
 
-      v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
+      v.doc = await TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
 
       TestModel.onChange(v.onChangeSpy = stub());
 
       spy(TransQueue, 'onSuccess');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {
         name: 'fiz',
         $partial: {
           html: [
-            'div.2', 3
-          ]
+            'div.2', 3,
+          ],
         }});
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'three']});
+      assert.equals((await v.doc.$reload(true)).html, {div: ['foo', 'bar', 'three']});
 
       assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {
         name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}}));
-      TransQueue.onSuccess.yield();
+      await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
-      assert.calledWithExactly(v.auth, "u123");
+      assert.calledWithExactly(v.auth, 'u123');
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
     });
 
-    test("removeRpc", ()=>{
+    test('removeRpc', async () => {
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub()
+        authorize: v.auth = stub(),
       }).defineFields({name: 'text'});
 
       spy(TestModel.db, 'transaction');
 
-      v.doc = TestModel.create({name: 'foo'});
+      v.doc = await TestModel.create({name: 'foo'});
 
       TestModel.onChange(v.onChangeSpy = stub());
 
-      assert.accessDenied(()=>{
-        session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
-      });
+      await assert.accessDenied(
+        () => session._rpcs.remove.call({userId: null}, 'TestModel', v.doc._id));
 
-      assert.exception(()=>{
-        session._rpcs.remove.call({userId: 'u123'}, "TestModel", 'x'+v.doc._id);
-      }, {error: 404, reason: {_id: [['not_found']]}});
+      await assert.exception(
+        () => session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'x' + v.doc._id),
+        {error: 404, reason: {_id: [['not_found']]}});
 
       spy(TransQueue, 'onSuccess');
 
-      session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
+      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', v.doc._id);
 
-      refute(TestModel.findById(v.doc._id));
+      refute(await TestModel.findById(v.doc._id));
 
       assert.calledOnce(v.onChangeSpy);
-      TransQueue.onSuccess.yield();
+      await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
-      assert.calledWith(v.auth, "u123", {remove: true});
+      assert.calledWith(v.auth, 'u123', {remove: true});
 
       assert.calledThrice(TestModel.db.transaction);
     });
 
-    test("addUniqueIndex", ()=>{
+    test('addUniqueIndex', () => {
       const TestModel = Model.define('TestModel');
 
       const ignoreme = () => {};
@@ -449,13 +443,13 @@ define((require, exports, module)=>{
       assert.equals(ans, {
         model: TestModel,
         sort: ['a', 'b', 'c', -1, 'd'],
-        filterTest: m(q => q instanceof Query),
+        filterTest: m((q) => q instanceof Query),
         from: [-1, 'c', 1, 'd'],
         stop: util.voidFunc,
       });
     });
 
-    test("addIndex", ()=>{
+    test('addIndex', () => {
       const TestModel = Model.define('TestModel');
 
       const ensureIndex = stub(TestModel.docs, 'ensureIndex');
@@ -471,11 +465,11 @@ define((require, exports, module)=>{
       });
     });
 
-    test("transaction", ()=>{
+    test('transaction', async () => {
       const TestModel = Model.define('TestModel');
-      const body = stub().returns('result');
+      const body = stub().returns(Promise.resolve('result'));
       const tx = spy(TestModel.db, 'transaction');
-      assert.same(TestModel.transaction(body), 'result');
+      assert.same(await TestModel.transaction(body), 'result');
 
       assert.called(body);
       assert.calledWith(tx, body);

@@ -1,18 +1,18 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Compilers       = require('koru/compilers');
   const TemplateCompiler = require('koru/dom/template-compiler');
-  const fst             = require('koru/fs-tools');
   const util            = require('koru/util');
+  const fsp             = requirejs.nodeRequire('fs/promises');
   const marked          = requirejs.nodeRequire('marked');
 
   const mdRenderer = new marked.Renderer();
   const mdOptions = {renderer: mdRenderer};
 
-  Compilers.set('html-md', (type, path, outPath)=>{
-    const html = marked.parse(fst.readFile(path).toString(), mdOptions);
+  Compilers.set('html-md', async (type, path, outPath) => {
+    const html = marked.parse((await fsp.readFile(path)).toString(), mdOptions);
     const js = TemplateCompiler.toJavascript(html, path);
 
-    fst.writeFile(outPath, "define("+ js + ")");
+    await fsp.writeFile(outPath, 'define(' + js + ')');
   });
 });

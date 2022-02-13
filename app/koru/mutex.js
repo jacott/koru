@@ -1,8 +1,5 @@
 define((require) => {
   'use strict';
-  const util            = require('koru/util');
-
-  const {Fiber} = util;
   const head$ = Symbol(), tail$ = Symbol();
 
   class Mutex {
@@ -13,10 +10,9 @@ define((require) => {
 
     get isLocked() {return this[head$] !== void 0}
 
-    get isLockedByMe() {return this[head$]?.[0] === Fiber.current}
-
     lock() {
-      const current = Fiber.current, node = [current, void 0];
+      const node = [void 0, void 0];
+      const p = new Promise((resolve, reject) => {node[0] = resolve});
 
       if (this[head$] === void 0) {
         this[head$] = this[tail$] = node;
@@ -24,14 +20,11 @@ define((require) => {
       }
 
       this[tail$] = this[tail$][1] = node;
-      Fiber.yield();
-      while (this[head$][0] !== current) {
-        Fiber.yield();
-      }
+      return p;
     }
 
     unlock() {
-      const {current} = Fiber, node = this[head$];
+      const node = this[head$];
       if (node === void 0) {
         throw new Error('mutex not locked');
       }
@@ -41,7 +34,7 @@ define((require) => {
       if (nh === void 0) {
         this[tail$] = void 0;
       } else {
-        nh[0].run();
+        nh[0]();
       }
     }
   }

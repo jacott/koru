@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Val             = require('koru/model/validation');
   const TH              = require('koru/test-helper');
@@ -12,38 +12,38 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.query = new Query({});
       v.model = {query: v.query};
-      v.doc = {constructor: v.model, name: 'foo', _id: "idid", $isNewRecord() {
+      v.doc = {constructor: v.model, name: 'foo', _id: 'idid', $isNewRecord() {
         return false;
       }};
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("scope", ()=>{
+    test('scope', () => {
       stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.org = 'abc';
-      unique.call(Val, v.doc,'name', {scope: 'org'});
+      unique.call(Val, v.doc, 'name', {scope: 'org'});
 
       assert(v.doc[error$]);
-      assert.equals(v.doc[error$]['name'],[['not_unique']]);
+      assert.equals(v.doc[error$]['name'], [['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("query scope", ()=>{
+    test('query scope', () => {
       stub(v.query, 'count').withArgs(1).returns(1);
 
       v.doc.org = 'abc';
       v.doc.foo = ['bar'];
 
-      unique.call(Val, v.doc,'name', {scope: {org: 'org', fuz: {$ne: 'foo'}}});
+      unique.call(Val, v.doc, 'name', {scope: {org: 'org', fuz: {$ne: 'foo'}}});
 
       assert(v.doc[error$]);
 
@@ -51,7 +51,7 @@ define((require, exports, module)=>{
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("function scope", ()=>{
+    test('function scope', () => {
       stub(v.query, 'count').withArgs(1).returns(1);
 
       v.doc.org = 'abc';
@@ -61,10 +61,10 @@ define((require, exports, module)=>{
         assert.same(doc, v.doc);
         assert.equals(options, {scope: scopeFunc});
 
-        query.where(field+'x', 123);
+        query.where(field + 'x', 123);
       }
 
-      unique.call(Val, v.doc,'name', {scope: scopeFunc});
+      unique.call(Val, v.doc, 'name', {scope: scopeFunc});
 
       assert(v.doc[error$]);
 
@@ -72,22 +72,22 @@ define((require, exports, module)=>{
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("multi scope", ()=>{
+    test('multi scope', () => {
       stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.bar = 'baz';
       v.doc.org = 'abc';
-      unique.call(Val, v.doc,'name', {scope: ['bar', 'org']});
+      unique.call(Val, v.doc, 'name', {scope: ['bar', 'org']});
 
       assert(v.doc[error$]);
-      assert.equals(v.doc[error$]['name'],[['not_unique']]);
+      assert.equals(v.doc[error$]['name'], [['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo', bar: 'baz', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("no duplicate", ()=>{
+    test('no duplicate', () => {
       stub(v.query, 'count').withArgs(1).returns(0);
-      unique.call(Val, v.doc,'name');
+      unique.call(Val, v.doc, 'name');
 
       refute(v.doc[error$]);
 
@@ -95,28 +95,48 @@ define((require, exports, module)=>{
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("duplicate", ()=>{
-      stub(v.query, 'count').withArgs(1).returns(1);
-      unique.call(Val, v.doc,'name');
+    test('no duplicate async', async () => {
+      stub(v.query, 'count').withArgs(1).returns(Promise.resolve(0));
+      await unique.call(Val, v.doc, 'name');
 
-      assert(v.doc[error$]);
-      assert.equals(v.doc[error$]['name'],[['not_unique']]);
+      refute(v.doc[error$]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
     });
 
-    test("new record", ()=>{
-      v.doc.$isNewRecord = () => true;
+    test('duplicate', () => {
       stub(v.query, 'count').withArgs(1).returns(1);
-      unique.call(Val, v.doc,'name');
+      unique.call(Val, v.doc, 'name');
 
       assert(v.doc[error$]);
-      assert.equals(v.doc[error$]['name'],[['not_unique']]);
+      assert.equals(v.doc[error$]['name'], [['not_unique']]);
+
+      assert.equals(v.query._wheres, {name: 'foo'});
+      assert.equals(v.query._whereNots, {_id: 'idid'});
+    });
+
+    test('duplicate async', async () => {
+      stub(v.query, 'count').withArgs(1).returns(Promise.resolve(1));
+      await unique.call(Val, v.doc, 'name');
+
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'], [['not_unique']]);
+
+      assert.equals(v.query._wheres, {name: 'foo'});
+      assert.equals(v.query._whereNots, {_id: 'idid'});
+    });
+
+    test('new record', () => {
+      v.doc.$isNewRecord = () => true;
+      stub(v.query, 'count').withArgs(1).returns(1);
+      unique.call(Val, v.doc, 'name');
+
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'], [['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.same(v.query._whereNots, undefined);
     });
-
   });
 });

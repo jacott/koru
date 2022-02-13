@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * AllSub is an extended {#../subscription} which will subscribe to all documents in
@@ -20,13 +20,13 @@ isClient && define((require, exports, module)=>{
 
   const AllSub = require('./all-sub');
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       AllSub.resetModelList();
       SubscriptionSession.unload(Session);
     });
 
-    test("subscribe", ()=>{
+    test('subscribe', () => {
       /**
        * Subscribe to all models in {#koru/models/model-map}
        **/
@@ -52,11 +52,11 @@ isClient && define((require, exports, module)=>{
       assert.isTrue(match.lastCall.args[1]({}));
     });
 
-    test("stopped", ()=>{
+    test('stopped', () => {
       class Book extends Model.BaseModel {
       }
       Book.define({name: 'Book'});
-      after(()=>{Model._destroyModel('Book', 'drop')});
+      after(() => {Model._destroyModel('Book', 'drop')});
 
       const b1 = Book.create('');
 
@@ -66,11 +66,11 @@ isClient && define((require, exports, module)=>{
       refute(Book.findById(b1._id));
     });
 
-    test("reconnecting", ()=>{
+    test('reconnecting', () => {
       class Book extends Model.BaseModel {
       }
       Book.define({name: 'Book'});
-      after(()=>{Model._destroyModel('Book', 'drop')});
+      after(() => {Model._destroyModel('Book', 'drop')});
 
       const b1 = Book.create('');
 
@@ -81,7 +81,7 @@ isClient && define((require, exports, module)=>{
       refute(Book.findById(b1._id));
     });
 
-    test("includedModels", ()=>{
+    test('includedModels', () => {
       /**
        * Return an iterator over the models that are included in the subscription
        **/
@@ -89,12 +89,12 @@ isClient && define((require, exports, module)=>{
       //[
       const db = new MockDB(['Book', 'Author']);
       const {Book, Author} = db.models;
-      assert.equals(Array.from(AllSub.includedModels()).map(m => m.modelName).sort(), [
+      assert.equals(Array.from(AllSub.includedModels()).map((m) => m.modelName).sort(), [
         'Author', 'Book']);
       //]
     });
 
-    test("excludeModel", ()=>{
+    test('excludeModel', () => {
       /**
        * Exclude {#koru/model/main}s from being subscribed to. UserLogin is always excluded. This will
        * clear {#.includeModel}
@@ -104,11 +104,11 @@ isClient && define((require, exports, module)=>{
       api.method();
 
       //[
-      const models = "Book Author UserLogin ErrorLog AuditLog".split(" ");
+      const models = 'Book Author UserLogin ErrorLog AuditLog'.split(' ');
       const db = new MockDB(models);
       //]
       ModelMap.NotAModel = {onChange: stub()}; // has no query method
-      models.push("NotAModel");
+      models.push('NotAModel');
       //[#
 
       const {Book, Author, UserLogin, AuditLog, ErrorLog} = db.models;
@@ -119,12 +119,12 @@ isClient && define((require, exports, module)=>{
       const errorLog = ErrorLog.create();
 
       class MyAllSub extends AllSub {}
-      MyAllSub.pubName = "All"; // register publication All
+      MyAllSub.pubName = 'All'; // register publication All
 
-      MyAllSub.excludeModel("AuditLog", "ErrorLog");
+      MyAllSub.excludeModel('AuditLog', 'ErrorLog');
 
       const sub = MyAllSub.subscribe();//]
-      after(()=>{sub.stop()});//[#
+      after(() => {sub.stop()});//[#
 
       assert(sub._matches.Book);
       assert(sub._matches.Author);
@@ -134,7 +134,7 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("includeModel", ()=>{
+    test('includeModel', () => {
       /**
        * Explicitly include the {#koru/model/main}s which should be published. All other models are
        * excluded. This clears {#.excludeModel}
@@ -144,7 +144,7 @@ isClient && define((require, exports, module)=>{
       api.method();
 
       //[
-      const models = "Book Author UserLogin ErrorLog AuditLog".split(" ");
+      const models = 'Book Author UserLogin ErrorLog AuditLog'.split(' ');
       const db = new MockDB(models);
 
       const {Book, Author, UserLogin, AuditLog, ErrorLog} = db.models;
@@ -155,15 +155,15 @@ isClient && define((require, exports, module)=>{
       const errorLog = ErrorLog.create();
 
       class MyAllSub extends AllSub {}
-      MyAllSub.pubName = "All"; // register publication All
+      MyAllSub.pubName = 'All'; // register publication All
 
-      MyAllSub.includeModel("UserLogin", "Author");
+      MyAllSub.includeModel('UserLogin', 'Author');
 
-      assert.equals(Array.from(MyAllSub.includedModels()).map(m => m.modelName).sort(), [
+      assert.equals(Array.from(MyAllSub.includedModels()).map((m) => m.modelName).sort(), [
         'Author', 'UserLogin']);
 
       const sub = MyAllSub.subscribe();//]
-      after(()=>{sub.stop()});//[#
+      after(() => {sub.stop()});//[#
 
       refute(sub._matches.Book);
       assert(sub._matches.Author);

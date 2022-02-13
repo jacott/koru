@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const makeSubject     = require('koru/make-subject');
   const DocChange       = require('koru/model/doc-change');
@@ -14,39 +14,43 @@ define((require)=>{
         compare$ = Symbol(), compareKeys$ = Symbol(),
         onChange$ = Symbol();
 
-  const foundIn = (doc, attrs, fields, affirm=true)=>{
+  const foundIn = (doc, attrs, fields, affirm=true) => {
     const funcs = fields[func$];
-    for(const func of funcs) {
-      if (! func(doc) === affirm)
+    for (const func of funcs) {
+      if (! func(doc) === affirm) {
         return ! affirm;
+      }
     }
     const matches = fields[matches$];
     for (const key in matches) {
-      if (foundItem(attrs[key], fields[key]) !== affirm)
+      if (foundItem(attrs[key], fields[key]) !== affirm) {
         return ! affirm;
+      }
     }
     return affirm;
   };
 
-  const foundItem = (value, expected)=>{
+  const foundItem = (value, expected) => {
     if (typeof expected === 'object') {
       if (Array.isArray(expected)) {
         const av = Array.isArray(value);
-        for(let i = 0; i < expected.length; ++i) {
+        for (let i = 0; i < expected.length; ++i) {
           const exv = expected[i];
           if (av) {
-            if (value.some(item => deepEqual(item, exv)))
+            if (value.some((item) => deepEqual(item, exv))) {
               return true;
-          } else if (deepEqual(exv, value))
+            }
+          } else if (deepEqual(exv, value)) {
             return true;
+          }
         }
         return false;
       }
-      if (Array.isArray(value))
-        return value.some(item => deepEqual(item, expected));
-
+      if (Array.isArray(value)) {
+        return value.some((item) => deepEqual(item, expected));
+      }
     } else if (Array.isArray(value)) {
-      return ! value.every(item => ! deepEqual(item, expected));
+      return ! value.every((item) => ! deepEqual(item, expected));
     }
 
     return deepEqual(expected, value);
@@ -55,11 +59,11 @@ define((require)=>{
   const EXPRS = {
     $ne(param, obj, key) {
       const expected = obj[key];
-      return doc => ! foundItem(doc[param], expected);
+      return (doc) => ! foundItem(doc[param], expected);
     },
     $nin(param, obj) {
       const expected = new Set(obj.$nin);
-      return doc => ! expected.has(doc[param]);
+      return (doc) => ! expected.has(doc[param]);
     },
     $in(param, obj) {
       return insertectFunc(param, obj.$in);
@@ -67,33 +71,37 @@ define((require)=>{
 
     $gt(param, obj, key, type) {
       const expected = obj[key];
-      if (type === 'text')
-        return doc => compare(doc[param], expected) > 0;
-      return doc => doc[param] > expected;
+      if (type === 'text') {
+        return (doc) => compare(doc[param], expected) > 0;
+      }
+      return (doc) => doc[param] > expected;
     },
     $gte(param, obj, key, type) {
       const expected = obj[key];
-      if (type === 'text')
-        return doc => compare(doc[param], expected) >= 0;
-      return doc => doc[param] >= expected;
+      if (type === 'text') {
+        return (doc) => compare(doc[param], expected) >= 0;
+      }
+      return (doc) => doc[param] >= expected;
     },
     $lt(param, obj, key, type) {
       const expected = obj[key];
-      if (type === 'text')
-        return doc => compare(doc[param], expected) < 0;
-      return doc => doc[param] < expected;
+      if (type === 'text') {
+        return (doc) => compare(doc[param], expected) < 0;
+      }
+      return (doc) => doc[param] < expected;
     },
     $lte(param, obj, key, type) {
       const expected = obj[key];
-      if (type === 'text')
-        return doc => compare(doc[param], expected) <= 0;
-      return doc => doc[param] <= expected;
+      if (type === 'text') {
+        return (doc) => compare(doc[param], expected) <= 0;
+      }
+      return (doc) => doc[param] <= expected;
     },
     $regex(param, obj, key, type) {
       const value = obj.$regex;
       const re = typeof value === 'string' ? new RegExp(value, obj.$options) : value;
 
-      return doc => re.test(doc[param]);
+      return (doc) => re.test(doc[param]);
     },
   };
 
@@ -103,16 +111,17 @@ define((require)=>{
   EXPRS['<'] = EXPRS.$lt;
   EXPRS['<='] = EXPRS.$lte;
 
-  const insertectFunc = (param, list)=>{
+  const insertectFunc = (param, list) => {
     const expected = new Set(list);
-    return doc => {
+    return (doc) => {
       const value = doc[param];
-      return Array.isArray(value) ? value.some(value => expected.has(value)) :
-        expected.has(value);
+      return Array.isArray(value)
+        ? value.some((value) => expected.has(value))
+        : expected.has(value);
     };
   };
 
-  const exprToFunc = (query, param, value)=>{
+  const exprToFunc = (query, param, value) => {
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value)) {
         return insertectFunc(param, value);
@@ -126,7 +135,7 @@ define((require)=>{
     return void 0;
   };
 
-  const copyConditions = (type, from, to)=>{
+  const copyConditions = (type, from, to) => {
     const f = from[type];
     if (f === void 0) return;
     const t = to[type] || (to[type] = {[func$]: []});
@@ -136,43 +145,46 @@ define((require)=>{
     t[func$].push(...f[func$]);
   };
 
-  const assignCondition = (query, conditions, field, value)=>{
+  const assignCondition = (query, conditions, field, value) => {
     conditions[field] = value;
     const func = exprToFunc(query, field, value);
-    if (func === void 0)
+    if (func === void 0) {
       (conditions[matches$] || (conditions[matches$] = {}))[field] = value;
-    else
+    } else {
       conditions[func$].push(func);
+    }
   };
 
-  const condition = (query, map, params, value)=>{
+  const condition = (query, map, params, value) => {
     let conditions = query[map];
     if (conditions === void 0) conditions = query[map] = {[func$]: []};
     const type = typeof params;
     if (type === 'function') {
       conditions[func$].push(params);
-
     } else if (type === 'string') {
       assignCondition(query, conditions, params, value);
-
-    } else for (const field in params) {
-      const value = params[field];
-      value !== void 0 && assignCondition(query, conditions, field, value);
+    } else {
+      for (const field in params) {
+        const value = params[field];
+        value !== void 0 && assignCondition(query, conditions, field, value);
+      }
     }
   };
 
-  const buildList = (query, listName, field, values)=>{
+  const buildList = (query, listName, field, values) => {
     const items = query[listName] || (query[listName] = {});
     const list = items[field] || (items[field] = []);
 
-    if (Array.isArray(values)) values.forEach(value => list.push(value));
-    else list.push(values);
+    if (Array.isArray(values)) {
+      values.forEach((value) => list.push(value));
+    } else {
+      list.push(values);
+    }
 
     return query;
   };
 
-
-  const __init__ = QueryEnv =>{
+  const __init__ = (QueryEnv) => {
     class Query {
       constructor(model) {
         this.model = model;
@@ -206,8 +218,8 @@ define((require)=>{
 
       updatePartial(...args) {
         const $partial = {};
-        for(let i = 0; i < args.length; i+=2) {
-          $partial[args[i]] = args[i+1];
+        for (let i = 0; i < args.length; i += 2) {
+          $partial[args[i]] = args[i + 1];
         }
 
         return this.update({$partial});
@@ -220,15 +232,16 @@ define((require)=>{
           const {_whereSomes} = params;
           _whereSomes === void 0 ||
             (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
-        } else
+        } else {
           condition(this, '_wheres', params, value);
+        }
         return this;
       }
 
       whereSome(...args) {
         let conditions = this._whereSomes;
         if (conditions === void 0) conditions = this._whereSomes = [];
-        conditions.push(args.map(o => {
+        conditions.push(args.map((o) => {
           const term = {[func$]: []};
           for (const field in o)
             assignCondition(this, term, field, o[field]);
@@ -244,7 +257,7 @@ define((require)=>{
 
       fields(...fields) {
         const _fields = this._fields = this._fields || {};
-        for(let i = 0; i < fields.length; ++i) {
+        for (let i = 0; i < fields.length; ++i) {
           _fields[fields[i]] = true;
         }
         return this;
@@ -257,11 +270,12 @@ define((require)=>{
 
       sort(...fields) {
         if (this._index !== void 0) throw new Error('withIndex may not be used with sort');
-        fields = fields.filter(n => n !== 1);
-        if (this._sort === void 0)
+        fields = fields.filter((n) => n !== 1);
+        if (this._sort === void 0) {
           this._sort = fields;
-        else
+        } else {
           this._sort = this._sort.concat(fields);
+        }
         this[compare$] = void 0;
         return this;
       }
@@ -273,31 +287,32 @@ define((require)=>{
           const slen = _sort.length, {$fields} = this.model;
           const compKeys = this[compareKeys$] = [], compMethod = [];
 
-          for(let i = 0; i < slen; ++i) {
+          for (let i = 0; i < slen; ++i) {
             const key = _sort[i];
-            const dir = i+1 == slen || typeof _sort[i+1] !== 'number' ? 1 : Math.sign(_sort[++i]);
+            const dir = i + 1 == slen || typeof _sort[i + 1] !== 'number' ? 1 : Math.sign(_sort[++i]);
             const type = $fields[key]?.type;
-            if (type === void 0) throw new Error('invalid field: '+key);
+            if (type === void 0) throw new Error('invalid field: ' + key);
 
-            compMethod.push(type === 'text'? dir*2 : dir);
+            compMethod.push(type === 'text' ? dir * 2 : dir);
             compKeys.push(key);
           }
-          if (compKeys[compKeys.length-1] !== '_id') {
+          if (compKeys[compKeys.length - 1] !== '_id') {
             compMethod.push(1);
             compKeys.push('_id');
           }
           const clen = compKeys.length;
           this[compare$] = (a, b) => {
             let dir = 1;
-            for(let i = 0; i < clen; ++i) {
+            for (let i = 0; i < clen; ++i) {
               const f = compKeys[i];
               const af = a[f], bf = b[f];
               if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
                 const dir = compMethod[i];
                 if (af === void 0) return -1;
                 if (bf === void 0) return 1;
-                if (dir < -1 || dir > 1)
+                if (dir < -1 || dir > 1) {
                   return compare(af, bf) < 0 ? -dir : dir;
+                }
                 return af < bf ? -dir : dir;
               }
             }
@@ -317,11 +332,12 @@ define((require)=>{
         const {_sort} = this;
         if (_sort === void 0) return this;
         const ns = [], slen = _sort.length;
-        for(let i = 0; i < slen; ++i) {
-          if (i+1 == slen || typeof _sort[i+1] !== 'number')
+        for (let i = 0; i < slen; ++i) {
+          if (i + 1 == slen || typeof _sort[i + 1] !== 'number') {
             ns.push(_sort[i], -1);
-          else
+          } else {
             ns.push(_sort[i++]);
+          }
         }
         this._sort = ns;
         this[compare$] = void 0;
@@ -331,7 +347,7 @@ define((require)=>{
       fetchField(field) {
         this.fields(field);
 
-        return this.map(doc => doc[field]);
+        return this.map((doc) => doc[field]);
       }
 
       fetchIds() {
@@ -339,22 +355,23 @@ define((require)=>{
       }
 
       matches(doc, attrs=doc) {
-        if (this._whereNots !== void 0 && foundIn(doc, attrs, this._whereNots, false))
+        if (this._whereNots !== void 0 && foundIn(doc, attrs, this._whereNots, false)) {
           return false;
+        }
 
-        if (this._wheres !== void 0 && ! foundIn(doc, attrs, this._wheres))
+        if (this._wheres !== void 0 && ! foundIn(doc, attrs, this._wheres)) {
           return false;
+        }
 
         if (this._whereSomes !== void 0 &&
             ! this._whereSomes.every(
-              ors => ors.some(o => foundIn(doc, attrs, o)))) return false;
+              (ors) => ors.some((o) => foundIn(doc, attrs, o)))) return false;
         return true;
       }
 
       onChange(callback) {
         if (this[onChange$] === void 0) {
-          const subject = this[onChange$] = new Observable(()=>subject.stop());
-          subject.stop = this.model.onChange(({type, doc, undo, flag, was}) =>{
+          const stop = this.model.onChange(({type, doc, undo, flag, was}) => {
             let nt = type;
             if (type !== 'del' && ! this.matches(doc)) {
               nt = 'del';
@@ -364,12 +381,13 @@ define((require)=>{
               if (nt === 'del') return;
               nt = 'add';
               undo = 'del';
-            } else if (was === null && nt === 'del')
+            } else if (was === null && nt === 'del') {
               return;
+            }
 
-            subject.notify(new DocChange(nt, doc, undo, flag));
-
+            return subject.notify(new DocChange(nt, doc, undo, flag));
           }).stop;
+          const subject = this[onChange$] = new Observable(stop);
         }
         return this[onChange$].onChange(callback);
       }

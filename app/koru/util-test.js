@@ -10,7 +10,7 @@ define((require, exports, module) => {
 
   const {stub, spy, match: m} = TH;
 
-  const util  = require('./util');
+  const util = require('./util');
 
   let v = {};
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
@@ -18,7 +18,7 @@ define((require, exports, module) => {
       api.module({subjectName: 'util'});
     });
 
-    afterEach( () => {
+    afterEach(() => {
       v = {};
     });
 
@@ -125,7 +125,7 @@ define((require, exports, module) => {
       api.method();
       //[
       const a = {a: 1, b: 2};
-      const b = util.mergeNoEnum({__proto__:a, b: 3, c: 4}, {e: 6});
+      const b = util.mergeNoEnum({__proto__: a, b: 3, c: 4}, {e: 6});
       const c = {d: 5};
 
       const ans = util.mergeOwnDescriptors(c, b);
@@ -167,7 +167,7 @@ define((require, exports, module) => {
       assert.same(util.DAY, +d2 - d1);
     });
 
-    test('EMAIL_RE', ()=>{
+    test('EMAIL_RE', () => {
       api.property('EMAIL_RE', {info: 'RegExp to match email addresses'});
       assert.isTrue(util.EMAIL_RE.test('test@example.com'));
       assert.isFalse(util.EMAIL_RE.test('test@example.c'));
@@ -443,7 +443,7 @@ define((require, exports, module) => {
        **/
       api.method('removeItem');
       //[
-      const foo = [1,2,3];
+      const foo = [1, 2, 3];
       assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
 
       util.removeItem(foo); assert.equals(foo, [1, 3]);
@@ -475,7 +475,7 @@ define((require, exports, module) => {
        **/
       api.method('values');
       //[
-      assert.equals(util.values({a: 1, b: 2}), [1,2]);
+      assert.equals(util.values({a: 1, b: 2}), [1, 2]);
       //]
     });
 
@@ -489,8 +489,8 @@ define((require, exports, module) => {
        **/
       api.method('intersectp');
       //[
-      assert(util.intersectp([1,4],[4,5]));
-      refute(util.intersectp([1,2],['a']));
+      assert(util.intersectp([1, 4], [4, 5]));
+      refute(util.intersectp([1, 2], ['a']));
       //]
     });
 
@@ -507,10 +507,10 @@ define((require, exports, module) => {
        **/
       api.method('union');
       //[
-      assert.equals(util.union([1,2,2,3], [3, 4, 4, 5], [3, 6]), [1, 2, 2, 3, 4, 5, 6]);
-      assert.equals(util.union([1,2]), [1, 2]);
-      assert.equals(util.union([1,2], null), [1, 2]);
-      assert.equals(util.union(null, [1,2]), [1, 2]);
+      assert.equals(util.union([1, 2, 2, 3], [3, 4, 4, 5], [3, 6]), [1, 2, 2, 3, 4, 5, 6]);
+      assert.equals(util.union([1, 2]), [1, 2]);
+      assert.equals(util.union([1, 2], null), [1, 2]);
+      assert.equals(util.union(null, [1, 2]), [1, 2]);
       assert.equals(util.union(null, null), []);
       //]
     });
@@ -529,7 +529,7 @@ define((require, exports, module) => {
 
       assert.equals(util.diff([1, 2]), [1, 2]);
 
-      assert.equals(util.diff([1,'2',3, null], ['2',4]), [1, 3, null]);
+      assert.equals(util.diff([1, '2', 3, null], ['2', 4]), [1, 3, null]);
       //]
     });
 
@@ -548,8 +548,8 @@ define((require, exports, module) => {
       assert.equals(util.symDiff(), []);
       assert.equals(util.symDiff([1, 2]), [1, 2]);
 
-      assert.equals(util.symDiff([1,2,3], [2,4]).sort(), [1, 3, 4]);
-      assert.equals(util.symDiff([2,4], [1,2,3]).sort(), [1, 3, 4]);
+      assert.equals(util.symDiff([1, 2, 3], [2, 4]).sort(), [1, 3, 4]);
+      assert.equals(util.symDiff([2, 4], [1, 2, 3]).sort(), [1, 3, 4]);
       //]
     });
 
@@ -558,13 +558,13 @@ define((require, exports, module) => {
       const sub = {a: 1, b: 2};
       const sup = {b: 3, get c() {return item}};
 
-      util.merge(sub,sup);
+      util.merge(sub, sup);
 
       item = 6;
 
-      assert.same(sub.a,1);
-      assert.same(sub.b,3);
-      assert.same(sub.c,6);
+      assert.same(sub.a, 1);
+      assert.same(sub.b, 3);
+      assert.same(sub.c, 6);
     });
 
     test('mergeExclude', () => {
@@ -585,13 +585,13 @@ define((require, exports, module) => {
           sub = {a: 1, b: 2},
           sup = {b: 3, get c() {return item}, d: 4, e: 5};
 
-      util.mergeExclude(sub,sup, {d: void 0, e: false});
+      util.mergeExclude(sub, sup, {d: void 0, e: false});
 
       item = 6;
 
-      assert.same(sub.a,1);
-      assert.same(sub.b,3);
-      assert.same(sub.c,6);
+      assert.same(sub.a, 1);
+      assert.same(sub.b, 3);
+      assert.same(sub.c, 6);
       refute(sub.hasOwnProperty('d'));
       //]
     });
@@ -665,11 +665,11 @@ define((require, exports, module) => {
       //[
       assert.equals(
         util.extractKeys({a: 4, b: 'abc', get c() {return {value: true}}}, ['a', 'c', 'e']),
-        {a: 4, c: {value: true}}
+        {a: 4, c: {value: true}},
       );
       assert.equals(
         util.extractKeys({a: 4, b: 'abc', get c() {return {value: true}}}, {a: true, c: false, e: null}),
-        {a: 4, c: {value: true}}
+        {a: 4, c: {value: true}},
       );
       //]
     });
@@ -688,7 +688,7 @@ define((require, exports, module) => {
       //[
       assert.equals(
         util.extractNotKeys({a: 4, b: 'abc', get c() {return {value: true}}}, {a: true, e: true}),
-        {b: 'abc', c: {value: true}}
+        {b: 'abc', c: {value: true}},
       );
       //]
     });
@@ -763,7 +763,7 @@ define((require, exports, module) => {
       assert.isFalse(util.deepEqual(/abc/i, /abc/));
       const now = Date.now();
       assert.isTrue(util.deepEqual(new Date(now), new Date(now)));
-      assert.isFalse(util.deepEqual(new Date(now), new Date(now+1)));
+      assert.isFalse(util.deepEqual(new Date(now), new Date(now + 1)));
 
       assert.isFalse(util.deepEqual({}, []));
       assert.isFalse(util.deepEqual(0, -0));
@@ -814,8 +814,8 @@ define((require, exports, module) => {
     });
 
     test('invert', () => {
-      assert.equals(util.invert({a: 1, b: 2}), {'1': 'a', '2': 'b'});
-      assert.equals(util.invert({a: 1, b: 2}, (x) => x+x), {'1': 'aa', '2': 'bb'});
+      assert.equals(util.invert({a: 1, b: 2}), {1: 'a', 2: 'b'});
+      assert.equals(util.invert({a: 1, b: 2}, (x) => x + x), {1: 'aa', 2: 'bb'});
     });
 
     test('lookupDottedValue', () => {
@@ -845,7 +845,7 @@ define((require, exports, module) => {
 
     test('pick', () => {
       assert.equals(util.pick(), {});
-      assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a:1, c: 3});
+      assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a: 1, c: 3});
     });
 
     test('mapToSearchStr', () => {
@@ -884,7 +884,7 @@ define((require, exports, module) => {
       api.method('forEach');
       //[
       const results = [];
-      util.forEach([1,2,3], (val, index) => {results.push(val+'.'+index)});
+      util.forEach([1, 2, 3], (val, index) => {results.push(val + '.' + index)});
       assert.equals(results, ['1.0', '2.1', '3.2']);
 
       // ignores null list
@@ -904,8 +904,8 @@ define((require, exports, module) => {
       api.method('reverseForEach');
       //[
       const results = [];
-      util.reverseForEach(v.list = [1,2,3], (val, index) => {
-        results.push(val+'.'+index);
+      util.reverseForEach(v.list = [1, 2, 3], (val, index) => {
+        results.push(val + '.' + index);
       });
       assert.equals(results, ['3.2', '2.1', '1.0']);
 
@@ -967,7 +967,7 @@ define((require, exports, module) => {
                     {foo: 'bar', a: 1});
       assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]),
                     {1: 'a', bar: 'foo'});
-      assert.equals(util.toMap('foo', (c, i) => c.foo+i, [{foo: 'a'}, {foo: 'b'}]),
+      assert.equals(util.toMap('foo', (c, i) => c.foo + i, [{foo: 'a'}, {foo: 'b'}]),
                     {a: 'a0', b: 'b1'});
       //]
     });
@@ -990,9 +990,9 @@ define((require, exports, module) => {
     });
 
     test('find ', () => {
-      assert.same(util.find([1,8,7,3], (value, idx) => value > 5 && idx === 2), 7);
+      assert.same(util.find([1, 8, 7, 3], (value, idx) => value > 5 && idx === 2), 7);
 
-      assert.same(util.find([1,8,7,3], (value, idx) => false), undefined);
+      assert.same(util.find([1, 8, 7, 3], (value, idx) => false), undefined);
     });
 
     test('binarySearch', () => {
@@ -1004,9 +1004,9 @@ define((require, exports, module) => {
       //[
       assert.same(util.binarySearch([], (row) => assert(false)), -1);
 
-      const list = [1,3,6,8,10,13,15];
-      assert.same(util.binarySearch([1,2,3], (row) => 1, 0), -1);
-      assert.same(util.binarySearch([1,2,3], (row) => -1, 0), 2);
+      const list = [1, 3, 6, 8, 10, 13, 15];
+      assert.same(util.binarySearch([1, 2, 3], (row) => 1, 0), -1);
+      assert.same(util.binarySearch([1, 2, 3], (row) => -1, 0), 2);
       assert.same(util.binarySearch(list, (row) => row - 0), -1);
       assert.same(util.binarySearch(list, (row) => row - 1), 0);
       assert.same(util.binarySearch(list, (row) => row - 16), 6);
@@ -1070,7 +1070,7 @@ define((require, exports, module) => {
       assert.same(util.shallowCopy('a'), 'a');
 
       /** sparse array **/
-      const ans = util.shallowCopy([1,2,,,3]);
+      const ans = util.shallowCopy([1, 2, , , 3]);
       assert.equals(ans.map((d, i) => `${d}:${i}`), ['1:0', '2:1', , , '3:4']);
 
       const func = () => {};
@@ -1078,7 +1078,7 @@ define((require, exports, module) => {
 
       /** Complex object */
       const X = Object.create({xx() {return 4}});
-      X.yy = (a) => 2*a;
+      X.yy = (a) => 2 * a;
 
       let Xcopy = util.shallowCopy(X);
       assert.same(Xcopy.xx(), 4);
@@ -1118,7 +1118,7 @@ define((require, exports, module) => {
       assert.same(u8c[2], 3);
 
       /** sparse array **/
-      const ans = util.deepCopy([1,2,,, v.ab = ['a','b']]);
+      const ans = util.deepCopy([1, 2, , , v.ab = ['a', 'b']]);
       refute.same(ans[5], v.ab);
       assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`),
                     ['1:0', '2:1', , , `['a', 'b']:4`]);
@@ -1140,7 +1140,7 @@ define((require, exports, module) => {
 
       assert.equals(orig, [1, '2', {three: [4, {five: 6}]}]);
 
-      assert.msg('should handle sparse arrays').equals(util.deepCopy([1,2,,3]), [1,2,,3]);
+      assert.msg('should handle sparse arrays').equals(util.deepCopy([1, 2, , 3]), [1, 2, , 3]);
 
       assert.exception((_) => {
         const a = {};
@@ -1229,22 +1229,22 @@ define((require, exports, module) => {
       const a = {name: 'Bob'};
       const b = {name: 'Bob'};
 
-      assert.same(util.compareByName(a,b), 0);
+      assert.same(util.compareByName(a, b), 0);
       b._id = 'Abc';
-      assert.same(util.compareByName(a,b), -1);
+      assert.same(util.compareByName(a, b), -1);
       a._id = 'zbc';
-      assert.same(util.compareByName(a,b), 1);
+      assert.same(util.compareByName(a, b), 1);
       a._id = 'Abc';
-      assert.same(util.compareByName(a,b), 0);
+      assert.same(util.compareByName(a, b), 0);
 
       b.name = 'Cary';
-      assert.same(util.compareByName(a,b), -1);
+      assert.same(util.compareByName(a, b), -1);
 
       b.name = 'Arnold';
-      assert.same(util.compareByName(a,b), 1);
+      assert.same(util.compareByName(a, b), 1);
 
       b.name = 'arnold';
-      assert.same(util.compareByName(a,b), 1);
+      assert.same(util.compareByName(a, b), 1);
 
       assert.same(util.compareByName(null, b), -1);
       assert.same(util.compareByName(b, null), 1);
@@ -1254,7 +1254,7 @@ define((require, exports, module) => {
     test('compareNumber', () => {
       api.method();
       //[
-      const array = [3,5,2,1];
+      const array = [3, 5, 2, 1];
       assert.equals(array.sort(util.compareNumber), [1, 2, 3, 5]);
       //]
     });
@@ -1264,19 +1264,19 @@ define((require, exports, module) => {
       const a = {order: 300};
       const b = {order: 300};
 
-      assert.same(util.compareByOrder(a,b), 0);
+      assert.same(util.compareByOrder(a, b), 0);
       b._id = 'Abc';
-      assert.same(util.compareByName(a,b), -1);
+      assert.same(util.compareByName(a, b), -1);
       a._id = 'zbc';
-      assert.same(util.compareByName(a,b), 1);
+      assert.same(util.compareByName(a, b), 1);
       a._id = 'Abc';
-      assert.same(util.compareByName(a,b), 0);
+      assert.same(util.compareByName(a, b), 0);
 
       b.order = 400;
-      assert.same(util.compareByOrder(a,b), -1);
+      assert.same(util.compareByOrder(a, b), -1);
 
       b.order = 200;
-      assert.same(util.compareByOrder(a,b), 1);
+      assert.same(util.compareByOrder(a, b), 1);
 
       assert.same(util.compareByOrder(null, b), -1);
       assert.same(util.compareByOrder(b, null), 1);
@@ -1287,46 +1287,46 @@ define((require, exports, module) => {
       const a = {f1: 'Bob', f2: 1, foo_id: 'Xbc'};
       const b = {f1: 'Bob', f2: 2, foo_id: 'cbc'};
 
-      assert.same(util.compareByField('foo_id')(a,b), -1);
+      assert.same(util.compareByField('foo_id')(a, b), -1);
 
       assert.equals(util.compareByField('_id').compareKeys, ['_id']);
 
       const f1 = util.compareByField('f1');
       assert.equals(f1.compareKeys, ['f1', '_id']);
 
-      assert.same(f1(a,b), 0);
+      assert.same(f1(a, b), 0);
 
       b._id = 'Abc';
-      assert.same(f1(a,b), -1);
+      assert.same(f1(a, b), -1);
       a._id = 'zbc';
-      assert.same(f1(a,b), 1);
+      assert.same(f1(a, b), 1);
       a._id = 'Abc';
-      assert.same(f1(a,b), 0);
+      assert.same(f1(a, b), 0);
 
       b.f1 = 'Cary';
-      assert.same(util.compareByField('f1')(a,b), -1);
-      assert.same(util.compareByField('f1', -1)(a,b), 1);
+      assert.same(util.compareByField('f1')(a, b), -1);
+      assert.same(util.compareByField('f1', -1)(a, b), 1);
 
       b.f1 = 'arnold';
-      assert.same(util.compareByField('f1')(a,b), 1);
-      assert.same(util.compareByField('f2')(a,b), -1);
-      assert.same(util.compareByField('f2')(b,a), 1);
+      assert.same(util.compareByField('f1')(a, b), 1);
+      assert.same(util.compareByField('f2')(a, b), -1);
+      assert.same(util.compareByField('f2')(b, a), 1);
 
-      assert.same(util.compareByField('f2')(null,a), -1);
+      assert.same(util.compareByField('f2')(null, a), -1);
       assert.same(util.compareByField('f2')(a, null), 1);
       assert.same(util.compareByField('f2')(null, undefined), -1);
 
       b.f2 = '2'; // string less than number
-      assert.same(util.compareByField('f2')(a,b), 1);
-      assert.same(util.compareByField('f2')(b,a), -1);
+      assert.same(util.compareByField('f2')(a, b), 1);
+      assert.same(util.compareByField('f2')(b, a), -1);
 
       // using symbol for key
       const sym = Symbol();
       a[sym] = 'G'; b[sym] = 'c';
       const compare = util.compareByField(sym);
-      assert.same(compare(a,b), -1);
-      assert.same(compare(b,a), 1);
-      assert.same(compare(b,{[sym]: 'c'}), 0);
+      assert.same(compare(a, b), -1);
+      assert.same(compare(b, a), 1);
+      assert.same(compare(b, {[sym]: 'c'}), 0);
       assert.equals(compare.compareKeys, [sym]);
     });
 
@@ -1334,12 +1334,12 @@ define((require, exports, module) => {
       const a = {f1: 'bob', f2: 1, foo_id: 'Xbc'};
       const b = {f1: 'bob', f2: 2, foo_id: 'cbc'};
 
-      assert.same(util.compareByFields('foo_id', -1)(a,b), 1);
-      assert.same(util.compareByFields('f2', 'f1')(a,b), -2);
-      assert.same(util.compareByFields('f1')(a,b), 0);
-      assert.same(util.compareByFields('f2')(a,b), -2);
-      assert.same(util.compareByFields('f1', 'f2')(a,b), -2);
-      assert.same(util.compareByFields('f1', 'f2', -1)(a,b), 2);
+      assert.same(util.compareByFields('foo_id', -1)(a, b), 1);
+      assert.same(util.compareByFields('f2', 'f1')(a, b), -2);
+      assert.same(util.compareByFields('f1')(a, b), 0);
+      assert.same(util.compareByFields('f2')(a, b), -2);
+      assert.same(util.compareByFields('f1', 'f2')(a, b), -2);
+      assert.same(util.compareByFields('f1', 'f2', -1)(a, b), 2);
       assert.equals(util.compareByFields('f1', 'f2', -1).compareKeys, ['f1', 'f2', '_id']);
       assert.equals(util.compareByFields('f1', '_id', -1).compareKeys, ['f1', '_id']);
 
@@ -1347,8 +1347,8 @@ define((require, exports, module) => {
       assert.same(util.compareByFields('f1', 'f2')(a, a), 0);
 
       b.f1 = 'Cary';
-      assert.same(util.compareByFields('f1', 1)(a,b), -2);
-      assert.same(util.compareByFields('f1', -1)(a,b), 2);
+      assert.same(util.compareByFields('f1', 1)(a, b), -2);
+      assert.same(util.compareByFields('f1', -1)(a, b), 2);
 
       a.f1 = 'Cary';
       const f1 = util.compareByFields('f1', -1);
@@ -1356,21 +1356,21 @@ define((require, exports, module) => {
       assert.same(f1(a, b), 0);
 
       b._id = 'Abc';
-      assert.same(f1(a,b), -1);
+      assert.same(f1(a, b), -1);
       a._id = 'zbc';
-      assert.same(f1(a,b), 1);
+      assert.same(f1(a, b), 1);
       a._id = 'Abc';
-      assert.same(f1(a,b), 0);
+      assert.same(f1(a, b), 0);
 
       // using symbol for key
       const sym = Symbol();
       a[sym] = 'G'; b[sym] = 'c';
       const compare = util.compareByFields('f1', sym);
-      assert.same(compare(a,b), -1);
-      assert.same(compare(b,a), 1);
+      assert.same(compare(a, b), -1);
+      assert.same(compare(b, a), 1);
       a.f1 = 'Zord';
-      assert.same(compare(b,a), -2);
-      assert.same(compare(b,{f1: b.f1, [sym]: 'c'}), 0);
+      assert.same(compare(b, a), -2);
+      assert.same(compare(b, {f1: b.f1, [sym]: 'c'}), 0);
       assert.equals(compare.compareKeys, ['f1', sym]);
     });
 
@@ -1393,7 +1393,7 @@ define((require, exports, module) => {
 
     test('colorToArray', () => {
       assert.equals(util.colorToArray(''), '');
-      assert.equals(util.colorToArray([1,2,3,0.5]), [1,2,3,0.5]);
+      assert.equals(util.colorToArray([1, 2, 3, 0.5]), [1, 2, 3, 0.5]);
       assert.equals(util.colorToArray('#ac3d4f'), [172, 61, 79, 1]);
       assert.equals(util.colorToArray('#d4faf480'), [212, 250, 244, 0.5]);
 
@@ -1445,23 +1445,23 @@ define((require, exports, module) => {
 
     test('reverseMerge', () => {
       let item = 5;
-      const sub={a: 1, b: 2};
+      const sub = {a: 1, b: 2};
       const sup = {d: 'd', b: 3, get c() {return item}};
 
-      util.reverseMerge(sub,sup, {d: 1});
+      util.reverseMerge(sub, sup, {d: 1});
 
       item = 6;
 
-      assert.same(sub.a,1);
-      assert.same(sub.b,2);
-      assert.same(sub.c,6);
+      assert.same(sub.a, 1);
+      assert.same(sub.b, 2);
+      assert.same(sub.c, 6);
       refute('d' in sub);
     });
 
     test('adjustTime', () => {
-      util.adjustTime(-util.timeAdjust);
+      util.adjustTime(- util.timeAdjust);
       stub(Date, 'now').returns(12345);
-      after((_) => {util.adjustTime(-util.timeAdjust)});
+      after((_) => {util.adjustTime(- util.timeAdjust)});
       assert.same(util.timeAdjust, 0);
       assert.same(util.timeUncertainty, 0);
 
@@ -1487,9 +1487,6 @@ define((require, exports, module) => {
           assert.equals(util.newDate(), new Date(+date + 123));
           assert.equals(util.dateNow(), +date + 123);
 
-          if (isServer) {
-            assert.same(util.thread, util.Fiber.current.appThread);
-          }
           assert.equals(util.thread.dates, [undefined, 1370819436855]);
           return 987;
         }), 987);
@@ -1581,7 +1578,7 @@ define((require, exports, module) => {
 
       assert.equals(
         util.parseEmailAddresses('a b c <abc@def.com> foo-_+%bar@vimaly-test.com, '),
-        {addresses: ['a b c <abc@def.com>', 'foo-_+%bar@vimaly-test.com'], remainder: '' });
+        {addresses: ['a b c <abc@def.com>', 'foo-_+%bar@vimaly-test.com'], remainder: ''});
     });
 
     test('toHex', () => {
@@ -1642,12 +1639,12 @@ define((require, exports, module) => {
       //]
     });
 
-    test('voidFunc', ()=>{
+    test('voidFunc', () => {
       assert.same(util.voidFunc(), void 0);
       assert.same(util.voidFunc(123), void 0);
     });
 
-    test('trueFunc', ()=>{
+    test('trueFunc', () => {
       assert.isTrue(util.trueFunc());
       assert.isTrue(util.trueFunc(false));
     });

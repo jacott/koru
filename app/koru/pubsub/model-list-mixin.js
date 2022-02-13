@@ -1,11 +1,11 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const ModelMap        = require('koru/model/map');
   const util            = require('koru/util');
 
   const excludeModels$ = Symbol(), includeModels$ = Symbol();
 
-  return Base => class extends Base {
+  return (Base) => class extends Base {
     static resetModelList() {
       this[excludeModels$] = {UserLogin: true},
       this[includeModels$] = {};
@@ -24,14 +24,16 @@ define((require, exports, module)=>{
     }
 
     static excludeModel(...names) {
-      if (! util.isObjEmpty(this[includeModels$]))
+      if (! util.isObjEmpty(this[includeModels$])) {
         this[includeModels$] = {};
+      }
       for (const name of names) this[excludeModels$][name] = true;
     }
 
     static includeModel(...names) {
-      if (! util.isObjEmpty(this[excludeModels$]))
+      if (! util.isObjEmpty(this[excludeModels$])) {
         this[excludeModels$] = {};
+      }
       for (const name of names) this[includeModels$][name] = true;
     }
   };

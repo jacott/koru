@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * A Subscription is a abstract interface for subscribing to publications.
@@ -28,19 +28,19 @@ isClient && define((require, exports, module)=>{
 
   const {messageResponse$, connected$} = SubscriptionSession[private$];
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     const origState = Session.state;
-    beforeEach(()=>{
+    beforeEach(() => {
       stub(Session, 'sendBinary');
       Session.state._state = 'ready';
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       SubscriptionSession.unload(Session);
       Session.state = origState;
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Create a subscription
 
@@ -50,7 +50,7 @@ isClient && define((require, exports, module)=>{
        **/
       const Subscription = api.class();
 
-      const module = new TH.MockModule("library-sub");
+      const module = new TH.MockModule('library-sub');
       //[
       class Library extends Subscription {
       }
@@ -62,7 +62,6 @@ isClient && define((require, exports, module)=>{
       assert.same(sub._id, '1');
       assert.equals(sub.args, {shelf: 'mathematics'});
 
-
       assert.same(sub.subSession, SubscriptionSession.get(Session));
 
       const sub2 = new Library(Session);
@@ -71,16 +70,16 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("connect", ()=>{
+    test('connect', () => {
       /**
        * Connect to the {#../publication} when session is ready.
        *
        *
        **/
       api.protoMethod();
-      const module = new TH.MockModule("library-client");
+      const module = new TH.MockModule('library-client');
 
-      const waitForServer = ()=>{
+      const waitForServer = () => {
         assert.calledWith(Session.sendBinary, 'Q', [
           '1', 1, 'Library', {shelf: 'mathematics'}, 0]);
         mockServer.sendSubResponse(['1', 1, 200, Date.now()]);
@@ -105,7 +104,7 @@ isClient && define((require, exports, module)=>{
       //]
     }),
 
-    test("onConnect", ()=>{
+    test('onConnect', () => {
       /**
        * Observe connection completions. The `callback` is called on success with a null argument,
        * on error with an `error` argument, and if stopped before connected with
@@ -121,15 +120,16 @@ isClient && define((require, exports, module)=>{
        *
        **/
       api.protoMethod();
-      const module = new TH.MockModule("library-client");
+      const module = new TH.MockModule('library-client');
 
-      const waitForServerResponse = (sub, {error, lastSubscribed})=>{
+      const waitForServerResponse = (sub, {error, lastSubscribed}) => {
         assert.calledWith(Session.sendBinary, 'Q', [
           '1', 1, 'Library', {shelf: 'mathematics'}, 0]);
-        if (error === null)
+        if (error === null) {
           mockServer.sendSubResponse([sub._id, 1, 200, lastSubscribed]);
-        else
+        } else {
           mockServer.sendSubResponse([sub._id, 1, error.code, error.reason]);
+        }
       };
 
       //[
@@ -140,7 +140,7 @@ isClient && define((require, exports, module)=>{
       { /** success */
         const sub1 = new Library({shelf: 'mathematics'});
         let resonse;
-        sub1.onConnect((error)=>{
+        sub1.onConnect((error) => {
           resonse = {error, state: sub1.state};
         });
 
@@ -166,7 +166,7 @@ isClient && define((require, exports, module)=>{
         const sub2 = new Library();
 
         let resonse;
-        sub2.onConnect((error)=>{
+        sub2.onConnect((error) => {
           resonse = {error, state: sub2.state};
         });
 
@@ -175,7 +175,7 @@ isClient && define((require, exports, module)=>{
         waitForServerResponse(sub2, {error: {code: 400, reason: {self: [['is_invalid']]}}});
 
         assert.equals(resonse, {
-          error: m(err => (err instanceof koru.Error) &&
+          error: m((err) => (err instanceof koru.Error) &&
                    err.error === 400 &&
                    util.deepEqual(err.reason, {self: [['is_invalid']]})),
           state: 'stopped'});
@@ -185,7 +185,7 @@ isClient && define((require, exports, module)=>{
         const sub3 = new Library();
 
         let resonse;
-        sub3.onConnect((error)=>{
+        sub3.onConnect((error) => {
           resonse = {error, state: sub3.state};
         });
 
@@ -194,14 +194,14 @@ isClient && define((require, exports, module)=>{
         sub3.stop();
 
         assert.equals(resonse, {
-          error: m(e => e.error == 409 && e.reason == 'stopped'), state: 'stopped'});
+          error: m((e) => e.error == 409 && e.reason == 'stopped'), state: 'stopped'});
 
         assert.isTrue(sub3.isClosed);
       }
       //]
     });
 
-    test("onConnect already connected", ()=>{
+    test('onConnect already connected', () => {
       const connect = stub(SubscriptionSession.prototype, 'connect');
       class Library extends Subscription {}
       const sub = Library.subscribe();
@@ -214,11 +214,11 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(callback, null);
     });
 
-    test("onConnect during stop", ()=>{
+    test('onConnect during stop', () => {
       const sub = new Subscription();
       const oc2 = stub();
       let called = false;
-      sub.onConnect(()=>{
+      sub.onConnect(() => {
         called = true;
         sub.onConnect(oc2);
       });
@@ -232,7 +232,7 @@ isClient && define((require, exports, module)=>{
       assert.called(oc2);
     });
 
-    test("match", ()=>{
+    test('match', () => {
       /**
        * Register a match function used to check if a document should
        * be in the database.
@@ -241,9 +241,9 @@ isClient && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const module = new TH.MockModule("library-client");
+      const module = new TH.MockModule('library-client');
 
-      const regBook = spy(Match.prototype, "register").withArgs('Book', TH.match.func);
+      const regBook = spy(Match.prototype, 'register').withArgs('Book', TH.match.func);
 
       class Book extends Model.BaseModel {
         static get modelName() {return 'Book'}
@@ -253,7 +253,7 @@ isClient && define((require, exports, module)=>{
       class Library extends Subscription {
         constructor(args) {
           super(args);
-          this.match(Book, doc => /lord/i.test(doc.name));
+          this.match(Book, (doc) => /lord/i.test(doc.name));
         }
       }
       //]
@@ -261,14 +261,14 @@ isClient && define((require, exports, module)=>{
 
       const sub1 = new Library();
 
-      assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
-      assert.equals(sub1._matches, {Book: m(n => n.modelName === 'Book')});
-      const myFunc = ()=>{};
-      sub1.match("Book", myFunc);
-      assert.equals(sub1._matches, {Book: m(n => n.value === myFunc)});
+      assert.isTrue(regBook.args(0, 1)({name: 'Lord of the Flies'}));
+      assert.equals(sub1._matches, {Book: m((n) => n.modelName === 'Book')});
+      const myFunc = () => {};
+      sub1.match('Book', myFunc);
+      assert.equals(sub1._matches, {Book: m((n) => n.value === myFunc)});
     });
 
-    test("unmatch", ()=>{
+    test('unmatch', () => {
       /**
        * Deregister a {##match} function.
 
@@ -276,7 +276,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const module = new TH.MockModule("library-client");
+      const module = new TH.MockModule('library-client');
 
       class Book extends Model.BaseModel {
         static get modelName() {return 'Book'}
@@ -286,7 +286,7 @@ isClient && define((require, exports, module)=>{
       class Library extends Subscription {
         constructor(args) {
           super(args);
-          this.match(Book, doc => /lord/i.test(doc.name));
+          this.match(Book, (doc) => /lord/i.test(doc.name));
         }
 
         noBooks() {
@@ -300,12 +300,12 @@ isClient && define((require, exports, module)=>{
       sub1.noBooks();
 
       assert.equals(sub1._matches, {Book: void 0});
-      sub1.match("Book", ()=>{});
-      sub1.unmatch("Book");
+      sub1.match('Book', () => {});
+      sub1.unmatch('Book');
       assert.equals(sub1._matches, {Book: void 0});
     });
 
-    test("stop", ()=>{
+    test('stop', () => {
       /**
        * Stops a subscription. Releases any matchers that were set up and calls {##stopped}.
        */
@@ -314,24 +314,24 @@ isClient && define((require, exports, module)=>{
       class Book extends Model.BaseModel {}
       Book.define({
         name: 'Book',
-        fields: {title: 'text', pageCount: 'number'}
+        fields: {title: 'text', pageCount: 'number'},
       });
-      after(()=>{Model._destroyModel('Book', 'drop')});
+      after(() => {Model._destroyModel('Book', 'drop')});
       const simDocs = {
         doc1: ['del'],
         doc2: ['del'],
       };
-      intercept(Query, 'simDocsFor', model => model === Book && simDocs);
+      intercept(Query, 'simDocsFor', (model) => model === Book && simDocs);
       //[
       const doc1 = Book.create({_id: 'doc1'});
       const doc2 = Book.create({_id: 'doc2'});
       const doc3 = Book.create({_id: 'doc3'});
 
-      const mr = SubscriptionSession.get(Session).match.register('Book', doc =>{
+      const mr = SubscriptionSession.get(Session).match.register('Book', (doc) => {
         return doc === doc2;
       });
       //]
-      after(()=>{mr.delete()});
+      after(() => {mr.delete()});
 
       //[#
       class Library extends Subscription {
@@ -340,7 +340,7 @@ isClient && define((require, exports, module)=>{
           unmatch(doc2);
         }
       }//]
-      api.protoMethod("stopped", {intro() {
+      api.protoMethod('stopped', {intro() {
         /**
          * Override this method to be called with an `unmatch` function when the subscription is
          * stopped.
@@ -367,7 +367,7 @@ isClient && define((require, exports, module)=>{
       assert.equals(sub._matches, {});
     });
 
-    test("filterDoc", ()=>{
+    test('filterDoc', () => {
       /**
        * Remove a model document if it does not match this subscription
 
@@ -392,7 +392,7 @@ isClient && define((require, exports, module)=>{
       assert.isTrue(sub.filterDoc(book1));
     });
 
-    test("filterModels", ()=>{
+    test('filterModels', () => {
       /**
        * Remove model documents that do not match this subscription
        **/
@@ -409,10 +409,9 @@ isClient && define((require, exports, module)=>{
 
       assert.calledWithExactly(filterModels, ['Book', 'Catalog']);
       assert.same(filterModels.firstCall.thisValue, sub.subSession);
-
     });
 
-    test("subscribe", ()=>{
+    test('subscribe', () => {
       /**
        * A convience method to create a subscription that connects to the publication and calls
        * callback on connect.
@@ -425,13 +424,13 @@ isClient && define((require, exports, module)=>{
        **/
       api.method();
       const connect = stub(SubscriptionSession.prototype, 'connect');
-      const responseFromServer = ()=>{connect.firstCall.args[0][connected$]({})};
+      const responseFromServer = () => {connect.firstCall.args[0][connected$]({})};
 
       //[
       class Library extends Subscription {
       }
       let response;
-      const sub = Library.subscribe({shelf: 'mathematics'}, error =>{
+      const sub = Library.subscribe({shelf: 'mathematics'}, (error) => {
         response = {error, state: sub.state};
       });
       assert.same(sub.state, 'connect');
@@ -443,7 +442,7 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("lastSubscribedMaximumAge", ()=>{
+    test('lastSubscribedMaximumAge', () => {
       /**
        * Any subscription with a lastSubscribed older than this sends 0 (no last subscribed) to the
        * server. Specified in milliseconds. Defaults to -1 (always send 0).
@@ -453,13 +452,13 @@ isClient && define((require, exports, module)=>{
       assert.same(Subscription.lastSubscribedMaximumAge, -1);
       api.done();
 
-      let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
       let lastSubscribedMaximumAge = now - util.DAY;
 
       stubProperty(Subscription, 'lastSubscribedMaximumAge', {get: () => lastSubscribedMaximumAge});
 
       const sub = new Subscription();
-      const lastSubscribed = now + 1 - 1*util.DAY;
+      const lastSubscribed = now + 1 - 1 * util.DAY;
       sub.lastSubscribed = lastSubscribed;
       sub.connect();
 
@@ -468,7 +467,7 @@ isClient && define((require, exports, module)=>{
       Session.sendBinary.reset();
 
       const sub2 = new Subscription();
-      sub2.lastSubscribed = now - 2*util.DAY;
+      sub2.lastSubscribed = now - 2 * util.DAY;
       sub2.connect();
       assert.calledWith(Session.sendBinary, 'Q', ['2', 1, 'Subscription', undefined, 0]);
 
@@ -479,7 +478,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(Session.sendBinary, 'Q', ['3', 1, 'Subscription', undefined, 0]);
     });
 
-    test("reconnecting", ()=>{
+    test('reconnecting', () => {
       /**
        * Override this method to be called when a subscription reconnect is attempted. Calling
        * {##stop} within this method will stop the reconnect.
@@ -492,8 +491,8 @@ isClient && define((require, exports, module)=>{
       class Book extends BaseModel {
       }
       Book.define({name: 'Book'});
-      after(()=>{Model._destroyModel('Book', 'drop')});
-      intercept(Session, 'reconnected', ()=>{
+      after(() => {Model._destroyModel('Book', 'drop')});
+      intercept(Session, 'reconnected', () => {
         Session.state._onConnect['10-subscribe2']();
       });
       //[
@@ -517,11 +516,11 @@ isClient && define((require, exports, module)=>{
       // ensure that this method is called once-and-only-once before a reconnect attempt
     });
 
-    test("stop clears matchers", ()=>{
+    test('stop clears matchers', () => {
       class MySub extends Subscription {
         constructor() {
           super();
-          this.match("Foo", ()=> true);
+          this.match('Foo', () => true);
         }
       }
       const sub = new MySub();
@@ -531,7 +530,7 @@ isClient && define((require, exports, module)=>{
       refute(sub.subSession.match.has({constructor: {modelName: 'Foo'}}));
     });
 
-    test("markForRemove", ()=>{
+    test('markForRemove', () => {
       /**
        * Mark the given document as a simulated add which will be removed if not updated by the
        * server. This method can be called without a `this` value
@@ -541,7 +540,7 @@ isClient && define((require, exports, module)=>{
       class Book extends BaseModel {
       }
       Book.define({name: 'Book'});
-      after(()=>{Model._destroyModel('Book', 'drop')});
+      after(() => {Model._destroyModel('Book', 'drop')});
 
       //[
       const {markForRemove} = Subscription;
@@ -552,12 +551,12 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("userIdChanged", ()=>{
+    test('userIdChanged', () => {
       /**
        * Override this method to change the default behavior of doing nothing when the user id
        * changes.
        **/
-      after(()=>{util.thread.userId = void 0});
+      after(() => {util.thread.userId = void 0});
       api.protoMethod();
       class Library extends Subscription {
       }
@@ -574,7 +573,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWithExactly(sub.userIdChanged, void 0, 'uid456');
     });
 
-    test("onMessage", ()=>{
+    test('onMessage', () => {
       /**
        * Override this method to receive an unsolicited `message` from the publication server.
 
@@ -584,7 +583,7 @@ isClient && define((require, exports, module)=>{
       const server = {
         postMessage(message) {
           Session._commands.Q.call(Session, [sub._id, 0, message]);
-        }
+        },
       };
       //[
       class Library extends Subscription {
@@ -596,13 +595,13 @@ isClient && define((require, exports, module)=>{
 
       const sub = Library.subscribe([123]);
 
-      server.postMessage({hello: "subscriber"});
-      assert.equals(sub.answer, {hello: "subscriber"});
+      server.postMessage({hello: 'subscriber'});
+      assert.equals(sub.answer, {hello: 'subscriber'});
 
       //]
     });
 
-    test("postMessage", ()=>{
+    test('postMessage', () => {
       /**
        * Send a message to publication. Messages can be used to alter the state of the publication.
        *
@@ -619,7 +618,7 @@ isClient && define((require, exports, module)=>{
        **/
       api.protoMethod();
 
-      const receivePost = (sub)=>{sub[messageResponse$](['sub1', 2, 0, 'added'])};
+      const receivePost = (sub) => {sub[messageResponse$](['sub1', 2, 0, 'added'])};
 
       //[
       class Library extends Subscription {
@@ -630,7 +629,7 @@ isClient && define((require, exports, module)=>{
 
       sub.args.push(789);
       let done = false;
-      sub.postMessage({addArg: 789}, (err, result)=>{
+      sub.postMessage({addArg: 789}, (err, result) => {
         if (err) sub.stop();
         done = result === 'added';
       });
@@ -638,7 +637,7 @@ isClient && define((require, exports, module)=>{
       assert.isTrue(done);
       //]
 
-      refute.exception(()=>{
+      refute.exception(() => {
         sub.stop(); // ensure runMessageCallbacks ignores fulfilled (undefined) callbacks
       });
     });

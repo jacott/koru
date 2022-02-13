@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const LinkedList      = require('koru/linked-list');
@@ -9,25 +9,22 @@ define((require, exports, module)=>{
   const timeout$ = Symbol(), isDone$ = Symbol(),
         after$ = Symbol(), once$ = Symbol(), temp$ = Symbol(), before$ = Symbol();
 
-  const {Fiber} = util;
-
   const MAX_TIME = 2000;
 
   let isOnce = false;
   let currentTC, tests;
   let lastTest, currTest, nextTest, common, nextFunc;
   let nt = 0, assertCount = 0;
-  let currentFiber;
   let asyncTimeout = 0;
 
-  const assertIsPromise = (p, f) =>{(p == null || typeof p.then !== 'function') && notPromise(f)};
+  const assertIsPromise = (p, f) => {(p == null || typeof p.then !== 'function') && notPromise(f)};
 
-  const notPromise = (f)=>{
+  const notPromise = (f) => {
     assert.fail(`Expected return of undefined or a Promise ${Core.test.mode}:
 ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
-  const checkAssertionCount = (test, assertCount)=>{
+  const checkAssertionCount = (test, assertCount) => {
     if (assertCount !== Core.assertCount) {
       test.success = true;
     } else {
@@ -36,15 +33,15 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       const {name, line} = test.location;
 
       test.errors = [
-        "Failure: No assertions\n    at - "+
-          `test.body (${name}.js:${line}:1)`
+        'Failure: No assertions\n    at - ' +
+          `test.body (${name}.js:${line}:1)`,
       ];
     }
   };
 
-  const runListAndAsyncCallbacks = async (value, i, list, node)=>{
+  const runListAndAsyncCallbacks = async (value, i, list, node) => {
     const {test} = Core;
-    for(; i >=0 ; --i) {
+    for (;i >= 0; --i) {
       const func = value[i];
       if (typeof func === 'function') {
         await func.call(test);
@@ -55,21 +52,21 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     await runAsyncCallbacks(list, node);
   };
 
-
-  const runAsyncCallbacks = async (list, node) =>{
+  const runAsyncCallbacks = async (list, node) => {
     const {test} = Core;
     let prev = node;
 
     for (node = node.next; node !== void 0; node = node.next) {
-      if (node[temp$] === true)
+      if (node[temp$] === true) {
         list.removeNode(node, prev);
-      else
+      } else {
         prev = node;
+      }
       const {value} = node;
       if (typeof value === 'function') {
         await value.call(test);
       } else if (Array.isArray(value)) {
-        for(let i = value.length-1; i >=0 ; --i) {
+        for (let i = value.length - 1; i >= 0; --i) {
           const func = value[i];
           if (typeof func === 'function') {
             await func.call(test);
@@ -83,15 +80,16 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
   };
 
-  const runCallbacks = (list)=>{
+  const runCallbacks = (list) => {
     if (list === void 0) return;
     const {test} = Core;
     let prev;
     for (let node = list.front; node !== void 0; node = node.next) {
-      if (node[temp$] === true)
+      if (node[temp$] === true) {
         list.removeNode(node, prev);
-      else
+      } else {
         prev = node;
+      }
       const {value} = node;
       if (typeof value.stop === 'function') {
         value.stop();
@@ -99,11 +97,12 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         const promise = value.call(test);
         if (promise !== void 0) {
           assertIsPromise(promise, value);
-          return node.next === void 0 ? promise
-            : promise.then(()=>{runAsyncCallbacks(list, node)});
+          return node.next === void 0
+            ? promise
+            : promise.then(() => runAsyncCallbacks(list, node));
         }
       } else if (Array.isArray(value)) {
-        for(let i = value.length-1; i >=0 ; --i) {
+        for (let i = value.length - 1; i >= 0; --i) {
           const func = value[i];
           if (typeof func.stop === 'function') {
             func.stop();
@@ -112,7 +111,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
             if (promise !== void 0) {
               assertIsPromise(promise, func);
               return i > 0
-                ? promise.then(()=>{runListAndAsyncCallbacks(value, i-1, list, node)}) : promise;
+                ? promise.then(() => {runListAndAsyncCallbacks(value, i - 1, list, node)})
+                : promise;
             }
           }
         }
@@ -120,7 +120,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
   };
 
-  const runOnceCallbacks = (list)=>{
+  const runOnceCallbacks = (list) => {
     try {
       isOnce = true;
       return runCallbacks(list);
@@ -129,7 +129,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
   };
 
-  const runTearDowns = (tc, common)=>{
+  const runTearDowns = (tc, common) => {
     currentTC = tc;
     if (tc === void 0) return;
 
@@ -139,7 +139,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     const promise = runCallbacks(tc[after$]);
 
     if (promise !== void 0) {
-      return promise.then(async ()=>{
+      return promise.then(async () => {
         if (sameTC) {
           if (once !== void 0) return;
         }
@@ -149,8 +149,9 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         const pTc = tc.tc;
         if (pTc === void 0) {
           common === void 0 && reset(tc);
-        } else
+        } else {
           await runTearDowns(pTc, sameTC ? pTc : common);
+        }
       });
     }
 
@@ -159,23 +160,25 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     } else if (once !== void 0) {
       const promise = runOnceCallbacks(once.after);
       if (promise !== void 0) {
-        return promise.then(()=>{
+        return promise.then(() => {
           const pTc = tc.tc;
           if (pTc === void 0) {
             common === void 0 && reset(tc);
-          } else
+          } else {
             return runTearDowns(pTc, sameTC ? pTc : common);
+          }
         });
       }
     }
     const pTc = tc.tc;
     if (pTc === void 0) {
       common === void 0 && reset(tc);
-    } else
+    } else {
       return runTearDowns(pTc, sameTC ? pTc : common);
+    }
   };
 
-  const runSetups = (tc, common)=>{
+  const runSetups = (tc, common) => {
     currentTC = tc;
     if (tc === void 0) return;
 
@@ -186,10 +189,11 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       const pTc = tc.tc;
       const promise = runSetups(pTc, sameTC ? pTc : common);
       if (promise !== void 0) {
-        return promise.then(async ()=>{
+        return promise.then(async () => {
           currentTC = tc;
-          if (once !== void 0)
+          if (once !== void 0) {
             await runOnceCallbacks(once.before);
+          }
           await runCallbacks(tc[before$]);
         });
       }
@@ -197,21 +201,23 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       if (once !== void 0) {
         const promise = runOnceCallbacks(once.before);
         if (promise !== void 0) {
-          return promise.then(()=>runCallbacks(tc[before$]));
+          return promise.then(() => runCallbacks(tc[before$]));
         }
       }
     }
     return runCallbacks(tc[before$]);
   };
 
-  const commonTC = (ot, nt)=>{
-    if (ot === void 0 || nt === void 0)
+  const commonTC = (ot, nt) => {
+    if (ot === void 0 || nt === void 0) {
       return;
+    }
 
     let otc = ot.tc, ntc = nt.tc;
 
-    if (otc === void 0 || ntc === void 0)
+    if (otc === void 0 || ntc === void 0) {
       return;
+    }
 
     while (ntc.level > otc.level) ntc = ntc.tc;
     while (otc.level > ntc.level) otc = otc.tc;
@@ -223,11 +229,11 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     return ntc;
   };
 
-  const once = (tc)=> tc[once$] || (tc[once$] = {before: new LinkedList, after: new LinkedList});
-  const before = (tc, func)=> (tc[before$] || (tc[before$] = new LinkedList)).addBack(func);
-  const after = (tc, func)=> (tc[after$] || (tc[after$] = new LinkedList)).addFront(func);
+  const once = (tc) => tc[once$] || (tc[once$] = {before: new LinkedList(), after: new LinkedList()});
+  const before = (tc, func) => (tc[before$] || (tc[before$] = new LinkedList())).addBack(func);
+  const after = (tc, func) => (tc[after$] || (tc[after$] = new LinkedList())).addFront(func);
 
-  const reset = (tc)=>{
+  const reset = (tc) => {
     tc[before$] = tc[after$] = tc[once$] = void 0;
   };
 
@@ -246,7 +252,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
     topTestCase() {
       let top = this;
-      while(top.tc != null) top = top.tc;
+      while (top.tc != null) top = top.tc;
       return top;
     }
 
@@ -266,8 +272,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         name = name.slice(2);
       }
 
-      name = 'test '+name+'.';
-      Object.defineProperty(body, "name", {value: name});
+      name = 'test ' + name + '.';
+      Object.defineProperty(body, 'name', {value: name});
 
       const fn = this.fullName(name);
 
@@ -282,13 +288,13 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
 
     get moduleId() {
-      return this.tc ? this.tc.moduleId : this.name+'-test';
+      return this.tc ? this.tc.moduleId : this.name + '-test';
     }
   }
 
-  const restorSpy = spy => ()=>{spy.restore && spy.restore()};
+  const restorSpy = (spy) => () => {spy.restore && spy.restore()};
 
-  Core.testCase = (name, body)=> new TestCase(name, void 0, body);
+  Core.testCase = (name, body) => new TestCase(name, void 0, body);
 
   Object.defineProperty(Core, 'currentTestCase', {get: () => currentTC});
 
@@ -305,8 +311,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       const tc = currentTC || this.tc;
       (isOnce
        ? once(tc).after.addFront(func)
-       : after(tc, func)
-      )[temp$] = true;
+       : after(tc, func))[temp$] = true;
     }
 
     spy(...args) {
@@ -341,8 +346,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         let idx = tcbody.indexOf(testbody);
 
         if (idx !== -1) {
-          for (let ni = tcbody.indexOf("\n"); ni !== -1 && ni < idx;
-               ni = tcbody.indexOf("\n", ni+1)) {
+          for (let ni = tcbody.indexOf('\n'); ni !== -1 && ni < idx;
+               ni = tcbody.indexOf('\n', ni + 1)) {
             ++line;
           }
         }
@@ -352,13 +357,13 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
 
     get moduleId() {return this.topTC.moduleId;}
-  };
+  }
 
   Test.prototype.onEnd = Test.prototype.after;
 
   let skipped = false;
 
-  const expandTestCase = (tc, skipped=false)=>{
+  const expandTestCase = (tc, skipped=false) => {
     const origTC = currentTC;
     currentTC = tc;
 
@@ -369,20 +374,21 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const builder = {
     // aroundEach: body => currentTC.add('setUpAround', body),
-    beforeEach: body => currentTC.beforeEach(body),
-    afterEach: body => currentTC.afterEach(body),
-    before: body => currentTC.before(body),
-    after: body =>{
+    beforeEach: (body) => currentTC.beforeEach(body),
+    afterEach: (body) => currentTC.afterEach(body),
+    before: (body) => currentTC.before(body),
+    after: (body) => {
       const {test} = Core;
-      if (test === void 0)
-         currentTC.after(body);
-      else
+      if (test === void 0) {
+        currentTC.after(body);
+      } else {
         test.after(body);
+      }
     },
 
-    test: (name, body)=> currentTC.addTest(name, body, skipped),
+    test: (name, body) => currentTC.addTest(name, body, skipped),
 
-    group: (name, body)=>{
+    group: (name, body) => {
       const otc = currentTC;
       const os = skipped;
       if (name[0] === '/' && name[1] === '/') {
@@ -401,33 +407,35 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       }
     },
 
-    exec: body=>{
+    exec: (body) => {
       if (typeof body === 'function') {
         body(builder);
-      } else for (const name in body) {
-        const value = body[name];
-        if (typeof value === 'function') {
-          switch(name) {
-          case 'setUp': case 'beforeEach':
-            currentTC.beforeEach(value);
-            break;
-          case 'tearDown': case 'afterEach':
-            currentTC.afterEach(value);
-            break;
-          case 'setUpOnce': case 'before':
-            currentTC.before(value);
-            break;
-          case 'tearDownOnce': case 'after':
-            currentTC.after(value);
-            break;
-          default:
-            if (! name.startsWith("test ")) {
-              assert.fail('misnamed test '+currentTC.fullName(name), 1);
+      } else {
+        for (const name in body) {
+          const value = body[name];
+          if (typeof value === 'function') {
+            switch (name) {
+            case 'setUp': case 'beforeEach':
+              currentTC.beforeEach(value);
+              break;
+            case 'tearDown': case 'afterEach':
+              currentTC.afterEach(value);
+              break;
+            case 'setUpOnce': case 'before':
+              currentTC.before(value);
+              break;
+            case 'tearDownOnce': case 'after':
+              currentTC.after(value);
+              break;
+            default:
+              if (! name.startsWith('test ')) {
+                assert.fail('misnamed test ' + currentTC.fullName(name), 1);
+              }
+              builder.test(name.slice(5), value);
             }
-            builder.test(name.slice(5), value);
+          } else {
+            expandTestCase(new TestCase(name, currentTC, value));
           }
-        } else {
-          expandTestCase(new TestCase(name, currentTC, value));
         }
       }
     },
@@ -436,22 +444,22 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   builder.it = builder.test;
   builder.describe = builder.group;
 
-  const testStart = ()=>{
+  const testStart = () => {
     currTest.mode = 'before';
     const promise = Core.runCallBacks('testStart', currTest);
     nextFunc = setup;
     return promise === void 0 ? setup() : promise;
   };
 
-  const setup = ()=>{
+  const setup = () => {
     const promise = runSetups(currTest.tc, common);
     nextFunc = runTest;
     return promise === void 0 ? runTest() : promise;
   };
 
-  const runDone = ()=>{
+  const runDone = () => {
     let isDone = false, resolve, reject;
-    const done = err =>{
+    const done = (err) => {
       isDone = true;
       if (resolve !== void 0) {
         err === void 0 ? resolve() : reject(err);
@@ -459,19 +467,20 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     };
     currTest.body(done);
     if (isDone) return;
-    return new Promise((res, rej)=>{resolve = res; reject = rej});
+    return new Promise((res, rej) => {resolve = res; reject = rej});
   };
 
-  const runTest = ()=>{
+  const runTest = () => {
     nextFunc = tearDown;
     currTest.mode = 'running';
     assertCount = Core.assertCount;
     const promise = currTest.body.length === 1
-          ? runDone() : currTest.body();
+          ? runDone()
+          : currTest.body();
     return promise == void 0 ? tearDown() : promise;
   };
 
-  const tearDown = ()=>{
+  const tearDown = () => {
     common = commonTC(currTest, nextTest);
     nextFunc = testEnd;
     currTest.errors === void 0 && checkAssertionCount(currTest, assertCount);
@@ -480,20 +489,19 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     return promise === void 0 ? testEnd() : promise;
   };
 
-  const testEnd = ()=>{
+  const testEnd = () => {
     nextFunc = testStart;
     return Core.runCallBacks('testEnd', currTest);
   };
 
-  const handleAsyncError = (err)=>{
+  const handleAsyncError = (err) => {
     asyncTimeout == 0 || clearTimeout(asyncTimeout);
-    if (handleError(err))
+    if (handleError(err)) {
       runNext();
-    else if (isServer)
-      currentFiber.run('abort');
+    }
   };
 
-  const handleError = (err)=>{
+  const handleError = (err) => {
     if (Core.test === void 0) return false;
     Core.test.success = false;
     if (err === 'abortTests') {
@@ -502,35 +510,28 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
     const msg = (err instanceof Error)
           ? util.extractError(err)
-          : (err === "timeout"
-             ? "Test timed out"
-             : (err === "wrongReturn"
-                ? "Unexpected return value"
+          : (err === 'timeout'
+             ? 'Test timed out'
+             : (err === 'wrongReturn'
+                ? 'Unexpected return value'
                 : err.toString()));
     if (Core.test.mode !== 'running') {
       err = typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err;
       Core.test.errors = [err];
-      if (Core.test.mode === 'after') {
-        Core.abort(err);
-        return false;
-      } else {
-        Core.testCount++;
-        Core.test.errors = [err];
-        Core.abortMode = 'end';
-      }
+      Core.abort(err);
+      return false;
     }
     Core.test.errors = [msg];
     return true;
   };
 
-  const timeExpired = ()=>{
+  const timeExpired = () => {
     asyncTimeout = 0;
-    handleError("timeout");
+    handleError('timeout');
     runNext();
   };
 
-
-  const runAsyncNext = ()=>{
+  const runAsyncNext = () => {
     if (asyncTimeout != 0) {
       clearTimeout(asyncTimeout);
       asyncTimeout = 0;
@@ -539,15 +540,16 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     runNext();
   };
 
-  const _runNext = ()=>{
-    while(true) {
+  const runNext = () => {
+    while (true) {
       if (Core.abortMode !== void 0) {
         if (Core.abortMode === 'end') {
           nextFunc = (Core.test !== void 0 && Core.test.mode !== 'after') ? tearDown : testStart;
           nextTest = void 0;
           nt = tests.length;
-        } else
+        } else {
           return;
+        }
       }
       if (nextFunc === testStart) {
         if (nt == tests.length) {
@@ -566,30 +568,22 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
           assertIsPromise(promise);
           asyncTimeout = setTimeout(timeExpired, MAX_TIME);
           promise.then(runAsyncNext, handleAsyncError);
-          if (isServer) {
-            if (Fiber.yield() !== 'continue')
-              return;
-          } else
-            return;
+          return;
         }
-      } catch(err) {
+      } catch (err) {
         handleError(err);
       }
     }
   };
 
-  const runNext = isServer ? ()=>{currentFiber.run('continue')} : _runNext;
-
-  Core.start = (testCases, runNextWrapper)=>{
+  Core.start = (testCases, runNextWrapper) => {
     tests = [];
     nt = assertCount = 0;
     Core.test = Core.lastTest = void 0;
     lastTest = currTest = nextTest = common = nextFunc = void 0;
     nextFunc = testStart;
 
-    if (isServer) currentFiber = Fiber.current;
-
-    for(let i = 0; i < testCases.length; ++i) {
+    for (let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
       if (tc === void 0) continue;
 
@@ -600,7 +594,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
 
     Core.runCallBacks('start');
-    _runNext();
+    runNext();
   };
 
   return TestCase;

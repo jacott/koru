@@ -1,17 +1,17 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Changes         = require('koru/changes');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const Observable      = require('koru/observable');
+  const dbBroker        = require('./db-broker');
+  const TransQueue      = require('./trans-queue');
+  const Val             = require('./validation');
   const driver          = require('../config!DBDriver');
   const koru            = require('../main');
   const Random          = require('../random');
   const session         = require('../session');
   const util            = require('../util');
-  const dbBroker        = require('./db-broker');
-  const TransQueue      = require('./trans-queue');
-  const Val             = require('./validation');
 
   const {private$, error$} = require('koru/symbols');
   const pv = ModelMap[private$];
@@ -21,7 +21,7 @@ define((require, exports, module)=>{
 
   let _support, BaseModel;
 
-  session.registerGlobalDictionaryAdder(module, adder => {
+  session.registerGlobalDictionaryAdder(module, (adder) => {
     for (const mname in ModelMap) {
       adder(mname);
       const model = ModelMap[mname];
@@ -32,9 +32,9 @@ define((require, exports, module)=>{
     for (const name in session._rpcs) adder(name);
   });
 
-  koru.onunload(module, ()=>{session.deregisterGlobalDictionaryAdder(module)});
+  koru.onunload(module, () => {session.deregisterGlobalDictionaryAdder(module)});
 
-  Changes.KEYWORDS.forEach(word=>{session.addToDict(word)});
+  Changes.KEYWORDS.forEach((word) => {session.addToDict(word)});
 
   {
     const dbBrokerDesc = Object.getOwnPropertyDescriptor(dbBroker, 'db');
@@ -44,16 +44,21 @@ define((require, exports, module)=>{
       get: dbBrokerDesc.get, set: dbBrokerDesc.set});
   }
 
+  const asyncFindById = async (model, id) => {
+    const rec = await model.docs.findById(id);
+    if (rec !== void 0) {
+      const doc = new model(rec);
+      model._$docCacheSet(doc);
+      return doc;
+    }
+  };
+
   function findById(id) {
     if (id == null) return;
-    if (typeof id !== 'string') throw new Error('invalid id: '+ id);
+    if (typeof id !== 'string') throw new Error('invalid id: ' + id);
     let doc = this._$docCacheGet(id);
     if (doc === void 0) {
-      const rec = this.docs.findOne({_id: id});
-      if (rec !== void 0) {
-        doc = new this(rec);
-        this._$docCacheSet(doc);
-      }
+      return asyncFindById(this, id);
     }
     return doc;
   }
@@ -61,10 +66,11 @@ define((require, exports, module)=>{
   const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;
-      if (drop === 'drop')
-        model.db.dropTable(model.modelName);
       const rd = _resetDocs[model.modelName];
       rd !== void 0 && rd();
+      if (drop === 'drop') {
+        return model.db.dropTable(model.modelName);
+      }
     },
 
     init(_BaseModel, _baseSupport) {
@@ -76,17 +82,17 @@ define((require, exports, module)=>{
 
       const prepareIndex = (model, args) => {
         let filterTest;
-        if (typeof args[args.length-1] === 'function') {
+        if (typeof args[args.length - 1] === 'function') {
           filterTest = model.query;
-          args[args.length-1](filterTest);
+          args[args.length - 1](filterTest);
           --args.length;
         }
         const name = model.modelName;
         const sort = [];
         let dir = 1, from = -1;
-        for(let i = 0; i < args.length; ++i) {
+        for (let i = 0; i < args.length; ++i) {
           const arg = args[i];
-          switch(arg) {
+          switch (arg) {
           case 1: dir = 1; break;
           case -1: dir = -1; break;
           default:
@@ -116,70 +122,81 @@ define((require, exports, module)=>{
         }
         doc.attributes = attrs;
         return doc;
-      };
+      }
 
-      BaseModel.prototype.$remove =  function () {
+      BaseModel.prototype.$remove = function () {
         return new Query(this.constructor).onId(this._id).remove();
-      };
+      }
 
-      BaseModel.prototype.$reload = function (full) {
-        const model = this.constructor;
-        if (full) {
-          const rec = model.docs.findOne({_id: this._id});
-          if (rec === void 0) {
-            this.attributes = {};
-          } else {
-            this.attributes = rec;
-          }
+      const clearDocChanges = (doc) => {
+        const model = doc.constructor;
+        doc.changes = {};
+        if (doc[error$] !== void 0) doc[error$] = void 0;
+        doc.$clearCache();
+        if (model._$docCacheGet(doc._id) === void 0) {
+          model._$docCacheSet(doc);
         }
 
-        this.changes = {};
-        if (this[error$] !== void 0) this[error$] = void 0;
-        this.$clearCache();
-        if (model._$docCacheGet(this._id) === void 0)
-          model._$docCacheSet(this);
-
-        return this;
+        return doc;
       };
 
-      ModelEnv.save = (doc, callback)=>{
+      const fullReload = async (doc) => {
+        const rec = await doc.constructor.docs.findById(doc._id);
+        if (rec === void 0) {
+          doc.attributes = {};
+        } else {
+          doc.attributes = rec;
+        }
+
+        return clearDocChanges(doc);
+      };
+
+      BaseModel.prototype.$reload = function (full=false) {
+        if (! full) return clearDocChanges(this);
+
+        return fullReload(this);
+      }
+
+      ModelEnv.save = async (doc, callback) => {
         const model = doc.constructor;
         const _id = doc._id;
         let {changes} = doc; doc.changes = {};
         const now = util.newDate();
 
-        if(doc.attributes._id == null) {
-          if (! model.$fields._id.auto)
+        if (doc.attributes._id == null) {
+          if (! model.$fields._id.auto) {
             changes._id = changes._id || Random.id();
+          }
           _support._addUserIds(changes, model.userIds, util.thread.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
           _support._updateTimestamps(changes, model.updateTimestamps, now);
 
           changes = Object.assign(doc.attributes, changes);
-          _support.performInsert(doc);
+          await _support.performInsert(doc);
         } else {
           if (util.isObjEmpty(changes)) return doc;
-          _support.performUpdate(doc, changes);
+          await _support.performUpdate(doc, changes);
         }
         if (callback) callback(doc);
       };
 
       const ID_ERROR = {baseName: '_id'};
 
-      session.defineRpc("save", function (modelName, id, changes) {
+      session.defineRpc('save', async function (modelName, id, changes) {
         const {userId} = this;
         Val.allowAccessIf(userId);
         Val.assertCheck(id, 'string', ID_ERROR);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        TransQueue.transaction(model.db, () => {
-          if (model.overrideSave)
-            return model.overrideSave(id, changes, userId);
-          let doc = model.findById(id || changes._id);
+        await TransQueue.transaction(model.db, async () => {
+          if (model.overrideSave != null) {
+            return await model.overrideSave(id, changes, userId);
+          }
+          let doc = await model.findById(id ?? changes._id);
 
-          const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ||
+          const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
                 changes;
-          if (id) {
+          if (id != null) {
             Val.allowIfFound(doc, '_id');
             doc.changes = topLevel;
           } else {
@@ -187,47 +204,48 @@ define((require, exports, module)=>{
             doc = new model(null, topLevel);
           }
           Val.allowAccessIf(doc.authorize);
-          doc.authorize(userId);
-          doc.$assertValid();
+          await doc.authorize(userId);
+          await doc.$assertValid();
           if (topLevel !== void 0) {
             Changes.updateCommands(changes, doc.changes, topLevel);
             doc.changes = changes;
           }
-          doc.$save('force');
+          await doc.$save('force');
         });
       });
 
-      session.defineRpc("bumpVersion", function(modelName, id, version) {
+      session.defineRpc('bumpVersion', function (modelName, id, version) {
         _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
-      session.defineRpc("remove", function (modelName, id) {
+      session.defineRpc('remove', async function (modelName, id) {
         const userId = this.userId;
         Val.allowAccessIf(userId);
         Val.ensureString(id);
         Val.ensureString(modelName);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        TransQueue.transaction(model.db, () => {
-          const doc = model.findById(id);
+        await TransQueue.transaction(model.db, async () => {
+          const doc = await model.findById(id);
           Val.allowIfFound(doc, '_id');
-          if (doc.overrideRemove)
-            doc.overrideRemove(userId);
-          else {
+          if (doc.overrideRemove != null) {
+            await doc.overrideRemove(userId);
+          } else {
             Val.allowAccessIf(doc.authorize);
-            doc.authorize(userId, {remove: true});
-            doc.$remove();
+            await doc.authorize(userId, {remove: true});
+            await doc.$remove();
           }
         });
       });
 
       util.merge(_support, {
         resetDocs(model) {
-          if (_resetDocs[model.modelName] !== void 0)
+          if (_resetDocs[model.modelName] !== void 0) {
             _resetDocs[model.modelName]();
+          }
         },
         bumpVersion() {
-          _support.performBumpVersion(this.constructor, this._id,this._version);
+          return _support.performBumpVersion(this.constructor, this._id, this._version);
         },
 
         transaction(model, func) {
@@ -238,7 +256,7 @@ define((require, exports, module)=>{
           return function (...args) {
             Val.allowAccessIf(this.userId);
             return model.db.transaction(() => (func.apply(this, args)));
-          };
+          }
         },
       });
     },
@@ -249,14 +267,14 @@ define((require, exports, module)=>{
 
       let docs, db;
 
-      _resetDocs[model.modelName] = ()=>{
+      _resetDocs[model.modelName] = () => {
         if (db !== void 0) {
           db[dbMap$] = void 0;
           db = docs = void 0;
         }
       };
 
-      const getDc = ()=>{
+      const getDc = () => {
         const dc = util.thread[docCache$];
         return model.db === dc?.$db ? dc : void 0;
       };
@@ -264,14 +282,18 @@ define((require, exports, module)=>{
       util.merge(model, {
         notify(...args) {
           const subject = model.db[notifyMap$];
-          if (subject)
-            subject.notify(...args);
+          if (subject) {
+            const p = subject.notify(...args);
+            if (p instanceof Promise) {
+              return p.then(() => anyChange.notify(...args));
+            }
+          }
 
           anyChange.notify(...args);
         },
-        onAnyChange: callback => anyChange.add(callback),
+        onAnyChange: (callback) => anyChange.add(callback),
         onChange(callback) {
-          const subject = model.db[notifyMap$] || (model.db[notifyMap$] =  new Observable());
+          const subject = model.db[notifyMap$] || (model.db[notifyMap$] = new Observable());
           return subject.onChange(callback);
         },
         get docs() {
@@ -307,8 +329,9 @@ define((require, exports, module)=>{
         _$docCacheDelete: (doc) => {
           if (doc._id) {
             const dc = getDc();
-            if (dc !== void 0)
+            if (dc !== void 0) {
               delete dc[doc._id];
+            }
           }
         },
 

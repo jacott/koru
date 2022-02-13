@@ -6,7 +6,6 @@ isServer && define((require, exports, module) => {
   const session         = require('koru/session/main');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
-  const fs              = requirejs.nodeRequire('fs');
   const Path            = requirejs.nodeRequire('path');
 
   const {stub, spy} = TH;
@@ -55,7 +54,7 @@ isServer && define((require, exports, module) => {
         return map;
       };
 
-      stub(fst, 'rm_f');
+      stub(fst, 'rm_f', async () => {});
       sut.clearGraph(); // loader-test calls server which sets the graph
     });
 
@@ -70,7 +69,7 @@ isServer && define((require, exports, module) => {
 
         v.addTimestamps(v.expectedSources);
         const orig = fst.stat;
-        stub(fst, 'stat', (fn) => {
+        stub(fst, 'stat', async (fn) => {
           fn = fn.slice(v.topDirLen);
           if (fn === 'koru/css/.build/less-compiler-test.less.css') {
             fn = 'koru/css/less-compiler-test.less';
@@ -80,15 +79,15 @@ isServer && define((require, exports, module) => {
           if (exp) {
             return {mtime: new Date(exp.mtime)};
           } else {
-            return orig.call(fst, fn);
+            return await orig.call(fst, fn);
           }
         });
       });
 
-      test('imports changed while system down', () => {
+      test('imports changed while system down', async () => {
         v.expectedSources['koru/css/less-compiler-test-imp2.lessimport'].mtime = Date.now() + 40*1000;
 
-        session._commands.S.call(v.conn, 'LAkoru/css');
+        await session._commands.S.call(v.conn, 'LAkoru/css');
 
         assert.calledWith(fst.rm_f, Path.join(koru.appDir, 'koru/css/.build/less-compiler-test.less.css'));
 
@@ -97,8 +96,8 @@ isServer && define((require, exports, module) => {
                 v.expectedSources['koru/css/less-compiler-test-imp2.lessimport'].mtime);
       });
 
-      test('build graph', () => {
-        session._commands.S.call(v.conn, 'LAkoru/css');
+      test('build graph', async () => {
+        await session._commands.S.call(v.conn, 'LAkoru/css');
 
         assert.calledWith(v.conn.send, 'SL', 'koru/css/less-compiler-test.less ' +
                           'koru/css/loader-test.css koru/css/loader-test2.css');
@@ -114,19 +113,21 @@ isServer && define((require, exports, module) => {
         delete sut.loads['koru/css/loader-test2.css'];
 
         v.conn.send.reset();
-        session._commands.S.call(v.conn, 'LAkoru/css');
+        await session._commands.S.call(v.conn, 'LAkoru/css');
 
         assert.calledWith(v.conn.send, 'SL', 'koru/css/less-compiler-test.less ' +
                           'koru/css/loader-test.css');
       });
 
-      test('bad names', () => {
-        'koru/.. koru/css/.build ../koru /koru koru/.dir'
-          .split(' ').forEach((dir) => {
-            assert.exception(() => {
-              session._commands.S.call(v.conn, 'LA' + dir);
-            }, {error: 500, reason: 'Illegal directory name'});
-          });
+      test('bad names', async () => {
+        for (const dir of 'koru/.. koru/css/.build ../koru /koru koru/.dir' .split(' ')) {
+          try {
+            await session._commands.S.call(v.conn, 'LA' + dir);
+            assert.fail('expected throw');
+          } catch (err) {
+            assert.exception(err, {error: 500, reason: 'Illegal directory name'});
+          }
+        }
       });
     });
 
@@ -145,13 +146,13 @@ isServer && define((require, exports, module) => {
         };
       });
 
-      test('lessimport change', () => {
+      test('lessimport change', async () => {
         stub(fst, 'readFile').withArgs(koru.appDir + '/koru/css/my-imp.lessimport')
-          .returns('@import "imp3.lessimport";\n\n@import "imp4.lessimport";');
+          .returns(Promise.resolve('@import "imp3.lessimport";\n\n@import "imp4.lessimport";'));
 
         v.loadDefaults();
 
-        fw.listeners.lessimport('lessimport', 'koru/css/my-imp.lessimport', koru.appDir, v.session);
+        await fw.listeners.lessimport('lessimport', 'koru/css/my-imp.lessimport', koru.appDir, v.session);
 
         refute('koru/css/my-imp.lessimport' in sut.loads);
 
@@ -167,15 +168,15 @@ isServer && define((require, exports, module) => {
         refute.called(v.session.sendAll);
       });
 
-      test('sends dependents', () => {
+      test('sends dependents', async () => {
         stub(fst, 'readFile').withArgs(koru.appDir + '/koru/css/less-compiler-test-imp2.lessimport')
-          .returns({toString() {return ''}});
+          .returns(Promise.resolve({toString() {return ''}}));
 
         v.expectedImports['koru/css/less-compiler-test-imp2.lessimport']['foo/bar.less'] = true;
 
         v.loadDefaults();
 
-        v.watcher('lessimport', 'koru/css/less-compiler-test-imp2.lessimport', koru.appDir, v.session);
+        await v.watcher('lessimport', 'koru/css/less-compiler-test-imp2.lessimport', koru.appDir, v.session);
 
         assert.calledWith(v.session.sendAll, 'SL', 'koru/css/less-compiler-test.less foo/bar.less');
 
@@ -183,18 +184,18 @@ isServer && define((require, exports, module) => {
         assert.calledWith(fst.rm_f, koru.appDir + '/foo/.build/bar.less.css');
       });
 
-      test('less change', () => {
+      test('less change', async () => {
         stub(fst, 'readFile').withArgs(koru.appDir + '/koru/css/my-test.less')
-          .returns('@import "imp3.lessimport"');
+          .returns(Promise.resolve('@import "imp3.lessimport"'));
 
-        v.watcher('less', 'koru/css/compiler-test.less', koru.appDir, v.session);
+        await v.watcher('less', 'koru/css/compiler-test.less', koru.appDir, v.session);
 
         refute.called(v.session.sendAll);
         refute.called(fst.readFile);
 
         v.loadDefaults();
 
-        v.watcher('less', 'koru/css/my-test.less', koru.appDir, v.session);
+        await v.watcher('less', 'koru/css/my-test.less', koru.appDir, v.session);
 
         assert.calledWith(v.session.sendAll, 'SL', 'koru/css/my-test.less');
 
@@ -206,11 +207,11 @@ isServer && define((require, exports, module) => {
         refute('koru/css/imp3.lessimport' in sut.sources);
       });
 
-      test('remove', () => {
+      test('remove', async () => {
         stub(fst, 'readFile');
         v.loadDefaults();
 
-        v.watcher('less', 'koru/css/less-compiler-test.less', koru.appDir, v.session);
+        await v.watcher('less', 'koru/css/less-compiler-test.less', koru.appDir, v.session);
 
         assert.calledWith(v.session.sendAll, 'SL', 'koru/css/less-compiler-test.less');
 

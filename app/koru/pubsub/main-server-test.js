@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Val             = require('koru/model/validation');
   const Publication     = require('koru/pubsub/publication');
@@ -6,28 +6,28 @@ define((require, exports, module)=>{
   const ConnTH          = require('koru/session/conn-th-server');
   const api             = require('koru/test/api');
 
-  return ({TH, module}) =>{
+  return ({TH, module}) => {
     const {stub, spy, util, match: m} = TH;
 
-    TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
       let conn, gDict;
-      before(()=>{
+      before(() => {
         api.module({pseudoModule: 'Overview'});
 
         conn = ConnTH.mockConnection();
         gDict = session.globalDict;
       });
 
-      after(()=>{
+      after(() => {
         ConnTH.stopAllSubs(conn);
       });
 
-      test("server-publish", ()=>{
+      test('server-publish', async () => {
         api.topic();
 
-        const query = {forEach: stub()};
+        const query = {forEach: stub(async () => {})};
         const Book = {
-          create: stub(),
+          create: stub(async () => {}),
           where: () => query, onChange: stub().returns({stop: stub()})};
         //[
         // Step 1 - Register the publication
@@ -35,12 +35,12 @@ define((require, exports, module)=>{
           constructor(options) {
             super(options);
           }
-          init({shelf}) {
+          async init({shelf}) {
             // step 3 from below calls this
             Val.ensureString(shelf);
             // Send relavent documents to client
-            Book.where({shelf})
-              .forEach(doc => conn.added('Book', doc.attributes));
+            await Book.where({shelf})
+              .forEach((doc) => conn.added('Book', doc.attributes));
 
             // Listen for relavent document changes
             this.listeners = [
@@ -58,21 +58,21 @@ define((require, exports, module)=>{
         //]
 
         const args = [{shelf: 'mathematics'}];
-        const thirtyDaysAgo = Date.now() - 30*util.DAY;
+        const thirtyDaysAgo = Date.now() - 30 * util.DAY;
         const lastSubscribed = new Date(thirtyDaysAgo);
 
         //[
         // Step 3 receive connect request from client
         // with data: 's123', 1, 'Library', args, lastSubscribed;
         const sub = new LibraryPub({id: 's123', conn, lastSubscribed});
-        sub.init(...args);
+        await sub.init(...args);
         // after init, server informs client of success and updates lastSubscribed
         // ['s123', 1, 200, new Date(thirtyDaysAgo)]
         //]
 
         //[
         // Step 5 - another client adds a book
-        Book.create({shelf: 'mathematics', name: "Euclid's Elements"});
+        await Book.create({shelf: 'mathematics', name: "Euclid's Elements"});
         // book is sent to subscribed clients
         //]
 
@@ -81,7 +81,7 @@ define((require, exports, module)=>{
 
         assert.calledOnce(Book.create);
 
-        query.forEach.yieldAll({attributes: {shelf: 'mathematics', name: "Euclid's Elements"}});
+        await query.forEach.yieldAll({attributes: {shelf: 'mathematics', name: "Euclid's Elements"}});
         assert.calledOnceWith(conn.added, 'Book', {shelf: 'mathematics', name: "Euclid's Elements"});
 
         //[

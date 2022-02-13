@@ -1,16 +1,16 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const {private$}      = require('koru/symbols');
   const Trace           = require('koru/trace');
-  const koru            = require('../main');
   const message         = require('./message');
+  const koru            = require('../main');
 
   const {inspect$} = require('koru/symbols');
 
   const rpcType$ = Symbol();
 
   let debug_msg = false;
-  Trace.debug_msg = value => debug_msg = !! value;
+  Trace.debug_msg = (value) => debug_msg = !! value;
 
   class SessionBase {
     constructor(id) {
@@ -21,15 +21,15 @@ define((require)=>{
       this.DEFAULT_USER_ID = void 0;
     }
 
-    [inspect$]() {return 'SessionBase('+this._id+')'}
+    [inspect$]() {return 'SessionBase(' + this._id + ')'}
 
-    defineRpc(name, func=()=>{}) {
+    defineRpc(name, func=() => {}) {
       this._rpcs[name] = func;
       func[rpcType$] = 'update';
       return this;
     }
 
-    defineRpcGet(name, func=()=>{}) {
+    defineRpcGet(name, func=() => {}) {
       this._rpcs[name] = func;
       func[rpcType$] = 'get';
       return this;
@@ -68,18 +68,22 @@ define((require)=>{
         data = new Uint8Array(data);
         type = String.fromCharCode(data[0]);
         obj = message.decodeMessage(data.subarray(1), this.globalDict);
-        debug_msg && koru.logger('D',
-          `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
+        debug_msg && koru.logger(
+          'D', `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
       }
 
       const func = this._commands[type];
 
-      if (typeof func !== 'function')
-        koru.info('Unexpected session('+this._id+') message: '+ type, conn.sessId);
-      else
-        func.call(conn, obj);
+      if (typeof func !== 'function') {
+        koru.info('Unexpected session(' + this._id + ') message: ' + type, conn.sessId);
+      } else {
+        const p = func.call(conn, obj);
+        if (p instanceof Promise) {
+          p.catch((err) => koru.unhandledException(err));
+        }
+      }
     }
-  };
+  }
 
   return new SessionBase('default');
 });

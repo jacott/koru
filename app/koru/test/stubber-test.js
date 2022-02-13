@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Spies and Stubs are functions which record the call arguments, the `this` value and the return
@@ -15,7 +15,7 @@ define((require, exports, module)=>{
    * {#koru/test/test-case} has completed.
 
    * ```js
-const {stub, spy, intercept} = TH;
+   const {stub, spy, intercept} = TH;
    * ```
    *
    **/
@@ -27,11 +27,11 @@ const {stub, spy, intercept} = TH;
 
   const stubber = require('./stubber');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.reportStubs();
     });
-    test("stub", ()=>{
+    test('stub', () => {
       /**
        * Create a {#::Stub}. Can stub a object function or be unattached.
        *
@@ -50,7 +50,7 @@ const {stub, spy, intercept} = TH;
         [privateMethod$]() {},
       };
 
-      const read = stubber.stub(Book, 'read', n => n*2);
+      const read = stubber.stub(Book, 'read', (n) => n * 2);
       assert.same(read, Book.read);
 
       assert.equals(Book.read(28), 56);
@@ -64,7 +64,7 @@ const {stub, spy, intercept} = TH;
       //]
     });
 
-    test("spy", ()=>{
+    test('spy', () => {
       /**
        * Create a spy. A spy is a {#::Stub} that calls the original function.
        **/
@@ -72,7 +72,7 @@ const {stub, spy, intercept} = TH;
       //[
       const Book = {
         lastReadPage: 0,
-        read(pageNo) {this.lastReadPage = pageNo}
+        read(pageNo) {this.lastReadPage = pageNo},
       };
 
       const read = stubber.spy(Book, 'read');
@@ -85,11 +85,11 @@ const {stub, spy, intercept} = TH;
       //]
     });
 
-    test("spy continued", ()=>{
+    test('spy continued', () => {
       let thisValue, args;
-      const obj = {foo(a,b,c) {
+      const obj = {foo(a, b, c) {
         thisValue = this;
-        args = [a,b,c];
+        args = [a, b, c];
         return 123;
       }};
 
@@ -101,17 +101,16 @@ const {stub, spy, intercept} = TH;
       assert.same(subject, obj.foo);
 
       // invoke
-      assert.same(obj.foo(1,2,3), 123);
+      assert.same(obj.foo(1, 2, 3), 123);
 
       assert.same(thisValue, obj);
-      assert.equals(args, [1,2,3]);
+      assert.equals(args, [1, 2, 3]);
 
       assert.calledWith(subject, 1, 2, 3);
 
       assert.called(with12);
       assert.same(with12.lastCall.returnValue, 123);
       assert.same(subject.callCount, 1);
-
 
       obj.foo.call({diff: 'this'}, 'a');
 
@@ -124,7 +123,7 @@ const {stub, spy, intercept} = TH;
       assert.same(subject.args(-2, -1), 3);
     });
 
-    test("intercept", ()=>{
+    test('intercept', () => {
       /**
        * Create an intercept. An intercept is a lightweight stub. It does not record any calls.
        **/
@@ -132,7 +131,7 @@ const {stub, spy, intercept} = TH;
       //[
       const Book = {
         lastReadPage: 0,
-        read(pageNo) {this.lastReadPage = pageNo}
+        read(pageNo) {this.lastReadPage = pageNo},
       };
 
       stubber.intercept(Book, 'read', function (n) {this.lastReadPage = n - 2});
@@ -144,14 +143,14 @@ const {stub, spy, intercept} = TH;
       //]
     });
 
-    test("isStubbed", ()=>{
+    test('isStubbed', () => {
       /**
        * Determine if a function is stubbed.
        **/
       api.method();
       //[
       const book = {
-        read() {}
+        read() {},
       };
 
       assert.isFalse(stubber.isStubbed(book.read));
@@ -162,8 +161,7 @@ const {stub, spy, intercept} = TH;
       //]
     });
 
-
-    test("prototype function", ()=>{
+    test('prototype function', () => {
       class Foo {
         bar() {}
       }
@@ -184,43 +182,43 @@ const {stub, spy, intercept} = TH;
       refute.hasOwn(Bar.prototype, 'bar');
     });
 
-    group("Stub", ()=>{
+    group('Stub', () => {
       let sApi;
-      before(()=>{
+      before(() => {
         sApi = api.innerSubject(stubber.stub().constructor, 'Stub', {
           abstract() {
             /**
              * Stub and Spy methods.
              **/
-          }
+          },
         });
       });
 
-      after(()=>{sApi = undefined});
+      after(() => {sApi = undefined});
 
-      test("restore", ()=>{
+      test('restore', () => {
         /**
          * Restore the original function
          **/
         //[
         let args;
         const obj = {foo() {args = 'aStub'}};
-        stubber.stub(obj, 'foo', (a,b,c)=>{args = [a,b,c]});
+        stubber.stub(obj, 'foo', (a, b, c) => {args = [a, b, c]});
         //]
         sApi.customIntercept(obj.foo, {name: 'restore', sig: 'Stub#'});
         //[
-        obj.foo(1,2,3);
-        assert.equals(args, [1,2,3]);
+        obj.foo(1, 2, 3);
+        assert.equals(args, [1, 2, 3]);
 
         assert.calledWith(obj.foo, 1, 2, 3);
 
         obj.foo.restore();
-        obj.foo(1,2,3);
+        obj.foo(1, 2, 3);
         assert.equals(args, 'aStub');
         //]
       });
 
-      test("withArgs", ()=>{
+      test('withArgs', () => {
         /**
          * Create a refined stub (or spy) that relates to a particular list of call arguments. This
          * stub will only be invoked if the subject is called with a list of arguments that match.
@@ -234,17 +232,17 @@ const {stub, spy, intercept} = TH;
 
         const aStub = stubber.stub().returns(null);
         const foo = aStub.withArgs('foo').returns('foo');
-        const bar = foo.withArgs("bar").throws(new Error("bar error"));
+        const bar = foo.withArgs('bar').throws(new Error('bar error'));
         const fnord = foo.withArgs(TH.match.number, TH.match.string).returns('fnord');
 
         refute.same(fnord, foo);
 
         assert.same(foo(), null);
-        assert.same(foo("foo"), 'foo');
-        assert.exception(()=>{
-          foo("bar");
+        assert.same(foo('foo'), 'foo');
+        assert.exception(() => {
+          foo('bar');
         }, 'Error', 'bar error');
-        assert.same(aStub(1, "two"), 'fnord');
+        assert.same(aStub(1, 'two'), 'fnord');
 
         assert.same(aStub.callCount, 4);
         assert.same(foo.subject.callCount, 4);
@@ -255,11 +253,11 @@ const {stub, spy, intercept} = TH;
         //]
       });
 
-      test("withArgs, calledAfter/Before", ()=>{
+      test('withArgs, calledAfter/Before', () => {
         const base = stub();
 
         const argOne = base.withArgs(1);
-        const argTwo = base.withArgs(1,{t: 2});
+        const argTwo = base.withArgs(1, {t: 2});
         const argDiff = base.withArgs(2);
 
         base(1, {t: 2});
@@ -290,7 +288,7 @@ const {stub, spy, intercept} = TH;
         refute(argDiff.calledBefore(argOne));
       });
 
-      test("returns", ()=>{
+      test('returns', () => {
         /**
          * Control what value a stub returns.
          *
@@ -310,7 +308,7 @@ const {stub, spy, intercept} = TH;
         //]
       });
 
-      test("onCall", ()=>{
+      test('onCall', () => {
         /**
          * Create a refined stub for a particular call repetition.
          *
@@ -341,7 +339,7 @@ const {stub, spy, intercept} = TH;
         refute(call.calledWith(2));
       });
 
-      test("yields", ()=>{
+      test('yields', () => {
         /**
          * Trigger the stub automatically to call the first callback.
          *
@@ -353,15 +351,15 @@ const {stub, spy, intercept} = TH;
         //[
         const aStub = stubber.stub();
 
-        aStub.yields(1,2,3);
+        aStub.yields(1, 2, 3);
 
         let result;
-        aStub(1, (a,b,c) => result = [c,b,a], ()=> "not me");
-        assert.equals(result, [3,2,1]);
+        aStub(1, (a, b, c) => result = [c, b, a], () => 'not me');
+        assert.equals(result, [3, 2, 1]);
         //]
       });
 
-      test("invokes", ()=>{
+      test('invokes', () => {
         /**
          * Invoke `callback` when the stub is called. The callback's result will be returned to the
          * stub caller.
@@ -387,7 +385,7 @@ const {stub, spy, intercept} = TH;
         //]
       });
 
-      test("cancelYields", ()=>{
+      test('cancelYields', () => {
         /**
          * remove automatic yield
          *
@@ -401,13 +399,13 @@ const {stub, spy, intercept} = TH;
         aStub.cancelYields();
 
         let result = 0;
-        aStub(()=>{result = 1});
+        aStub(() => {result = 1});
 
         assert.same(result, 0);
         //]
       });
 
-      test("yield", ()=>{
+      test('yield', () => {
         /**
          * Call the first callback of the first call to stub.
          *
@@ -419,10 +417,10 @@ const {stub, spy, intercept} = TH;
         //[
         const aStub = stubber.stub();
         let result;
-        aStub((arg1, arg2)=> result = arg2);
+        aStub((arg1, arg2) => result = arg2);
 
         assert.same(
-          aStub.yield(1,2),
+          aStub.yield(1, 2),
           2);
 
         assert.same(result, 2);
@@ -430,7 +428,7 @@ const {stub, spy, intercept} = TH;
         aStub.reset();
       });
 
-      test("yieldAndReset", ()=>{
+      test('yieldAndReset', () => {
         /**
          * Like {##yield} but also calls reset on the stub.
          *
@@ -441,18 +439,18 @@ const {stub, spy, intercept} = TH;
         sApi.protoMethod();
         //[
         const obj = {run(arg) {}};
-        const aStub = stub(obj, "run");
+        const aStub = stub(obj, 'run');
         let arg2;
-        obj.run((a1, a2)=> arg2 = a2);
-        assert.equals(aStub.yieldAndReset(1,2), 2);
+        obj.run((a1, a2) => arg2 = a2);
+        assert.equals(aStub.yieldAndReset(1, 2), 2);
 
         assert.same(arg2, 2);
         refute.called(aStub);
-        obj.run(_=>3);
+        obj.run((_) => 3);
         assert.equals(aStub.yieldAndReset(), 3);
         //]
       });
-      test("yieldAll", ()=>{
+      test('yieldAll', () => {
         /**
          * Like {##yield} but yields for all calls to stub; not just the first.
          *
@@ -464,31 +462,31 @@ const {stub, spy, intercept} = TH;
         //[
         const aStub = stub();
         let foo, bar;
-        aStub(function (arg1, arg2) {foo = arg1;});
-        aStub((arg1, arg2)=>{bar = arg2;});
+        aStub(function (arg1, arg2) {foo = arg1});
+        aStub((arg1, arg2) => {bar = arg2});
 
         assert.same(
-          aStub.yieldAll(1,2),
+          aStub.yieldAll(1, 2),
           aStub);
 
         assert.same(foo, 1);
         assert.same(bar, 2);
       });
 
-      group("inspect", ()=>{
+      group('inspect', () => {
         let aStub;
-        const setupExample = ()=>{
+        const setupExample = () => {
           aStub = stubber.stub();
           //[
-          aStub(1,2,3);
-          aStub(4,5,6);
+          aStub(1, 2, 3);
+          aStub(4, 5, 6);
           //]
         };
 
         before(setupExample);
-        after(()=>{aStub = undefined});
+        after(() => {aStub = undefined});
 
-        test("properties", ()=>{
+        test('properties', () => {
           sApi.protoProperty('firstCall', {info: `The first call to the stub`});
           sApi.protoProperty('lastCall', {info: `The last call to the stub`});
           sApi.protoProperty('callCount', {info: `How many times the stub has been called`});
@@ -502,7 +500,7 @@ const {stub, spy, intercept} = TH;
           refute.called(aStub);
           assert.isFalse(aStub.called);
 
-          aStub.call({val: "this"}, 123, {aStub: "123"});
+          aStub.call({val: 'this'}, 123, {aStub: '123'});
 
           assert.isTrue(aStub.called);
           assert.called(aStub);
@@ -510,24 +508,24 @@ const {stub, spy, intercept} = TH;
 
           assert.calledWith(aStub, 123);
           refute.calledWithExactly(aStub, 123);
-          assert.calledWith(aStub, 123, {aStub: "123"});
-          assert.calledWithExactly(aStub, 123, {aStub: "123"});
-          refute.calledWith(aStub, 123, {aStub: "122"});
+          assert.calledWith(aStub, 123, {aStub: '123'});
+          assert.calledWithExactly(aStub, 123, {aStub: '123'});
+          refute.calledWith(aStub, 123, {aStub: '122'});
 
-          assert.equals(aStub.printf("%C"), "\n    [123, {aStub: '123'}]");
-          assert.equals(aStub.printf("%n"), "stub");
+          assert.equals(aStub.printf('%C'), "\n    [123, {aStub: '123'}]");
+          assert.equals(aStub.printf('%n'), 'stub');
 
           assert.isTrue(aStub.calledOnce);
           assert.isFalse(aStub.calledTwice);
           assert.isFalse(aStub.calledThrice);
 
-          aStub.call({val: "middlethis"}, 456);
+          aStub.call({val: 'middlethis'}, 456);
 
           assert.isFalse(aStub.calledOnce);
           assert.isTrue(aStub.calledTwice);
           assert.isFalse(aStub.calledThrice);
 
-          aStub.call({val: "lastthis"}, 789);
+          aStub.call({val: 'lastthis'}, 789);
 
           assert.isFalse(aStub.calledOnce);
           assert.isFalse(aStub.calledTwice);
@@ -535,22 +533,22 @@ const {stub, spy, intercept} = TH;
 
           assert.equals(aStub.callCount, 3);
 
-          assert.equals(aStub.firstCall.thisValue, {val: "this"});
-          assert.equals(aStub.lastCall.thisValue, {val: "lastthis"});
+          assert.equals(aStub.firstCall.thisValue, {val: 'this'});
+          assert.equals(aStub.lastCall.thisValue, {val: 'lastthis'});
           refute.calledOnce(aStub);
 
           aStub.reset();
 
           refute.called(aStub);
-          assert.equals(aStub.printf("%C"), "");
+          assert.equals(aStub.printf('%C'), '');
 
-          aStub(1,2);
+          aStub(1, 2);
 
           assert.calledOnceWith(aStub, 1, 2);
         });
 
-        group("methods", ()=>{
-          test("getCall", ()=>{
+        group('methods', () => {
+          test('getCall', () => {
             /**
              * Get the details of a particular call to stub.
              *
@@ -566,7 +564,7 @@ const {stub, spy, intercept} = TH;
             //]
           });
 
-          test("calledBefore", ()=>{
+          test('calledBefore', () => {
             /**
              * Test this stub is called before `after`.
              *
@@ -582,7 +580,7 @@ const {stub, spy, intercept} = TH;
             //]
           });
 
-          test("calledAfter", ()=>{
+          test('calledAfter', () => {
             /**
              * Test this stub is called after `before`.
              *
@@ -598,7 +596,7 @@ const {stub, spy, intercept} = TH;
             //]
           });
 
-          test("calledWith", ()=>{
+          test('calledWith', () => {
             /**
              * Was the stub called with the given `args`.
              *
@@ -611,19 +609,19 @@ const {stub, spy, intercept} = TH;
             //[
             const aStub = stubber.stub();
 
-            aStub(1,2,3);
-            aStub(4,5,6);
+            aStub(1, 2, 3);
+            aStub(4, 5, 6);
 
-            assert.isTrue(aStub.calledWith(1,2));
-            assert.isTrue(aStub.calledWith(1,2,3));
+            assert.isTrue(aStub.calledWith(1, 2));
+            assert.isTrue(aStub.calledWith(1, 2, 3));
             assert.isTrue(aStub.calledWith(4));
 
-            assert.isFalse(aStub.calledWith(1,2,3,4));
+            assert.isFalse(aStub.calledWith(1, 2, 3, 4));
             assert.isFalse(aStub.calledWith(5));
             //]
           });
 
-          test("calledWithExactly", ()=>{
+          test('calledWithExactly', () => {
             /**
              * Was the stub called with the given `args` and no extra args.
              *
@@ -635,24 +633,23 @@ const {stub, spy, intercept} = TH;
             //[
             const aStub = stubber.stub();
 
-            aStub(1,2,3);
-            aStub(4,5,6);
+            aStub(1, 2, 3);
+            aStub(4, 5, 6);
 
-            assert.isTrue(aStub.calledWithExactly(1,2,3));
-            assert.isTrue(aStub.calledWithExactly(4,5,6));
+            assert.isTrue(aStub.calledWithExactly(1, 2, 3));
+            assert.isTrue(aStub.calledWithExactly(4, 5, 6));
 
-            assert.isFalse(aStub.calledWithExactly(1,2));
-            assert.isFalse(aStub.calledWithExactly(1,2,3,4));
-            assert.isFalse(aStub.calledWithExactly(4,5));
+            assert.isFalse(aStub.calledWithExactly(1, 2));
+            assert.isFalse(aStub.calledWithExactly(1, 2, 3, 4));
+            assert.isFalse(aStub.calledWithExactly(4, 5));
             //]
           });
-
         });
       });
 
-      group("call", ()=>{
+      group('call', () => {
         let cApi;
-        before(()=>{
+        before(() => {
           const aStub = stubber.stub();
           aStub();
           cApi = sApi.innerSubject(
@@ -662,12 +659,12 @@ const {stub, spy, intercept} = TH;
                 /**
                  * Details of a Stub call.
                  **/
-              }
-            }
+              },
+            },
           );
         });
 
-        test("properties", ()=>{
+        test('properties', () => {
           cApi.protoProperty('globalCount', {info: `The index in the sequence of all stub
 calls since the start of the program`});
           cApi.protoProperty('args', {info: `the args of the call`});
@@ -676,21 +673,21 @@ calls since the start of the program`});
           const foo = {foo: 'foo'};
 
           const aStub = stubber.stub();
-          aStub.call(foo, 1,2,3);
+          aStub.call(foo, 1, 2, 3);
           assert.same(aStub.globalCount, aStub.globalCount);
-          assert.equals(aStub.firstCall.args, [1,2,3]);
+          assert.equals(aStub.firstCall.args, [1, 2, 3]);
           assert.same(aStub.firstCall.thisValue, foo);
 
           cApi.done();
           aStub.reset();
 
-          aStub(1,2,3); aStub(); aStub(4,5,6);
+          aStub(1, 2, 3); aStub(); aStub(4, 5, 6);
 
           assert(aStub.firstCall.globalCount < aStub.lastCall.globalCount);
-          assert.equals(aStub.firstCall.args, [1,2,3]);
+          assert.equals(aStub.firstCall.args, [1, 2, 3]);
         });
 
-        test("calledWith", ()=>{
+        test('calledWith', () => {
           /**
            * Was this call called with the given `args`.
            *
@@ -702,20 +699,20 @@ calls since the start of the program`});
           //[
           const aStub = stubber.stub();
 
-          aStub(1,2,3);
-          aStub(4,5,6);
+          aStub(1, 2, 3);
+          aStub(4, 5, 6);
 
           const {firstCall} = aStub;
 
-          assert.isTrue(firstCall.calledWith(1,2));
-          assert.isTrue(firstCall.calledWith(1,2,3));
+          assert.isTrue(firstCall.calledWith(1, 2));
+          assert.isTrue(firstCall.calledWith(1, 2, 3));
 
-          assert.isFalse(firstCall.calledWith(1,2,3,4));
+          assert.isFalse(firstCall.calledWith(1, 2, 3, 4));
           assert.isFalse(firstCall.calledWith(4));
           //]
         });
 
-        test("yield", ()=>{
+        test('yield', () => {
           /**
            * Trigger the stub automatically to call the first callback.
            *
@@ -735,14 +732,12 @@ calls since the start of the program`});
           //]
         });
       });
-
-
     });
 
-    test("stub with function", ()=>{
+    test('stub with function', () => {
       const obj = {foo() {}};
-      stub(obj, 'foo', function (a, b) {return [a,b]});
-      assert.equals(obj.foo(1,2), [1,2]);
+      stub(obj, 'foo', function (a, b) {return [a, b]});
+      assert.equals(obj.foo(1, 2), [1, 2]);
       assert.calledWith(obj.foo, 1, 2);
     });
   });

@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * AllPub is an extended {#../publication} which publicizes all documents in every defined
@@ -11,6 +11,7 @@ isServer && define((require, exports, module)=>{
    * See also {#../all-sub}
    **/
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const DocChange       = require('koru/model/doc-change');
   const ModelMap        = require('koru/model/map');
   const TransQueue      = require('koru/model/trans-queue');
@@ -29,43 +30,43 @@ isServer && define((require, exports, module)=>{
 
   const API = api;
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let conn, gDict;
 
-    beforeEach(()=>{
+    beforeEach(() => {
       conn = ConnTH.mockConnection('s123', session);
       gDict = session.globalDict;
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       ConnTH.stopAllSubs(conn);
       AllPub.resetConfig();
     });
 
-    test("requireUserId", ()=>{
+    test('requireUserId', async () => {
       api.property('requireUserId', {info: 'require user to be signed in'});
       TH.noInfo();
-      after(()=>{MyAllPub.pubName = void 0});
+      after(() => {MyAllPub.pubName = void 0});
       //[
       class MyAllPub extends AllPub {}
-      MyAllPub.pubName = "All";
+      MyAllPub.pubName = 'All';
 
-      conn.onSubscribe("sub1", 1, "All");
+      await conn.onSubscribe('sub1', 1, 'All');
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, m.number]);
 
       conn.sendBinary.reset();
       MyAllPub.requireUserId = true;
-      conn.onSubscribe("sub2", 1, "All");
+      await conn.onSubscribe('sub2', 1, 'All');
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 403, 'Access denied']);
 
       conn.sendBinary.reset();
-      conn.userId = "user123";
-      conn.onSubscribe("sub2", 1, "All");
+      await conn.setUserId('user123');
+      await conn.onSubscribe('sub2', 1, 'All');
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 200, m.number]);
       //]
     });
 
-    test("includedModels", ()=>{
+    test('includedModels', () => {
       /**
        * Return an iterator over the models that are included in the subscription
        **/
@@ -73,12 +74,12 @@ isServer && define((require, exports, module)=>{
       //[
       const db = new MockDB(['Book', 'Author']);
       const {Book, Author} = db.models;
-      assert.equals(Array.from(AllPub.includedModels()).map(m => m.modelName).sort(), [
+      assert.equals(Array.from(AllPub.includedModels()).map((m) => m.modelName).sort(), [
         'Author', 'Book']);
       //]
     });
 
-    test("init", ()=>{
+    test('init', async () => {
       /**
        * init will send the contents of the database to each client that subscribes. This method is
        * called automatically and only needs to be overridden if additionaly setup is required.
@@ -88,38 +89,36 @@ isServer && define((require, exports, module)=>{
        **/
       api.protoMethod();
       //[
-      const db = new MockDB(["Book"]);
+      const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const book1 = Book.create();
-      const book2 = Book.create();
+      const book1 = await Book.create();
+      const book2 = await Book.create();
 
       class MyAllPub extends AllPub {}
       //]
-      MyAllPub.pubName = "All";
+      MyAllPub.pubName = 'All';
 
-      after(()=>{MyAllPub.pubName = void 0});
+      after(() => {MyAllPub.pubName = void 0});
 
-      const future = new util.Future;
+      const future = new Future();
 
       const {forEach} = Book.query;
 
-      Book.query.forEach = func =>{
-        future.wait();
-        forEach(func);
+      Book.query.forEach = async (func) => {
+        await future.promise;
+        await forEach(func);
       };
 
       //[#
-      let sub1, sub2;
-      koru.runFiber(()=>{
-        sub1 = conn.onSubscribe('s123', 1, 'All');
-      });
-      koru.runFiber(()=>{
-        sub2 = conn.onSubscribe('s124', 1, 'All');
-      });
+      const sub1p = koru.runFiber(() => conn.onSubscribe('s123', 1, 'All'));
+      const sub2p = koru.runFiber(() => conn.onSubscribe('s124', 1, 'All'));
 
-      future.return();
+      future.resolve();
+
+      const sub1 = await sub1p;
+      const sub2 = await sub2p;
 
       assert.calledTwice(mc.sendEncoded);
       assert.same(mc.sendEncoded.firstCall.args[0], mc.sendEncoded.lastCall.args[0]);
@@ -130,13 +129,13 @@ isServer && define((require, exports, module)=>{
 
       mc.sendEncoded.reset();
       sub2.stop();
-      const sub3 = conn.onSubscribe('s124', 1, 'All');
+      const sub3 = await conn.onSubscribe('s124', 1, 'All');
 
       mc.assertAdded(book1);
       mc.assertAdded(book2);
     });
 
-    test("excludeModel", ()=>{
+    test('excludeModel', async () => {
       /**
        * Exclude {#koru/model/main}s from being published. UserLogin is always excluded. This will
        * clear {#.includeModel}
@@ -144,35 +143,35 @@ isServer && define((require, exports, module)=>{
        * @param ...names one or more model names to exclude
        **/
       api.method();
-      let now = util.dateNow(); intercept(util, "dateNow", ()=>now);
+      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
       //[
-      const models = "Book Author UserLogin ErrorLog AuditLog".split(" ");
+      const models = 'Book Author UserLogin ErrorLog AuditLog'.split(' ');
       const db = new MockDB(models);
       const mc = new MockConn(conn);
       //]
       ModelMap.NotAModel = {onChange: stub()}; // has no query method
-      models.push("NotAModel");
+      models.push('NotAModel');
       //[#
 
       const {Book, Author, UserLogin, AuditLog, ErrorLog} = db.models;
-      const book = Book.create();
-      const author = Author.create();
-      const userLogin = UserLogin.create();
-      const auditLog = AuditLog.create();
-      const errorLog = ErrorLog.create();
+      const book = await Book.create();
+      const author = await Author.create();
+      const userLogin = await UserLogin.create();
+      const auditLog = await AuditLog.create();
+      const errorLog = await ErrorLog.create();
 
       class MyAllPub extends AllPub {}
-      MyAllPub.pubName = "All"; // register publication All
+      MyAllPub.pubName = 'All'; // register publication All
       //]
-      after(()=>{MyAllPub.pubName = void 0});
+      after(() => {MyAllPub.pubName = void 0});
       //[#
-      MyAllPub.excludeModel("AuditLog", "ErrorLog");
+      MyAllPub.excludeModel('AuditLog', 'ErrorLog');
 
-      const sub = conn.onSubscribe("s123", 1, "All");
+      const sub = await conn.onSubscribe('s123', 1, 'All');
       //]
-      after(()=>{sub && sub.stop()});
-      assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
+      after(() => {sub && sub.stop()});
+      assert.calledWith(conn.sendBinary, 'Q', ['s123', 1, 200, now]);
       refute.called(ModelMap.NotAModel.onChange);
       //[#
       mc.assertAdded(book);
@@ -182,16 +181,16 @@ isServer && define((require, exports, module)=>{
       mc.refuteAdded(errorLog);
 
       let bookChange, auditLogChange;
-      TransQueue.transaction(()=>{
-        bookChange = db.change(book);
-        auditLogChange = db.change(auditLog);
+      await TransQueue.transaction(async () => {
+        bookChange = await db.change(book);
+        auditLogChange = await db.change(auditLog);
       });
       mc.assertChange(bookChange);
       mc.refuteChange(auditLogChange);
       //]
     });
 
-    test("includeModel", ()=>{
+    test('includeModel', async () => {
       /**
        * Explicitly include the {#koru/model/main}s which should be published. All other models are
        * excluded. This clears {#.excludeModel}
@@ -199,34 +198,34 @@ isServer && define((require, exports, module)=>{
        * @param ...names one or more model names to include
        **/
       api.method();
-      let now = util.dateNow(); intercept(util, "dateNow", ()=>now);
+      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
       //[
-      const models = "Book Author UserLogin ErrorLog AuditLog".split(" ");
+      const models = 'Book Author UserLogin ErrorLog AuditLog'.split(' ');
       const db = new MockDB(models);
       const mc = new MockConn(conn);
 
       const {Book, Author, UserLogin, AuditLog, ErrorLog} = db.models;
-      const book = Book.create();
-      const author = Author.create();
-      const userLogin = UserLogin.create();
-      const auditLog = AuditLog.create();
-      const errorLog = ErrorLog.create();
+      const book = await Book.create();
+      const author = await Author.create();
+      const userLogin = await UserLogin.create();
+      const auditLog = await AuditLog.create();
+      const errorLog = await ErrorLog.create();
 
       class MyAllPub extends AllPub {}
-      MyAllPub.pubName = "All"; // register publication All
+      MyAllPub.pubName = 'All'; // register publication All
       //]
-      after(()=>{MyAllPub.pubName = void 0});
+      after(() => {MyAllPub.pubName = void 0});
       //[#
-      MyAllPub.includeModel("UserLogin", "Author");
+      MyAllPub.includeModel('UserLogin', 'Author');
 
-      assert.equals(Array.from(MyAllPub.includedModels()).map(m => m.modelName).sort(), [
+      assert.equals(Array.from(MyAllPub.includedModels()).map((m) => m.modelName).sort(), [
         'Author', 'UserLogin']);
 
-      const sub = conn.onSubscribe("s123", 1, "All");
+      const sub = await conn.onSubscribe('s123', 1, 'All');
       //]
-      after(()=>{sub && sub.stop()});
-      assert.calledWith(conn.sendBinary, "Q", ["s123", 1, 200, now]);
+      after(() => {sub && sub.stop()});
+      assert.calledWith(conn.sendBinary, 'Q', ['s123', 1, 200, now]);
       //[#
       mc.refuteAdded(book);
       mc.assertAdded(author);
@@ -235,9 +234,9 @@ isServer && define((require, exports, module)=>{
       mc.refuteAdded(errorLog);
 
       let bookChange, authorChange;
-      TransQueue.transaction(()=>{
-        bookChange = db.change(book);
-        authorChange = db.change(author);
+      await TransQueue.transaction(async () => {
+        bookChange = await db.change(book);
+        authorChange = await db.change(author);
       });
       mc.refuteChange(bookChange);
       mc.assertChange(authorChange);

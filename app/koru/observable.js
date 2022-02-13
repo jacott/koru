@@ -1,4 +1,4 @@
-define(()=>{
+define(() => {
   const head$ = Symbol(),
         next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
 
@@ -8,7 +8,7 @@ define(()=>{
       this[prev$] = prev;
       this[next$] = next;
 
-      this.stop = ()=>{
+      this.stop = () => {
         if (this.callback === null) return;
         this.callback = null;
         this[prev$][next$] = this[next$];
@@ -16,6 +16,15 @@ define(()=>{
       };
     }
   }
+
+  const asyncNotify = async (observer, node, args) => {
+    for (;node !== observer; node = node[next$]) {
+      if (node.callback !== null) {
+        await node.callback(...args);
+      }
+    }
+    return args[0];
+  };
 
   class Observable {
     constructor(allStopped) {
@@ -34,41 +43,50 @@ define(()=>{
     }
 
     add(callback) {
-      if (typeof callback !== 'function')
+      if (typeof callback !== 'function') {
         throw new TypeError('callback is not a function');
+      }
 
       const tail = this[tail$];
       const node = new Node(callback, tail, this);
       this[tail$] = node;
-      if (tail !== this)
+      if (tail !== this) {
         tail[next$] = node;
-      if (this[head$] === this)
+      }
+      if (this[head$] === this) {
         this[head$] = node;
+      }
 
       return node;
     }
 
     notify(...args) {
-      for(let node = this[head$]; node !== this; node = node[next$]) {
-        if (node.callback !== null)
-          node.callback(...args);
+      for (let node = this[head$]; node !== this; node = node[next$]) {
+        if (node.callback !== null) {
+          const p = node.callback(...args);
+          if (p instanceof Promise) {
+            return p.then(() => asyncNotify(this, node[next$], args));
+          }
+        }
       }
 
       return args[0];
     }
 
     forEach(callback) {
-      for(let node = this[head$]; node !== this; node = node[next$]) {
-        if (node.callback !== null)
+      for (let node = this[head$]; node !== this; node = node[next$]) {
+        if (node.callback !== null) {
           callback(node);
+        }
       }
     }
 
     [Symbol.iterator]() {
       let node = null;
-      return {next: ()=>{
-        if (node !== this)
+      return {next: () => {
+        if (node !== this) {
           node = node === null ? this[head$] : node[next$];
+        }
 
         return {value: node === this ? undefined : node, done: node === this};
       }};
@@ -77,7 +95,7 @@ define(()=>{
     stopAll() {
       let node = this[head$];
       if (node === this) return;
-      while(node !== this) {
+      while (node !== this) {
         const nn = node[next$];
         node[prev$] = node[next$] = null;
         node = nn;

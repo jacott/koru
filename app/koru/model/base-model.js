@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Changes         = require('koru/changes');
@@ -18,10 +18,10 @@ define((require, exports, module)=>{
 
   const cache$ = Symbol(), inspectField$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
 
-  const savePartial = (doc, args, force)=>{
+  const savePartial = (doc, args, force) => {
     const $partial = {};
-    for(let i = 0; i < args.length; i+=2) {
-      $partial[args[i]] = args[i+1];
+    for (let i = 0; i < args.length; i += 2) {
+      $partial[args[i]] = args[i + 1];
     }
 
     doc.changes = {$partial};
@@ -31,30 +31,63 @@ define((require, exports, module)=>{
   const versionProperty = {
     configurable: true,
     get() {return this.attributes._version},
-    set(value) {this.attributes._version = value}
+    set(value) {this.attributes._version = value},
   };
 
-  const registerObserver = (model, name, callback)=>{
-    const subj = model[observers$][name] ?? (model[observers$][name] = new Observable);
+  const registerObserver = (model, name, callback) => {
+    const subj = model[observers$][name] ?? (model[observers$][name] = new Observable());
     return subj.onChange(callback).stop;
   };
 
-  const callBeforeObserver = (type, doc) => {doc.constructor[observers$][type]?.notify(doc, type)};
+  const callBeforeObserver = (type, doc) => doc.constructor[observers$][type]?.notify(doc, type);
 
-  const callAfterLocalChange = (docChange) => {docChange.model[observers$].afterLocalChange?.notify(docChange)};
+  const callAfterLocalChange = (docChange) => docChange.model[observers$].afterLocalChange?.notify(docChange);
 
-  const callWhenFinally = (doc, ex) => {
-    const subj = doc.constructor[observers$].whenFinally;
-    if (subj !== undefined) for (const {callback} of subj) {
+  const callAsyncWhenFinally = async (iter, doc, ex) => {
+    for (let i = iter.next(); ! i.done; i = iter.next()) {
       try {
-        callback(doc, ex);
-      } catch(ex1) {
-        if (ex === undefined) ex = ex1;
+        await i.value.callback(doc, ex);
+      } catch (ex1) {
+        if (ex === void 0) ex = ex1;
       }
+    }
+    if (ex !== void 0) {
+      throw ex;
     }
   };
 
+  const callWhenFinally = (doc, ex) => {
+    const subj = doc.constructor[observers$].whenFinally;
+    if (subj !== void 0) {
+      const iter = subj[Symbol.iterator]();
+      for (let i = iter.next(); ! i.done; i = iter.next()) {
+        let p;
+        try {
+          p = i.value.callback(doc, ex);
+          if (p instanceof Promise) {
+            return p.then(() => callAsyncWhenFinally(iter, doc, ex));
+          }
+        } catch (ex1) {
+          if (ex === void 0) ex = ex1;
+        }
+      }
+    }
+    if (ex !== void 0) {
+      throw ex;
+    }
+  };
 
+  const checkIsOkay = (self, topLevel, origChanges) => {
+    const isOkay = self[error$] === undefined;
+    if (topLevel !== null) {
+      if (isOkay) {
+        Changes.updateCommands(origChanges, self.changes, topLevel);
+      }
+      self.changes = origChanges;
+    }
+
+    return isOkay;
+  };
 
   class BaseModel {
     constructor(attributes, changes={}) {
@@ -62,7 +95,7 @@ define((require, exports, module)=>{
       if (dbIdField !== undefined) {
         this[dbIdField] = dbBroker.dbId;
       }
-      if(attributes != null && attributes._id !== void 0) {
+      if (attributes != null && attributes._id !== void 0) {
         // existing record
         this.attributes = attributes;
         this.changes = changes;
@@ -70,8 +103,9 @@ define((require, exports, module)=>{
         // new record
         this.attributes = {};
         this.changes = Object.assign({}, this.constructor._defaults);
-        if (attributes != null)
+        if (attributes != null) {
           Object.assign(this.changes, attributes);
+        }
         Object.assign(this.changes, changes);
       }
     }
@@ -79,12 +113,18 @@ define((require, exports, module)=>{
     static create(attributes) {
       const doc = new this({});
       attributes != null && Object.assign(doc.changes, deepCopy(attributes));
-      doc.$save();
+      const p = doc.$save();
+      if (p instanceof Promise) {
+        return p.then(() => doc);
+      }
       return doc;
     }
 
     static _insertAttrs(attrs) {
-      Query._insertAttrs(this, attrs);
+      const p = Query._insertAttrs(this, attrs);
+      if (p instanceof Promise) {
+        return p.then(() => attrs._id);
+      }
       return attrs._id;
     }
 
@@ -92,8 +132,9 @@ define((require, exports, module)=>{
       const doc = new this({});
       attributes = attributes == null ? {} : deepCopy(attributes);
 
-      if (attributes._id && ! allow_id)
+      if (attributes._id && ! allow_id) {
         attributes._id = null;
+      }
       attributes == null || Object.assign(doc.changes, deepCopy(attributes));
       return doc;
     }
@@ -103,12 +144,14 @@ define((require, exports, module)=>{
     }
 
     static toId(docOrId) {
-      return typeof docOrId === 'string' ? docOrId :
-        docOrId == null ? null : docOrId._id;
+      return typeof docOrId === 'string'
+        ? docOrId
+        : docOrId == null ? null : docOrId._id;
     }
 
     static toDoc(docOrId) {
-      return typeof docOrId === 'string' ? this.findById(docOrId)
+      return typeof docOrId === 'string'
+        ? this.findById(docOrId)
         : docOrId == null ? null : docOrId;
     }
 
@@ -126,10 +169,11 @@ define((require, exports, module)=>{
 
     static exists(condition) {
       const query = new Query(this);
-      if (typeof condition === 'string')
+      if (typeof condition === 'string') {
         query.onId(condition);
-      else
+      } else {
         query.where(condition);
+      }
 
       return query.exists();
     }
@@ -143,9 +187,9 @@ define((require, exports, module)=>{
     }
 
     static lock(id, func) {
-      if (this.isLocked(id))
+      if (this.isLocked(id)) {
         func.call(this, id);
-      else {
+      } else {
         this._locks[id] = true;
         try {
           func.call(this, id);
@@ -164,13 +208,15 @@ define((require, exports, module)=>{
      */
 
     static define({module, inspectField='name', name=moduleName(module), fields}) {
-      if (! name)
-        throw new Error("Model requires a name");
-      if (ModelMap[name])
+      if (! name) {
+        throw new Error('Model requires a name');
+      }
+      if (ModelMap[name] !== void 0) {
         throw new Error(`Model '${name}' already defined`);
+      }
       if (module !== void 0) {
         this._module = module;
-        module.onUnload(()=> ModelMap._destroyModel(name));
+        module.onUnload(() => ModelMap._destroyModel(name));
       }
 
       this[inspectField$] = inspectField;
@@ -193,12 +239,11 @@ define((require, exports, module)=>{
       return this;
     }
 
-
     static defineFields(fields) {
       const proto = this.prototype;
       let $fields = this.$fields;
       if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
-      for(const field in fields) {
+      for (const field in fields) {
         let _options = fields[field];
         const options = (typeof _options === 'string') ? {type: _options} : _options;
         const func = TYPE_MAP[options.type];
@@ -208,7 +253,7 @@ define((require, exports, module)=>{
         if (options.default !== void 0) this._defaults[field] = options.default;
         if (! options.pseudo_field) {
           $fields[field] = options;
-          if (options.accessor !== false) defineField(proto,field, options.accessor);
+          if (options.accessor !== false) defineField(proto, field, options.accessor);
         }
       }
       _support.resetDocs(this);
@@ -222,7 +267,7 @@ define((require, exports, module)=>{
           const query = model.query;
           finder.call(this, query);
           return query;
-        }
+        },
       });
     }
 
@@ -242,7 +287,7 @@ define((require, exports, module)=>{
     static remote(funcs) {
       const prefix = this.modelName + '.';
 
-      for(const key in funcs) {
+      for (const key in funcs) {
         session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
@@ -252,7 +297,7 @@ define((require, exports, module)=>{
     static remoteGet(funcs) {
       const prefix = this.modelName + '.';
 
-      for(const key in funcs) {
+      for (const key in funcs) {
         session.defineRpcGet(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
@@ -280,22 +325,41 @@ define((require, exports, module)=>{
     }
 
     $save(mode) {
-      const callback = mode && mode.callback;
+      const callback = mode?.callback;
 
-      switch(mode) {
-      case 'assert': this.$assertValid(); break;
-      case 'force': this.$isValid(); break;
+      let ans;
+
+      switch (mode) {
+      case 'assert':
+        ans = this.$assertValid();
+        break;
+      case 'force':
+        ans = this.$isValid();
+        break;
       default:
-        if (! this.$isValid())
-          return false;
+        ans = this.$isValid();
+        if (! ans) return false;
+        if (ans instanceof Promise) {
+          return ans.then((isValid) => isValid &&
+                          Promise.resolve(ModelEnv.save(this, callback)).then(util.trueFunc));
+        }
       }
+
+      if (isServer || (ans instanceof Promise)) {
+        return Promise.resolve(ans).then(() => ModelEnv.save(this, callback)).then(util.trueFunc);
+      }
+
       ModelEnv.save(this, callback);
 
       return true;
     }
 
     $$save() {
-      this.$save('assert'); return this;
+      const p = this.$save('assert');
+      if (p instanceof Promise) {
+        return p.then(() => this);
+      }
+      return this;
     }
 
     $savePartial(...args) {
@@ -314,41 +378,44 @@ define((require, exports, module)=>{
 
       const origChanges = this.changes;
       const topLevel = ('$partial' in origChanges)
-            ? Changes.topLevelChanges(this.attributes, origChanges) : null;
+            ? Changes.topLevelChanges(this.attributes, origChanges)
+            : null;
       if (topLevel !== null) {
         this.changes = deepCopy(topLevel);
         Changes.setOriginal(this.changes, origChanges);
       }
 
+      let promises = [];
 
-      if(fVTors !== undefined) {
-        for(const field in fVTors) {
+      if (fVTors !== void 0) {
+        for (const field in fVTors) {
           const validators = fVTors[field];
           if (validators !== void 0) {
             const value = this[field];
-            for(const vTor in validators) {
+            for (const vTor in validators) {
               const args = validators[vTor];
               if (! args[2].changesOnly || (
                 (original$ in this)
                   ? this[original$] === void 0 || this[original$][field] !== value
-                  : this.$hasChanged(field)))
-                args[0].call(Val, this, field, args[1], args[2]);
+                  : this.$hasChanged(field))) {
+                const p = args[0].call(Val, this, field, args[1], args[2]);
+                if (p instanceof Promise) promises.push(p);
+              }
             }
           }
         }
       }
 
-      this.validate && this.validate();
-
-      const isOkay = this[error$] === undefined;
-      if (topLevel !== null) {
-        if (isOkay) {
-          Changes.updateCommands(origChanges, this.changes, topLevel);
-        }
-        this.changes = origChanges;
+      if (this.validate !== void 0) {
+        const p = this.validate();
+        if (p instanceof Promise) promises.push(p);
       }
 
-      return isOkay;
+      if (promises.length != 0) {
+        return Promise.all(promises).then(() => checkIsOkay(this, topLevel, origChanges));
+      }
+
+      return checkIsOkay(this, topLevel, origChanges);
     }
 
     $assertValid() {
@@ -366,8 +433,9 @@ define((require, exports, module)=>{
     }
 
     $change(field) {
-      if (field in this.changes)
+      if (field in this.changes) {
         return this.changes[field];
+      }
       return this.changes[field] = deepCopy(this[field]);
     }
 
@@ -416,8 +484,8 @@ define((require, exports, module)=>{
       return new this.constructor(this.attributes);
     }
 
-    $setFields(fields,options) {
-      for(let i = 0,field;field = fields[i];++i) {
+    $setFields(fields, options) {
+      for (let i = 0, field; field = fields[i]; ++i) {
         if (field[0] !== '_' && options[field] !== undefined) {
           this[field] = options[field];
         }
@@ -429,8 +497,9 @@ define((require, exports, module)=>{
     get $cache() {return this[cache$] ?? (this[cache$] = {})}
 
     $clearCache() {
-      if (this[cache$] !== undefined)
-      this[cache$] = undefined;
+      if (this[cache$] !== undefined) {
+        this[cache$] = undefined;
+      }
       return this;
     }
 
@@ -438,73 +507,122 @@ define((require, exports, module)=>{
       return this.$cache[key] ?? (this.$cache[key] = {});
     }
   }
+
+  const performInsert_2 = (doc, attrs) => {
+    let p;
+    try {
+      p = callBeforeObserver('beforeSave', doc);
+    } catch (ex) {
+      return callWhenFinally(doc, ex);
+    }
+
+    if (p instanceof Promise) return p.then(() => performInsert_3(doc));
+
+    return performInsert_3(doc);
+  };
+
+  const performUpdate_2 = (doc, attrs) => {
+    let p;
+    try {
+      p = callBeforeObserver('beforeSave', doc);
+    } catch (ex) {
+      return callWhenFinally(doc, ex);
+    }
+
+    if (p instanceof Promise) return p.then(() => performUpdate_3(doc));
+
+    return performUpdate_3(doc);
+  };
+
+  const performInsert_3 = (doc) => {
+    const attrs = doc.attributes;
+    doc.attributes = doc.changes;
+    doc.changes = attrs;
+    doc.constructor.hasVersioning && (doc.attributes._version = 1);
+
+    let p;
+    try {
+      p = Query.insert(doc);
+    } catch (ex) {
+      return callWhenFinally(doc, ex);
+    }
+
+    if (p instanceof Promise) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
+    return callWhenFinally(doc);
+  };
+
+  const performUpdate_3 = (doc) => {
+    let p;
+    try {
+      const model = doc.constructor;
+      const st = new Query(model).onId(doc._id);
+
+      model.hasVersioning && st.inc('_version', 1);
+
+      const {changes} = doc;
+      doc.changes = {};
+      p = st.update(changes);
+    } catch (ex) {
+      return callWhenFinally(doc, ex);
+    }
+
+    if (p instanceof Promise) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
+    return callWhenFinally(doc);
+  };
+
   const _support = {
     setupExtras: [],
 
     performBumpVersion(model, _id, _version) {
-      new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();
+      return new Query(model).onId(_id).where({_version}).inc('_version', 1).update();
     },
 
     performInsert(doc) {
-      const model = doc.constructor;
-      let ex;
-
       doc.changes = doc.attributes;
       const attrs = doc.attributes = {};
 
+      let p;
+
       try {
-        callBeforeObserver('beforeCreate', doc);
-        callBeforeObserver('beforeSave', doc);
-
-
-        doc.attributes = doc.changes;
-        doc.changes = attrs;
-        model.hasVersioning && (doc.attributes._version = 1);
-
-        Query.insert(doc);
-      } catch(ex1) {
-        ex = ex1;
-      } finally {
-        callWhenFinally(doc, ex);
+        p = callBeforeObserver('beforeCreate', doc);
+      } catch (ex) {
+        return callWhenFinally(doc, ex);
       }
-      if (ex) throw ex;
+
+      if (p instanceof Promise) return p.then(() => performInsert_2(doc));
+
+      return performInsert_2(doc);
     },
 
     performUpdate(doc, changes) {
-      const model = doc.constructor;
-      let ex;
-
       doc.changes = changes;
 
+      let p;
+
       try {
-        callBeforeObserver('beforeUpdate', doc);
-        callBeforeObserver('beforeSave', doc);
-        const st = new Query(model).onId(doc._id);
-
-        model.hasVersioning && st.inc("_version", 1);
-
-        doc.changes = {};
-        st.update(changes);
-      } catch(ex1) {
-        ex = ex1;
-      } finally {
-        callWhenFinally(doc, ex);
+        p = callBeforeObserver('beforeUpdate', doc);
+      } catch (ex) {
+        return callWhenFinally(doc, ex);
       }
-      if (ex) throw ex;
+
+      if (p instanceof Promise) return p.then(() => performUpdate_2(doc));
+
+      return performUpdate_2(doc);
     },
 
     _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
-        for(const key in timestamps)  {
-          if (changes[key] === undefined)
+        for (const key in timestamps) {
+          if (changes[key] === undefined) {
             changes[key] = now;
+          }
         }
       }
     },
 
     _addUserIds(changes, userIds, user_id) {
       if (userIds) {
-        for(const key in userIds)  {
+        for (const key in userIds) {
           changes[key] = changes[key] || user_id;
         }
       }
@@ -514,7 +632,7 @@ define((require, exports, module)=>{
     callAfterLocalChange,
   };
 
-  const getField = (doc, field) =>{
+  const getField = (doc, field) => {
     const val = hasOwn(doc.changes, field) ? doc.changes[field] : doc.attributes[field];
     return val === null ? undefined : val;
   };
@@ -524,10 +642,11 @@ define((require, exports, module)=>{
     if (value === null) value = undefined;
     if (value === doc.attributes[field]) {
       if (hasOwn(changes, field)) {
-        if (value === void 0 && doc.constructor._defaults[field] !== void 0)
+        if (value === void 0 && doc.constructor._defaults[field] !== void 0) {
           changes[field] = deepCopy(doc.constructor._defaults[field]);
-        else
+        } else {
           delete doc.changes[field];
+        }
 
         typeof doc._setChanges === 'function' && doc._setChanges(field, value);
       }
@@ -540,19 +659,18 @@ define((require, exports, module)=>{
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  ("beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally "
-  ).split(" ").forEach(type => {
+  ('beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally ').split(' ').forEach((type) => {
     BaseModel[type] = function (callback) {
       return registerObserver(this, type, callback);
-    };
+    }
   });
 
-  const mapFieldType = (model, field, bt, name)=>{
+  const mapFieldType = (model, field, bt, name) => {
     if (! bt) throw Error(name + ' is not defined for field: ' + field);
     model.fieldTypeMap[field] = bt;
   };
 
-  const defineField = (proto, field, accessor)=>{
+  const defineField = (proto, field, accessor) => {
     Object.defineProperty(proto, field, {
       configurable: true,
       get: (accessor && accessor.get) || getValue(field),
@@ -564,33 +682,32 @@ define((require, exports, module)=>{
   const belongsTo = (model, name, field) => function () {
     const value = this[field];
     return value && model.findById(value);
-  };
+  }
 
-  const getValue = field => function getValue() {return getField(this, field)};
-  const setValue = field => function setValue(value) {setField(this, field, value)};
+  const getValue = (field) => function getValue() {return getField(this, field)}
+  const setValue = (field) => function setValue(value) {setField(this, field, value)}
 
-  const setUpValidators = (model, field, options)=>{
+  const setUpValidators = (model, field, options) => {
     const validators = getValidators(model, field);
 
     if (typeof options === 'object') {
-
-      for(const validator in options) {
+      for (const validator in options) {
         const valFunc = Val.validators(validator);
         if (valFunc !== undefined) {
-          validators[validator]=[valFunc, options[validator], options];
+          validators[validator] = [valFunc, options[validator], options];
         }
       }
     }
   };
 
-  const getValidators =
-        (model, field)=> model._fieldValidators[field] || (model._fieldValidators[field] = {});
+  const getValidators = (model, field) => model._fieldValidators[field] || (model._fieldValidators[field] = {});
 
   const TYPE_MAP = {
     belongs_to_dbId(model, field, options) {
       options.pseudo_field = true;
-      if (model.$dbIdField)
-        throw new Error("belongs_to_dbId already defined!");
+      if (model.$dbIdField) {
+        throw new Error('belongs_to_dbId already defined!');
+      }
       model.$dbIdField = field;
       options.accessor = {set() {}};
       TYPE_MAP.belongs_to.call(this, model, field, options);

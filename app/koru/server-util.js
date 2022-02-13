@@ -3,11 +3,11 @@ const cp = require('child_process');
 define((require) => {
   'use strict';
   const koru            = require('koru');
-  const util            = require('koru/util');
+  const Future          = require('koru/future');
 
   const sUtil = {
     execFile: (cmd, ...args) => {
-      const future = new util.Future();
+      const future = new Future();
       const callback = args.length && typeof args[args.length - 1] === 'function'
             ? args.pop()
             : void 0;
@@ -20,12 +20,12 @@ define((require) => {
       }
 
       const proc = cp.execFile(cmd, args, options, (error, stdout, stderr) => {
-        future.return({error, stdout, stderr});
+        future.resolve({error, stdout, stderr});
       });
 
       callback !== void 0 && callback(proc);
 
-      return future.wait();
+      return future.promise;
     },
 
     system: (cmd, ...args) => {
@@ -39,9 +39,9 @@ define((require) => {
     },
 
     sleep: (ms) => {
-      const future = new util.Future();
-      setTimeout(() => {future.return()}, ms);
-      return future.wait();
+      const future = new Future();
+      setTimeout(future.resolve, ms);
+      return future.promise;
     },
   };
 

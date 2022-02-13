@@ -1,19 +1,19 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const BTree           = require('koru/btree');
   const DLinkedList     = require('koru/dlinked-list');
+  const Future          = require('koru/future');
   const LinkedList      = require('koru/linked-list');
   const TransQueue      = require('koru/model/trans-queue');
   const Session         = require('koru/session');
   const message         = require('koru/session/message');
   const ServerConnection = require('koru/session/server-connection');
-  const util            = require('koru/util');
 
   const subs$ = Symbol(), unionSym$ = Symbol(),
         loadQueue$ = Symbol();
 
-  const WaitSubCompare = (a, b)=> a.time - b.time;
+  const WaitSubCompare = (a, b) => a.time - b.time;
 
   class Encoder {
     constructor(session) {
@@ -39,41 +39,42 @@ define((require, exports, module)=>{
       this.subs = new LinkedList();
     }
 
-    static addSub(union, sub, token) {
-      const subs = union[subs$];
-      subs.head === null && union.initObservers();
-      sub[union[unionSym$]] = subs.add(sub);
-
+    static async addSub(union, sub, token) {
       let loadQueue = union[loadQueue$];
       let myQueue;
-      if (loadQueue === null)
+      if (loadQueue === null) {
         loadQueue = union[loadQueue$] = {msgQueue: [], map: new Map()};
-      else
+      } else {
         myQueue = loadQueue.map.get(this);
+      }
       myQueue === void 0 && loadQueue.map.set(this, myQueue = new this(union));
-      myQueue.add(sub, token);
+
+      const subs = union[subs$];
+      subs.head === null && await union.initObservers();
+      sub[union[unionSym$]] = await subs.add(sub);
+      await myQueue.add(sub, token);
     }
 
-    _loadDocsPart1(sub, loadInitial, token) {
+    async _loadDocsPart1(sub, loadInitial, token) {
       const encoder = new Encoder(sub.conn._session);
       const {encode, close} = sub.conn._session.openBatch();
-      loadInitial.call(this.union, encoder, token);
+      await loadInitial.call(this.union, encoder, token);
       return encoder.encode();
     }
 
     _loadDocsPart2(msg, node) {
       const send = String.fromCharCode(msg[0]) !== 'W' || msg.length > 2;
-      for(; node !== void 0; node = node.next) {
+      for (;node !== void 0; node = node.next) {
         const {sub, future} = node.value;
         send && sub.conn.sendEncoded(msg);
-        future !== void 0 && future.return();
+        future !== void 0 && future.resolve();
       }
 
       if (this.subs.size != 0) {
         const {value} = this.subs.back;
         const {future} = value;
         value.future = void 0;
-        future.return(value);
+        future.resolve(value);
       }
 
       const {union} = this;
@@ -84,7 +85,7 @@ define((require, exports, module)=>{
         if (loadQueue.map.size == 0) {
           union[loadQueue$] = null;
           const {msgQueue} = loadQueue;
-          for(let i = 0; i < msgQueue.length; ++i) {
+          for (let i = 0; i < msgQueue.length; ++i) {
             union.sendEncoded(msgQueue[i]);
           }
         }
@@ -99,48 +100,50 @@ define((require, exports, module)=>{
       this.discreteLastSubscribed = 0;
     }
 
-    add(sub, lastSubscribed) {
+    async add(sub, lastSubscribed) {
       const time = sub.constructor.discreteLastSubscribed(lastSubscribed);
       if (this.subs.size !== 0) {
         // loadDocs is running
-        const future = new util.Future;
+        const future = new Future();
         if (this.discreteLastSubscribed == time &&
             lastSubscribed >= this.minLastSubscribed) {
           // My loadDocs is running
           this.subs.push({sub, future});
-          future.wait();
+          await future.promise;
           return;
         } else {
           const waiting = this.waitingSubs.find({time});
           if (waiting !== void 0) {
             // My loadDocs is queued
             const oldestSub = waiting.queue.back.value;
-            if (lastSubscribed < oldestSub.lastSubscribed)
+            if (lastSubscribed < oldestSub.lastSubscribed) {
               waiting.queue.addBack({sub, lastSubscribed, future});
-            else
+            } else {
               waiting.queue.push({sub, lastSubscribed, future});
+            }
           } else {
             const waiting = {time, queue: new LinkedList()};
             waiting.queue.push({sub, lastSubscribed, future});
             this.waitingSubs.add(waiting);
           }
-          const value = future.wait();
-          if (value !== void 0)
-            this.loadDocs(sub, value);
+          const value = await future.promise;
+          if (value !== void 0) {
+            await this.loadDocs(sub, value);
+          }
         }
       } else {
         // no loadDocs in progress
         const value = {sub, lastSubscribed, future: void 0};
         this.subs.push(value);
-        this.loadDocs(sub, value);
+        await this.loadDocs(sub, value);
       }
     }
 
-    loadDocs(sub, {lastSubscribed}) {
+    async loadDocs(sub, {lastSubscribed}) {
       this.discreteLastSubscribed = sub.constructor.discreteLastSubscribed(lastSubscribed);
       this.minLastSubscribed = lastSubscribed;
 
-      const msg = this._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
+      const msg = await this._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
 
       this.discreteLastSubscribed = NaN;
 
@@ -163,10 +166,10 @@ define((require, exports, module)=>{
       this.token = null;
     }
 
-    add(sub, token) {
+    async add(sub, token) {
       if (this.subs.size !== 0) {
         // loadDocs is running
-        const future = new util.Future;
+        const future = new Future();
         if (this.token === token) {
           // My loadDocs is running
           this.subs.push({sub, future});
@@ -181,19 +184,20 @@ define((require, exports, module)=>{
             this.waitingSubs.set(token, waiting);
           }
         }
-        const value = future.wait();
-        if (value !== void 0)
-          this.loadDocs(sub, token);
+        const value = await future.promise;
+        if (value !== void 0) {
+          await this.loadDocs(sub, token);
+        }
       } else {
         this.subs.push({sub, future: void 0});
-        this.loadDocs(sub, token);
+        await this.loadDocs(sub, token);
       }
     }
 
-    loadDocs(sub, token) {
+    async loadDocs(sub, token) {
       this.token = token;
 
-      const msg = this._loadDocsPart1(sub, this.union.loadByToken, token);
+      const msg = await this._loadDocsPart1(sub, this.union.loadByToken, token);
 
       this.token = null;
 
@@ -212,7 +216,7 @@ define((require, exports, module)=>{
 
   class Union {
     constructor() {
-      this[subs$] = new DLinkedList(()=>{this.onEmpty()});
+      this[subs$] = new DLinkedList(() => {this.onEmpty()});
       this.handles = [];
       this[loadQueue$] = null;
       this.batchUpdate = this.buildBatchUpdate();
@@ -224,16 +228,16 @@ define((require, exports, module)=>{
       return sub[this[unionSym$]] !== void 0;
     }
 
-    addSub(sub, lastSubscribed=sub.lastSubscribed) {
+    async addSub(sub, lastSubscribed=sub.lastSubscribed) {
       if (sub[this[unionSym$]] !== void 0) return;
       this.count++;
-      LoadQueue.addSub(this, sub, lastSubscribed);
+      await LoadQueue.addSub(this, sub, lastSubscribed);
     }
 
-    addSubByToken(sub, token) {
+    async addSubByToken(sub, token) {
       if (sub[this[unionSym$]] !== void 0) return;
       this.count++;
-      LoadQueueByToken.addSub(this, sub, token);
+      await LoadQueueByToken.addSub(this, sub, token);
     }
 
     removeSub(sub) {
@@ -264,10 +268,11 @@ define((require, exports, module)=>{
 
     sendEncodedWhenIdle(msg) {
       const loadQueue = this[loadQueue$];
-      if (loadQueue === null)
+      if (loadQueue === null) {
         this.sendEncoded(msg);
-      else
+      } else {
         loadQueue.msgQueue.push(msg);
+      }
     }
 
     subs() {return this[subs$].values()}
@@ -279,9 +284,9 @@ define((require, exports, module)=>{
     buildBatchUpdate() {
       let push = null;
 
-      const tidyUp = ()=>{push = null};
+      const tidyUp = () => {push = null};
 
-      return dc =>{
+      return (dc) => {
         const upd = this.buildUpdate(dc);
         if (upd === void 0) return;
         if (TransQueue.isInTransaction()) {
@@ -290,14 +295,15 @@ define((require, exports, module)=>{
             const obj = Session.openBatch();
             push = obj.push;
             push(upd);
-            TransQueue.onSuccess(()=>{
+            TransQueue.onSuccess(() => {
               msg = obj.encode();
               tidyUp();
               this.sendEncodedWhenIdle(msg);
             });
             TransQueue.onAbort(tidyUp);
-          } else
+          } else {
             push(upd);
+          }
         } else {
           this.sendEncodedWhenIdle(message.encodeMessage(...upd, Session.globalDict));
         }

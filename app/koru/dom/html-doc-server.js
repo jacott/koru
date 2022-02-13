@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Dom             = require('koru/dom/base');
   const htmlEncode      = require('koru/dom/html-encode');
@@ -27,10 +27,10 @@ define((require, exports, module)=>{
   cssParser.enableSubstitutes();
 
   Object.defineProperty(global, 'document', {configurable: true, get() {
-    const key = util.Fiber.current || global;
+    const key = util.thread ?? global;
     const doc = key[doc$];
     if (doc == null) {
-      const doc = new HTMLDocument;
+      const doc = new HTMLDocument();
       key[doc$] = doc;
       return doc;
     }
@@ -38,10 +38,10 @@ define((require, exports, module)=>{
     return doc;
   }});
 
-  const cloneChildren = (fromNode, toNode)=>{
+  const cloneChildren = (fromNode, toNode) => {
     const from = fromNode.childNodes, to = toNode.childNodes;
     let prev = null;
-    util.forEach(from, elm => {
+    util.forEach(from, (elm) => {
       to.push(elm = elm.cloneNode(true));
       elm[prev$] = prev;
       elm.parentNode = toNode;
@@ -57,11 +57,12 @@ define((require, exports, module)=>{
   const DOCUMENT_NODE = 9;
   const DOCUMENT_FRAGMENT_NODE = 11;
 
-  const NOCLOSE = util.toMap("BR HR INPUT LINK META".split(' '));
+  const NOCLOSE = util.toMap('BR HR INPUT LINK META'.split(' '));
 
-  const detachNode = node =>{
-    if (node.parentNode === null)
+  const detachNode = (node) => {
+    if (node.parentNode === null) {
       return;
+    }
     node.parentNode = null;
     const p = node[prev$], n = node[next$];
     if (p !== null) {
@@ -75,7 +76,7 @@ define((require, exports, module)=>{
     }
   };
 
-  const attachNode = (parent, index, node)=>{
+  const attachNode = (parent, index, node) => {
     node.parentNode = parent;
     const {childNodes} = parent, len = childNodes.length;
     const old = childNodes[index];
@@ -83,42 +84,42 @@ define((require, exports, module)=>{
     childNodes[index] = node;
     old == null || detachNode(old);
 
-    const p = node[prev$] = (index != 0 && childNodes[index-1]) || null;
+    const p = node[prev$] = (index != 0 && childNodes[index - 1]) || null;
     if (p !== null && p.parentNode !== null) p[next$] = node;
 
-    const n = node[next$] = (index+1 != len && childNodes[index+1]) || null;
+    const n = node[next$] = (index + 1 != len && childNodes[index + 1]) || null;
     if (n !== null && n.parentNode !== null) n[prev$] = node;
   };
 
-  const insertNodes = (from, toNode, pos)=>{
+  const insertNodes = (from, toNode, pos) => {
     if (from.length == 0) return;
     const to = toNode.childNodes;
     let mlen = to.length - pos;
 
     let tlen = to.length += from.length;
 
-    while (--mlen >= 0)
-      to[--tlen] = to[pos+mlen];
+    while (--mlen >= 0) {
+      to[--tlen] = to[pos + mlen];
+    }
 
-
-    let i = pos+from.length-1;
-    if (to.length !== i+1) {
-      if (i-pos == -1)
-        to[i+1][prev$] = null;
-      else {
-        const p = from[i-pos], n = p[next$] = to[i+1];
+    let i = pos + from.length - 1;
+    if (to.length !== i + 1) {
+      if (i - pos == -1) {
+        to[i + 1][prev$] = null;
+      } else {
+        const p = from[i - pos], n = p[next$] = to[i + 1];
         n[prev$] = p;
       }
     }
 
-    for(; i >= pos ; --i) {
-      const fnode = from[i-pos];
+    for (;i >= pos; --i) {
+      const fnode = from[i - pos];
       to[i] = fnode;
       fnode.parentNode = toNode;
     }
 
     if (i !== -1) {
-      const p = to[i], n = p[next$] = to[i+1];
+      const p = to[i], n = p[next$] = to[i + 1];
       n[prev$] = p;
     }
 
@@ -136,14 +137,15 @@ define((require, exports, module)=>{
     get nextSibling() {return this[next$]}
 
     remove() {
-      if (this.parentNode != null)
+      if (this.parentNode != null) {
         this.parentNode.removeChild(this);
+      }
     }
 
     removeChild(node) {
       const nodes = this.childNodes;
 
-      for(let i = nodes.length - 1; i >= 0; --i) {
+      for (let i = nodes.length - 1; i >= 0; --i) {
         if (nodes[i] === node) {
           detachNode(node);
           nodes.splice(i, 1);
@@ -157,7 +159,7 @@ define((require, exports, module)=>{
     replaceChild(newNode, oldNode) {
       const nodes = this.childNodes;
 
-      for(let i = nodes.length-1; i >= 0; -- i) {
+      for (let i = nodes.length - 1; i >= 0; -- i) {
         if (nodes[i] === oldNode) {
           detachNode(oldNode);
           if (newNode.nodeType === DOCUMENT_FRAGMENT_NODE) {
@@ -166,8 +168,9 @@ define((require, exports, module)=>{
             attachNode(this, i, newNode);
             insertNodes(cns, this, i);
           } else {
-            if (newNode.parentNode != null)
+            if (newNode.parentNode != null) {
               newNode.parentNode.removeChild(newNode);
+            }
             attachNode(this, i, newNode);
           }
           return oldNode;
@@ -176,20 +179,21 @@ define((require, exports, module)=>{
     }
 
     insertBefore(node, before) {
-      if (! before)
+      if (! before) {
         return this.appendChild(node);
+      }
 
-      if (node.parentNode != null)
+      if (node.parentNode != null) {
         node.parentNode.removeChild(node);
+      }
 
       const nodes = this.childNodes;
 
-      for(let i = 0; i < nodes.length; ++i) {
+      for (let i = 0; i < nodes.length; ++i) {
         if (nodes[i] === before) {
           if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
             insertNodes(node.childNodes, this, i);
           } else {
-
             node.parentNode = this;
             nodes.splice(i, 0, undefined);
             attachNode(this, i, node);
@@ -197,23 +201,25 @@ define((require, exports, module)=>{
           return node;
         }
       }
-      throw new Error("before node is not a child");
+      throw new Error('before node is not a child');
     }
 
     appendChild(node) {
       if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
         insertNodes(node.childNodes, this, this.childNodes.length);
       } else {
-        if (node.parentNode != null)
+        if (node.parentNode != null) {
           node.parentNode.removeChild(node);
+        }
 
         const {childNodes} = this, cl = childNodes.length;
 
         node.parentNode = this;
         node[next$] = null;
-        const prev = node[prev$] = cl === 0 ? null : childNodes[cl-1];
-        if (prev !== null)
+        const prev = node[prev$] = cl === 0 ? null : childNodes[cl - 1];
+        if (prev !== null) {
           prev[next$] = node;
+        }
         childNodes.push(node);
       }
       return node;
@@ -238,7 +244,7 @@ define((require, exports, module)=>{
     get innerHTML() {
       const {childNodes} = this, len = childNodes.length;
       let result = '';
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i < len; ++i) {
         result += childNodes[i].outerHTML;
       }
 
@@ -248,10 +254,10 @@ define((require, exports, module)=>{
       let node = this;
       node.childNodes = [];
       HTMLParser.parse(code, {
-        onopentag(name, attrs){
+        onopentag(name, attrs) {
           const elm = createHTMLElement(name);
           node.appendChild(elm);
-          for(const attr in attrs) {
+          for (const attr in attrs) {
             const v = attrs[attr];
             elm.setAttribute(attr, v === true ? attr : unescapeHTML(attrs[attr]));
           }
@@ -262,11 +268,11 @@ define((require, exports, module)=>{
           node.appendChild(new TextNode(unescapeHTML(code.slice(spos, epos))));
         },
         oncomment(code, spos, epos) {
-          node.appendChild(new CommentNode(code.slice(spos+4, epos-3)));
+          node.appendChild(new CommentNode(code.slice(spos + 4, epos - 3)));
         },
-        onclosetag(name){
+        onclosetag(name) {
           node = node.parentNode;
-        }
+        },
       });
     }
 
@@ -276,7 +282,7 @@ define((require, exports, module)=>{
       const {childNodes} = this, len = childNodes.length;
 
       let result = '';
-      for(let i = 0; i < len; ++i) {
+      for (let i = 0; i < len; ++i) {
         result += childNodes[i].textContent;
       }
       return result;
@@ -288,11 +294,12 @@ define((require, exports, module)=>{
       css = cssParser.parse(css).rule;
 
       const results = [];
-      util.forEach(this.childNodes, node => {
+      util.forEach(this.childNodes, (node) => {
         if (node.nodeType !== ELEMENT_NODE) return;
 
-        if (Dom.canonicalTagName(node) === css.tagName)
+        if (Dom.canonicalTagName(node) === css.tagName) {
           results.push(node);
+        }
       });
       return results;
     }
@@ -302,8 +309,8 @@ define((require, exports, module)=>{
 
   Element.prototype.namespaceURI = Dom.XHTMLNS;
 
-  const createHTMLElement = (tag)=>{
-    return new (SPECIAL_TYPE[tag]||HTMLElement)(tag);
+  const createHTMLElement = (tag) => {
+    return new (SPECIAL_TYPE[tag] || HTMLElement)(tag);
   };
 
   class HTMLDocument extends Element {
@@ -316,9 +323,9 @@ define((require, exports, module)=>{
     createElementNS(xmlns, tag) {
       const canon = Dom.CANONICAL_TAG_NAMES[tag];
       if (canon === undefined) {
-        if (xmlns === SVGNS)
+        if (xmlns === SVGNS) {
           Dom.CANONICAL_TAG_NAMES[tag] = tag;
-        else {
+        } else {
           const lc = tag.toLowerCase();
           Dom.CANONICAL_TAG_NAMES[lc] = lc;
           Dom.CANONICAL_TAG_NAMES[tag.toUpperCase()] = lc;
@@ -355,8 +362,9 @@ define((require, exports, module)=>{
 
   class HTMLElement extends Element {
     constructor(tagName) {
-      if (typeof tagName !== 'string')
+      if (typeof tagName !== 'string') {
         throw new Error('tagName is not a string');
+      }
       super(ELEMENT_NODE);
       const canon = Dom.CANONICAL_TAG_NAMES[tagName];
       const uc = tagName.toUpperCase();
@@ -384,42 +392,46 @@ define((require, exports, module)=>{
       const cssText = this[style$] !== undefined ? origCssText(this.style) : undefined;
       let open = tn;
       if (util.isObjEmpty(attrs)) {
-        if (cssText) open += ' style="'+cssText+'"';
+        if (cssText) open += ' style="' + cssText + '"';
       } else {
         const oa = [tn];
-        for(const attr in attrs) {
-          oa.push(attr+'="'+attrs[attr].replace(/"/g, '&quot;')+'"');
+        for (const attr in attrs) {
+          oa.push(attr + '="' + attrs[attr].replace(/"/g, '&quot;') + '"');
         }
-        cssText && oa.push('style="'+cssText+'"');
+        cssText && oa.push('style="' + cssText + '"');
         open = oa.join(' ');
       }
 
-      if (this.childNodes.length == 0 && hasOwn(NOCLOSE, this.tagName))
-        return "<"+open+">";
+      if (this.childNodes.length == 0 && hasOwn(NOCLOSE, this.tagName)) {
+        return '<' + open + '>';
+      }
 
-      return "<"+open+">"+this.innerHTML+"</"+tn+">";
+      return '<' + open + '>' + this.innerHTML + '</' + tn + '>';
     }
 
     setAttribute(name, value) {
-      if (typeof value !== 'string') value = ''+value;
-      if (name === 'style')
+      if (typeof value !== 'string') value = '' + value;
+      if (name === 'style') {
         this.style.cssText = value;
-      else
+      } else {
         this[attributes$][name] = value;
+      }
     }
     setAttributeNS(ns, name, value) {this.setAttribute(name, value)}
     getAttribute(name) {
-      if (name === 'style')
+      if (name === 'style') {
         return origCssText(this.style);
-      else
+      } else {
         return this[attributes$][name];
+      }
     }
     getAttributeNS(ns, name) {return this.getAttribute(name)}
 
     get attributes() {
       const ans = [];
-      if (this.style.length != 0)
+      if (this.style.length != 0) {
         ans.push({name: 'style', value: origCssText(this.style)});
+      }
       for (let name in this[attributes$])
         ans.push({name, value: this[attributes$][name]});
       return ans;
@@ -431,11 +443,12 @@ define((require, exports, module)=>{
 
     getElementsByClassName(className) {
       const ans = [];
-      const re = new RegExp("(?:^|\\s)" + util.regexEscape(className) + "(?=\\s|$)");
+      const re = new RegExp('(?:^|\\s)' + util.regexEscape(className) + '(?=\\s|$)');
 
-      Dom.walkNode(this, node => {
-        if (node.nodeType !== ELEMENT_NODE)
+      Dom.walkNode(this, (node) => {
+        if (node.nodeType !== ELEMENT_NODE) {
           return false;
+        }
 
         re.test(node[attributes$].class) &&
           ans.push(node);
@@ -463,12 +476,12 @@ define((require, exports, module)=>{
     }
 
     contains(className) {
-      return new RegExp("(?:^|\\s)" + util.regexEscape(className) + "(?=\\s|$)")
+      return new RegExp('(?:^|\\s)' + util.regexEscape(className) + '(?=\\s|$)')
         .test(this.node[attributes$].class);
     }
 
     add(...args) {
-      for(let i = 0; i < args.length; ++i) {
+      for (let i = 0; i < args.length; ++i) {
         const value = args[i];
         const attrs = this.node[attributes$];
         if (attrs.class) {
@@ -482,9 +495,9 @@ define((require, exports, module)=>{
     remove(...args) {
       const attrs = this.node[attributes$];
       if (typeof attrs.class === 'string') {
-        for(let i = 0; i < args.length; ++i) {
+        for (let i = 0; i < args.length; ++i) {
           attrs.class = attrs.class
-            .replace(new RegExp("\\s?\\b" + util.regexEscape(args[i]) + "\\b"), '');
+            .replace(new RegExp('\\s?\\b' + util.regexEscape(args[i]) + '\\b'), '');
         }
       }
     }
@@ -493,14 +506,14 @@ define((require, exports, module)=>{
   class TextNode extends Element {
     constructor(value) {
       super(TEXT_NODE);
-      this.data = ''+value;
+      this.data = '' + value;
     }
 
     cloneNode(deep) {
       return new TextNode(this.data);
     }
     get textContent() {return this.data}
-    set textContent(value) {this.data = ''+value}
+    set textContent(value) {this.data = '' + value}
     get nodeValue() {return this.data}
     get innerHTML() {return escapeHTML(this.data)}
     set innerHTML(value) {this.data = unescapeHTML(value)}
@@ -522,7 +535,7 @@ define((require, exports, module)=>{
     set innerHTML(value) {this.data = unescapeHTML(value)}
   }
 
-  const origCssText = style=>{
+  const origCssText = (style) => {
     if (style[needBuild$]) {
       style[needBuild$] = false;
       style[cssText$] = style.cssText;
@@ -543,8 +556,9 @@ define((require, exports, module)=>{
     item(index) {return this[styleArray$][index]}
 
     setProperty(dname, value='') {
-      if (dname.slice(-5) === 'color')
+      if (dname.slice(-5) === 'color') {
         value = value && uColor.toRgbStyle(value);
+      }
       this[needBuild$] = true;
       const styles = this[styles$];
       const oldValue = styles[dname];
@@ -573,12 +587,13 @@ define((require, exports, module)=>{
 
     get cssText() {
       const sm = this[styles$];
-      return this[styleArray$].map(dname => {
+      return this[styleArray$].map((dname) => {
         let value = sm[dname];
-        if (dname === 'font-family' && value.indexOf(' ') !== -1)
-          value = "'"+value+"'";
-        return dname+": "+value+";";
-      }).join(" ");
+        if (dname === 'font-family' && value.indexOf(' ') !== -1) {
+          value = "'" + value + "'";
+        }
+        return dname + ': ' + value + ';';
+      }).join(' ');
     }
 
     set cssText(cssText) {
@@ -587,7 +602,7 @@ define((require, exports, module)=>{
       const sa = this[styleArray$] = [];
       this[needBuild$] = false;
       const styles = cssText.split(/\s*;\s*/);
-      for(let i = 0; i < styles.length; ++i) {
+      for (let i = 0; i < styles.length; ++i) {
         const style = styles[i];
         if (! style) {
           styles.length = i;
@@ -596,36 +611,36 @@ define((require, exports, module)=>{
         const idx = style.indexOf(':');
         const dname = style.slice(0, idx);
         const name = util.camelize(dname);
-        let value = style.slice(idx+1).trim();
-        if (/color/.test(dname) && value.startsWith('#'))
+        let value = style.slice(idx + 1).trim();
+        if (/color/.test(dname) && value.startsWith('#')) {
           value = (value && uColor.toRgbStyle(value)) || '';
+        }
         sm[dname] = sm[name] = value;
         sa.push(dname);
       }
     }
   }
 
-  ('text-align font-size font-family font-weight font-style text-decoration '+
-    'border-color background-color color'
-  ).split(' ').forEach(dname => {
-      const name = util.camelize(dname);
-      function get() {return this[styles$][dname] || ''};
-      function set(value) {this.setProperty(dname, value)};
+  ('text-align font-size font-family font-weight font-style text-decoration ' +
+   'border-color background-color color').split(' ').forEach((dname) => {
+     const name = util.camelize(dname);
+     function get() {return this[styles$][dname] || ''}
+     function set(value) {this.setProperty(dname, value)}
 
-      Object.defineProperty(Style.prototype, name, {
-        configurable: true,
-        get: get,
-        set: set,
-      });
+     Object.defineProperty(Style.prototype, name, {
+       configurable: true,
+       get,
+       set,
+     });
 
-      Object.defineProperty(Style.prototype, dname, {
-        configurable: true,
-        get: get,
-        set: set,
-      });
-    });
+     Object.defineProperty(Style.prototype, dname, {
+       configurable: true,
+       get,
+       set,
+     });
+   });
 
-  module.onUnload(()=>{
+  module.onUnload(() => {
     Object.defineProperty(global, 'document', {configurable: true, value: void 0});
   });
 

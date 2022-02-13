@@ -1,5 +1,5 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.createTable('TestTable', {
-    name: {type: 'text'}
+    name: {type: 'text'},
   });
 });

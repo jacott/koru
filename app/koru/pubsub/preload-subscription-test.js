@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * PreloadSubscription extends {#../subscription} to facilitate preloading documents from a client
@@ -29,12 +29,12 @@ isClient && define((require, exports, module)=>{
 
   const {connected$} = SubscriptionSession[private$];
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       SubscriptionSession.unload(Session);
     });
 
-    test("onConnect already connected", ()=>{
+    test('onConnect already connected', () => {
       const connect = stub(SubscriptionSession.prototype, 'connect');
       class Library extends PreloadSubscription {}
       const sub = Library.subscribe();
@@ -47,7 +47,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(callback, null);
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Used to initialise matchers and any other common synchronous work
        *
@@ -63,7 +63,7 @@ isClient && define((require, exports, module)=>{
         constructor(args) {
           super(args);
           const {shelf} = args;
-          this.match(Book, doc => doc.shelf === shelf);
+          this.match(Book, (doc) => doc.shelf === shelf);
         }
       }
       LibrarySub.pubName = 'Library';
@@ -73,14 +73,14 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    test("connect no idb", ()=>{
+    test('connect no idb', () => {
       class LibrarySub extends PreloadSubscription {
       }
       LibrarySub.pubName = 'Library';
 
       let resolve;
 
-      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+      const superConnect = spy(Subscription.prototype, 'connect').invokes((c) => {
         return c.returnValue;
       });
 
@@ -92,7 +92,7 @@ isClient && define((require, exports, module)=>{
       assert.called(callback);
     });
 
-    test("preload", async ()=>{
+    test('preload', async () => {
       /**
        * Override this (usally) async method to load client records, using say,
        * {#koru/model/query-idb}. Should `await` for loads to complete before returning. Any
@@ -122,7 +122,7 @@ isClient && define((require, exports, module)=>{
         index: () => ({getAll: () => Promise.resolve(books)}),
         loadDocs: (model, docs) => {
           Book.docs = docs;
-        }
+        },
       };
       const isOffline = false;
       //[
@@ -130,10 +130,10 @@ isClient && define((require, exports, module)=>{
         getQueryIDB() {return idb}
         async preload(idb) {
           const shelf = await idb.get('last', 'self');
-          if (self == null) return "waitServer";
+          if (self == null) return 'waitServer';
           const books = await idb.index('Book', 'shelf').getAll(IDBKeyRange.only(shelf.name));
           idb.loadDocs('Book', books);
-          if (isOffline) return "skipServer";
+          if (isOffline) return 'skipServer';
         }
       }
       LibrarySub.pubName = 'Library';
@@ -147,18 +147,17 @@ isClient && define((require, exports, module)=>{
       assert(Book.query.count(), 1);
     });
 
-    test("preload returns undefined", async ()=>{
+    test('preload returns undefined', async () => {
       const idb = {isReady: true};
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
-        async preload(idb, preloadComplete) {
-        }
+        async preload(idb, preloadComplete) {}
       }
       LibrarySub.pubName = 'Library';
       let resolve;
 
       const connect = promiseResolve();
-      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+      const superConnect = spy(Subscription.prototype, 'connect').invokes((c) => {
         connect.resolve();
         return c.returnValue;
       });
@@ -171,19 +170,19 @@ isClient && define((require, exports, module)=>{
       assert.called(callback);
     });
 
-    test("preload returns waitServer", async ()=>{
+    test('preload returns waitServer', async () => {
       const idb = {isReady: true};
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
         async preload(idb) {
-          return "waitServer";
+          return 'waitServer';
         }
       }
       LibrarySub.pubName = 'Library';
       let resolve;
 
       const connect = promiseResolve();
-      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+      const superConnect = spy(Subscription.prototype, 'connect').invokes((c) => {
         connect.resolve();
         return c.returnValue;
       });
@@ -197,13 +196,13 @@ isClient && define((require, exports, module)=>{
       assert.called(callback);
     });
 
-    test("preload returns skipServer", async ()=>{
+    test('preload returns skipServer', async () => {
       const idb = {isReady: true};
       class LibrarySub extends PreloadSubscription {
         getQueryIDB() {return idb}
         async preload(idb) {
           await pl.resolve();
-          return "skipServer";
+          return 'skipServer';
         }
       }
       LibrarySub.pubName = 'Library';
@@ -213,7 +212,7 @@ isClient && define((require, exports, module)=>{
       const superConnect = spy(Subscription.prototype, 'connect');
 
       const cb = promiseResolve();
-      const callback = stub().invokes(()=>{
+      const callback = stub().invokes(() => {
         cb.resolve();
       });
       const sub = LibrarySub.subscribe({shelf: 'mathematics'}, callback);
@@ -225,7 +224,7 @@ isClient && define((require, exports, module)=>{
       assert.called(callback);
     });
 
-    test("getQueryIDB", async ()=>{
+    test('getQueryIDB', async () => {
       /**
        * Override this method to return a {#koru/model/query-idb} like instance or undefined (if
        * none). The idb instance is passed to the {##preload} method. If no idb is returned
@@ -253,7 +252,7 @@ isClient && define((require, exports, module)=>{
       assert.equals(sub.shelf, {name: 'mathematics'});
     });
 
-    test("serverResponse", async ()=>{
+    test('serverResponse', async () => {
       /**
        * Override this method to intercept the serverResponse to the subscribe.
 
@@ -270,7 +269,7 @@ isClient && define((require, exports, module)=>{
 
       const connect = promiseResolve();
       let superConnectCalled = false;
-      const superConnect = spy(Subscription.prototype, 'connect').invokes(c  => {
+      const superConnect = spy(Subscription.prototype, 'connect').invokes((c) => {
         superConnectCalled = true;
         connect.resolve();
         return c.returnValue;
@@ -310,19 +309,19 @@ isClient && define((require, exports, module)=>{
           }
         }
         const sub2 = BookSub.subscribe('book1');
-        const err2 = new koru.Error(500, "server error");
+        const err2 = new koru.Error(500, 'server error');
         sub2.stop(err2);
         assert.equals(sub2.serverResponseArgs, [err2, void 0]);
         //]
       }
     });
 
-    test("connect without QueryIDB", ()=>{
+    test('connect without QueryIDB', () => {
       let preloadCalled = false;
       class LibrarySub extends PreloadSubscription {
         preload(idb, preloadComplete) {preloadCalled = true}
       }
-      LibrarySub.pubName = "Library";
+      LibrarySub.pubName = 'Library';
 
       const callback = stub();
       const sub = LibrarySub.subscribe({shelf: 'Mathematics'}, callback);

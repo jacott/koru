@@ -406,7 +406,9 @@ define((require) => {
 
   Ctx[private$] = {onDestroy$};
 
-  Ctx.current = {
+  Dom.Ctx = Ctx;
+
+  Dom.current = Ctx.current = {
     data: (elm) => {
       if (elm != null) {
         const ctx = Dom.ctx(elm);

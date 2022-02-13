@@ -70,11 +70,28 @@ define((require) => {
     message: 'a difference of {0}. Before {$before}, after {$after}',
   });
 
+  const accessDeniedAsync = async (p) => {
+    let error;
+    try {
+      await p;
+    } catch (e) {error = e}
+
+    if (error) {
+      if (error.error === 403) {
+        return true;
+      }
+
+      throw error;
+    }
+    return false;
+  };
+
   ga.add('accessDenied', {
     assert(func) {
       let error;
       try {
-        func.call();
+        const p = func.call();
+        if (p instanceof Promise) return accessDeniedAsync(p);
       } catch (e) {error = e}
       if (error) {
         if (error.error === 403) {

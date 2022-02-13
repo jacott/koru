@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fsp = require('fs/promises');
 const Path = require('path');
 
 define((require, exports, module) => {
@@ -23,13 +24,13 @@ define((require, exports, module) => {
 
   const defaultUnloader = (path) => {session.unload(path)};
 
-  const watch = (dir, top) => {
+  const watch = async (dir, top) => {
     const dirs = Object.create(null);
 
     const watcher = fs.watch(dir, (event, filename) => {
-      runFiber(() => {
+      runFiber(async () => {
         if (! /^\w/.test(filename)) return;
-        let path = manage(dirs, dir, filename, top);
+        let path = await manage(dirs, dir, filename, top);
         if (path === void 0) return;
 
         const m = /\.(.+)$/.exec(path);
@@ -37,25 +38,29 @@ define((require, exports, module) => {
 
         path = path.slice(top.length);
 
-        handler
-          ? handler(m[1], path, top, session)
+        handler != null
+          ? Promise.resolve(handler(m[1], path, top, session)).catch((err) => {
+            koru.unhandledException(err);
+          })
           : defaultUnloader(path);
       });
     });
-    fst.readdir(dir).forEach((filename) => {
-      if (! filename.match(/^\w/)) return;
-      manage(dirs, dir, filename, top);
-    });
+
+    for (const filename of await fsp.readdir(dir)) {
+      if (filename.match(/^\w/)) {
+        await manage(dirs, dir, filename, top);
+      }
+    }
 
     return watcher;
   };
 
-  const manage = (dirs, dir, filename, top) => {
+  const manage = async (dirs, dir, filename, top) => {
     const path = dir + '/' + filename;
-    const st = fst.stat(path);
+    const st = await fst.stat(path);
     if (st !== void 0) {
       if (st.isDirectory()) {
-        if (dirs[filename] === void 0) dirs[filename] = watch(path, top);
+        if (dirs[filename] === void 0) dirs[filename] = await watch(path, top);
         return;
       }
     } else {
@@ -70,11 +75,11 @@ define((require, exports, module) => {
 
   koru.onunload(module, 'reload');
 
-  runFiber(() => {watch(top, top + '/')});
+  runFiber(async () => {await watch(top, top + '/')});
 
   return {
     listeners,
 
-    watch: (dir, top) => {watch(Path.resolve(dir), Path.resolve(top) + '/')},
+    watch: async (dir, top) => await watch(Path.resolve(dir), Path.resolve(top) + '/'),
   };
 });

@@ -26,10 +26,10 @@ define((require, exports, module) => {
   }
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
-    before(() => {
-      TH.startTransaction();
+    before(async () => {
+      await TH.startTransaction();
       const bm = new Module(void 0, 'book');
-      module.onUnload = after;
+      module.onUnload = stub();
 
       Val.register(bm, {RequiredValidator});
       Book.define({module, name: 'Book', fields: {
@@ -37,17 +37,17 @@ define((require, exports, module) => {
       }});
     });
 
-    after(() => {
-      Model._destroyModel('Book', 'drop');
-      TH.rollbackTransaction();
+    after(async () => {
+      await Model._destroyModel('Book', 'drop');
+      await TH.rollbackTransaction();
     });
 
-    beforeEach(() => {
-      TH.startTransaction();
+    beforeEach(async () => {
+      await TH.startTransaction();
     });
 
-    afterEach(() => {
-      TH.rollbackTransaction();
+    afterEach(async () => {
+      await TH.rollbackTransaction();
     });
 
     test('defines', () => {
@@ -194,7 +194,7 @@ define((require, exports, module) => {
         //]
       });
 
-      test('addRef', () => {
+      test('addRef', async () => {
         /**
          * Add a default reference to another model.
 
@@ -216,7 +216,7 @@ define((require, exports, module) => {
         Chapter.define({module, name: 'Chapter', fields: {
           number: 'number', book_id: 'belongs_to',
         }});
-        after(() => {Model._destroyModel('Chapter', 'drop')});
+        after(() => Model._destroyModel('Chapter', 'drop'));
 
         after(() => {
           TestFactory.createBook = TestFactory.buildBook = void 0;
@@ -233,11 +233,13 @@ define((require, exports, module) => {
 
         api.protoMethod();
         //[
-        const book = TestFactory.createBook();
+        const book = await TestFactory.createBook();
 
         const builder1 = new TestFactory.Builder('Chapter', {number: 1})
               .addRef('book')
         ;
+
+        await builder1.waitPromises();
 
         assert.equals(builder1.defaults, {book_id: book._id});
 
@@ -248,14 +250,15 @@ define((require, exports, module) => {
         assert.equals(builder2.defaults, {});
 
         const builder3 = new TestFactory.Builder('Chapter', {number: 1})
-              .addRef('book', () => TestFactory.createBook({_id: 'book123'}))
-        ;
+              .addRef('book', () => TestFactory.createBook({_id: 'book123'}));
+
+        await builder3.waitPromises();
 
         assert.equals(builder3.defaults, {book_id: 'book123'});
         //]
       });
 
-      test('create', () => {
+      test('create', async () => {
         /**
          * Create the document. Called by, say, `Factory.createBook`. See {#.constructor}, {##useSave}
          **/
@@ -264,7 +267,7 @@ define((require, exports, module) => {
         const builder = new TestFactory.Builder('Book')
         ;
 
-        const book = builder.create();
+        const book = await builder.create();
         assert.equals(book.attributes, {_id: m.id});
         //]
       });
@@ -285,7 +288,7 @@ define((require, exports, module) => {
         //]
       });
 
-      test('useSave', () => {
+      test('useSave', async () => {
         /**
          * Determine if the normal Model save code should be run.
 
@@ -314,7 +317,7 @@ define((require, exports, module) => {
                 .useSave(false) // the default
           ;
 
-          const book = builder.create();
+          const book = await builder.create();
           assert.equals(book.attributes, {_id: m.id});
         }
 
@@ -324,9 +327,8 @@ define((require, exports, module) => {
                 .useSave(true)
           ;
 
-          assert.exception(() => {
-            const book = builder.create();
-          }, {error: 400, reason: {title: [['is_required']]}});
+          await assert.exception(
+            () => builder.create(), {error: 400, reason: {title: [['is_required']]}});
         }
 
         {
@@ -335,7 +337,7 @@ define((require, exports, module) => {
                 .useSave('force')
           ;
 
-          const book = builder.create();
+          const book = await builder.create();
           assert.equals(book.attributes, {_id: m.id, author: 'Anon'});
         }
         //]

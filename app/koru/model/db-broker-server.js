@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const driver          = require('koru/config!DBDriver');
   const DBRunner        = require('koru/model/db-runner');
@@ -19,7 +19,7 @@ define((require)=>{
     },
     get dbId() {return dbBroker.db.name},
 
-    clearDbId: ()=>{dbBroker.db = undefined},
+    clearDbId: () => {dbBroker.db = undefined},
   };
 
   DBRunner(dbBroker);

@@ -1,9 +1,10 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   /**
    * Manage durable Message queues.
    **/
   const koru            = require('koru');
+  const Future          = require('koru/future');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
   const Driver          = require('koru/pg/driver');
@@ -20,26 +21,25 @@ isServer && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let mqFactory;
-    beforeEach(()=>{
+    beforeEach(async () => {
       api.module();
       v.defDb = Driver.defaultDb;
-      TH.startTransaction(v.defDb);
+      await TH.startTransaction(v.defDb);
       mqFactory = new MQFactory('_test_MQ');
-      intercept(Object.getPrototypeOf(v.defDb), 'onCommit', f => f());
     });
 
-    afterEach(()=>{
+    afterEach(async () => {
+      dbBroker.db = v.defDb;
       mqFactory.deregisterQueue('foo');
       mqFactory.stopAll();
-      v.defDb.query(`drop table  if exists "_test_MQ"; drop sequence if exists "_test_MQ__id_seq";`);
-      TH.rollbackTransaction(v.defDb);
+      await TH.rollbackTransaction(v.defDb);
       mqFactory = null;
       v = {};
     });
 
-    test("global registerQueue", ()=>{
+    test('global registerQueue', () => {
       /**
        * Register an action with a queue
 
@@ -59,95 +59,103 @@ isServer && define((require, exports, module)=>{
 
       const doSomethingWith = stub();
 
-      after(()=>{mqFactory.deregisterQueue('bar')});
+      after(() => {mqFactory.deregisterQueue('bar')});
 
       //[
       mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}});
       mqFactory.registerQueue({
         module, name: 'bar', retryInterval: -1, action(msg) {doSomethingWith(msg)}});
       //]
-      assert.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      assert.exception(() => {mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
       mqFactory.deregisterQueue('foo');
-      refute.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      refute.exception(() => {mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
     });
 
-    group("with multi-db", ()=>{
-      beforeEach(()=>{
-        v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
-        v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
-        TH.startTransaction(v.altDb);
+    group('with multi-db', () => {
+      beforeEach(async () => {
+        v.altDb = await Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
+        await v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
+        await TH.startTransaction(v.altDb);
         dbBroker.db = v.defDb;
       });
 
-
-      afterEach(()=>{
+      afterEach(async () => {
         if (v.altDb) {
-          TH.rollbackTransaction(v.altDb);
+          dbBroker.db = v.altDb;
+          mqFactory.stopAll();
+          await TH.rollbackTransaction(v.altDb);
           dbBroker.clearDbId();
-          v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
+          await v.altDb.query('DROP SCHEMA IF EXISTS alt CASCADE');
         }
-        mqFactory.deregisterQueue('foo');
+        dbBroker.db = v.defDb;
+        mqFactory.stopAll();
+        mqFactory.deregisterQueue('bar');
       });
 
-      test("local registerQueue", ()=>{
+      test('local registerQueue', async () => {
         mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
           v.args = args;
           v.db = dbBroker.db;
         }});
 
-        mqFactory.registerQueue({name: 'panda', local: true, action(...args) {
-        }});
+        mqFactory.registerQueue({name: 'panda', local: true, action(...args) {}});
 
         stub(koru, 'setTimeout').onCall(0).returns(123).onCall(1).returns(456);
         stub(koru, 'clearTimeout');
 
-        mqFactory.getQueue('bar').add({message: 'hello'});
-        mqFactory.getQueue('panda').add({message: 'p1'});
+        await mqFactory.getQueue('bar').add({message: 'hello'});
+        await mqFactory.getQueue('panda').add({message: 'p1'});
 
-        assert.equals(mqFactory.getQueue('bar').peek()[0].message, 'hello');
+        assert.equals((await mqFactory.getQueue('bar').peek())[0].message, 'hello');
 
         /** with alt db **/
         dbBroker.db = v.altDb;
 
         assert.same(mqFactory.getQueue('bar'), undefined);
 
+        let altBarFuture = new Future();
+
         mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
           v.altArgs = args;
+          altBarFuture.resolve();
         }});
 
         assert.same(v.db, undefined);
-        koru.setTimeout.yieldAndReset(); // doesn't matter where yielded;
+
+        await koru.setTimeout.yieldAndReset(); // doesn't matter where yielded;
         dbBroker.db = v.altDb; // because we stubbed koru.setTimeout
         assert.same(v.args[0].message, 'hello');
         assert.same(v.db, v.defDb);
 
         /** queue to other bar **/
-        mqFactory.getQueue('bar').add({message: 'alt hello'});
+        await mqFactory.getQueue('bar').add({message: 'alt hello'});
         koru.setTimeout.yieldAndReset();
+        await altBarFuture.promise;
 
         assert.equals(v.altArgs[0].message, 'alt hello');
         assert.same(v.db, v.defDb);
+
 
         /** back to orig db **/
         dbBroker.db = v.defDb;
 
         assert.same(v.args[1], mqFactory.getQueue('bar'));
 
-        mqFactory.getQueue('bar').add({message: 'middle'});
-        koru.setTimeout.yieldAndReset();
+        await mqFactory.getQueue('bar').add({message: 'middle'});
+        await koru.setTimeout.yieldAndReset();
         assert.equals(v.args[0].message, 'middle');
-        mqFactory.getQueue('bar').add({message: 'goodbye'});
+        await mqFactory.getQueue('bar').add({message: 'goodbye'});
 
         const {table} = mqFactory.getQueue('bar').mqdb;
 
         /** purge, deregister **/
         koru.clearTimeout.reset();
-        mqFactory.getQueue('bar').purge();
+        await mqFactory.getQueue('bar').purge();
         mqFactory.getQueue('panda').deregister();
 
-        assert.same(table.count({name: 'bar'}), 0);
+        assert.same(await table.count({name: 'bar'}), 0);
         assert.calledWith(koru.clearTimeout, 123);
-        assert.same(table.count({name: 'panda'}), 1);
+        assert.same(await table.count({name: 'panda'}), 1);
         assert.calledWith(koru.clearTimeout, 456);
 
         assert.same(mqFactory.getQueue('bar'), undefined);
@@ -158,45 +166,44 @@ isServer && define((require, exports, module)=>{
         koru.setTimeout.reset();
         koru.clearTimeout.reset();
 
-        mqFactory.registerQueue({name: 'panda', local: true, retryInterval: 30*1000, action(msg) {
+        mqFactory.registerQueue({name: 'panda', local: true, retryInterval: 30*1000, async action(msg) {
+          await 1;
           v.msg = msg;
         }});
 
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
-        assert(mqFactory.getQueue('panda'));
+        await mqFactory.getQueue('panda').init();
 
         assert.calledWith(koru.setTimeout, TH.match.func, 30*1000);
 
-        koru.setTimeout.yieldAndReset();
+        await koru.setTimeout.yieldAndReset();
 
         assert.equals(v.msg.message, 'p1');
-
-
       });
 
-      test("start", ()=>{
+      test('start', async () => {
         /**
          * Start timers on all queues within current database with existing messages
          **/
         api.protoMethod('start');
 
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         mqFactory.registerQueue({module, name: 'foo', action(args) {v.foo = [dbBroker.db, args]}});
         mqFactory.registerQueue({module, name: 'bar', action(args) {v.bar = [dbBroker.db, args]}});
-        after(()=>{mqFactory.deregisterQueue('bar')});
+        after(() => {mqFactory.deregisterQueue('bar')});
 
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout').returns(123);
 
-        mqFactory.getQueue('foo').add({message: 'foo1'});
-        mqFactory.getQueue('foo').add({message: 'foo2'});
-        mqFactory.getQueue('bar').add({message: 'bar1'});
+        await mqFactory.getQueue('foo').add({message: 'foo1'});
+        await mqFactory.getQueue('foo').add({message: 'foo2'});
+        await mqFactory.getQueue('bar').add({message: 'bar1'});
 
         dbBroker.db = v.altDb;
 
-        mqFactory.getQueue('foo').add({message: 'altfoo1'});
+        await mqFactory.getQueue('foo').add({message: 'altfoo1'});
 
         mqFactory.stopAll();
 
@@ -206,13 +213,13 @@ isServer && define((require, exports, module)=>{
         koru.setTimeout.reset();
         koru.clearTimeout.reset();
 
-        mqFactory.start();
+        await mqFactory.start();
 
-        const foodb = dbBroker.db = {name: "foo"};
+        const foodb = dbBroker.db = {name: 'foo'};
 
-        assert.same(koru.setTimeout.callCount, 1);
+        assert.calledOnce(koru.setTimeout);
 
-        koru.setTimeout.yield();
+        await koru.setTimeout.yield();
 
         assert.equals(v.foo, [v.altDb, {_id: 1, dueAt: util.newDate(), message: 'altfoo1'}]);
 
@@ -221,24 +228,26 @@ isServer && define((require, exports, module)=>{
 
         api.done();
 
-        mqFactory.start();
+        await mqFactory.start();
 
-        assert.same(koru.setTimeout.callCount, 2);
+        assert.calledTwice(koru.setTimeout);
 
         dbBroker.db = v.altDb;
 
-        koru.setTimeout.lastCall.yield();
-        koru.setTimeout.firstCall.yield();
+        await koru.setTimeout.lastCall.args[0]();
+        await koru.setTimeout.firstCall.yield();
 
         assert.equals(v.foo, [v.defDb, {_id: 1, dueAt: util.newDate(), message: 'foo1'}]);
         assert.equals(v.bar, [v.defDb, {_id: 3, dueAt: util.newDate(), message: 'bar1'}]);
 
-        koru.setTimeout.lastCall.yield();
+        assert.same(koru.setTimeout.callCount, 3);
+
+        await koru.setTimeout.lastCall.yield();
 
         assert.equals(v.foo, [v.defDb, {_id: 2, dueAt: util.newDate(), message: 'foo2'}]);
       });
 
-      test("getQueue", ()=>{
+      test('getQueue', () => {
         /**
          * Get a message queue for current database
 
@@ -269,35 +278,37 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    group("MQ", ()=>{
+    group('MQ', () => {
       /**
        * The class for queue instances.
        *
        * See {#../mq-factory#getQueue}
        **/
       let mqApi;
-      beforeEach(()=>{
+      beforeEach(() => {
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout');
-        koru.setTimeout
-          .onCall(0).returns(121)
-          .onCall(1).returns(122)
-          .onCall(2).returns(123)
-        ;
-
+        koru.setTimeout.invokes((c) => 120 + koru.setTimeout.callCount);
         mqFactory.registerQueue({
-          module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
+          module, name: 'foo', action(...args) {return v.action(...args)}, retryInterval: 300});
 
         mqApi = api.innerSubject(MQ);
       });
 
-      test("creates table", ()=>{
-        const query = stub(dbBroker.db, 'query').returns([]);
-        mqFactory.getQueue('foo');
+      test('creates table', async () => {
+        const query = stub(dbBroker.db, 'query').returns(Promise.resolve([]));
+        const q = mqFactory.getQueue('foo');
 
-        assert.same(query.callCount, 5);
+        stub(q.mqdb.table, '_ensureTable').invokes((c) => {
+          c.thisValue._columns = [];
+          return Promise.resolve();
+        });
 
-        assert.equals(query.calls[3].args[0], `
+        await q.init();
+
+        assert.same(query.callCount, 2);
+
+        assert.equals(query.calls[0].args[0], `
 CREATE TABLE "_test_MQ" (
     _id bigint NOT NULL,
     name text COLLATE pg_catalog."C" NOT NULL,
@@ -322,7 +333,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 `);
       });
 
-      test("add", ()=>{
+      test('add', async () => {
         /**
          * Add a message to the queue. The message is persisted.
 
@@ -331,38 +342,40 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
          * @param message the message to action
 
          **/
-        v.action = (...args)=>{v.args = args};
+        v.action = (...args) => {v.args = args};
 
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
         mqApi.protoMethod();
 
-        queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
+        //[
+        await queue.add({dueAt: new Date(now + 30), message: {my: 'message'}});
         assert.calledWith(koru.setTimeout, TH.match.func, 30);
-        queue.add({dueAt: new Date(now+10), message: {another: 'message'}});
+        await queue.add({dueAt: new Date(now + 10), message: {another: 'message'}});
         assert.calledOnceWith(koru.clearTimeout, 121);
         assert.calledWith(koru.setTimeout, TH.match.func, 10);
 
-        assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
+        assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
           _id: 2,
           name: 'foo',
-          dueAt: new Date(now+10),
+          dueAt: new Date(now + 10),
           message: {another: 'message'},
         }, {
           _id: 1,
           name: 'foo',
-          dueAt: new Date(now+30),
+          dueAt: new Date(now + 30),
           message: {my: 'message'},
         }]);
+        //]
 
         assert.same(v.args, undefined);
 
         const call = koru.setTimeout.lastCall;
         koru.setTimeout.reset();
-        now+=10;
-        call.yield();
+        now += 10;
+        await call.yield();
 
         assert.equals(v.args, [{
           _id: 2,
@@ -372,28 +385,28 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         assert.calledOnceWith(koru.setTimeout, TH.match.func, 20);
 
-        assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
+        assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
           _id: 1,
           name: 'foo',
-          dueAt: new Date(now+20),
+          dueAt: new Date(now + 20),
           message: {my: 'message'},
         }]);
 
-        now+=30;
-        koru.setTimeout.yieldAndReset();
+        now += 30;
+        await koru.setTimeout.yieldAndReset();
 
         refute.called(koru.setTimeout);
 
         assert.equals(v.args, [{
           _id: 1,
-          dueAt: new Date(now-10),
+          dueAt: new Date(now - 10),
           message: {my: 'message'},
         }, queue]);
 
-        assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), []);
+        assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), []);
       });
 
-      test("peek", ()=>{
+      test('peek', async () => {
         /**
          * Look at messages at the front of the queue without removing them
 
@@ -403,177 +416,177 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
          * @returns an array of messages in queue order
          **/
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
         mqApi.protoMethod();
 
-        queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
-        queue.add({dueAt: new Date(now+10), message: {another: 'message'}});
+        //[
+        await queue.add({dueAt: new Date(now + 30), message: {my: 'message'}});
+        await queue.add({dueAt: new Date(now + 10), message: {another: 'message'}});
 
-        assert.equals(queue.peek(), [{
+        assert.equals(await queue.peek(), [{
           _id: 2,
-          dueAt: new Date(now+10),
+          dueAt: new Date(now + 10),
           message: {another: 'message'},
         }]);
 
-        assert.equals(queue.peek(3), [{
+        assert.equals(await queue.peek(3), [{
           _id: 2,
-          dueAt: new Date(now+10),
+          dueAt: new Date(now + 10),
           message: {another: 'message'},
         }, {
           _id: 1,
-          dueAt: new Date(now+30),
+          dueAt: new Date(now + 30),
           message: {my: 'message'},
         }]);
 
-        assert.equals(queue.peek(5, new Date(now+10)), [{
+        assert.equals(await queue.peek(5, new Date(now + 10)), [{
           _id: 2,
-          dueAt: new Date(now+10),
+          dueAt: new Date(now + 10),
           message: {another: 'message'},
         }]);
+        //]
       });
 
-      test("remove", ()=>{
+      test('remove', async () => {
         /**
          * Remove a message.
 
          * @param _id the id of the message to remove.
          **/
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
         mqApi.protoMethod();
+        //[
+        await queue.add({dueAt: new Date(now + 10), message: {my: 'message'}});
+        await queue.add({dueAt: new Date(now + 20), message: {another: 'message'}});
 
-        queue.add({dueAt: new Date(now+10), message: {my: 'message'}});
-        queue.add({dueAt: new Date(now+20), message: {another: 'message'}});
+        await queue.remove('2');
 
-        queue.remove('2');
-
-        assert.equals(queue.peek(5), [TH.match.field('_id', 1)]);
+        assert.equals(await queue.peek(5), [TH.match.field('_id', 1)]);
+        //]
       });
 
-      test("bad queue Time", ()=>{
-        assert.exception(()=>{
-          mqFactory.getQueue('foo').add({dueAt: new Date(-4)});
-        }, {message: 'Invalid dueAt'});
+      test('bad queue Time', async () => {
+        try {
+          await mqFactory.getQueue('foo').add({dueAt: new Date(-4)});
+          assert.fail('expect throw');
+        } catch (err) {
+          assert.exception(err, {message: 'Invalid dueAt'});
+        }
       });
 
-      test("error in action", ()=>{
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      test('error in action', async () => {
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
-        v.action = (args)=>{
+        v.action = async (args) => {
+          await 1;
           throw v.error = new Error('test error');
         };
-        queue.add({message: [1,2]});
+        await queue.add({message: [1, 2]});
 
         stub(koru, 'unhandledException');
 
-        koru.setTimeout.yieldAndReset();
+        await koru.setTimeout.yieldAndReset();
 
         assert.calledWith(koru.unhandledException, v.error);
 
         assert.calledWith(koru.setTimeout, TH.match.func, 300);
 
-        queue.add({message: [1,2,3]});
+        await queue.add({message: [1, 2, 3]});
 
         assert.calledOnce(koru.setTimeout);
 
-        after(()=>{mqFactory.deregisterQueue('bar')});
+        after(() => {mqFactory.deregisterQueue('bar')});
         mqFactory.registerQueue({name: 'bar', action: v.action, retryInterval: -1});
 
-        mqFactory.getQueue('bar').add({message: [4,5,6]});
+        await mqFactory.getQueue('bar').add({message: [4, 5, 6]});
 
-        koru.setTimeout.lastCall.yield();
+        await koru.setTimeout.lastCall.yield();
 
         assert.same(koru.setTimeout.callCount, 2);
 
         assert.equals(queue.error, v.error);
 
+        v.action = (args) => {v.args = args};
 
-        v.action = args => {v.args = args};
-
-        koru.setTimeout.firstCall.yield();
+        await koru.setTimeout.firstCall.yield();
 
         assert.equals(queue.error, undefined);
-        assert.equals(v.args.message, [1,2]);
+        assert.equals(v.args.message, [1, 2]);
 
-        koru.setTimeout.lastCall.yield();
-        assert.equals(v.args.message, [1,2,3]);
+        await koru.setTimeout.lastCall.yield();
+        assert.equals(v.args.message, [1, 2, 3]);
       });
 
-      test("retryAfter", ()=>{
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      test('retryAfter', async () => {
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
-        v.action = (args)=>{
+        v.action = async (args) => {
           throw {retryAfter: 12345};
         };
 
-        queue.add({message: [1,2]});
-        koru.setTimeout.yieldAndReset();
+        await queue.add({message: [1, 2]});
+        await koru.setTimeout.yieldAndReset();
         assert.calledWith(koru.setTimeout, TH.match.func, 12345);
       });
 
-      test("delay more than one day", ()=>{
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      test('delay more than one day', async () => {
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
-        queue.add({dueAt: new Date(now+5*util.DAY), message: [1]});
+        await queue.add({dueAt: new Date(now + 5 * util.DAY), message: [1]});
 
         assert.calledWith(koru.setTimeout, TH.match.func, util.DAY);
 
         v.action = stub();
 
-        koru.setTimeout.yieldAndReset();
+        await koru.setTimeout.yieldAndReset();
 
         refute.called(v.action);
 
         assert.calledWith(koru.setTimeout, TH.match.func, util.DAY);
 
-        now+=5*util.DAY;
+        now += 5 * util.DAY;
 
-        koru.setTimeout.yieldAndReset();
+        await koru.setTimeout.yieldAndReset();
 
         assert.called(v.action);
 
         refute.called(koru.setTimeout);
       });
 
-      test("queue from within action", ()=>{
-        v.defDb.onCommit.restore();
-        const onCommit = stub(v.defDb, 'onCommit');
-        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+      test('queue from within action', async () => {
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
-        v.action = (args)=>{
-          v.action = args => {v.args = args};
-          queue.add({dueAt: new Date(now+50), message: {last: 'msg'}});
-          onCommit.yieldAndReset();
-          queue.add({dueAt: new Date(now-20), message: [1,2,3]});
-          onCommit.yieldAndReset();
+        v.action = async (args) => {
+          v.action = (args) => {v.args = args};
+          await queue.add({dueAt: new Date(now + 50), message: {last: 'msg'}});
+          await queue.add({dueAt: new Date(now - 20), message: [1, 2, 3]});
         };
 
-        queue.add({message: [4,5,6]});
-        refute.called(koru.setTimeout);
-        assert.called(onCommit);
-        onCommit.yieldAndReset();
+        await queue.add({message: [4, 5, 6]});
 
-        koru.setTimeout.yieldAndReset();
-        assert.calledOnce(koru.setTimeout);
-        koru.setTimeout.yieldAndReset();
+        await koru.setTimeout.yieldAndReset();
+        assert.equals(v.args, void 0);
+        assert.calledTwice(koru.setTimeout);
 
-        assert.equals(v.args.message, [1,2,3]);
+        await koru.setTimeout.yieldAndReset();
 
-        now+=50;
-        koru.setTimeout.yieldAndReset();
+        assert.equals(v.args.message, [1, 2, 3]);
+
+        now += 50;
+        await koru.setTimeout.yieldAndReset();
 
         assert.equals(v.args.message, {last: 'msg'});
       });
     });
-
   });
 });

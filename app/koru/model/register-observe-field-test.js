@@ -1,172 +1,246 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const DocChange       = require('koru/model/doc-change');
-  const util            = require('koru/util');
   const dbBroker        = require('./db-broker');
   const Model           = require('./main');
   const TH              = require('./test-helper');
 
   const {stub, spy, intercept, matchModel: mm, match: m} = TH;
 
-  let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v.TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'object'});
-      v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
-      v.obs = [];
-      v.TestModel.registerObserveField('age');
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    let TestModel, doc, obs;
+    beforeEach(async () => {
+      TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'object'});
+      doc = await TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
+      obs = [];
+      TestModel.registerObserveField('age');
     });
 
-    afterEach(()=>{
-      Model._destroyModel('TestModel', 'drop');
-      for(let i = 0; i < v.obs.length; ++i) v.obs[i].stop();
-      v = {};
+    afterEach(async () => {
+      await Model._destroyModel('TestModel', 'drop');
+      for (let i = 0; i < obs.length; ++i) obs[i].stop();
     });
 
-    test("values must be an array", ()=>{
-      v.TestModel.registerObserveField('toys');
-      assert.exception(()=>{
-        v.TestModel.observeToys('robot', stub());
+    isServer && group('async callbacks', () => {
+      const assertCallbacks = (callback) => {
+        assert.called(callback.at(-1));
+        for (let i = 0; i + 1 < callback.length; ++i) {
+          assert(callback[i].calledBefore(callback[i + 1]), `callback ${i} not called before ${i + 1}`);
+        }
+      };
+
+      test('single value change', async () => {
+        const callback = [0, 1, 2, 3].map(() => stub());
+        obs.push(
+          TestModel.observeAge([5], async (dc) => {await 1; callback[0]()}),
+          TestModel.observeAge([5], callback[1]),
+          TestModel.observeAge([6], async (dc) => {await 1; callback[2]()}),
+          TestModel.onChange(callback[3]),
+        );
+
+        doc.age = 6;
+        await doc.$$save();
+        assertCallbacks(callback);
+      });
+
+      test('multi old change', async () => {
+        doc.toys = ['robot', 'bear'];
+        await doc.$$save();
+        const callback = [0, 1, 2, 3].map(() => stub());
+        TestModel.registerObserveField('toys');
+        obs.push(
+          TestModel.observeToys(['robot'], async (dc) => {await 1; callback[0]()}),
+          TestModel.observeToys(['bear'], callback[1]),
+          TestModel.observeToys(['car'], async (dc) => {await 1; callback[2]()}),
+          TestModel.onChange(callback[3]),
+        );
+
+        doc.toys = ['robot', 'car', 'bear'];
+        await doc.$$save();
+        assertCallbacks(callback);
+      });
+
+      test('multi new value only', async () => {
+        const callback = [0, 1, 2, 3].map((n) => stub());
+        TestModel.registerObserveField('toys');
+        obs.push(
+          TestModel.observeToys(['bear'], async (dc) => {await 1; callback[1]()}),
+          TestModel.observeToys(['bear'], callback[2]),
+          TestModel.observeToys(['car'], async (dc) => {await 1; callback[0]()}),
+          TestModel.onChange(callback[3]),
+        );
+
+        doc.toys = ['robot', 'car', 'bear'];
+        await doc.$$save();
+        assertCallbacks(callback);
+      });
+
+      test('single new value only', async () => {
+        const callback = [0, 1, 2, 3].map(() => stub());
+        obs.push(
+          TestModel.observeAge([6], async (dc) => {await 1; callback[0]()}),
+          TestModel.observeAge([6], callback[1]),
+          TestModel.observeAge([6], async (dc) => {await 1; callback[2]()}),
+          TestModel.onChange(callback[3]),
+        );
+
+        doc.age = 6;
+        await doc.$$save();
+        assertCallbacks(callback);
+      });
+    });
+
+    test('values must be an array', () => {
+      TestModel.registerObserveField('toys');
+      assert.exception(() => {
+        TestModel.observeToys('robot', stub());
       }, {message: 'values must be an array'});
     });
 
-    test("multi dbs", ()=>{
-      v.TestModel.registerObserveField('toys');
-      const origId = v.dbId = dbBroker.dbId;
+    test('multi dbs', () => {
+      TestModel.registerObserveField('toys');
+      const origId = dbBroker.dbId;
+      let dbId = origId;
       intercept(dbBroker, 'dbId');
-      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
-      const oc = spy(v.TestModel, 'onChange');
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return dbId}});
+      const oc = spy(TestModel, 'onChange');
 
-      v.obs.push(v.TestModel.observeToys(['robot'], v.origOb = stub()));
-      v.dbId = 'alt';
+      const origOb = stub();
+      obs.push(TestModel.observeToys(['robot'], origOb));
+      dbId = 'alt';
       assert.same(dbBroker.dbId, 'alt');
 
-      assert.calledWith(oc, m(func => v.oFunc = func));
+      let oFunc;
+      assert.calledWith(oc, m((func) => oFunc = func));
       oc.reset();
-      v.obs.push(v.altHandle = v.TestModel.observeToys(['robot'], v.altOb = stub()));
-      assert.calledWith(oc, m(func => v.altFunc = func));
-      v.oFunc(DocChange.change(v.doc, {name: 'old'}));
-      assert.calledWith(v.origOb, DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.altOb);
+      const altOb = stub();
+      const altHandle = TestModel.observeToys(['robot'], altOb);
+      obs.push(altHandle);
+      let altFunc;
+      assert.calledWith(oc, m((func) => altFunc = func));
+      oFunc(DocChange.change(doc, {name: 'old'}));
+      assert.calledWith(origOb, DocChange.change(doc, {name: 'old'}));
+      refute.called(altOb);
 
-      v.origOb.reset();
-      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
-      assert.calledWith(v.altOb, DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.origOb);
+      origOb.reset();
+      altFunc(DocChange.change(doc, {name: 'old'}));
+      assert.calledWith(altOb, DocChange.change(doc, {name: 'old'}));
+      refute.called(origOb);
 
-      v.altHandle.stop();
+      altHandle.stop();
 
-      v.altOb.reset();
-      v.altFunc(DocChange.change(v.doc, {name: 'old'}));
-      refute.called(v.altOb);
-
+      altOb.reset();
+      altFunc(DocChange.change(doc, {name: 'old'}));
+      refute.called(altOb);
 
       oc.reset();
-      v.obs.push(v.TestModel.observeToys(['robot'], stub()));
-      v.obs.push(v.TestModel.observeToys(['buzz'], stub()));
+      obs.push(TestModel.observeToys(['robot'], stub()));
+      obs.push(TestModel.observeToys(['buzz'], stub()));
       assert.calledOnce(oc);
     });
 
-    group("observe array field", ()=>{
-      beforeEach(()=>{
-        v.TestModel.registerObserveField('toys');
+    group('observe array field', () => {
+      let callback;
+      beforeEach(() => {
+        TestModel.registerObserveField('toys');
 
-        v.obs.push(v.toys = v.TestModel.observeToys(['buzz', 'woody'], v.callback = stub()));
+        obs.push(TestModel.observeToys(['buzz', 'woody'], callback = stub()));
       });
 
-      test("adding observed field", ()=>{
-        const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
+      test('adding observed field', async () => {
+        const doc = await TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
 
-        assert.calledOnceWith(v.callback, DocChange.add(doc));
+        assert.calledOnceWith(callback, DocChange.add(doc));
       });
 
-      test("adding two observed fields", ()=>{
-        const doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
+      test('adding two observed fields', async () => {
+        const doc = await TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
 
-        assert.calledOnceWith(v.callback, DocChange.add(doc));
+        assert.calledOnceWith(callback, DocChange.add(doc));
       });
 
-      test("updating observered field", ()=>{
-        v.doc.toys = v.attrs = ['woody', 'slinky'];
-        v.doc.$$save();
+      test('updating observered field', async () => {
+        doc.toys = ['woody', 'slinky'];
+        await doc.$$save();
 
-        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {
+        assert.calledWith(callback, DocChange.change(doc.$reload(), {
           $partial: {toys: ['$patch', [0, 2, ['robot']]]}}));
       });
 
-      test("add/remove to observered field", ()=>{
-        v.doc.$onThis.addItems('toys', ['woody']);
+      test('add/remove to observered field', async () => {
+        await doc.$onThis.addItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {$partial: {
+        assert.calledWith(callback, DocChange.change(doc.$reload(), {$partial: {
           toys: ['$remove', ['woody']]}}));
 
-        v.callback.reset();
-        v.doc.$onThis.removeItems('toys', ['woody']);
+        callback.reset();
+        await doc.$onThis.removeItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {$partial: {
+        assert.calledWith(callback, DocChange.change(doc.$reload(), {$partial: {
           toys: ['$add', ['woody']]}}));
       });
 
-      test("updating other field", ()=>{
-        v.doc.toys = v.attrs = ['woody', 'buzz'];
-        v.doc.$$save();
-        v.callback.reset();
+      test('updating other field', async () => {
+        doc.toys = ['woody', 'buzz'];
+        await doc.$$save();
+        callback.reset();
 
-        v.doc.$reload().age = 8;
-        v.doc.$$save();
+        doc.$reload().age = 8;
+        await doc.$$save();
 
-        assert.calledWith(v.callback, DocChange.change(v.doc.$reload(), {age: 5}));
+        assert.calledWith(callback, DocChange.change(doc.$reload(), {age: 5}));
       });
     });
 
-    group("manipulation", ()=>{
-      beforeEach(()=>{
-        v.doc2 =  v.TestModel.create({name: 'Bob', age: 35});
-        v.doc3 = v.TestModel.create({name: 'Helen', age: 25});
+    group('manipulation', () => {
+      let ids, doc2, doc3, callback;
+      beforeEach(async () => {
+        doc2 = await TestModel.create({name: 'Bob', age: 35});
+        doc3 = await TestModel.create({name: 'Helen', age: 25});
 
-        v.obs.push(v.ids = v.TestModel.observeAge([5, 35], v.callback = stub()));
+        obs.push(ids = TestModel.observeAge([5, 35], callback = stub()));
       });
 
-      test("replaceValues", ()=>{
-        v.ids.replaceValues([5, 25]);
+      test('replaceValues', async () => {
+        ids.replaceValues([5, 25]);
 
-        v.TestModel.create({name: 'Henry', age: 35});
-        refute.called(v.callback);
+        await TestModel.create({name: 'Henry', age: 35});
+        refute.called(callback);
 
-        v.doc3.name = "changed";
-        v.doc3.$$save();
-        assert.calledWith(v.callback, DocChange.change(v.doc3.$reload(), {name: 'Helen'}));
-        v.callback.reset();
+        doc3.name = 'changed';
+        await doc3.$$save();
+        assert.calledWith(callback, DocChange.change(doc3.$reload(), {name: 'Helen'}));
+        callback.reset();
 
-        v.ids.stop();
+        ids.stop();
 
-        v.doc3.name = "Helen";
-        v.doc3.$$save();
-        refute.called(v.callback);
+        doc3.name = 'Helen';
+        await doc3.$$save();
+        refute.called(callback);
       });
 
-      test("addValue", ()=>{
-        v.ids.addValue(25);
+      test('addValue', async () => {
+        ids.addValue(25);
 
-        const doc = v.TestModel.create({_id: '123', name: 'Mamma', age: 25});
+        const doc = await TestModel.create({_id: '123', name: 'Mamma', age: 25});
 
-        assert.calledWith(v.callback, DocChange.add(doc));
+        assert.calledWith(callback, DocChange.add(doc));
       });
 
-      test("removeValue", ()=>{
-        v.ids.removeValue(5);
+      test('removeValue', async () => {
+        ids.removeValue(5);
 
-        v.doc2.age = 5;
-        v.doc2.$$save();
+        doc2.age = 5;
+        await doc2.$$save();
 
-        assert.calledWith(v.callback, DocChange.change(v.doc2.$reload(), {age: 35}));
+        assert.calledWith(callback, DocChange.change(doc2.$reload(), {age: 35}));
 
-        v.callback.reset();
+        callback.reset();
 
-        v.doc2.name = 'new name';
-        v.doc2.$$save();
+        doc2.name = 'new name';
+        await doc2.$$save();
 
-        refute.called(v.callback);
+        refute.called(callback);
       });
     });
   });

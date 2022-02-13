@@ -1,10 +1,10 @@
-define(()=> mig =>{
+define(() => (mig) => {
   mig.reversible({
-    add(client) {
-      client.query('ALTER TABLE "TestTable" ADD COLUMN bar date');
+    async add(client) {
+      await client.query('ALTER TABLE "TestTable" ADD COLUMN bar date');
     },
-    revert(client) {
-      client.query('ALTER TABLE "TestTable" DROP COLUMN bar');
-    }
+    async revert(client) {
+      await client.query('ALTER TABLE "TestTable" DROP COLUMN bar');
+    },
   });
 });

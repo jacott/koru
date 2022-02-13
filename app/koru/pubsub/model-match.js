@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const DLinkedList     = require('koru/dlinked-list');
 
@@ -36,8 +36,9 @@ define((require)=>{
       const models = this[models$];
       for (const modelName in models) {
         const matchFuncs = models[modelName];
-        if (matchFuncs !== void 0)
+        if (matchFuncs !== void 0) {
           matchFuncs.clear();
+        }
       }
     }
   }

@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const ModelListMixin  = require('koru/pubsub/model-list-mixin');
   const Subscription    = require('koru/pubsub/subscription');

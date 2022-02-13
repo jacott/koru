@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Query           = require('koru/model/query');
@@ -17,11 +17,11 @@ define((require, exports, module)=>{
   const STATE_NAMES = ['stopped', 'new', 'connect', 'active'];
   const STATE_MAP = {stopped: 0, new: 1, connect: 2, active: 3};
 
-  const runMessageCallbacks = (sub, error)=>{
+  const runMessageCallbacks = (sub, error) => {
     const msgCallbacks = sub[messages$];
     if (msgCallbacks !== null) {
       sub[messages$] = null;
-      msgCallbacks.forEach(cb => cb !== void 0 && cb(error));
+      msgCallbacks.forEach((cb) => cb !== void 0 && cb(error));
     }
   };
 
@@ -45,8 +45,9 @@ define((require, exports, module)=>{
     connect() {
       if (this.lastSubscribed != 0) {
         const {lastSubscribedMaximumAge} = this.constructor;
-        if (lastSubscribedMaximumAge == -1 || this.lastSubscribed < lastSubscribedMaximumAge)
+        if (lastSubscribedMaximumAge == -1 || this.lastSubscribed < lastSubscribedMaximumAge) {
           this.lastSubscribed = 0;
+        }
       }
       this.error = null;
       this[state$] = STATE_MAP.connect;
@@ -74,7 +75,7 @@ define((require, exports, module)=>{
         const onConnect = this[onConnect$];
         if (onConnect !== void 0) this[onConnect$] = void 0;
         try {
-          this.stopped(doc => {subSession.filterDoc(doc, 'stopped')});
+          this.stopped((doc) => {subSession.filterDoc(doc, 'stopped')});
         } finally {
           if (error !== void 0) {
             this.error = error;
@@ -97,17 +98,20 @@ define((require, exports, module)=>{
     get isClosed() {return this[state$] <= 1}
 
     match(modelName, test) {
-      if (typeof modelName !== 'string')
+      if (typeof modelName !== 'string') {
         modelName = modelName.modelName;
+      }
       const {_matches} = this;
-      if (_matches[modelName] !== void 0)
+      if (_matches[modelName] !== void 0) {
         _matches[modelName].delete();
+      }
       this._matches[modelName] = this.subSession.match.register(modelName, test);
     }
 
     unmatch(modelName) {
-      if (typeof modelName !== 'string')
+      if (typeof modelName !== 'string') {
         modelName = modelName.modelName;
+      }
       const handle = this._matches[modelName];
       if (handle !== void 0) {
         this._matches[modelName] = void 0;
@@ -121,9 +125,9 @@ define((require, exports, module)=>{
 
     postMessage(message, callback) {
       const msgId = this.subSession.postMessage(this, message);
-      if (msgId == -1 && callback !== void 0)
+      if (msgId == -1 && callback !== void 0) {
         this.onConnect(callback);
-      else if (callback !== void 0) {
+      } else if (callback !== void 0) {
         (this[messages$] || (this[messages$] = []))[msgId] = callback;
       }
     }
@@ -148,8 +152,9 @@ define((require, exports, module)=>{
     static get lastSubscribedMaximumAge() {return -1}
 
     [connected$]({lastSubscribed}) {
-      if (this[state$] == STATE_MAP.connect)
+      if (this[state$] == STATE_MAP.connect) {
         this[state$] = STATE_MAP.active;
+      }
 
       this.lastSubscribed = +lastSubscribed || 0;
       const onConnect = this[onConnect$];
@@ -164,15 +169,16 @@ define((require, exports, module)=>{
       if (callback !== void 0) {
         this[messages$][data[1]] = void 0;
         const status = data[2];
-        if (status == 0)
+        if (status == 0) {
           callback(null, data[3]);
-        else
+        } else {
           callback(new koru.Error(-status, data[3]));
+        }
       }
     }
   }
 
-  Subscription.markForRemove = doc =>{
+  Subscription.markForRemove = (doc) => {
     Query.simDocsFor(doc.constructor)[doc._id] = ['del', void 0];
   };
 

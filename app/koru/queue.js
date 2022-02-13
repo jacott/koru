@@ -5,56 +5,51 @@
  */
 define((require) => (type) => {
   'use strict';
-  const util            = require('koru/util');
+  const Future          = require('koru/future');
 
   const queues = type === 'single' ? null : {};
-
-  const finish = (queue) => {
-    queue.running = false;
-    queues && delete queues[queue.name];
-  };
 
   class Queue {
     constructor(name) {
       this.name = name;
-      this.running = false;
+      this.isPending = this.running = false;
+      this.head = this.tail = void 0;
     }
 
-    add(func) {
+    async add(func) {
       if (this.running) {
         this.isPending = true;
-        if (this.queued == null) {
-          this.queued = 1;
-          this.runNext = 1;
-          this.futures = {};
+        const future = new Future();
+        future.next = void 0;
+        if (this.head === void 0) {
+          this.head = this.tail = future;
         } else {
-          ++this.queued;
+          this.tail = this.tail.next = future;
         }
 
-        (this.futures[this.queued] = new util.Future()).wait();
+        await future.promise;
       }
 
-      this.isPending = false;
       this.running = true;
 
       let result, error;
       try {
-        result = func(this);
+        result = await func(this);
       } catch (ex) {
         error = ex;
       }
-      if (this.queued) {
-        const future = this.futures[this.runNext];
-        if (future) {
-          delete this.futures[this.runNext];
-          ++this.runNext;
 
-          future.return();
-        } else {
-          finish(this);
+      if (this.head !== void 0) {
+        const future = this.head;
+        this.head = future.next;
+        if (this.head === void 0) {
+          this.tail = void 0;
+          this.isPending = false;
         }
+        future.resolve();
       } else {
-        finish(this);
+        this.running = false;
+        queues && delete queues[this.name];
       }
       if (error) throw error;
       return result;

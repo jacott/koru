@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const dbBroker        = require('koru/model/db-broker');
   const Driver          = require('koru/pg/driver');
@@ -12,10 +12,10 @@ define((require, exports, module)=>{
 
     DBTranCounter: 0,
 
-    startTransaction(txClient=Model.db) {
+    async startTransaction(txClient=Model.db) {
       ++TestDBHelper.DBTranCounter;
       Model.db = txClient;
-      const tx = txClient.startTransaction();
+      const tx = await txClient.startTransaction();
       if (tx.savepoint == 0) {
         tx.transaction = 'ROLLBACK';
       } else {
@@ -23,12 +23,12 @@ define((require, exports, module)=>{
       }
     },
 
-    rollbackTransaction(txClient=Model.db) {
+    async rollbackTransaction(txClient=Model.db) {
       --TestDBHelper.DBTranCounter;
       Model.db = txClient;
-      const level = txClient.endTransaction('abort');
+      const level = await txClient.endTransaction('abort');
 
-      for(const name in Model) {
+      for (const name in Model) {
         const model = Model[name];
         if ('docs' in model) {
           model._$docCacheClear();

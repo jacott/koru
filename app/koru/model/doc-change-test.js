@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * DocChange encapsulates a change to a {#koru/model/base-model} instance. Used with
@@ -29,22 +29,20 @@ define((require, exports, module)=>{
 
   const DocChange = require('./doc-change');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let Book;
-    before(()=>{
+    before(() => {
       Book = class extends BaseModel {
       };
       Book.define({
         name: 'Book',
-        fields: {title: 'text', author: 'text', pages: 'number', index: 'object'}
+        fields: {title: 'text', author: 'text', pages: 'number', index: 'object'},
       });
     });
 
-    after(()=>{
-      Model._destroyModel('Book', 'drop');
-    });
+    after(() => Model._destroyModel('Book'));
 
-    test("add", ()=>{
+    test('add', () => {
       /**
        * Create a model change representing an add.
        **/
@@ -66,7 +64,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("delete", ()=>{
+    test('delete', () => {
       /**
        * Create a model change representing a delete.
        **/
@@ -87,7 +85,7 @@ define((require, exports, module)=>{
       assert.same(change.flag, 'simComplete');
     });
 
-    test("change", ()=>{
+    test('change', () => {
       /**
        * Create a model change representing a change.
        **/
@@ -108,14 +106,14 @@ define((require, exports, module)=>{
       assert.same(change.flag, 'serverUpdate');
     });
 
-    group("with change", ()=>{
+    group('with change', () => {
       let change;
 
-      beforeEach(()=>{
+      beforeEach(() => {
         change = DocChange.add(new Book({_id: 'book1', title: 'Animal Farm'}, {title: 'Fanimal Arm'}));
       });
 
-      test("clone", ()=>{
+      test('clone', () => {
         /**
          * Clone the change. This is a shallow copy of the change---doc and undo are assigned; not
          * copied.
@@ -134,7 +132,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("was", ()=>{
+      test('was', () => {
         /**
          * Retrieve the doc with the `undo` set as changes.  See {#koru/model/base-model#$withChanges}
          **/
@@ -149,7 +147,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("changes", ()=>{
+      test('changes', () => {
         /**
          * Retrieve the changes that were made to `doc`. See {#koru/model/base-model#$invertChanges}
          **/
@@ -162,7 +160,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("model", ()=>{
+      test('model', () => {
         /**
          * Retrieve the model of the `doc`.
          **/
@@ -173,8 +171,8 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("hasField", ()=>{
-         /**
+      test('hasField', () => {
+        /**
          * Test if a field has been changed.
          **/
         api.protoMethod();
@@ -198,11 +196,11 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("hasSomeFields", ()=>{
+      test('hasSomeFields', () => {
         /**
          * Test if any of the `fields` have been changed
          **/
-         api.protoMethod();
+        api.protoMethod();
 
         //[
         const dc = DocChange.change(
@@ -220,7 +218,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("subDocKeys", ()=>{
+      test('subDocKeys', () => {
         /**
          * Create a iterator over the property names for each property that is different between two
          * objects.
@@ -230,13 +228,13 @@ define((require, exports, module)=>{
 
         //[
         const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
-          d: {dog: [123,234], donkey: [56,456]},
-          p: {pig: [3, 34]}
+          d: {dog: [123, 234], donkey: [56, 456]},
+          p: {pig: [3, 34]},
         }});
 
         const undo = Changes.applyAll(book.attributes, {index: {
-          d: {dog: [123,234]},
-          h: {horse: [23,344]},
+          d: {dog: [123, 234]},
+          h: {horse: [23, 344]},
           p: {pig: [3, 34]},
         }});
 
@@ -255,40 +253,40 @@ define((require, exports, module)=>{
         assert.equals(Array.from(change.subDocKeys('foo')).sort(), ['a', 'b']);
 
         assert.equals(Array.from(
-          DocChange.change(book, {}).subDocKeys('index')
+          DocChange.change(book, {}).subDocKeys('index'),
         ).sort(), ['d', 'h', 'p']);
 
         assert.equals(Array.from(
-          DocChange.change(book, {$partial: {title: null}}).subDocKeys('index')
+          DocChange.change(book, {$partial: {title: null}}).subDocKeys('index'),
         ).sort(), []);
       });
 
-      group("subDocs", ()=>{
+      group('subDocs', () => {
         /**
          * Create a iterator over the `DocChange`s for each property that is different between two
          * objects
          **/
 
-        const map = (iter)=> {
+        const map = (iter) => {
           const ans = [];
           for (const dc of iter)
             ans.push(dc.clone());
-          return ans.sort((a, b)=>{
+          return ans.sort((a, b) => {
             a = a._id; b = b._id;
             return a === b ? 0 : a < b ? -1 : 1;
           });
         };
 
-        test("example", ()=>{
+        test('example', () => {
           api.protoMethod();
           //[
           const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
-            d: {dog: [123,234], donkey: [56,456]},
-            p: {pig: [3, 34]}
+            d: {dog: [123, 234], donkey: [56, 456]},
+            p: {pig: [3, 34]},
           }});
           const undo = Changes.applyAll(book.attributes, {index: {
-            d: {dog: [123,234], deer: [34]},
-            h: {horse: [23,344]},
+            d: {dog: [123, 234], deer: [34]},
+            h: {horse: [23, 344]},
             p: {pig: [3, 34]},
           }});
 
@@ -319,51 +317,50 @@ define((require, exports, module)=>{
           let ans, dc;
 
           ans = map(change.subDocs('index'));
-          assert.equals(ans.map(dc => dc._id), ['d', 'g', 'h', 'p']);
-          assert.equals(ans.map(dc => dc.type), ['add', 'del', 'add', 'add']);
-          assert.equals(ans.map(dc => dc.doc), [
+          assert.equals(ans.map((dc) => dc._id), ['d', 'g', 'h', 'p']);
+          assert.equals(ans.map((dc) => dc.type), ['add', 'del', 'add', 'add']);
+          assert.equals(ans.map((dc) => dc.doc), [
             {dog: [123, 234], deer: [34]}, false, {horse: [23, 344]}, {pig: [3, 34]}]);
 
           change._set(book, {$partial: {index: ['$replace', null]}});
 
           ans = map(change.subDocs('index'));
-          assert.equals(ans.map(dc => dc._id), ['d', 'h', 'p']);
-          assert.equals(ans.map(dc => dc.type), ['add', 'add', 'add']);
-          assert.equals(ans.map(dc => dc.doc), [
+          assert.equals(ans.map((dc) => dc._id), ['d', 'h', 'p']);
+          assert.equals(ans.map((dc) => dc.type), ['add', 'add', 'add']);
+          assert.equals(ans.map((dc) => dc.doc), [
             {dog: [123, 234], deer: [34]}, {horse: [23, 344]}, {pig: [3, 34]}]);
 
           change._set(book, {foo: {a: 1, b: 2}});
           ans = map(change.subDocs('foo'));
-          assert.equals(ans.map(dc => dc._id), ['a', 'b']);
-          assert.equals(ans.map(dc => dc.type), ['del', 'del']);
-          assert.equals(ans.map(dc => dc.doc), [1, 2]);
+          assert.equals(ans.map((dc) => dc._id), ['a', 'b']);
+          assert.equals(ans.map((dc) => dc.type), ['del', 'del']);
+          assert.equals(ans.map((dc) => dc.doc), [1, 2]);
 
           change._set(book, {$partial: {index: ['h', null]}});
           ans = map(change.subDocs('index')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['h']);
+          assert.equals(ans.map((dc) => dc._id), ['h']);
           assert.equals(dc.type, 'add');
           assert.equals(dc.doc, {horse: [23, 344]});
 
           change._set(book, {$partial: {index: ['h', {hog: [12]}]}});
           ans = map(change.subDocs('index')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['h']);
+          assert.equals(ans.map((dc) => dc._id), ['h']);
           assert.equals(dc.type, 'chg');
           assert.equals(dc.undo, {hog: [12]});
-
 
           change._set(book, {$partial: {index: ['h', {hog: [12]}]}});
 
           change._set(book, {$partial: {foo: ['a', 123]}});
           assert.equals(map(change.subDocs('index')), []);
           ans = map(change.subDocs('foo')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['a']);
+          assert.equals(ans.map((dc) => dc._id), ['a']);
           assert.equals(dc.type, 'del');
           assert.equals(dc.doc, 123);
         });
 
-        test("multipart partial", ()=>{
+        test('multipart partial', () => {
           const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
-            p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}}
+            p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}},
           }});
 
           const undo = {$partial: {
@@ -375,35 +372,35 @@ define((require, exports, module)=>{
 
           let ans, dc;
           ans = map(change.subDocs('index')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['p']);
+          assert.equals(ans.map((dc) => dc._id), ['p']);
           assert.equals(dc.type, 'chg');
           assert.equals(dc.doc, {words: {pig: {occurs: 158}, puppy: {occurs: 2}}});
           assert.equals(dc.undo, {$partial: {words: ['puppy.$partial', ['occurs', 4]]}});
 
           ans = map(dc.subDocs('words')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['puppy']);
+          assert.equals(ans.map((dc) => dc._id), ['puppy']);
           assert.equals(dc.type, 'chg');
           assert.equals(dc.doc, {occurs: 2});
           assert.equals(dc.undo, {$partial: {occurs: 4}});
         });
 
-        test("nested", ()=>{
+        test('nested', () => {
           const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
-            p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}}
+            p: {words: {pig: {occurs: 158}, puppy: {occurs: 2}}},
           }});
 
           const undo = {$partial: {
             index: ['p.$partial', [
               'words.$partial', [
                 'puppy', null,
-                'pig.$partial', ['occurs', 34]
+                'pig.$partial', ['occurs', 34],
               ]]]}};
 
           const change = DocChange.change(book, undo);
 
           let ans, dc;
           ans = map(change.subDocs('index')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['p']);
+          assert.equals(ans.map((dc) => dc._id), ['p']);
           assert.equals(dc.type, 'chg');
 
           assert.equals(dc.doc, {words: {pig: {occurs: 158}, puppy: {occurs: 2}}});
@@ -411,17 +408,17 @@ define((require, exports, module)=>{
             'puppy', null, 'pig.$partial', ['occurs', 34]]}});
 
           ans = map(dc.subDocs('words'));
-          assert.equals(ans.map(dc => dc._id), ['pig', 'puppy']);
-          assert.equals(ans.map(dc => dc.type), ['chg', 'add']);
-          assert.equals(ans.map(dc => dc.doc), [
+          assert.equals(ans.map((dc) => dc._id), ['pig', 'puppy']);
+          assert.equals(ans.map((dc) => dc.type), ['chg', 'add']);
+          assert.equals(ans.map((dc) => dc.doc), [
             {occurs: 158}, {occurs: 2}]);
-          assert.equals(ans.map(dc => dc.undo), [
+          assert.equals(ans.map((dc) => dc.undo), [
             {$partial: {occurs: 34}}, 'del']);
         });
 
-        test("compond keys", ()=>{
+        test('compond keys', () => {
           const book = new Book({_id: 'book1', title: 'Animal Farm', index: {
-            p: {words: {pig: {syn: 'hog'}, puppy: {syn: 'dog'}}}
+            p: {words: {pig: {syn: 'hog'}, puppy: {syn: 'dog'}}},
           }});
 
           const undo = {$partial: {index: [
@@ -431,7 +428,7 @@ define((require, exports, module)=>{
 
           let ans, dc;
           ans = map(change.subDocs('index')); dc = ans[0];
-          assert.equals(ans.map(dc => dc._id), ['p']);
+          assert.equals(ans.map((dc) => dc._id), ['p']);
           assert.equals(dc.type, 'chg');
 
           assert.equals(dc.doc, {words: {pig: {syn: 'hog'}, puppy: {syn: 'dog'}}});
@@ -441,16 +438,16 @@ define((require, exports, module)=>{
           ]}});
 
           ans = map(dc.subDocs('words'));
-          assert.equals(ans.map(dc => dc._id), ['pig', 'puppy']);
-          assert.equals(ans.map(dc => dc.type), ['chg', 'chg']);
-          assert.equals(ans.map(dc => dc.doc), [
+          assert.equals(ans.map((dc) => dc._id), ['pig', 'puppy']);
+          assert.equals(ans.map((dc) => dc.type), ['chg', 'chg']);
+          assert.equals(ans.map((dc) => dc.doc), [
             {syn: 'hog'}, {syn: 'dog'}]);
-          assert.equals(ans.map(dc => dc.undo), [
+          assert.equals(ans.map((dc) => dc.undo), [
             {$partial: {syn: 'pork'}}, {$partial: {syn: ['$append', 'gy']}}]);
         });
       });
 
-      test("inspect", ()=>{
+      test('inspect', () => {
         change = DocChange.change(
           new Book({_id: 'book1', title: 'Animal Farm'}), {title: 'Fanimal Arm'});
 
@@ -459,15 +456,14 @@ define((require, exports, module)=>{
           `DocChange.change(Model.Book("book1"), {title: 'Fanimal Arm'}, undefined)`);
       });
 
-      test("read only type, doc, undo", ()=>{
+      test('read only type, doc, undo', () => {
         change = DocChange.change(
           new Book({_id: 'book1', title: 'Animal Farm'}), {title: 'Fanimal Arm'});
 
-        ['type', 'doc', 'undo'].forEach(field =>{
-          assert.exception(()=>{change[field] = null}, {message: 'illegal call'});
+        ['type', 'doc', 'undo'].forEach((field) => {
+          assert.exception(() => {change[field] = null}, {message: 'illegal call'});
         });
       });
-
     });
   });
 });

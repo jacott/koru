@@ -1,7 +1,6 @@
-const fs = require('fs');
 const Path = require('path');
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const fw              = require('koru/file-watch');
@@ -9,10 +8,6 @@ define((require, exports, module)=>{
   const queue           = require('koru/queue')();
   const session         = require('koru/session');
   const util            = require('koru/util');
-
-  const {Future} = util, wait = Future.wait;
-  const readdir = Future.wrap(fs.readdir);
-  const stat = Future.wrap(fs.stat);
 
   const topDir = koru.appDir;
   const topDirLen = koru.appDir.length + 1;
@@ -22,75 +17,74 @@ define((require, exports, module)=>{
   let sources = Object.create(null);
   let loadDirs = Object.create(null);
 
-  session.provide('S', function loadRequest(data) {
-    if (data.slice(0,2).toString() === 'LA')
-      this.send('SL', findAll(data.slice(2).toString()).join(' '));
+  session.provide('S', async function loadRequest(data) {
+    if (data.slice(0, 2).toString() === 'LA') {
+      this.send('SL', (await findAll(data.slice(2).toString())).join(' '));
+    }
   });
 
-  const findAll = dir =>{
+  const findAll = async (dir) => {
     if (dir.match(/(^[./]|[./]\.)/)) throw new koru.Error(500, 'Illegal directory name');
 
-    loadDirs[dir] || queue(dir, (isNew, result)=>{
+    loadDirs[dir] || await queue(dir, async (isNew, result) => {
       if (loadDirs[dir]) return;
 
-      const findAll1 = dir =>{
+      const findAll1 = async (dir) => {
         let m;
         const dirPath = Path.join(topDir, dir);
-        const filenames = readdir(dirPath).wait()
-              .filter(fn => /^[\w-]*(?:\.(css|less)$|$)/.test(fn));
-        const stats = filenames.map(filename => stat(Path.join(dirPath, filename)));
+        const filenames = (await fst.readdir(dirPath))
+              .filter((fn) => /^[\w-]*(?:\.(css|less)$|$)/.test(fn));
+        const stats = filenames.map((filename) => fst.stat(Path.join(dirPath, filename)));
 
-        wait(stats);
-
-        for(let i = 0; i < filenames.length; ++i) {
+        for (let i = 0; i < filenames.length; ++i) {
           const fn = Path.join(dir, filenames[i]);
           if (fn in loads) continue;
 
           if (m = filenames[i].match(/^\w.*(less|css)$/)) {
-            if (m[1] === 'less')
-              extractInfo(fn);
-            else
+            if (m[1] === 'less') {
+              await extractInfo(fn);
+            } else {
               loads[fn] = true;
-          } else if (stats[i].get().isDirectory()) {
-            findAll1(fn);
+            }
+          } else if ((await stats[i]).isDirectory()) {
+            await findAll1(fn);
           }
         }
       };
 
       const prefixLen = dir.length + 1;
-      findAll1(dir);
+      await findAll1(dir);
 
       loadDirs[dir] = true;
     });
 
-    const re = new RegExp("^"+util.regexEscape(dir));
+    const re = new RegExp('^' + util.regexEscape(dir));
 
     const results = [];
 
-    for(const key in loads) {
+    for (const key in loads) {
       re.test(key) && results.push(key);
     }
 
     return results;
   };
 
-  const extractInfo = (srcName, fromName)=>{
+  const extractInfo = async (srcName, fromName) => {
     let fullname, src;
     if (srcName[0] !== '.') {
       fullname = Path.join(topDir, srcName);
       try {
-        src = fst.readFile(fullname);
-      } catch(ex) {
-      }
+        src = await fst.readFile(fullname);
+      } catch (ex) {}
     }
     if (! src) {
       fullname = Path.resolve(topDir, Path.dirname(fromName || ''), srcName);
       try {
-        src = fst.readFile(fullname);
+        src = await fst.readFile(fullname);
         srcName = fullname.slice(topDirLen);
         fullname = Path.join(topDir, srcName);
-        src = fst.readFile(fullname);
-      } catch(ex) {
+        src = await fst.readFile(fullname);
+      } catch (ex) {
         if (ex.code === 'ENOENT') {
           ex.message = "ENOENT @import '" + srcName + "' from '" + fromName + '"';
           koru.error(ex);
@@ -98,11 +92,9 @@ define((require, exports, module)=>{
       }
     }
 
-
     let provs = sources[srcName];
     if (! src) {
-
-      if (provs) for(const id in provs) {
+      if (provs) for (const id in provs) {
         const imp = imports[id];
         if (imp) delete imp[srcName];
       }
@@ -112,17 +104,17 @@ define((require, exports, module)=>{
       fromName || delete loads[srcName];
 
       return;
-    };
+    }
 
     let st;
     if (fromName) {
-      st = fst.stat(fullname);
+      st = await fst.stat(fullname);
     } else {
-      st = fst.stat(buildName(fullname));
+      st = await fst.stat(buildName(fullname));
       loads[srcName] = true;
     }
 
-    st = st && +st.mtime;
+    st = st && + st.mtime;
 
     src = src.toString();
 
@@ -138,10 +130,9 @@ define((require, exports, module)=>{
     while (m = re.exec(src)) {
       const imp = Path.resolve(Path.join(dir, m[1])).slice(topDirLen);
       let deps = imports[imp], imt;
-      if (! deps)  {
+      if (! deps) {
         imports[imp] = deps = Object.create(null);
-        imt = extractInfo(imp, srcName);
-
+        imt = await extractInfo(imp, srcName);
       } else {
         imt = sources[imp] && sources[imp].mtime;
       }
@@ -154,55 +145,56 @@ define((require, exports, module)=>{
       deps[srcName] = true;
     }
 
-    if (st && provs.mtime && st > provs.mtime ) {
+    if (st && provs.mtime && st > provs.mtime) {
       if (fromName) {
         provs.mtime = st; // propagate most recent time
-      } else
-        fst.rm_f(buildName(fullname));
+      } else {
+        await fst.rm_f(buildName(fullname));
+      }
     }
-
 
     return st;
   };
 
-  const buildName = fullname =>{
+  const buildName = (fullname) => {
     return Path.join(Path.dirname(fullname),
-                     ".build", Path.basename(fullname)+".css");
+                     '.build', Path.basename(fullname) + '.css');
   };
 
-  const watchLess = (type, path, top, session)=>{
+  const watchLess = async (type, path, top, session) => {
     let prefix = Path.dirname(path);
-    while(prefix.length > 1 && ! loadDirs[prefix]) {
+    while (prefix.length > 1 && ! loadDirs[prefix]) {
       prefix = Path.dirname(prefix);
     }
 
     if (! loadDirs[prefix]) return;
 
-    queue(path, queue =>{
-      extractInfo(path, type === 'less' ? null : path);
+    await queue(path, async (queue) => {
+      await extractInfo(path, type === 'less' ? null : path);
       if (queue.isPending) return;
-      if (type === 'less')
+      if (type === 'less') {
         session.sendAll('SL', path);
-      else {
+      } else {
         const list = [];
 
         let count = 0;
 
-        const findDeps = (name)=>{
+        const findDeps = async (name) => {
           const deps = imports[name];
 
-          if (deps) for(const key in deps) {
-            if (/\.lessimport$/.test(key))
-              ++count < 20 && findDeps(key);
-            else {
+          if (deps) for (const key in deps) {
+            if (/\.lessimport$/.test(key)) {
+              ++count < 20 && await findDeps(key);
+            } else {
               list.push(key);
-              fst.rm_f(buildName(Path.join(topDir, key)));
+              await fst.rm_f(buildName(Path.join(topDir, key)));
             }
           }
         };
-        findDeps(path);
-        if (queue.isPending || list.length === 0)
+        await findDeps(path);
+        if (queue.isPending || list.length === 0) {
           return;
+        }
         session.sendAll('SL', list.join(' '));
       }
     });

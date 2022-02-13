@@ -61,19 +61,23 @@ isServer && define((require, exports, module) => {
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
+  const Ctx             = require('koru/dom/ctx');
   const Template        = require('koru/dom/template');
   const fst             = require('koru/fs-tools');
+  const BaseController  = require('koru/server-pages/base-controller');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const WebServer       = require('koru/web-server');
 
-  const path            = requirejs.nodeRequire('path');
+  const {private$} = require('koru/symbols');
+
+  const path = requirejs.nodeRequire('path');
 
   const {stub, spy, util, intercept} = TH;
 
-  const sut = require('./main');
+  const ServerPages = require('./main');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
     let v = {};
     beforeEach(() => {
       v.req = {
@@ -92,14 +96,14 @@ isServer && define((require, exports, module) => {
         end: stub(),
       };
       api.module({
-        initInstExample: 'const serverPages = new ServerPages(WebServer);'});
+        initInstExample: 'const serverPages = await ServerPages.build(WebServer);'});
     });
 
     afterEach(() => {
       v = {};
     });
 
-    test('constructor', () => {
+    test('build', async () => {
       /**
        * Register a page server with a webServer.
        *
@@ -110,14 +114,13 @@ isServer && define((require, exports, module) => {
 
        * @param pathRoot handle pages starting with this path root.
        **/
-      const ServerPages = api.class();
-
+      api.method();
       //[
       const WebServer = require('koru/web-server');
       //]
       stub(WebServer, 'registerHandler');
       //[
-      const sp = new ServerPages(WebServer);
+      const sp = await ServerPages.build(WebServer);
       //]
       assert.isFunction(sp._handleRequest);
 
@@ -127,17 +130,17 @@ isServer && define((require, exports, module) => {
     });
 
     group('with instance', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         v.webServer = {registerHandler() {}};
-        v.sp = new sut(v.webServer, 'koru/server-pages/test-pages');
+        v.sp = await ServerPages.build(v.webServer, 'koru/server-pages/test-pages');
         v.tpl = Template.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'div', attrs:[
-              ['=','id',['','id']],
-              ['=','class',['','classes']],
+          nodes: [{
+            name: 'div', attrs: [
+              ['=', 'id', ['', 'id']],
+              ['=', 'class', ['', 'classes']],
             ],
-            children:[],
+            children: [],
           }],
         });
       });
@@ -145,33 +148,6 @@ isServer && define((require, exports, module) => {
       afterEach(() => {
         delete Dom.tpl.Foo;
         delete Dom.tpl.TestPage1;
-      });
-
-      test('less helper', () => {
-        spy(Compilers, 'read');
-        assert.match(Dom._helpers.less.call({controller: {App: v.sp}}, 'layouts/default'),
-                     /background-color:\s*#112233;[\s\S]*sourceMappingURL/);
-
-        assert.calledWith(Compilers.read, 'less', TH.match(/layouts\/default\.less/),
-                          TH.match(/layouts\/\.build\/default\.less\.css/));
-      });
-
-      test('css helper', () => {
-        stub(fst, 'readFile').returns({toString() {return 'css-output'}});
-        assert.equals(Dom._helpers.css.call({controller: {App: v.sp}}, 'my-css-page'),
-                      'css-output');
-
-        assert.calledWith(fst.readFile, v.sp._pageDirPath+'/my-css-page.css');
-      });
-
-      test('page helper', () => {
-        assert.equals(Dom._helpers.page.call({controller: {pathParts: []}}), 'root');
-        assert.equals(Dom._helpers.page.call({controller: {pathParts: ['show']}}), 'show');
-      });
-
-      test('controllerId helper', () => {
-        assert.equals(Dom._helpers.controllerId.call({
-          controller: {constructor: {modId: 'foo'}}}), 'foo');
       });
 
       test('stop', () => {
@@ -185,36 +161,36 @@ isServer && define((require, exports, module) => {
         assert.calledWith(v.webServer.deregisterHandler, 'DEFAULT');
       });
 
-      test('auto load html', () => {
-        removeTestBuild();
+      test('auto load html', async () => {
+        await removeTestBuild();
 
         const {sp} = v;
 
-        sp._handleRequest(v.req, v.res, '/test-page1.html');
+        await sp._handleRequest(v.req, v.res, '/test-page1.html');
 
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
+        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
                           '<div> Test page 1  </div> </body></html>');
 
         v.res.end.reset();
-        sp._handleRequest(v.req, v.res, '/test-page1/message-1');
+        await sp._handleRequest(v.req, v.res, '/test-page1/message-1');
 
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
+        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
                           '<div> Test page 1 message-1 </div> </body></html>');
       });
 
-      test('auto load markdown', () => {
-        removeTestBuild();
+      test('auto load markdown', async () => {
+        await removeTestBuild();
         const {sp} = v;
 
-        sp._handleRequest(v.req, v.res, '/test-page-md.html');
+        await sp._handleRequest(v.req, v.res, '/test-page-md.html');
 
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
+        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
                           '<h2 id="test-foo">test Markdown</h2> </body></html>');
       });
 
-      test('$parser', () => {
+      test('$parser', async () => {
         const {sp, tpl} = v;
         stub(tpl, '$render').returns(Dom.h({}));
 
@@ -222,7 +198,7 @@ isServer && define((require, exports, module) => {
           $parser() {this.params.pp = this.pathParts.join(':'); return 'index'}
         });
 
-        sp._handleRequest(v.req, v.res, '/foo/1/2%201/3?a=x');
+        await sp._handleRequest(v.req, v.res, '/foo/1/2%201/3?a=x');
 
         assert.calledWith(tpl.$render, TH.match((ctl) => {
           assert.equals(ctl.params, {a: 'x', pp: '1:2 1:3'});
@@ -230,7 +206,7 @@ isServer && define((require, exports, module) => {
         }));
       });
 
-      test('funny pathParts', () => {
+      test('funny pathParts', async () => {
         const {sp, tpl} = v;
 
         sp.addViewController('foo', tpl, class extends sp.BaseController {
@@ -240,21 +216,21 @@ isServer && define((require, exports, module) => {
           }
         });
 
-        sp._handleRequest(v.req, v.res, '/foo/1/<%= 2%201 %>/3?a=x');
+        await sp._handleRequest(v.req, v.res, '/foo/1/<%= 2%201 %>/3?a=x');
 
         assert.equals(v.ctl.pathParts, ['1', '<%= 2 1 %>', '3']);
       });
 
-      test('trailing slash', () => {
+      test('trailing slash', async () => {
         const {sp, tpl} = v;
 
         stub(tpl, '$render').returns(Dom.h({}));
         sp.addViewController('foo', tpl, class extends sp.BaseController {});
 
-        sp._handleRequest(v.req, v.res, '/?abc=123');
+        await sp._handleRequest(v.req, v.res, '/?abc=123');
         refute.called(v.res.end);
 
-        sp._handleRequest(v.req, v.res, '/foo/?abc=123');
+        await sp._handleRequest(v.req, v.res, '/foo/?abc=123');
 
         assert.calledWith(tpl.$render, TH.match((ctl) => {
           assert.equals(ctl.params, {abc: '123'});
@@ -267,7 +243,7 @@ isServer && define((require, exports, module) => {
           v.res.end.firstCall.args[0])).html.id, 'defLayout');
       });
 
-      test('exception', () => {
+      test('exception', async () => {
         const {sp, tpl} = v;
 
         class MyController extends sp.BaseController {
@@ -277,16 +253,14 @@ isServer && define((require, exports, module) => {
 
         sp.addViewController('foo', tpl, MyController);
 
-        const error = stub();
-
-        sp._handleRequest(v.req, v.res, '/foo/1234', error);
-
-        assert.calledWith(error, 400, {name: [['invalid']]});
+        await assert.exception(
+          () => sp._handleRequest(v.req, v.res, '/foo/1234'),
+          {error: 400, reason: {name: [['invalid']]}});
       });
     });
 
-    const removeTestBuild = () => {
-      fst.rm_r(path.join(v.sp._pageDirPath, '.build'));
+    const removeTestBuild = async () => {
+      await fst.rm_rf(path.join(v.sp._pageDirPath, '.build'));
     };
   });
 });

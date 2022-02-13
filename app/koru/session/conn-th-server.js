@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const TransQueue      = require('koru/model/trans-queue');
@@ -10,23 +10,29 @@ define((require, exports, module)=>{
 
   const {stub, spy} = TH;
 
-  const decodeMessage = (msg, conn)=> message.decodeMessage(
+  const decodeMessage = (msg, conn) => message.decodeMessage(
     msg.subarray(1), conn._session.globalDict);
 
   const ConnTH = {
     mockConnection(sessId='s123', session=Session) {
+      let userId = koru.userId();
       const conn = new ServerConnection(session, {
-        send: stub(), on: stub()}, {}, sessId, ()=>{}
-      );
-      conn.userId = koru.userId();
+        send: stub(), on: stub()}, {}, sessId, () => {},
+                                       );
+      const origSetUserId = conn.setUserId;
+      util.merge(conn, {get userId() {return userId}, setUserId(v) {userId = v; origSetUserId.call(this, v)}});
       conn.sendBinary = stub();
       conn.sendEncoded = stub();
       conn.added = stub();
       conn.changed = stub();
       conn.removed = stub();
-      conn.onSubscribe = (...args)=> TransQueue.transaction(()=>{
-        conn._session._commands.Q.call(conn, args);
-        return conn._subs[args[0]];
+      conn.onSubscribe = (...args) => TransQueue.transaction(() => {
+        const p = conn._session._commands.Q.call(conn, args);
+        const result = () => conn._subs[args[0]];
+        if (p instanceof Promise) {
+          return p.then(result);
+        }
+        return result();
       });
 
       return conn;
@@ -40,40 +46,39 @@ define((require, exports, module)=>{
 
     decodeMessage,
 
-    decodeEncodedCall: (conn, call)=>({
+    decodeEncodedCall: (conn, call) => ({
       type: String.fromCharCode(call.args[0][0]),
       data: decodeMessage(call.args[0], conn)}),
 
-
-    hasEncodedCall: (conn, expType, expData)=>{
+    hasEncodedCall: (conn, expType, expData) => {
       cacheConn(conn);
       return hasEncodedCall(expType, expData);
     },
 
-    listEncodedCalls: (conn, type)=>{
+    listEncodedCalls: (conn, type) => {
       cacheConn(conn);
       return cache.calls;
     },
   };
 
-  const LINE_SEP = "\n   ";
+  const LINE_SEP = '\n   ';
 
-  const callsToString = (calls)=> "Calls:"+LINE_SEP+calls.map(
-    msg =>util.inspect(msg)).join(LINE_SEP);
+  const callsToString = (calls) => 'Calls:' + LINE_SEP + calls.map(
+    (msg) => util.inspect(msg)).join(LINE_SEP);
 
   const cache = {
     sendEncoded: null, lastCall: null,
     calls: null, _callsString: null,
     get callsString() {
       return this._callsString || (this._callsString = callsToString(this.calls));
-    }
+    },
   };
 
-  const clearCache = ()=>{
+  const clearCache = () => {
     cache.sendEncoded = cache.lastCall = cache.calls = cache._callsString = null;
   };
 
-  const cacheConn = (conn)=>{
+  const cacheConn = (conn) => {
     if (cache.sendEncoded !== conn.sendEncoded || cache.lastCall !== conn.sendEncoded.lastCall) {
       if (cache.sendEncoded === null) {
         TH.after(clearCache);
@@ -84,50 +89,51 @@ define((require, exports, module)=>{
         const {type, data} = ConnTH.decodeEncodedCall(conn, call);
         if (type === 'W') {
           cache.calls.push(...data);
-        } else
+        } else {
           cache.calls.push([type, data]);
+        }
       }
     }
   };
 
-  const hasEncodedCall = (expType, expData)=> cache.calls
-        .some(msg => msg[0] === expType && util.deepEqual(msg[1], expData));
+  const hasEncodedCall = (expType, expData) => cache.calls
+        .some((msg) => msg[0] === expType && util.deepEqual(msg[1], expData));
 
-
-  TH.Core.assertions.add("encodedCall", {
+  TH.Core.assertions.add('encodedCall', {
     assert(conn, type, exp) {
       cacheConn(conn);
       const ans = hasEncodedCall(type, exp);
-      if (ans === this._asserting)
+      if (ans === this._asserting) {
         return ans;
+      }
       this.type = type;
       this.exp = exp;
-      const calls = type === '' ? cache.calls : cache.calls.filter(call => call[0] === type);
-      this.calls = calls.length == 0 ? "But was not called" : cache.callsString;
+      const calls = type === '' ? cache.calls : cache.calls.filter((call) => call[0] === type);
+      this.calls = calls.length == 0 ? 'But was not called' : cache.callsString;
       return ans;
     },
 
-    message: "sendEncoded to be called with {i$type} {i$exp}. {$calls}",
+    message: 'sendEncoded to be called with {i$type} {i$exp}. {$calls}',
   });
 
-  TH.Core.assertions.add("encodedCount", {
+  TH.Core.assertions.add('encodedCount', {
     assert(conn, count, type='') {
       cacheConn(conn);
 
-      const calls = type === '' ? cache.calls : cache.calls.filter(call => call[0] === type);
+      const calls = type === '' ? cache.calls : cache.calls.filter((call) => call[0] === type);
 
-      if ((calls.length == count) === this._asserting)
+      if ((calls.length == count) === this._asserting) {
         return this._asserting;
+      }
       this.count = count;
       this.type = type;
-      this.calls = (this.callCount = calls.length) == 0 ? "" : cache.callsString;
+      this.calls = (this.callCount = calls.length) == 0 ? '' : cache.callsString;
 
       return ! this._asserting;
     },
 
-    message: "sendEncoded {$type} call count to be {$count} but was {$callCount}. {$calls}",
+    message: 'sendEncoded {$type} call count to be {$count} but was {$callCount}. {$calls}',
   });
-
 
   return ConnTH;
 });
