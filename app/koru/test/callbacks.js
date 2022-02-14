@@ -43,10 +43,9 @@ define((require, exports, module)=>{
       if (cbs === void 0) return;
 
       for (let node = cbs.front; node !== void 0; node = node.next) {
-        const promise = node.value(test);
-        if (promise !== void 0) {
-          if (typeof promise.then !== 'function') throw "wrongReturn";
-          return promise.then(()=>{runAsyncCallbacks(node.next, test)});
+        const p = node.value(test);
+        if (p instanceof Promise) {
+          return p.then(()=>{runAsyncCallbacks(node.next, test)});
         }
       }
     };
