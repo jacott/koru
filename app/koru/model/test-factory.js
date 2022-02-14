@@ -261,7 +261,7 @@ define((require) => {
         }
       } else {
         if (p !== void 0) {
-          p = p.then(() => doc.$save(this._useSave));
+          p = p.then(() => this.insert());
         } else {
           p = this.insert();
         }
