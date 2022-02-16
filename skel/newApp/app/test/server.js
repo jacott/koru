@@ -16,13 +16,13 @@ define((require, exports, module) => {
   require('koru/server');
   require('koru/server-rc');
 
-  return () => {
+  return async () => {
     stubber.spy(Model.BaseModel, 'addUniqueIndex');
     stubber.spy(Model.BaseModel, 'addIndex');
 
     fileWatch.watch(path.join(koru.libDir, 'app/koru'), path.join(koru.libDir, 'app'));
 
-    webServer.start();
+    await webServer.start();
     console.log('=> Ready');
   };
 });

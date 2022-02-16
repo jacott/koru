@@ -112,7 +112,10 @@ define((require, exports, module) => {
 
     const webServer = {
       start() {
-        server.listen(port, host);
+        return new Promise(async (resolve, reject) => {
+          server.once('listening', () => resolve());
+          server.listen(port, host);
+        });
       },
 
       stop() {

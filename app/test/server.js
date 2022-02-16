@@ -1,15 +1,15 @@
-define((require)=>{
+define((require) => {
+  require('koru/css/less-watcher');
   'use strict';
   require('koru/server');
-  require('koru/session');
-  require('koru/css/less-watcher');
   require('koru/server-rc');
-  const webServer = require('koru/web-server');
-  require('koru/test/server');
+  require('koru/session');
   require('koru/test/api');
+  require('koru/test/server');
+  const webServer = require('koru/web-server');
 
-  return ()=>{
-    webServer.start();
+  return async () => {
+    await webServer.start();
     console.log('=> Ready');
   };
 });

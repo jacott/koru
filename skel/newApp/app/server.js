@@ -8,7 +8,7 @@ define((require, exports, module) => {
 
   koru.onunload(module, 'reload');
 
-  return () => {
+  return async () => {
     startup();
 
     process.on('SIGTERM', () => {
@@ -21,7 +21,7 @@ define((require, exports, module) => {
       });
     });
 
-    webServer.start();
+    await webServer.start();
     console.log('=> Ready');
   };
 });

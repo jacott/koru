@@ -60,11 +60,13 @@ define((require) => {
       if (! hasOwn(this.attributes, field)) {
         switch (typeof value) {
         case 'undefined': break;
-        case 'function':
-          this.defaults[field] = value();
-          break;
+        case 'function': value = value();
         default:
-          this.defaults[field] = value;
+          if (value instanceof Promise) {
+            this.addPromise((value) => {this.defaults[field] = value});
+          } else {
+            this.defaults[field] = value;
+          }
         }
       }
       return this;
@@ -75,6 +77,11 @@ define((require) => {
     }
 
     makeAttributes() {
+      const p = this.waitPromises();
+      if (p instanceof Promise) {
+        return p.then(() => this.makeAttributes());
+      }
+
       const result = {};
       const addAttributes = (attributes) => {
         for (const key in attributes) {
@@ -90,9 +97,9 @@ define((require) => {
     }
   }
 
-  const insertNotify = (self, doc) => {
+  const insertNotify = (self, doc, id) => {
     if (doc == null) {
-      throw Error('Factory insert failed! ' + this.model.modelName + ': ' + id);
+      throw Error('Factory insert failed! ' + self.model.modelName + ': ' + id);
     }
     const insertNotify_3 = () => {
       const p = self.model.notify(dc);
@@ -121,7 +128,7 @@ define((require) => {
       throw Error('Factory insert failed! ' + self.model.modelName + ': ' + id);
     }
 
-    return insertNotify(self, doc);
+    return insertNotify(self, doc, id);
   };
 
   const asyncAddRef = async (self, p, ref, refId, modelName) => {
@@ -171,7 +178,9 @@ define((require) => {
       const promises = this[promises$];
       if (promises !== void 0) {
         this[promises$] = void 0;
-        return Promise.all(promises);
+        return Promise.all(promises).then(() => {
+          if (this[promises$ !== void 0]) return this.waitPromises();
+        });
       }
     }
 
@@ -199,9 +208,8 @@ define((require) => {
           }
           const p = func();
           if (p instanceof Promise) {
-            return this.addPromise(p.then((doc) => {
-              this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
-            }));
+            this.addPromise(p.then((doc) => {this.defaults[refId] = doc._id === void 0 ? doc : doc._id}));
+            return this;
           } else {
             doc = p;
           }
@@ -225,46 +233,59 @@ define((require) => {
     }
 
     insert() {
-      const id = this.model._insertAttrs(this.makeAttributes());
+      const p = this.makeAttributes();
+      if (p instanceof Promise) return asyncInsert(this, p);
+
+      let id, doc;
+
+      id = this.model._insertAttrs(p);
       if (id instanceof Promise) {
-        return asyncInsert(this, id);
+        doc = id.then((_id) => {
+          id = _id;
+          return this.model.findById(_id);
+        });
+      } else {
+        doc = this.model.findById(id);
       }
 
-      const p = this.model.findById(id);
-      if (p instanceof Promise) {
-        return p.then(insertNotify);
-      }
-      return insertNotify(this, p);
+      return (doc instanceof Promise)
+        ? doc.then((doc) => insertNotify(this, doc, id))
+        : insertNotify(this, doc, id);
     }
 
     build() {
       const doc = new this.model();
-      Object.assign(doc.changes, this.makeAttributes());
-      const p = this.waitPromises();
-      if (p !== void 0) return p.then(() => doc);
+      let p = this.makeAttributes();
+      if (p instanceof Promise) {
+        return p.then((attrs) => {
+          Object.assign(doc.changes, attrs);
+          return doc;
+        });
+      }
+
+      Object.assign(doc.changes, p);
       return doc;
     }
 
     create() {
       let doc;
-      let p = this.waitPromises();
       if (this._useSave !== '') {
+        let p = this.makeAttributes();
         doc = this.model.build({});
-        doc.changes = this.makeAttributes();
-        if (p !== void 0) {
-          p = p.then(() => doc.$save(this._useSave));
+        if (p instanceof Promise) {
+          p = p.then((attrs) => {
+            doc.changes = attrs;
+            return doc.$save(this._useSave);
+          });
         } else {
+          doc.changes = p;
           p = doc.$save(this._useSave);
         }
         if (p instanceof Promise) {
           return p.then(() => asyncAfterCreate(this, doc));
         }
       } else {
-        if (p !== void 0) {
-          p = p.then(() => this.insert());
-        } else {
-          p = this.insert();
-        }
+        let p = this.insert();
         if (p instanceof Promise) {
           return p.then((doc) => asyncAfterCreate(this, doc));
         }
