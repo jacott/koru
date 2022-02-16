@@ -9,7 +9,7 @@ define((require, exports, module) => {
   koru.onunload(module, 'reload');
 
   return async () => {
-    startup();
+    await startup();
 
     process.on('SIGTERM', () => {
       console.log('Closing [SIGTERM]');

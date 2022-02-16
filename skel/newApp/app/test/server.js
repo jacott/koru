@@ -10,8 +10,8 @@ define((require, exports, module) => {
   const stubber         = require('koru/test/stubber');
   const webServer       = require('koru/web-server');
 
-  TH.Core.onStart(() => {TH.startTransaction()});
-  TH.Core.onEnd(() => {TH.rollbackTransaction()});
+  TH.Core.onStart(() => TH.startTransaction());
+  TH.Core.onEnd(() => TH.rollbackTransaction());
 
   require('koru/server');
   require('koru/server-rc');
@@ -20,7 +20,7 @@ define((require, exports, module) => {
     stubber.spy(Model.BaseModel, 'addUniqueIndex');
     stubber.spy(Model.BaseModel, 'addIndex');
 
-    fileWatch.watch(path.join(koru.libDir, 'app/koru'), path.join(koru.libDir, 'app'));
+    await fileWatch.watch(path.join(koru.libDir, 'app/koru'), path.join(koru.libDir, 'app'));
 
     await webServer.start();
     console.log('=> Ready');

@@ -7,8 +7,8 @@ define((require, exports, module) => {
 
   KoruStartup.restartOnUnload(require, module);
 
-  return () => {
-    bootstrap();
+  return async () => {
+    await bootstrap();
     if (AllPub.pubName === void 0) AllPub.pubName = 'All';
     UserAccount.start();
   };
