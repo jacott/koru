@@ -8,20 +8,18 @@ define((require, exports, module) => {
   const sUtil = require('./server-util');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
-    test('system', () => {
+    test('system', async () => {
       const ans = {stdout: 'my stdout', stderr: 'my stderr'};
 
-      stub(sUtil, 'execFile').returns(ans);
+      stub(sUtil, 'execFile').returns(Promise.resolve(ans));
 
-      assert.equals(sUtil.system('foo', 'bar'), 'my stdout');
+      assert.equals(await sUtil.system('foo', 'bar'), 'my stdout');
       assert.calledWith(sUtil.execFile, 'foo', 'bar');
 
       ans.error = {error: 'my error'};
 
       stub(koru, 'error');
-      assert.exception(() => {
-        sUtil.system('cmd');
-      }, {error: 'my error'});
+      await assert.exception(() => sUtil.system('cmd'), {error: 'my error'});
 
       assert.calledWith(koru.error, 'my stderr');
     });

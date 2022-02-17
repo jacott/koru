@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --no-wasm-code-gc
+#!/usr/bin/env -S node
 // -*- js2 -*-
 const path = require('path');
 const fs = require('fs');

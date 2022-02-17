@@ -24,8 +24,8 @@
   "main": "lib/koru",
   "bin": "./bin/koru",
   "dependencies": {
-    "@babel/generator": "^7.17.0",
-    "@babel/parser": "^7.17.0",
+    "@babel/generator": "^7.17.3",
+    "@babel/parser": "^7.17.3",
     "autoprefixer": "^10.4.2",
     "commander": "^9.0.0",
     "css-selector-parser": "^1.4.1",

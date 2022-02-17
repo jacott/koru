@@ -122,7 +122,8 @@ define((require) => {
   };
 
   const asyncInsert = async (self, p) => {
-    const id = await p;
+    const id = await self.model._insertAttrs(await p);
+
     const doc = await self.model.findById(id);
     if (doc == null) {
       throw Error('Factory insert failed! ' + self.model.modelName + ': ' + id);

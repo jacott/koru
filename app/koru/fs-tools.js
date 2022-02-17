@@ -20,8 +20,7 @@ define(() => {
   const RM_RF = {force: true, recursive: true};
 
   return {
-    // mkdir,
-    // mkdir_p,
+    mkdir: fs.mkdir,
     // appendData,
     readFile: fs.readFile,
     readdir: fs.readdir,
@@ -30,10 +29,8 @@ define(() => {
     stat: (path) => waitMethod(fs.stat, path),
     lstat: (path) => waitMethod(fs.lstat, path),
     mkdir_p: (dir) => fs.mkdir(dir, MKDIR_P),
-    // realpath: (path) => futureWrap(fs, fs.realpath, [path]),
-    // readlink(path) {
-    //   return waitMethod(fs.readlink, path);
-    // },
+    realpath: fs.realpath,
+    readlink: fs.readlink,
     // truncate,
     // unlink,
     // link,

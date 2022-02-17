@@ -34,7 +34,7 @@ case "$KORU_ENV" in
 esac
 
 export KORU_MODULE="$KORU_HOME/node_modules/koru"
-export KORU_NODE_OPTIONS="--no-wasm-code-gc"
+export KORU_NODE_OPTIONS=""
 
 if [[ $KORU_ENV = check ]]; then
     return

@@ -28,8 +28,8 @@ define((require) => {
       return future.promise;
     },
 
-    system: (cmd, ...args) => {
-      const ans = sUtil.execFile(cmd, ...args);
+    system: async (cmd, ...args) => {
+      const ans = await sUtil.execFile(cmd, ...args);
       if (ans.error) {
         koru.error(ans.stderr);
         throw ans.error;
