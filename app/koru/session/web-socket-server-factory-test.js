@@ -42,24 +42,24 @@ define((require, exports, module) => {
       beforeEach(() => {
         v.sess = sut(v.mockSess);
         v.msgId = 'm123';
-        v.run = (rpcMethod) => {
+        v.run = async (rpcMethod) => {
           v.sess.defineRpc('foo.rpc', rpcMethod);
 
           const data = [v.msgId, 'foo.rpc', 1, 2, 3];
           const buffer = message.encodeMessage('M', data, v.sess.globalDict);
 
           v.conn = makeConn();
-          v.sess._onMessage(v.conn, buffer);
+          return await v.sess._onMessage(v.conn, buffer);
         };
       });
 
-      test('in TransQueue transaction failure', () => {
+      test('in TransQueue transaction failure', async () => {
         let inTrans = false;
         v.sess.defineRpc('foo.rpc', () => {
           assert.isTrue(inTrans);
           throw new koru.Error(404, 'not found');
         });
-        intercept(TransQueue, 'transaction', (func) => {
+        intercept(TransQueue, 'transaction', async (func) => {
           inTrans = true;
           try {
             return func();
@@ -71,13 +71,15 @@ define((require, exports, module) => {
         conn.sendBinary.invokes((c) => {
           assert.isFalse(inTrans);
         });
-        v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
+        const p = v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
+        assert(p instanceof Promise);
+        await p;
         assert.calledWith(conn.sendBinary, 'M', ['m123', 'e', 404, 'not found']);
       });
 
-      test('in TransQueue transaction success', () => {
+      test('in TransQueue transaction success', async () => {
         let inTrans = false;
-        v.sess.defineRpc('foo.rpc', () => {
+        v.sess.defineRpc('foo.rpc', async () => {
           assert.isTrue(inTrans);
           return 'success';
         });
@@ -93,13 +95,13 @@ define((require, exports, module) => {
         conn.sendBinary.invokes((c) => {
           assert.isFalse(inTrans);
         });
-        v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
+        await v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
         assert.calledWith(conn.sendBinary, 'M', ['m123', 'r', 'success']);
       });
 
-      test('Random.id', () => {
+      test('Random.id', async () => {
         v.msgId = 'a1212345671234567890';
-        v.run((arg) => {
+        await v.run((arg) => {
           assert.same(Random.id(), 'Fs3Fn26qRzQI9PL1H');
           v.ans = Random.id();
         });
@@ -107,7 +109,7 @@ define((require, exports, module) => {
         assert.same(v.ans, 'W2gquYPP21ZS1N14d');
 
         v.msgId = 'a12123456712345678Aa';
-        v.run((arg) => {
+        await v.run((arg) => {
           assert.same(util.thread.msgId, 'a12123456712345678Aa');
 
           assert.same(Random.id(), 'FFykqEzyflL6oKnqR');
@@ -117,9 +119,9 @@ define((require, exports, module) => {
         assert.same(v.ans, 'ygIaapK60J3Lx3KGY');
       });
 
-      test('old msgId', () => {
+      test('old msgId', async () => {
         v.msgId = 'a1212';
-        v.run((arg) => {
+        await v.run((arg) => {
           refute.same(Random.id(), 'XDYyyXJ6M7iSTHjwZ');
           v.ans = Random.id();
         });
@@ -127,8 +129,8 @@ define((require, exports, module) => {
         refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
       });
 
-      test('result', () => {
-        v.run(function (...args) {
+      test('result', async () => {
+        await v.run(async function (...args) {
           v.thisValue = this;
           v.args = args.slice();
           return 'result';
@@ -140,9 +142,9 @@ define((require, exports, module) => {
         assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'r', 'result']);
       });
 
-      test('exception', () => {
+      test('exception', async () => {
         stub(koru, 'error');
-        v.run((one, two, three) => {
+        await v.run((one, two, three) => {
           throw v.error = new koru.Error(404, {foo: 'not found'});
         });
 
@@ -150,9 +152,9 @@ define((require, exports, module) => {
         assert.same(v.error.message, "{foo: 'not found'} [404]");
       });
 
-      test('general exception', () => {
+      test('general exception', async () => {
         stub(koru, 'error');
-        v.run((one, two, three) => {
+        await v.run((one, two, three) => {
           throw new Error('Foo');
         });
 

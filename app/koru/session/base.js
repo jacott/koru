@@ -2,6 +2,7 @@ define((require) => {
   'use strict';
   const {private$}      = require('koru/symbols');
   const Trace           = require('koru/trace');
+  const util            = require('koru/util');
   const message         = require('./message');
   const koru            = require('../main');
 
@@ -23,13 +24,13 @@ define((require) => {
 
     [inspect$]() {return 'SessionBase(' + this._id + ')'}
 
-    defineRpc(name, func=() => {}) {
+    defineRpc(name, func=util.voidFunc) {
       this._rpcs[name] = func;
       func[rpcType$] = 'update';
       return this;
     }
 
-    defineRpcGet(name, func=() => {}) {
+    defineRpcGet(name, func=util.voidFunc) {
       this._rpcs[name] = func;
       func[rpcType$] = 'get';
       return this;

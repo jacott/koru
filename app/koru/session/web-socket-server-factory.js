@@ -176,7 +176,7 @@ define((require, exports, module) => {
 
     session.countNotify = new Observable();
 
-    session.provide('M', function (data) {
+    session.provide('M', async function (data) {
       const msgId = data[0];
       const func = session._rpcs[util.thread.action = data[1]];
       try {
@@ -184,7 +184,7 @@ define((require, exports, module) => {
           throw new koru.Error(404, 'unknown method: ' + data[1]);
         }
 
-        const result = TransQueue.transaction(() => {
+        const result = await TransQueue.transaction(() => {
           util.thread.msgId = msgId;
           if (msgId.length > 17) {
             util.thread.random = new Random(msgId);
