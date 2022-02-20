@@ -44,7 +44,7 @@ isServer && define((require, exports, module) => {
       assert(new ReverseRpcSender().rpcQueue.cmd === 'F');
     });
 
-    test('configureSession', () => {
+    test('configureSession', async () => {
       /**
        * Enable a session to receive reverseRpc callbacks
        *
@@ -63,17 +63,18 @@ isServer && define((require, exports, module) => {
       const conn = ConnTH.mockConnection(void 0, mySession);
       const reverseRpc = new ReverseRpcSender({conn});
       const handler = mySession.provide.firstCall.args[1];
-      const callback = stub();
+      const callback = stub().returns(Promise.resolve(123));
 
       reverseRpc.rpc('myCall', 1, callback);
 
       const msgId = '1' + reverseRpc.baseId.toString(36);
       const data = [msgId, 'r', [1, 2, 3]];
 
-      handler.call(conn, data);
+      assert.same(await handler.call(conn, data), 123);
+
       assert.calledWith(callback, null, data[2]);
 
-      handler.call(conn, data);
+      await handler.call(conn, data);
       assert.calledOnce(callback);
 
       callback.reset();
@@ -83,7 +84,7 @@ isServer && define((require, exports, module) => {
       reverseRpc.rpc('myCall', 1, callback);
 
       const errData = ['2' + reverseRpc.baseId.toString(36), 'e', 400, {name: [['is_invalid']]}];
-      handler.call(conn, errData);
+      assert.same(await handler.call(conn, errData), 123);
 
       let errResult;
       assert.calledWithExactly(callback, m((err) => errResult = err));

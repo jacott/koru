@@ -23,15 +23,11 @@ define((require, exports, module) => {
         this[rpcQueue$].delete(msgId);
         const type = data[1];
         if (type === 'e') {
-          const callback = args[1] ?? koru.globalCallback;
-          if (data.length === 3) {
-            callback(new Error(data[2]));
-          } else {
-            callback(new koru.Error(+ data[2], data[3]));
-          }
-          return;
+          return (args[1] ?? koru.globalCallback)(
+            data.length === 3 ? new Error(data[2]) : new koru.Error(+ data[2], data[3]),
+          );
         }
-        args[1]?.(null, data[2]);
+        return args[1]?.(null, data[2]);
       });
     }
 

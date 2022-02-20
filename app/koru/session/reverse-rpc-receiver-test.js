@@ -26,7 +26,7 @@ isServer && define((require, exports, module) => {
 
     afterEach(() => {});
 
-    test('new', () => {
+    test('new', async () => {
       /**
        * Create an reverse rpc handler
        *
@@ -48,7 +48,7 @@ isServer && define((require, exports, module) => {
       const receive = sess._commands.F;
       assert.isFunction(receive);
 
-      receive(['1234', 'foo.rpc', 1, 2]);
+      await receive(['1234', 'foo.rpc', 1, 2]);
 
       assert.calledWith(sess.sendBinary, 'F', ['1234', 'r', 'success']);
 
@@ -59,17 +59,19 @@ isServer && define((require, exports, module) => {
       const r2 = new ReverseRpcReceiver(sess, 'Z');
       assert.isFunction(sess._commands.Z);
 
-      sess._commands.Z(['4321', 'iDontExist']);
+      const p = sess._commands.Z(['4321', 'iDontExist']);
+      assert(p instanceof Promise);
+      await p;
 
       assert.calledWith(sess.sendBinary, 'Z', ['4321', 'e', 404, 'unknown method: iDontExist']);
     });
 
-    test('error', () => {
+    test('error', async () => {
       const reverseRpc = new ReverseRpcReceiver(sess);
 
       reverseRpc.define('myRpc', () => {throw new koru.Error(400, {name: [['is_invalid']]})});
 
-      sess._commands.F(['4321', 'myRpc']);
+      await sess._commands.F(['4321', 'myRpc']);
 
       assert.calledWith(sess.sendBinary, 'F', ['4321', 'e', 400, {name: [['is_invalid']]}]);
     });

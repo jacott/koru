@@ -8,7 +8,7 @@ define((require, exports, module) => {
       if (session._commands[cmd] !== void 0) throw new Error('Session Already has a ' + cmd + ' command');
       this.session = session;
       this._rpcs = {};
-      session.provide(cmd, (data) => {
+      session.provide(cmd, async (data) => {
         const msgId = data[0];
         const func = this._rpcs[util.thread.action = data[1]];
         try {
@@ -16,7 +16,7 @@ define((require, exports, module) => {
             throw new koru.Error(404, 'unknown method: ' + data[1]);
           }
 
-          const result = TransQueue.transaction(() => {
+          const result = await TransQueue.transaction(() => {
             util.thread.msgId = msgId;
             return func.apply(session, data.slice(2));
           });
