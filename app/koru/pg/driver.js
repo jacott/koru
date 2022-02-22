@@ -271,7 +271,7 @@ define((require, exports, module) => {
       return this.query(`DROP TABLE IF EXISTS "${name}"`);
     }
 
-    get inTransaction() {return util.thread[this[tx$]]?.transaction === 'COMMIT'}
+    get inTransaction() {return util.thread[this[tx$]]?.transaction != null}
 
     async startTransaction() {
       await getConn(this); // ensure connection

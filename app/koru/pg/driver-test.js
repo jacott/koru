@@ -661,7 +661,13 @@ isServer && define((require, exports, module) => {
 
         assert.isFalse(client.inTransaction);
         const tx = await client.startTransaction(); {
+          assert.same(tx.transaction, 'COMMIT');
+
           assert.isTrue(client.inTransaction);
+          tx.transaction = 'ROLLBACK';
+          assert.isTrue(client.inTransaction);
+          tx.transaction = 'COMMIT';
+
           await foo.updateById('123', {name: 'a1'});
 
           assert.same(await client.startTransaction(), tx);
