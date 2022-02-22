@@ -508,7 +508,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     }
 
     async ensureIndex(keys, options={}) {
-      this._ensureTable();
+      this._ready !== true && await this._ensureTable();
       let cols = Object.keys(keys);
       const name = this._name + '_' + cols.join('_');
       cols = cols.map((col) => '"' + col + (keys[col] === -1 ? '" DESC' : '"'));
@@ -541,6 +541,10 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
 
     where(query, whereValues) {
       if (query == null) return;
+      if (this._ready !== true) {
+        return this._ensureTable().then(() => this.where(query, whereValues));
+      }
+
       const colMap = this._colMap;
       const whereSql = [];
       let count = whereValues.length;
@@ -816,7 +820,12 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
         return new Cursor(this, sql, null, options);
       }
 
-      sql += ' WHERE ' + where;
+      if (where instanceof Promise) {
+        const head = sql;
+        sql = where.then((where) => where === void 0 ? head : head + ' WHERE ' + where);
+      } else {
+        sql += ' WHERE ' + where;
+      }
       return new Cursor(this, sql, values, options);
     }
 
@@ -847,6 +856,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
 
   const initCursor = async (cursor) => {
     if (cursor.table._ready !== true) await cursor.table._ensureTable();
+    if (cursor._sql instanceof Promise) cursor._sql = await cursor._sql;
     const client = cursor.table._client;
     const tx = util.thread[client[tx$]];
     let sql = cursor._sql;

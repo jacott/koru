@@ -585,13 +585,31 @@ isServer && define((require, exports, module) => {
         await foo._client.query('truncate "Foo"');
       });
 
-      test('_resetTable', async () => {
+      test('_resetTable and cursor with where', async () => {
         assert.same(foo._ready, true);
         foo._resetTable();
         assert.same(foo._ready, undefined);
 
         const c = foo.find({name: 'abc'});
+        refute(foo._ready);
+        assert(c._sql instanceof Promise);
         assert.equals(await c.next(), {_id: '123', name: 'abc', age: 10});
+        assert.equals(c._sql, 'SELECT * FROM "Foo" WHERE "name"=$1');
+
+        assert.same(foo._ready, true);
+      });
+
+      test('_resetTable and cursor without where', async () => {
+        assert.same(foo._ready, true);
+        foo._resetTable();
+        assert.same(foo._ready, undefined);
+
+        const c = foo.find({});
+        refute(foo._ready);
+        assert(c._sql instanceof Promise);
+        assert.equals(await c.next(), {_id: '123', name: 'abc', age: 10});
+        assert.equals(c._sql, 'SELECT * FROM "Foo"');
+
         assert.same(foo._ready, true);
       });
 
