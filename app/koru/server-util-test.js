@@ -16,10 +16,10 @@ define((require, exports, module) => {
       assert.equals(await sUtil.system('foo', 'bar'), 'my stdout');
       assert.calledWith(sUtil.execFile, 'foo', 'bar');
 
-      ans.error = {error: 'my error'};
+      ans.error = {message: 'my error', code: 1, signal: 123};
 
       stub(koru, 'error');
-      await assert.exception(() => sUtil.system('cmd'), {error: 'my error'});
+      await assert.exception(() => sUtil.system('cmd'), {code: 1, message: 'my error', signal: 123});
 
       assert.calledWith(koru.error, 'my stderr');
     });

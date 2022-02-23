@@ -32,7 +32,9 @@ define((require) => {
       const ans = await sUtil.execFile(cmd, ...args);
       if (ans.error) {
         koru.error(ans.stderr);
-        throw ans.error;
+        const err = new Error(ans.error.message);
+        Object.assign(err, ans.error);
+        throw err;
       } else {
         return ans.stdout;
       }
