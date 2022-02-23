@@ -107,23 +107,23 @@ isServer && define((require, exports, module) => {
         assert.same(v.thread.userId, 'tcuid');
       });
 
-      test('queued', () => {
+      test('queued', async () => {
         v.calls = [];
         let error;
         let token = 'first';
         session.execWrapper.restore();
         intercept(session, 'execWrapper', (func, conn) => {
           v.calls.push(token);
-          func(conn);
+          return func(conn);
         });
-        intercept(session, '_onMessage', (conn, data) => {
+        intercept(session, '_onMessage', async (conn, data) => {
           token = 'second';
           try {
             v.calls.push(data);
             switch (data) {
             case 't123':
               assert.equals(v.conn._last, ['t123', null]);
-              v.conn.onMessage('t456');
+              await v.conn.onMessage('t456');
               assert.equals(v.conn._last, ['t456', null]);
               assert.equals(v.calls, ['first', 't123']);
               break;
@@ -135,7 +135,7 @@ isServer && define((require, exports, module) => {
             error = error || ex;
           }
         });
-        v.conn.onMessage('t123');
+        await v.conn.onMessage('t123');
 
         if (error) throw error;
 

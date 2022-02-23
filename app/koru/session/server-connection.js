@@ -130,27 +130,25 @@ define((require, exports, module) => {
         return;
       }
 
-      const process = (current) => {
-        this._session.execWrapper(() => {
-          IdleCheck.inc();
-          try {
-            this._session._onMessage(this, current[0]);
-          } catch (ex) {
-            koru.unhandledException(ex);
-          } finally {
-            IdleCheck.dec();
+      const process = (current) => this._session.execWrapper(async () => {
+        IdleCheck.inc();
+        try {
+          await this._session._onMessage(this, current[0]);
+        } catch (ex) {
+          koru.unhandledException(ex);
+        } finally {
+          IdleCheck.dec();
 
-            const nextMsg = current[1];
-            if (nextMsg) {
-              process(nextMsg);
-            } else {
-              this._last = null;
-            }
+          const nextMsg = current[1];
+          if (nextMsg) {
+            process(nextMsg);
+          } else {
+            this._last = null;
           }
-        }, this);
-      };
+        }
+      }, this);
 
-      process(this._last = [data, null]);
+      return process(this._last = [data, null]);
     }
 
     added(name, attrs, filter) {
