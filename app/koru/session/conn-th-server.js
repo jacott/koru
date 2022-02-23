@@ -20,7 +20,10 @@ define((require, exports, module) => {
         send: stub(), on: stub()}, {}, sessId, () => {},
                                        );
       const origSetUserId = conn.setUserId;
-      util.merge(conn, {get userId() {return userId}, setUserId(v) {userId = v; origSetUserId.call(this, v)}});
+      util.merge(conn, {
+        get userId() {return userId},
+        set userId(v) {throw new Error("set not allowed; use setUserId");},
+        setUserId(v) {userId = v; return origSetUserId.call(this, v)}});
       conn.sendBinary = stub();
       conn.sendEncoded = stub();
       conn.added = stub();

@@ -80,7 +80,7 @@ define((require) => {
       } else {
         const p = func.call(conn, obj);
         if (p instanceof Promise) {
-          p.catch((err) => koru.unhandledException(err));
+          return p.catch(koru.unhandledException);
         }
       }
     }

@@ -76,7 +76,7 @@ define((require, exports, module) => {
         return globalThis.__koruThreadLocal.run({}, () => {
           const ans = func();
           if (ans instanceof Promise) {
-            ans.catch((err) => {koru.unhandledException(err)});
+            return ans.catch(koru.unhandledException);
           }
           return ans;
         });
@@ -90,7 +90,7 @@ define((require, exports, module) => {
           dbBroker.db = conn.db;
           const ans = func(conn, data);
           if (ans instanceof Promise) {
-            ans.catch((err) => {koru.unhandledException(err)});
+            return ans.catch(koru.unhandledException);
           }
           return ans;
         });
