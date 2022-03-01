@@ -193,7 +193,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
 
     async _getMigrations() {
       if (this._migrations) return this._migrations;
-      this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
+      await this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
       this._migrations = Object.create(null);
       (await this._client.query('SELECT name FROM "Migration"')).
         forEach((row) => this._migrations[row.name] = true);
