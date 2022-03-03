@@ -13,7 +13,7 @@ define((require) => {
   const {ctx$, inspect$} = require('koru/symbols');
 
   const {TEXT_NODE} = document;
-  const dragTouchStart$ = Symbol();
+  const dragTouchStart$ = Symbol(), template$ = Symbol(), parsed$ = Symbol();
 
   let currentEvent;
 
@@ -31,8 +31,9 @@ define((require) => {
     };
 
     const tm = (event) => {
-      if (! v.dragging)
+      if (! v.dragging) {
         return cancel();
+      }
 
       touch = event.touches[0];
 
@@ -54,8 +55,9 @@ define((require) => {
 
     v?.cancel?.();
 
-    if (event.touches.length !== 1)
+    if (event.touches.length !== 1) {
       return;
+    }
 
     document.addEventListener('touchend', te, Dom.captureEventOption);
     document.addEventListener('touchmove', tm, Dom.captureEventOption);
@@ -65,7 +67,7 @@ define((require) => {
       currentTarget: event.currentTarget,
       target: event.target,
       data: {clientX: touch.clientX, clientY: touch.clientY},
-      timer:  koru.setTimeout(() => {
+      timer: koru.setTimeout(() => {
         const {target, data} = v;
         v.dragging = true;
         Dom.triggerEvent(target, 'dragstart', data);
@@ -89,25 +91,25 @@ define((require) => {
     let elm = event.target;
 
     try {
-      for(const key in eventTypes) {
+      for (const key in eventTypes) {
         if (key === ':TOP') {
           if (elm === event.currentTarget) {
             if (fire(event, elm, eventTypes[key])) return;
-          } else
+          } else {
             later[key] = true;
-        }
-        else if (elm != null && elm.nodeType !== TEXT_NODE) {
+          }
+        } else if (elm != null && elm.nodeType !== TEXT_NODE) {
           if (matches.call(elm, key)) {
             if (fire(event, elm, eventTypes[key])) return;
-          } else if (matches.call(elm, key.replace(/,/g, ' *,')+' *')) {
+          } else if (matches.call(elm, key.replace(/,/g, ' *,') + ' *')) {
             later[key] = true;
           }
         }
       }
 
-      for(const key in later) {
-        for (elm = elm?.parentNode;elm != null && elm !== event.currentTarget; elm = elm.parentNode) {
-          for(const key in later) {
+      for (const key in later) {
+        for (elm = elm?.parentNode; elm != null && elm !== event.currentTarget; elm = elm.parentNode) {
+          for (const key in later) {
             if (key !== ':TOP' && matches.call(elm, key)) {
               if (fire(event, elm, eventTypes[key])) return;
               delete later[key];
@@ -117,10 +119,10 @@ define((require) => {
         break;
       }
 
-      for(const key in later) {
+      for (const key in later) {
         if (fire(event, elm, eventTypes[key])) return;
       }
-    } catch(ex) {
+    } catch (ex) {
       Dom.stopEvent(event);
       Dom.handleException(ex);
     } finally {
@@ -175,13 +177,15 @@ define((require) => {
 
     if (selector) {
       selector += ' ';
-      for(let i = 0; i < events.length; ++i) {
+      for (let i = 0; i < events.length; ++i) {
         const row = events[i];
-        func(parent, row[0],  selector+row[1], row[row.length -1]);
+        func(parent, row[0], selector + row[1], row[row.length - 1]);
       }
-    } else for(let i = 0; i < events.length; ++i) {
-      const row = events[i];
-      func(parent, row[0], row[1], row[row.length -1]);
+    } else {
+      for (let i = 0; i < events.length; ++i) {
+        const row = events[i];
+        func(parent, row[0], row[1], row[row.length - 1]);
+      }
     }
   };
 
@@ -201,7 +205,7 @@ define((require) => {
         result = (template ?? root)[name];
       }
     }
-    if (rest != null) for(let i = 0; result != null && i < rest.length; ++i) {
+    if (rest != null) for (let i = 0; result != null && i < rest.length; ++i) {
       result = result[rest[i]];
     }
 
@@ -210,7 +214,7 @@ define((require) => {
 
   const addNodeEval = (template, node, parent) => {
     let elm;
-    switch(node[0]) {
+    switch (node[0]) {
     case '-':
       elm = null; break;
     case '':
@@ -228,20 +232,19 @@ define((require) => {
   };
 
   const setAttrs = (template, elm, attrs) => {
-    for(let j=0; j < attrs.length; ++j) {
+    for (let j = 0; j < attrs.length; ++j) {
       const attr = attrs[j];
 
       if (typeof attr === 'string') {
         elm.setAttribute(attr, '');
-
       } else if (attr[0] === '=') {
         const name = attr[1], value = attr[2];
         if (typeof value === 'string') {
-          if (name === 'xlink:href')
+          if (name === 'xlink:href') {
             elm.setAttributeNS(Dom.XLINKNS, 'href', value);
-          else
+          } else {
             elm.setAttribute(name, value);
-
+          }
         } else {
           addAttrEval(template, name, value, elm);
         }
@@ -254,8 +257,9 @@ define((require) => {
   const initBlueprint = (tpl, blueprint) => {
     if (blueprint.extends != null) {
       const sup = lookupTemplate(tpl.parent, blueprint.extends);
-      if (sup == null)
+      if (sup == null) {
         throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
+      }
       Object.setPrototypeOf(tpl, sup);
       tpl._helpers = sup._helpers != null && Object.create(sup._helpers);
     }
@@ -271,7 +275,6 @@ define((require) => {
 
       if (typeof node === 'string') {
         parent.appendChild(document.createTextNode(node));
-
       } else if (Array.isArray(node)) {
         const elm = addNodeEval(template, node, parent);
         elm != null && parent.appendChild(elm);
@@ -279,13 +282,15 @@ define((require) => {
         const {name, attrs, children} = node;
         if (node.ns !== void 0) {
           ns = node.ns;
-          if (ns === XHTMLNS)
+          if (ns === XHTMLNS) {
             ns = void 0;
+          }
         }
-        const elm = ns === void 0 ? (
-          name === 'svg' ?
-            document.createElementNS(ns=SVGNS, name)
-            : document.createElement(name))
+        const elm = ns === void 0
+              ? (
+                name === 'svg'
+                  ? document.createElementNS(ns = SVGNS, name)
+                  : document.createElement(name))
               : document.createElementNS(ns, name);
         attrs !== void 0 && setAttrs(template, elm, attrs);
         children != null && addNodes(template, elm, children, ns);
@@ -294,31 +299,48 @@ define((require) => {
     }
   };
 
+  const tryFetchTemplate = (template, name, parts) => {
+    const pt = fetchTemplate(template, name, parts);
+    if (pt == null) throw new Error("Invalid partial '" + name + "' in Template: " + template.name);
+    return pt;
+  };
+
+  const resolveHelper = (node, helpers) => {
+    const name = node[1];
+    if (typeof name === 'string' && (name in helpers)) {
+      const func = helpers[name];
+      if (typeof func === 'function') return func;
+    }
+    return name;
+  };
+
   const parseNode = (template, node, result) => {
-    const origName = node[1];
-    const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(origName);
-    const partial = node[0] === '>';
+    let node1 = node[parsed$];
+    if (node[template$] !== template) {
+      node1 = node[1];
+      if (node[0] === '>') {
+        if (typeof node1 === 'string') {
+          const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(node1);
 
-    let name;
-    if (m !== null) {
-      name = m[1];
-      node = {dotted: m[2].split('.'), opts: node.slice(m ? 2 : 1)};
-    } else {
-      name = origName;
-      node = node.slice(2);
+          if (m !== null) {
+            node1 = tryFetchTemplate(template, m[1], m[2].split('.'));
+          } else {
+            node1 = tryFetchTemplate(template, node1);
+          }
+        } else {
+          node1 = tryFetchTemplate(template, node1[1], node1[2]);
+        }
+      } else if (typeof node1 === 'string') {
+        node1 = resolveHelper(node, template._helpers);
+      } else if (node1[0] === '.') {
+        node1 = node1.slice();
+        node1[1] = resolveHelper(node1, template._helpers);
+      }
+      node[template$] = template;
+      node[parsed$] = node1;
     }
 
-    if (partial) {
-      const pt = fetchTemplate(template, name, m && node.dotted);
-      if (pt == null) throw new Error("Invalid partial '"  + origName + "' in Template: " + template.name);
-
-      result.push(pt);
-      result.push(m != null ? node.opts : node);
-    } else {
-      result.push(template._helpers[name] ?? name);
-      result.push(node);
-    }
-
+    result.push(node1, node[2]);
     return result;
   };
 
@@ -329,15 +351,17 @@ define((require) => {
       this._events = [];
       this.nodes = void 0;
       blueprint != null && initBlueprint(this, blueprint);
-      if (this._helpers === void 0)
+      if (this._helpers === void 0) {
         this._helpers = Object.create(Dom._helpers);
+      }
     }
 
     static get root() {return root}
 
     static newTemplate(module, blueprint, parent=this.root) {
-      if (arguments.length === 1)
+      if (blueprint === void 0) {
         return this.addTemplates(parent, module);
+      }
 
       const tpl = this.addTemplates(parent, blueprint);
       tpl.$module = module;
@@ -359,7 +383,7 @@ define((require) => {
         const names = name.split('.');
         name = names.pop();
         forEach(names, (nm) => {
-          parent = parent[nm] ?? (parent[nm] =  new this(nm, parent));
+          parent = parent[nm] ?? (parent[nm] = new this(nm, parent));
         });
       }
       if (hasOwn(parent, name) && parent[name] != null) {
@@ -370,7 +394,7 @@ define((require) => {
       }
       const {nested} = blueprint;
 
-      if (nested != null) for(let i = 0; i < nested.length; ++i) {
+      if (nested != null) for (let i = 0; i < nested.length; ++i) {
         this.addTemplates(parent, nested[i]);
       }
 
@@ -392,12 +416,13 @@ define((require) => {
 
     $ctx(origin) {
       if (typeof origin === 'string') origin = document.getElementById(origin);
-      if (origin == null)
+      if (origin == null) {
         origin = Ctx._currentCtx;
-      else if (origin.parentNode !== void 0)
+      } else if (origin.parentNode !== void 0) {
         origin = Dom.ctx(origin);
+      }
 
-      for(; origin != null; origin = origin.parentCtx) {
+      for (;origin != null; origin = origin.parentCtx) {
         if (origin.template === this) return origin;
       }
     }
@@ -408,8 +433,9 @@ define((require) => {
       const elm = this.$render(data, parentCtx);
 
       if (this._events.length > 0) {
-        if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE)
+        if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
           throw new Error('attempt to attach events to document fragment: ' + this.$fullname);
+        }
         this.$attachEvents(elm);
         Dom.ctx(elm).onDestroy(() => this.$detachEvents(elm));
       }
@@ -431,12 +457,12 @@ define((require) => {
         this.$created?.(ctx, frag);
         ctx.data == null || ctx.updateAllTags(ctx.data);
         return frag;
-      } catch(err) {
+      } catch (err) {
         try {
           err.toStringPrefix = `while rendering: ${this.$fullname}\n`;
           // clean up what we can
           Dom.destroyData(frag);
-        } catch(ex2) {}
+        } catch (ex2) {}
         throw err;
       } finally {
         Ctx._currentCtx = prevCtx;
@@ -453,7 +479,7 @@ define((require) => {
     }
 
     $events(events) {
-      for(const key in events)
+      for (const key in events)
         this.$event(key, events[key]);
       return this;
     }
@@ -467,17 +493,18 @@ define((require) => {
 
     $findEvent(type, css) {
       const events = this._events;
-      for(let i = 0; i < events.length; ++i) {
+      for (let i = 0; i < events.length; ++i) {
         const row = events[i];
-        if (row[0] === type && row[1] === css)
+        if (row[0] === type && row[1] === css) {
           return row;
+        }
       }
     }
 
     $actions(actions) {
       const events = {};
-      for(const key in actions) {
-        events['click [name='+key+']'] = actions[key];
+      for (const key in actions) {
+        events['click [name=' + key + ']'] = actions[key];
       }
       return this.$events(events);
     }
@@ -497,20 +524,21 @@ define((require) => {
     }
 
     [inspect$]() {
-      return 'Template(' + this.$fullname +')';
+      return 'Template(' + this.$fullname + ')';
     }
 
     $contains(subTemplate=null) {
       while (subTemplate !== null) {
-        if (this === subTemplate)
+        if (this === subTemplate) {
           return true;
+        }
         subTemplate = subTemplate.parent;
       }
       return false;
     }
 
     static get _currentEvent() {return currentEvent}
-    static set _currentEvent(value) {currentEvent =  value}
+    static set _currentEvent(value) {currentEvent = value}
   }
 
   const nativeOn = (parent, eventType, selector, func) => {
@@ -519,7 +547,7 @@ define((require) => {
     let eventTypes = events[eventType];
     if (eventTypes === void 0) {
       eventTypes = events[eventType] = {};
-      switch(eventType) {
+      switch (eventType) {
       case 'focus':
         parent.addEventListener(eventType, onEvent, true);
         break;
@@ -542,7 +570,7 @@ define((require) => {
       }
     }
 
-    eventTypes[selector||':TOP'] = func;
+    eventTypes[selector || ':TOP'] = func;
   };
 
   const lookupTemplate = Template.lookupTemplate = (tpl, name) => {

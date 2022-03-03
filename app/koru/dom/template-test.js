@@ -34,8 +34,8 @@ isClient && define((require, exports, module) => {
       assert.called(ev.preventDefault);
       const Tpl = Dom.newTemplate({
         name: 'Foo',
-        nodes:[{
-          name:'div',
+        nodes: [{
+          name: 'div',
         }],
       });
 
@@ -87,9 +87,9 @@ isClient && define((require, exports, module) => {
     test('relative name', () => {
       Dom.newTemplate({
         name: 'Bar.Baz.Buzz',
-        nodes:[{
-          name:'div',
-          children: [' ', ['>', '../../Fnord.Sub.Sub', ['=', 'x', 123]]],
+        nodes: [{
+          name: 'div',
+          children: [' ', ['>', ['.', '../../Fnord', ['Sub', 'Sub']], ['=', 'x', 123]]],
         }],
       });
 
@@ -106,30 +106,58 @@ isClient && define((require, exports, module) => {
       });
     });
 
+    test('partial with helper data', () => {
+      Dom.newTemplate({
+        name: 'Bar.Parent',
+        nodes: [{
+          name: 'div',
+          children: [' ', ['>', ['.', '/Bar', ['Child']], ['fooHelper']]],
+        }],
+      });
+
+      Dom.newTemplate({
+        name: 'Bar.Child',
+        nodes: [{
+          name: 'p',
+          children: ['', ['', 'value1']],
+        }],
+      });
+
+      Dom.tpl.Bar.Parent.$helpers({
+        fooHelper() {
+          return this.child;
+        },
+      });
+
+      assert.dom(Dom.tpl.Bar.Parent.$render({child: {value1() {return 'Success'}}}), function () {
+        assert.dom('div>p', 'Success');
+      });
+    });
+
     group('partial', () => {
-      beforeEach( () => {
+      beforeEach(() => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'section',
-            attrs: [['=','id','FooId']],
-            children:[' ', ['>', '/Bar']],
+          nodes: [{
+            name: 'section',
+            attrs: [['=', 'id', 'FooId']],
+            children: [' ', ['>', '/Bar']],
           }],
         });
 
         Dom.newTemplate({
           name: 'Bar',
-          nodes:[{
-            name:'div',
-            children:[' ', ['>', 'Baz', ['=', 'initials', 'myFunc']]],
+          nodes: [{
+            name: 'div',
+            children: [' ', ['>', 'Baz', [['=', 'initials', 'myFunc']]]],
           }],
         });
 
         Dom.newTemplate({
           name: 'Bar.Baz',
-          nodes:[{
-            name:'input',
-            attrs:[['=','type','text'], ['=', 'value', ['', 'initials']]],
+          nodes: [{
+            name: 'input',
+            attrs: [['=', 'type', 'text'], ['=', 'value', ['', 'initials']]],
             children: [{
               name: 'article',
               attrs: [['=', 'id', 'BazArticle']],
@@ -138,7 +166,7 @@ isClient && define((require, exports, module) => {
         });
       });
 
-      afterEach( () => {
+      afterEach(() => {
         Dom.removeChildren(document.body);
         delete Dom.tpl.Bar;
       });
@@ -295,7 +323,7 @@ isClient && define((require, exports, module) => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'button'},
-        ]
+        ],
       }]});
       Dom.tpl.Foo.$events({
         'focus button': v.focus = stub(),
@@ -338,7 +366,7 @@ isClient && define((require, exports, module) => {
         Dom.newTemplate({name: 'Foo', nodes: [{
           name: 'div', children: [
             {name: 'button'},
-          ]
+          ],
         }]});
         Dom.tpl.Foo.$events({
           'menustart button': v.menustart = stub(),
@@ -385,7 +413,7 @@ isClient && define((require, exports, module) => {
         Dom.newTemplate({name: 'Foo', nodes: [{
           name: 'div', children: [
             {name: 'span', attrs: [['=', 'draggable', 'true']]},
-          ]
+          ],
         }]});
         Dom.tpl.Foo.$events({
           'dragstart span': v.dragStart = stub(),
@@ -518,7 +546,7 @@ isClient && define((require, exports, module) => {
         name: 'div', children: [
           {name: 'span'},
           {name: 'button'},
-        ]
+        ],
       }]});
       v.spanCall = stub();
       Dom.tpl.Foo.$events({
@@ -608,8 +636,7 @@ isClient && define((require, exports, module) => {
     });
 
     group('newTemplate', () => {
-      beforeEach(() => {
-      });
+      beforeEach(() => {});
 
       test('simple', () => {
         /**
@@ -627,7 +654,7 @@ isClient && define((require, exports, module) => {
         const myMod = {id: 'myMod', onUnload: stub(),
                        __proto__: Module.prototype};
         assert.same(Template.newTemplate(myMod, {
-          name: 'Foo', nodes: [{name: 'div'}]
+          name: 'Foo', nodes: [{name: 'div'}],
         }), Dom.tpl.Foo);
 
         const tpl = Dom.tpl.Foo;
@@ -685,10 +712,10 @@ isClient && define((require, exports, module) => {
     });
 
     group('with template', () => {
-      beforeEach( () => {
+      beforeEach(() => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{name: 'div', attrs:[['=','id','foo'], ['', 'myHelper']],}],
+          nodes: [{name: 'div', attrs: [['=', 'id', 'foo'], ['', 'myHelper']]}],
         });
       });
 
@@ -753,8 +780,7 @@ isClient && define((require, exports, module) => {
       });
 
       group('with rendered', () => {
-        beforeEach( () => {
-
+        beforeEach(() => {
           v.foo = Dom.tpl.Foo.$render();
 
           document.body.appendChild(v.foo);
@@ -828,7 +854,7 @@ isClient && define((require, exports, module) => {
           children: [{
             name: 'svg',
             attrs: [],
-            children: [{name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]}]
+            children: [{name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]}],
           }, {name: 'div', attrs: [], children: []}],
         }],
       });
@@ -853,17 +879,17 @@ isClient && define((require, exports, module) => {
         nodes: [{
           name: 'g',
           children: [{
-            name:'image',
-            attrs: [['=','xlink:href','/abc.jpg']],
+            name: 'image',
+            attrs: [['=', 'xlink:href', '/abc.jpg']],
           }, {
-            name:'image',
-            attrs: [['=','xlink:href', ['', 'image2']]],
+            name: 'image',
+            attrs: [['=', 'xlink:href', ['', 'image2']]],
           }, {
-            name:'foreignObject',
+            name: 'foreignObject',
             attrs: [], children: [
-              {name:'div', ns:'http://www.w3.org/1999/xhtml'}
+              {name: 'div', ns: 'http://www.w3.org/1999/xhtml'},
             ],
-          }]
+          }],
         }],
       });
 
@@ -889,12 +915,12 @@ isClient && define((require, exports, module) => {
       Template.newTemplate({
         name: 'Foo',
         nodes: [{
-          name:'div',
-          attrs: [['=','id','div1']],
-          children: [' ',['','bar'],' ']
+          name: 'div',
+          attrs: [['=', 'id', 'div1']],
+          children: [' ', ['', 'bar'], ' '],
         }, {
-          name:'div',
-          attrs: [['=','id','div2']],
+          name: 'div',
+          attrs: [['=', 'id', 'div2']],
         }],
       });
 
@@ -908,9 +934,9 @@ isClient && define((require, exports, module) => {
       Template.newTemplate({
         name: 'Foo',
         nodes: [{
-          name:'div',
-          attrs:[],
-          children: [' ',['','bar'],' '],
+          name: 'div',
+          attrs: [],
+          children: [' ', ['', 'bar'], ' '],
         }],
       });
 
@@ -974,7 +1000,7 @@ isClient && define((require, exports, module) => {
       test('autostop', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{name: 'div'}],
+          nodes: [{name: 'div'}],
         });
 
         const elm = Dom.tpl.Foo.$render({});
@@ -999,8 +1025,8 @@ isClient && define((require, exports, module) => {
         Dom.newTemplate({
           name: 'Foo',
           nodes: [{
-            name:'div',
-            children: [' ',['','bar'],' '],
+            name: 'div',
+            children: [' ', ['', 'bar'], ' '],
           }],
         });
 
@@ -1025,7 +1051,7 @@ isClient && define((require, exports, module) => {
       test('no frag if only one child node', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{name: 'div'}],
+          nodes: [{name: 'div'}],
         });
 
         const elm = Dom.tpl.Foo.$render({});
@@ -1036,7 +1062,7 @@ isClient && define((require, exports, module) => {
       test('frag if multi childs', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{name: 'div',}, {name: 'span'}, {name: 'section'}],
+          nodes: [{name: 'div'}, {name: 'span'}, {name: 'section'}],
         });
         const frag = Dom.tpl.Foo.$render({});
         assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
@@ -1051,14 +1077,14 @@ isClient && define((require, exports, module) => {
       test('attributes', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'div',attrs:[
-              ['=','id',['','id']],
-              ['=','class',['','classes']],
-              ['=','data-id',['','user._id']],
-              ['','draggable']
+          nodes: [{
+            name: 'div', attrs: [
+              ['=', 'id', ['', 'id']],
+              ['=', 'class', ['', 'classes']],
+              ['=', 'data-id', ['', ['.', 'user', ['_id']]]],
+              ['', 'draggable'],
             ],
-            children:[],
+            children: [],
           }],
         });
 
@@ -1108,20 +1134,20 @@ isClient && define((require, exports, module) => {
       test('updateElement', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'div',
-            children:[{
-              name:'h1',
-              attrs:[['', 'foo', '.user.nameFunc']],
-              children:[['', 'user.name']]
-            },{
-              name:'label',
-              attrs:[['=', 'class', 'search']],
-              children:[['', 'user.initials']],
-            }]
+          nodes: [{
+            name: 'div',
+            children: [{
+              name: 'h1',
+              attrs: [['', 'foo', [['.', 'user', ['nameFunc']]]]],
+              children: [['', ['.', 'user', ['name']]]],
+            }, {
+              name: 'label',
+              attrs: [['=', 'class', 'search']],
+              children: [['', ['.', 'user', ['initials']]]],
+            }],
           }, {
             name: 'h2',
-            children:[['', 'user.name']],
+            children: [['', ['.', 'user', ['name']]]],
           }],
         });
 
@@ -1149,11 +1175,11 @@ isClient && define((require, exports, module) => {
       test('updateElement 2', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'div',
-            children:[['', 'name'], {
-              name:'p',
-              children:[['', 'name']],
+          nodes: [{
+            name: 'div',
+            children: [['', 'name'], {
+              name: 'p',
+              children: [['', 'name']],
             }],
           }],
         });
@@ -1173,9 +1199,9 @@ isClient && define((require, exports, module) => {
       test('body', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes:[{
-            name:'div',
-            children:[['', 'user.initials']],
+          nodes: [{
+            name: 'div',
+            children: [['', ['.', 'user', ['initials']]]],
           }],
         });
 
@@ -1186,7 +1212,7 @@ isClient && define((require, exports, module) => {
     test('registerHelpers', () => {
       const Foo = Dom.newTemplate({
         name: 'Foo.Super',
-        nodes:[],
+        nodes: [],
       });
 
       Foo.$helpers({
@@ -1215,7 +1241,7 @@ isClient && define((require, exports, module) => {
       });
 
       Dom.newTemplate({
-        name: 'Foo.Super.Duper'
+        name: 'Foo.Super.Duper',
       });
 
       Super.$helpers({
@@ -1233,13 +1259,13 @@ isClient && define((require, exports, module) => {
       const Sub = Dom.newTemplate({
         name: 'Foo.Sub',
         extends: '../Foo.Super', // test lookup works
-        nodes:[{
-          name:'div',
-          children:[['', 'superFoo']],
+        nodes: [{
+          name: 'div',
+          children: [['', 'superFoo']],
         }],
         nested: [{
-          name: 'Duper'
-        }]
+          name: 'Duper',
+        }],
       });
 
       assert.same(Sub.Duper.parent, Sub);

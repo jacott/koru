@@ -4,7 +4,7 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
-  const TemplateCompiler  = require('./template-compiler');
+  const TemplateCompiler = require('./template-compiler');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     test('filenameToTemplateName', () => {
@@ -18,18 +18,65 @@ define((require, exports, module) => {
       assert.equals(json, {
         name: 'Hello',
         nodes: [
-          {name: 'div', children: ['hello']}
+          {name: 'div', children: ['hello']},
         ],
       });
     });
 
     test('no template, supplied name', () => {
-      const json = JSON.parse(TemplateCompiler.toJavascript('<div>hello</div>', void 0, 'My.Template'));
+      const json = TemplateCompiler.toJavascript('<div>hello</div>', void 0, 'My.Template').toJson();
 
       assert.equals(json, {
         name: 'My.Template',
         nodes: [
-          {name: 'div', children: ['hello']}
+          {name: 'div', children: ['hello']},
+        ],
+      });
+    });
+
+    test('partials', () => {
+      const json = TemplateCompiler.toJavascript('<div>{{> ../../../a.b.c foo=123 bar="abc"}}</div>', void 0, 'My.Template').toJson();
+
+      assert.equals(json, {
+        name: 'My.Template',
+        nodes: [
+          {name: 'div', children: [
+            ['>', '../../../a.b.c', [['=', 'foo', 123], ['=', 'bar', '"abc']]],
+          ]},
+        ],
+      });
+    });
+
+    test('nested values', () => {
+      const json = TemplateCompiler.toJavascript('<div>{{a.b.c x.y.z 123 "abc" def="qzy" ghj=this}}</div>', void 0, 'My.Template').toJson();
+
+      assert.equals(json, {
+        name: 'My.Template',
+        nodes: [
+          {name: 'div', children: [
+            ['', ['.', 'a', ['b', 'c']], [['.', 'x', ['y', 'z']], 123, '"abc', ['=', 'def', '"qzy'], ['=', 'ghj', 'this']]]]},
+        ],
+      });
+    });
+
+    test('attrs with embedded curlys', () => {
+      const json = TemplateCompiler.toJavascript(
+        `<div disabled class="{{
+classes    a.b.c
+}}"
+
+{{ cmd.and arg.has.parts "other"
+}}
+></div>`, void 0, 'My.Template').toJson();
+
+      assert.equals(json, {
+        name: 'My.Template',
+        nodes: [
+          {name: 'div', attrs: [
+            'disabled',
+            ['=', 'class', ['', 'classes', [['.', 'a', ['b', 'c']]]]],
+            ['', ['.', 'cmd', ['and']], [['.', 'arg', ['has', 'parts']], '"other']],
+          ]},
         ],
       });
     });
@@ -46,14 +93,14 @@ define((require, exports, module) => {
         nested: [{
           name: 'Bar', nodes: [{
             name: 'span',
-            attrs: [['=', 'id', ['', 'join', 'korulet', '"\n           ']],
-                    ['=', 'data-foo', ['', 'join', '"the', 'quick', '"brown', 'fox']]],
+            attrs: [['=', 'id', ['', 'join', ['korulet', '"\n           ']]],
+                    ['=', 'data-foo', ['', 'join', ['"the', 'quick', '"brown', 'fox']]]],
             children: [
-              ' ', ['', 'helperName', ['=', 'foo', '"a\nb\nc\n']],
+              ' ', ['', 'helperName', [['=', 'foo', '"a\nb\nc\n']]],
               ' some & <other>\u00a0text\n      \t',
-              ['', 'h2.has.parts'], ' ']
+              ['', ['.', 'h2', ['has', 'parts']]], ' '],
           }]}, {
-            name: 'Fnord'
+            name: 'Fnord',
           }, {
             name: 'Baz', extends: 'Fnord', ns: 'http://www.w3.org/2000/svg',
             nodes: [{name: 'div'}]}],
@@ -61,30 +108,30 @@ define((require, exports, module) => {
           name: 'div',
           attrs: [
             ['=', 'id', 'Foo'], ['=', 'class', ['', 'classes']],
-            ['', 'attrs'], ['', 'dotted', '.arg.has.parts', '"literal']],
+            ['', 'attrs'], ['', 'dotted', [['.', 'arg', ['has', 'parts']], '"literal']]],
           children: [
             ' ', ['>', 'Bar'], ' ', {
               name: 'svg',
               children: [
-                {name:'defs',
+                {name: 'defs',
                  children: [{
                    name: 'pattern', attrs: [
-                     ['=','id','image123'],['=','patternUnits','userSpaceOnUse'],
-                     ['=','width','83.38'],['=','height','100'],['=','x','0'],['=','y','0']],
+                     ['=', 'id', 'image123'], ['=', 'patternUnits', 'userSpaceOnUse'],
+                     ['=', 'width', '83.38'], ['=', 'height', '100'], ['=', 'x', '0'], ['=', 'y', '0']],
                    children: [{
                      name: 'image', attrs: [
-                       ['=','xlink:href','http://vimaly.test/myImage.jpg'],
-                       ['=','x','0'],['=','y','0'],
-                       ['=','width','100%'],['=','height','100%'],
-                       ['=','preserveAspectRatio','xMinYMin slice']]
-                   }]
+                       ['=', 'xlink:href', 'http://vimaly.test/myImage.jpg'],
+                       ['=', 'x', '0'], ['=', 'y', '0'],
+                       ['=', 'width', '100%'], ['=', 'height', '100%'],
+                       ['=', 'preserveAspectRatio', 'xMinYMin slice']],
+                   }],
                  }]},
                 {name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]},
                 {name: 'foreignObject', children: [
-                  {name: 'div', ns: 'http://www.w3.org/1999/xhtml'}
-                ]}
+                  {name: 'div', ns: 'http://www.w3.org/1999/xhtml'},
+                ]},
               ],
-            }]
+            }],
         }],
       });
     });

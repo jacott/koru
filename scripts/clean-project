@@ -2,5 +2,7 @@
 set -e
 cd "${0%/*}"/..
 
-rm -rf package-node.test node_modules build
+if [[ "$1" = "full" ]]; then
+    rm -rf package-node.test node_modules build
+fi
 rm -rf $(find app -type d -name '.build')

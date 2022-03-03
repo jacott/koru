@@ -34,32 +34,30 @@ define((require) => {
   };
 
   const getValue = (data, func, args) => {
-    if (args == null) return;
-    if (args.dotted != null) {
-      let value = getValue(data, func, []);
+    if (Array.isArray(func) && func[0] === '.') {
+      let value = getValue(data, func[1], []);
       if (value == null) return value;
-      const {dotted} = args;
-      const last = dotted.length - 1;
+      const parts = func[2];
+      const last = parts.length - 1;
       for (let i = 0; i <= last; ++i) {
-        const row = dotted[i];
+        const row = parts[i];
         const lv = value;
-        value = lv[dotted[i]];
+        value = lv[parts[i]];
         if (value == null) {
           return value;
         }
         if (typeof value === 'function') {
-          value = i === last
-            ? value.apply(lv, evalArgs(data, args))
-            : value.call(lv);
+          value = (i === last && args !== void 0
+                   ? value.apply(lv, evalArgs(data, args))
+                   : value.call(lv));
         }
       }
       return value;
     }
 
-    let parts = null;
     switch (typeof func) {
     case 'function':
-      return func.apply(data, evalArgs(data, args));
+      return args === void 0 ? func.call(data) : func.apply(data, evalArgs(data, args));
     case 'string': {
       const sp = Specials[func];
       if (sp !== void 0) {
@@ -69,9 +67,6 @@ define((require) => {
 
       switch (func[0]) {
       case '"': return func.slice(1);
-      case '.':
-        parts = func.split('.');
-        func = parts[1];
       default:
         if (Specials[func[0]] !== void 0) {
           const n = Number.parseFloat(func);
@@ -91,15 +86,9 @@ define((require) => {
           if (value === void 0) value = null;
         }
       }
-      if (parts !== null) {
-        for (let i = 2; value != null && i < parts.length; ++i) {
-          data = value;
-          value = value[parts[i]];
-        }
-      }
       if (value !== void 0) {
         if (typeof value === 'function') {
-          return value.apply(data, evalArgs(data, args));
+          return args === void 0 ? value.call(data) : value.apply(data, evalArgs(data, args));
         }
         return value;
       }
@@ -124,7 +113,6 @@ define((require) => {
     if (value === void 0 || value === currentElement) {
       return;
     }
-
     if (value === null) {
       if (currentElement.nodeType === COMMENT_NODE) {
         value = currentElement;
@@ -172,16 +160,16 @@ define((require) => {
     let output = [];
     let hash = void 0;
 
-    for (let i = 0; i<len; ++i) {
+    for (let i = 0; i < len; ++i) {
       const arg = args[i];
       if (arg != null && typeof arg === 'object' && arg[0] === '=') {
         if (hash === void 0) hash = {};
-        hash[arg[1]] = getValue(data, arg[2], []);
+        hash[arg[1]] = getValue(data, arg[2]);
       } else {
-        output.push(getValue(data, arg, []));
+        output.push(getValue(data, arg));
       }
     }
-    if (hash !== void 0) for (const key in hash) {
+    for (const key in hash) {
       output.push(hash);
       break;
     }
@@ -202,7 +190,7 @@ define((require) => {
   };
 
   function evalPartial(func, args) {
-    if (args.length === 0) {
+    if (args === void 0 || args.length === 0) {
       args = this;
     } else {
       args = evalArgs(this, args);
@@ -339,7 +327,7 @@ define((require) => {
       try {
         const {evals} = this;
         const len = evals.length;
-        for (let i = 0; i<len; ++i) {
+        for (let i = 0; i < len; ++i) {
           const ev = evals[i];
           if (Dom.contains(elm, ev[0])) {
             updateNode(ev, currentCtx.data);

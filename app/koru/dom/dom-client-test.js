@@ -742,7 +742,7 @@ define((require, exports, module) => {
     test('decimal helper', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
-          ['', 'decimal', 'foo', ['=', 'format', '"3']],
+          ['', 'decimal', ['foo', ['=', 'format', '"3']]],
         ],
       }]});
 
@@ -758,7 +758,7 @@ define((require, exports, module) => {
     test('comment helper', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
-          ['', 'comment', '"foo'],
+          ['', 'comment', ['"foo']],
         ],
       }]});
 

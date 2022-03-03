@@ -1,22 +1,22 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
-  const Ctx     = require('koru/dom/ctx');
-  const Dom     = require('../dom');
-  const eachTpl = require('../html!./each-test');
-  const Model   = require('../model/main');
-  const TH      = require('../model/test-helper');
-  const util    = require('../util');
+  const Ctx             = require('koru/dom/ctx');
+  const Dom             = require('../dom');
+  const eachTpl         = require('../html!./each-test');
+  const Model           = require('../model/main');
+  const TH              = require('../model/test-helper');
+  const util            = require('../util');
 
   const {stub, spy} = TH;
   const {endMarker$} = require('koru/symbols');
   const $ = Dom.current;
 
-  const each    = require('./each');
+  const each = require('./each');
 
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.Each = Dom.newTemplate(util.deepCopy(eachTpl));
 
       v.Each.$helpers({
@@ -24,32 +24,32 @@ isClient && define((require, exports, module)=>{
       });
 
       Dom.newTemplate({
-        name: "Test.Each.Each_fooList",
+        name: 'Test.Each.Each_fooList',
         nodes: [{
-          name:"li",
-          attrs:[["=","id",["", "id"]]],
-          children: [["","name"]],
+          name: 'li',
+          attrs: [['=', 'id', ['', 'id']]],
+          children: [['', 'name']],
         }],
       });
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       Dom.removeChildren(document.body);
       Dom.tpl.Test = undefined;
       v = {};
     });
 
-    test("default template", ()=>{
-      v.Each.nodes[0].children[1].pop();
+    test('default template', () => {
+      v.Each.nodes[0].children[1][2].pop();
 
       const query = {
         compare: util.compareByName,
         compareKeys: ['name', 'id'],
         matches() {return true},
-        forEach(func) {func({id: "id1", name: 'r1'})},
+        forEach(func) {func({id: 'id1', name: 'r1'})},
       };
 
-      assert.dom(v.Each.$render({}), elm => {
+      assert.dom(v.Each.$render({}), (elm) => {
         v.fooList.firstCall.args[0].autoList({
           query,
         });
@@ -57,21 +57,21 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("calling global helper", ()=>{
+    test('calling global helper', () => {
       delete v.Each._helpers.fooList;
       Dom.registerHelpers({
         fooList: stub(),
       });
 
-      after(()=>{delete Dom._helpers.fooList});
+      after(() => {delete Dom._helpers.fooList});
 
       v.Each.$render({});
 
       assert.called(Dom._helpers.fooList);
     });
 
-    group("each.autoList", ()=>{
-      beforeEach(()=>{
+    group('each.autoList', () => {
+      beforeEach(() => {
         v.TestModel = Model.define('TestModel').defineFields({
           id1: 'text',
           id2: 'text',
@@ -83,54 +83,57 @@ isClient && define((require, exports, module)=>{
         v.other = v.TestModel.create({id1: '2', id2: '3', name: 'Caprice'});
       });
 
-      afterEach(()=>{
+      afterEach(() => {
         Model._destroyModel('TestModel', 'drop');
       });
 
-      test("sort by field name", ()=>{
-         v.Each.$helpers({
+      test('sort by field name', () => {
+        v.Each.$helpers({
           fooList(each) {
             return each.autoList({
               query: v.TestModel.where({id1: $.data().major, id2: '2'}).sort('name'),
               changed: v.changedStub = stub(),
             });
-          }
+          },
         });
 
-        assert.dom(v.Each.$render({major: '1'}), elm => {
+        assert.dom(v.Each.$render({major: '1'}), (elm) => {
           assert.dom('li', {count: 2});
           assert.dom('li:first-child', 'alice');
           assert.dom('li:nth-child(2)', 'bob');
         });
       });
 
-      test("query", ()=>{
+      test('query', () => {
         let count = 0;
         v.Each.$helpers({
           fooList(each) {
             count++;
             v.list = each.list;
             if (each.list) {
-              if (each._major !== this.major)
+              if (each._major !== this.major) {
                 each.list.changeOptions({
-                  query: v.TestModel.where({id1: each._major = this.major, id2: '2'}).sort('name')
+                  query: v.TestModel.where({id1: each._major = this.major, id2: '2'}).sort('name'),
                 });
-            } else each.autoList({
-              query: v.TestModel.
-                where({id1: each._major = this.major, id2: '2'})
-                .sort('name'),
-            });
-          }
+              }
+            } else {
+              each.autoList({
+                query: v.TestModel.
+                  where({id1: each._major = this.major, id2: '2'})
+                  .sort('name'),
+              });
+            }
+          },
         });
 
-        assert.dom(v.Each.$render({major: '1'}), elm => {
+        assert.dom(v.Each.$render({major: '1'}), (elm) => {
           assert.dom('li', {count: 2});
           assert.dom('li:first-child', 'alice');
           assert.dom('li:nth-child(2)', 'bob');
 
           const barney = v.TestModel.create({id1: '1', id2: '2', name: 'barny'});
           assert.dom('li', {count: 3});
-          assert.dom('li:nth-child(2)', 'barny', elm =>{
+          assert.dom('li:nth-child(2)', 'barny', (elm) => {
             assert.same(Dom.myCtx(elm).parentCtx, Dom.myCtx(elm.parentNode));
           });
 
@@ -149,7 +152,7 @@ isClient && define((require, exports, module)=>{
           v.other.$update({id2: '2'});
           assert.dom('li', {count: 3});
 
-          assert.dom('li', 'alice', elm => {
+          assert.dom('li', 'alice', (elm) => {
             Dom.ctx(elm).onDestroy(v.oldCtx = stub());
           });
 
@@ -166,12 +169,11 @@ isClient && define((require, exports, module)=>{
         });
 
         assert.same(count, 2);
-
       });
     });
 
-    test("staticList", ()=>{
-      assert.dom(v.Each.$render({}), elm => {
+    test('staticList', () => {
+      assert.dom(v.Each.$render({}), (elm) => {
         refute.dom('li');
         assert.calledOnce(v.fooList);
         const each = v.fooList.firstCall.args[0];
@@ -179,23 +181,21 @@ isClient && define((require, exports, module)=>{
 
         assert.dom('li', {count: 2});
 
-        assert.dom('li:first-child', 'zac', elm =>{
+        assert.dom('li:first-child', 'zac', (elm) => {
           assert.equals($.data(elm), {_id: 'a', name: 'zac'});
-
         });
-        assert.dom('li:nth-child(2)', 'alice', elm => {
+        assert.dom('li:nth-child(2)', 'alice', (elm) => {
           assert.equals($.data(elm), {_id: 'b', name: 'alice'});
         });
 
-        each.staticList([2,1], {map: i => [i, 'n'+i]});
+        each.staticList([2, 1], {map: (i) => [i, 'n' + i]});
 
         const x4Elm = each.append([4, 'x4']);
 
         assert.dom('li:first-child', 'n2');
         assert.dom('li:nth-last-child(2)', 'n1');
-        assert.dom('li:last-child', 'x4', elm =>{
+        assert.dom('li:last-child', 'x4', (elm) => {
           assert.same(x4Elm, elm);
-
         });
 
         each.clear();
@@ -204,39 +204,39 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("helper returns query", ()=>{
-      after(_=>{Ctx._currentCtx = null});
+    test('helper returns query', () => {
+      after((_) => {Ctx._currentCtx = null});
       Ctx._currentCtx = new Ctx(v.Each);
 
-      const container = Dom.h({div: [""]});
+      const container = Dom.h({div: ['']});
 
       each(
         container.firstChild, {}, {
           forEach(body) {body({_id: 1, name: 'Alice'})},
-          compare: util.compareByName
+          compare: util.compareByName,
         }, {template: v.Each.Row});
 
-      assert.dom(container, pn =>{
-        assert.dom('li', 'Alice', li =>{
+      assert.dom(container, (pn) => {
+        assert.dom('li', 'Alice', (li) => {
           assert.same($.data(li)._id, 1);
         });
       });
     });
 
-    test("Dynamic templateName", ()=>{
-      after(_=>{Ctx._currentCtx = null});
+    test('Dynamic templateName', () => {
+      after((_) => {Ctx._currentCtx = null});
       Ctx._currentCtx = new Ctx(v.Each);
 
-      const container = Dom.h({div: [""]});
+      const container = Dom.h({div: ['']});
 
       each(
         container.firstChild, {}, {
           forEach(body) {body({_id: 1, name: 'Alice'})},
-          compare: util.compareByName
-        }, {template: {toString: () => "Each_fooList"}});
+          compare: util.compareByName,
+        }, {template: {toString: () => 'Each_fooList'}});
 
-      assert.dom(container, pn =>{
-        assert.dom('li', 'Alice', li =>{
+      assert.dom(container, (pn) => {
+        assert.dom('li', 'Alice', (li) => {
           assert.same($.data(li)._id, 1);
         });
       });

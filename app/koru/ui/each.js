@@ -12,9 +12,9 @@ define((require, exports, module) => {
   const each$ = Symbol();
   const {COMMENT_NODE} = document;
 
-  const each = (startEach, data, args, options={}) => {
+  const each = (startEach, data, args=null, options={}) => {
     let {
-      template: templateName=typeof args === 'string' ? `Each_${args}` : 'Each_row'
+      template: templateName=typeof args === 'string' ? `Each_${args}` : 'Each_row',
     } = options;
     let each = startEach[each$];
     if (each === undefined) {
@@ -33,7 +33,7 @@ define((require, exports, module) => {
 
       if (pv.helper === undefined) {
         throw new Error(
-          (typeof args === 'string' ? `helper "${args}" not found` : `invalid call to each`)+
+          (typeof args === 'string' ? `helper "${args}" not found` : `invalid call to each`) +
             ` in template "${ctpl.name}"`);
       }
     }
@@ -43,10 +43,11 @@ define((require, exports, module) => {
       let template = null;
 
       if (typeof templateName === 'object') {
-        if ('$autoRender' in templateName)
+        if ('$autoRender' in templateName) {
           template = templateName;
-        else
-          templateName = ''+templateName;
+        } else {
+          templateName = '' + templateName;
+        }
       }
 
       if (template == null) {
@@ -65,11 +66,12 @@ define((require, exports, module) => {
         : pv.helper;
 
     if (result != null) {
-      if (Array.isArray(result))
+      if (Array.isArray(result)) {
         each.staticList(result, options);
-      else {
-        if (('forEach' in result))
+      } else {
+        if (('forEach' in result)) {
           result = {query: result};
+        }
         if (pv.list === null) {
           each.autoList(result);
         } else {
@@ -89,7 +91,7 @@ define((require, exports, module) => {
     constructor(insertPoint) {
       this[private$] = {
         template: null, templateName: null, args: null,
-        helper: null, list: null
+        helper: null, list: null,
       };
       this.parentCtx = $.ctx;
       this.startEach = document.createComment('start');

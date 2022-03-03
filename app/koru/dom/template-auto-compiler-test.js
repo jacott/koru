@@ -1,18 +1,18 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
+  const Dom             = require('koru/dom');
   const TH              = require('koru/test-helper');
-  const Dom             = require('./dom-client');
 
   const testTpl = require('koru/html!./template-compiler-test');
   const $ = Dom.current;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       Dom.removeChildren(document.body);
       Dom.tpl.Test = undefined;
     });
 
-    test("rendering html template", ()=>{
+    test('rendering html template', () => {
       refute(Dom.tpl.Test);
 
       Dom.newTemplate(testTpl);
@@ -41,14 +41,14 @@ isClient && define((require, exports, module)=>{
       });
 
       const elm = Dom.tpl.Test.Foo.$autoRender({
-        helperName(opts) {return opts.foo+'Adam'},
+        helperName(opts) {return opts.foo + 'Adam'},
         arg: {has: {parts: 'success'}}});
 
       document.body.appendChild(elm);
 
-      assert.dom('div#Foo', elm =>{
+      assert.dom('div#Foo', (elm) => {
         assert.same(elm.className, 'e1 e2');
-        assert.dom('span[data-foo]', 'a\nb\nc\nAdam some & <other>\u00a0text', span =>{
+        assert.dom('span[data-foo]', 'a\nb\nc\nAdam some & <other>\u00a0text', (span) => {
           assert.equals(span.id, 'barId\n           ');
           assert.equals(span.getAttribute('data-foo'), 'theQUICKbrownFOX');
         });

@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * Ctx (Context) is used to track
@@ -16,33 +16,33 @@ isClient && define((require, exports, module)=>{
 
   const {private$, ctx$} = require('koru/symbols');
 
-  const Ctx  = require('./ctx');
+  const Ctx = require('./ctx');
 
   let v = {};
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       api.module();
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       delete Dom.tpl.Foo;
       Dom.removeChildren(document.body);
       v = {};
     });
 
-    group("evalArgs", ()=>{
-      test("constant", ()=>{
+    group('evalArgs', () => {
+      test('constant', () => {
         assert.equals(Ctx[private$].evalArgs(
-          {}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]
+          {}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']],
         ), ['name', {type: 'text', count: '5'}]);
       });
     });
 
     const compileTemplate = (text) => Dom.newTemplate(
-      module, TemplateCompiler.toJavascript(text, "foo.html").toJson());
+      module, TemplateCompiler.toJavascript(text, 'foo.html').toJson());
 
-    group("autoUpdate", ()=>{
+    group('autoUpdate', () => {
       /**
        * Update template contents whenever the `ctx.data` contents changes or the `ctx.data` object
        * itself changes.
@@ -56,14 +56,14 @@ isClient && define((require, exports, module)=>{
        * @param {function} [observe] a optional function that will be called for each update of the subject.
        **/
 
-      before(()=>{
+      before(() => {
         api.protoMethod();
         //[
         compileTemplate(`<div>{{name}}{{_id}}</div>`);
         //]
       });
 
-      test("options", ()=>{
+      test('options', () => {
         //[
         const stop = stub();
         class Custom {
@@ -81,11 +81,11 @@ isClient && define((require, exports, module)=>{
         const observer = stub();
 
         ctx.autoUpdate(observer);
-        doc.name = "new name";
+        doc.name = 'new name';
         const docChange = DocChange.change(doc, {name: 'old name'});
         Custom._onChange(docChange); // change
 
-        assert.equals(foo.textContent, "new name");
+        assert.equals(foo.textContent, 'new name');
 
         assert.calledOnceWith(observer, docChange);
         assert.same(observer.firstCall.thisValue, ctx);
@@ -104,7 +104,7 @@ isClient && define((require, exports, module)=>{
         refute.called(ctx.updateAllTags);
       });
 
-      group("observeId", ()=>{
+      group('observeId', () => {
         class MyModel {
           constructor(id, name) {
             this._id = id;
@@ -118,16 +118,16 @@ isClient && define((require, exports, module)=>{
           }
         }
 
-        afterEach(()=>{
+        afterEach(() => {
           MyModel._id = MyModel._onChange = MyModel._handle = void 0;
         });
 
-        test("remove", ()=>{
+        test('remove', () => {
           const foo = Dom.tpl.Foo.$render();
           const ctx = Dom.myCtx(foo);
           spy(ctx, 'updateAllTags');
 
-          ctx.data = new MyModel("id1", {name: 'name 1'});
+          ctx.data = new MyModel('id1', {name: 'name 1'});
           const observer = stub();
           ctx.autoUpdate(observer);
 
@@ -137,9 +137,9 @@ isClient && define((require, exports, module)=>{
           refute.called(ctx.updateAllTags);
           assert.calledWith(observer, docDelete);
 
-          ctx.data = new MyModel("id2", {name: 'x'});
+          ctx.data = new MyModel('id2', {name: 'x'});
 
-          assert.same(MyModel._id, "id2");
+          assert.same(MyModel._id, 'id2');
           refute.called(ctx.updateAllTags);
 
           ctx.data.name = 'name 2';
@@ -150,17 +150,17 @@ isClient && define((require, exports, module)=>{
           assert.called(MyModel._handle.stop);
         });
 
-        test("change", ()=>{
+        test('change', () => {
           const ctx = new Ctx();
           ctx.updateAllTags = stub();
 
-          const doc = new MyModel("id1");
+          const doc = new MyModel('id1');
           ctx.autoUpdate();
 
           ctx.data = doc;
-          assert.same(MyModel._id, "id1");
+          assert.same(MyModel._id, 'id1');
 
-          const doc1 = new MyModel("id1");
+          const doc1 = new MyModel('id1');
           MyModel._onChange(DocChange.change(doc1, {}));
           assert.called(ctx.updateAllTags);
           assert.same(ctx.data, doc1);
@@ -173,12 +173,12 @@ isClient && define((require, exports, module)=>{
           const h1 = MyModel._handle;
           refute.called(h1.stop);
 
-          const doc2 = new MyModel("id2");
+          const doc2 = new MyModel('id2');
           ctx.data = doc2;
 
           assert.called(h1.stop);
 
-          assert.same(MyModel._id, "id2");
+          assert.same(MyModel._id, 'id2');
           refute.same(h1, MyModel._handle);
 
           ctx._destroyData();
@@ -188,7 +188,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("stopAutoUpdate", ()=>{
+    test('stopAutoUpdate', () => {
       /**
        * Stop an {##autoUpdate}. Note that the autoUpdate will automatically stop when the `ctx` is destroyed.
        */
@@ -204,19 +204,19 @@ isClient && define((require, exports, module)=>{
       //[
       const Tpl = compileTemplate(`<div>{{name}}</div>`);
 
-      const elm = Tpl.$render(new Foo("name1"));
+      const elm = Tpl.$render(new Foo('name1'));
       const ctx = Dom.myCtx(elm);
 
       ctx.autoUpdate();
       ctx.stopAutoUpdate();
 
-      ctx.data.name = "name2";
-      Foo.notify(DocChange.change(ctx.data, {name: "name1"}));
-      assert.same(elm.textContent, "name1");
+      ctx.data.name = 'name2';
+      Foo.notify(DocChange.change(ctx.data, {name: 'name1'}));
+      assert.same(elm.textContent, 'name1');
       //]
     });
 
-    test("data", ()=>{
+    test('data', () => {
       /**
        * The data associated with an element via this context
        **/
@@ -226,7 +226,7 @@ isClient && define((require, exports, module)=>{
       assert.same(ctx.data, v.data);
     });
 
-    test("parentCtx", ()=>{
+    test('parentCtx', () => {
       /**
        * The associated parent Ctx
        **/
@@ -237,7 +237,7 @@ isClient && define((require, exports, module)=>{
       assert.same(ctx.parentCtx, pCtx);
     });
 
-    test("addEventListener", ()=>{
+    test('addEventListener', () => {
       /**
        * This is like the `Node#addEventListener` except that it will call
        * `Node#removeEventListener` when the `ctx` is destroyed. Also handle the koru event type
@@ -280,21 +280,21 @@ isClient && define((require, exports, module)=>{
       //]
     });
 
-    group("Ctx.current", ()=>{
+    group('Ctx.current', () => {
       /**
        * Hello world
        **/
-      test("no currentCtx data", ()=>{
+      test('no currentCtx data', () => {
         Ctx._currentCtx = void 0;
         assert.equals(Ctx.current.data(null), void 0);
       });
 
-      test("data", ()=>{
+      test('data', () => {
         Dom.newTemplate({
-          name: "Foo",
-          nodes:[{
-            name:"section",
-            children:[['', "testMe"]],
+          name: 'Foo',
+          nodes: [{
+            name: 'section',
+            children: [['', 'testMe']],
           }],
         });
         Dom.tpl.Foo.$helpers({
@@ -303,7 +303,6 @@ isClient && define((require, exports, module)=>{
             assert.same(this, v.x);
             assert.same(Ctx.current.isElement(), v.isElement);
             v.isElement || assert.same(Ctx.current.ctx, Dom.ctx(Dom.current.element));
-
 
             v.data = Ctx.current.data(v.elm);
 
@@ -322,7 +321,7 @@ isClient && define((require, exports, module)=>{
         const data = {me: true};
 
         v.elm = Dom.h({});
-        v.elm[ctx$] = {data: data};
+        v.elm[ctx$] = {data};
 
         v.isElement = false;
 
@@ -331,7 +330,6 @@ isClient && define((require, exports, module)=>{
         assert.same(v.testHelper, 12);
         assert.same(v.dataValue, null);
         v.dataValue = void 0;
-
 
         assert.same(v.data, data);
 
@@ -347,16 +345,16 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("Specials", ()=>{
+    test('Specials', () => {
       const Tpl = Dom.newTemplate({
-        name: "Foo",
-        nodes:[{
-          name: "div",
-          children: [['', "bar", "-123", "this", "null", "true", "false", "8.6", "baz", "-", ..."0123456789".split('')]],
+        name: 'Foo',
+        nodes: [{
+          name: 'div',
+          children: [['', 'bar', ['-123', 'this', 'null', 'true', 'false', '8.6', 'baz', '-', ...'0123456789'.split('')]]],
         }],
       });
 
-      const data = {baz: "BAZ"};
+      const data = {baz: 'BAZ'};
 
       let actualArgs;
       Tpl.$helpers({
@@ -371,12 +369,12 @@ isClient && define((require, exports, module)=>{
         -123, {baz: 'BAZ'}, null, true, false, 8.6, 'BAZ', '-', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     });
 
-    test("onAnimationEnd", ()=>{
+    test('onAnimationEnd', () => {
       const Tpl = Dom.newTemplate({
-        name: "Foo",
-        nodes:[{
-          name: "div",
-          children: [['', "bar"]],
+        name: 'Foo',
+        nodes: [{
+          name: 'div',
+          children: [['', 'bar']],
         }],
       });
 
@@ -394,7 +392,7 @@ isClient && define((require, exports, module)=>{
       // Repeatable
       Dom.myCtx(v.elm).onAnimationEnd(v.stub = stub(), 'repeat');
       assert.calledWith(document.body.addEventListener, 'animationend', TH.match(
-        arg => v.animationEndFunc = arg), true);
+        (arg) => v.animationEndFunc = arg), true);
 
       // Element removed
       document.body.appendChild(v.elm2 = Dom.tpl.Foo.$render({}));
