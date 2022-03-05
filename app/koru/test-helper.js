@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const Test            = require('koru/test');
@@ -10,9 +10,10 @@ define((require)=>{
   const {deepEqual} = Core;
 
   const TH = koru.util.reverseMerge({
-    login: (id, func)=>{
-      if (typeof id === 'object' && id !== null)
+    login: (id, func) => {
+      if (typeof id === 'object' && id !== null) {
         id = id._id;
+      }
       if (func === void 0) {
         TH.stubProperty(util.thread, 'userId', {value: id});
         return;
@@ -21,27 +22,36 @@ define((require)=>{
       try {
         util.thread.userId = id || void 0;
         func();
-      }
-      finally {
+      } finally {
         util.thread.userId = oldId;
       }
     },
-    noInfo: ()=>{
-      if (koru.info.restore === void 0)
+
+    noInfo: () => {
+      if (koru.info.restore === void 0) {
         Core.test.intercept(koru, 'info');
+      }
     },
 
-    createPromiseCallback: ()=>{
+    createPromiseCallback: () => {
       let resolve, reject;
       return {
-        promise: new Promise((suc, err)=>{resolve = suc, reject = err}),
-        callback: TH.stub((err)=>{err ? reject(err) : resolve()}),
+        promise: new Promise((suc, err) => {resolve = suc, reject = err}),
+        callback: TH.stub((err) => {err ? reject(err) : resolve()}),
       };
     },
 
+    promiseStub: () => {
+      const p = {};
+      p.then = Core.test.stub().returns(p);
+      p.catch = Core.test.stub().returns(p);
+      p.finally = Core.test.stub().returns(p);
+      return p;
+    },
+
     async awaitLoop(n) {
-      for(let i = 0; i < n; ++i) await null;
-    }
+      for (let i = 0; i < n; ++i) await null;
+    },
   }, Test);
 
   const ga = Core.assertions;
@@ -50,14 +60,14 @@ define((require)=>{
     assert(options, body) {
       const {by} = options;
       const counter = options.counter ||
-              (options.model ? () => options.model.query.count() : () => options.query.count());
+            (options.model ? () => options.model.query.count() : () => options.query.count());
       this.before = +counter();
       body();
       this.after = +counter();
       return this.after - this.before === by;
     },
 
-    message: "a difference of {0}. Before {$before}, after {$after}",
+    message: 'a difference of {0}. Before {$before}, after {$after}',
   });
 
   ga.add('accessDenied', {
@@ -65,7 +75,7 @@ define((require)=>{
       let error;
       try {
         func.call();
-      } catch(e) {error = e;}
+      } catch (e) {error = e}
       if (error) {
         if (error.error === 403) {
           return true;
@@ -76,8 +86,8 @@ define((require)=>{
       return false;
     },
 
-    assertMessage: "Expected AccessDenied",
-    refuteMessage: "Did not expect AccessDenied: {$details}",
+    assertMessage: 'Expected AccessDenied',
+    refuteMessage: 'Did not expect AccessDenied: {$details}',
   });
 
   ga.add('invalidRequest', {
@@ -85,29 +95,31 @@ define((require)=>{
       let error;
       try {
         func.call();
-      } catch(e) {error = e;}
+      } catch (e) {error = e}
       if (error) {
-        if (error.error === 400)
+        if (error.error === 400) {
           return true;
+        }
 
         throw error;
       }
       return false;
     },
 
-    assertMessage: "Expected Invalid request",
-    refuteMessage: "Did not expect Invalid request",
+    assertMessage: 'Expected Invalid request',
+    refuteMessage: 'Did not expect Invalid request',
   });
 
   ga.add('modelErrors', {
     assert(doc, expected) {
       const result = {}, {[error$]: errors} = doc;
 
-      for(const field in errors) {
-        const msgs = errors[field].map(m =>{
-          if (m.length === 1)
+      for (const field in errors) {
+        const msgs = errors[field].map((m) => {
+          if (m.length === 1) {
             return m[0];
-          return m.map(n => typeof n === 'object' ? util.inspect(n) : n).join(', ');
+          }
+          return m.map((n) => typeof n === 'object' ? util.inspect(n) : n).join(', ');
         });
 
         result[field] = msgs.join('; ');
@@ -117,13 +129,14 @@ define((require)=>{
       return deepEqual(result, expected);
     },
 
-    message: "{i$result} to be {i1}",
+    message: '{i$result} to be {i1}',
   });
 
   ga.add('validators', {
     assert(validators, expected) {
-      if (validators == null)
-        assert.fail("Could not find field", 1);
+      if (validators == null) {
+        assert.fail('Could not find field', 1);
+      }
       this.actual = validators;
       this.expected = expected;
       if (Object.keys(expected).length !== Object.keys(validators).length) {
@@ -131,40 +144,41 @@ define((require)=>{
         return false;
       }
 
-      for(const key in expected) {
+      for (const key in expected) {
         const val = validators[key];
         this.key = key;
-        this.actual = val && val.slice(1,2);
+        this.actual = val && val.slice(1, 2);
         this.expected = expected[key];
 
-        if (! (val && deepEqual(val.slice(1,2), expected[key]))) return false;
+        if (! (val && deepEqual(val.slice(1, 2), expected[key]))) return false;
       }
       return true;
     },
 
-    assertMessage: "Expected {i$actual} to match {i$expected}. For {i$key}",
-    refuteMessage: "Did not expect {i0} to match {i1}"
+    assertMessage: 'Expected {i$actual} to match {i$expected}. For {i$key}',
+    refuteMessage: 'Did not expect {i0} to match {i1}',
   });
 
   ga.add('defineFields', {
     assert(model, expected) {
       for (const field in expected) {
         const validators = model.$fields[field];
-        if (validators == null)
-          assert.fail("Could not find field "+field, 1);
+        if (validators == null) {
+          assert.fail('Could not find field ' + field, 1);
+        }
         this.field = field;
 
         if (deepEqual(this.actual = validators,
-                      this.expected = expected[field], this, 'diff') !== this._asserting)
+                      this.expected = expected[field], this, 'diff') !== this._asserting) {
           return ! this._asserting;
+        }
       }
       return true;
     },
 
-    assertMessage: "Expected {$field} to match{$diff}",
-    refuteMessage: "Did not expect {i1} to match {i2}"
+    assertMessage: 'Expected {$field} to match{$diff}',
+    refuteMessage: 'Did not expect {i1} to match {i2}',
   });
-
 
   ga.add('attributesEqual', {
     assert(actual, expected, exclude) {
@@ -176,10 +190,10 @@ define((require)=>{
       if (! Array.isArray(actual)) actual = [actual];
       if (! Array.isArray(expected)) expected = [expected];
       if (actual[0] && actual[0].attributes) {
-        actual = actual.map(i => i.attributes);
+        actual = actual.map((i) => i.attributes);
       }
       if (expected[0] && expected[0].attributes) {
-        expected = expected.map(i => i.attributes);
+        expected = expected.map((i) => i.attributes);
       }
       actual = mapFields(actual, exclude);
       expected = mapFields(expected, exclude);
@@ -189,10 +203,10 @@ define((require)=>{
       return deepEqual(actual, expected, this, 'diff');
     },
 
-    message: "attributes to be equal{$diff}",
+    message: 'attributes to be equal{$diff}',
   });
 
-  const mapFields = (list, exclude)=>{
+  const mapFields = (list, exclude) => {
     const result = {};
     if (list.length === 0) return result;
     const useId = (! exclude || exclude.indexOf('_id') === -1) && !! list[0]._id;
