@@ -41,15 +41,15 @@ define((require, exports, module) => {
 
       const checkDigit13Valid = (isbn) => {
         let r = 0;
-        for(let i = 0; i < 12; ++i) {
-          const d = +isbn[i];
+        for (let i = 0; i < 12; ++i) {
+          const d = + isbn[i];
           if (d !== d) {
             r = -1;
             break;
           }
-          r += (i % 2) == 0 ? d : 3*d;
+          r += (i % 2) == 0 ? d : 3 * d;
         }
-        return r !== -1 && +isbn[12] == (10 - (r%10)) % 10;
+        return r !== -1 && + isbn[12] == (10 - (r % 10)) % 10;
       };
 
       test('calls', () => {
@@ -69,7 +69,7 @@ define((require, exports, module) => {
             }
 
             return 'is_invalid';
-          }}
+          }},
         });
         const book = Book.build({ISBN: '978-3-16-148410-0'});
 
@@ -81,6 +81,22 @@ define((require, exports, module) => {
         assert.equals(book[error$].ISBN, [['is_invalid']]);
         assert.equals(book.ISBN, '222-3-16-148410-0');
         //]
+      });
+
+      test('async calls', async () => {
+        let ans = Promise.resolve();
+        Book.defineFields({
+          ISBN: {type: 'text', validate(field) {return ans}},
+        });
+
+        const book = Book.build({ISBN: '978-3-16-148410-0'});
+
+        assert(await book.$isValid());
+
+        ans = Promise.resolve('is_invalid');
+
+        refute(await book.$isValid());
+        assert.equals(book[error$], {ISBN: [['is_invalid']]});
       });
     });
   });
