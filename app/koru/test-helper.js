@@ -107,18 +107,21 @@ define((require) => {
     refuteMessage: 'Did not expect AccessDenied: {$details}',
   });
 
+  const invalidRequestError = (error) => {
+    if (error.error === 400) return true;
+    throw error;
+  };
+
   ga.add('invalidRequest', {
     assert(func) {
       let error;
       try {
-        func.call();
-      } catch (e) {error = e}
-      if (error) {
-        if (error.error === 400) {
-          return true;
+        const p = func();
+        if (p instanceof Promise) {
+          return p.then(false, invalidRequestError);
         }
-
-        throw error;
+      } catch (error) {
+        return invalidRequestError(error);
       }
       return false;
     },
