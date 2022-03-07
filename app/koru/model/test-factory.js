@@ -135,10 +135,10 @@ define((require) => {
   const asyncAddRef = async (self, p, ref, refId, modelName) => {
     const doc = await p;
     if (doc === void 0) {
-      doc = last[ref] || last[util.uncapitalize(modelName)];
+      doc = last[ref] ?? last[util.uncapitalize(modelName)];
     }
     if (doc == null) {
-      const func = Factory['create' + util.capitalize(ref)] || Factory['create' + modelName];
+      const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
       if (func === void 0) {
         throw new Error("can't find factory create for " + modelName);
       }
@@ -166,10 +166,12 @@ define((require) => {
     }
 
     addPromise(p) {
-      if (this[promises$] === void 0) {
-        this[promises$] = [p];
-      } else {
-        this[promises$].push(p);
+      if (p instanceof Promise) {
+        if (this[promises$] === void 0) {
+          this[promises$] = [p];
+        } else {
+          this[promises$].push(p);
+        }
       }
 
       return this;
@@ -200,10 +202,10 @@ define((require) => {
           doc = p;
         }
         if (doc === void 0) {
-          doc = last[ref] || last[util.uncapitalize(modelName)];
+          doc = last[ref] ?? last[util.uncapitalize(modelName)];
         }
         if (doc == null) {
-          const func = Factory['create' + util.capitalize(ref)] || Factory['create' + modelName];
+          const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
           if (func === void 0) {
             throw new Error("can't find factory create for " + modelName);
           }
@@ -368,7 +370,7 @@ define((require) => {
       }
 
       for (let i = 0; i < number; ++i) {
-        func && func.apply(args, [i, args[args.length - 1]]);
+        func?.apply(args, [i, args[args.length - 1]]);
         list.push(this[creator].apply(this, args));
       }
       return list;
@@ -386,7 +388,7 @@ define((require) => {
 
     lastOrCreate(name) {
       checkDb();
-      return last[name] || Factory['create' + util.capitalize(name)]();
+      return last[name] ?? Factory['create' + util.capitalize(name)]();
     },
 
     getUniqueNow,
@@ -446,7 +448,7 @@ define((require) => {
   };
 
   const buildAttributes = (key, args) => {
-    const attributes = {}, keyTraits = traits[key] || {};
+    const attributes = {}, keyTraits = traits[key] ?? {};
     for (let i = 0; i < args.length; ++i) {
       if (typeof args[i] === 'string') {
         const trait = keyTraits[args[i]];
