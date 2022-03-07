@@ -52,12 +52,20 @@ define((require) => {
   assert.fail = fail;
   assert.elide = (body, adjust=0) => {
     try {
-      return body();
-    } catch (ex) {
-      if (ex.name === 'AssertionError') {
-        assert.fail(ex.message, adjust + 2);
+      const ans = body();
+      if (ans instanceof Promise) {
+        return ans.catch(err => {
+          if (err.name === 'AssertionError') {
+            assert.fail(err.message, adjust + 2);
+          }
+          throw err;
+        })
       }
-      throw ex;
+    } catch (err) {
+      if (err.name === 'AssertionError') {
+        assert.fail(err.message, adjust + 2);
+      }
+      throw err;
     }
   };
 
