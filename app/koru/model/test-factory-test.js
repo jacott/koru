@@ -10,6 +10,7 @@ define((require, exports, module) => {
    * documents bypass the validation when created but validation can be done using
    * {#::Builder#useSave}
    **/
+  const Future          = require('koru/future');
   const Model           = require('koru/model');
   const Val             = require('koru/model/validation');
   const RequiredValidator = require('koru/model/validators/required-validator');
@@ -153,7 +154,7 @@ define((require, exports, module) => {
         //]
       });
 
-      test('addField', () => {
+      test('addField', async () => {
         /**
          * Add a field to `Builder.defaults`.
 
@@ -169,10 +170,14 @@ define((require, exports, module) => {
 
         builder
           .addField('title', 'When We Were Very Young')
-          .addField('isbn', 9780140361230)
-          .addField('pages', () => 100+12);
+          .addField('isbn', () => Promise.resolve('9780140361230'))
 
-        assert.equals(builder.defaults, {isbn: 9780140361230, pages: 112});
+        // addField waits for promises
+          .addField('pages', () => builder.field('isbn').length * 10 - 18);
+
+        await builder.waitPromises();
+
+        assert.equals(builder.defaults, {isbn: '9780140361230', pages: 112});
         //]
       });
 
@@ -239,14 +244,21 @@ define((require, exports, module) => {
               .addRef('book')
         ;
 
+        builder1.addField('pages', () => TestFactory.last.book?.pages ?? 50);
+
         await builder1.waitPromises();
 
         const {book} = TestFactory.last;
 
-        assert.equals(builder1.defaults, {book_id: book._id});
+        assert.equals(builder1.defaults, {book_id: book._id, pages: 100});
+
+        let waitingForBook;
+
+        // we are waiting on a lot of promises until we get the book
+        builder1.addPromise(Promise.resolve().then(waitingForBook = Promise.resolve(book)));
 
         const builder2 = new TestFactory.Builder('Chapter', {book_id: void 0})
-              .addRef('book', book)
+              .addRef('book', waitingForBook) // addRef will wait for promise
         ;
 
         assert.equals(builder2.defaults, {});
@@ -342,6 +354,90 @@ define((require, exports, module) => {
           const book = await builder.create();
           assert.equals(book.attributes, {_id: m.id, author: 'Anon'});
         }
+        //]
+      });
+
+      test('addPromise', async () => {
+        /**
+         * Add a promise to list of outstanding promises
+
+         * @param promise
+         */
+        api.protoMethod();
+        //[
+        const list = [];
+        const fut1 = new Future();
+        const builder = new TestFactory.Builder('Book')
+              .addPromise(fut1.promise.then(() => {list.push(1)}))
+              .addPromise(Promise.resolve().then(() => {list.push(2)}));
+
+        const p = builder.waitPromises().then(() => {list.push(3)});
+
+        fut1.resolve();
+        assert.equals(list, []);
+
+        await fut1.promise;
+
+        assert.equals(list, [2, 1]);
+
+        const fut2 = new Future();
+
+        await p;
+
+        builder.addPromise(fut2.promise.then(() => {list.push(4)}));
+        builder.addPromise(Promise.resolve().then(() => {fut2.resolve(); list.push(5)}));
+        assert.equals(list, [2, 1, 3]);
+
+        await builder.waitPromises();
+        assert.equals(list, [2, 1, 3, 5, 4]);
+        assert.same(builder.waitPromises(), void 0);
+        //]
+      });
+
+      test('waitPromises', async () => {
+        /**
+         * Return a promise that whats for all `addPromise` to complete
+         */
+        api.protoMethod();
+        //[
+        const list = [];
+        const fut1 = new Future();
+        const builder = new TestFactory.Builder('Book')
+              .addPromise(fut1.promise.then(() => {list.push(1)}))
+              .addPromise(Promise.resolve().then(() => {list.push(2)}));
+
+        const p = builder.waitPromises().then(() => {list.push(3)});
+
+        fut1.resolve();
+        await p;
+        assert.equals(list, [2, 1, 3]);
+        //]
+      });
+
+      test('afterPromises', async () => {
+        /**
+         * run callback after any outstanding promises are complete
+         */
+        //[
+        const list = [];
+        const fut1 = new Future();
+        const builder = new TestFactory.Builder('Book');
+
+        builder.afterPromises(() => {list.push(1)});
+
+        assert.equals(list, [1]);
+
+        builder
+          .addPromise(fut1.promise.then(() => {list.push(2)}))
+          .addPromise(Promise.resolve().then(() => {list.push(3)}));
+
+        fut1.resolve();
+        builder.afterPromises(() => {list.push(4)});
+
+        assert.equals(list, [1]);
+
+        await builder.waitPromises();
+        assert.equals(list, [1, 3, 2, 4]);
         //]
       });
     });

@@ -57,18 +57,20 @@ define((require) => {
     }
 
     addField(field, value) {
-      if (! hasOwn(this.attributes, field)) {
-        switch (typeof value) {
-        case 'undefined': break;
-        case 'function': value = value();
-        default:
-          if (value instanceof Promise) {
-            this.addPromise((value) => {this.defaults[field] = value});
-          } else {
-            this.defaults[field] = value;
+      this.afterPromises(() => {
+        if (! hasOwn(this.attributes, field)) {
+          switch (typeof value) {
+          case 'undefined': break;
+          case 'function': value = value();
+          default:
+            if (value instanceof Promise) {
+              this.addPromise(value.then((value) => {this.defaults[field] = value}));
+            } else {
+              this.defaults[field] = value;
+            }
           }
         }
-      }
+      });
       return this;
     }
 
@@ -156,6 +158,12 @@ define((require) => {
     return doc;
   };
 
+  const waitInSequence = async (promises) => {
+    for (const p of promises) {
+      await p;
+    }
+  };
+
   class Builder extends BaseBuilder {
     constructor(modelName, attributes, defaults={}) {
       super(attributes, {});
@@ -177,48 +185,58 @@ define((require) => {
       return this;
     }
 
+    afterPromises(func) {
+      const p = this.waitPromises();
+      if (p !== void 0) {
+        this.addPromise(p.then(func));
+      } else {
+        func();
+      }
+      return this;
+    }
+
     waitPromises() {
       const promises = this[promises$];
       if (promises !== void 0) {
         this[promises$] = void 0;
-        return Promise.all(promises).then(() => {
-          if (this[promises$ !== void 0]) return this.waitPromises();
-        });
+        return waitInSequence(promises).then(() => this.waitPromises());
       }
     }
 
     addRef(ref, doc) {
-      const refId = `${ref}_id`;
-      if (! hasOwn(this.attributes, refId)) {
-        const model = this.model.fieldTypeMap[refId];
-        if (! model) throw new Error(
-          `model not found for reference: ${refId} in model ${this.model.modelName}`);
-        const {modelName} = model;
-        if (typeof doc === 'function') {
-          const p = doc(this);
-          if (p instanceof Promise) {
-            return this.addPromise(asyncAddRef(this, p, ref, refId, modelName));
-          }
-          doc = p;
-        }
-        if (doc === void 0) {
-          doc = last[ref] ?? last[util.uncapitalize(modelName)];
-        }
-        if (doc == null) {
-          const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
-          if (func === void 0) {
-            throw new Error("can't find factory create for " + modelName);
-          }
-          const p = func();
-          if (p instanceof Promise) {
-            this.addPromise(p.then((doc) => {this.defaults[refId] = doc._id === void 0 ? doc : doc._id}));
-            return this;
-          } else {
+      this.afterPromises(() => {
+        const refId = `${ref}_id`;
+        if (! hasOwn(this.attributes, refId)) {
+          const model = this.model.fieldTypeMap[refId];
+          if (! model) throw new Error(
+            `model not found for reference: ${refId} in model ${this.model.modelName}`);
+          const {modelName} = model;
+          if (typeof doc === 'function') {
+            const p = doc(this);
+            if (p instanceof Promise) {
+              return this.addPromise(asyncAddRef(this, p, ref, refId, modelName));
+            }
             doc = p;
           }
+          if (doc === void 0) {
+            doc = last[ref] ?? last[util.uncapitalize(modelName)];
+          }
+          if (doc == null) {
+            const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
+            if (func === void 0) {
+              throw new Error("can't find factory create for " + modelName);
+            }
+            const p = func();
+            if (p instanceof Promise) {
+              return this.addPromise(
+                p.then((doc) => {this.defaults[refId] = doc._id === void 0 ? doc : doc._id}));
+            } else {
+              doc = p;
+            }
+          }
+          this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
         }
-        this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
-      }
+      });
       return this;
     }
 
