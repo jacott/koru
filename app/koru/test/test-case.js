@@ -17,6 +17,8 @@ define((require, exports, module) => {
   let nt = 0, assertCount = 0;
   let asyncTimeout = 0;
 
+  const {clearTimeout, setTimeout} = globalThis; // isolate from stubbing
+
   const assertIsPromise = (p, f) => {(p == null || typeof p.then !== 'function') && notPromise(f)};
 
   const notPromise = (f) => {

@@ -75,8 +75,7 @@ define((require, exports, module) => {
 
         now += 10000;
 
-        assert.calledOnceWith(global.setTimeout, m.func, 2000);
-        global.setTimeout.reset();
+        refute.called(global.setTimeout);
 
         const conn2 = await pool.acquire();
         assert.same(conn2, conn);
