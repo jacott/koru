@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
 
@@ -6,7 +6,7 @@ define((require, exports, module)=>{
 
   const {stub, spy, after, util, intercept, match: m} = TH;
 
-  return ()=>{
+  return () => {
     let StartupServerBody, req, start;
     const exps = {};
     const Module = module.constructor;
@@ -15,19 +15,20 @@ define((require, exports, module)=>{
 
     let preInit = true;
 
-    const mockRequire = (name, exp)=>{
+    const mockRequire = (name, exp) => {
       if (preInit) {
         return exps[name] = exp || {};
       } else {
         const exp = exps[name];
-        if (exp === void 0)
-          throw new TH.Core.AssertionError("mockRequire can't find "+name, 1);
+        if (exp === void 0) {
+          throw new TH.Core.AssertionError("mockRequire can't find " + name, 1);
+        }
         exp[called$] = true;
         return exp;
       }
     };
 
-    const checkExports = (reject)=>{
+    const checkExports = (reject) => {
       for (const name in exps) {
         const exp = exps[name];
         if (exp[called$] === void 0) {
@@ -38,22 +39,21 @@ define((require, exports, module)=>{
       return true;
     };
 
-
-    const init = (module)=> new Promise((resolve, reject)=>{
+    const init = (module) => new Promise((resolve, reject) => {
       const origDefine = global.__yaajsVars__.define;
       const targetId = module.id.slice(0, -5);
 
-      intercept(global.__yaajsVars__, 'define', body =>{
+      intercept(global.__yaajsVars__, 'define', (body) => {
         StartupServerBody = body;
         origDefine({});
       });
 
-      after(()=>{
+      after(() => {
         const mod = module.get(targetId);
         mod && mod.unload();
       });
 
-      require(targetId, (s)=>{
+      require(targetId, (s) => {
         preInit = false;
         start = StartupServerBody(mockRequire, {}, mockModule);
 
@@ -61,14 +61,13 @@ define((require, exports, module)=>{
           resolve();
         }
       });
-
     });
 
     return {
       mockRequire,
       init,
       mockModule,
-      start: ()=>{start()},
+      start: () => start(),
     };
   };
 });
