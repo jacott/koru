@@ -1,6 +1,16 @@
 define((require, exports, module) => {
   'use strict';
   const {hasOwnProperty} = Object.prototype;
+
+  const isPromise = (object) => typeof object?.then === 'function';
+
+  const ifPromise = (object, trueCallback, falseCallbase=trueCallback) => isPromise(object)
+        ? object.then(trueCallback)
+        : falseCallbase(object);
+
+  globalThis.isPromise = isPromise;
+  globalThis.ifPromise = ifPromise;
+
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
 
   const qstr = (s) => /[\x00-\x09\x0b-\x1f\']/.test(s)
@@ -17,9 +27,9 @@ define((require, exports, module) => {
       // Convert the argument to an integer
       n = Math.trunc(n) || 0;
       // Allow negative indexing from the end
-      if (n<0) n += this.length;
+      if (n < 0) n += this.length;
       // Out-of-bounds access returns undefined
-      if (n<0 || n >= this.length) return undefined;
+      if (n < 0 || n >= this.length) return undefined;
       // Otherwise, this is just normal property access
       return this[n];
     }
@@ -55,10 +65,10 @@ define((require, exports, module) => {
         if (constructor === RegExp) return o.toString();
         if ('outerHTML' in o) return 'Node`' + o.outerHTML + '`';
         if (o.nodeType === 3) return 'TextNode("' + o.textContent + '")';
-        if (o.nodeType === 11) return 'DocumentFragment(`' + inspect1(o.firstChild, i-1) + '`)';
+        if (o.nodeType === 11) return 'DocumentFragment(`' + inspect1(o.firstChild, i - 1) + '`)';
         if (Array.isArray(o)) {
           if (i) {
-            return '[' + o.map((o2) => inspect1(o2, i-1)).join(', ') + ']';
+            return '[' + o.map((o2) => inspect1(o2, i - 1)).join(', ') + ']';
           }
           return '[...more]';
         }
@@ -81,7 +91,7 @@ define((require, exports, module) => {
             if (typeof v === 'function' && v.name === p && qlabel(p) === p) {
               r.push(p + '(){}');
             } else {
-              r.push(qlabel(p) + ': ' + inspect1(v, i-1));
+              r.push(qlabel(p) + ': ' + inspect1(v, i - 1));
             }
           }
           const isSimple = constructor === undefined || constructor === Object;
@@ -107,7 +117,7 @@ define((require, exports, module) => {
   const regexEscape = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
   const idLen = 17;
-  const idBytes = ((2*idLen - 1) >> 2) << 2;
+  const idBytes = ((2 * idLen - 1) >> 2) << 2;
   const abId = new ArrayBuffer(idBytes);
   const u32Id = new Uint32Array(abId);
   const u8Id = new Uint8Array(abId);
@@ -120,7 +130,7 @@ define((require, exports, module) => {
     CHARS,
     id: () => {
       let result = '';
-      for (let i = 0; i<idLen; ++i) {
+      for (let i = 0; i < idLen; ++i) {
         result += CHARS[u8Id[i] % 62];
       }
 
@@ -129,12 +139,12 @@ define((require, exports, module) => {
     idToUint8Array: (str, u8Id) => {
       for (let i = 0; i < str.length; ++i) {
         const o = str.charCodeAt(i);
-        if (o<65) {
-          u8Id[i] = o === 48 ? 9 : o-49;
-        } else if (o<97) {
-          u8Id[i] = o-29;
+        if (o < 65) {
+          u8Id[i] = o === 48 ? 9 : o - 49;
+        } else if (o < 97) {
+          u8Id[i] = o - 29;
         } else {
-          u8Id[i] = o-87;
+          u8Id[i] = o - 87;
         }
       }
 
@@ -185,6 +195,8 @@ define((require, exports, module) => {
       module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''))),
 
     qstr, qlabel,
+
+    isPromise, ifPromise,
   };
 
   return util;

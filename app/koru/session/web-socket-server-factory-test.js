@@ -72,7 +72,7 @@ define((require, exports, module) => {
           assert.isFalse(inTrans);
         });
         const p = v.sess._commands.M.call(conn, [v.msgId, 'foo.rpc', 1, 2, 3]);
-        assert(p instanceof Promise);
+        assert(isPromise(p));
         await p;
         assert.calledWith(conn.sendBinary, 'M', ['m123', 'e', 404, 'not found']);
       });

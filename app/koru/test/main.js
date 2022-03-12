@@ -182,7 +182,7 @@ define((require, exports, module) => {
       count = errorCount = 0;
 
       require(tests, (...args) => {
-        koru.runFiber(() => {Core.start(Core.testCases = args)});
+        koru.runFiber(() => Core.start(Core.testCases = args));
       }, (err) => {
         ++errorCount;
         if (err.module) {

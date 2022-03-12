@@ -19,7 +19,7 @@ define((require) => {
         if (! called.has(token)) {
           called.add(token);
           const p = handle.callback(docChange);
-          if (p instanceof Promise) await p;
+          if (isPromise(p)) await p;
         }
       }
     };
@@ -34,7 +34,7 @@ define((require) => {
         if (! called.has(token)) {
           called.add(token);
           const p = handle.callback(docChange);
-          if (p instanceof Promise) {
+          if (isPromise(p)) {
             return asyncCallObservers(p, iter, called, docChange);
           }
         }
@@ -44,7 +44,7 @@ define((require) => {
     const asyncContinueValues = async (p, i, values, observers, called, dc) => {
       for (await p; i < values.length; ++i) {
         p = callObservers(observers, called, dc, values[i]);
-        if (p instanceof Promise) await p;
+        if (isPromise(p)) await p;
       }
     };
 
@@ -54,11 +54,11 @@ define((require) => {
         if (Array.isArray(nowValue)) {
           for (let i = 0; i < nowValue.length; ++i) {
             p = callObservers(observers, called, dc, nowValue[i]);
-            if (p instanceof Promise) await p;
+            if (isPromise(p)) await p;
           }
         } else {
           p = callObservers(observers, called, dc, nowValue);
-          if (p instanceof Promise) await p;
+          if (isPromise(p)) await p;
         }
       }
     };
@@ -79,7 +79,7 @@ define((require) => {
           if (Array.isArray(oldValue)) {
             for (let i = 0; i < oldValue.length; ++i) {
               p = callObservers(observers, called, dc, oldValue[i]);
-              if (p instanceof Promise) {
+              if (isPromise(p)) {
                 p = asyncContinueValues(p, i, oldValue, observers, called, dc);
                 break;
               }
@@ -89,7 +89,7 @@ define((require) => {
           }
         }
 
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return asyncCallNowValue(p, nowValue, oldValue, observers, called, dc);
         }
 
@@ -97,7 +97,7 @@ define((require) => {
           if (Array.isArray(nowValue)) {
             for (let i = 0; i < nowValue.length; ++i) {
               p = callObservers(observers, called, dc, nowValue[i]);
-              if (p instanceof Promise) {
+              if (isPromise(p)) {
                 return asyncContinueValues(p, i, nowValue, observers, called, dc);
               }
             }

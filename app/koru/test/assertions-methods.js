@@ -202,6 +202,14 @@ define((require) => {
     message: '{i0} to be true',
   });
 
+  ga.add('isPromise', {
+    assert(actual) {
+      return util.isPromise(actual);
+    },
+
+    message: '{i0} to be a promise',
+  });
+
   ga.add('instanceof', {
     assert(object, type) {
       return object instanceof type;
@@ -388,7 +396,7 @@ define((require) => {
       try {
         if (typeof func !== 'function') throw func;
         const p = func();
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return exceptionAsync(this, name, expError, p);
         }
 

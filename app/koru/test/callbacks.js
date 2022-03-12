@@ -44,7 +44,7 @@ define((require, exports, module)=>{
 
       for (let node = cbs.front; node !== void 0; node = node.next) {
         const p = node.value(test);
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return p.then(()=>{runAsyncCallbacks(node.next, test)});
         }
       }

@@ -96,7 +96,7 @@ define((require) => {
         const p = finder.call(doc, newIds).fields('_id').forEach((assoc) => {
           value[ki++] = assoc._id;
         });
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return p.then(() => {
             value.length = ki;
             value.sort();
@@ -108,27 +108,20 @@ define((require) => {
         value.sort();
         if (belongs_to) doc[field] = value[0];
       } else {
-        const p = finder.call(doc, newIds).count();
-        if (p instanceof Promise) {
-          return p.then((count) => changesOnlyCheckCount(this, count, newIds, doc, field, value, ki));
-        }
-        changesOnlyCheckCount(this, p, newIds, doc, field, value, ki);
+        return ifPromise(finder.call(doc, newIds).count(),
+                         (count) => changesOnlyCheckCount(this, count, newIds, doc, field, value, ki));
       }
     } else if (filter) {
       const query = finder.call(doc, value.slice()); // stop from being clobbered
       value.length = 0;
 
-      const p = query.fields('_id').forEach((assoc) => value.push(assoc._id));
-      const finish = () => {
-        value.sort();
+      return ifPromise(
+        query.fields('_id').forEach((assoc) => value.push(assoc._id)),
+        () => {
+          value.sort();
 
-        if (belongs_to) doc[field] = value[0];
-      };
-      if (p instanceof Promise) {
-        return p.then(finish);
-      }
-
-      finish();
+          if (belongs_to) doc[field] = value[0];
+        });
     } else {
       value.sort();
       const vl = value.length;
@@ -140,17 +133,9 @@ define((require) => {
           return;
         }
       }
-      const ans = finder.call(doc, value).count();
-      if (ans instanceof Promise) {
-        return ans.then((count) => {
-          if (count !== value.length) {
-            this.addError(doc, field, 'not_found');
-          }
-        });
-      }
-      if (ans !== value.length) {
-        this.addError(doc, field, 'not_found');
-      }
+      return ifPromise(
+        finder.call(doc, value).count(),
+        (count) => {count !== value.length && this.addError(doc, field, 'not_found')});
     }
   }};
 });

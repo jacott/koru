@@ -284,9 +284,7 @@ define((require, exports, module) => {
           const subject = model.db[notifyMap$];
           if (subject) {
             const p = subject.notify(...args);
-            if (p instanceof Promise) {
-              return p.then(() => anyChange.notify(...args));
-            }
+            if (isPromise(p)) return p.then(() => anyChange.notify(...args));
           }
 
           anyChange.notify(...args);

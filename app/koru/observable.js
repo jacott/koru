@@ -64,7 +64,7 @@ define(() => {
       for (let node = this[head$]; node !== this; node = node[next$]) {
         if (node.callback !== null) {
           const p = node.callback(...args);
-          if (p instanceof Promise) {
+          if (isPromise(p)) {
             return p.then(() => asyncNotify(this, node[next$], args));
           }
         }

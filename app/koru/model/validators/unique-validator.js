@@ -37,14 +37,8 @@ define((require) => {
 
     if (! doc.$isNewRecord()) query.whereNot('_id', doc._id);
 
-    const p = query.count(1);
-
-    if (p instanceof Promise) {
-      return p.then((c) => {
-        if (c !== 0) this.addError(doc, field, 'not_unique');
-      });
-    }
-
-    if (p !== 0) this.addError(doc, field, 'not_unique');
+    return ifPromise(query.count(1), (c) => {
+      if (c !== 0) this.addError(doc, field, 'not_unique');
+    });
   }};
 });

@@ -820,7 +820,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
         return new Cursor(this, sql, null, options);
       }
 
-      if (where instanceof Promise) {
+      if (isPromise(where)) {
         const head = sql;
         sql = where.then((where) => where === void 0 ? head : head + ' WHERE ' + where);
       } else {
@@ -856,7 +856,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
 
   const initCursor = async (cursor) => {
     if (cursor.table._ready !== true) await cursor.table._ensureTable();
-    if (cursor._sql instanceof Promise) cursor._sql = await cursor._sql;
+    if (isPromise(cursor._sql)) cursor._sql = await cursor._sql;
     const client = cursor.table._client;
     const tx = util.thread[client[tx$]];
     let sql = cursor._sql;

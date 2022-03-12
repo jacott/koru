@@ -60,7 +60,7 @@ isServer && define((require, exports, module) => {
       assert.isFunction(sess._commands.Z);
 
       const p = sess._commands.Z(['4321', 'iDontExist']);
-      assert(p instanceof Promise);
+      assert(isPromise(p));
       await p;
 
       assert.calledWith(sess.sendBinary, 'Z', ['4321', 'e', 404, 'unknown method: iDontExist']);

@@ -65,11 +65,7 @@ define((require, exports, module) => {
       const model = ModelMap[name];
       if (! model) return;
 
-      const p = ModelEnv.destroyModel(model, drop);
-      if (p instanceof Promise) return p.then(() => {
-        delete ModelMap[name];
-      });
-      delete ModelMap[name];
+      return ifPromise(ModelEnv.destroyModel(model, drop), () => {delete ModelMap[name]});
     },
   });
 

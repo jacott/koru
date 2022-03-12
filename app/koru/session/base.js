@@ -79,7 +79,7 @@ define((require) => {
         koru.info('Unexpected session(' + this._id + ') message: ' + type, conn.sessId);
       } else {
         const p = func.call(conn, obj);
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return p.catch(koru.unhandledException);
         }
       }

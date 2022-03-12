@@ -22,7 +22,7 @@ define((require, exports, module) => {
       const origSetUserId = conn.setUserId;
       util.merge(conn, {
         get userId() {return userId},
-        set userId(v) {throw new Error("set not allowed; use setUserId");},
+        set userId(v) {throw new Error('set not allowed; use setUserId');},
         setUserId(v) {userId = v; return origSetUserId.call(this, v)}});
       conn.sendBinary = stub();
       conn.sendEncoded = stub();
@@ -30,12 +30,8 @@ define((require, exports, module) => {
       conn.changed = stub();
       conn.removed = stub();
       conn.onSubscribe = (...args) => TransQueue.transaction(() => {
-        const p = conn._session._commands.Q.call(conn, args);
-        const result = () => conn._subs[args[0]];
-        if (p instanceof Promise) {
-          return p.then(result);
-        }
-        return result();
+        return ifPromise(conn._session._commands.Q.call(conn, args),
+                         () => conn._subs[args[0]]);
       });
 
       return conn;

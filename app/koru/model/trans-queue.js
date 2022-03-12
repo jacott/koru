@@ -64,7 +64,7 @@ define((require) => {
 
       try {
         const result = db === void 0 ? body() : db.transaction((tx) => body.call(db, tx));
-        if (result instanceof Promise) {
+        if (isPromise(result)) {
           const _firstLevel = firstLevel;
           firstLevel = false;
           return asyncTransactionResult(list, _firstLevel, prevTime, result);

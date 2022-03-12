@@ -592,7 +592,7 @@ isServer && define((require, exports, module) => {
 
         const c = foo.find({name: 'abc'});
         refute(foo._ready);
-        assert(c._sql instanceof Promise);
+        assert(isPromise(c._sql));
         assert.equals(await c.next(), {_id: '123', name: 'abc', age: 10});
         assert.equals(c._sql, 'SELECT * FROM "Foo" WHERE "name"=$1');
 
@@ -606,7 +606,7 @@ isServer && define((require, exports, module) => {
 
         const c = foo.find({});
         refute(foo._ready);
-        assert(c._sql instanceof Promise);
+        assert(isPromise(c._sql));
         assert.equals(await c.next(), {_id: '123', name: 'abc', age: 10});
         assert.equals(c._sql, 'SELECT * FROM "Foo"');
 

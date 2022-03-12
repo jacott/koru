@@ -24,9 +24,9 @@ define((require) => {
       if (config.variance == null) config.variance = 10*1000;
       const wrapper = () => {
         config.timer = 0;
-        let p = Promise.resolve().then(async () => {
+        Promise.resolve().then(async () => {
           const ans = config?.onSuccess(await func());
-          if (ans instanceof Promise) await ans;
+          if (isPromise(ans)) await ans;
         }).catch((err) => {
           if (config.isRetry === undefined ? err.statusCode >= 500 : config.isRetry(err)) {
             config.timer = koru.setTimeout(

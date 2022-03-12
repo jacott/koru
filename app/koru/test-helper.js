@@ -91,7 +91,7 @@ define((require) => {
       let error;
       try {
         const p = func.call();
-        if (p instanceof Promise) return accessDeniedAsync(p);
+        if (isPromise(p)) return accessDeniedAsync(p);
       } catch (e) {error = e}
       if (error) {
         if (error.error === 403) {
@@ -117,7 +117,7 @@ define((require) => {
       let error;
       try {
         const p = func();
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           return p.then(false, invalidRequestError);
         }
       } catch (error) {

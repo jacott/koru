@@ -106,7 +106,7 @@ define((require) => {
       let ans;
       for (let i = 0; i < length; ++i) {
         const p = calls[i].yield(...args);
-        if (p instanceof Promise) {
+        if (isPromise(p)) {
           if (ans === void 0) {
             ans = [p];
           } else {

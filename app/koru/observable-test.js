@@ -122,7 +122,7 @@ define((require, exports, module) => {
 
       refute.called(stub1);
 
-      assert(ans instanceof Promise);
+      assert(isPromise(ans));
 
       assert.same(
         await ans,

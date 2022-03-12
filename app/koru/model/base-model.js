@@ -43,37 +43,37 @@ define((require, exports, module) => {
 
   const callAfterLocalChange = (docChange) => docChange.model[observers$].afterLocalChange?.notify(docChange);
 
-  const callAsyncWhenFinally = async (iter, doc, ex) => {
+  const callAsyncWhenFinally = async (iter, doc, err) => {
     for (let i = iter.next(); ! i.done; i = iter.next()) {
       try {
-        await i.value.callback(doc, ex);
-      } catch (ex1) {
-        if (ex === void 0) ex = ex1;
+        await i.value.callback(doc, err);
+      } catch (err1) {
+        if (err === void 0) err = err1;
       }
     }
-    if (ex !== void 0) {
-      throw ex;
+    if (err !== void 0) {
+      throw err;
     }
   };
 
-  const callWhenFinally = (doc, ex) => {
+  const callWhenFinally = (doc, err) => {
     const subj = doc.constructor[observers$].whenFinally;
     if (subj !== void 0) {
       const iter = subj[Symbol.iterator]();
       for (let i = iter.next(); ! i.done; i = iter.next()) {
         let p;
         try {
-          p = i.value.callback(doc, ex);
-          if (p instanceof Promise) {
-            return p.then(() => callAsyncWhenFinally(iter, doc, ex));
+          p = i.value.callback(doc, err);
+          if (isPromise(p)) {
+            return p.then(() => callAsyncWhenFinally(iter, doc, err));
           }
-        } catch (ex1) {
-          if (ex === void 0) ex = ex1;
+        } catch (err1) {
+          if (err === void 0) err = err1;
         }
       }
     }
-    if (ex !== void 0) {
-      throw ex;
+    if (err !== void 0) {
+      throw err;
     }
   };
 
@@ -114,18 +114,12 @@ define((require, exports, module) => {
       const doc = new this({});
       attributes != null && Object.assign(doc.changes, deepCopy(attributes));
       const p = doc.$save();
-      if (p instanceof Promise) {
-        return p.then(() => doc);
-      }
-      return doc;
+      return isPromise(p) ? p.then(() => doc) : doc;
     }
 
     static _insertAttrs(attrs) {
       const p = Query._insertAttrs(this, attrs);
-      if (p instanceof Promise) {
-        return p.then(() => attrs._id);
-      }
-      return attrs._id;
+      return isPromise(p) ? p.then(() => attrs._id) : attrs._id;
     }
 
     static build(attributes, allow_id=false) {
@@ -339,27 +333,21 @@ define((require, exports, module) => {
       default:
         ans = this.$isValid();
         if (! ans) return false;
-        if (ans instanceof Promise) {
+        if (isPromise(ans)) {
           return ans.then((isValid) => isValid &&
                           Promise.resolve(ModelEnv.save(this, callback)).then(util.trueFunc));
         }
       }
 
-      if (isServer || (ans instanceof Promise)) {
+      if (isServer || isPromise(ans)) {
         return Promise.resolve(ans).then(() => ModelEnv.save(this, callback)).then(util.trueFunc);
       }
 
-      ModelEnv.save(this, callback);
-
-      return true;
+      return ifPromise(ModelEnv.save(this, callback), util.trueFunc);
     }
 
     $$save() {
-      const p = this.$save('assert');
-      if (p instanceof Promise) {
-        return p.then(() => this);
-      }
-      return this;
+      return ifPromise(this.$save('assert'), () => this);
     }
 
     $savePartial(...args) {
@@ -399,7 +387,7 @@ define((require, exports, module) => {
                   ? this[original$] === void 0 || this[original$][field] !== value
                   : this.$hasChanged(field))) {
                 const p = args[0].call(Val, this, field, args[1], args[2]);
-                if (p instanceof Promise) promises.push(p);
+                isPromise(p) && promises.push(p);
               }
             }
           }
@@ -408,7 +396,7 @@ define((require, exports, module) => {
 
       if (this.validate !== void 0) {
         const p = this.validate();
-        if (p instanceof Promise) promises.push(p);
+        isPromise(p) && promises.push(p);
       }
 
       if (promises.length != 0) {
@@ -512,26 +500,22 @@ define((require, exports, module) => {
     let p;
     try {
       p = callBeforeObserver('beforeSave', doc);
-    } catch (ex) {
-      return callWhenFinally(doc, ex);
+    } catch (err) {
+      return callWhenFinally(doc, err);
     }
 
-    if (p instanceof Promise) return p.then(() => performInsert_3(doc));
-
-    return performInsert_3(doc);
+    return ifPromise(p, () => performInsert_3(doc));
   };
 
   const performUpdate_2 = (doc, attrs) => {
     let p;
     try {
       p = callBeforeObserver('beforeSave', doc);
-    } catch (ex) {
-      return callWhenFinally(doc, ex);
+    } catch (err) {
+      return callWhenFinally(doc, err);
     }
 
-    if (p instanceof Promise) return p.then(() => performUpdate_3(doc));
-
-    return performUpdate_3(doc);
+    return ifPromise(p, () => performUpdate_3(doc));
   };
 
   const performInsert_3 = (doc) => {
@@ -543,11 +527,11 @@ define((require, exports, module) => {
     let p;
     try {
       p = Query.insert(doc);
-    } catch (ex) {
-      return callWhenFinally(doc, ex);
+    } catch (err) {
+      return callWhenFinally(doc, err);
     }
 
-    if (p instanceof Promise) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
+    if (isPromise(p)) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
     return callWhenFinally(doc);
   };
 
@@ -562,11 +546,11 @@ define((require, exports, module) => {
       const {changes} = doc;
       doc.changes = {};
       p = st.update(changes);
-    } catch (ex) {
-      return callWhenFinally(doc, ex);
+    } catch (err) {
+      return callWhenFinally(doc, err);
     }
 
-    if (p instanceof Promise) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
+    if (isPromise(p)) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
     return callWhenFinally(doc);
   };
 
@@ -585,13 +569,11 @@ define((require, exports, module) => {
 
       try {
         p = callBeforeObserver('beforeCreate', doc);
-      } catch (ex) {
-        return callWhenFinally(doc, ex);
+      } catch (err) {
+        return callWhenFinally(doc, err);
       }
 
-      if (p instanceof Promise) return p.then(() => performInsert_2(doc));
-
-      return performInsert_2(doc);
+      return ifPromise(p, () => performInsert_2(doc));
     },
 
     performUpdate(doc, changes) {
@@ -601,13 +583,11 @@ define((require, exports, module) => {
 
       try {
         p = callBeforeObserver('beforeUpdate', doc);
-      } catch (ex) {
-        return callWhenFinally(doc, ex);
+      } catch (err) {
+        return callWhenFinally(doc, err);
       }
 
-      if (p instanceof Promise) return p.then(() => performUpdate_2(doc));
-
-      return performUpdate_2(doc);
+      return ifPromise(p, () => performUpdate_2(doc));
     },
 
     _updateTimestamps(changes, timestamps, now) {

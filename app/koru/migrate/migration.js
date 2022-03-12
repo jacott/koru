@@ -206,7 +206,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
         if ((await this.migrationExists(name)) === add) return;
 
         const mc = new Commander();
-        {const p = callback(mc); if (p instanceof Promise) await p}
+        {const p = callback(mc); isPromise(p) && await p}
         if (add) {
           for (const {action, args} of mc[actions$]) {
             await action(add, client, args);

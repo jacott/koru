@@ -53,13 +53,13 @@ define((require) => {
   assert.elide = (body, adjust=0) => {
     try {
       const ans = body();
-      if (ans instanceof Promise) {
-        return ans.catch(err => {
+      if (isPromise(ans)) {
+        return ans.catch((err) => {
           if (err.name === 'AssertionError') {
             assert.fail(err.message, adjust + 2);
           }
           throw err;
-        })
+        });
       }
     } catch (err) {
       if (err.name === 'AssertionError') {
@@ -115,7 +115,7 @@ define((require) => {
 
       const p = func.apply(sideAffects, args);
 
-      if (p instanceof Promise) {
+      if (isPromise(p)) {
         return assertAsyncFunc(pass, options, args, sideAffects, p);
       }
 

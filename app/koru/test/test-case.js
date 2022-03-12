@@ -595,12 +595,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       testCases[i] = null;
     }
 
-    const p = Core.runCallBacks('start');
-    if (p instanceof Promise) {
-      p.then(runNext);
-    } else {
-      runNext();
-    }
+    return ifPromise(Core.runCallBacks('start'), runNext);
   };
 
   return TestCase;

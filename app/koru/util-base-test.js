@@ -3,6 +3,8 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
+  const {stub, spy, after} = TH;
+
   const {inspect$} = require('koru/symbols');
 
   const util = require('./util');
@@ -26,7 +28,7 @@ define((require, exports, module) => {
     test('id', () => {
       const {u8Id} = util;
       for (let i = 0; i < u8Id.length; ++i) {
-        u8Id[i] = i+8;
+        u8Id[i] = i + 8;
       }
 
       assert.same(util.id(), '90abcdefghijklmno');
@@ -38,6 +40,53 @@ define((require, exports, module) => {
 
       util.idToUint8Array('7890abcdefghijklm', util.u8Id);
       assert.same(util.id(), '7890abcdefghijklm');
+    });
+
+    test('isPromise', () => {
+      /**
+       * Return true is `object` is an object with a `then` function.
+
+       * This function is also on globalThis for convenience.
+       */
+      api.method();
+      //[
+      assert.isTrue(util.isPromise(Promise.resolve()));
+      assert.isTrue(util.isPromise({then() {}}));
+      assert.isFalse(util.isPromise({then: true}));
+      assert.isFalse(util.isPromise(null));
+      assert.isFalse(util.isPromise(void 0));
+      //]
+    });
+
+    test('ifPromise', async () => {
+      /**
+       * If `object` is a promise return `object.then(trueCallback)` otherwise return `falseCallbase(object)`.
+
+       * This function is also on globalThis for convenience.
+       */
+      api.method();
+      //[
+      const trueCallback = stub().returns('true called');
+      const falseCallback = stub().returns('false called');
+
+      const promise = Promise.resolve(123);
+      const ans = util.ifPromise(promise, trueCallback, falseCallback);
+      assert.isPromise(ans);
+
+      refute.called(trueCallback);
+      await ans;
+      assert.calledWith(trueCallback, 123);
+
+      assert.same(util.ifPromise(456, trueCallback), 'true called');
+      assert.calledWith(trueCallback, 456);
+
+      refute.called(falseCallback);
+      trueCallback.reset();
+
+      assert.same(util.ifPromise([789], trueCallback, falseCallback), 'false called');
+      refute.called(trueCallback);
+      assert.calledWith(falseCallback, [789]);
+      //]
     });
 
     test('inspect', () => {
