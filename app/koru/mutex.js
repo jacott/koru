@@ -1,5 +1,9 @@
 define((require) => {
   'use strict';
+  const util            = require('koru/util');
+
+  if (isClient) throw new Error('module not allowed on client!');
+
   const head$ = Symbol(), tail$ = Symbol();
 
   class Mutex {
@@ -10,8 +14,11 @@ define((require) => {
 
     get isLocked() {return this[head$] !== void 0}
 
+    get isLockedByMe() {return this[head$]?.[2] === util.thread}
+
     lock() {
-      const node = [void 0, void 0];
+      if (this.isLockedByMe) return;
+      const node = [void 0, void 0, util.thread];
       const p = new Promise((resolve, reject) => {node[0] = resolve});
 
       if (this[head$] === void 0) {
