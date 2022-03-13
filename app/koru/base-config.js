@@ -3,7 +3,7 @@ const path = require('path');
 
 const polyfill = (modName, destname)=>{
   const srcPath = require.resolve(modName);
-  const destPath = path.resolve(__dirname, 'polyfill', destname || path.basename(srcPath));
+  const destPath = path.resolve(__dirname, 'polyfill', destname ?? path.basename(srcPath));
 
   if (! stat(destPath)) {
     try {fs.unlinkSync(destPath);} catch(ex) {}
@@ -20,8 +20,6 @@ const stat = file =>{
       throw ex;
   }
 };
-
-polyfill('pepjs/dist/pep');
 
 exports.polyfill = polyfill;
 

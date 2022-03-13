@@ -1,6 +1,5 @@
 define((require, exports, module) => {
   'use strict';
-  const pep             = require('koru/polyfill/maybe-pep');
   const util            = require('./util-client');
 
   const TWENTY_DAYS = 20 * util.DAY;
