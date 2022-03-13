@@ -228,9 +228,18 @@ define((require, exports, module) => {
     test('$save with callback', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       const doc = TestModel.build({name: 'foo'});
-      await doc.$save({callback: v.callback = stub()});
-
-      assert.calledWith(v.callback, doc);
+      const callback2 = stub();
+      const future = new Future();
+      const callback = stub().invokes(() => TestModel.db.query(`SELECT 1`).then(callback2));
+      const callback3 = stub();
+      const p = doc.$save({callback}).then(callback3);
+      refute.called(callback);
+      future.resolve();
+      await p;
+      assert.calledWith(callback3, true);
+      assert.calledWith(callback, doc);
+      assert.called(callback2);
+      assert(callback2.calledBefore(callback3));
     });
 
     test('defaults for saveRpc new', async () => {

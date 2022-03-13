@@ -177,7 +177,7 @@ define((require, exports, module) => {
           if (util.isObjEmpty(changes)) return doc;
           await _support.performUpdate(doc, changes);
         }
-        if (callback) callback(doc);
+        return callback?.(doc);
       };
 
       const ID_ERROR = {baseName: '_id'};
