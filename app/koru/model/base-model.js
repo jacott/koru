@@ -339,11 +339,7 @@ define((require, exports, module) => {
         }
       }
 
-      if (isServer || isPromise(ans)) {
-        return Promise.resolve(ans).then(() => ModelEnv.save(this, callback)).then(util.trueFunc);
-      }
-
-      return ifPromise(ModelEnv.save(this, callback), util.trueFunc);
+      return ifPromise(ans, () => ifPromise(ModelEnv.save(this, callback), util.trueFunc));
     }
 
     $$save() {
@@ -407,7 +403,7 @@ define((require, exports, module) => {
     }
 
     $assertValid() {
-      Val.allowIfValid(this.$isValid(), this);
+      return ifPromise(this.$isValid(), (ans) => Val.allowIfValid(ans, this));
     }
 
     $equals(other) {

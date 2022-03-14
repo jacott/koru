@@ -606,7 +606,10 @@ define((require, exports, module) => {
         api.protoMethod();
         const {Book} = v;
         //[
-        Book.defineFields({author: {type: 'text', required: true}});
+        Book.defineFields({author: {
+          type: 'text',
+          async validate(field) {
+            if (! this[field]) return 'is_required'}}});
         const book = Book.build();
 
         try {
