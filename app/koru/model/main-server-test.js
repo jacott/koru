@@ -311,8 +311,10 @@ define((require, exports, module) => {
     });
 
     test('saveRpc existing', async () => {
+      const validate = stub();
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub(),
+        validate,
       }).defineFields({name: 'text'});
 
       v.doc = await TestModel.create({name: 'foo'});
@@ -330,7 +332,11 @@ define((require, exports, module) => {
 
       spy(TransQueue, 'onSuccess');
 
+      assert.calledOnce(validate);
+
       await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {name: 'bar'});
+
+      assert.calledTwice(validate);
 
       assert.same(v.doc.$reload().name, 'bar');
 
@@ -343,8 +349,10 @@ define((require, exports, module) => {
     });
 
     test('saveRpc partial no modification', async () => {
+      const validate = stub();
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub(),
+        validate,
       }).defineFields({name: 'text', html: 'object'});
 
       v.doc = await TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
@@ -353,11 +361,15 @@ define((require, exports, module) => {
 
       spy(TransQueue, 'onSuccess');
 
+      assert.calledOnce(validate);
+      validate.reset();
+
       await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {$partial: {
         html: [
           'div.2', 'baz',
         ],
       }});
+      assert.calledOnce(validate);
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
 

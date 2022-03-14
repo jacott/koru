@@ -200,17 +200,16 @@ define((require, exports, module) => {
             Val.allowIfFound(doc, '_id');
             doc.changes = topLevel;
           } else {
-            if (doc) return; // replay or duplicate id so don't update, don't throw error
+            if (doc !== void 0) return; // replay or duplicate id so don't update, don't throw error
             doc = new model(null, topLevel);
           }
           Val.allowAccessIf(doc.authorize);
           await doc.authorize(userId);
-          await doc.$assertValid();
-          if (topLevel !== void 0) {
+          if (topLevel !== changes && topLevel !== void 0) {
             Changes.updateCommands(changes, doc.changes, topLevel);
             doc.changes = changes;
           }
-          await doc.$save('force');
+          await doc.$save('assert');
         });
       });
 
