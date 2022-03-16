@@ -331,12 +331,8 @@ define((require, exports, module) => {
         ans = this.$isValid();
         break;
       default:
-        ans = this.$isValid();
-        if (! ans) return false;
-        if (isPromise(ans)) {
-          return ans.then((isValid) => isValid &&
-                          Promise.resolve(ModelEnv.save(this, callback)).then(util.trueFunc));
-        }
+        return ifPromise(this.$isValid(),
+                         (isValid) => isValid && ifPromise(ModelEnv.save(this, callback), util.trueFunc));
       }
 
       return ifPromise(ans, () => ifPromise(ModelEnv.save(this, callback), util.trueFunc));
