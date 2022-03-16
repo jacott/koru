@@ -385,10 +385,18 @@ define((require) => {
         args.push({});
       }
 
+      let ps = false;
+
       for (let i = 0; i < number; ++i) {
-        func?.apply(args, [i, args[args.length - 1]]);
-        list.push(this[creator].apply(this, args));
+        const p = func?.apply(args, [i, args[args.length - 1]]);
+        ifPromise(p, () => {
+          const p2 = this[creator].apply(this, args);
+          if (isPromise(p) || isPromise(p2)) ps = true;
+          list.push(p2);
+        });
       }
+
+      if (ps) return Promise.all(list);
       return list;
     },
 
