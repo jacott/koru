@@ -27,7 +27,7 @@ define((require) => {
       };
 
       koru.clientErrorConvert = async (data) => {
-        mutex.lock();
+        await mutex.lock();
         try {
           if (data.indexOf(STACK_LINE_SEP) === -1 || ! /^    at .*\(.*\.js\b.*:\d+:\d+\)$/m.test(data)) {
             return data;

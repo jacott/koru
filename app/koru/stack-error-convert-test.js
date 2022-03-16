@@ -2,9 +2,11 @@ isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
+  const Future          = require('koru/future');
   const Mutex           = require('koru/mutex');
   const TH              = require('./test-helper');
-  const fsp             = requirejs.nodeRequire('fs/promises');
+
+  const fsp = requirejs.nodeRequire('fs/promises');
 
   const {SourceMapGenerator, SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
@@ -87,6 +89,36 @@ Cannot read property 'class' of undefined
       assert.calledTwice(destroy);
       assert(lock.calledBefore(destroy));
       assert(unlock.firstCall.globalCount > destroy.lastCall.globalCount);
+
+      const mutex = lock.firstCall.thisValue;
+
+      const future = new Future();
+
+      lock.restore();
+      unlock.restore();
+      stub(mutex, 'unlock');
+      stub(mutex, 'lock').returns(future.promise);
+
+      let err = new Error('bad_value');
+
+      const indexOf = stub().throws(err);
+
+      const p = koru.clientErrorConvert({indexOf});
+
+      refute.called(indexOf);
+
+      future.resolve();
+
+      try {
+        await p;
+      } catch (_err) {
+        if (_err === err) err = void 0;
+      }
+
+      assert.calledOnce(mutex.unlock);
+      assert.same(unlock.firstCall.thisValue, mutex);
+
+      assert.same(err, void 0);
 
       StackErrorConvert.stop();
       StackErrorConvert.start({sourceMapDir: 'test/maps'});
