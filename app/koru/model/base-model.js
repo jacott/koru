@@ -176,23 +176,6 @@ define((require, exports, module) => {
       return this.query.where(field, value).fetchOne();
     }
 
-    static isLocked(id) {
-      return (this._locks || (this._locks = createDictionary()))[id] || false;
-    }
-
-    static lock(id, func) {
-      if (this.isLocked(id)) {
-        func.call(this, id);
-      } else {
-        this._locks[id] = true;
-        try {
-          func.call(this, id);
-        } finally {
-          delete this._locks[id];
-        }
-      }
-    }
-
     static assertFound(doc) {
       if (doc == null) throw new koru.Error(404, this.name + ' Not found');
     }

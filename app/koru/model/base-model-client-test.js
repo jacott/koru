@@ -242,57 +242,6 @@ define((require, exports, module) => {
         v.Book = Book;
       });
 
-      group('model lock', () => {
-        test('nesting', () => {
-          try {
-            v.Book.lock('a', () => {
-              try {
-                v.Book.lock('a', () => {
-                  assert.isTrue(v.Book.isLocked('a'));
-                  throw new Error('catch me');
-                });
-              } catch (ex) {
-                assert.isTrue(v.Book.isLocked('a'));
-                throw ex;
-              }
-              assert.fail('should not reach here');
-            });
-          } catch (ex) {
-            if (ex.message !== 'catch me') {
-              throw ex;
-            }
-          }
-
-          assert.isFalse(v.Book.isLocked('a'));
-        });
-
-        test('Exception unlocks', () => {
-          try {
-            v.Book.lock('a', () => {
-              assert.isTrue(v.Book.isLocked('a'));
-              throw new Error('catch me');
-            });
-          } catch (ex) {
-            if (ex.message !== 'catch me') {
-              throw ex;
-            }
-          }
-
-          assert.isFalse(v.Book.isLocked('a'));
-        });
-
-        test('isLocked', () => {
-          v.Book.lock('a', () => {
-            v.isLocked_a = v.Book.isLocked('a');
-            v.isLocked_b = v.Book.isLocked('b');
-          });
-
-          assert.isTrue(v.isLocked_a);
-          assert.isFalse(v.isLocked_b);
-          assert.isFalse(v.Book.isLocked('a'));
-        });
-      });
-
       test('nullToUndef', () => {
         const book = new v.Book();
         book.title = null;
