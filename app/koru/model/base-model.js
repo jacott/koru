@@ -6,7 +6,9 @@ define((require, exports, module) => {
   const dbBroker        = require('koru/model/db-broker');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
+  const TransQueue      = require('koru/model/trans-queue');
   const Val             = require('koru/model/validation');
+  const Mutex           = require('koru/mutex');
   const Observable      = require('koru/observable');
   const session         = require('koru/session');
   const util            = require('koru/util');
@@ -16,7 +18,7 @@ define((require, exports, module) => {
   const {hasOwn, deepCopy, createDictionary, moduleName} = util;
   const {private$, inspect$, error$, original$} = require('koru/symbols');
 
-  const cache$ = Symbol(), inspectField$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
+  const cache$ = Symbol(), idLock$ = Symbol(), inspectField$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
 
   const savePartial = (doc, args, force) => {
     const $partial = {};
@@ -178,6 +180,27 @@ define((require, exports, module) => {
 
     static assertFound(doc) {
       if (doc == null) throw new koru.Error(404, this.name + ' Not found');
+    }
+
+    static async lockId(id) {
+      if (! TransQueue.isInTransaction()) {
+        throw new Error('Attempt to lock while not in a transaction');
+      }
+      const {docs} = this;
+      const locks = docs[idLock$] ??= util.createDictionary();
+      const mutex = locks[id] ??= new Mutex();
+      if (mutex.isLockedByMe) return;
+      TransQueue.finally(() => {
+        mutex.unlock();
+        if (! mutex.isLocked) {
+          delete locks[id];
+        }
+      });
+      await mutex.lock();
+    }
+
+    static isIdLocked(id) {
+      return this.docs[idLock$]?.[id]?.isLocked ?? false;
     }
 
     /**

@@ -8,6 +8,7 @@ define((require, exports, module) => {
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
+  const TransQueue      = require('koru/model/trans-queue');
   const RequiredValidator = require('koru/model/validators/required-validator');
   const TextValidator   = require('koru/model/validators/text-validator');
   const ValidateValidator = require('koru/model/validators/validate-validator');
@@ -268,6 +269,48 @@ define((require, exports, module) => {
           fields: {title: 'text', pages: 'jsonb', pageCount: 'number'},
         });
         v.Book = Book;
+      });
+
+      test('lockId', async () => {
+        /**
+         * Wait for a lock on an id in this model using a {#koru/mutex}. Must be used in a
+         * {#../trans-queue}. Locks until the transaction is finished.
+         *
+         * @param id usally the id of a DB record.
+         */
+        api.method();
+        const {Book} = v;
+        //[
+        await TransQueue.transaction(async () => {
+          await Book.lockId('bookid123');
+          assert.isTrue(Book.isIdLocked('bookid123'));
+          await Book.lockId('bookid123'); // does nothing if called more than once
+        });
+        assert.isFalse(Book.isIdLocked('bookid123'));
+
+        await assert.exception(
+          () => Book.lockId('bookid123'),
+          {message: 'Attempt to lock while not in a transaction'},
+        );
+        //]
+      });
+
+      test('isIdLocked', async () => {
+        /**
+         * Test if an id is locked.
+         *
+         * @param id usally the id of a DB record.
+         */
+        api.method();
+        const {Book} = v;
+        //[
+        await TransQueue.transaction(async () => {
+          await Book.lockId('bookid123');
+          assert.isTrue(Book.isIdLocked('bookid123'));
+          assert.isFalse(Book.isIdLocked('bookid456'));
+        });
+        assert.isFalse(Book.isIdLocked('bookid123'));
+        //]
       });
 
       test('nullToUndef', () => {
