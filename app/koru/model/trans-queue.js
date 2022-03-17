@@ -14,31 +14,33 @@ define((require) => {
           const l = list;
           list = void 0;
           thread[success$] = null;
-
-          for (let i = 0; i < l.length; ++i) await l[i]();
+          await runListAsync(l, 0);
           list = thread[success$];
         }
       }
       return result;
-    } catch (ex) {
+    } catch (err) {
       if (firstLevel) {
         const list = thread[abort$];
-        if (list) for (let i = 0; i < list.length; ++i) {
-          await list[i]();
-        }
+        if (list !== void 0) await runListAsync(list, 0);
       }
-      throw ex;
+      throw err;
     } finally {
       if (firstLevel) {
-        thread.date = prevTime;
-        const list = thread[finally$];
-        thread[success$] = thread[abort$] = thread[finally$] = void 0;
-        if (list) for (let i = 0; i < list.length; ++i) {
-          await list[i]();
-        }
+        await runFinallyAsync(prevTime);
       }
     }
   };
+
+  const runFinallyAsync = async (prevTime) => {
+    const {thread} = util;
+    thread.date = prevTime;
+    const list = thread[finally$];
+    thread[success$] = thread[abort$] = thread[finally$] = void 0;
+    if (list !== void 0) await runListAsync(list, 0, true);
+  };
+
+  const runListAsync = async (list, i) => {for (;i < list.length; ++i) await list[i]()};
 
   const TransQueue = {
     transaction: (db, body) => {
@@ -61,6 +63,8 @@ define((require) => {
         body = db;
         db = void 0;
       }
+
+      let p;
 
       try {
         const result = db === void 0 ? body() : db.transaction((tx) => body.call(db, tx));
@@ -85,17 +89,26 @@ define((require) => {
         if (firstLevel) {
           const list = thread[abort$];
           if (list) for (let i = 0; i < list.length; ++i) {
-            list[i]();
+            p = list[i]();
+            if (isPromise(p)) {
+              p = p.then(() => runListAsync(list, i + 1));
+              if (firstLevel) p = p.finally(() => runFinallyAsync(prevTime));
+              break;
+            }
           }
         }
         throw ex;
       } finally {
         if (firstLevel) {
+          if (isPromise(p)) return p;
           thread.date = prevTime;
           const list = thread[finally$];
           thread[success$] = thread[abort$] = thread[finally$] = void 0;
           if (list) for (let i = 0; i < list.length; ++i) {
-            list[i]();
+            const p = list[i]();
+            if (isPromise(p)) {
+              return p.then(() => runListAsync(list, i + 1));
+            }
           }
         }
       }

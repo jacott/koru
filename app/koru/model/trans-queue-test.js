@@ -168,6 +168,19 @@ define((require, exports, module) => {
       assert.calledOnce(func1);
     });
 
+    test('async finally', async () => {
+      const order = [];
+      const func1 = async () => {await 1; order.push(1)};
+      const func2 = () => {order.push(2)};
+      const func3 = async () => {await 1; order.push(3)};
+      await TransQueue.transaction(async () => {
+        TransQueue.finally(func1);
+        TransQueue.finally(func2);
+        TransQueue.finally(func3);
+      });
+      assert.equals(order, [1, 2, 3]);
+    });
+
     isClient && test('success', () => {
       const stub1 = stub();
       const stub2 = stub();
