@@ -1,4 +1,4 @@
-isServer && define((require, exports, module) => {
+define((require, exports, module) => {
   'use strict';
   /**
    * Mutex implements a semaphore [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)).
@@ -35,7 +35,7 @@ isServer && define((require, exports, module) => {
 
           koru.runFiber(() => {
             assert.isTrue(mutex.isLocked);
-            assert.isFalse(mutex.isLockedByMe);
+            isServer && assert.isFalse(mutex.isLockedByMe);
           });
 
           counter = 1;
@@ -113,7 +113,9 @@ isServer && define((require, exports, module) => {
     });
 
     test('isLockedByMe', async () => {
-      api.protoProperty('isLockedByMe', {info: `true if mutex is locked by the current thread`});
+      api.protoProperty('isLockedByMe', {
+        info: 'true if mutex is locked by the current thread. ' +
+          'On client there is only one thread so same result as `isLocked`'});
       //[
       const mutex = new Mutex();
 
@@ -124,7 +126,7 @@ isServer && define((require, exports, module) => {
           await mutex.lock();
           assert.isTrue(mutex.isLockedByMe);
           koru.runFiber(() => {
-            assert.isFalse(mutex.isLockedByMe);
+            isServer && assert.isFalse(mutex.isLockedByMe);
           });
 
           ans.push(id);
@@ -143,9 +145,13 @@ isServer && define((require, exports, module) => {
       assert.equals(ans, []);
       assert.isTrue(mutex.isLockedByMe);
       mutex.unlock();
-      assert.isFalse(mutex.isLockedByMe);
+      assert.isTrue(mutex.isLockedByMe);
+      mutex.unlock();
+      if (isServer) {
+        assert.isFalse(mutex.isLockedByMe);
 
-      assert.equals(await ans, [1]);
+        assert.equals(await ans, [1]);
+      }
 
       await mutex.lock();
       assert.equals(ans, [1, 2, 3]);
