@@ -1653,6 +1653,10 @@ define((require, exports, module) => {
       assert.isTrue(util.trueFunc(false));
     });
 
+    test('throwFunc', () => {
+      assert.exception(() => util.throwFunc({test: 123}), {test: 123});
+    });
+
     test('asyncArrayFrom', async () => {
       /**
        * Convert an async iterator into an Array

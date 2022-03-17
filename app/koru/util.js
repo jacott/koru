@@ -1191,6 +1191,7 @@ define((require) => {
 
     voidFunc: () => {},
     trueFunc: () => true,
+    throwFunc: (error) => {throw error},
 
     async asyncArrayFrom(asyncIterator) {
       const arr = [];
