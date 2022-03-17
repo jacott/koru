@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Stacktrace provides methods to normalize stack frames from different browsers and nodejs. Koru
@@ -12,8 +12,16 @@ define((require, exports, module)=>{
 
   const Stacktrace = require('./stacktrace');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    test("normalize", ()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    let currentTest;
+    class AssertionError extends TH.Core.AssertionError {
+      recordError() {}
+    }
+
+    beforeEach(() => {
+      currentTest = TH.Core.test;
+    });
+    test('normalize', () => {
       /**
        * Normalize the stack trace for an `error`. See {#.elideFrames} and {#.replaceStack} for
        * manipulation of the stack trace. By default other frames are elided from the trace when
@@ -26,15 +34,16 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const inner1 = ()=>{inner2()};
-      const inner2 = ()=>{inner3()};
-      const inner3 = ()=>{
-        throw new TH.Core.AssertionError("I failed");
+
+      const inner1 = () => {inner2()};
+      const inner2 = () => {inner3()};
+      const inner3 = () => {
+        throw new AssertionError('I failed');
       };
 
       try {
         inner1();
-      } catch(err) {
+      } catch (err) {
         assert.equals(Stacktrace.normalize(err), [
           m(/    at .*inner3.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
           m(/    at .*inner2.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
@@ -47,7 +56,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("elideFrames", ()=>{
+    test('elideFrames', () => {
       /**
        * Elide the top `count` frames from an `error`'s {#.normalize;d} stack frame
 
@@ -55,14 +64,14 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const inner1 = ()=>{inner2()};
-      const inner2 = ()=>{inner3()};
-      const inner3 = ()=>{
-        throw new TH.Core.AssertionError("I have a shortened customStack");
+      const inner1 = () => {inner2()};
+      const inner2 = () => {inner3()};
+      const inner3 = () => {
+        throw new AssertionError('I have a shortened customStack');
       };
       try {
         inner1();
-      } catch(err) {
+      } catch (err) {
         Stacktrace.elideFrames(err, 2);
 
         assert.equals(Stacktrace.normalize(err), [
@@ -73,7 +82,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("replaceStack", ()=>{
+    test('replaceStack', () => {
       /**
        * Replace the {#.normalize;d} stack frame.
 
@@ -83,12 +92,12 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const inner1 = ()=>{inner2()};
-      const inner2 = ()=>{inner3()};
-      const inner3 = ()=>{
-        const err = new Error("I failed");
+      const inner1 = () => {inner2()};
+      const inner2 = () => {inner3()};
+      const inner3 = () => {
+        const err = new Error('I failed');
 
-        const err2 = (()=> new Error("I use another stack"))();
+        const err2 = (() => new Error('I use another stack'))();
         Stacktrace.replaceStack(err2, err);
         assert.same(Stacktrace.normalize(err2), Stacktrace.normalize(err));
       };

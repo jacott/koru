@@ -6,9 +6,10 @@ define((require, exports, module) => {
   const Random          = require('koru/random');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
+  const Core            = require('koru/test/core');
   const match           = require('./match');
 
-  const {stub, spy, match: m} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const util = require('./util');
 
@@ -631,11 +632,14 @@ define((require, exports, module) => {
        *
        * See {#koru/stacktrace}
        **/
+      class AssertionError extends Core.AssertionError {
+        recordError() {}
+      }
       api.method();
       //[
       const inner1 = () => inner2();
       const inner2 = () => {
-        return new TH.Core.AssertionError('Testing 123');
+        return new AssertionError('Testing 123');
       };
       const err = inner1();
 

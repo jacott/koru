@@ -43,7 +43,7 @@ define((require, exports, module) => {
           mutex.unlock();
 
           assert.isTrue(mutex.isLocked);
-          assert.isFalse(mutex.isLockedByMe);
+          isServer && assert.isFalse(mutex.isLockedByMe);
         });
       } finally {
         assert.isTrue(mutex.isLocked);
@@ -131,7 +131,7 @@ define((require, exports, module) => {
 
           ans.push(id);
           mutex.unlock();
-          assert.isFalse(mutex.isLockedByMe);
+          isServer && assert.isFalse(mutex.isLockedByMe);
         });
       };
 

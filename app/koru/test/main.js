@@ -246,16 +246,20 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     if (isClient) koru.afTimeout = () => util.voidFunc;
   });
 
+  Core.sendErrors = (test) => {
+    let result = `${test.name}\x00`;
+    const {errors} = test;
+    for (let i = 0; i < errors.length; ++i) {
+      result += errors[i] + '\n';
+    }
+    Main.testHandle('E', result);
+  };
+
   Core.onTestEnd((test) => {
-    if (test.errors) {
+    if (test.errors != null) {
       ++errorCount;
 
-      let result = `${test.name}\x00`;
-      const {errors} = test;
-      for (let i = 0; i < errors.length; ++i) {
-        result += errors[i] + '\n';
-      }
-      Main.testHandle('E', result);
+      Core.sendErrors(test);
     }
 
     ++count;

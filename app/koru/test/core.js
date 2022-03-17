@@ -21,15 +21,27 @@ define((require) => {
       } else {
         stacktrace.replaceStack(this, elidePoint);
       }
+      this.recordError();
     }
 
     get name() {return 'AssertionError'}
+
+    recordError() {
+      if (Core.test !== void 0) {
+        Core.test.success = false;
+        (Core.test.errors ??= []).push(util.extractError(this));
+      }
+    }
+  }
+
+  class NoRecordAssertionError extends AssertionError {
+    recordError() {}
   }
 
   let elidePoint = void 0;
 
   const fail = (message='failed', elidePoint=0) => {
-    throw new AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
+    throw new Core.AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
   };
 
   const assert = (truth, msg) => {
@@ -74,7 +86,7 @@ define((require) => {
   };
 
   function getElideFromStack() {
-    elidePoint = elidePoint || new AssertionError('', 2);
+    elidePoint = elidePoint || new NoRecordAssertionError('', 2);
     return this;
   }
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});

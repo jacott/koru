@@ -8,11 +8,14 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, util, match: m} = TH;
+  const {stub, spy, util, match: m, stubProperty} = TH;
 
   const Core = require('./core');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    class AssertionError extends Core.AssertionError {
+      recordError() {} // don't record this error
+    }
 
     test('properties', () => {
       assert.same(Core, TH.Core);
@@ -25,8 +28,8 @@ trace of the actual error. Access can be useful to save and restore in custom as
 `});
       api.property('AssertionError', {info: 'the {#::AssertionError} class'});
       assert.same(Core.__elidePoint, void 0);
-      assert.elideFromStack.same(Core.__elidePoint.constructor, Core.AssertionError);
-      Core.__elidePoint = new Core.AssertionError();
+      assert.elideFromStack.isTrue(Core.__elidePoint instanceof Core.AssertionError);
+      Core.__elidePoint = new AssertionError();
 
       api.property('match', {info: `
 A clone of the {#koru/match} framework. This is conventionally assigned to the constant \`m\`
@@ -57,7 +60,9 @@ because of its widespread use.
          **/
         aeApi.protoProperty('customStack', {
           info: `The normalized stack trace with the elided frames and message`});
-        let {AssertionError} = Core;
+        class AssertionError extends aeApi.class() {
+          recordError() {}
+        }
         //[
         const inner1 = () => {inner2()};
         const inner2 = () => {inner3()};
@@ -80,7 +85,6 @@ because of its widespread use.
         };
         inner1();
         //]
-        AssertionError = aeApi.class();
         const a1 = new AssertionError('message');
         const a2 = new AssertionError('message', 1);
         const a3 = new AssertionError('message', a1);
@@ -95,20 +99,21 @@ because of its widespread use.
 
        * @param elidePoint the number of stack frames to elide
        **/
+      stubProperty(Core, 'AssertionError', {value: AssertionError});
       //[
       let ex;
       const inner1 = () => {inner2()};
       const inner2 = () => {
         try {
           assert.fail('I failed', 1);
-        } catch(e) {
+        } catch (e) {
           ex = e;
         }
       };
 
       inner1();
 
-      assert.instanceof(ex, Core.AssertionError);
+      assert.instanceof(ex, AssertionError);
       assert.same(ex.message, 'I failed');
       assert.equals(Stacktrace.normalize(ex), [
         m(/^    at.*inner1.*core-test.js/),
@@ -129,6 +134,7 @@ because of its widespread use.
 
        * @param adjust the number of additional stack frames to elide.
        **/
+      stubProperty(Core, 'AssertionError', {value: AssertionError});
       //[
       const inner = () => {
         assert.fail('I failed');
@@ -141,24 +147,22 @@ because of its widespread use.
             inner();
           }, 1);
         })();
-      } catch(e) {
+      } catch (e) {
         ex = e;
       }
-      assert.instanceof(ex, Core.AssertionError);
+      assert.instanceof(ex, AssertionError);
       assert.same(ex.message, 'I failed');
-      assert.equals(ex.customStack, new Core.AssertionError('I failed', 1).customStack);
+      assert.equals(ex.customStack, new AssertionError('I failed', 1).customStack);
 
       //]
       // api trace here because intercept will interfere with stack trace
       api.customIntercept(assert, {name: 'elide', sig: 'assert.'});
       try {
         assert.elide(() => {inner()});
-      } catch (ex) {
-      }
+      } catch (ex) {}
       try {
         assert.elide(() => {inner()}, 1);
-      } catch (ex) {
-      }
+      } catch (ex) {}
     });
 
     test('assert', () => {
@@ -170,6 +174,7 @@ because of its widespread use.
        *
        * @param msg A message to display if the assertion fails
        **/
+      stubProperty(Core, 'AssertionError', {value: AssertionError});
       api.method();
       //[
       let ex;
@@ -181,13 +186,13 @@ because of its widespread use.
           assert(1, 'I succeeded');
           assert(true, 'So did I');
           assert(0, 'I failed');
-        } catch(e) {
+        } catch (e) {
           ex = e;
         }
         //]
       }
       //[
-      assert.instanceof(ex, Core.AssertionError);
+      assert.instanceof(ex, AssertionError);
       assert.same(ex.message, 'I failed');
       //]
     });
@@ -201,6 +206,7 @@ because of its widespread use.
        *
        * @param msg A message to display if the assertion fails
        **/
+      stubProperty(Core, 'AssertionError', {value: AssertionError});
       api.method();
       //[
       let ex;
@@ -212,13 +218,13 @@ because of its widespread use.
           refute(0, 'I succeeded');
           refute(false, 'So did I');
           refute(true, 'I failed');
-        } catch(e) {
+        } catch (e) {
           ex = e;
         }
         //]
       }
       //[
-      assert.instanceof(ex, Core.AssertionError);
+      assert.instanceof(ex, AssertionError);
       assert.same(ex.message, 'I failed');
       //]
     });
@@ -265,7 +271,7 @@ because of its widespread use.
       const hint = {};
       assert.isFalse(TH.Core.deepEqual(a, b, hint, 'x'));
 
-      const exp =     ' keys differ:\n' +
+      const exp = ' keys differ:\n' +
             "    ''\n" +
             " != 'b'\n" +
             '    {e: 1, a: 2, c: 3}\n' +
@@ -282,7 +288,7 @@ because of its widespread use.
         const hint = {};
         assert.isFalse(deepEqual(a, b, hint, 'x'));
 
-        const exp = '\n'+
+        const exp = '\n' +
               '    "1234567890123456789012345\\n"\n' +
               ' != "1234567890123456789012"\n' +
               '---------------------------^ here';
@@ -324,7 +330,7 @@ because of its widespread use.
 
         b[1] = '7xxabc';
 
-        assert.isFalse(deepEqual('1789'.split('').join('xxxxxx\n')+'\n',
+        assert.isFalse(deepEqual('1789'.split('').join('xxxxxx\n') + '\n',
                                  b.join('xxxxxx\n'), hint, 'x'));
 
         const exp = '\n' +

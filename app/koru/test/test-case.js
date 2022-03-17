@@ -504,26 +504,29 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
   const handleError = (err) => {
-    if (Core.test === void 0) return false;
-    Core.test.success = false;
+    const {test} = Core;
+    if (test === void 0) return false;
+    test.success = false;
     if (err === 'abortTests') {
       Core.abort(err);
       return false;
     }
-    const msg = (err instanceof Error)
+    const isAssertionError = err instanceof Core.AssertionError;
+    if (! isAssertionError) {
+      (test.errors ??= []).push(
+        (err instanceof Error)
           ? util.extractError(err)
           : (err === 'timeout'
              ? 'Test timed out'
              : (err === 'wrongReturn'
                 ? 'Unexpected return value'
-                : err.toString()));
+                : err.toString())));
+    }
     if (Core.test.mode !== 'running') {
-      err = typeof err === 'string' ? new Core.AssertionError(msg, {stack: ''}) : err;
-      Core.test.errors = [err];
-      Core.abort(err);
+      Core.sendErrors(test);
+      Core.abort(`\n**** Failure during ${Core.test.mode} ****`);
       return false;
     }
-    Core.test.errors = [msg];
     return true;
   };
 
