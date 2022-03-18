@@ -114,7 +114,7 @@ define((require, exports, module) => {
     ws.on('message', (data, isBinary) => {
       if (isBinary) {
         ws.send('FServer\x00Binary messages are not allowed');
-        ws.close();
+        ws.send('Z');
         return;
       }
       data = data.toString();
@@ -126,21 +126,30 @@ define((require, exports, module) => {
         koru.runFiber(async () => {
           try {
             await buildCmd.runTests(session, type, pattern, (mode, exec) => {
+              if (mode === 'none') {
+                koru.error(`No matching tests to run (${type})`);
+                ws.send('FServer\x00no-tests');
+                ws.send('Z');
+                return;
+              }
               testMode = mode;
               testExec = exec;
-              if (mode === 'client') {
-                testExec.server = null;
+
+              pendingClientTests = testExec.clientTests;
+              if (mode === 'server') {
+                testClientCount = 0;
               }
 
-              if (testExec.clientTests) {
-                pendingClientTests = testExec.clientTests;
-              }
               testWhenReady();
             });
-          } catch (ex) {
-            koru.unhandledException(ex);
-            ws.send('FServer\x00' + ex.toString());
-            ws.close();
+          } catch (err) {
+            if (err instanceof Error) {
+              koru.unhandledException(err);
+            } else {
+              koru.error(err);
+            }
+            ws.send('FServer\x00' + err.toString());
+            ws.send('Z');
           }
         });
         break;

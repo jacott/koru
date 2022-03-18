@@ -14,12 +14,12 @@ define((require, exports, module) => {
 
   const BuildCmd = {
     async runTests(session, type, pattern='', callback) {
-      const cTests = type !== 'server' ? [] : null;
-      const sTests = type !== 'client' ? [] : null;
+      const cTests = type !== 'server' ? [] : void 0;
+      const sTests = type !== 'client' ? [] : void 0;
 
       const pushPath = (path) => {
-        cTests !== null && ! path.match(/\bserver\b/i) && cTests.push(path);
-        sTests !== null && ! path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
+        cTests !== void 0 && ! path.match(/\bserver\b/i) && cTests.push(path);
+        sTests !== void 0 && ! path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
       };
 
       const findAll = async (dir, exDirs) => {
@@ -68,15 +68,16 @@ define((require, exports, module) => {
 
       type = 'none';
 
-      if (cTests && cTests.length) {
+      if (cTests?.length > 0) {
         type = 'client';
       }
 
-      if (sTests && sTests.length) {
+      if (sTests?.length > 0) {
         type = type === 'none' ? 'server' : 'both';
       }
 
       if (type === 'none') {
+        callback(type, {});
         return;
       }
 
@@ -95,7 +96,7 @@ define((require, exports, module) => {
       }
 
       callback(type, {
-        server() {
+        server: type === 'client' ? void 0 : () => {
           require(['./server', 'test/server-ready'], (TH, serverReady) => {
             serverReady(koru, BuildCmd);
             TH.run(pattern, sTests);
