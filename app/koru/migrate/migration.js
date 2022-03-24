@@ -130,7 +130,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
   const readMigration = async (mig) => {
     const id = mig + '.js';
     try {
-      return await new Promise((resolve, reject) => {require([id], resolve)});
+      return await new Promise((resolve, reject) => {require([id], resolve, reject)});
     } finally {
       koru.unload(id);
     }
