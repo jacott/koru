@@ -376,7 +376,7 @@ define((require, exports, module) => {
 
     test('encode/decodeMessage', () => {
       const u8 = message.encodeMessage('M', [
-        1, 2, {foo: 'bar', [Symbol()]: 'notme'}], v.gDict);
+        1, 2, {foo: 'bar', [Symbol()]: 'notme'}]);
       const data = [];
 
       assert.same(u8.constructor, Uint8Array);
@@ -385,7 +385,7 @@ define((require, exports, module) => {
       assert.equals(data, [
         77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
 
-      assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
+      assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     });
 
     test('encode empty message', () => {

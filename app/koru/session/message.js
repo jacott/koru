@@ -321,6 +321,27 @@ define((require) => {
     return dict[1].c2k[code - 0x100];
   };
 
+  const newGlobalDict = () => {
+    const dict = newLocalDict(4096);
+    dict.limit = 0xfff0;
+    return dict;
+  };
+
+  const finalizeGlobalDict = (dict) => {
+    if (dict.index == -1) return;
+    const {c2k, k2c} = dict;
+    const delta = dict.limit = 0xffff - c2k.length;
+
+    for (let i = 0; i < c2k.length; ++i) {
+      k2c[c2k[i]] = i + delta;
+    }
+    dict.index = -1;
+    return dict;
+  };
+
+  const emptyDict = newGlobalDict();
+  finalizeGlobalDict(emptyDict);
+
   return {
     openEncoder: (type, globalDict) => {
       const buffer = new Uint8ArrayBuilder(1024);
@@ -349,7 +370,7 @@ define((require) => {
         },
       };
     },
-    encodeMessage: (type, args, globalDict) => {
+    encodeMessage: (type, args, globalDict=emptyDict) => {
       const buffer = new Uint8ArrayBuilder(1024);
 
       const dicts = [globalDict, newLocalDict()];
@@ -366,7 +387,7 @@ define((require) => {
       return dictBuilder.subarray();
     },
 
-    decodeMessage: (u8, globalDict) => {
+    decodeMessage: (u8, globalDict=emptyDict) => {
       const dict = newLocalDict(-1);
       let index = decodeDict(u8, 0, dict);
 
@@ -385,23 +406,8 @@ define((require) => {
     _decode: decode,
     _newLocalDict: newLocalDict,
 
-    newGlobalDict: () => {
-      const dict = newLocalDict(4096);
-      dict.limit = 0xfff0;
-      return dict;
-    },
-
-    finalizeGlobalDict: (dict) => {
-      if (dict.index == -1) return;
-      const {c2k, k2c} = dict;
-      const delta = dict.limit = 0xffff - c2k.length;
-
-      for (let i = 0; i < c2k.length; ++i) {
-        k2c[c2k[i]] = i + delta;
-      }
-      dict.index = -1;
-      return dict;
-    },
+    newGlobalDict,
+    finalizeGlobalDict,
 
     toHex: (data) => {
       const result = [];
