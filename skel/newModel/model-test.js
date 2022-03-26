@@ -8,13 +8,8 @@ define((require, exports, module)=>{
   const $$reqModel$$;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      TH.startTransaction();
-    });
-
-    afterEach(()=>{
-      TH.rollbackTransaction();
-    });
+    beforeEach(()=> TH.startTransaction());
+    afterEach(()=> TH.rollbackTransaction());
 
     test("defineFields", ()=>{
       assert.defineFields($$modelName$$, {
@@ -22,11 +17,11 @@ define((require, exports, module)=>{
       });
     });
 
-    test("persistence", ()=>{
-      const doc = Factory.create$$modelName$$();
+    test("persistence", async ()=>{
+      const doc = await Factory.create$$modelName$$();
 
-      const loaded = doc.$reload(true); // true avoids cache
-      assert.same($$modelName$$.query.count(), 1);
+      const loaded = await doc.$reload(true); // true avoids cache
+      assert.same(await $$modelName$$.query.count(), 1);
       $$persistenceTest$$
     });
   });

@@ -1,7 +1,7 @@
 define(() => (mig) => {
   mig.reversible({
-    add() {},
+    add(client) {},
 
-    revert() {},
+    revert(client) {},
   });
 });

@@ -12,14 +12,14 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let conn;
-    beforeEach(() => {
-      TH.startTransaction();
+    beforeEach(async () => {
+      await TH.startTransaction();
       conn = ConnTH.mockConnection();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       ConnTH.stopAllSubs(conn);
-      TH.rollbackTransaction();
+      await TH.rollbackTransaction();
     });
 
     test('publish', () => {
