@@ -46,6 +46,10 @@ define((require) => {
   const tDictString = 17;
   const tSparseSmall = 18;
   const tSparseLarge = 19;
+  const tEmptyArray = 20;
+  const tEmptyObject = 21;
+  const tNullObject = 22;
+  const tEmptyNullObject = 23;
 
   const tSmString = 0x80;
   const tSmNumber = 0x40;
@@ -87,6 +91,9 @@ define((require) => {
       return utf8to16(buffer, index);
     case tDictString:
       return [getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]), index + 2];
+    case tEmptyArray: return [[], index];
+    case tEmptyObject: return [{}, index];
+    case tEmptyNullObject: return [Object.create(null), index];
     case tArray: {
       const len = buffer.length;
       const out = [];
@@ -112,9 +119,9 @@ define((require) => {
       }
       return [out, ++index];
     }
-    case tObject: {
+    case tNullObject: case tObject: {
       const len = buffer.length;
-      const out = {};
+      const out = byte === tObject ? {} : Object.create(null);
       let result = null;
       for (;index < len && buffer[index] !== tTerm; index = result[1]) {
         const key = getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]);
@@ -218,7 +225,8 @@ define((require) => {
     const constructor = object.constructor;
 
     if (constructor === Object || constructor === void 0) {
-      buffer.push(tObject);
+      buffer.push(constructor === void 0 ? tNullObject : tObject);
+      let len = buffer.length;
       for (let key in object) {
         const value = object[key];
         if (typeof value === 'symbol') continue;
@@ -227,28 +235,36 @@ define((require) => {
         buffer.push(dkey >> 8, dkey & 0xff);
         encode(buffer, value, dict);
       }
-      buffer.push(tTerm);
+      if (len === buffer.length) {
+        buffer.set(len - 1, constructor === void 0 ? tEmptyNullObject : tEmptyObject);
+      } else {
+        buffer.push(tTerm);
+      }
     } else if (constructor === Array) {
-      buffer.push(tArray);
-      let last = -1;
-      object.forEach((o, index) => {
-        const diff = index - last - 1;
-        if (diff !== 0) {
-          if (diff < 256) {
-            buffer.push(tSparseSmall);
-            tmpDv.setInt8(0, diff);
-            buffer.push(tmpU8[0]);
-          } else {
-            if (diff > 4294967294) throw new Error('sparse array too sparse');
-            buffer.push(tSparseLarge);
-            tmpDv.setUint32(0, diff);
-            buffer.append(tmpU8.subarray(0, 4));
+      if (object.length == 0) {
+        buffer.push(tEmptyArray);
+      } else {
+        buffer.push(tArray);
+        let last = -1;
+        object.forEach((o, index) => {
+          const diff = index - last - 1;
+          if (diff !== 0) {
+            if (diff < 256) {
+              buffer.push(tSparseSmall);
+              tmpDv.setInt8(0, diff);
+              buffer.push(tmpU8[0]);
+            } else {
+              if (diff > 4294967294) throw new Error('sparse array too sparse');
+              buffer.push(tSparseLarge);
+              tmpDv.setUint32(0, diff);
+              buffer.append(tmpU8.subarray(0, 4));
+            }
           }
-        }
-        last = index;
-        encode(buffer, o, dict);
-      });
-      buffer.push(tTerm);
+          last = index;
+          encode(buffer, o, dict);
+        });
+        buffer.push(tTerm);
+      }
     } else if (constructor === Date) {
       buffer.push(tDate);
       tmpDv.setFloat64(0, object.getTime());

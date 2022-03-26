@@ -78,15 +78,35 @@ define((require, exports, module) => {
     });
 
     test('empty array', () => {
-      assert.equals(_encode([]), v.ans = [6, 0]);
+      assert.equals(_encode([]), v.ans = [20]);
 
       assert.equals(_decode(v.ans), []);
     });
 
     test('empty object', () => {
-      assert.equals(_encode({}), v.ans = [7, 0]);
+      assert.equals(_encode({}), v.ans = [21]);
 
-      assert.equals(_decode(v.ans), {});
+      const result = _decode(v.ans);
+      assert.equals(result, {});
+      assert.same(result.constructor, Object);
+    });
+
+    test('empty null object', () => {
+      assert.equals(_encode(Object.create(null)), v.ans = [23]);
+
+      const result = _decode(v.ans);
+      assert.equals(result, {});
+      assert.same(result.constructor, void 0);
+    });
+
+    test('empty null object', () => {
+      const obj = Object.create(null);
+      obj.x = 1;
+      assert.equals(_encode(obj), v.ans = [8, 120, 255, 0, 22, 1, 0, 65, 0]);
+
+      const result = _decode(v.ans);
+      assert.equals(result, {x: 1});
+      assert.same(result.constructor, void 0);
     });
 
     test('small string as dict', () => {
@@ -233,7 +253,9 @@ define((require, exports, module) => {
         0                              // eom
       ]);
 
-      assert.equals(_decode(v.ans, gDict), {foo: 'bar', baz: 'foo'});
+      const result = _decode(v.ans, gDict);
+      assert.equals(result, {foo: 'bar', baz: 'foo'});
+      assert.same(result.constructor, Object);
     });
 
     test('large object', () => {
