@@ -1,6 +1,6 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const {toHex, add} = require('koru/crypto/acc-sha256');
+  const {toHex, add}    = require('koru/crypto/acc-sha256');
 
-  return s => toHex(add(s));
+  return (s) => toHex(add(s));
 });

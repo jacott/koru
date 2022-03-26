@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * This is useful for building a hash in small increments; it is not the same as hashing the
@@ -7,10 +7,10 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
-  const sut  = require('./acc-sha256');
+  const sut = require('./acc-sha256');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("add", ()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('add', () => {
       /**
        * Modify `hash` using `text`.
        *
@@ -23,7 +23,7 @@ define((require, exports, module)=>{
        **/
       api.method();
       //[
-      const h = [1,2,3,4,5,6,7,8];
+      const h = [1, 2, 3, 4, 5, 6, 7, 8];
       assert.same(sut.add('hello world', h), h);
       assert.equals(
         h,
@@ -37,18 +37,22 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("toId", ()=>{
+    test('toId', () => {
       /**
        * Convert a string into an id hash
        **/
       api.method();
       //[
+      assert.same(sut.toId('hello' + 'goodbye'), 'hef112kz6HMarjX36');
       assert.same(sut.toId('hello'), '1fUIeDQxGXKCyEZbu');
-      assert.same(sut.toId('hello'+'goodbye'), 'hef112kz6HMarjX36');
+
+      const u8 = new Uint8Array([255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      assert.same(sut.toId(u8), 'HL7iBaOFoWMgDI3fK');
+      assert.same(sut.toId(new Uint32Array(u8.buffer)), 'HL7iBaOFoWMgDI3fK');
       //]
     });
 
-    test("toHex", ()=>{
+    test('toHex', () => {
       /**
        * Convert a `hash` to a hex string.
        *
@@ -57,8 +61,8 @@ define((require, exports, module)=>{
        * @return the hex equivalent of the `hash`
        **/
       api.method();
-      const h = [1,2,3,4,5,6,7,8];
-      assert.same(sut.toHex([65535,1,15,256,0xffffffff,10]),
+      const h = [1, 2, 3, 4, 5, 6, 7, 8];
+      assert.same(sut.toHex([65535, 1, 15, 256, 0xffffffff, 10]),
                   '0000ffff000000010000000f00000100ffffffff0000000a'),
 
       sut.add('hello world', h);
@@ -67,7 +71,7 @@ define((require, exports, module)=>{
                   '4cb301ea6c1e975ad8130be3e660b5a9ccf9e28e514a73c63533f2690c866255');
 
       api.done();
-      sut.add("363", h);
+      sut.add('363', h);
       assert.same(sut.toHex(sut.add('Ჾ蠇', h)),
                   'f8165b4e4696d5f09d0a08ed60f3503b9f4b15bf5bec95ad1fd7c85a43b00ead');
     });
