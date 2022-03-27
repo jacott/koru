@@ -56,7 +56,7 @@ define((require, exports, module) => {
       assert.equals(Html.htmlToJson(section), ans);
 
       const path = Html.html({path: [], d: 'M0,0 10,10Z'}, Html.SVGNS);
-      assert(path instanceof (isClient ?  window.SVGPathElement : global.Element));
+      assert(path instanceof (isClient ? window.SVGPathElement : global.Element));
 
       const br = Html.h({br: ''});
       assert.isNull(br.firstChild);
@@ -89,6 +89,8 @@ define((require, exports, module) => {
       assertConvert({input: [], name: 'email'});
       assertConvert({input: ''});
       assertConvert({div: ['']});
+      assertConvert({style: 'width:123px'});
+      assertConvert({style: ['.foo {width:123px}']});
       //]
     });
 

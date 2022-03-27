@@ -1,7 +1,7 @@
-define(()=>{
-  const SVGNS = "http://www.w3.org/2000/svg";
-  const XHTMLNS = "http://www.w3.org/1999/xhtml";
-  const XLINKNS = "http://www.w3.org/1999/xlink";
+define(() => {
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const XHTMLNS = 'http://www.w3.org/1999/xhtml';
+  const XLINKNS = 'http://www.w3.org/1999/xlink';
 
   const ATTRS = {id: true, class: true, style: true, xmlns: true};
 
@@ -18,7 +18,7 @@ define(()=>{
     foreignObject: 'foreignObject',
   };
 
-  const canonicalTagName = elm => {
+  const canonicalTagName = (elm) => {
     const {tagName} = elm;
     const canon = CANONICAL_TAG_NAMES[tagName];
     if (canon !== undefined) return canon;
@@ -36,23 +36,24 @@ define(()=>{
   const html = (body, xmlns) => {
     let content = null, tagName = '';
 
-    if (typeof body === "string") {
-      if (body.indexOf("\n") !== -1) {
+    if (typeof body === 'string') {
+      if (body.indexOf('\n') !== -1) {
         content = document.createDocumentFragment();
-        body.split('\n').forEach((line, index)=>{
+        body.split('\n').forEach((line, index) => {
           index && content.appendChild(document.createElement('br'));
           line && content.appendChild(document.createTextNode(line));
         });
         return content;
-      } else
+      } else {
         return document.createTextNode(body);
+      }
     }
 
     if (body.nodeType) return body;
 
     if (Array.isArray(body)) {
       const elm = document.createDocumentFragment();
-      body.forEach(item => {
+      body.forEach((item) => {
         item != null && elm.appendChild(html(item, xmlns));
       });
       return elm;
@@ -64,10 +65,11 @@ define(()=>{
     const attrs = {};
     let pTag = '', ambig = false;
 
-    if (body.xmlns !== undefined)
+    if (body.xmlns !== undefined) {
       xmlns = body.xmlns === XHTMLNS ? undefined : body.xmlns;
+    }
 
-    for(const key in body) {
+    for (const key in body) {
       if (HTML_IGNORE[key]) continue;
       const value = body[key];
       if (key[0] === '$') {
@@ -89,8 +91,9 @@ define(()=>{
           pTag = '';
         }
         tagName = key;
-        if (tagName === 'svg')
+        if (tagName === 'svg') {
           xmlns = SVGNS;
+        }
         content = value && html(value, xmlns);
       }
     }
@@ -102,16 +105,17 @@ define(()=>{
 
       tagName = pTag;
       content = content && (! Array.isArray(content) || content.length != 0)
-        ? html(content, xmlns) : null;
+        ? html(content, xmlns)
+        : null;
     }
 
-    const elm = xmlns !== undefined ?
-          document.createElementNS(SVGNS, tagName)
-          : document.createElement(tagName||'div');
+    const elm = xmlns !== undefined
+          ? document.createElementNS(SVGNS, tagName)
+          : document.createElement(tagName || 'div');
     canonicalTagName(elm);
 
     if (body.id !== undefined) elm.id = body.id;
-    for(const key in attrs) {
+    for (const key in attrs) {
       elm.setAttribute(key, attrs[key]);
     }
 
@@ -120,9 +124,9 @@ define(()=>{
     return elm;
   };
 
-  const htmlToJson = (node, ns=XHTMLNS)=>{
+  const htmlToJson = (node, ns=XHTMLNS) => {
     const {childNodes} = node;
-    switch(node.nodeType) {
+    switch (node.nodeType) {
     case document.TEXT_NODE: return node.textContent;
     case document.ELEMENT_NODE:
       const tagName = canonicalTagName(node);
@@ -130,20 +134,22 @@ define(()=>{
 
       if (ns !== node.namespaceURI) {
         ns = node.namespaceURI;
-        if (tagName !== 'svg')
+        if (tagName !== 'svg') {
           result.xmlns = ns;
+        }
       }
-      let ambig = false;
+      let ambig = ATTRS[tagName] !== void 0;
       const {attributes} = node;
-      for(let i = 0; i < attributes.length; ++i) {
+      for (let i = 0; i < attributes.length; ++i) {
         const {name, value} = attributes[i];
         if (ATTRS[name] === void 0) ambig = true;
         result[name] = value;
       }
-      switch(childNodes.length) {
+      switch (childNodes.length) {
       case 0:
-        if (tagName !== 'div')
+        if (tagName !== 'div') {
           result[tagName] = ambig ? [] : '';
+        }
         break;
       case 1: {
         const v = htmlToJson(node.firstChild, ns);
@@ -151,13 +157,13 @@ define(()=>{
       } break;
       default:
         const nodes = result[tagName] = [childNodes.length];
-        for(let i = 0; i < childNodes.length; ++i)
+        for (let i = 0; i < childNodes.length; ++i)
           nodes[i] = htmlToJson(childNodes[i], ns);
       }
       return result;
     case document.DOCUMENT_FRAGMENT_NODE: {
       const nodes = [childNodes.length];
-      for(let i = 0; i < childNodes.length; ++i)
+      for (let i = 0; i < childNodes.length; ++i)
         nodes[i] = htmlToJson(childNodes[i], ns);
       return nodes;
     }
@@ -178,13 +184,13 @@ define(()=>{
     CANONICAL_TAG_NAMES,
     canonicalTagName,
 
-    textToHtml: (body, tagName='div')=>{
+    textToHtml: (body, tagName='div') => {
       const elm = document.createElement(tagName);
       elm.innerHTML = body;
       return elm.firstChild;
     },
 
-    escapeHTML: (text)=>{
+    escapeHTML: (text) => {
       const pre = document.createElement('pre');
       pre.appendChild(document.createTextNode(text));
       return pre.innerHTML;
