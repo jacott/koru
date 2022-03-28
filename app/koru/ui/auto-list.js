@@ -1,22 +1,23 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const BTree = require('koru/btree');
-  const Dom   = require('koru/dom');
+  const BTree           = require('koru/btree');
+  const Dom             = require('koru/dom');
 
   const $ = Dom.current;
   const {myCtx} = Dom;
 
   const {deepCopy} = require('koru/util');
 
-  const copyKeys = (obj, keys)=>{
+  const copyKeys = (obj, keys) => {
     const ans = {};
     const len = keys.length;
-    for(let i = 0; i < len; ++i) {
+    for (let i = 0; i < len; ++i) {
       const key = keys[i];
       if (key in obj) {
         const v = obj[key];
         ans[key] = typeof v === 'object' && v !== null
-          ? deepCopy(v) : v;
+          ? deepCopy(v)
+          : v;
       }
     }
     return ans;
@@ -26,8 +27,8 @@ define((require)=>{
   const elm$ = Symbol(), addOrder$ = Symbol(), doc$ = Symbol();
   const {COMMENT_NODE} = document;
 
-  const addOrder = (pv, obj)=>obj[addOrder$] || (obj[addOrder$] = ++pv.globalAddOrder);
-  const compareAddOrder = (a,b)=>a-b;
+  const addOrder = (pv, obj) => obj[addOrder$] ??= ++pv.globalAddOrder;
+  const compareAddOrder = (a, b) => a - b;
   const addOrderKeys = compareAddOrder.compareKeys = [addOrder$];
 
   class AutoList {
@@ -41,7 +42,7 @@ define((require)=>{
       overLimit,
       removeElement=Dom.remove,
       parentCtx=$.ctx,
-    })  {
+    }) {
       let endMarker = null;
       if (container.nodeType === COMMENT_NODE) {
         endMarker = container[endMarker$];
@@ -72,7 +73,7 @@ define((require)=>{
       const ctx = Dom.ctx(pv.container);
       if (ctx != null) ctx.onDestroy(this);
 
-      query === void 0 || query.forEach(doc => {addRow(pv, doc)});
+      query?.forEach((doc) => {addRow(pv, doc)});
     }
 
     thisNode(doc) {return doc[this[private$].sym$]}
@@ -86,7 +87,7 @@ define((require)=>{
       if (doc == null) return null;
       const pv = this[private$];
       const {entries, sym$} = pv;
-      const node = doc[sym$] || entries.findNode(doc);
+      const node = doc[sym$] ?? entries.findNode(doc);
       if (node === void 0) return null;
 
       const elm = node[elm$];
@@ -105,7 +106,7 @@ define((require)=>{
       const pv = this[private$];
       const {entries} = pv;
 
-      for(let count = -1, curr = node; curr !== null; curr = entries.previousNode(curr)) {
+      for (let count = -1, curr = node; curr !== null; curr = entries.previousNode(curr)) {
         ++count;
         if (curr[elm$] !== null) {
           setLimit(pv, pv.limit + count);
@@ -131,8 +132,9 @@ define((require)=>{
         pv.query = query;
 
         if (compare === void 0) compare = pv.query.compare ?? pv.compare;
-        if (compareKeys === void 0)
+        if (compareKeys === void 0) {
           compareKeys = pv.query.compareKeys ?? compare.compareKeys ?? pv.compareKeys;
+        }
       }
 
       if (compare !== void 0) pv.compare = compare;
@@ -163,7 +165,7 @@ define((require)=>{
             node.value = pv.compareKeys === addOrderKeys ?
               addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
             newTree.addNode(node);
-            updateAllTags && myCtx(node[elm$]).updateAllTags();
+            updateAllTags && myCtx(node[elm$])?.updateAllTags();
             insertElm(pv, node);
           }
         });
@@ -187,7 +189,7 @@ define((require)=>{
         action = 'removed';
         removeRow(pv, doc);
       } else {
-        const node = doc[sym$] || pv.entries.findNode(doc);
+        const node = doc[sym$] ?? pv.entries.findNode(doc);
         if (node === void 0) {
           action = 'added';
           addRow(pv, doc);
@@ -195,14 +197,15 @@ define((require)=>{
           action = 'changed';
           const isAddOrder = pv.compareKeys === addOrderKeys;
           if (pv.compare(isAddOrder ? doc[addOrder$] : doc, node.value) != 0) {
-            node.value = isAddOrder ?
-              addOrder(pv, doc) : copyKeys(doc, pv.compareKeys);
+            node.value = isAddOrder
+              ? addOrder(pv, doc)
+              : copyKeys(doc, pv.compareKeys);
             moveNode(pv, node);
           }
-          node[elm$] == null || myCtx(node[elm$]).updateAllTags(doc);
+          myCtx(node[elm$])?.updateAllTags(doc);
         }
-      };
-      pv.observeUpdates === void 0 || pv.observeUpdates(this, doc, action);
+      }
+      pv.observeUpdates?.(this, doc, action);
     }
 
     get limit() {return this[private$].limit}
@@ -215,49 +218,49 @@ define((require)=>{
     }
   }
 
-
-  const makeOnChange = list => ({doc, isDelete}) =>{
+  const makeOnChange = (list) => ({doc, isDelete}) => {
     list.updateEntry(doc, isDelete ? 'remove' : void 0);
   };
 
-  const setLimit = (pv, value)=>{
+  const setLimit = (pv, value) => {
     const old = pv.limit;
     const {entries} = pv;
     pv.limit = value;
 
     let lastVis = pv.lastVis;
 
-    for(let diff = value-old;lastVis !== null && diff > 0; --diff) {
+    for (let diff = value - old; lastVis !== null && diff > 0; --diff) {
       lastVis = entries.nextNode(lastVis);
       lastVis === null || (renderNode(pv, lastVis), insertElm(pv, lastVis));
     }
     if (value < old) {
       let node = entries.firstNode;
-      for(let count = value; node !== null && count > 1; --count)
+      for (let count = value; node !== null && count > 1; --count)
         node = entries.nextNode(node);
 
       lastVis = node;
-      while(node = entries.nextNode(node)) {
+      while (node = entries.nextNode(node)) {
         removeElm(pv, node);
       }
     }
     pv.lastVis === lastVis || (pv.lastVis = lastVis);
   };
 
-  const stopObserver = pv=>{
+  const stopObserver = (pv) => {
     if (pv.observer != null) {
       pv.observer.stop();
       pv.observer = null;
     }
   };
 
-  const cleanupDoc = (pv, doc)=>{
+  const cleanupDoc = (pv, doc) => {
     delete doc[pv.sym$];
-    if (pv.compareKeys === addOrderKeys)
+    if (pv.compareKeys === addOrderKeys) {
       delete doc[addOrder$];
+    }
   };
 
-  const stop = pv=>{
+  const stop = (pv) => {
     stopObserver(pv);
     const {endMarker, entries} = pv;
     if (entries == null) return;
@@ -274,29 +277,30 @@ define((require)=>{
     }
   };
 
-  const addRow = (pv, doc)=>{
-    const node = pv.entries.add(pv.compareKeys === addOrderKeys ?
-                                addOrder(pv, doc) : copyKeys(doc, pv.compareKeys));
+  const addRow = (pv, doc) => {
+    const node = pv.entries.add(pv.compareKeys === addOrderKeys
+                                ? addOrder(pv, doc)
+                                : copyKeys(doc, pv.compareKeys));
     node[doc$] = doc;
     doc[pv.sym$] = node;
     const elm = checkToRender(pv, node);
     elm === null || insertElm(pv, node);
   };
 
-  const checkToRender = (pv, node)=>{
+  const checkToRender = (pv, node) => {
     const {entries} = pv;
     const overLimit = entries.size - pv.limit;
 
     const nn = entries.nextNode(node);
 
     if (overLimit > 0) {
-      pv.overLimit === void 0 || pv.overLimit();
-      if (nn === null || nn[elm$] === null)
+      pv.overLimit?.();
+      if (nn === null || nn[elm$] === null) {
         return node[elm$] = null;
+      }
       const {lastVis} = pv;
       removeElm(pv, lastVis);
       pv.lastVis = entries.previousNode(lastVis);
-
     } else if (overLimit == 0) {
       pv.lastVis = entries.lastNode;
     }
@@ -304,9 +308,9 @@ define((require)=>{
     return elm == null ? renderNode(pv, node) : elm;
   };
 
-  const renderNode = (pv, node)=>{node[elm$] = pv.template.$autoRender(node[doc$], pv.parentCtx)};
+  const renderNode = (pv, node) => {node[elm$] = pv.template.$autoRender(node[doc$], pv.parentCtx)};
 
-  const removeElm = (pv, node, isNodeRemove=false)=>{
+  const removeElm = (pv, node, isNodeRemove=false) => {
     const elm = node[elm$];
     if (elm !== null) {
       node[elm$] = null;
@@ -314,9 +318,9 @@ define((require)=>{
     }
   };
 
-  const removeRow = (pv, doc)=>{
+  const removeRow = (pv, doc) => {
     const {sym$} = pv;
-    const node = doc[sym$] || pv.entries.findNode(doc);
+    const node = doc[sym$] ?? pv.entries.findNode(doc);
     if (node !== void 0) {
       cleanupDoc(pv, node[doc$]);
       checkLimitBeforeRemove(pv, node);
@@ -328,7 +332,7 @@ define((require)=>{
   const checkLimitBeforeRemove = (pv, node) => {
     if (node[elm$] === null) return;
 
-    const overLimit = pv.entries.size-1 - pv.limit;
+    const overLimit = pv.entries.size - 1 - pv.limit;
 
     if (overLimit >= 0) {
       const lastVis = pv.entries.nextNode(pv.lastVis);
@@ -340,12 +344,12 @@ define((require)=>{
     pv.lastVis === null || (pv.lastVis = null);
   };
 
-  const insertElm = (pv, node)=>{
+  const insertElm = (pv, node) => {
     const nn = pv.entries.nextNode(node);
     pv.container.insertBefore(node[elm$], nn === null ? pv.endMarker : nn[elm$]);
   };
 
-  const moveNode = (pv, node)=>{
+  const moveNode = (pv, node) => {
     /** move up/down **/
 
     const lastFromVis = pv.lastVis;
@@ -355,7 +359,6 @@ define((require)=>{
       /** fully visible list **/
       entries.deleteNode(node);
       entries.addNode(node);
-
     } else {
       let lastVis = lastFromVis;
       const fromNode = entries.nextNode(node);
@@ -370,7 +373,7 @@ define((require)=>{
           renderNode(pv, node);
           removeElm(pv, lastVis);
           pv.lastVis = entries.previousNode(lastVis);
-        } /** else to hidden requires nothing **/
+        }/** else to hidden requires nothing **/
       } else {
         /** visible from **/
         if (nn === null || nn[elm$] === null) {
@@ -383,7 +386,8 @@ define((require)=>{
           }
         } else if (node === lastVis) {
           /** to visible **/
-          lastVis = pv.lastVis = fromNode === null ? entries.lastNode
+          lastVis = pv.lastVis = fromNode === null
+            ? entries.lastNode
             : entries.previousNode(fromNode);
         }
       }
