@@ -56,6 +56,36 @@ define((require) => {
       this.defaults = defaults;
     }
 
+    addPromise(p) {
+      if (isPromise(p)) {
+        if (this[promises$] === void 0) {
+          this[promises$] = [p];
+        } else {
+          this[promises$].push(p);
+        }
+      }
+
+      return this;
+    }
+
+    afterPromises(func) {
+      const p = this.waitPromises();
+      if (p !== void 0) {
+        this.addPromise(p.then(func));
+      } else {
+        func();
+      }
+      return this;
+    }
+
+    waitPromises() {
+      const promises = this[promises$];
+      if (promises !== void 0) {
+        this[promises$] = void 0;
+        return waitInSequence(promises).then(() => this.waitPromises());
+      }
+    }
+
     addField(field, value) {
       this.afterPromises(() => {
         if (! hasOwn(this.attributes, field)) {
@@ -169,36 +199,6 @@ define((require) => {
       this._useSave = '';
       if (! this.model) throw new Error('Model: "' + modelName + '" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
-    }
-
-    addPromise(p) {
-      if (isPromise(p)) {
-        if (this[promises$] === void 0) {
-          this[promises$] = [p];
-        } else {
-          this[promises$].push(p);
-        }
-      }
-
-      return this;
-    }
-
-    afterPromises(func) {
-      const p = this.waitPromises();
-      if (p !== void 0) {
-        this.addPromise(p.then(func));
-      } else {
-        func();
-      }
-      return this;
-    }
-
-    waitPromises() {
-      const promises = this[promises$];
-      if (promises !== void 0) {
-        this[promises$] = void 0;
-        return waitInSequence(promises).then(() => this.waitPromises());
-      }
     }
 
     addRef(ref, doc) {
