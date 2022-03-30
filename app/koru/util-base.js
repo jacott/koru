@@ -2,6 +2,8 @@ define((require, exports, module) => {
   'use strict';
   const {hasOwnProperty} = Object.prototype;
 
+  globalThis.assert = (truthy) => {if (! truthy) throw new Error('assertion failed')}
+
   const isPromise = (object) => typeof object?.then === 'function';
 
   const ifPromise = (object, trueCallback, falseCallbase=trueCallback) => isPromise(object)
