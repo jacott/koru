@@ -1,85 +1,51 @@
-const fs = require('fs');
-const fsp = require('fs/promises');
 const Path = require('path');
 
 define((require, exports, module) => {
   'use strict';
-  const fst             = require('./fs-tools');
+  const DirWatcher      = require('koru/dir-watcher');
   const koru            = require('./main');
   const session         = require('./session/base');
 
   const {runFiber, appDir: top} = koru;
 
   const listeners = {
-    js: (type, path, top) => {
+    __proto__: null,
+    js: (type, path, top, session) => {
       if (path.slice(-8) !== '.html.js') {
         session.unload(path.slice(0, -3));
       }
     },
 
-    html: (type, path) => {
+    html: (type, path, top, session) => {
       session.unload(koru.buildPath(path));
     },
   };
 
   const defaultUnloader = (path) => {session.unload(path)};
 
-  const watch = async (dir, top) => {
-    const dirs = Object.create(null);
+  const watch = (dir, top) => {
+    const watcher = new DirWatcher(dir, (path, st) => {
+      if (st?.isDirectory()) return;
+      const ext = Path.extname(path).slice(1);
+      const handler = listeners[ext];
 
-    const watcher = fs.watch(dir, (event, filename) => {
-      runFiber(async () => {
-        if (! /^\w/.test(filename)) return;
-        let path = await manage(dirs, dir, filename, top);
-        if (path === void 0) return;
+      path = path.slice(top.length);
 
-        const m = /\.(.+)$/.exec(path);
-        const handler = m && listeners[m[1]];
-
-        path = path.slice(top.length);
-
-        handler != null
-          ? Promise.resolve(handler(m[1], path, top, session)).catch((err) => {
-            koru.unhandledException(err);
-          })
-          : defaultUnloader(path);
-      });
+      if (handler === void 0) {
+        defaultUnloader(path);
+      } else {
+        return handler(ext, path, top, session);
+      }
     });
-
-    for (const filename of await fsp.readdir(dir)) {
-      if (filename.match(/^\w/)) {
-        await manage(dirs, dir, filename, top);
-      }
-    }
-
-    return watcher;
-  };
-
-  const manage = async (dirs, dir, filename, top) => {
-    const path = dir + '/' + filename;
-    const st = await fst.stat(path);
-    if (st !== void 0) {
-      if (st.isDirectory()) {
-        if (dirs[filename] === void 0) dirs[filename] = await watch(path, top);
-        return;
-      }
-    } else {
-      const watcher = dirs[filename];
-      if (watcher) {
-        delete dirs[filename];
-        watcher.close();
-      }
-    }
-    return path;
   };
 
   koru.onunload(module, 'reload');
 
-  runFiber(async () => {await watch(top, top + '/')});
+  watch(top, top + '/');
 
   return {
     listeners,
 
-    watch: async (dir, top) => await watch(Path.resolve(dir), Path.resolve(top) + '/'),
+    watch: (dir, top) => watch(Path.resolve(dir), Path.resolve(top) + '/'),
   };
 });
