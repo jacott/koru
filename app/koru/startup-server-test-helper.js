@@ -6,12 +6,13 @@ define((require, exports, module) => {
 
   const {stub, spy, after, util, intercept, match: m} = TH;
 
-  return () => {
+  return (module) => {
     let StartupServerBody, req, start;
     const exps = {};
     const Module = module.constructor;
+    const targetId = module.id.slice(0, -5);
 
-    const mockModule = new Module(void 0, 'startup-server');
+    const mockModule = new Module(void 0, targetId);
 
     let preInit = true;
 
@@ -39,9 +40,8 @@ define((require, exports, module) => {
       return true;
     };
 
-    const init = (module) => new Promise((resolve, reject) => {
+    const init = () => new Promise((resolve, reject) => {
       const origDefine = global.__yaajsVars__.define;
-      const targetId = module.id.slice(0, -5);
 
       intercept(global.__yaajsVars__, 'define', (body) => {
         StartupServerBody = body;
@@ -68,6 +68,7 @@ define((require, exports, module) => {
       init,
       mockModule,
       start: () => start(),
+      startFunction: () => start,
     };
   };
 });
