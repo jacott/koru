@@ -1,5 +1,4 @@
-const fs = require('fs/promises');
-
+const fsp = require('fs/promises');
 define(() => {
   'use strict';
 
@@ -20,27 +19,31 @@ define(() => {
   const RM_RF = {force: true, recursive: true};
 
   return {
-    mkdir: fs.mkdir,
-    // appendData,
-    readFile: fs.readFile,
-    readdir: fs.readdir,
-    // rename,
-    // rmdir,
-    stat: (path) => waitMethod(fs.stat, path),
-    lstat: (path) => waitMethod(fs.lstat, path),
-    mkdir_p: (dir) => fs.mkdir(dir, MKDIR_P),
-    realpath: fs.realpath,
-    readlink: fs.readlink,
-    // truncate,
-    // unlink,
-    // link,
-    writeFile: fs.writeFile,
+    mkdir: fsp.mkdir,
+    readFile: fsp.readFile,
+    readdir: fsp.readdir,
+    stat: (path) => waitMethod(fsp.stat, path),
+    lstat: (path) => waitMethod(fsp.lstat, path),
+    mkdir_p: (dir) => fsp.mkdir(dir, MKDIR_P),
+    realpath: fsp.realpath,
+    readlink: fsp.readlink,
+    readlinkIfExists: async (path, options) => {
+      try {
+        return await fsp.readlink(path, options);
+      } catch (err) {
+        if (err.code === 'ENOENT') return void 0;
+        const err2 = new Error(err.message, {cause: err});
+        err2.code = err.code;
+        throw err2;
+      }
+    },
+    writeFile: fsp.writeFile,
     setMtime: (path, time) => {
       time = new Date(time);
-      return fs.utimes(path, time, time);
+      return fsp.utimes(path, time, time);
     },
-    rm: fs.rm,
-    rm_f: (path) => fs.rm(path, RM_F),
-    rm_rf: (path) => fs.rm(path, RM_RF),
+    rm: fsp.rm,
+    rm_f: (path) => fsp.rm(path, RM_F),
+    rm_rf: (path) => fsp.rm(path, RM_RF),
   };
 });
