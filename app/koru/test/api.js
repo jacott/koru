@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const HTMLDocument    = require('koru/dom/html-doc');
@@ -23,22 +23,22 @@ define((require, exports, module)=>{
 
   const Element = globalThis.Element || {};
 
-  const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
+  const relType = (orig, value) => orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
 
-  const EMPTY_FUNC = ()=>{};
+  const EMPTY_FUNC = () => {};
 
   let count = 0;
 
-  const onTestEnd = (api, func)=>{
+  const onTestEnd = (api, func) => {
     if (api[onEnd$] === void 0) {
       const foo = count++;
-      const onEnd = api[onEnd$] = ()=>{
+      const onEnd = api[onEnd$] = () => {
         if (api[onEnd$] !== onEnd) return;
         api[onEnd$] = void 0;
         api.target = void 0;
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
-        callbacks.forEach(cb => cb());
+        callbacks.forEach((cb) => cb());
       };
       onEnd.callbacks = [];
       TH.after(onEnd);
@@ -52,7 +52,7 @@ define((require, exports, module)=>{
     func === void 0 || api[onEnd$].callbacks.push(func);
   };
 
-  const createSubjectName = (subject, tc)=>{
+  const createSubjectName = (subject, tc) => {
     switch (typeof subject) {
     case 'function': return subject.name;
     case 'string': return subject;
@@ -60,16 +60,17 @@ define((require, exports, module)=>{
     const mods = ctx.exportsModule(subject);
     if (mods) {
       const id = tc && toId(tc);
-      const mod = mods.find(mod => id === mod.id) || mods[0];
+      const mod = mods.find((mod) => id === mod.id) || mods[0];
       return fileToCamel(mod.id);
     }
   };
 
-  const toId = tc => tc.moduleId.replace(/-test$/, '');
+  const toId = (tc) => tc.moduleId.replace(/-test$/, '');
 
-  const extractFnBody = body =>{
-    if (typeof body === 'string')
+  const extractFnBody = (body) => {
+    if (typeof body === 'string') {
       return jsParser.shiftIndent(body);
+    }
 
     body = body.toString();
 
@@ -80,49 +81,51 @@ define((require, exports, module)=>{
     return jsParser.shiftIndent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
   };
 
-  const funcToSig = (func, name)=>{
-    const sig = jsParser.extractCallSignature(func);
-    return (name === undefined || name === func.name)
-      ? sig : name+sig.slice(func.name.length);
-  };
+  const funcToSig = jsParser.extractCallSignature;
 
-  const fileToCamel = fn => fn
-        .replace(/-(\w)/g, (m, l)=> l.toUpperCase()).replace(/^.*\//, '')
-        .replace(/^[a-z]/, m => m.toUpperCase());
+  const fileToCamel = (fn) => fn
+        .replace(/-(\w)/g, (m, l) => l.toUpperCase()).replace(/^.*\//, '')
+        .replace(/^[a-z]/, (m) => m.toUpperCase());
 
-  const cache = (API, value, orig, result)=>{
-    if (value !== orig)
+  const cache = (API, value, orig, result) => {
+    if (value !== orig) {
       API._objCache.set(value, ['C', result[1], result[2]]);
+    }
     API._objCache.set(orig, result);
     return result;
   };
 
-  const serializeCalls = (api, calls)=> calls.map(row => {
-    if (Array.isArray(row))
+  const serializeCalls = (api, calls) => calls.map((row) => {
+    if (Array.isArray(row)) {
       return serializeCall(api, row);
+    }
 
     row.calls = serializeCalls(api, row.calls);
     return row;
   });
 
-  const serializeCall = (api, [args, ans, comment])=>{
-    args = args.map(arg => api.serializeValue(arg));
-    if (comment)
+  const serializeCall = (api, [args, ans, comment]) => {
+    args = args.map((arg) => api.serializeValue(arg));
+    if (comment) {
       return [args, ans === undefined ? [''] : api.serializeValue(ans), comment];
+    }
 
-    if (ans === undefined)
+    if (ans === undefined) {
       return [args];
-    else
+    } else {
       return [args, api.serializeValue(ans)];
+    }
   };
 
-  const serializeProperties = (api, properties)=>{
+  const serializeProperties = (api, properties) => {
     for (let name in properties) {
       const property = properties[name];
-      if (property.value !== undefined)
+      if (property.value !== undefined) {
         property.value = api.serializeValue(property.value);
-      if (property.calls)
+      }
+      if (property.calls) {
         property.calls = serializeCalls(api, property.calls);
+      }
       if (property.test) property.test = property.test.name,
 
       property.properties &&
@@ -130,18 +133,18 @@ define((require, exports, module)=>{
     }
   };
 
-  const property = (api, field, subject, name, options)=>{
+  const property = (api, field, subject, name, options) => {
     api[level$] = getTestLevel();
     if (name == null) name = extractTestName(api, subject);
 
-    const inner = (subject, name, options, properties)=>{
+    const inner = (subject, name, options, properties) => {
       const property = properties[name] || (properties[name] = {});
 
-      const hasValueOpt =
-            typeof options === 'object' && options !== null && hasOwn(options, 'value');
+      const hasValueOpt = typeof options === 'object' && options !== null && hasOwn(options, 'value');
 
       const desc = subject && ! hasValueOpt
-            ? Object.getOwnPropertyDescriptor(subject, name) : undefined;
+            ? Object.getOwnPropertyDescriptor(subject, name)
+            : undefined;
 
       let savedValue = desc == null || desc.get == null ? subject[name] : undefined;
 
@@ -165,16 +168,16 @@ define((require, exports, module)=>{
             calls.push(entry);
             savedValue = value;
             desc && desc.set.call(this, value);
-          }
+          },
         });
 
         onTestEnd(api, () => {
-          if (desc)
+          if (desc) {
             Object.defineProperty(subject, name, desc);
-          else
+          } else {
             delete subject[name];
+          }
         });
-
       } else {
         property.value = api.valueTag(savedValue);
       }
@@ -191,15 +194,16 @@ define((require, exports, module)=>{
           if (info !== void 0) {
             if (typeof info === 'function') {
               property.info = info(savedValue);
-              if (property.info === void 0)
+              if (property.info === void 0) {
                 property.info = docComment(info);
-            } else
+              }
+            } else {
               property.info = info.toString();
-          }
-          else if (options.intro) property.info = options.intro;
+            }
+          } else if (options.intro) property.info = options.intro
           if (options.properties) {
             const properties = property.properties ||
-                    (property.properties = {});
+                  (property.properties = {});
             for (let name in options.properties) {
               inner(savedValue, name, options.properties[name], properties);
             }
@@ -209,7 +213,7 @@ define((require, exports, module)=>{
       case 'undefined':
         break;
       default:
-        throw new Error("invalid options supplied for property "+name);
+        throw new Error('invalid options supplied for property ' + name);
       }
       if (property.info === undefined) {
         property.info = docComment(api);
@@ -219,18 +223,18 @@ define((require, exports, module)=>{
     inner(subject, name, options, api[field] || (api[field] = {}));
   };
 
-  const getTestLevel = ()=>{
+  const getTestLevel = () => {
     const {test} = TH;
     if (test === undefined) return;
     const {mode} = test;
     if (mode === 'running') {
-      return  test;
+      return test;
     } else {
       return TH.Core.currentTestCase;
     }
   };
 
-  const extractTestName = (api, subject)=>{
+  const extractTestName = (api, subject) => {
     const {test} = TH;
     const {mode} = test;
     const start = mode === 'running' ? test : TH.Core.currentTestCase;
@@ -246,7 +250,7 @@ define((require, exports, module)=>{
     return start.name.replace(/^.*test ([^\s.]+).*$/, '$1');
   };
 
-  const addBody = (details, body, isNew=true)=>{
+  const addBody = (details, body, isNew=true) => {
     if (body === '') return;
     let calls = details.calls.slice(details[callLength$]);
     details.calls.length = Math.min(details[callLength$] || 0, details.calls.length);
@@ -254,7 +258,7 @@ define((require, exports, module)=>{
     if (! isNew || body !== void 0) {
       body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
       if (details.calls.length !== 0 && ! isNew) {
-        const last = details.calls[details.calls.length-1];
+        const last = details.calls[details.calls.length - 1];
         details.calls.length -= 1;
         if (last.body !== void 0) {
           body = last.body + body;
@@ -269,17 +273,17 @@ define((require, exports, module)=>{
     details[callLength$] = details.calls.length;
   };
 
-  const example = (api, body, isNew)=>{
+  const example = (api, body, isNew) => {
     try {
       return typeof body === 'function' && body();
     } finally {
       if (api.target !== void 0) {
-        addBody(api.target,  extractFnBody(body), isNew);
+        addBody(api.target, extractFnBody(body), isNew);
       }
     }
   };
 
-  const extractBodyExample = (details, fromTest)=>{
+  const extractBodyExample = (details, fromTest) => {
     if (details === undefined) return;
 
     const currentTest = fromTest || details[currentTest$];
@@ -297,7 +301,7 @@ define((require, exports, module)=>{
     }
 
     let raw = currentTest.body.toString().replace(/\/\*\*[\s\S]*?\*?\*\//, '');
-    const noExamplesIdx = raw.indexOf("//[no-more-examples]");
+    const noExamplesIdx = raw.indexOf('//[no-more-examples]');
     if (noExamplesIdx != -1) {
       raw = raw.slice(0, noExamplesIdx).trim();
     }
@@ -325,19 +329,20 @@ define((require, exports, module)=>{
     addBody(details, body, isNew);
   };
 
-  const method = (api, methodKey, obj, intro, methods)=>{
+  const method = (api, methodKey, obj, intro, methods) => {
     api[level$] = getTestLevel();
     if (methodKey == null) methodKey = extractTestName(api, obj);
 
     const func = obj[methodKey];
-    if (func == undefined)
+    if (func == undefined) {
       throw new Error(`method "${methodKey}" not found`);
+    }
 
     let methodName = methodKey.toString();
     if (typeof methodKey === 'symbol') {
-      const m = /^Symbol\((Symbol\..*?)\)$/.exec(methodName);
+      const m = /^Symbol\(((?:Symbol\.)?.*?)\)$/.exec(methodName);
       if (m !== null) methodName = m[1];
-      methodName = '['+methodName+']';
+      methodName = '[' + methodName + ']';
     }
 
     let details = methods[methodName];
@@ -345,11 +350,12 @@ define((require, exports, module)=>{
     if (details === undefined) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
       if (sig.indexOf(methodName) === -1 && sig[0] === '(') {
-        sig = methodName+sig;
+        sig = methodName + sig;
       }
       const isGenerator = sig[0] === '*';
-      if (isGenerator)
+      if (isGenerator) {
         sig = sig.replace(/^\*\s*/, '*');
+      }
 
       details = methods[methodName] = {
         sig,
@@ -367,7 +373,7 @@ define((require, exports, module)=>{
         const {calls} = details;
         if (calls === undefined) return func.apply(this, args);
         const entry = [
-          args.map(obj => api.valueTag(obj)),
+          args.map((obj) => api.valueTag(obj)),
           undefined,
         ];
         addComment(api, entry);
@@ -376,7 +382,7 @@ define((require, exports, module)=>{
         const ans = func.apply(this, args);
         entry[1] = api.valueTag(ans);
         return ans;
-      }
+      },
     });
 
     onTestEnd(api, () => {
@@ -388,7 +394,7 @@ define((require, exports, module)=>{
     });
   };
 
-  const addComment = (api, entry)=>{
+  const addComment = (api, entry) => {
     const {currentComment} = api;
     if (currentComment) {
       entry.push(currentComment);
@@ -396,10 +402,11 @@ define((require, exports, module)=>{
     }
   };
 
-  const inspect = (obj)=>{
+  const inspect = (obj) => {
     if (typeof obj !== 'object' || obj === null ||
-        obj[inspect$] || ('outerHTML' in obj) || obj.nodeType === 3)
+        obj[inspect$] || ('outerHTML' in obj) || obj.nodeType === 3) {
       return util.inspect(obj, 4, 150);
+    }
 
     const coreDisplay = obj && API._coreDisplay.get(obj.constructor);
     if (coreDisplay !== undefined) {
@@ -407,30 +414,35 @@ define((require, exports, module)=>{
     }
 
     let keys = Object.keys(obj).sort();
-    if (keys.length > 20)
+    if (keys.length > 20) {
       keys = keys.slice(0, 20);
+    }
 
-    const display = keys.map(key => {
+    const display = keys.map((key) => {
       const item = obj[key];
-      if (/[^$\w]/.test(key))
+      if (/[^$\w]/.test(key)) {
         key = JSON.stringify(key);
+      }
       const resolveFunc = item && API._resolveFuncs.get(item.constructor);
-      if (typeof resolveFunc === 'function')
+      if (typeof resolveFunc === 'function') {
         return `${key}: ${resolveFunc('Oi', item)[1]}`;
-      if (typeof item === 'function' && item.name === key)
+      }
+      if (typeof item === 'function' && item.name === key) {
         return `${key}(){}`;
+      }
 
       return `${key}: ${util.inspect(item, 3, 150)}`;});
-    return `{${display.join(", ").slice(0, 150)}}`;
+    return `{${display.join(', ').slice(0, 150)}}`;
   };
 
-  const docComment = func =>{
+  const docComment = (func) => {
     if (func instanceof API) {
-      const tl  = func[level$];
+      const tl = func[level$];
       if (tl != null) {
         func = tl.body;
-      } else
+      } else {
         func = null;
+      }
     }
     if (func == null) {
       const tl = getTestLevel();
@@ -442,7 +454,7 @@ define((require, exports, module)=>{
     let m = /\)\s*(?:=>)?\s*{\s*(:?\s*['"]use strict['"];\s*)?/.exec(code);
     if (m == null) return;
     let re = /\/\*\*\s*([\s\S]*?)\s*\*?\*\//y;
-    re.lastIndex = m.index+m[0].length;
+    re.lastIndex = m.index + m[0].length;
     m = re.exec(code);
     return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
   };
@@ -480,14 +492,14 @@ define((require, exports, module)=>{
 
     static reset() {
       this._instance = null;
-      this._moduleMap = new Map;
-      this._subjectMap = new Map;
-      this._objCache = new Map;
+      this._moduleMap = new Map();
+      this._subjectMap = new Map();
+      this._objCache = new Map();
     }
 
     static reportStubs() {
       this[reportStubs$] = true;
-      TH.after(()=>{this[reportStubs$] = false});
+      TH.after(() => {this[reportStubs$] = false});
     }
 
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
@@ -496,8 +508,9 @@ define((require, exports, module)=>{
         subjectModule = new Module(void 0, toId(tc));
         subjectModule.ctx = ctx;
         subjectModule.exports = pseudoModule;
-      } else
+      } else {
         subjectModule = subjectModule || ctx.modules[toId(tc)];
+      }
       const subject = subjectModule.exports;
       if (! this.isRecord) {
         this._instance.tc = tc;
@@ -508,28 +521,31 @@ define((require, exports, module)=>{
 
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
-        TH.after(()=>{this._instance = null});
+        TH.after(() => {this._instance = null});
 
         this._mapSubject(subject, subjectModule);
         this._moduleMap.set(
           subjectModule, this._instance = new this(
             null, subjectModule,
             subjectName,
-            ctx.modules[tc.moduleId]
-          )
+            ctx.modules[tc.moduleId],
+          ),
         );
-        if (initExample)
+        if (initExample) {
           this._instance.initExample = initExample;
+        }
 
-        if (initInstExample)
+        if (initInstExample) {
           this._instance.initInstExample = initInstExample;
+        }
       }
       if (tc[tcInfo$] === undefined) {
         tc[tcInfo$] = true;
         if (this._instance.abstract === undefined) {
           const module = ctx.modules[tc.moduleId];
-          if (module !== undefined)
+          if (module !== undefined) {
             this._instance.abstract = docComment(module.body);
+          }
         }
       }
 
@@ -554,15 +570,18 @@ define((require, exports, module)=>{
     static get instance() {return this._instance || this.module()}
 
     static resolveObject(value, displayName, orig=value) {
-      if (value === null || value === Object)
+      if (value === null || value === Object) {
         return ['O', displayName];
+      }
 
       const resolveFunc = this._resolveFuncs.get(value);
-      if (resolveFunc)
+      if (resolveFunc) {
         return resolveFunc(relType(orig, value), orig);
+      }
 
-      if (this._coreTypes.has(value))
+      if (this._coreTypes.has(value)) {
         return [relType(orig, value), displayName, CoreJsTypes.objectName(value) ?? value.name];
+      }
 
       let api = this.valueToApi(value);
       if (api) {
@@ -571,15 +590,17 @@ define((require, exports, module)=>{
 
       let cValue = this._objCache.get(value);
       if (cValue) {
-        if (cValue[0] === 'C' || orig !== value)
+        if (cValue[0] === 'C' || orig !== value) {
           return cache(this, orig, orig, [relType(orig, value), displayName, cValue[2]]);
+        }
         return cValue;
       }
 
       if (typeof value === 'function') {
         const proto = Object.getPrototypeOf(value);
-        if (! proto)
+        if (! proto) {
           return ['O', displayName];
+        }
 
         let api = this.valueToApi(proto);
         if (api) {
@@ -588,20 +609,23 @@ define((require, exports, module)=>{
 
         return this.resolveObject(proto, displayName, orig);
       }
-      if (! value.constructor || value.constructor === value)
+      if (! value.constructor || value.constructor === value) {
         return ['O', displayName];
+      }
       value = value.constructor;
       return this.resolveObject(value, displayName, orig);
     }
 
     static valueToApi(value) {
       const entry = this._subjectMap.get(value);
-      if (! entry)
+      if (! entry) {
         return;
+      }
 
       const item = entry[0];
-      if (item instanceof API)
+      if (item instanceof API) {
         return item;
+      }
       return this._moduleMap.get(item);
     }
 
@@ -611,36 +635,43 @@ define((require, exports, module)=>{
       const smap = this._subjectMap.get(subject);
 
       if (smap) {
-        if (smap[0] === module)
+        if (smap[0] === module) {
           return;
+        }
         this._subjectMap.set(subject, [module, smap]);
-      } else
+      } else {
         this._subjectMap.set(subject, [module, null]);
+      }
     }
 
     get moduleName() {
-      if (this.module)
+      if (this.module) {
         return this.module.id;
+      }
       const {parent} = this;
       return parent && parent.moduleName +
-        (parent.properties && this.propertyName ?
-         '.'+this.propertyName : '::'+this.subjectName);
+        (parent.properties && this.propertyName
+         ? '.' + this.propertyName
+         : '::' + this.subjectName);
     }
 
     innerSubject(subject, subjectName, options={}) {
       let propertyName;
       if (typeof subject === 'string') {
         propertyName = subject;
-        if (! (this.properties && this.properties[subject]))
+        if (! (this.properties && this.properties[subject])) {
           this.property(subject, options);
-        if (! subjectName)
+        }
+        if (! subjectName) {
           subjectName = subject;
+        }
         subject = this.subject[subject];
       }
       subjectName = subjectName || createSubjectName(subject);
 
-      if (! subjectName)
+      if (! subjectName) {
         throw new Error("Don't know the name of the subject!");
+      }
 
       const ThisAPI = this.constructor;
 
@@ -656,18 +687,20 @@ define((require, exports, module)=>{
       if (propertyName) ans.propertyName = propertyName;
 
       if (options.abstract !== void 0) {
-        ans.abstract = typeof options.abstract === 'string' ?
-          options.abstract :
-          docComment(options.abstract);
+        ans.abstract = typeof options.abstract === 'string'
+          ? options.abstract
+          : docComment(options.abstract);
       } else {
         ans.abstract = docComment();
       }
 
-      if (options.initExample !== void 0)
+      if (options.initExample !== void 0) {
         ans.initExample = options.initExample;
+      }
 
-      if (options.initInstExample !== void 0)
+      if (options.initInstExample !== void 0) {
         ans.initInstExample = options.initInstExample;
+      }
 
       return ans;
     }
@@ -675,23 +708,23 @@ define((require, exports, module)=>{
     class({sig, intro}={}) {
       const calls = [];
 
-      switch(typeof sig) {
+      switch (typeof sig) {
       case 'function':
         this.subject = sig;
       case 'undefined':
-        if (typeof this.subject !== 'function' || Object.getPrototypeOf(this.subject) == null)
-          throw new Error("this.new called on non function");
+        if (typeof this.subject !== 'function' || Object.getPrototypeOf(this.subject) == null) {
+          throw new Error('this.new called on non function');
+        }
 
         sig = funcToSig(this.subject).replace(/^[^(]*/, 'constructor');
         break;
       }
 
-
       if (! this.newInstance) {
         this.newInstance = {
           sig,
           intro: typeof intro === 'string' ? intro : docComment(intro),
-          calls
+          calls,
         };
       }
 
@@ -700,7 +733,6 @@ define((require, exports, module)=>{
       onTestEnd(this);
 
       const api = this;
-
 
       return class extends api.subject {
         constructor(...args) {
@@ -711,12 +743,12 @@ define((require, exports, module)=>{
           }
           extractBodyExample(details);
           const entry = [
-            args.map(obj => api.valueTag(obj)),
+            args.map((obj) => api.valueTag(obj)),
             undefined,
           ];
           calls.push(entry);
           entry[1] = api.valueTag(this);
-        };
+        }
       };
     }
 
@@ -728,18 +760,21 @@ define((require, exports, module)=>{
         const m = /^([^=(]*?[.#:])/.exec(sig);
         if (m != null) {
           sigPrefix = m[1];
-          if (sigPrefix === sig)
+          if (sigPrefix === sig) {
             sig = funcToSig(func, name);
-          else
+          } else {
             sig = sig.slice(m[1].length);
+          }
         }
       }
       const api = this;
-      if (typeof func !== 'function')
-        throw new Error("api.custom called with non function");
+      if (typeof func !== 'function') {
+        throw new Error('api.custom called with non function');
+      }
 
-      if (! name)
+      if (! name) {
         throw new Error("Can't derive name of function");
+      }
 
       const calls = [];
 
@@ -748,7 +783,7 @@ define((require, exports, module)=>{
         sigPrefix,
         sig,
         intro: typeof intro === 'string' ? intro : docComment(intro),
-        calls
+        calls,
       };
       api.target = details;
 
@@ -761,14 +796,14 @@ define((require, exports, module)=>{
         if (calls === undefined) return func.apply(this, args);
         extractBodyExample(details);
         const entry = [
-          args.map(obj => api.valueTag(obj)),
+          args.map((obj) => api.valueTag(obj)),
           undefined,
         ];
         calls.push(entry);
         const ans = func.apply(this, args);
         entry[1] = api.valueTag(ans);
         return ans;
-      };
+      }
     }
 
     customIntercept(func, {name=func.name, sig, intro}={}) {
@@ -822,7 +857,7 @@ define((require, exports, module)=>{
       const {calls} = target;
 
       target.calls = undefined;
-      TH.after(()=>{target.calls = calls});
+      TH.after(() => {target.calls = calls});
     }
 
     [inspect$]() {
@@ -832,7 +867,7 @@ define((require, exports, module)=>{
     serialize() {
       const {methods, protoMethods, customMethods, abstract, topics} = this;
 
-      const procMethods = list => {
+      const procMethods = (list) => {
         for (let methodName in list) {
           const row = list[methodName];
 
@@ -887,31 +922,36 @@ define((require, exports, module)=>{
       }
 
       if (this.module) {
-        if (this.module._requires)
+        if (this.module._requires) {
           ans.requires = Object.keys(this.module._requires).sort();
+        }
 
         let otherMods = this.constructor._subjectMap.get(this.subject);
         if (otherMods) {
           const otherIds = [];
-          for (; otherMods; otherMods = otherMods[1]) {
+          for (;otherMods; otherMods = otherMods[1]) {
             if (! (otherMods[0] instanceof API) &&
-                otherMods[0].id && otherMods[0].id !== id)
+                otherMods[0].id && otherMods[0].id !== id) {
               otherIds.push(otherMods[0].id);
+            }
           }
           if (otherIds) {
             const modifies = [], modifiedBy = [];
             const {modules} = this.module.ctx;
-            otherIds.forEach(oId => {
+            otherIds.forEach((oId) => {
               const oMod = modules[oId];
-              if (oMod && moduleGraph.isRequiredBy(oMod, this.module))
+              if (oMod && moduleGraph.isRequiredBy(oMod, this.module)) {
                 modifies.push(oId);
-              else if (oMod && moduleGraph.isRequiredBy(this.module, oMod))
+              } else if (oMod && moduleGraph.isRequiredBy(this.module, oMod)) {
                 modifiedBy.push(oId);
+              }
             });
-            if (modifies.length)
+            if (modifies.length) {
               ans.modifies = modifies.sort();
-            if (modifiedBy.length)
+            }
+            if (modifiedBy.length) {
               ans.modifiedBy = modifiedBy.sort();
+            }
           }
         }
       }
@@ -921,18 +961,21 @@ define((require, exports, module)=>{
 
     valueTag(obj, recurse=true) {
       const mods = ctx.exportsModule(obj);
-      if (mods)
+      if (mods) {
         return ['M', obj];
+      }
       switch (typeof obj) {
       case 'function':
         if (! API[reportStubs$]) {
-          if (typeof obj.restore === 'function' && typeof obj.calledWith === 'function')
+          if (typeof obj.restore === 'function' && typeof obj.calledWith === 'function') {
             obj = obj.original || EMPTY_FUNC;
+          }
         }
         return ['F', obj, obj[stubName$] || obj.name || funcToSig(obj)];
       case 'object':
-        if (obj === null)
+        if (obj === null) {
           return obj;
+        }
         if (recurse && obj.constructor === Object) {
           const parts = {};
           for (const id in obj) {
@@ -941,7 +984,7 @@ define((require, exports, module)=>{
           return ['P', parts];
         }
         let resolveFunc = this.constructor._resolveFuncs.get(obj) ||
-              this.constructor._resolveFuncs.get(obj.constructor);
+            this.constructor._resolveFuncs.get(obj.constructor);
         return ['O', obj, resolveFunc ? resolveFunc('O', obj)[1] : inspect(obj)];
       default:
         return obj;
@@ -952,16 +995,18 @@ define((require, exports, module)=>{
       if (Array.isArray(value)) {
         let api;
         const v1 = value[1];
-        switch(value[0]) {
+        switch (value[0]) {
         case 'M':
           return ['M', this.bestId(v1)];
         case 'F':
-          if (Object.getPrototypeOf(v1) === Function.prototype)
+          if (Object.getPrototypeOf(v1) === Function.prototype) {
             return ['F', value[2]];
+          }
         case 'O':
-          api =  this.constructor.valueToApi(v1);
-          if (api)
+          api = this.constructor.valueToApi(v1);
+          if (api) {
             return ['M', api.moduleName];
+          }
 
           return this.constructor.resolveObject(v1, value[2]);
         case 'P': {
@@ -970,16 +1015,18 @@ define((require, exports, module)=>{
             ans[id] = this.serializeValue(v1[id]);
           }
           return ['P', ans];
-        } default:
+        }default:
           return [value[0], value[2]];
         }
       }
 
-      if (value === undefined)
+      if (value === undefined) {
         return ['U', 'undefined'];
+      }
 
-      if (typeof value === 'symbol')
+      if (typeof value === 'symbol') {
         return ['S', 'symbol'];
+      }
 
       return value;
     }
@@ -998,12 +1045,13 @@ define((require, exports, module)=>{
 
   API._coreDisplay = new Map([
     [Promise, 'Promise()'],
-    [RegExp, obj => ''+obj],
+    [RegExp, (obj) => '' + obj],
   ]);
 
-  const resolveModule = (type, value)=>{
-    if (type === 'Oi')
+  const resolveModule = (type, value) => {
+    if (type === 'Oi') {
       return [type, `{Module:${value.id}}`, 'Module'];
+    }
     return [type, value.name, 'Module'];
   };
 
@@ -1014,18 +1062,20 @@ define((require, exports, module)=>{
 
     [Array, (type, value) => {
       if (type === 'Oi') {
-        if (value.length > 20)
+        if (value.length > 20) {
           value = value.slice(0, 20);
-        const display = value.map(item => {
-
+        }
+        const display = value.map((item) => {
           const resolveFunc = item != null && typeof item === 'object'
-                ? API._resolveFuncs.get(item.constructor) : undefined;
-          if (resolveFunc !== undefined)
+                ? API._resolveFuncs.get(item.constructor)
+                : undefined;
+          if (resolveFunc !== undefined) {
             return resolveFunc('Oi', item)[1];
-          else
+          } else {
             return inspect(item);
+          }
         });
-        return [type, `[${display.join(", ").slice(0, 150)}]`, 'Array'];
+        return [type, `[${display.join(', ').slice(0, 150)}]`, 'Array'];
       }
       return [type, 'Array', 'Array'];
     }],
@@ -1036,7 +1086,6 @@ define((require, exports, module)=>{
   API.isRecord = module.config().record;
 
   const STUB_TOPIC = {addBody() {}};
-
 
   class APIOff extends API {
     class({sig, intro}={}) {
@@ -1064,14 +1113,14 @@ define((require, exports, module)=>{
   if (! API.isRecord) {
     API._instance = new APIOff();
   } else {
-    TH.Core.onEnd(module, ()=>{
+    TH.Core.onEnd(module, () => {
       if (API.isRecord) {
         API._record();
         API.reset();
       }
     });
 
-    TH.Core.onTestEnd(test=>{API._instance = null});
+    TH.Core.onTestEnd((test) => {API._instance = null});
   }
 
   API._docComment = docComment;
