@@ -48,7 +48,7 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
     dbBroker.db = mq.mqdb.table._client;
     const {name, [timer$]: timer,
            mqdb: {[action$]: actions, [retryInterval$]: retryIntervals}} = mq;
-    timer.handle = void 0; timer.ts = 0;
+    timer.handle = void 0; timer.dueAt = 0;
     mq.error = void 0;
     try {
       const [rec] = await mq.peek(1, util.newDate());
@@ -65,13 +65,13 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
       if (ex.stack) koru.unhandledException(ex);
       if (retryInterval !== -1) {
         timer.handle = void 0;
-        queueFor(mq, new Date(util.dateNow() + retryInterval));
+        queueFor(mq, util.dateNow() + retryInterval);
         mq.error = ex;
       }
     }
   };
 
-  const queueNext = async (mq, minStart) => {
+  const queueNext = async (mq, minStart=0) => {
     const {mqdb: {table}, name, [timer$]: timer} = mq;
 
     const nrec = (await table._client.query(`
@@ -80,29 +80,27 @@ select "dueAt" from "${table._name}" where name = $1
 `, [name]))[0];
 
     if (nrec !== void 0) {
-      queueFor(mq, minStart === void 0 ? nrec.dueAt : Math.max(+minStart, + nrec.dueAt));
+      queueFor(mq, Math.max(minStart, nrec.dueAt.getTime()));
     }
   };
 
   const queueFor = (mq, dueAt) => {
     if (mq.error !== void 0) return;
-    const ts = +dueAt;
-    if (ts !== ts || ts <= 0) throw new Error('Invalid dueAt');
     const timer = mq[timer$];
     if (timer.handle !== void 0) {
-      if (timer.ts > ts) {
+      if (timer.dueAt > dueAt) {
         koru.clearTimeout(timer.handle);
       } else {
         return;
       }
     }
-    timer.ts = ts;
+    timer.dueAt = dueAt;
     timer.handle = koru.setTimeout(
-      () => action(mq), Math.min(util.DAY, Math.max(0, +dueAt - util.dateNow())));
+      () => action(mq), Math.min(util.DAY, Math.max(0, dueAt - util.dateNow())));
   };
 
   class MQ {
-    constructor(mqdb, name) {
+    constructor(mqdb, name, startupDelay) {
       this.mqdb = mqdb;
       this.name = name;
       this[timer$] = {handle: void 0, dueAt: 0};
@@ -110,12 +108,13 @@ select "dueAt" from "${table._name}" where name = $1
       this[ready$] = false;
     }
 
-    async init() {
+    async init(delay) {
       if (this[ready$]) return;
       this[ready$] = true;
       this.mqdb[ready$] || await initTable(this.mqdb);
-      const retryInterval = this.mqdb[retryInterval$][this.name];
-      await queueNext(this, (retryInterval === void 0 ? DEFAULT_INTERVAL : retryInterval) + util.dateNow());
+      delay ??= this.mqdb[retryInterval$][this.name] ?? DEFAULT_INTERVAL;
+
+      return queueNext(this, delay + util.dateNow());
     }
 
     deregister() {
@@ -141,12 +140,18 @@ select "dueAt" from "${table._name}" where name = $1
       await this.mqdb.table.remove({name: this.name});
     }
 
+    async sendNow() {
+      this.error = void 0;
+      return this[ready$] ? queueNext(this, util.dateNow()) : this.init(0);
+    }
+
     async add({dueAt=util.newDate(), message}) {
+      if (dueAt.getTime() !== dueAt.getTime()) throw new Error('Invalid dueAt');
       this[ready$] || await this.init();
       const {mqdb, name} = this;
       const now = util.dateNow();
       await mqdb.table.insert({name, dueAt, message});
-      queueFor(this, dueAt);
+      queueFor(this, dueAt.getTime());
     }
 
     async peek(maxResults=1, dueBefore) {
@@ -197,7 +202,7 @@ select _id,"dueAt",message from "${table._name}"
         if (timers.handle !== void 0) {
           koru.clearTimeout(timers.handle);
           timers.handle = void 0;
-          timers.ts = 0;
+          timers.dueAt = 0;
         }
       }
     }
@@ -211,6 +216,10 @@ select _id,"dueAt",message from "${table._name}"
       if (retryInterval !== void 0) {
         retryIntervals[name] = retryInterval;
       }
+    }
+
+    deregisterQueue(name) {
+      this[queue$][name]?.deregister();
     }
   }
 
@@ -254,6 +263,7 @@ select _id,"dueAt",message from "${table._name}"
     deregisterQueue(name) {
       delete this[action$][name];
       delete this[retryInterval$][name];
+      this[dbs$].current.deregisterQueue(name);
     }
 
     getQueue(name) {

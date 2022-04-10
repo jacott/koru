@@ -161,6 +161,14 @@ isServer && define((require, exports, module) => {
         assert.same(mqFactory.getQueue('bar'), undefined);
         assert.same(mqFactory.getQueue('panda'), undefined);
 
+        mqFactory.registerQueue({name: 'bar', local: true, action(...args) {}});
+        const bar = mqFactory.getQueue('bar');
+        spy(bar, 'deregister');
+        mqFactory.deregisterQueue('bar');
+        assert.same(await mqFactory.getQueue('bar'), undefined);
+        assert.called(bar.deregister);
+
+
         /** can restart deregisterd queue **/
 
         koru.setTimeout.reset();
@@ -473,7 +481,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
       test('bad queue Time', async () => {
         try {
-          await mqFactory.getQueue('foo').add({dueAt: new Date(-4)});
+          await mqFactory.getQueue('foo').add({dueAt: new Date(NaN)});
           assert.fail('expect throw');
         } catch (err) {
           assert.exception(err, {message: 'Invalid dueAt'});
@@ -522,6 +530,39 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         await koru.setTimeout.lastCall.yield();
         assert.equals(v.args.message, [1, 2, 3]);
+      });
+
+      test('sendNow', async () => {
+        /**
+         * Skip any retry interval and send the message now if dueAt has passed.
+         */
+        mqApi.protoMethod();
+        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+
+        //[
+        const queue = mqFactory.getQueue('foo');
+        v.action = async (args) => {
+          throw {retryAfter: 12345};
+        };
+
+        await queue.add({message: [1, 2]});
+        await koru.setTimeout.yieldAndReset();
+        assert.calledWith(koru.setTimeout, TH.match.func, 12345);
+
+        koru.setTimeout.reset();
+        await queue.sendNow();
+        assert.calledWith(koru.setTimeout, TH.match.func, 0);
+        //]
+
+        /** on init */
+        {
+          mqFactory.stopAll();
+
+          const queue = mqFactory.getQueue('foo');
+          koru.setTimeout.reset();
+          await queue.sendNow();
+          assert.calledWith(koru.setTimeout, TH.match.func, 0);
+        }
       });
 
       test('retryAfter', async () => {
