@@ -1480,6 +1480,9 @@ define((require, exports, module) => {
 
       assert.same(util.timeUncertainty, 0);
       assert.same(util.dateNow(), 12348);
+
+      stubProperty(util, 'thread', {value: void 0});
+      assert.same(util.dateNow(), 12348);
     });
 
     test('withDateNow', () => {

@@ -1101,7 +1101,7 @@ define((require) => {
     get timeUncertainty() {return timeUncertainty},
 
     dateNow() {
-      return util.thread.date || (Date.now() + timeAdjust);
+      return util.thread?.date || (Date.now() + timeAdjust);
     },
 
     newDate() {
