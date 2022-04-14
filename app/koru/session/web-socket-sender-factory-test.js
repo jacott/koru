@@ -65,6 +65,8 @@ define((require, exports, module) => {
       assert.same(v.sess.state._state, 'closed');
 
       v.sess.start();
+
+      assert.same(v.ws.onerror, util.voidFunc);
       v.ws.close = stub();
 
       v.sess.onStop(v.c1 = stub());
@@ -72,7 +74,13 @@ define((require, exports, module) => {
       spy(v.sess.state, 'retry');
 
       v.sess.pause();
-      assert.called(v.ws.close);
+      assert.calledOnce(v.ws.close);
+      assert.same(v.ws.onmessage, util.voidFunc);
+      assert.same(v.ws.onclose, util.voidFunc);
+      assert.same(v.ws.onerror, util.voidFunc);
+
+      v.sess.pause();
+      assert.calledOnce(v.ws.close);
 
       refute.called(v.c1);
 
@@ -82,6 +90,9 @@ define((require, exports, module) => {
       v.sess.start();
 
       assert.same(v.sess.state._state, 'startup');
+      refute.same(v.ws.onmessage, util.voidFunc);
+      refute.same(v.ws.onclose, util.voidFunc);
+      assert.same(v.ws.onerror, util.voidFunc);
     });
 
     test('heartbeat adjust time', () => {
@@ -101,7 +112,7 @@ define((require, exports, module) => {
       now += 120000;
       v.sess[private$].queueHeatBeat();
       now += 234;
-      kFunc.call(v.sess, '' + (now-400));
+      kFunc.call(v.sess, '' + (now - 400));
 
       assert.equals(util.timeAdjust, -283);
       assert.near(util.timeUncertainty, 234);
@@ -110,7 +121,7 @@ define((require, exports, module) => {
       now += 120000;
       v.sess[private$].queueHeatBeat();
       now += 105;
-      kFunc.call(v.sess, '' + (now+800));
+      kFunc.call(v.sess, '' + (now + 800));
 
       assert.equals(util.timeAdjust, 853);
       assert.near(util.timeUncertainty, 53);
@@ -121,6 +132,15 @@ define((require, exports, module) => {
       kFunc.call(v.sess, '' + (now));
       assert.equals(util.timeAdjust, 60);
       assert.near(util.timeUncertainty, 66);
+
+      const stopTimeout = stub();
+      stub(koru, '_afTimeout').returns(stopTimeout);
+
+      v.sess[private$].queueHeatBeat();
+      assert.called(koru._afTimeout);
+      refute.called(stopTimeout);
+      v.sess.pause();
+      assert.called(stopTimeout);
     });
 
     test('state', () => {

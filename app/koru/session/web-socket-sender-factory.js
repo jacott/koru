@@ -50,13 +50,13 @@ define((require) => {
       const now = adjustedNow();
       const serverTime = +data;
       const sentAt = this[heatbeatSentAt$];
-      const uncertainty = now-sentAt;
+      const uncertainty = now - sentAt;
 
       this[heatbeatTime$] = now + this.heartbeatInterval;
 
       if (serverTime > util.DAY) {
         util.adjustTime(
-          serverTime<sentAt || serverTime>now ? serverTime - Math.floor((sentAt+now) / 2) : 0,
+          serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now) * 0.5) : 0,
           util.timeUncertainty === 0
             ? uncertainty
             : Math.min(uncertainty, (util.timeUncertainty * 4 + uncertainty) * 0.2),
@@ -135,11 +135,12 @@ define((require) => {
 
     function closeWs(ws) {
       stopReconnTimeout();
-      if (ws === null) return;
+      if (ws == null) return;
       try {
         ws.close();
       } catch (ex) {}
       ws.onclose({wasClean: true});
+      ws.onmessage = ws.onclose = util.voidFunc;
     }
 
     util.merge(session, {
@@ -150,9 +151,9 @@ define((require) => {
 
       send(type, msg) {
         if (this.ws !== null && this.state.isReady()) {
-          session.ws.send(type+msg);
+          session.ws.send(type + msg);
         } else {
-          waitSends.push(type+msg);
+          waitSends.push(type + msg);
         }
       },
 
@@ -214,7 +215,7 @@ define((require) => {
         heartbeatTO = null;
         if (session[heatbeatTime$] === null) {
           if (ws != null) {
-            ws.onclose = null;
+            ws.onclose = util.voidFunc;
             try {
               ws.close();
             } finally {
@@ -263,7 +264,7 @@ define((require) => {
       const onclose = (event) => {
         stopReconnTimeout();
         ws.onmessage = null;
-        if (heartbeatTO) heartbeatTO();
+        heartbeatTO?.();
         session[heatbeatTime$] = heartbeatTO = session.ws = session._queueHeatBeat = null;
         if (event === void 0) return;
         if (event.code !== void 0 && event.code !== 1006 && session[retryCount$] != 0) {
@@ -281,7 +282,7 @@ define((require) => {
         sessState.retry(event.code, event.reason);
       };
 
-      ws.onerror = () => {};
+      ws.onerror = util.voidFunc;
       ws.onclose = onclose;
     }
 
