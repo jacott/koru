@@ -61,7 +61,7 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
     } catch (ex) {
       const retryInterval = typeof ex.retryAfter === 'number'
             ? ex.retryAfter
-            : retryIntervals[name] || DEFAULT_INTERVAL;
+            : retryIntervals[name] ?? DEFAULT_INTERVAL;
       if (ex.stack) koru.unhandledException(ex);
       if (retryInterval !== -1) {
         timer.handle = void 0;
@@ -192,7 +192,7 @@ select _id,"dueAt",message from "${table._name}"
 
     getQueue(name) {
       if (this[action$][name] === void 0) return;
-      return this[queue$][name] || (this[queue$][name] = new MQ(this, name));
+      return this[queue$][name] ??= new MQ(this, name);
     }
 
     stop() {
@@ -256,7 +256,7 @@ select _id,"dueAt",message from "${table._name}"
         if (retryInterval !== void 0) {
           this[retryInterval$][name] = retryInterval;
         }
-        module === void 0 || module.onUnload(() => {this.deregisterQueue(name)});
+        module?.onUnload(() => {this.deregisterQueue(name)});
       }
     }
 
