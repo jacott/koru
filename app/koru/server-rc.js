@@ -13,6 +13,8 @@ define((require, exports, module) => {
 
   remoteControl.engine = 'Server';
 
+  const decoder = new globalThis.TextDecoder();
+
   function remoteControl(ws) {
     ws.on('error', (err) => {
       ws.close();
@@ -113,8 +115,27 @@ define((require, exports, module) => {
     });
     ws.on('message', (data, isBinary) => {
       if (isBinary) {
-        ws.send('FServer\x00Binary messages are not allowed');
-        ws.send('Z');
+        switch (data[0]) {
+        case 73: // I
+          let cmd;
+          const args = [];
+          let prev = 1;
+          for (let i = 1; i < data.length; ++i) {
+            if (data[i] == 255) {
+              const arg = decoder.decode(data.subarray(prev, i));
+              if (cmd === void 0) {
+                cmd = arg;
+              } else {
+                args.push(arg);
+              }
+              prev = i + 1;
+            }
+          }
+          args.push(decoder.decode(data.subarray(prev)));
+          actions.handle(cmd, ws, clients, args);
+          break;
+        }
+
         return;
       }
       data = data.toString();

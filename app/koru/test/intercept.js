@@ -195,7 +195,7 @@ define((require, exports, module) => {
               type = 'C';
             }
           } else if (sample[0] === '(') {
-            sample = name+sample;
+            sample = name + sample;
           }
           if (type === 'G') {
             type += 'F';

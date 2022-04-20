@@ -24,27 +24,26 @@ define((require, exports, module) => {
       afterEach(Intercept.finishIntercept);
 
       test('after optional chaining', () => {
-        const fooBar = function fooBar() {fooBar?.toString()};
+        const fooBar = function fooBar() {fooBar?.toString()}
         const source = fooBar.toString();
-        const epos = source.indexOf('.')+3;
-        Intercept.breakPoint(mod.id, epos, 'to', source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko'+'ru_.__INTERCEPT$__]("to")._toString()}');
+        const epos = source.indexOf('.') + 3;
+        Intercept.breakPoint(mod.id, source.slice(0, epos), 'to', source.slice(epos));
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar?.[_ko' + 'ru_.__INTERCEPT$__]("to")._String()}');
       });
 
       test('within member word', () => {
-        const fooBar = function fooBar() {fooBar.toString()};
+        const fooBar = function fooBar() {fooBar.toString()}
         const source = fooBar.toString();
-        const epos = source.indexOf('.')+3;
-        Intercept.breakPoint(mod.id, epos, 'to', source);
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko'+'ru_.__INTERCEPT$__]("to")._toString()}');
+        const epos = source.indexOf('.') + 3;
+        Intercept.breakPoint(mod.id, source.slice(0, epos), 'to', source.slice(epos));
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar[_ko' + 'ru_.__INTERCEPT$__]("to")._String()}');
       });
 
       test('member at end of body', () => {
-        const fooBar = function fooBar() {fooBar.toString()};
-        const source = fooBar.toString().slice(0, -1);
-        const epos = source.length+1;
-        Intercept.breakPoint(mod.id, epos, '', source+'.}');
-        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko'+'ru_.__INTERCEPT$__]("")._}');
+        const source = `function fooBar() {fooBar.toString().`;
+        const epos = source.length + 1;
+        Intercept.breakPoint(mod.id, source, '', '}');
+        assert.equals(ipv.repSrc, 'function fooBar() {fooBar.toString()[_ko' + 'ru_.__INTERCEPT$__]("")._}');
       });
 
       test('scope var complete', () => {
@@ -62,15 +61,15 @@ define((require, exports, module) => {
             {const x4 = 4}
           }
           {const x2 = 1}
-        };
+        }
 
         let fbSource = fooBar.toString();
         const epos = fbSource.indexOf('assert');
         const source = fbSource.replace(/assert\(\);/, 'a');
 
-        Intercept.breakPoint(mod.id, epos, '', source);
+        Intercept.breakPoint(mod.id, source.slice(0, epos), '', source.slice(epos));
 
-        const exp = 'globalThis[_ko'+'ru_.__INTERCEPT$__](\"\",{ac,abc,p1,ab,abb,fooBar,})._a';
+        const exp = 'globalThis[_ko' + 'ru_.__INTERCEPT$__](\"\",{ac,abc,p1,ab,abb,fooBar,})._a';
 
         assert.equals(ipv.repSrc, fbSource.replace(/assert\(\);/, exp));
       });
@@ -82,27 +81,27 @@ define((require, exports, module) => {
         }).toString();
 
         let epos = source.indexOf('//') - 1;
-        Intercept.breakPoint(mod.id, epos, '', source);
+        Intercept.breakPoint(mod.id, source.slice(0, epos), '', source.slice(epos));
 
-        assert.same(ipv.repSrc.slice(epos - 3, - 27),
-                    '   globalThis[_ko'+'ru_.__INTERCEPT$__]("",{b,a,})._ // comment');
+        assert.same(ipv.repSrc.slice(epos - 3, -27),
+                    '   globalThis[_ko' + 'ru_.__INTERCEPT$__]("",{b,a,})._ // comment');
       });
 
       test('scope in assignment', () => {
-        function code() {const ErrOther = 123;class ErrMine extends Error {x() {new ErrMine()}}}
+        function code() {const ErrOther = 123; class ErrMine extends Error {x() {new ErrMine()}}}
 
         let source = code.toString();
         let epos = source.indexOf('Error') + 3;
-        Intercept.breakPoint(mod.id, epos, 'Err', source);
+        Intercept.breakPoint(mod.id, source.slice(0, epos), 'Err', source.slice(epos));
 
-        assert.same(ipv.repSrc.slice(epos - 3, - 21),
-                    'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,})._Error {');
+        assert.same(ipv.repSrc.slice(epos - 3, -21),
+                    'globalThis[_ko' + 'ru_.__INTERCEPT$__]("Err",{ErrOther,})._or {');
 
         epos = source.indexOf('new', epos) + 7;
-        Intercept.breakPoint(mod.id, epos, 'Err', source);
+        Intercept.breakPoint(mod.id, source.slice(0, epos), 'Err', source.slice(epos));
 
-        assert.same(ipv.repSrc.slice(epos - 3, - 3),
-                    'globalThis[_ko'+'ru_.__INTERCEPT$__]("Err",{ErrOther,ErrMine,})._ErrMine()');
+        assert.same(ipv.repSrc.slice(epos - 3, -3),
+                    'globalThis[_ko' + 'ru_.__INTERCEPT$__]("Err",{ErrOther,ErrMine,})._Mine()');
       });
     });
   });

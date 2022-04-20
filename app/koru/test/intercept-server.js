@@ -17,33 +17,36 @@ define((require, exports, module) => {
     return true;
   };
 
-  const parseCode = (spos, interceptPrefix, source) => {
-    let rep = '[_ko'+`ru_.__INTERCEPT$__]("${interceptPrefix}"`;
+  const parseCode = (sourceStart, interceptPrefix, sourceEnd) => {
+    let rep = '[_ko' + `ru_.__INTERCEPT$__]("${interceptPrefix}"`;
 
-    for(let i = spos-1; i >= 0; --i) {
-      const ch = source[i];
+    for (let i = sourceStart.length - 1; i >= 0; --i) {
+      const ch = sourceStart[i];
       if (/\W/.test(ch)) {
         if (ch === '.') {
-          return source.slice(0 , spos - (source[i-1] === '?' ? 0 : 1)) + rep + ')._' + source.slice(spos);
+          return sourceStart.slice(0, i + (sourceStart[i - 1] === '?' ? 1 : 0)) + rep + ')._' + sourceEnd;
         }
         break;
       }
     }
 
-    const ast = parse(source);
+    const spos = sourceStart.length;
+
+    const ast = parse(sourceStart + sourceEnd);
 
     let me;
     const callback = (node, scope) => {
       if (node.start > spos) throw 'done';
       if (node.end >= spos) {
         me = scope;
-        if (visitorKeys(node).length == 0)
+        if (visitorKeys(node).length == 0) {
           throw 'done';
+        }
       }
     };
     try {
       scopeWalk(ast, callback);
-    } catch(done) {
+    } catch (done) {
       if (done !== 'done') throw done;
     }
 
@@ -51,14 +54,15 @@ define((require, exports, module) => {
     const bindings = me.getAllBindings();
     for (const name in bindings) {
       if (name.startsWith(interceptPrefix)) {
-        const binding =  bindings[name];
+        const binding = bindings[name];
         if (binding.isLive) {
           rep += name + ',';
         }
       }
     }
 
-    return source.slice(0 , spos ) + 'globalThis' + rep + '})._' + source.slice(spos);
+    return sourceStart.slice(0, interceptPrefix == '' ? void 0 : - interceptPrefix.length) +
+      'globalThis' + rep + '})._' + sourceEnd;
   };
 
   return (Intercept) => {
@@ -93,13 +97,12 @@ define((require, exports, module) => {
         this.ws.send('I' + cand);
       }
 
-      static breakPoint(id, epos, interceptPrefix, source) {
+      static breakPoint(id, sourceStart, interceptPrefix, sourceEnd) {
         intercepting = id;
-        expPath = '/'+id+'.js';
+        expPath = '/' + id + '.js';
         Intercept.interceptObj = void 0;
 
-        const spos = epos - interceptPrefix.length;
-        repSrc = parseCode(spos, interceptPrefix, source);
+        repSrc = parseCode(sourceStart, interceptPrefix, sourceEnd);
 
         let thisMod = false;
         ctx.loadModule = (mod) => {
