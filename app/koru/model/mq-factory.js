@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const dbBroker        = require('koru/model/db-broker');
+  const TransQueue      = require('koru/model/trans-queue');
   const util            = require('koru/util');
 
   const {private$} = require('koru/symbols');
@@ -151,7 +152,7 @@ select "dueAt" from "${table._name}" where name = $1
       const {mqdb, name} = this;
       const now = util.dateNow();
       await mqdb.table.insert({name, dueAt, message});
-      queueFor(this, dueAt.getTime());
+      TransQueue.onSuccess(() => queueFor(this, dueAt.getTime()));
     }
 
     async peek(maxResults=1, dueBefore) {

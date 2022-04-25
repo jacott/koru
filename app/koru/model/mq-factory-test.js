@@ -7,13 +7,14 @@ isServer && define((require, exports, module) => {
   const Future          = require('koru/future');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
+  const TransQueue      = require('koru/model/trans-queue');
   const Driver          = require('koru/pg/driver');
   const api             = require('koru/test/api');
   const TH              = require('./test-db-helper');
 
   const {private$} = require('koru/symbols');
 
-  const {stub, spy, util, intercept} = TH;
+  const {stub, spy, util, intercept, match: m} = TH;
 
   const MQFactory = require('./mq-factory');
 
@@ -183,7 +184,7 @@ isServer && define((require, exports, module) => {
 
         await mqFactory.getQueue('panda').init();
 
-        assert.calledWith(koru.setTimeout, TH.match.func, 30*1000);
+        assert.calledWith(koru.setTimeout, m.func, 30*1000);
 
         await koru.setTimeout.yieldAndReset();
 
@@ -360,10 +361,10 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         //[
         await queue.add({dueAt: new Date(now + 30), message: {my: 'message'}});
-        assert.calledWith(koru.setTimeout, TH.match.func, 30);
+        assert.calledWith(koru.setTimeout, m.func, 30);
         await queue.add({dueAt: new Date(now + 10), message: {another: 'message'}});
         assert.calledOnceWith(koru.clearTimeout, 121);
-        assert.calledWith(koru.setTimeout, TH.match.func, 10);
+        assert.calledWith(koru.setTimeout, m.func, 10);
 
         assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
           _id: 2,
@@ -391,7 +392,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
           message: {another: 'message'},
         }, queue]);
 
-        assert.calledOnceWith(koru.setTimeout, TH.match.func, 20);
+        assert.calledOnceWith(koru.setTimeout, m.func, 20);
 
         assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
           _id: 1,
@@ -475,7 +476,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         await queue.remove('2');
 
-        assert.equals(await queue.peek(5), [TH.match.field('_id', 1)]);
+        assert.equals(await queue.peek(5), [m.field('_id', 1)]);
         //]
       });
 
@@ -504,7 +505,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         assert.calledWith(koru.unhandledException, v.error);
 
-        assert.calledWith(koru.setTimeout, TH.match.func, 300);
+        assert.calledWith(koru.setTimeout, m.func, 300);
 
         await queue.add({message: [1, 2, 3]});
 
@@ -547,11 +548,11 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         await queue.add({message: [1, 2]});
         await koru.setTimeout.yieldAndReset();
-        assert.calledWith(koru.setTimeout, TH.match.func, 12345);
+        assert.calledWith(koru.setTimeout, m.func, 12345);
 
         koru.setTimeout.reset();
         await queue.sendNow();
-        assert.calledWith(koru.setTimeout, TH.match.func, 0);
+        assert.calledWith(koru.setTimeout, m.func, 0);
         //]
 
         /** on init */
@@ -561,7 +562,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
           const queue = mqFactory.getQueue('foo');
           koru.setTimeout.reset();
           await queue.sendNow();
-          assert.calledWith(koru.setTimeout, TH.match.func, 0);
+          assert.calledWith(koru.setTimeout, m.func, 0);
         }
       });
 
@@ -575,16 +576,21 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         await queue.add({message: [1, 2]});
         await koru.setTimeout.yieldAndReset();
-        assert.calledWith(koru.setTimeout, TH.match.func, 12345);
+        assert.calledWith(koru.setTimeout, m.func, 12345);
       });
 
       test('delay more than one day', async () => {
         let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
+        stub(TransQueue, 'onSuccess');
+
         const queue = mqFactory.getQueue('foo');
         await queue.add({dueAt: new Date(now + 5 * util.DAY), message: [1]});
 
-        assert.calledWith(koru.setTimeout, TH.match.func, util.DAY);
+        assert.calledWith(TransQueue.onSuccess, m.func);
+        refute.called(koru.setTimeout);
+        TransQueue.onSuccess.yieldAndReset();
+        assert.calledWith(koru.setTimeout, m.func, util.DAY);
 
         v.action = stub();
 
@@ -592,7 +598,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         refute.called(v.action);
 
-        assert.calledWith(koru.setTimeout, TH.match.func, util.DAY);
+        assert.calledWith(koru.setTimeout, m.func, util.DAY);
 
         now += 5 * util.DAY;
 
