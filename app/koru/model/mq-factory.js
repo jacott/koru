@@ -30,7 +30,7 @@ CREATE SEQUENCE "_message_queue__id_seq"
     CACHE 1;
 
 ALTER TABLE ONLY "_message_queue" ALTER COLUMN _id
-  SET DEFAULT nextval('_message_queue__id_seq'::regclass),
+  SET DEFAULT nextval('"_message_queue__id_seq"'::regclass),
   ADD CONSTRAINT "_message_queue_pkey" PRIMARY KEY (_id);
 
 
@@ -242,6 +242,10 @@ select _id,"dueAt",message from "${table._name}"
       }
     }
 
+    _initTableSchema() {
+      return initTable(this[dbs$].current);
+    }
+
     stopAll() {
       this[dbs$].stop();
     }
@@ -274,6 +278,7 @@ select _id,"dueAt",message from "${table._name}"
 
   MQFactory[private$] = {
     MQ,
+    dbs$,
   };
 
   return MQFactory;

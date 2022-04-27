@@ -14,7 +14,7 @@ isServer && define((require, exports, module) => {
 
   const {private$} = require('koru/symbols');
 
-  const {stub, spy, util, intercept, match: m} = TH;
+  const {stub, spy, util, intercept, match: m, stubProperty} = TH;
 
   const MQFactory = require('./mq-factory');
 
@@ -91,6 +91,38 @@ isServer && define((require, exports, module) => {
         dbBroker.db = v.defDb;
         mqFactory.stopAll();
         mqFactory.deregisterQueue('bar');
+      });
+
+      test('_initTableSchema', async () => {
+        const {dbs$} = MQFactory[private$];
+        stub(dbBroker.db, 'query');
+        stubProperty(mqFactory[dbs$].current, 'table', {value: {_name: 'Test_TABEL', _columns: [], _ensureTable: stub()}});
+        await mqFactory._initTableSchema();
+        const schema = dbBroker.db.query.args(0, 0);
+        dbBroker.db.query.restore();
+        assert.equals(schema, `
+CREATE TABLE "Test_TABEL" (
+    _id bigint NOT NULL,
+    name text COLLATE pg_catalog."C" NOT NULL,
+    "dueAt" timestamp without time zone,
+    message jsonb
+);
+
+CREATE SEQUENCE "Test_TABEL__id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE ONLY "Test_TABEL" ALTER COLUMN _id
+  SET DEFAULT nextval('"Test_TABEL__id_seq"'::regclass),
+  ADD CONSTRAINT "Test_TABEL_pkey" PRIMARY KEY (_id);
+
+
+CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
+  USING btree (name, "dueAt", _id);
+`);
       });
 
       test('local registerQueue', async () => {
@@ -317,29 +349,7 @@ isServer && define((require, exports, module) => {
 
         assert.same(query.callCount, 2);
 
-        assert.equals(query.calls[0].args[0], `
-CREATE TABLE "_test_MQ" (
-    _id bigint NOT NULL,
-    name text COLLATE pg_catalog."C" NOT NULL,
-    "dueAt" timestamp without time zone,
-    message jsonb
-);
-
-CREATE SEQUENCE "_test_MQ__id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER TABLE ONLY "_test_MQ" ALTER COLUMN _id
-  SET DEFAULT nextval('_test_MQ__id_seq'::regclass),
-  ADD CONSTRAINT "_test_MQ_pkey" PRIMARY KEY (_id);
-
-
-CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
-  USING btree (name, "dueAt", _id);
-`);
+        assert.match(query.calls[0].args[0], /CREATE TABLE "_test_MQ"/);
       });
 
       test('add', async () => {
