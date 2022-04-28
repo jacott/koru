@@ -1,12 +1,21 @@
 define(() => {
   'use strict';
 
+  const makePromise = (future) => new Promise((resolve, reject) => {
+    future.isResolved = false;
+    future.resolve = (arg) => (future.isResolved = true, resolve(arg));
+    future.reject = (arg) => (future.isResolved = true, reject(arg));
+  });
+
   class Future {
-    isResolved = false;
     constructor() {
-      this.promise = new Promise((resolve, reject) => {
-        this.resolve = (arg) => (this.isResolved = true, resolve(arg));
-        this.reject = (arg) => (this.isResolved = true, reject(arg));
+      this.promise = makePromise(this);
+    }
+
+    promiseAndReset() {
+      return this.promise.finally((result) => {
+        this.promise = makePromise(this);
+        return result;
       });
     }
   }
