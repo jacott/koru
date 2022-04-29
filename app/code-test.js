@@ -8,8 +8,11 @@ isServer && define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('_debug code', async () => {
-      const proc = child_process.spawn('rg', [
-        '--quiet', '--type', 'js', '-we', '_ko' + 'ru_|FIX' + 'ME|kd' + 'bg|DE' + 'BUG|de' + 'bug(ger)?']);
+      const proc = child_process.spawn('/usr/bin/rg', [
+        '--quiet',
+        '--type', 'js', '-we', '_ko' + 'ru_|FIX' + 'ME|kd' + 'bg|DE' + 'BUG|de' + 'bug(ger)?',
+        '.',
+      ]);
 
       const future = new Future();
       proc.on('error', future.reject);
