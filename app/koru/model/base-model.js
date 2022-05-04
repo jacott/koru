@@ -112,6 +112,26 @@ define((require, exports, module) => {
       }
     }
 
+    static _saveDoc(doc, mode, saveFunc=ModelEnv.save) {
+      const callback = mode?.callback;
+
+      let ans;
+
+      switch (mode) {
+      case 'assert':
+        ans = doc.$assertValid();
+        break;
+      case 'force':
+        ans = doc.$isValid();
+        break;
+      default:
+        return ifPromise(doc.$isValid(),
+                         (isValid) => isValid && ifPromise(saveFunc(doc, callback), util.trueFunc));
+      }
+
+      return ifPromise(ans, () => ifPromise(saveFunc(doc, callback), util.trueFunc));
+    }
+
     static create(attributes) {
       const doc = new this({});
       attributes != null && Object.assign(doc.changes, deepCopy(attributes));
@@ -325,23 +345,7 @@ define((require, exports, module) => {
     }
 
     $save(mode) {
-      const callback = mode?.callback;
-
-      let ans;
-
-      switch (mode) {
-      case 'assert':
-        ans = this.$assertValid();
-        break;
-      case 'force':
-        ans = this.$isValid();
-        break;
-      default:
-        return ifPromise(this.$isValid(),
-                         (isValid) => isValid && ifPromise(ModelEnv.save(this, callback), util.trueFunc));
-      }
-
-      return ifPromise(ans, () => ifPromise(ModelEnv.save(this, callback), util.trueFunc));
+      return BaseModel._saveDoc(this, mode);
     }
 
     $$save() {
