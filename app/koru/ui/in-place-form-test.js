@@ -1,10 +1,10 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
+  const TemplateCompiler = require('koru/dom/template-compiler');
   const DomNav          = require('koru/ui/dom-nav');
-  const Dom             = require('../dom');
-  const ipfTpl          = require('../html!./in-place-form-test');
-  const util            = require('../util');
   const TH              = require('./test-helper');
+  const Dom             = require('../dom');
+  const util            = require('../util');
 
   const {error$} = require('koru/symbols');
 
@@ -12,79 +12,96 @@ isClient && define((require, exports, module)=>{
 
   const sut = require('./in-place-form');
 
-  let v = {};
+  const ipfTpl = TemplateCompiler.toJavascript(`
+<template name="Test.InPlaceForm">
+  <ul id="InPlaceFormTest">
+    {{editInPlace name="autoShowEdit"}}
+    <template name="Show_autoShowEdit">
+      <div>
+        <button name="autoShowEdit" class="ui-editable showTpl">{{doc.autoShowEdit}}</button>
+      </div>
+    </template>
+    <template name="Edit_autoShowEdit">
+      <div>
+        <input name="autoShowEdit" class="editTpl" value="{{doc.autoShowEdit}}">
+      </div>
+    </template>
+  </ul>
+</template>
+`).toJson();
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      document.body.appendChild(v.parent = document.createElement('div'));
-      v.Ipf = Dom.newTemplate(util.deepCopy(ipfTpl));
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    let Ipf, parent;
+    beforeEach(() => {
+      document.body.appendChild(parent = document.createElement('div'));
+      Ipf = Dom.newTemplate(util.deepCopy(ipfTpl));
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       TH.domTearDown();
-      v = {};
     });
 
-    test("defaults", ()=>{
+    test('defaults', () => {
       const sut = Dom.tpl.InPlaceForm.$render({doc: {}});
 
-      assert.dom(sut, ()=>{
-        assert.dom('input[type=text][name=name]', input =>{
+      assert.dom(sut, () => {
+        assert.dom('input[type=text][name=name]', (input) => {
           assert.same(input.value, '');
         });
-        assert.dom('.actions', ()=>{
+        assert.dom('.actions', () => {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
     });
 
-    test("options", ()=>{
+    test('options', () => {
       stub(Dom.tpl.Form, 'field');
-      sut._helpers.field.call(v.opts = {
+      const opts = {
         'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
         name: 'theName', type: 'foo',
-        notthis: 'not this'});
+        notthis: 'not this'};
+      sut._helpers.field.call(opts);
 
       assert.calledWith(Dom.tpl.Form.field, {theName: '123'}, 'theName',
-                        {type: 'foo', me: 'html me'}, v.opts);
+                        {type: 'foo', me: 'html me'}, opts);
     });
 
-    test("no doc", ()=>{
-      const sut = Dom.tpl.InPlaceForm.$render({value: "foo"});
+    test('no doc', () => {
+      const sut = Dom.tpl.InPlaceForm.$render({value: 'foo'});
 
-      assert.dom(sut, ()=>{
-        assert.dom('input[type=text][name=name]', input =>{
+      assert.dom(sut, () => {
+        assert.dom('input[type=text][name=name]', (input) => {
           assert.same(input.value, 'foo');
         });
-        assert.dom('.actions', ()=>{
+        assert.dom('.actions', () => {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
     });
 
-    test("render", ()=>{
+    test('render', () => {
       const sut = Dom.tpl.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
-        name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
+        name: 'foo', 'html-id': 'My_foo', 'html-form-id': 'MyFormId', 'html-maxLength': 4});
 
-      assert.dom(sut, ()=>{
-        assert.same(sut.id, "MyFormId");
+      assert.dom(sut, () => {
+        assert.same(sut.id, 'MyFormId');
 
-        assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', input =>{
+        assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', (input) => {
           assert.same(input.value, 'abc');
         });
-        assert.dom('.actions', ()=>{
+        assert.dom('.actions', () => {
           assert.dom('button[name=apply]', 'Save');
         });
       });
     });
 
-    test("custom Show/Edit templates", ()=>{
-      sut.autoRegister(v.Ipf);
+    test('custom Show/Edit templates', () => {
+      sut.autoRegister(Ipf);
       const doc = {autoShowEdit: 'bar'};
-      document.body.appendChild(v.Ipf.$autoRender(doc));
+      document.body.appendChild(Ipf.$autoRender(doc));
 
-      assert.dom('#InPlaceFormTest', elm =>{
+      assert.dom('#InPlaceFormTest', (elm) => {
         assert.dom('[name=autoShowEdit].ui-editable.showTpl', 'bar');
 
         doc.autoShowEdit = 'foo';
@@ -98,12 +115,12 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("click with selection does nothing", ()=>{
-      sut.autoRegister(v.Ipf);
+    test('click with selection does nothing', () => {
+      sut.autoRegister(Ipf);
       const doc = {autoShowEdit: 'bar', $reload: stub()};
-      document.body.appendChild(v.Ipf.$autoRender(doc));
+      document.body.appendChild(Ipf.$autoRender(doc));
 
-      assert.dom('#InPlaceFormTest', ()=>{
+      assert.dom('#InPlaceFormTest', () => {
         const range = document.createRange();
         Dom.setRange(range);
         const editable = Dom('[name=autoShowEdit].ui-editable.showTpl');
@@ -115,7 +132,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("saveField", ()=>{
+    test('saveField', () => {
       const form = Dom.h({form: [{input: [], name: 'name'}], class: 'submitting'});
       let doc = {$save: stub()};
       const widget = {close: stub()};
@@ -128,7 +145,7 @@ isClient && define((require, exports, module)=>{
       doc = {$save() {this[error$] = {name: [['is_invalid']]}}, changes: {name: 'nn'}};
       sut.saveField(doc, form, widget);
       refute.className(form, 'submitting');
-      assert.dom(form, form =>{
+      assert.dom(form, (form) => {
         assert.dom('[name=name].error+error>div', 'is not valid');
       });
 
@@ -140,21 +157,22 @@ isClient && define((require, exports, module)=>{
       assert.called(widget.close);
     });
 
-    test("apply event", ()=>{
+    test('apply event', () => {
+      let arg;
       const widget = Dom.tpl.InPlaceForm.newWidget({doc: {name: 'abc'}});
-      widget.onSubmit(function (arg) {
+      widget.onSubmit(function (_arg) {
         assert.same(this, widget);
-        v.arg = arg;
+        arg = _arg;
       });
 
-      v.parent.appendChild(widget.element);
+      parent.appendChild(widget.element);
 
-      assert.dom(widget.element, ()=>{
+      assert.dom(widget.element, () => {
         TH.input('input', 'new text');
         TH.click('[name=apply]');
       });
 
-      assert.same(v.arg, 'new text');
+      assert.same(arg, 'new text');
 
       spy(Dom.tpl.InPlaceForm, '$detachEvents');
 
@@ -163,30 +181,27 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(Dom.tpl.InPlaceForm.$detachEvents, widget.element);
     });
 
-    test("ctrl or meta+enter event", ()=>{
+    test('ctrl or meta+enter event', () => {
+      let arg;
       const widget = Dom.tpl.InPlaceForm.newWidget({doc: {name: 'abc'}});
-      widget.onSubmit(function (arg) {
+      widget.onSubmit(function (_arg) {
         assert.same(this, widget);
-        v.arg = arg;
+        arg = _arg;
       });
 
-      v.parent.appendChild(widget.element);
+      parent.appendChild(widget.element);
 
-      assert.dom(widget.element, ()=>{
+      assert.dom(widget.element, () => {
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13});
-        refute.same(v.arg, 'new text');
+        refute.same(arg, 'new text');
         TH.trigger('input', 'keydown', {which: 13, ctrlKey: true});
-        assert.same(v.arg, 'new text');
+        assert.same(arg, 'new text');
 
         TH.input('input', 'meta text');
         TH.trigger('input', 'keydown', {which: 13, metaKey: true});
-        assert.same(v.arg, 'meta text');
+        assert.same(arg, 'meta text');
       });
-
-
-
-
 
       spy(Dom.tpl.InPlaceForm, '$detachEvents');
 
@@ -195,43 +210,45 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(Dom.tpl.InPlaceForm.$detachEvents, widget.element);
     });
 
-    test("enterSubmits", ()=>{
+    test('enterSubmits', () => {
+      let arg;
       const widget = Dom.tpl.InPlaceForm.newWidget({
         doc: {name: 'abc'},
         enterSubmits: true,
       });
-      widget.onSubmit(function (arg) {
+      widget.onSubmit(function (_arg) {
         assert.same(this, widget);
-        v.arg = arg;
+        arg = _arg;
       });
 
-      v.parent.appendChild(widget.element);
+      parent.appendChild(widget.element);
 
-      assert.dom(widget.element, ()=>{
+      assert.dom(widget.element, () => {
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13, shiftKey: true});
-        refute.same(v.arg, 'new text');
-        TH.trigger('input', 'keydown', {which: 13}); });
+        refute.same(arg, 'new text');
+        TH.trigger('input', 'keydown', {which: 13})});
 
-      assert.same(v.arg, 'new text');
+      assert.same(arg, 'new text');
     });
 
-    test("delete event", ()=>{
+    test('delete event', () => {
+      let arg;
       const widget = Dom.tpl.InPlaceForm.newWidget({
         doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
 
       widget.onDelete(function () {
         assert.same(this, widget);
-        v.arg = true;
+        arg = true;
       });
 
-      v.parent.appendChild(widget.element);
+      parent.appendChild(widget.element);
 
-      assert.dom(widget.element, ()=>{
+      assert.dom(widget.element, () => {
         TH.click('[name=delete]', 'Delete me');
       });
 
-      assert.dom('.Confirm.Dialog', ()=>{
+      assert.dom('.Confirm.Dialog', () => {
         assert.dom('.ui-dialog.warn.cl>div', 'Are you sure about it?');
         TH.click('button[name=cancel]');
       });
@@ -242,21 +259,21 @@ isClient && define((require, exports, module)=>{
 
       TH.click('.Confirm button[name=okay]');
 
-      assert.same(v.arg, true);
+      assert.same(arg, true);
 
       spy(Dom.tpl.InPlaceForm, '$detachEvents');
     });
 
-    test("swap cancel", ()=>{
-      v.parent.appendChild(v.elm = document.createElement('span'));
+    test('swap cancel', () => {
+      const elm = document.createElement('span');
+      parent.appendChild(elm);
 
-      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.tpl.InPlaceForm.swapFor(elm);
 
-      assert.same(widget.swap, v.elm);
+      assert.same(widget.swap, elm);
 
-
-      assert.dom(v.parent, ()=>{
-        assert.dom('form', ()=>{
+      assert.dom(parent, () => {
+        assert.dom('form', () => {
           TH.click('[name=cancel]');
         });
 
@@ -265,18 +282,18 @@ isClient && define((require, exports, module)=>{
 
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
-
     });
 
-    test("swap escape", ()=>{
-      v.parent.appendChild(v.elm = document.createElement('span'));
+    test('swap escape', () => {
+      const elm = document.createElement('span');
+      parent.appendChild(elm);
 
-      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
+      const reload = stub();
+      const widget = Dom.tpl.InPlaceForm.swapFor(elm, {doc: {name: 'foo', $reload: reload}});
 
-      assert.same(widget.swap, v.elm);
+      assert.same(widget.swap, elm);
 
-
-      assert.dom(v.parent, ()=>{
+      assert.dom(parent, () => {
         TH.trigger('form [name=name]', 'keydown', {which: 65});
 
         refute.dom('>span');
@@ -289,21 +306,45 @@ isClient && define((require, exports, module)=>{
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
 
-      assert.called(v.reload);
+      assert.called(reload);
     });
 
-    test("swap close", ()=>{
-      v.parent.appendChild(v.elm = document.createElement('span'));
+    test('swap close', () => {
+      const elm = document.createElement('button');
+      parent.appendChild(elm);
 
-      const widget = Dom.tpl.InPlaceForm.swapFor(v.elm);
+      const widget = Dom.tpl.InPlaceForm.swapFor(elm);
       widget.close();
 
-      assert.dom(v.parent, ()=>{
-        assert.dom('>span');
+      assert.dom(parent, () => {
+        assert.dom('>button');
       });
 
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
+
+      assert.same(document.activeElement, elm);
+    });
+
+    test('GenericShow', () => {
+      Ipf = Dom.newTemplate(TemplateCompiler.toJavascript(`
+<template name="Test.InPlaceForm">
+  <ul id="InPlaceFormTest">
+    {{editInPlace name="nickname"}}
+  </ul>
+</template>
+`).toJson());
+
+      sut.autoRegister(Ipf);
+      const doc = {nickname: 'The Bard of Avon'};
+      document.body.appendChild(Ipf.$autoRender(doc));
+
+      assert.dom('#InPlaceFormTest', (elm) => {
+        assert.dom('>label.nickname-field>span.label', 'Nickname');
+        TH.click('button.value.ui-editable[name=nickname]', 'The Bard of Avon');
+
+        assert.dom('form>input[name=nickname]', {value: 'The Bard of Avon'});
+      });
     });
   });
 });

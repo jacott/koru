@@ -857,8 +857,8 @@ isClient && define((require, exports, module) => {
       Route.root.removeTemplate(Baz);
 
       // removes auto onEntry, onExit
-      assert.same(Baz.onEntry, null);
-      assert.same(Baz.onExit, null);
+      assert.same(Baz.onEntry, void 0);
+      assert.same(Baz.onExit, void 0);
     });
 
     test('removeTemplate', () => {

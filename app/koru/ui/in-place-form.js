@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Dom             = require('koru/dom');
   const Dialog          = require('koru/ui/dialog');
@@ -13,7 +13,7 @@ define((require)=>{
   const $ = Dom.current;
 
   class Widget {
-    constructor (options) {
+    constructor(options) {
       const element = this.element = Tpl.$autoRender(options);
       const ctx = this.ctx = Dom.ctx(element);
       ctx[widget$] = this;
@@ -28,22 +28,25 @@ define((require)=>{
     }
 
     close() {
-      if (this.swap) {
-        this.element.parentNode.replaceChild(this.swap, this.element);
-        this.swap = null;
+      if (this.swap !== void 0) {
+        const pn = this.element.parentNode;
+        pn.replaceChild(this.swap, this.element);
+        pn.querySelector(Dom.WIDGET_SELECTOR)?.focus();
+        this.swap = void 0;
       }
       Dom.remove(this.element);
     }
-  };
+  }
 
   Tpl.$helpers({
     htmlAttrs() {
       const elm = $.element;
 
-      for(const key in this) {
+      for (const key in this) {
         const m = /^html-form-(.*)$/.exec(key);
-        if (m !== null)
+        if (m !== null) {
           elm.setAttribute(m[1], this[key]);
+        }
       }
     },
 
@@ -54,13 +57,14 @@ define((require)=>{
         type: this.type,
       };
 
-      for(const key in this) {
+      for (const key in this) {
         const m = /^html-(form-)?(.*)$/.exec(key);
-        if (m !== null && m[1] === undefined)
+        if (m !== null && m[1] === void 0) {
           fieldOptions[m[2]] = this[key];
+        }
       }
 
-      const name = this.name || 'name';
+      const name = this.name ?? 'name';
       let {doc} = this;
       if (doc == null) {
         doc = {};
@@ -71,13 +75,14 @@ define((require)=>{
     },
 
     deleteButton() {
-      if (! this.deleteName)
+      if (! this.deleteName) {
         return '';
+      }
 
       const elm = $.element;
-      if (elm.tagName === 'BUTTON')
+      if (elm.tagName === 'BUTTON') {
         return elm;
-      else {
+      } else {
         const elm = document.createElement('button');
         elm.setAttribute('type', 'button');
         elm.setAttribute('name', 'delete');
@@ -87,7 +92,7 @@ define((require)=>{
     },
 
     applyName() {
-      return this.applyName || 'Apply';
+      return this.applyName ?? 'Apply';
     },
   });
 
@@ -100,7 +105,7 @@ define((require)=>{
     },
 
     classes() {
-      return this.options.name+"-field";
+      return this.options.name + '-field';
     },
     value() {
       return this.doc[this.options.name];
@@ -117,18 +122,17 @@ define((require)=>{
 
     const {value} = input;
 
-    widget._onSubmit && widget._onSubmit(value, this);
+    widget._onSubmit?.(value, this);
   }
 
-  const cancel = (elm)=>{
+  const cancel = (elm) => {
     const ctx = Dom.ctx(elm);
-    const {data} = ctx;
-    data && data.doc && data.doc.$reload();
+    ctx.data?.doc?.$reload();
     ctx[widget$].close();
   };
 
   Tpl.$events({
-    'submit': submit,
+    submit,
 
     'keydown'(event) {
       switch (event.which) {
@@ -153,10 +157,10 @@ define((require)=>{
       Dialog.confirm({
         classes: 'warn cl',
         okay: 'Delete',
-        content: ctx.data.deleteConfirmMsg || 'Are you sure you want to delete this?',
+        content: ctx.data.deleteConfirmMsg ?? 'Are you sure you want to delete this?',
         callback(confirmed) {
           if (confirmed) {
-            widget._onDelete && widget._onDelete();
+            widget._onDelete?.();
           }
         },
       });
@@ -168,28 +172,22 @@ define((require)=>{
     },
   });
 
-
   Tpl.$extend({
-    $created: (ctx, elm)=>{
-      const editTpl = ctx.data && ctx.data.editTpl;
-      if (editTpl && ('$opened' in editTpl)) {
-        editTpl.$opened(elm);
-      }
-    },
-    newWidget: options => new Widget(options),
+    $created: (ctx, elm) => {ctx.data?.editTpl?.$opened?.(elm)},
 
-    swapFor: (elm, options)=>{
+    newWidget: (options) => new Widget(options),
+
+    swapFor: (elm, options) => {
       const widget = new Widget(options);
       elm.parentNode.replaceChild(widget.element, elm);
       widget.swap = elm;
 
-      const focus = widget.element.querySelector(Dom.INPUT_SELECTOR);
-      focus === null || focus.focus();
+      widget.element.querySelector(Dom.INPUT_SELECTOR)?.focus();
 
       return widget;
     },
 
-    autoRegister: (template, func)=>{
+    autoRegister: (template, func) => {
       template.$events({
         'click .ui-editable'(event) {
           Dom.stopEvent();
@@ -206,8 +204,9 @@ define((require)=>{
             doc[ctx.options.name] = value;
             if (func) {
               Dom.addClass(form, 'submitting');
-              if (func.call(widget, doc, ctx.options.name, value, form) === 'exit')
+              if (func.call(widget, doc, ctx.options.name, value, form) === 'exit') {
                 return;
+              }
             }
             Tpl.saveField(doc, form, this);
           });
@@ -216,16 +215,16 @@ define((require)=>{
       return this;
     },
 
-    saveField: (doc, form, widget)=>{
-      if (doc[error$] === undefined) for(const _ in doc.changes) {
+    saveField: (doc, form, widget) => {
+      if (doc[error$] === void 0) for (const _ in doc.changes) {
         doc.$save();
         break;
       }
-      if (doc[error$] !== undefined) {
+      if (doc[error$] !== void 0) {
         Dom.removeClass(form, 'submitting');
         Dom.tpl.Form.renderErrors(doc, form);
       } else {
-        widget == null || widget.close(form);
+        widget?.close(form);
       }
     },
   });
@@ -237,16 +236,16 @@ define((require)=>{
       let ctx;
       if (elm.nodeType !== document.ELEMENT_NODE) {
         const pTpl = $.ctx.template;
-        const tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
+        const tpl = pTpl[options.showTemplate ?? 'Show_' + options.name] ?? Tpl.GenericShow;
         elm = tpl.$render();
         ctx = Dom.ctx(elm);
-        options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
+        options.editTpl = pTpl[options.editTemplate ?? 'Edit_' + options.name];
         ctx.options = options;
       } else {
         ctx = Dom.ctx(elm);
       }
 
-      ctx == null || ctx.updateAllTags({doc: this, options: options});
+      ctx?.updateAllTags({doc: this, options});
 
       return elm;
     },

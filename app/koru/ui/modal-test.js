@@ -1,20 +1,20 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
-  const Dom             = require('../dom');
   const TH              = require('./test-helper');
+  const Dom             = require('../dom');
 
   const {stub, spy} = TH;
 
   const sut = require('./modal');
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       TH.domTearDown();
     });
 
     // see SelectMenu for more comprehensive testing of positioning
 
-    test("appendBelow", ()=>{
+    test('appendBelow', () => {
       stub(sut, 'append');
 
       sut.appendBelow('opts');
@@ -22,7 +22,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(sut.append, 'below', 'opts');
     });
 
-    test("appendAbove", ()=>{
+    test('appendAbove', () => {
       stub(sut, 'append');
 
       sut.appendAbove('opts');
@@ -30,7 +30,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(sut.append, 'above', 'opts');
     });
 
-    test("supply position", ()=>{
+    test('supply position', () => {
       const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
       Dom.setCtx(popup);
       sut.append('below', {container: popup, popup, boundingClientRect: {
@@ -41,7 +41,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("popup", ()=>{
+    test('popup', () => {
       spy(sut, 'init');
       const page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
@@ -49,7 +49,7 @@ isClient && define((require, exports, module)=>{
       Dom.setCtx(popup);
       let ibox;
       assert.dom('input', function () {
-        sut.appendBelow({container: popup, origin: this, popup: popup});
+        sut.appendBelow({container: popup, origin: this, popup});
         ibox = this.getBoundingClientRect();
       });
       assert.dom('body', function () {
@@ -61,13 +61,12 @@ isClient && define((require, exports, module)=>{
       assert.called(sut.init);
     });
 
-
-    test("cancel", ()=>{
+    test('cancel', () => {
       const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
       const page = Dom.h({div: popup, class: 'page'});
       Dom.setCtx(page);
 
-      after(()=>{TH.pointerDownUp(popup)});
+      after(() => {TH.pointerDownUp(popup)});
 
       sut.append('below', {container: page, origin: document.body});
       assert.dom('.popup');
@@ -78,12 +77,12 @@ isClient && define((require, exports, module)=>{
       refute.dom('.page');
     });
 
-    test("closes with destroyMeWith", ()=>{
-      const elm = Dom.h({div: {div: "subject"}, id: 'subject'});
+    test('closes with destroyMeWith', () => {
+      const elm = Dom.h({div: {div: 'subject'}, id: 'subject'});
       const elmCtx = Dom.setCtx(elm);
       document.body.appendChild(elm);
 
-      const dep = Dom.h({div: {section: "dep"}, id: 'dep'});
+      const dep = Dom.h({div: {section: 'dep'}, id: 'dep'});
       const depCtx = Dom.setCtx(dep);
 
       sut.appendBelow({
@@ -97,8 +96,8 @@ isClient && define((require, exports, module)=>{
       refute.dom('#dep');
     });
 
-    test("handleTab", ()=>{
-      const container =  Dom.h({
+    test('handleTab', () => {
+      const container = Dom.h({
         class: 'glassPane', div: {
           form: [
             {span: '', class: 'startTab', $tabindex: 0},
@@ -111,10 +110,10 @@ isClient && define((require, exports, module)=>{
       const ctx = Dom.setCtx(container);
       spy(ctx, 'onDestroy');
 
-      after(()=>{TH.pointerDownUp(container)});
+      after(() => {TH.pointerDownUp(container)});
 
       const options = sut.appendBelow({
-        container: container,
+        container,
         handleTab: true,
         origin: document.body,
       });
@@ -138,7 +137,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("nesting", ()=>{
+    test('nesting', () => {
       spy(sut, 'init');
       const page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
@@ -161,7 +160,7 @@ isClient && define((require, exports, module)=>{
       });
       const keydown = stub();
       document.body.addEventListener('keydown', keydown);
-      after(()=>{document.body.removeEventListener('keydown', keydown)});
+      after(() => {document.body.removeEventListener('keydown', keydown)});
       assert.dom('body', function () {
         assert.dom('>.glassPane:nth-last-child(3)>.popup0', function () {
           assert.cssNear(this, 'left', ibox.left);

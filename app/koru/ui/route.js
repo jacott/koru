@@ -159,6 +159,9 @@ define((require, exports, module) => {
       throw new Error(`Path already exists! ${path} for template '${this.path}'`);
     }
     route.routes[path] = template;
+    if (template.route !== void 0) {
+      throw new Error(template.name + ' is already added');
+    }
     template.route = route;
     template.subPath = path;
     template.routeOptions = options;
@@ -495,10 +498,11 @@ define((require, exports, module) => {
     }
 
     removeTemplate(template, options={}) {
-      const path = options.path === void 0 ? templatePath(template) : options.path;
-      this.routes[path] = null;
-      if (template?.onEntry?.isAuto) template.onEntry = null;
-      if (template?.onExit?.isAuto) template.onExit = null;
+      const path = options.path ?? templatePath(template);
+      this.routes[path] = void 0;
+      template.route = void 0;
+      if (template.onEntry?.isAuto) template.onEntry = void 0;
+      if (template.onExit?.isAuto) template.onExit = void 0;
     }
 
     addDialog(module, template, options) {
