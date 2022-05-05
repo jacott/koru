@@ -103,7 +103,7 @@ define((require, exports, module) => {
         await assert.exception(async () => {
           let result = await session._rpcs['UserAccount.loginWithPassword'].call(
             conn, lu.email, 'wrong password');
-        }, {error: 403, reason: 'Invalid password'});
+        }, {error: 403, reason: 'incorrect_password'});
 
         const result = await session._rpcs['UserAccount.loginWithPassword'].call(conn, 'foo@bar.co', 'secret');
 
@@ -131,20 +131,23 @@ define((require, exports, module) => {
           }
         };
 
+        assert.same(UserAccount.changePassword, session._rpcs['UserAccount.changePassword']);
+
+
         // not scrypt
-        await assert.exception(() => session._rpcs['UserAccount.changePassword'].call(
-          conn, lu.email, 'old password', 'new password'), {error: 403, reason: 'failure'});
+        await assert.exception(() => UserAccount.changePassword(
+          lu.email, 'old password', 'new password'), {error: 403, reason: 'failure'});
 
         await lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
-        await assert.exception(() => session._rpcs['UserAccount.changePassword'].call(
-          conn, lu.email, 'old passwordx', 'new password'), {error: 403, reason: 'Invalid password'});
+        await assert.exception(() => UserAccount.changePassword(
+          lu.email, 'old passwordx', 'new password'), {error: 403, reason: 'incorrect_password'});
 
-        await assert.exception(() => session._rpcs['UserAccount.changePassword'].call(
-          conn, lu.email + 'x', 'old password', 'new password'), {error: 403, reason: 'failure'});
+        await assert.exception(() => UserAccount.changePassword(
+          lu.email + 'x', 'old password', 'new password'), {error: 403, reason: 'failure'});
 
-        let result = await session._rpcs['UserAccount.changePassword'].call(
-          conn, lu.email, 'old password', 'new password');
+        let result = await UserAccount.changePassword(
+          lu.email, 'old password', 'new password');
 
         assert.same(await result, void 0);
 
@@ -168,7 +171,7 @@ define((require, exports, module) => {
         await lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
 
         await assert.exception(() => session._rpcs['UserAccount.secureCall'].call(
-          conn, 'foobar', lu.email, 'wrongSecret', [1, 2, 3]), {error: 403, reason: 'Invalid password'});
+          conn, 'foobar', lu.email, 'wrongSecret', [1, 2, 3]), {error: 403, reason: 'incorrect_password'});
 
         stub(session, 'rpc').withArgs('foobar', 1, 2, 3).invokes((c) => {
           assert.same(conn.secure, lu);
@@ -200,6 +203,27 @@ define((require, exports, module) => {
         assert.same(docToken[0], lu);
 
         assert(await UserAccount.verifyToken('foo@bar.co', docToken[1]));
+      });
+
+      test('checkScryptPassword', async () => {
+        const {conn, lu} = v;
+        const scrypt = stub(crypto, 'scrypt', myScript);
+
+        derivedKey = (password, salt) => {
+          if (password === 'secret' && salt.toString('hex') === '001122') {
+            return '44332211';
+          } else {
+            return '00990011';
+          }
+        };
+
+        await lu.$update('password', {type: 'scrypt', salt: '001122', key: '44332211'});
+
+        await assert.exception(() => UserAccount.checkScryptPassword(lu.email, 'bad'), {
+          error: 403, reason: 'incorrect_password'});
+
+        const doc = await UserAccount.checkScryptPassword(lu.email, 'secret');
+        assert.same(doc, lu);
       });
     });
 
@@ -413,7 +437,7 @@ define((require, exports, module) => {
         const response = v.srp.respondToChallenge(result);
 
         await assert.exception(() => session._rpcs.SRPLogin.call(v.conn, response),
-                               {error: 403, reason: 'Invalid password'});
+                               {error: 403, reason: 'incorrect_password'});
 
         assert.same(v.conn.userId, undefined);
       });
@@ -553,7 +577,7 @@ define((require, exports, module) => {
         assert.equals(response.newPassword, v.lu.password);
       });
 
-      test('wrong password', async () => {
+      test('incorrect_password', async () => {
         const result = await session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);

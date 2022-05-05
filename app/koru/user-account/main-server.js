@@ -106,6 +106,13 @@ define((require, exports, module) => {
     session.unprovide('V');
   };
 
+  const changePassword = async (email, oldPassword, newPassword) => {
+    const doc = await UserLogin.findBy('email', email);
+    await assertScryptPassword(doc, oldPassword);
+
+    await doc.$update('password', await makeScrypt(newPassword));
+  };
+
   const UserAccount = {
     start() {
       if (running) return;
@@ -122,6 +129,7 @@ define((require, exports, module) => {
     model: UserLogin,
 
     makeScryptPassword: makeScrypt,
+    changePassword,
 
     async resetPassword(token, password) {
       Val.ensureString(token);
@@ -143,6 +151,12 @@ define((require, exports, module) => {
         }
       }
       throw new koru.Error(404, 'Expired or invalid reset request');
+    },
+
+    async checkScryptPassword(email, password) {
+      const doc = await UserLogin.findBy('email', email);
+      await assertScryptPassword(doc, password);
+      return doc;
     },
 
     async verifyClearPassword(email, password) {
@@ -243,7 +257,7 @@ define((require, exports, module) => {
 
     assertResponse(conn, response) {
       if (response && conn.$srp && response.M === conn.$srp.M) return;
-      throw new koru.Error(403, 'Invalid password');
+      throw new koru.Error(403, 'incorrect_password');
     },
 
     SRPBegin(state, request) {
@@ -277,18 +291,11 @@ define((require, exports, module) => {
     }
 
     if ((await makeScrypt(password, Buffer.from(doc.password.salt, 'hex'))).key !== doc.password.key) {
-      throw new koru.Error(403, 'Invalid password');
+      throw new koru.Error(403, 'incorrect_password');
     }
   };
 
   session.defineRpc('UserAccount.changePassword', changePassword);
-
-  async function changePassword(email, oldPassword, newPassword) {
-    const doc = await UserLogin.findBy('email', email);
-    await assertScryptPassword(doc, oldPassword);
-
-    await doc.$update('password', await makeScrypt(newPassword));
-  }
 
   session.defineRpc('UserAccount.loginWithPassword', loginWithPassword);
 
