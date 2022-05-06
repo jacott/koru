@@ -297,14 +297,14 @@ define((require) => {
     },
 
     renderErrors(doc, form) {
-      const errors = doc[error$];
+      const errors = doc[error$] ?? (doc instanceof koru.Error ? doc.reason : void 0);
       const otherMsgs = [];
       let focus = null;
       Tpl.clearErrors(form);
 
       if (errors !== undefined) {
         for (const field in errors) {
-          const msg = Val.Error.msgFor(doc, field);
+          const msg = Val.Error.msgFor(errors, field);
           if (msg) {
             const fieldElm = Tpl.renderError(form, field, msg);
             if (fieldElm) {

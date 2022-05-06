@@ -1,5 +1,6 @@
 isClient && define((require, exports, module) => {
   'use strict';
+  const koru            = require('koru');
   const Route           = require('./route');
   const TH              = require('./test-helper');
   const Dom             = require('../dom');
@@ -503,6 +504,18 @@ isClient && define((require, exports, module) => {
         Form.renderError(form, 'bar', false);
 
         assert.dom('[name=bar]:not(.error)+.errorMsg', '');
+      });
+    });
+
+    test('renderErrors from koru.Error', () => {
+      const error = new koru.Error(400, {foo: ['is_invalid'], bar: ['is_required']});
+
+      const form = Dom.h({div: [{$name: 'foo'}, {$name: 'bar'}]});
+      Form.renderErrors(error, form);
+
+      assert.dom(form, (elm) => {
+        assert.dom('[name=foo].error+.errorMsg>div', 'is not valid');
+        assert.dom('[name=bar].error+.errorMsg>div', "can't be blank");
       });
     });
 
