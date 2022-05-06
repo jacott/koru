@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Utilities to help validate models.
@@ -7,44 +7,44 @@ define((require, exports, module)=>{
   const RequiredValidator = require('koru/model/validators/required-validator');
   const TextValidator   = require('koru/model/validators/text-validator');
   const api             = require('koru/test/api');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
   const koru            = require('../main');
   const match           = require('../match');
   const util            = require('../util');
-  const Model           = require('./main');
-  const TH              = require('./test-helper');
 
   const {error$} = require('koru/symbols');
 
   const {stub, spy, match: m} = TH;
 
-  const Val   = require('./validation');
+  const Val = require('./validation');
 
   const Module = module.constructor;
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module({subjectName: 'Val'});
     });
 
-    beforeEach(()=>{
+    beforeEach(() => {
       TH.noInfo();
       v.myModule = new Module(void 0, 'mymodule');
       v.myModule.onUnload = after;
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    group("Error", ()=>{
+    group('Error', () => {
       let eapi;
-      before(()=>{
+      before(() => {
         eapi = api.innerSubject(Val.Error, 'Error');
       });
 
-      test("msgFor", ()=>{
+      test('msgFor', () => {
         /**
          * Extract the translated error message for a field
          */
@@ -52,14 +52,15 @@ define((require, exports, module)=>{
         //[
         const doc = {[error$]: {foo: [['too_long', 34]]}};
 
-        assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
+        assert.same(Val.Error.msgFor(doc, 'foo'), '34 characters is the maximum allowed');
+        assert.same(Val.Error.msgFor(doc[error$], 'foo'), '34 characters is the maximum allowed');
 
-        assert.same(Val.Error.msgFor("error one"), "error one");
-        assert.same(Val.Error.msgFor([["error 1"], "error 2"]), 'error 1, error 2');
+        assert.same(Val.Error.msgFor('error one'), 'error one');
+        assert.same(Val.Error.msgFor([['error 1'], 'error 2']), 'error 1, error 2');
         //]
       });
 
-      test("toString", ()=>{
+      test('toString', () => {
         /**
          * Translate all errors
          */
@@ -67,13 +68,13 @@ define((require, exports, module)=>{
         //[
         const doc = {[error$]: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
 
-        assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; '+
+        assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; ' +
                     'bar: is not valid');
         //]
       });
     });
 
-    test("addError", ()=>{
+    test('addError', () => {
       /**
        * Add an error to an object; usually a {#../base-model;;model} document.
        **/
@@ -87,7 +88,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("transferErrors", ()=>{
+    test('transferErrors', () => {
       const doc = {};
       Val.addError(doc, 'foo', 'is_too_big', 400);
       Val.addError(doc, 'foo', 'is_wrong_color', 'red');
@@ -104,20 +105,19 @@ define((require, exports, module)=>{
         ['is_too_big', 400], ['is_wrong_color', 'red']]});
     });
 
-    test("addSubErrors", ()=>{
+    test('addSubErrors', () => {
       const doc = {};
       Val.addSubErrors(doc, 'foo', {
         bar: v.barErrors = [['is_too_big', 400], ['is_wrong_color', 'red']],
-        fiz: [['is_invalid']]
+        fiz: [['is_invalid']],
       });
 
       Val.addSubErrors(doc, 'foo', {
         bar: [['is_wrong_type'], ['is_not_included', 'pink']],
-        fuz: [['is_required']]
+        fuz: [['is_required']],
       });
 
       assert.equals(v.barErrors.length, 2);
-
 
       assert.equals(doc[error$], {
         'foo.bar': [['is_too_big', 400], ['is_wrong_color', 'red'],
@@ -127,7 +127,7 @@ define((require, exports, module)=>{
       });
     });
 
-    test("clearErrors", ()=>{
+    test('clearErrors', () => {
       Val.clearErrors();
       Val.clearErrors(null);
       Val.clearErrors(123);
@@ -142,7 +142,7 @@ define((require, exports, module)=>{
       assert.equals(Object.getOwnPropertySymbols(empty), []);
     });
 
-    test("text", ()=>{
+    test('text', () => {
       assert.same(Val.text('foo'), 'foo');
       assert.same(Val.text(['foo']), 'foo');
 
@@ -150,7 +150,7 @@ define((require, exports, module)=>{
       assert.same(Val.text(['unexpected_error', 'foo']), 'An unexpected error has occurred: foo');
     });
 
-    test("check", ()=>{
+    test('check', () => {
       let spec = {foo: 'string'};
       refute(Val.check('dfsfd', spec));
       assert(Val.check({foo: ''}, spec));
@@ -169,7 +169,6 @@ define((require, exports, module)=>{
       spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
       assert(Val.check(
         {foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
-
 
       refute(Val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
       refute(Val.check({foo: 'x', bar: {baz: 'x'}, 'as if': new Date()}, spec));
@@ -211,29 +210,28 @@ define((require, exports, module)=>{
       assert.equals(data, {foo: {a: 1, b: 'hello there'}});
     });
 
-    test("assertCheck", ()=>{
-      assert.exception(()=>{
+    test('assertCheck', () => {
+      assert.exception(() => {
         Val.assertCheck(1, 'string');
       }, {error: 400, reason: 'is_invalid'});
       Val.assertCheck(1, 'number');
-      assert.exception(()=>{
+      assert.exception(() => {
         Val.assertCheck({name: 1}, {name: 'string'});
       }, {error: 400, reason: {name: [['is_invalid']]}});
-      assert.exception(()=>{
+      assert.exception(() => {
         Val.assertCheck({_id: 'abc'}, {name: 'string'});
       }, {error: 400, reason: {_id: [['is_invalid']]}});
-
 
       Val.register(v.myModule, {valAbc(doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
 
-      assert.exception(()=>{
+      assert.exception(() => {
         Val.assertCheck({name: 'abc'}, Val.matchFields({name: {type: 'string', valAbc: true}}));
       }, {error: 400, reason: {name: [['is_abc']]}});
     });
 
-    test("assertDocChanges", ()=>{
+    test('assertDocChanges', () => {
       /**
        * Assert doc changes are allowed.
 
@@ -272,78 +270,78 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("validateName", ()=>{
+    test('validateName', () => {
       assert.equals(Val.validateName(), ['is_required']);
       assert.equals(Val.validateName(' ', 300), ['is_required']);
       assert.equals(Val.validateName('1234', 3), ['cant_be_greater_than', 3]);
       assert.equals(Val.validateName('   1234  ', 4), '1234');
     });
 
-    test("allowIfSimple", ()=>{
-      assert.accessDenied(()=>{Val.allowIfSimple([12, {}])});
-      assert.accessDenied(()=>{Val.allowIfSimple({})});
-      refute.accessDenied(()=>{Val.allowIfSimple('sdfs')});
-      refute.accessDenied(()=>{Val.allowIfSimple(123)});
-      refute.accessDenied(()=>{Val.allowIfSimple([], ['abc', 1234])});
+    test('allowIfSimple', () => {
+      assert.accessDenied(() => {Val.allowIfSimple([12, {}])});
+      assert.accessDenied(() => {Val.allowIfSimple({})});
+      refute.accessDenied(() => {Val.allowIfSimple('sdfs')});
+      refute.accessDenied(() => {Val.allowIfSimple(123)});
+      refute.accessDenied(() => {Val.allowIfSimple([], ['abc', 1234])});
     });
 
-    test("allowIfValid", ()=>{
-      assert.invalidRequest(()=>{Val.allowIfValid(false)});
-      assert.exception(()=>{
+    test('allowIfValid', () => {
+      assert.invalidRequest(() => {Val.allowIfValid(false)});
+      assert.exception(() => {
         Val.allowIfValid(false, {[error$]: {x: 123}});
       }, {error: 400, reason: {x: 123}});
-      refute.invalidRequest(()=>{Val.allowIfValid(true)});
-      assert.exception(()=>{Val.allowIfValid(false)}, {error: 400, reason: 'is_invalid'});
-      assert.exception(()=>{
+      refute.invalidRequest(() => {Val.allowIfValid(true)});
+      assert.exception(() => {Val.allowIfValid(false)}, {error: 400, reason: 'is_invalid'});
+      assert.exception(() => {
         Val.allowIfValid(null, 'book');
       }, {error: 400, reason: {book: [['is_invalid']]}});
-      assert.exception(()=>{
+      assert.exception(() => {
         Val.allowIfValid(false, {custom: 'message'});
       }, {error: 400, reason: {custom: 'message'}});
 
-      assert.exception(()=>{
+      assert.exception(() => {
         Val.allowIfValid(undefined, {[error$]: {custom: 'message'}});
       }, {error: 400, reason: {custom: 'message'}});
     });
 
-    test("allowAccessIf", ()=>{
-      assert.accessDenied(()=>{Val.allowAccessIf(false);});
-      refute.accessDenied(()=>{Val.allowAccessIf(true);});
+    test('allowAccessIf', () => {
+      assert.accessDenied(() => {Val.allowAccessIf(false)});
+      refute.accessDenied(() => {Val.allowAccessIf(true)});
     });
 
-    test("ensureString", ()=>{
-      refute.accessDenied(()=>{
-        Val.ensureString("a", "b");
+    test('ensureString', () => {
+      refute.accessDenied(() => {
+        Val.ensureString('a', 'b');
       });
 
-      assert.accessDenied(()=>{
-        Val.ensureString("a", 2, "b");
+      assert.accessDenied(() => {
+        Val.ensureString('a', 2, 'b');
       });
     });
 
-    test("ensure", ()=>{
-      refute.accessDenied(()=>{
-        Val.ensure(match.string, "a", "b");
-        Val.ensure('func', ()=>{});
+    test('ensure', () => {
+      refute.accessDenied(() => {
+        Val.ensure(match.string, 'a', 'b');
+        Val.ensure('func', () => {});
         Val.ensure(match.number, 2, 3);
       });
 
-      assert.exception(()=>{
-        Val.ensure(match.number, 2, "b");
+      assert.exception(() => {
+        Val.ensure(match.number, 2, 'b');
       }, {error: 403, reason: 'Access denied - expected match.number'});
     });
 
-    test("ensureDate", ()=>{
-      refute.accessDenied(()=>{
+    test('ensureDate', () => {
+      refute.accessDenied(() => {
         Val.ensureDate(new Date(), new Date(2000, 1, 1));
       });
 
-      assert.accessDenied(()=>{
+      assert.accessDenied(() => {
         Val.ensureDate(new Date(), 2, new Date());
       });
     });
 
-    test("register", ()=>{
+    test('register', () => {
       /**
        * Register one or more collections of validators. This is conventionally done in
        * `app/models/model.js`
@@ -371,9 +369,7 @@ define((require, exports, module)=>{
       //]
     });
 
-
-
-    test("validators", ()=>{
+    test('validators', () => {
       /**
        * Return a function that runs the validators with a given name. Called by BaseModel
        **/
@@ -399,7 +395,7 @@ define((require, exports, module)=>{
       assert.same(Val.validators('fooStub'), void 0);
     });
 
-    test("validateField", ()=>{
+    test('validateField', () => {
       let errors = 'set';
       let fieldOpts;
       Val.register(v.myModule, {addIt(doc, field, x, _fieldOpts) {
@@ -412,7 +408,6 @@ define((require, exports, module)=>{
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
       assert.equals(fieldOpts, {type: 'number', addIt: 5});
 
-
       assert.same(doc[error$], 'set');
       assert.same(doc.age, 15);
 
@@ -424,19 +419,19 @@ define((require, exports, module)=>{
       assert.same(doc.age, 'x5');
     });
 
-    test("nestedFieldValidator", ()=>{
+    test('nestedFieldValidator', () => {
       const sut = Val.nestedFieldValidator(v.func = stub());
 
       sut.call({changes: {}}, 'foo');
 
-      refute.msg("Should not call when field value undefined")
+      refute.msg('Should not call when field value undefined')
         .called(v.func);
 
       const doc = {changes: {foo: 'bar'}};
 
       sut.call(doc, 'foo');
 
-      assert.calledOnceWith(v.func, doc, 'foo', 'bar', TH.match(opts => v.opts = opts));
+      assert.calledOnceWith(v.func, doc, 'foo', 'bar', TH.match((opts) => v.opts = opts));
 
       assert.isFunction(v.opts.onError);
       v.opts.onError();
@@ -454,18 +449,18 @@ define((require, exports, module)=>{
         foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
     });
 
-    test("typeSpec", ()=>{
+    test('typeSpec', () => {
       assert.equals(
         Val.typeSpec({$fields: {foo: {type: 'a'}, bar: {type: 'b'},
                                 notMe: {type: 'b', readOnly: true}}}),
         {foo: 'a', bar: 'b'});
-
     });
 
-    test("matchFields", ()=>{
+    test('matchFields', () => {
       Val.register(v.myModule, {divByx(doc, field, x) {
-        if (doc[field] % x !== 0)
+        if (doc[field] % x !== 0) {
           this.addError(doc, field, 'is_invalid');
+        }
       }});
 
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
@@ -480,7 +475,7 @@ define((require, exports, module)=>{
       assert.isFalse(matcher.test(doc));
       assert.modelErrors(doc, {bar: 'unexpected_field'});
 
-      assert.msg("null doc should be false").isFalse(matcher.test(null));
+      assert.msg('null doc should be false').isFalse(matcher.test(null));
     });
   });
 });

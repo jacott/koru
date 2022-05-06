@@ -19,7 +19,7 @@ define((require) => {
     Error: {
       msgFor(doc, field, other_error) {
         const errors = field !== void 0
-              ? doc[error$][field]
+              ? (doc[error$] ?? doc)[field]
               : (Array.isArray(doc) ? doc : [[doc.toString()]]);
         if (errors !== void 0) {
           return errors.map(format.translate).join(', ');
