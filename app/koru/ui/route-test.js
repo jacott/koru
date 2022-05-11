@@ -179,6 +179,18 @@ isClient && define((require, exports, module) => {
         assert.calledWith(Route.gotoPage, v.RootBar, {bazId: 'diff-id', pathname: '/baz/diff-id/root-bar'});
       });
 
+      test('pathToPage', () => {
+        api.method();
+        //[
+        const pageRoute = {};
+        const page = Route.pathToPage('/baz/an-id/root-bar?search=data#tag', pageRoute);
+        assert.equals(page, v.RootBar);
+
+        assert.equals(pageRoute, {bazId: 'an-id', pathname: '/baz/an-id/root-bar',
+                                  search: '?search=data', hash: '#tag'});
+        //]
+      });
+
       test('search and tag reset', () => {
         Route.gotoPath('/baz/an-id/root-bar?search=data#tag');
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: 'an-id', pathname: '/baz/an-id/root-bar',

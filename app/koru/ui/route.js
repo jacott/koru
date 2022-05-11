@@ -26,18 +26,18 @@ define((require, exports, module) => {
   const exitEntry = (exit, oldSymbols, entry, pageRoute, page, then) => {
     const entryLen = entry.length;
     let exitLen = exit.length;
-    const diff = exitLen-entryLen;
+    const diff = exitLen - entryLen;
     let index, sym, item;
 
     for (--exitLen; exitLen >= 0; --exitLen) {
       item = exit[exitLen];
-      if (item !== entry[exitLen-diff] ||
+      if (item !== entry[exitLen - diff] ||
           ((sym = item.routeVar) !== void 0 && oldSymbols[sym] !== pageRoute[sym])) {
         break;
       }
     }
 
-    for (index = 0; index<diff; ++index) {
+    for (index = 0; index < diff; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit?.(page, pageRoute);
     }
@@ -49,13 +49,13 @@ define((require, exports, module) => {
 
     currentPage = exit[index];
 
-    index = index-diff-1;
+    index = index - diff - 1;
     let runInstanceCopy = ++runInstance;
     const callback = () => {
       if (runInstanceCopy !== runInstance) {
         return // route call overridden
         ;
-      } if (index<0) {
+      } if (index < 0) {
         runInstanceCopy = 0; // stop multi calling
         then();
         return true;
@@ -401,38 +401,45 @@ define((require, exports, module) => {
       }
     }
 
-    static gotoPath(page, ...args) {
+    static gotoPath(path, ...args) {
       const pageRoute = {};
-      if (page == null) {
-        page = koru.getLocation();
+      if (path == null) {
+        path = koru.getLocation();
       }
 
-      if (typeof page !== 'string') {
-        if (! page.pathname) {
-          return this.gotoPage(page, ...args);
+      if (typeof path !== 'string') {
+        if (! path.pathname) {
+          return this.gotoPage(path, ...args);
         }
 
-        if (page.pathname !== '/') {
-          page = this.pageRouteToHref(page);
+        if (path.pathname !== '/') {
+          path = this.pageRouteToHref(path);
         } else {
-          page = page.hash || '/';
+          path = path.hash || '/';
         }
       } else {
-        page = decodeURIComponent(page);
+        path = decodeURIComponent(path);
       }
 
-      const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) ||
-            /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
-      if (m) {
-        page = m[1] || '/';
-        if (m[2]) pageRoute.search = m[2];
-        if (m[3]) pageRoute.hash = m[3];
-      }
-      pageRoute.pathname = page;
+      const page = this.pathToPage(path, pageRoute);
 
-      const parts = page.split('/');
-      const root = this.root;
-      page = root;
+      if (page === void 0) {
+        throw new koru.Error(404, 'Page not found: ' + path);
+      }
+
+      this.gotoPage(page, pageRoute);
+    }
+
+    static pathToPage(path, pageRoute) {
+      let append;
+      const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path) ||
+            /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path);
+      if (m !== null) {
+        path = m[1] || '/';
+      }
+      const parts = path.split('/');
+      const {root} = this;
+      let page = root;
 
       let newPage = root.defaultPage;
       for (let i = 0; i < parts.length; ++i) {
@@ -442,14 +449,14 @@ define((require, exports, module) => {
         if (newPage === void 0) {
           newPage = page.defaultPage;
 
-          if (page.routeVar) {
+          if (page.routeVar !== void 0 && pageRoute !== void 0) {
             if (pageRoute[page.routeVar] === void 0) {
               pageRoute[page.routeVar] = part;
               continue;
             }
           }
 
-          pageRoute.append = parts.slice(i).join('/');
+          append = parts.slice(i).join('/');
           break;
         }
         page = newPage;
@@ -460,10 +467,18 @@ define((require, exports, module) => {
       }
 
       if (page === root) {
-        throw new koru.Error(404, 'Page not found: ' + util.inspect(pageRoute));
+        return;
       }
 
-      this.gotoPage(page, pageRoute);
+      if (pageRoute !== void 0 && m !== null) {
+        pageRoute.pathname = path;
+
+        if (m[2] !== void 0) pageRoute.search = m[2];
+        if (m[3] !== void 0) pageRoute.hash = m[3];
+        if (append !== void 0) pageRoute.append = append;
+      }
+
+      return page;
     }
 
     static searchParams(pageRoute) {
