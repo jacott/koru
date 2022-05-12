@@ -39,10 +39,11 @@ define((require, exports, module) => {
         if (type === 'D') {
           console.log('D> ' + util.inspect(args));
         } else if (type === 'C') {
-          const {connection} = util.thread;
+          const {connection, userId} = util.thread;
           console.log((connection === void 0
                        ? ''
-                       : connection.engine + ' ' + connection.sessId + ': ') +
+                       : userId + ' on ' + connection.engine + ' ' +
+                       connection.remoteAddress + ':' + connection.sessId + ': ') +
                       args[0]);
         } else {
           console.log(type + '> ' + args.join(' '));

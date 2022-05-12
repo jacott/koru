@@ -123,7 +123,7 @@ isServer && define((require, exports, module) => {
       stub(koru, 'logger');
       v.sess.sessId = 's123';
       func.call({send: v.send = stub()}, 'my test error');
-      assert.calledWith(koru.logger, 'E', 'my test error');
+      assert.calledWith(koru.logger, 'E', 'Client: my test error');
     });
 
     test('clientErrorConvert', async () => {
@@ -140,7 +140,7 @@ isServer && define((require, exports, module) => {
       await func.call({send: v.send = stub()}, 'my message');
 
       assert.calledWith(
-        koru.logger, 'E', 'converted');
+        koru.logger, 'E', 'Client: converted');
     });
 
     test('onerror', () => {

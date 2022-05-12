@@ -12,13 +12,13 @@ define((require, exports, module) => {
     webSocketServerFactory(session);
 
     session.provide('L', (data) => {
-      koru.logger('L', data);
+      koru.logger('L', 'Client: ' + data);
     });
     session.provide('E', async (data) => {
       if (koru.clientErrorConvert !== undefined) {
         data = await koru.clientErrorConvert(data);
       }
-      koru.logger('E', data);
+      koru.logger('E', 'Client: ' + data);
     });
 
     session.connectionIntercept = (newSession, ws, ugr, remoteAddress) => {
