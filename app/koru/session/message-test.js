@@ -258,6 +258,23 @@ define((require, exports, module) => {
       assert.same(result.constructor, Object);
     });
 
+    test('bad message', () => {
+      assert.exception(
+        () => _decode(new Uint8Array([
+          8,                             // Dictionary
+          98, 97, 114, 0xff,             // local entry: bar
+          98, 97, 122, 0xff,             // local entry: baz
+          0,                             // end-of-dict
+          61, 2, 3, 4, // junk
+          7,                             // object
+          0xff, 0xfe, 17, 1, 0,          // foo: bar
+          1, 1, 17, 0xff, 0xfe,          // baz: foo
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+        ])),
+        {message: 'Unsupported format: 61 at 11 in:\n' +
+         '   8,98,97,114,255,98,97,122,255,0,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1'});
+    });
+
     test('large object', () => {
       const obj = {};
       for (let i = 0; i < 129; ++i) {

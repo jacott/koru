@@ -1,8 +1,11 @@
 define((require, exports, module) => {
   'use strict';
+
+  const {inspect$}      = require('koru/symbols');
+
   const {hasOwnProperty} = Object.prototype;
 
-  globalThis.assert = (truthy) => {if (! truthy) throw new Error('assertion failed')}
+  globalThis.assert = (truthy) => {if (! truthy) throw new Error('assertion failed')};
 
   const isPromise = (object) => typeof object?.then === 'function';
 
@@ -46,8 +49,6 @@ define((require, exports, module) => {
       }
     }
   }
-
-  const {inspect$}      = require('koru/symbols');
 
   const inspect1 = (o, i) => {
     try {
@@ -196,9 +197,11 @@ define((require, exports, module) => {
     moduleName: (module) => module && util.capitalize(util.camelize(
       module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''))),
 
-    qstr, qlabel,
+    qstr,
+    qlabel,
 
-    isPromise, ifPromise,
+    isPromise,
+    ifPromise,
   };
 
   return util;
