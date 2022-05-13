@@ -92,7 +92,7 @@ define((require, exports, module) => {
             --session.totalSessions;
             delete session.conns[sessId];
             session.countNotify.notify(conn, false);
-            koru.info(`Close conn id:${sessId}, tot:${session.totalSessions}, userId:${conn.userId}`);
+            koru.info(`Close conn tot:${session.totalSessions}`);
           }
         });
         conn.engine = util.browserVersion(ugr.headers['user-agent'] ?? '');

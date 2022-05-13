@@ -38,15 +38,13 @@ define((require, exports, module) => {
       logger: (type, ...args) => {
         if (type === 'D') {
           console.log('D> ' + util.inspect(args));
-        } else if (type === 'C') {
+        } else {
           const {connection, userId} = util.thread;
-          console.log((connection === void 0
+          console.log(type + '> ' + (connection === void 0
                        ? ''
                        : userId + ' on ' + connection.engine + ' ' +
                        connection.remoteAddress + ':' + connection.sessId + ': ') +
-                      args[0]);
-        } else {
-          console.log(type + '> ' + args.join(' '));
+                      args.join(' '));
         }
       },
 
