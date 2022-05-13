@@ -8,12 +8,14 @@ define((require, exports, module) => {
   const {stub, spy, match: m, intercept} = TH;
 
   const koru = require('./main');
-  let v = {};
+
+  const cleanup = () => {
+    dbBroker.db = util.thread.connection = util.thread.userId = void 0;
+  };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     afterEach(() => {
       cleanup();
-      v = {};
     });
 
     group('afTimeout', () => {
@@ -149,8 +151,4 @@ define((require, exports, module) => {
       assert.calledWith(koru.unhandledException, 'reject');
     });
   });
-
-  const cleanup = () => {
-    dbBroker.db = util.thread.connection = util.thread.userId = void 0;
-  };
 });

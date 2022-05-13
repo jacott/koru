@@ -1,5 +1,3 @@
-/*global WebSocket, KORU_APP_VERSION */
-
 define((require, exports, module) => {
   'use strict';
   const util            = require('./util-server');
@@ -12,7 +10,7 @@ define((require, exports, module) => {
     let dbBroker = null;
 
     {
-      const versionParts = (process.env.KORU_APP_VERSION || 'dev,h' + util.dateNow()).split(',');
+      const versionParts = (process.env.KORU_APP_VERSION ?? 'dev,h' + util.dateNow()).split(',');
       koru.version = versionParts[0];
       koru.versionHash = versionParts[1];
     }
@@ -32,7 +30,7 @@ define((require, exports, module) => {
         }
       },
 
-      appDir: koru.config.appDir || module.toUrl('').slice(0, -1),
+      appDir: koru.config.appDir ?? module.toUrl('').slice(0, -1),
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
 
       logger: (type, ...args) => {
@@ -41,9 +39,9 @@ define((require, exports, module) => {
         } else {
           const {connection, userId} = util.thread;
           console.log(type + '> ' + (connection === void 0
-                       ? ''
-                       : userId + ' on ' + connection.engine + ' ' +
-                       connection.remoteAddress + ':' + connection.sessId + ': ') +
+                                     ? ''
+                                     : userId + ' on ' + connection.engine + ' ' +
+                                     connection.remoteAddress + ':' + connection.sessId + ':\n') +
                       args.join(' '));
         }
       },

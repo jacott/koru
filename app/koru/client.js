@@ -8,7 +8,7 @@ define((require, exports, module) => {
   let lastLog = 0, logCount = 0;
 
   koru.clientLogger = koru.logger = (type, ...args) => {
-    if (++logCount > 5) {
+    if (type !== 'D' && ++logCount > 5) {
       if (lastLog + 60000 > Date.now()) return;
       logCount = 0;
     }
