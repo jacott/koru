@@ -250,7 +250,7 @@ define((require) => {
 
       ws._session = session;
 
-      ws.onmessage = (event) => {
+      session.defaultOnmessage = (event) => {
         session[heatbeatTime$] = adjustedNow() + session.heartbeatInterval;
         if (heartbeatTO == null) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
@@ -260,6 +260,8 @@ define((require) => {
         }
         session.execWrapper(onMessage, session, event.data);
       };
+
+      ws.onmessage = session.overrideOnmessage ?? session.defaultOnmessage;
 
       const onclose = (event) => {
         stopReconnTimeout();

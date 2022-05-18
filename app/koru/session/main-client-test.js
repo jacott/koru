@@ -92,6 +92,27 @@ define((require, exports, module) => {
       assert.same(v.sess.globalDict.k2c.hello, 256);
     });
 
+    test('defaultOnmessage', () => {
+      v.ws = {send: stub()};
+      v.sess = {
+        overrideOnmessage: stub(),
+        provide: stub(),
+        _onMessage(conn, data) {
+          v.actualConn = conn;
+          assert.same(data, v.data);
+        },
+      };
+      sessionClientFactory(v.sess, sessState);
+
+      v.sess.newWs = stub().returns(v.ws);
+
+      stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
+
+      v.sess.connect();
+
+      assert.same(v.ws.onmessage, v.sess.overrideOnmessage);
+    });
+
     group('onmessage', () => {
       beforeEach(() => {
         v.ws = {send: stub()};
@@ -137,6 +158,8 @@ define((require, exports, module) => {
 
         const event = {data: v.data = 'foo'};
         v.ws.onmessage(event);
+
+        assert.same(v.sess.defaultOnmessage, v.ws.onmessage);
 
         assert(v.actualConn);
         assert.same(v.actualConn.ws, v.ws);
