@@ -576,7 +576,7 @@ define((require) => {
           self.htmlClue = `an Element; got: ${elm}`;
           return false;
         } else {
-          msg = {elm, toString() {return self.elm.innerHTML}};
+          msg = {elm, toString() {return elm.innerHTML}};
           if (elm.nodeType != null) elm = [elm];
         }
         self.htmlClue = {toString() {
