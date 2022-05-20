@@ -63,6 +63,8 @@ define((require, exports, module) => {
     return doc;
   }
 
+  const assertAuthorize = (doc) => {Val.allowAccessIf(doc.authorize !== void 0, doc)};
+
   const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;
@@ -203,7 +205,7 @@ define((require, exports, module) => {
             if (doc !== void 0) return; // replay or duplicate id so don't update, don't throw error
             doc = new model(null, topLevel);
           }
-          Val.allowAccessIf(doc.authorize);
+          assertAuthorize(doc);
           await doc.authorize(userId);
           if (topLevel !== changes && topLevel !== void 0) {
             Changes.updateCommands(changes, doc.changes, topLevel);
@@ -230,7 +232,7 @@ define((require, exports, module) => {
           if (doc.overrideRemove != null) {
             await doc.overrideRemove(userId);
           } else {
-            Val.allowAccessIf(doc.authorize);
+            assertAuthorize(doc);
             await doc.authorize(userId, {remove: true});
             await doc.$remove();
           }

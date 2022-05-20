@@ -6,7 +6,7 @@ define((require) => {
   const ResourceString  = require('../resource-string');
   const util            = require('../util');
 
-  const {error$} = require('koru/symbols');
+  const {error$, inspect$} = require('koru/symbols');
 
   const {hasOwn} = util;
 
@@ -364,7 +364,8 @@ define((require) => {
 
   const accessDenied = (details, nolog) => {
     const reason = 'Access denied';
-    const error = new koru.Error(403, details === void 0 ? reason : reason + ' - ' + details);
+    const error = new koru.Error(403, details === void 0 ? reason : reason + ' - ' +
+                                 (details?.[inspect$]?.() ?? (details?.toString?.())));
 
     if (! nolog && ! util.thread.suppressAccessDenied) {
       koru.info(`Access denied: user ${koru.userId()}: ${details}`,

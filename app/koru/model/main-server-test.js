@@ -262,6 +262,15 @@ define((require, exports, module) => {
       assert.same(jen.language, 'no');
     });
 
+    test('no authorize function', async () => {
+      const TestModel = Model.define('TestModel', {})
+            .defineFields({name: 'text', language: {type: 'text', default: 'en'}});
+
+      await assert.exception(
+        () => session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {_id: 'fooid', name: 'Mel'}),
+        {error: 403, reason: 'Access denied - Model.TestModel("fooid", "Mel")'});
+    });
+
     test('saveRpc new', async () => {
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub(async () => {await 1}),

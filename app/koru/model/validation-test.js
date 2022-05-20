@@ -13,7 +13,7 @@ define((require, exports, module) => {
   const match           = require('../match');
   const util            = require('../util');
 
-  const {error$} = require('koru/symbols');
+  const {error$, inspect$} = require('koru/symbols');
 
   const {stub, spy, match: m} = TH;
 
@@ -307,6 +307,14 @@ define((require, exports, module) => {
     test('allowAccessIf', () => {
       assert.accessDenied(() => {Val.allowAccessIf(false)});
       refute.accessDenied(() => {Val.allowAccessIf(true)});
+      assert.exception(
+        () => Val.allowAccessIf(false, {[inspect$]: () => 'inspect msg'}),
+        {error: 403, reason: 'Access denied - inspect msg'},
+      );
+      assert.exception(
+        () => Val.allowAccessIf(false, {toString() {return this.foo}, foo: 'from toString'}),
+        {error: 403, reason: 'Access denied - from toString'},
+      );
     });
 
     test('ensureString', () => {
