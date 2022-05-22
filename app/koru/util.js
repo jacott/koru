@@ -1198,6 +1198,13 @@ define((require) => {
       for await (const i of asyncIterator) arr.push(i);
       return arr;
     },
+
+    voidToNull: (object) => {
+      for (const name in object) {
+        if (object[name] === void 0) object[name] = null;
+      }
+      return object;
+    },
   });
 
   return util;

@@ -23,6 +23,18 @@ define((require, exports, module) => {
       v = {};
     });
 
+    test('voidToNull', () => {
+      /**
+       * Convert all void values in Object to null values
+       */
+      api.method();
+      //[
+      const changes = {a: void 0, b: 123, c: '', d: null};
+      assert.same(util.voidToNull(changes), changes);
+      assert.equals(changes, {a: null, b: 123, c: '', d: null});
+      //]
+    });
+
     test('setProperty', () => {
       /**
        * Set a property descriptor for an object. By default the descriptor options will be:
