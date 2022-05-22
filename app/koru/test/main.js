@@ -250,7 +250,8 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     let result = `${test.name}\x00`;
     const {errors} = test;
     for (let i = 0; i < errors.length; ++i) {
-      result += errors[i] + '\n';
+      const error = errors[i];
+      result += (typeof error !== 'string' ? util.extractError(error) : error) + '\n';
     }
     Main.testHandle('E', result);
   };

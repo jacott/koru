@@ -12,14 +12,10 @@ define(['require', 'koru/util-base'], (require, util) => {
 
   const stackHasMessage = isServer || new Error('abc').stack.slice(7, 10) === 'abc';
 
-  const normalizedStack = (ex, elidePoint=0) => {
+  const normalizedStack = (ex, elidePoint, isTestAssert) => {
     const stackString = ex.userStack || (
       stackHasMessage ? (ex.stack || '').slice(ex.toString().length) : ex.stack);
     if (typeof stackString !== 'string') return null;
-
-    const isTestAssert = isTest && ex.name === 'AssertionError',
-          lines = stackString.split('\n'),
-          stack = [];
 
     let parts = null, m = null,
         url = '', func = '', line = '', column = '';
@@ -32,6 +28,9 @@ define(['require', 'koru/util-base'], (require, util) => {
         originRe = new RegExp('^' + util.regexEscape(lcn.protocol + '//' + lcn.host + '/'));
       }
     }
+
+    const lines = stackString.split('\n');
+    const stack = [];
 
     for (let i = 0; i < lines.length; ++ i) {
       const row = lines[i];
@@ -84,9 +83,13 @@ define(['require', 'koru/util-base'], (require, util) => {
   };
 
   const normalize = (error) => {
-    return error[normalizedStack$] ??= error[replacementError$] !== void 0
-      ? normalize(error[replacementError$])
-      : normalizedStack(error, error[elideFrames$]);
+    const isTestAssert = isTest && error.name === 'AssertionError';
+    const ns = error[normalizedStack$];
+    if (ns !== void 0) return ns;
+    while (error[replacementError$] !== void 0) {
+      error = error[replacementError$];
+    }
+    return error[normalizedStack$] = normalizedStack(error, error[elideFrames$], isTestAssert);
   };
 
   return {

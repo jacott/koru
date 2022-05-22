@@ -470,7 +470,7 @@ define((require) => {
 
     extractError(err) {
       const st = Stacktrace.normalize(err);
-      if (st) {
+      if (st != null) {
         if (st.length != 0) {
           if (st[0][7] !== '-') {
             st[0] = '    at -' + st[0].slice(6);

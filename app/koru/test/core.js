@@ -29,7 +29,7 @@ define((require) => {
     recordError() {
       if (Core.test !== void 0) {
         Core.test.success = false;
-        (Core.test.errors ??= []).push(util.extractError(this));
+        (Core.test.errors ??= []).push(this);
       }
     }
   }
@@ -61,22 +61,26 @@ define((require) => {
     fail(msg, ep);
   };
 
+  const adjustError = (err, elidePoint) => {
+    if (err.name === 'AssertionError') {
+      const rs = new Error();
+      stacktrace.elideFrames(rs, elidePoint);
+      stacktrace.replaceStack(err, rs);
+    }
+  };
+
   assert.fail = fail;
   assert.elide = (body, adjust=0) => {
     try {
       const ans = body();
       if (isPromise(ans)) {
         return ans.catch((err) => {
-          if (err.name === 'AssertionError') {
-            assert.fail(err.message, adjust + 2);
-          }
+          adjustError(err, adjust + 2);
           throw err;
         });
       }
     } catch (err) {
-      if (err.name === 'AssertionError') {
-        assert.fail(err.message, adjust + 2);
-      }
+      adjustError(err, adjust + 3);
       throw err;
     }
   };
