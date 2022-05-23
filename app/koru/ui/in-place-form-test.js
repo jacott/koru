@@ -341,9 +341,19 @@ isClient && define((require, exports, module) => {
 
       assert.dom('#InPlaceFormTest', (elm) => {
         assert.dom('>label.nickname-field>span.label', 'Nickname');
-        TH.click('button.value.ui-editable[name=nickname]', 'The Bard of Avon');
+        assert.dom('button.value.ui-editable[name=nickname]', 'The Bard of Avon');
 
-        assert.dom('form>input[name=nickname]', {value: 'The Bard of Avon'});
+        doc.nickname = void 0;
+        Dom.myCtx(elm).updateAllTags();
+
+        assert.dom('button.value.ui-editable[name=nickname]', '');
+
+        doc.nickname = 'Ace';
+        Dom.myCtx(elm).updateAllTags();
+
+        TH.click('button.value.ui-editable[name=nickname]', 'Ace');
+
+        assert.dom('form>input[name=nickname]', {value: 'Ace'});
       });
     });
   });

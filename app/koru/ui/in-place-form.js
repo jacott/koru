@@ -108,7 +108,7 @@ define((require) => {
       return this.options.name + '-field';
     },
     value() {
-      return this.doc[this.options.name];
+      return this.doc[this.options.name] ?? '';
     },
   });
 
