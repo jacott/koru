@@ -48,7 +48,7 @@ define((require, exports, module) => {
           m(/    at .*inner3.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
           m(/    at .*inner2.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
           m(/    at .*inner1.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
-          m(/    at .*(Test\.test normalize|anonymous).* \(koru\/stacktrace-test.js:\d+:\d+\)/),
+          m(/    at .*((Test\.)?test normalize|anonymous).* \(koru\/stacktrace-test.js:\d+:\d+\)/),
         ]);
 
         assert.same(Stacktrace.normalize(err), Stacktrace.normalize(err));
@@ -76,7 +76,7 @@ define((require, exports, module) => {
 
         assert.equals(Stacktrace.normalize(err), [
           m(/    at .*inner1.* \(koru\/stacktrace-test.js:\d+:\d+\)/),
-          m(/    at .*(Test\.test elideFrames|anonymous).* \(koru\/stacktrace-test.js:\d+:\d+\)/),
+          m(/    at .*((Test\.)?test elideFrames|anonymous).* \(koru\/stacktrace-test.js:\d+:\d+\)/),
         ]);
       }
       //]
