@@ -24,10 +24,10 @@
   "main": "lib/koru",
   "bin": "./bin/koru",
   "dependencies": {
-    "@babel/generator": "^7.18.0",
-    "@babel/parser": "^7.18.0",
+    "@babel/generator": "^7.18.2",
+    "@babel/parser": "^7.18.4",
     "autoprefixer": "^10.4.7",
-    "commander": "^9.2.0",
+    "commander": "^9.3.0",
     "css-selector-parser": "^1.4.1",
     "less": "^4.1.2",
     "marked": "^4.0.16",
@@ -37,7 +37,7 @@
     "postcss": "^8.4.14",
     "send": "^0.18.0",
     "source-map": "^0.7.3",
-    "ws": "^8.6.0",
+    "ws": "^8.7.0",
     "yaajs": "^4.0.2"
   },
   "devDependencies": {
