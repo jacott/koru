@@ -126,6 +126,18 @@ define((require, exports, module) => {
   const u8Id = new Uint8Array(abId);
   const CHARS = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+  const strCode = (str, i) => {
+    if (str.length == i) return 63;
+    const o = str.charCodeAt(i);
+    if (o < 65) {
+      return o === 48 ? 9 : o - 49;
+    }
+    if (o < 97) {
+      return o - 29;
+    }
+    return o - 87;
+  };
+
   const util = {
     hasOwn: (obj, prop) => hasOwnProperty.call(obj, prop),
     idLen,
@@ -133,25 +145,66 @@ define((require, exports, module) => {
     CHARS,
     id: () => {
       let result = '';
-      for (let i = 0; i < idLen; ++i) {
-        result += CHARS[u8Id[i] % 62];
-      }
+      for (let i = 0; i < idLen; ++i) result += CHARS[u8Id[i] % 62];
 
-      return result.slice(0, idLen);
+      return result;
     },
     idToUint8Array: (str, u8Id) => {
-      for (let i = 0; i < str.length; ++i) {
-        const o = str.charCodeAt(i);
-        if (o < 65) {
-          u8Id[i] = o === 48 ? 9 : o - 49;
-        } else if (o < 97) {
-          u8Id[i] = o - 29;
-        } else {
-          u8Id[i] = o - 87;
-        }
-      }
+      for (let i = 0; i < str.length; ++i) u8Id[i] = strCode(str, i);
 
       return u8Id;
+    },
+
+    zipId: (str, u8) => {
+      const mask = 63;
+      let shift = 2;
+      let strIdx = 0;
+      let o1 = strCode(str, strIdx);
+      let o2 = 0;
+      let i = 0;
+      while (i < 17) {
+        o2 = strCode(str, ++strIdx);
+        o1 |= (o2 & (mask >> (6 - shift))) << (8 - shift);
+        u8[i] = o1;
+        if (o2 === 63) {
+          if (i < 12) u8[i + 1] = 255;
+          return u8;
+        }
+        o1 = o2 >> shift;
+        shift = (shift + 2) % 8;
+        if (shift != 2) ++i;
+      }
+
+      return u8;
+    },
+
+    unzipId: (u8) => {
+      const mask = 63;
+      let shift = 0;
+      let str = '';
+      let o1 = 0, o2 = 0;
+
+      let i = 0;
+      while (i < 13) {
+        o2 = u8[i];
+        o1 |= (o2 & (mask >> shift)) << shift;
+        if (o1 == 63) return str;
+        str += CHARS[o1];
+        o1 = o2 >> (6 - shift);
+        shift = (shift + 2) % 8;
+        if (shift == 0) {
+          o1 = o2 & mask;
+          if (i == 12) {
+            if (o1 != 63) {
+              str += CHARS[o1];
+            }
+            return str;
+          }
+        } else {
+          ++i;
+        }
+      }
+      return str;
     },
 
     browserVersion(ua) {

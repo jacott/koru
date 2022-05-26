@@ -42,6 +42,28 @@ define((require, exports, module) => {
       assert.same(util.id(), '7890abcdefghijklm');
     });
 
+    test('zipId', () => {
+      /**
+       * Pack an 17 Character id into a 13 byte Uint8Array
+       */
+
+      const {zipId, unzipId} = util;
+
+      const u8 = new Uint8Array(13);
+
+      zipId('ZYXWVUTSRQPONMLKJ', u8);
+      assert.equals(unzipId(u8), 'ZYXWVUTSRQPONMLKJ');
+
+      zipId('1234ABCDEFGHIJKLZ', u8);
+      assert.same(unzipId(u8), '1234ABCDEFGHIJKLZ');
+
+      zipId('7890abcdefghijklm', u8);
+      assert.same(unzipId(u8), '7890abcdefghijklm');
+
+      zipId('hello', u8);
+      assert.same(unzipId(u8), 'hello');
+    });
+
     test('isPromise', () => {
       /**
        * Return true is `object` is an object with a `then` function.
