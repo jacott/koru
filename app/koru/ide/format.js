@@ -10,7 +10,7 @@ define((require, exports, module) => {
       ws.send('IF' + JSON.stringify({source: CodeFormatter.reformat(input, options)}));
     } catch(err) {
       if (err.name === 'SyntaxError') {
-        koru.error(err.toString());
+        ws.send('IF' + JSON.stringify({syntaxError: err.message, pos: err.pos + 1}));
       } else {
         koru.unhandledException(err);
       }
