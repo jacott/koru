@@ -167,7 +167,8 @@ define((require, exports, module) => {
         o1 |= (o2 & (mask >> (6 - shift))) << (8 - shift);
         u8[i] = o1;
         if (o2 === 63) {
-          if (i < 12) u8[i + 1] = 255;
+          if (shift != 0) ++i;
+          if (i < 13) u8[i] = 255;
           return u8;
         }
         o1 = o2 >> shift;

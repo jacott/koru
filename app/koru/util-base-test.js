@@ -51,6 +51,15 @@ define((require, exports, module) => {
 
       const u8 = new Uint8Array(13);
 
+      zipId('demo', u8);
+      assert.same(unzipId(u8), 'demo');
+
+      zipId('', u8);
+      assert.same(unzipId(u8), '');
+
+      zipId('dem', u8);
+      assert.same(unzipId(u8), 'dem');
+
       zipId('ZYXWVUTSRQPONMLKJ', u8);
       assert.equals(unzipId(u8), 'ZYXWVUTSRQPONMLKJ');
 
