@@ -47,6 +47,41 @@ isClient && define((require, exports, module) => {
       Session.sendBinary = origSendBinary;
     });
 
+    group('stop', () => {
+      test('before success', () => {
+        const {state} = Session;
+        Session.state._state = 'startup';
+        const sub1 = Library.subscribe([123, 456]);
+        Session.sendBinary.reset();
+
+        spy(sub1, 'stop');
+
+        mockServer.sendSubResponse([sub1._id]); // stop
+        assert.same(state.pendingCount(), 0);
+        assert.calledWith(sub1.stop, new koru.Error(409, 'stopped'));
+      });
+
+      test('after success', () => {
+        const {state} = Session;
+        Session.state._state = 'startup';
+        const sub1 = Library.subscribe([123, 456]);
+        Session.sendBinary.reset();
+
+        spy(sub1, 'stop');
+
+        Session.state._state = 'ready';
+        Session.state._onConnect['10-subscribe2']();
+        assert.calledOnceWith(Session.sendBinary, 'Q', ['1', 1, 'Library', [123, 456], 0]);
+        mockServer.sendSubResponse([sub1._id, 1, 200]);
+        assert.same(state.pendingCount(), 0);
+
+        refute.called(sub1.stop);
+        mockServer.sendSubResponse([sub1._id]); // stop
+        assert.same(state.pendingCount(), 0);
+        assert.calledWith(sub1.stop, new koru.Error(409, 'stopped'));
+      });
+    });
+
     test('reconnecting', () => {
       const reconnecting = stub(Library.prototype, 'reconnecting');
       const sub1 = Library.subscribe([123, 456]);

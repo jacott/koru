@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const Model           = require('koru/model');
@@ -20,20 +20,24 @@ define((require)=>{
 
   const sessions = Object.create(null);
 
-  const assertState = (truth)=>{
-    if (! truth) throw new Error("Illegal action");
+  const assertState = (truth) => {
+    if (! truth) throw new Error('Illegal action');
   };
 
-  const incPending = (ss, sub)=>{
+  const incPending = (ss, sub) => {
     if (sub[msgId$] === void 0) {
       sub[msgId$] = 1;
       ss.session.state.incPending();
-    } else ++sub[msgId$];
+    } else {
+      ++sub[msgId$];
+    }
   };
 
-  const decPending = (ss, sub)=>{
-    sub[msgId$] = void 0;
-    ss.session.state.decPending();
+  const decPending = (ss, sub) => {
+    if (sub[msgId$] !== void 0) {
+      sub[msgId$] = void 0;
+      ss.session.state.decPending();
+    }
   };
 
   function provideQ(data) {
@@ -50,13 +54,14 @@ define((require)=>{
     const status = data[2];
     try {
       if (status !== 200) {
-        if (status <=0) {
+        if (status <= 0) {
           sub[messageResponse$](data);
         } else {
-          sub.stop(new koru.Error(status, data[3]));
+          sub.stop(new koru.Error(status ?? 409, data[3] ?? 'stopped'));
         }
-      } else
+      } else {
         sub[connected$]({lastSubscribed: data[3]});
+      }
     } finally {
       if (sub[msgId$] === msgId) {
         decPending(subSess, sub);
@@ -64,7 +69,7 @@ define((require)=>{
     }
   }
 
-  const sendInit = (ss, sub)=>{
+  const sendInit = (ss, sub) => {
     if (sub[reconnect$]) {
       sub.reconnecting();
       if (sub.state === 'stopped') return;
@@ -76,15 +81,16 @@ define((require)=>{
   };
 
   let debug_clientUpdate = false;
-  Trace.debug_clientUpdate = value => {debug_clientUpdate = value};
+  Trace.debug_clientUpdate = (value) => {debug_clientUpdate = value};
 
   const modelUpdate = (type, func) => {
     return function (data) {
       const ss = sessions[this._id];
       if (ss === void 0) return;
       if (debug_clientUpdate) {
-        if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
-          koru.logger("D", type, '< ' + util.inspect(data));
+        if (debug_clientUpdate === true || debug_clientUpdate[data[0]]) {
+          koru.logger('D', type, '< ' + util.inspect(data));
+        }
       }
       this.isUpdateFromServer = true;
       const prevDbId = dbBroker.dbId;
@@ -95,12 +101,13 @@ define((require)=>{
         this.isUpdateFromServer = false;
         dbBroker.dbId = prevDbId;
       }
-    };
+    }
   };
 
   const added = modelUpdate('Add', (ss, model, attrs) => {
-    if (ss.match.has(new model(attrs)))
+    if (ss.match.has(new model(attrs))) {
       Query.insertFromServer(model, attrs);
+    }
   });
 
   const changed = modelUpdate('Upd', (ss, model, id, changes) => {
@@ -132,33 +139,35 @@ define((require)=>{
       session.provide('R', removed);
 
       this.userId = koru.userId();
-      this[loginObserver$] = login.onChange(session, (state)=>{
+      this[loginObserver$] = login.onChange(session, (state) => {
         if (state === 'change') {
           if (koru.userId() === this.userId) return;
           const oldUid = this.userId;
           this.userId = koru.userId();
           const {subs} = this;
-          for(const key in subs) {
+          for (const key in subs) {
             subs[key].userIdChanged(this.userId, oldUid);
           }
         }
       });
 
-      session.state.onConnect('10-subscribe2', ()=>{
-        for(const id in this.subs) {
+      session.state.onConnect('10-subscribe2', () => {
+        for (const id in this.subs) {
           const sub = this.subs[id];
-          if (sub[msgId$] === void 0)
+          if (sub[msgId$] === void 0) {
             incPending(this, sub);
-          else
+          } else {
             sub[msgId$] = 1;
+          }
           sendInit(this, this.subs[id]);
         }
       });
     }
 
     connect(sub) {
-      if (this.subs[sub._id] !== void 0)
-        throw new Error("Illegal connect on active subscription");
+      if (this.subs[sub._id] !== void 0) {
+        throw new Error('Illegal connect on active subscription');
+      }
       this.subs[sub._id] = sub;
       sub[reconnect$] = false;
       incPending(this, sub);
@@ -181,8 +190,9 @@ define((require)=>{
     _delete(sub) {
       assertState(sub.state === 'stopped');
       if (this.subs[sub._id] !== void 0) {
-        if (this.session.state.isReady())
-          this.session.sendBinary('Q', [sub._id]); // stop
+        if (this.session.state.isReady()) {
+          this.session.sendBinary('Q', [sub._id]);
+        }// stop
         delete this.subs[sub._id];
         if (sub[msgId$] !== void 0) {
           decPending(this, sub);
@@ -224,18 +234,19 @@ define((require)=>{
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);
         const sim = simDocs[doc._id];
-        if (sim !== void 0)
+        if (sim !== void 0) {
           delete simDocs[doc._id];
+        }
         delete model.docs[doc._id];
         Query.notify(DocChange.delete(doc, ans === false ? 'fromServer' : 'stopped'));
         return true;
       }
       return false;
-    };
+    }
 
     filterModels(models) {
       TransQueue.transaction(() => {
-        for(const name of models) {
+        for (const name of models) {
           const model = ModelMap[name];
           if (model !== void 0) {
             const {docs} = model;
