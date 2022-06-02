@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
 
@@ -6,14 +6,14 @@ isClient && define((require, exports, module)=>{
 
   const nextFrame = require('./next-frame');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     let rafStub, cafStub;
-    beforeEach(()=>{
+    beforeEach(() => {
       rafStub = stub(window, 'requestAnimationFrame').returns(123);
       cafStub = stub(window, 'cancelAnimationFrame');
     });
 
-    test("nextFrame init", ()=>{
+    test('nextFrame init', () => {
       const exp = {};
       const nf = nextFrame(exp);
 
@@ -36,7 +36,7 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(cafStub, 123);
     });
 
-    test("queing", ()=>{
+    test('queing', () => {
       const nf = nextFrame();
       const s1 = stub(), s2 = stub();
 
@@ -53,7 +53,7 @@ isClient && define((require, exports, module)=>{
       refute.called(cafStub);
     });
 
-    test("flush", ()=>{
+    test('flush', () => {
       const nf = nextFrame();
       const s1 = stub(), s2 = stub();
 

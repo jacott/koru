@@ -40,8 +40,8 @@ define(() => {
       if (body.indexOf('\n') !== -1) {
         content = document.createDocumentFragment();
         body.split('\n').forEach((line, index) => {
-          index && content.appendChild(document.createElement('br'));
-          line && content.appendChild(document.createTextNode(line));
+          index != 0 && content.appendChild(document.createElement('br'));
+          line !== '' && content.appendChild(document.createTextNode(line));
         });
         return content;
       } else {

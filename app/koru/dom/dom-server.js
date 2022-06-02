@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   require('koru/dom/html-doc');
   const util            = require('koru/util');
@@ -9,7 +9,7 @@ define((require)=>{
   Dom._helpers = {};
 
   util.merge(Dom, {
-    replaceElement: (newElm, oldElm, noRemove)=>{
+    replaceElement: (newElm, oldElm, noRemove) => {
       const ast = oldElm[endMarker$];
       if (ast !== undefined) {
         Dom.removeInserts(oldElm);
@@ -19,7 +19,6 @@ define((require)=>{
       oldElm.parentNode && oldElm.parentNode.replaceChild(newElm, oldElm);
       return Dom;
     },
-
   });
 
   return Dom;

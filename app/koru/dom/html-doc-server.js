@@ -195,7 +195,7 @@ define((require, exports, module) => {
             insertNodes(node.childNodes, this, i);
           } else {
             node.parentNode = this;
-            nodes.splice(i, 0, undefined);
+            nodes.splice(i, 0, void 0);
             attachNode(this, i, node);
           }
           return node;
@@ -226,7 +226,7 @@ define((require, exports, module) => {
     }
 
     get style() {
-      if (this[style$] !== undefined) return this[style$];
+      if (this[style$] !== void 0) return this[style$];
       return this[style$] = new Style(this);
     }
 
@@ -322,7 +322,7 @@ define((require, exports, module) => {
     createElement(tag) {return createHTMLElement(tag)}
     createElementNS(xmlns, tag) {
       const canon = Dom.CANONICAL_TAG_NAMES[tag];
-      if (canon === undefined) {
+      if (canon === void 0) {
         if (xmlns === SVGNS) {
           Dom.CANONICAL_TAG_NAMES[tag] = tag;
         } else {
@@ -368,10 +368,10 @@ define((require, exports, module) => {
       super(ELEMENT_NODE);
       const canon = Dom.CANONICAL_TAG_NAMES[tagName];
       const uc = tagName.toUpperCase();
-      if (canon === undefined || canon !== tagName) {
+      if (canon === void 0 || canon !== tagName) {
         this.tagName = uc;
       } else {
-        this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== undefined ? uc : canon;
+        this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== void 0 ? uc : canon;
       }
       this[attributes$] = {};
     }
@@ -389,7 +389,7 @@ define((require, exports, module) => {
     get outerHTML() {
       const tn = Dom.canonicalTagName(this);
       const attrs = this[attributes$];
-      const cssText = this[style$] !== undefined ? origCssText(this.style) : undefined;
+      const cssText = this[style$] !== void 0 ? origCssText(this.style) : void 0;
       let open = tn;
       if (util.isObjEmpty(attrs)) {
         if (cssText) open += ' style="' + cssText + '"';
@@ -398,7 +398,7 @@ define((require, exports, module) => {
         for (const attr in attrs) {
           oa.push(attr + '="' + attrs[attr].replace(/"/g, '&quot;') + '"');
         }
-        cssText && oa.push('style="' + cssText + '"');
+        cssText !== void 0 && oa.push('style="' + cssText + '"');
         open = oa.join(' ');
       }
 
@@ -556,14 +556,15 @@ define((require, exports, module) => {
     item(index) {return this[styleArray$][index]}
 
     setProperty(dname, value='') {
-      if (dname.slice(-5) === 'color') {
-        value = value && uColor.toRgbStyle(value);
+      if (dname.slice(-5) === 'color' && value !== '') {
+        value = uColor.toRgbStyle(value);
       }
+
       this[needBuild$] = true;
       const styles = this[styles$];
       const oldValue = styles[dname];
       if (oldValue === value) return;
-      if (oldValue === undefined) {
+      if (oldValue === void 0) {
         this[pos$][dname] = this[styleArray$].length;
         this[styleArray$].push(dname);
       }
@@ -576,7 +577,7 @@ define((require, exports, module) => {
 
     removeProperty(dname) {
       const styles = this[styles$];
-      if (styles[dname] !== undefined) {
+      if (styles[dname] !== void 0) {
         const poses = this[pos$];
         this[styleArray$].splice(poses[dname], 1);
         delete styles[dname];
@@ -612,8 +613,8 @@ define((require, exports, module) => {
         const dname = style.slice(0, idx);
         const name = util.camelize(dname);
         let value = style.slice(idx + 1).trim();
-        if (/color/.test(dname) && value.startsWith('#')) {
-          value = (value && uColor.toRgbStyle(value)) || '';
+        if (value !== '' && /color/.test(dname) && value.startsWith('#')) {
+          value = uColor.toRgbStyle(value);
         }
         sm[dname] = sm[name] = value;
         sa.push(dname);

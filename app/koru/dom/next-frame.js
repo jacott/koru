@@ -1,14 +1,13 @@
-define((require)=>{
+define(() => {
   'use strict';
-  const util            = require('koru/util');
 
-  return (obj={})=>{
+  return (obj={}) => {
     let queue = null;
     let afHandle = 0;
 
-    const execOne = func=>{func()};
+    const execOne = (func) => {func()};
 
-    const run = ()=>{
+    const run = () => {
       const q = queue;
       queue = null;
       afHandle = 0;
@@ -16,7 +15,7 @@ define((require)=>{
     };
 
     Object.assign(obj, {
-      nextFrame: (func)=>{
+      nextFrame: (func) => {
         if (queue === null) {
           queue = [func];
           afHandle = window.requestAnimationFrame(run);
@@ -25,20 +24,20 @@ define((require)=>{
         }
       },
 
-      flushNextFrame: ()=>{
+      flushNextFrame: () => {
         if (afHandle == 0) return;
         window.cancelAnimationFrame(afHandle);
         run();
       },
 
-      cancelNextFrame: ()=>{
+      cancelNextFrame: () => {
         if (afHandle == 0) return;
         window.cancelAnimationFrame(afHandle);
         queue = null;
         afHandle = 0;
       },
 
-      isPendingNextFrame: ()=> queue !== null,
+      isPendingNextFrame: () => queue !== null,
     });
 
     return obj;
