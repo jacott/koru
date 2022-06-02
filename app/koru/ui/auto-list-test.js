@@ -73,17 +73,17 @@ isClient && define((require, exports, module) => {
        * `observeUpdates` function which is called for each change with the arguments `(list, doc,
        * action)` where:
 
-       * @param [removeElement] Method used to remove an element. Defaults to
-       * {#koru/dom-client.remove}
-
-       * @param [parentCtx] The {#koru/dom/ctx} to use for rendering elements. Defaults to the
-       * current context.
-
        * * `list` is this `AutoList`
 
        * * `doc` is the document being added, changed, or removed
 
        * * `action` is `added`, `changed` or `removed`
+
+       * @param [removeElement] Method used to remove an element. Defaults to
+       * {#koru/dom-client.remove}
+
+       * @param [parentCtx] The {#koru/dom/ctx} to use for rendering elements. Defaults to the
+       * current context.
 
        **/
       const AutoList = api.class();
