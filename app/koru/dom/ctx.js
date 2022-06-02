@@ -162,7 +162,7 @@ define((require) => {
 
     for (let i = 0; i < len; ++i) {
       const arg = args[i];
-      if (arg != null && typeof arg === 'object' && arg[0] === '=') {
+      if (Array.isArray(arg) && arg[0] === '=') {
         if (hash === void 0) hash = {};
         hash[arg[1]] = getValue(data, arg[2]);
       } else {
@@ -179,7 +179,7 @@ define((require) => {
   const animationEnd = (event) => {
     const target = event.target;
     const ctx = Dom.myCtx(target);
-    const func = ctx && ctx.animationEnd;
+    const func = ctx?.animationEnd;
 
     if (func == null) return;
     if (ctx.animationEndRepeat !== true) {
@@ -265,15 +265,13 @@ define((require) => {
           }
         }
       }
-      this.destroyed !== void 0 && this.destroyed(this, elm);
-      const tpl = this.template;
-      tpl != null && tpl.$destroyed !== void 0 && tpl.$destroyed.call(tpl, this, elm);
+      this.destroyed?.(this, elm);
+      this.template?.$destroyed?.(this, elm);
     }
 
     onDestroy(obj) {
       if (obj == null) return;
-      const list = this[onDestroy$];
-      (list === void 0 ? (this[onDestroy$] = []) : list).push(obj);
+      (this[onDestroy$] ??= []).push(obj);
       return this;
     }
 
@@ -295,8 +293,7 @@ define((require) => {
         for (let i = 0; i < attrEvals.length; ++i) {
           const node = attrEvals[i];
           currentElement = node[0];
-          const raw = getValue(data, node[2], node[3]);
-          const value = (raw === 0 ? '0' : raw || '').toString();
+          const value = getValue(data, node[2], node[3])?.toString() ?? '';
           const name = node[1];
           if (name != null && currentElement.getAttribute(name) !== value) {
             if (name === 'xlink:href') {
@@ -409,14 +406,7 @@ define((require) => {
   Dom.Ctx = Ctx;
 
   Dom.current = Ctx.current = {
-    data: (elm) => {
-      if (elm != null) {
-        const ctx = Dom.ctx(elm);
-        return ctx && ctx.data;
-      }
-
-      return currentCtx == null ? null : currentCtx.data;
-    },
+    data: (elm) => (elm == null ? currentCtx : Dom.ctx(elm))?.data,
 
     get template() {return currentCtx.template},
     get ctx() {return currentCtx},

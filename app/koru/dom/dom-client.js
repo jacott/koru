@@ -141,8 +141,8 @@ define((require) => {
       return elm.getBoundingClientRect().top < region.bottom;
     },
 
-    ensureInView: (elm=null) => {
-      if (elm === null) return;
+    ensureInView: (elm) => {
+      if (elm == null) return;
       const adjustments = [];
       let {left, right, bottom, top} = elm.getBoundingClientRect();
       for (let sp = Dom.getScrollParent(elm); sp !== null; sp = Dom.getScrollParent(sp)) {
@@ -173,8 +173,8 @@ define((require) => {
       }
     },
 
-    getScrollParent: (elm=null) => {
-      if (elm === null) return null;
+    getScrollParent: (elm) => {
+      if (elm == null) return null;
       elm = elm.parentNode;
       for (;elm !== null; elm = elm.parentNode) {
         if (elm.scrollHeight > elm.clientHeight || elm.scrollWidth > elm.clientWidth) {
@@ -283,16 +283,16 @@ define((require) => {
       return Dom.ctx(Dom.getClosest(elm, selector));
     },
 
-    getUpDownByClass: (elm=null, upClass, downClass) => {
-      if (elm === null) return;
+    getUpDownByClass: (elm, upClass, downClass) => {
+      if (elm == null) return;
       elm = elm.closest(`.${upClass}`);
       if (elm !== null) return elm.getElementsByClassName(downClass)[0];
     },
 
     matches: (elm, selector) => matches.call(elm, selector),
 
-    nextSibling: (elm=null, selector) => {
-      if (elm !== null) {
+    nextSibling: (elm, selector) => {
+      if (elm != null) {
         for (let next = elm.nextElementSibling; next !== null;
              next = next.nextElementSibling) {
           if (matches.call(next, selector)) return next;
@@ -384,8 +384,8 @@ define((require) => {
         (observers === void 0) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(elm);
     },
 
-    destroyData: (elm=null) => {
-      const ctx = elm === null ? null : elm[ctx$];
+    destroyData: (elm) => {
+      const ctx = elm == null ? null : elm[ctx$];
       if (ctx != null) {
         const dw = ctx[destoryWith$];
         dw === void 0 || dw.delete();
@@ -415,8 +415,8 @@ define((require) => {
       }
     },
 
-    remove: (elm=null) => {
-      if (elm !== null) {
+    remove: (elm) => {
+      if (elm != null) {
         Dom.destroyData(elm);
         if (elm.parentNode === null) return false;
         elm.remove();
@@ -434,8 +434,8 @@ define((require) => {
       }
     },
 
-    removeChildren: (elm=null) => {
-      if (elm === null) return;
+    removeChildren: (elm) => {
+      if (elm == null) return;
 
       let row;
       while ((row = elm.firstChild) !== null) {
@@ -444,8 +444,8 @@ define((require) => {
       }
     },
 
-    destroyChildren: (elm=null) => {
-      if (elm === null) return;
+    destroyChildren: (elm) => {
+      if (elm == null) return;
 
       let iter = elm.firstChild;
       while (iter !== null) {
@@ -457,8 +457,8 @@ define((require) => {
 
     myCtx: (elm) => elm == null ? null : elm[ctx$] || null,
 
-    ctx: (elm=null) => {
-      if (elm === null) return;
+    ctx: (elm) => {
+      if (elm == null) return;
       if (typeof elm === 'string') elm = document.querySelector(elm);
       let ctx = elm[ctx$];
       while (ctx === void 0 && elm.parentNode !== null) {
