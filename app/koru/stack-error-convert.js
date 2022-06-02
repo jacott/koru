@@ -35,11 +35,10 @@ define((require) => {
 
           const re = /(.*)\((.*\.js\b).*:(\d+):(\d+)\)$/;
           const lines = data.split(STACK_LINE_SEP);
-          let prevFile = '';
           for (let i = 1; i < lines.length; ++i) {
             const m = re.exec(lines[i]);
             if (m !== null && m[2].indexOf('..') === -1) {
-              const fn = lines[i];
+              const fn = m[2];
               if (fn !== lastFileName) {
                 lastFileName = fn;
                 const pn = path.join(sourceMapDir, m[2] + '.map');

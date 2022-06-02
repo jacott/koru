@@ -74,12 +74,14 @@ isServer && define((require, exports, module) => {
         await koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne (index.js:2:170049)
+    at - j.dup (index.js:14:23)
     at nasty (index.js/../index.js:4:334)
     at missing (nofound.js:4:334)
     at j.toChildren (index.js?4d99f24827ef433ac3da163797519ed5:14:23)`),
         `while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne christopher (myPrefix/file1.js:13:23)
+    at - j.dup robin (myPrefix/nested/file2.js:4:1)
     at nasty (index.js/../index.js:4:334)
     at missing (nofound.js:4:334)
     at j.toChildren robin (myPrefix/nested/file2.js:4:1)`,
