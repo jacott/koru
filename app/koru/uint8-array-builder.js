@@ -1,9 +1,9 @@
 define((require, exports, module) => {
   'use strict';
 
-  const length$ = Symbol(), buffer$ = Symbol();
+  const length$ = Symbol(), dataView$ = Symbol(), buffer$ = Symbol();
 
-  const resize = (from, newSize) => {
+  const resizeBuffer = (from, newSize) => {
     const u8 = new Uint8Array(newSize);
     u8.set(from, 0);
     return u8;
@@ -30,8 +30,13 @@ define((require, exports, module) => {
       }
     }
 
+    get dataView() {
+      return this[dataView$] ??= new DataView(this[buffer$].buffer);
+    }
+
     set(index, byte) {
-      if (index >= this[length$] || index < 0) throw new Error('Invalid index');
+      const length = this[length$];
+      if (index >= length) this.grow(1 + index - length);
       this[buffer$][index] = byte;
     }
 
@@ -40,14 +45,21 @@ define((require, exports, module) => {
       return this[buffer$][index];
     }
 
+    grow(n) {
+      let u8 = this[buffer$];
+
+      const newLength = n + this[length$];
+      if (newLength > u8.length) {
+        this[buffer$] = resizeBuffer(u8, newLength << 1);
+        this[dataView$] = void 0;
+      }
+      this[length$] = newLength;
+    }
+
     append(data) {
       const length = this[length$];
-      let u8 = this[buffer$];
-      const newLength = data.length + length;
-      if (newLength > u8.length) u8 = this[buffer$] = resize(u8, newLength << 1);
-
-      u8.set(data, length);
-      this[length$] = newLength;
+      this.grow(data.length);
+      this[buffer$].set(data, length);
     }
 
     push(...bytes) {this.append(bytes)}

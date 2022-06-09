@@ -26,7 +26,7 @@ define((require, exports, module) => {
 
     test('subarray', () => {
       /**
-       * return the built array. It contains the same `ArrayBuffer` store as the interal `Uint8Array`.
+       * Return the built array. It contains the same `ArrayBuffer` store as the interal `Uint8Array`.
        */
       api.protoMethod();
       //[
@@ -41,6 +41,20 @@ define((require, exports, module) => {
       //]
     });
 
+    test('dataView', () => {
+      /**
+       * Use a dataView over the interal ArrayBuffer
+       */
+      api.protoProperty();
+      //[
+      const b1 = new Uint8ArrayBuilder();
+      b1.push(1, 2, 3, 4, 5);
+      assert.equals(b1.dataView.getInt32(0), 16909060);
+      assert.equals(b1.dataView.getInt32(1), 33752069);
+      assert.equals(b1.dataView.getFloat32(0), 2.387939260590663e-38);
+      //]
+    });
+
     test('set', () => {
       /**
        * Set an existing byte in array.
@@ -52,6 +66,9 @@ define((require, exports, module) => {
       b1.set(1, 3);
 
       assert.equals(Array.from(b1.subarray()), [1, 3]);
+
+      b1.set(2, 4);
+      assert.equals(Array.from(b1.subarray()), [1, 3, 4]);
       //]
     });
 
@@ -85,6 +102,13 @@ define((require, exports, module) => {
       assert.equals(b.subarray(), new Uint8Array([1, 2]));
       assert.same(b.subarray().buffer.byteLength, 4);
       //]
+    });
+
+    test('grow', () => {
+      const b = new Uint8ArrayBuilder();
+      b.grow(4);
+
+      assert.equals(b.subarray(), new Uint8Array([0, 0, 0, 0]));
     });
 
     test('append', () => {
