@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const Helpers         = require('koru/server-pages/helpers');
 
   const toggleMenuScript = `(${(() => {
     document.getElementById('mainMenu').addEventListener('click', (event) => {
@@ -22,7 +23,7 @@ define((require, exports, module) => {
         classList.remove('menu-open');
       }
     });
-                               }).toString()})()`;
+  }).toString()})()`;
 
   Dom.registerHelpers({
     versionHash() {

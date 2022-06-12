@@ -32,20 +32,16 @@ define((require) => {
         response.end();
         return;
       } else if (typeof result == 'object') {
-        const p = ctl.waitPromises();
-        if (p !== void 0) await p;
         if ('outerHTML' in result) {
-          ctl.renderHTML(result);
-        } else {
-          ctl.renderJSON(result);
+          return ctl.renderHTML(result);
         }
-        return;
+        return ctl.renderJSON(result);
       }
     }
 
     const tpl = toTpl(ctl, action);
     if (tpl !== undefined) {
-      ctl.checkETag() || ctl.render(tpl.$render(ctl));
+      if (! ctl.checkETag()) return ctl.render(tpl.$render(ctl));
       return;
     }
 
@@ -54,7 +50,7 @@ define((require) => {
 
   const HEADER = '<!DOCTYPE html>\n';
 
-  const runParser = (ctl) => {
+  const runParser = async (ctl) => {
     const {action} = ctl;
     if (action !== void 0 && ! ctl[rendered$]) {
       return render(ctl, action);
@@ -118,8 +114,11 @@ define((require) => {
       }
     }
 
-    waitPromises() {
-      return this[promises$] && Promise.all(this[promises$]);
+    async waitPromises() {
+      for (let ps = this[promises$]; ps !== void 0; ps = this[promises$]) {
+        this[promises$] = void 0;
+        for (const p of ps) await p;
+      }
     }
 
     get rendered() {return this[rendered$]}
@@ -136,13 +135,14 @@ define((require) => {
       }
     }
 
-    render(content, {layout=this.App.defaultLayout}={}) {
-      this.renderHTML(layout.$render({controller: this, content}));
+    async render(content, {layout=this.App.defaultLayout}={}) {
+      await this.renderHTML(layout.$render({controller: this, content}));
     }
 
-    renderHTML(html) {
+    async renderHTML(html) {
+      await this.waitPromises();
       const data = html.outerHTML;
-      this.renderContent({
+      await this.renderContent({
         data, contentType: 'text/html',
         prefix: data.startsWith('<!') ? undefined : HEADER,
         eTag: this.eTag});
@@ -156,7 +156,9 @@ define((require) => {
       this.response.end();
     }
 
-    renderJSON(json) {this.renderContent({data: JSON.stringify(json), contentType: 'application/json'})}
+    async renderJSON(json) {
+      await this.waitPromises();
+      await this.renderContent({data: JSON.stringify(json), contentType: 'application/json'})}
 
     renderContent(opts) {
       this[rendered$] = true;

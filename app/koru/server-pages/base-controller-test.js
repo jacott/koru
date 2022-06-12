@@ -10,7 +10,9 @@ isServer && define((require, exports, module) => {
    **/
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
+  const HTMLDocument    = require('koru/dom/html-doc');
   const Template        = require('koru/dom/template');
+  const Future          = require('koru/future');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -27,6 +29,8 @@ isServer && define((require, exports, module) => {
       return Dom.h({body: content});
     }}};
   };
+
+  const {createTextNode} = HTMLDocument.prototype;
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     let v = {};
@@ -209,38 +213,70 @@ isServer && define((require, exports, module) => {
     test('html response', async () => {
       const {response} = v.opts;
 
+      const raw1 = createTextNode();
+
+      const f1 = new Future();
+      const f2 = new Future();
+
       class MyController extends BaseController {
         $parser() {return 'foo'}
-        foo() {return Dom.h({html: {body: 'foo'}})}
+        foo() {
+          this.addPromise(f1.promiseAndReset());
+          f2.resolve();
+          return Dom.h({html: {body: ['foo', raw1]}})}
       }
 
-      await MyController.build(v.opts);
+      const p = MyController.build(v.opts);
+
+      await f2.promiseAndReset();
+      raw1.data = 'bar';
+      f1.resolve();
+
+      await p;
 
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Length': 45,
+        'Content-Length': 48,
         ETag: TH.match(/W\/"h[0-9]+"/),
       });
 
-      assert.calledWithExactly(response.end, '<html><body>foo</body></html>');
+      assert.calledWithExactly(response.end, '<html><body>foobar</body></html>');
     });
 
     test('json response', async () => {
       const {response} = v.opts;
 
+      let delayed = 'old';
+      const future = new Future();
+      const f2 = new Future();
+      let ctl;
+
       class MyController extends BaseController {
         $parser() {return 'foo'}
-        foo() {return {html: {body: 'foo'}}}
+        foo() {
+          ctl = this;
+          this.addPromise(future.promiseAndReset());
+          f2.resolve();
+          return {html: {body: {toJSON: () => delayed}}}}
       }
 
-      await MyController.build(v.opts);
+      const p = MyController.build(v.opts);
 
+      await f2.promiseAndReset();
+      ctl.addPromise(Promise.resolve().then(() => {f2.resolve(); ctl.addPromise(future.promiseAndReset())}));
+      future.resolve();
+      await f2.promiseAndReset();
+      delayed = 'foo';
+      future.resolve();
+
+      assert.same(await p, ctl);
+
+      assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Length': 23,
       });
       refute.called(response.write);
-      assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
     });
 
     test('unknown method', async () => {
@@ -253,7 +289,7 @@ isServer && define((require, exports, module) => {
         foo() {foo(this)}
       }
 
-      const controller = await MyController.build(opts);
+      await MyController.build(opts);
 
       refute.called(foo);
       assert.equals(opts.response.statusCode, 404);

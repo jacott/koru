@@ -25,11 +25,18 @@ define((require) => {
 
   HTMLDocument.prototype.createRawNode = (value='') => new RawNode(value);
 
+  const populateNode = async (node, p) => {
+    try {
+      const text = (await p) ?? '';
+      node.data = text.toString();
+    } catch (err) {
+      if (err.error !== 404) throw err;
+    }
+  };
+
   const addAsyncReadFile = (ctl, textFunc) => {
     const node = new RawNode('');
-    ctl.addPromise(textFunc(ctl).then(
-      (text='') => {node.data = text.toString()},
-      (err) => {if (err.error !== 404) return Promise.reject(err)}));
+    ctl.addPromise(populateNode(node, textFunc(ctl)));
     return node;
   };
 
