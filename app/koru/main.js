@@ -138,7 +138,7 @@ ${stack}`);
             userStack: '    at ' + errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
           }));
         } else {
-          const m = /^([\S]*)([\s\S]*?)    at.*vm.js:/.exec(err.stack);
+          const m = /^([\S]*)([\s\S]*?)    at.*vm(?:.js)?:/.exec(err.stack);
           koru.error(m !== null ? `\n\tat - ${m[1]}\n${m[2]}` : util.extractError(err));
         }
       }
