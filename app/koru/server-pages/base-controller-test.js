@@ -229,18 +229,18 @@ isServer && define((require, exports, module) => {
       const p = MyController.build(v.opts);
 
       await f2.promiseAndReset();
-      raw1.data = 'bar';
+      raw1.data = 'bar🥝';
       f1.resolve();
 
       await p;
 
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Length': 48,
+        'Content-Length': 52,
         ETag: TH.match(/W\/"h[0-9]+"/),
       });
 
-      assert.calledWithExactly(response.end, '<html><body>foobar</body></html>');
+      assert.calledWithExactly(response.end, Buffer.from('<html><body>foobar🥝</body></html>'));
     });
 
     test('json response', async () => {
@@ -271,7 +271,7 @@ isServer && define((require, exports, module) => {
 
       assert.same(await p, ctl);
 
-      assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
+      assert.calledWithExactly(response.end, Buffer.from('{"html":{"body":"foo"}}'));
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Length': 23,
@@ -340,7 +340,7 @@ isServer && define((require, exports, module) => {
 
           await Foo.build(opts);
 
-          assert.calledWith(opts.response.end, `<body><div class="${action}">${body}</div></body>`);
+          assert.calledWith(opts.response.end, Buffer.from(`<body><div class="${action}">${body}</div></body>`));
         };
       });
 
@@ -583,7 +583,7 @@ isServer && define((require, exports, module) => {
       opts.pathParts = ['1234', 'edit'];
       await Foo.build(opts);
 
-      assert.calledWith(opts.response.end, '<div>uid123</div>');
+      assert.calledWith(opts.response.end, Buffer.from('<div>uid123</div>'));
       assert.isTrue(testDone);
     });
 
@@ -641,7 +641,7 @@ isServer && define((require, exports, module) => {
 
       assert.calledWith(
         opts.response.end,
-        '<html><head><title>My First App</title></head><body><div>Hello world</div></body></html>');
+        Buffer.from('<html><head><title>My First App</title></head><body><div>Hello world</div></body></html>'));
     });
 
     test('renderHTML', async () => {
@@ -665,7 +665,7 @@ isServer && define((require, exports, module) => {
 
       assert.calledWith(
         opts.response.end,
-        '<div>Hello world</div>');
+        Buffer.from('<div>Hello world</div>'));
     });
 
     test('$parser, render', async () => {
@@ -697,7 +697,7 @@ isServer && define((require, exports, module) => {
         ETag: TH.match.string,
       });
       assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
-      assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
+      assert.calledWith(opts.response.end, Buffer.from('<main><div>foo€</div></main>'));
     });
 
     test('Index template', async () => {
@@ -711,7 +711,7 @@ isServer && define((require, exports, module) => {
 
       await Root.build(opts);
 
-      assert.calledWith(opts.response.end, '<body><div>index</div></body>');
+      assert.calledWith(opts.response.end, Buffer.from('<body><div>index</div></body>'));
     });
 
     test('DOCTYPE supplied', async () => {
@@ -739,7 +739,7 @@ isServer && define((require, exports, module) => {
         ETag: TH.match.string,
       });
       refute.called(opts.response.write);
-      assert.calledWith(opts.response.end, '<!CUSTOM><body>x</body>');
+      assert.calledWith(opts.response.end, Buffer.from('<!CUSTOM><body>x</body>'));
     });
   });
 });

@@ -241,7 +241,7 @@ isServer && define((require, exports, module) => {
         let v = {};
         const res = HttpHelper.makeResponse(v);
         sut.renderContent(res, {data: {foo: 123}});
-        assert.equals(v.output, [JSON.stringify({foo: 123})]);
+        assert.equals(v.output.map((d) => d.toString()), [JSON.stringify({foo: 123})]);
         assert.calledWith(res.writeHead, 200, {
           'Content-Length': 11, 'Content-Type': 'application/json; charset=utf-8'});
         assert.isTrue(v.ended);
@@ -264,7 +264,7 @@ isServer && define((require, exports, module) => {
           contentType: 'custom',
           prefix: 'my prefix', data: 'the data', endcoding: 'binary',
         });
-        assert.equals(v.output, ['my prefix', 'the data']);
+        assert.equals(v.output.map((d) => d.toString()), ['my prefix', 'the data']);
         assert.calledWith(res.writeHead, 200, {
           'Content-Length': 17, 'Content-Type': 'custom; charset=utf-8'});
         assert.isTrue(v.ended);

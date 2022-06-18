@@ -169,14 +169,14 @@ isServer && define((require, exports, module) => {
         await sp._handleRequest(v.req, v.res, '/test-page1.html');
 
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
-                          '<div> Test page 1  </div> </body></html>');
+        assert.calledWith(v.res.end, Buffer.from('<html><body id="defLayout"> ' +
+                                                 '<div> Test page 1  </div> </body></html>'));
 
         v.res.end.reset();
         await sp._handleRequest(v.req, v.res, '/test-page1/message-1');
 
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
-                          '<div> Test page 1 message-1 </div> </body></html>');
+        assert.calledWith(v.res.end, Buffer.from('<html><body id="defLayout"> ' +
+                                                 '<div> Test page 1 message-1 </div> </body></html>'));
       });
 
       test('auto load markdown', async () => {
@@ -186,8 +186,8 @@ isServer && define((require, exports, module) => {
         await sp._handleRequest(v.req, v.res, '/test-page-md.html');
 
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
-        assert.calledWith(v.res.end, '<html><body id="defLayout"> ' +
-                          '<h2 id="test-foo">test Markdown</h2> </body></html>');
+        assert.calledWith(v.res.end, Buffer.from('<html><body id="defLayout"> ' +
+                                                 '<h2 id="test-foo">test Markdown</h2> </body></html>'));
       });
 
       test('$parser', async () => {
@@ -239,8 +239,9 @@ isServer && define((require, exports, module) => {
 
         assert.called(v.res.end);
 
-        assert.equals(Dom.htmlToJson(Dom.textToHtml(
-          v.res.end.firstCall.args[0])).html.id, 'defLayout');
+        const text = v.res.end.firstCall.args[0].toString();
+
+        assert.equals(Dom.htmlToJson(Dom.textToHtml(text)).html.id, 'defLayout');
       });
 
       test('exception', async () => {

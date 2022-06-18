@@ -28,7 +28,7 @@ define((require) => {
           const ans = config?.onSuccess(await func());
           if (isPromise(ans)) await ans;
         }).catch((err) => {
-          if (config.isRetry === undefined ? err.statusCode >= 500 : config.isRetry(err)) {
+          if (config.isRetry === void 0 ? err.statusCode >= 500 : config.isRetry(err)) {
             config.timer = koru.setTimeout(
               wrapper,
               Math.min(
@@ -46,7 +46,7 @@ define((require) => {
     },
 
     pipeBody: (req, {limit=1000*1000}) => {
-      const input = /gzip|deflate/i.test(req.headers['content-encoding'] || '')
+      const input = /gzip|deflate/i.test(req.headers['content-encoding'] ?? '')
             ? req.pipe(zlib.createUnzip())
             : req;
 
@@ -90,7 +90,7 @@ define((require) => {
       let data;
       let body;
       try {
-        body = (await future.promise) || '{}';
+        body = (await future.promise) ?? '{}';
       } catch (ex) {
         throw new koru.Error(...ex);
       }
@@ -108,12 +108,12 @@ define((require) => {
     },
 
     renderContent(response, {data, contentType, encoding='utf-8', prefix, eTag}) {
-      if (data === undefined) {
+      if (data === void 0) {
         response.writeHead(204, {'Content-Length': 0});
         response.end('');
         return;
       }
-      if (contentType === undefined) {
+      if (contentType === void 0) {
         if (typeof data === 'string') {
           contentType = 'text';
         } else {
@@ -121,13 +121,17 @@ define((require) => {
           data = JSON.stringify(data);
         }
       }
+      if (typeof data === 'string') {
+        data = Buffer.from(data);
+      }
+
       const header = {
-        'Content-Length': (prefix === undefined ? 0 : prefix.length) + Buffer.byteLength(data, encoding),
+        'Content-Length': (prefix === void 0 ? 0 : prefix.length) + data.length,
         'Content-Type': `${contentType}; charset=${encoding}`,
       };
-      if (eTag !== undefined) header.ETag = `W/"${eTag}"`;
+      if (eTag !== void 0) header.ETag = `W/"${eTag}"`;
       response.writeHead(200, header);
-      if (prefix !== undefined) response.write(prefix);
+      if (prefix !== void 0) response.write(prefix);
       response.end(data);
     },
   };
