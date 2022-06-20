@@ -469,6 +469,7 @@ define((require) => {
     },
 
     extractError(err) {
+      if (typeof err === 'string') return err;
       const st = Stacktrace.normalize(err);
       if (st != null) {
         if (st.length != 0) {

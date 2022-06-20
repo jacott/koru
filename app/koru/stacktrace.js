@@ -83,6 +83,8 @@ define(['require', 'koru/util-base'], (require, util) => {
   };
 
   const normalize = (error) => {
+    if (typeof error !== 'object') return;
+
     const isTestAssert = isTest && error.name === 'AssertionError';
     const ns = error[normalizedStack$];
     if (ns !== void 0) return ns;

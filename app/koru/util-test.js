@@ -665,6 +665,8 @@ define((require, exports, module) => {
         m(/    at inner1 \(koru\/util-test.js:\d+:28\)/),
         m(/    at .* \(koru\/util-test.js:\d+:19\)/),
       ]);
+
+      assert.equals(util.extractError('plain string'), 'plain string');
       //]
     });
 
