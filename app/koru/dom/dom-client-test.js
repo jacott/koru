@@ -14,7 +14,7 @@ define((require, exports, module) => {
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
     beforeEach(() => {
       api.module({subjectModule: module.get('koru/dom')});
     });
@@ -138,6 +138,32 @@ define((require, exports, module) => {
         assert.near(container.scrollTop, 35);
         assert.near(outer.scrollTop, 61, 2);
       });
+    });
+
+    test('loadScript', async () => {
+      /**
+       * Dynamically load a script and wait for it to load
+       */
+      api.method();
+      after(() => {
+        document.getElementById('example-script')?.remove();
+      });
+
+      //[
+      await assert.exception(
+        () => Dom.loadScript({src: '/koru/dom/example-test-script-missing.js', id: 'example-script'}),
+        {type: 'error'},
+      );
+
+      document.getElementById('example-script').remove();
+
+      const scriptElm = await Dom.loadScript({src: '/koru/dom/example-test-script.js', id: 'example-script'});
+
+      assert.dom('#example-script', (elm) => {
+        assert.same(scriptElm, elm);
+        assert.same(elm.getAttribute('testing'), 'loaded');
+      });
+      //]
     });
 
     test('getBoundingClientRect', () => {

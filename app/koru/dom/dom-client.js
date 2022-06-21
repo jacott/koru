@@ -122,6 +122,19 @@ define((require) => {
 
     _matchesFunc: matches,
 
+    loadScript: (opts) => {
+      return new Promise((resolve, reject) => {
+        const script = Dom.h({...opts, script: []});
+        script.addEventListener('load', () => {
+          resolve(script);
+        });
+        script.addEventListener('error', (error) => {
+          reject(error);
+        });
+        document.head.appendChild(script);
+      });
+    },
+
     isInView: (elm, regionOrNode) => {
       const region = regionOrNode.getBoundingClientRect === void 0
             ? regionOrNode
