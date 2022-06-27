@@ -97,6 +97,12 @@ define((require) => {
       return yieldCall(callArgs, args);
     }
 
+    yieldAndRemoveSelected(match, ...args) {
+      const call = this.removeSelected(match);
+      if (call === void 0) throw new Error('No matching call found');
+      return yieldCall(call.args, args);
+    }
+
     yieldAll(...args) {
       const {calls} = this;
       if (calls === void 0) {
@@ -116,6 +122,20 @@ define((require) => {
       }
       if (ans === void 0) return this;
       return Promise.all(ans).then(() => this);
+    }
+
+    removeSelected(selector) {
+      let idx = -1;
+      let call;
+      const callIdx = this.calls?.forEach((c, i) => {
+        if (selector(c)) {
+          call = c;
+          idx = i;
+        }
+      });
+      if (idx == -1) return;
+      this.calls.splice(idx, 1);
+      return call;
     }
 
     reset() {this.calls = void 0}

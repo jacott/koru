@@ -450,6 +450,51 @@ define((require, exports, module) => {
         assert.equals(aStub.yieldAndReset(), 3);
         //]
       });
+
+      test('yieldAndRemoveSelected', () => {
+        /**
+         * Like {##yieldAndReset} but search calls using `selector` function to select which call to
+         * yield and remove from calls.
+         *
+         * @param selector the function given a `call` instance that returns true on the call to
+         * yield. It can return true more than once in which case only the last call that returned
+         * true is selected.
+
+         * @param {any-type} args the arguments to pass to the callback.
+         *
+         * @return {any-type} the result from the callback.
+
+         * @throws Error if `selector` never returns true
+         */
+        sApi.protoMethod();
+        //[
+        const func1 = stub();
+        const func2 = (...args) => args.join(',');
+        const func3 = stub();
+        const obj = stub();
+
+        const matches = (c) => c.args[0] < 3;
+
+        assert.exception(
+          () => obj.yieldAndRemoveSelected(matches, 6, 7, 8),
+          {message: 'No matching call found'},
+        );
+
+        obj(1, func1);
+        obj(3, func3);
+        obj(2, func2);
+
+        assert.same(obj.callCount, 3);
+
+        const ans = obj.yieldAndRemoveSelected(matches, 6, 7, 8);
+        assert.equals(ans, '6,7,8');
+        refute.called(func1);
+        refute.called(func3);
+
+        assert.same(obj.callCount, 2);
+        //]
+      });
+
       test('yieldAll', () => {
         /**
          * Like {##yield} but yields for all calls to stub; not just the first.
@@ -471,6 +516,41 @@ define((require, exports, module) => {
 
         assert.same(foo, 1);
         assert.same(bar, 2);
+      });
+
+      test('removeSelected', () => {
+        /**
+         * Search calls using `selector` function to select which call to remove from calls.
+         *
+         * @param selector the function given a `call` instance that returns true on the call to
+         * yield. It can return true more than once in which case the last call returned true is selected.
+
+         * @return the call that is removed.
+
+         * @throws Error if `selector` never returns true
+         */
+        sApi.protoMethod();
+        //[
+        const obj = stub();
+
+        obj(1);
+        obj(3);
+        obj(2);
+
+        assert.same(
+          obj.removeSelected((c) => c.args[0] == 4),
+          void 0,
+        );
+
+        assert.same(obj.callCount, 3);
+
+        const call = obj.removeSelected((c) => c.args[0] < 3);
+        assert.same(call.args[0], 2);
+
+        assert.same(obj.callCount, 2);
+        assert.same(obj.firstCall.args[0], 1);
+        assert.same(obj.lastCall.args[0], 3);
+        //]
       });
 
       group('inspect', () => {
