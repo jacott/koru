@@ -17,9 +17,11 @@ define((require, exports, module) => {
       const Uint8ArrayBuilder = api.class();
       //[
       const b1 = new Uint8ArrayBuilder();
+      b1.set(0, 1);
       assert.same(b1.subarray().buffer.byteLength, 4);
 
       const b2 = new Uint8ArrayBuilder(2);
+      b2.set(0, 1);
       assert.same(b2.subarray().buffer.byteLength, 2);
       //]
     });
@@ -31,9 +33,13 @@ define((require, exports, module) => {
       api.protoMethod();
       //[
       const b1 = new Uint8ArrayBuilder();
-      b1.push(1, 2);
+      assert.equals(Array.from(b1.subarray()), []);
+      assert.same(b1.subarray(), b1.subarray());
 
-      assert.equals(Array.from(b1.subarray()), [1, 2]);
+      b1.push(1, 2, 3, 4, 5);
+
+      assert.equals(Array.from(b1.subarray()), [1, 2, 3, 4, 5]);
+      assert.equals(Array.from(b1.subarray(2, 4)), [3, 4]);
 
       assert.same(b1.subarray().constructor, Uint8Array);
       refute.same(b1.subarray(), b1.subarray());

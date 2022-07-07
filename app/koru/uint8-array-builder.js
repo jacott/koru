@@ -9,10 +9,13 @@ define((require, exports, module) => {
     return u8;
   };
 
+  const EMPTY_U8 = new Uint8Array(0);
+
   class Uint8ArrayBuilder {
     constructor(initialCapacity=4) {
       this[length$] = 0;
-      this[buffer$] = new Uint8Array(initialCapacity);
+      this.initialCapacity = initialCapacity;
+      this[buffer$] = void 0;
     }
 
     get length() {return this[length$]}
@@ -34,6 +37,11 @@ define((require, exports, module) => {
       return this[dataView$] ??= new DataView(this[buffer$].buffer);
     }
 
+    decouple() {
+      this[buffer$] = this[dataView$] = void 0;
+      this[length$] = 0;
+    }
+
     set(index, byte) {
       const length = this[length$];
       if (index >= length) this.grow(1 + index - length);
@@ -46,6 +54,12 @@ define((require, exports, module) => {
     }
 
     grow(n) {
+      if (this[length$] === 0) {
+        this[length$] = n;
+        this[buffer$] = new Uint8Array(Math.max(this.initialCapacity, n << 1));
+
+        return;
+      }
       let u8 = this[buffer$];
 
       const newLength = n + this[length$];
@@ -64,7 +78,7 @@ define((require, exports, module) => {
 
     push(...bytes) {this.append(bytes)}
 
-    subarray() {return this[buffer$].subarray(0, this[length$])}
+    subarray(spos=0, epos=this.length) {return this[buffer$]?.subarray(spos, epos) ?? EMPTY_U8}
   }
 
   return Uint8ArrayBuilder;
