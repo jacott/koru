@@ -1098,6 +1098,7 @@ define((require, exports, module) => {
         }
       };
     }
+    customIntercept() {}
     property() {}
     comment() {}
     topic() {return STUB_TOPIC}
@@ -1107,7 +1108,9 @@ define((require, exports, module) => {
     protoMethod() {}
     protoProperty() {}
     done() {}
-    custom(func=(this.tc === TH.Core.currentTestCase || API.module(), this.subject)) {return func}
+    custom(func=(this.tc === TH.Core.currentTestCase || API.module(), this.subject)) {
+      return function (...args) {return func.call(this, ...args)}
+    }
   }
 
   if (! API.isRecord) {
