@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Main error class for koru errors.
@@ -11,16 +11,16 @@ define((require, exports, module)=>{
 
   const KoruError = require('./koru-error');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    before(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    before(() => {
       api.module({subjectName: 'koru.Error'});
     });
 
-    test("KoruError", ()=>{
+    test('KoruError', () => {
       assert.same(KoruError, koru.Error);
     });
 
-    test("constructor", ()=>{
+    test('constructor', () => {
       /**
        * Create a new koru.Error
 
@@ -37,13 +37,13 @@ define((require, exports, module)=>{
       //[
       const error = new koru.Error(500, 'the reason');
       assert.same(error.name, 'KoruError');
-      assert.same(error.message, 'the reason [500]');
+      assert.same(error.toString(), 'the reason [500]');
 
       assert.same(error.error, 500);
       assert.equals(error.reason, 'the reason');
 
       const err2 = new koru.Error(400, {name: [['is_invalid']]});
-      assert.same(err2.message, `{name: [['is_invalid']]} [400]`);
+      assert.same(err2.toString(), `{name: [['is_invalid']]} [400]`);
 
       assert.equals(err2.reason, {name: [['is_invalid']]});
       //]

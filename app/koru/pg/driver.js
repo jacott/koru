@@ -2,14 +2,23 @@ define((require, exports, module) => {
   'use strict';
   const Future          = require('koru/future');
   const Observable      = require('koru/observable');
+  const PgConn          = require('koru/pg/pg-conn');
+  const PgType          = require('koru/pg/pg-type');
   const SQLStatement    = require('koru/pg/sql-statement');
-  const Libpq           = requirejs.nodeRequire('pg-libpq');
   const koru            = require('../main');
   const match           = require('../match');
   const Pool            = require('../pool-server');
   const util            = require('../util');
 
   const {private$, inspect$} = require('koru/symbols');
+
+  const {escapeLiteral} = PgType;
+
+  const JSON_OIDS = [];
+  JSON_OIDS[114] = true;
+  JSON_OIDS[3802] = true;
+
+  const UNKNOWN_COLUMN = {name: '', oid: 0, arraydim: 0, order: -1, isJson: false};
 
   const OPS = {
     $gt: '>',
@@ -22,7 +31,7 @@ define((require, exports, module) => {
     '<=': '<=',
   };
 
-  const pool$ = Symbol(), tx$ = Symbol();
+  const pool$ = Symbol(), oidsLoaded$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
 
   let clientCount = 0;
@@ -44,13 +53,12 @@ define((require, exports, module) => {
     defaultDb = null;
   };
 
-  const aryToSqlStr = Libpq.sqlArray;
-
   const getConn = async (client) => {
     const {thread} = util, sym = client[tx$];
     const tx = thread[sym] ?? (thread[sym] = await fetchPool(client).acquire());
+
     if (tx.conn === void 0 || tx.conn.isClosed()) {
-      tx.conn = await Libpq.connect(client._url);
+      tx.conn = await new PgConn(PgType, client.formatOptions).connect(client._url);
     }
 
     ++tx.count;
@@ -77,46 +85,38 @@ define((require, exports, module) => {
       },
       destroy(tx) {
         --conns;
-        tx.conn.finish();
+        tx.conn.destroy();
       },
       idleTimeoutMillis: 30*1000,
     });
   };
 
-  const query = async (conn, text, params) => {
-    try {
-      if (params !== void 0) {
-        return await conn.execParams(text, params);
-      } else {
-        return await conn.exec(text);
-      }
-    } catch (ex) {
-      if (ex.sqlState === void 0) {
-        conn.finish();
-      }
+  const query = (conn, text, params, paramOids) => conn.exec(text, params, paramOids);
 
-      const err = new Error(
-        ex.message.indexOf('syntax') != -1
-          ? `${ex.message}\nquery: ${text}\nparams: ${util.inspect(params)}\n`
-          : ex.message);
-      err.sqlState = ex.sqlState;
+  const withColumns = async (table, params, callback) => {
+    table._ready !== true && await table._ensureTable();
 
-      throw err;
+    const columns = toColumns(table, params);
+    if (columns.needCols !== void 0 && table.schema === void 0) {
+      return table._client.transaction(async () => {
+        await addColumns(table, columns.needCols);
+        return table._client.withConn(async (conn) => callback(conn, toColumns(table, params)));
+      });
+    } else {
+      return table._client.withConn(async (conn) => callback(conn, columns));
     }
   };
 
-  const buildUpdate = (table, params) => {
-    table._ensureTable();
-
-    const set = toColumns(table, params);
-    return {
-      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"' + col + '"=$' + (i + 1)).join(',')}`,
-      set,
-    };
-  };
+  const buildUpdate = (table, params, callback) => withColumns(
+    table, params, (conn, columns) => callback(
+      conn,
+      `UPDATE "${table._name}" SET ${columns.names.map((col, i) => '"' + col + '"=$' + (i + 1)).join(',')}`,
+      columns,
+    ),
+  );
 
   const selectFields = (table, fields) => {
-    if (! fields) return '*';
+    if (fields === void 0) return '*';
     let add = false, col;
     const result = ['_id'];
     for (col in fields) {
@@ -144,41 +144,45 @@ define((require, exports, module) => {
     }
   };
 
-  const normalizeQuery = (text, args) => {
+  const normalizeQuery = (args) => {
+    const text = args[0];
+    const arg1 = args[1];
+    if (typeof text === 'string') {
+      if (arg1 === void 0 || Array.isArray(arg1)) return args;
+      const args2 = args[2] ?? {};
+      const posMap = {}, params = [], oids = [];
+      let count = 0;
+      const ctext = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] ?? (
+        params.push(arg1[key]), oids.push(args2[key] ?? 0),
+        (posMap[key] = `$${++count}`)));
+      return [ctext, params];
+    }
+
     if (text instanceof SQLStatement) {
-      const params = args.length == 0 ? void 0 : text.convertArgs(args[0]);
-      return [text.text, params];
+      const args = text.convertArgs(arg1);
+      return [text.text, args];
     }
 
     if (Array.isArray(text)) {
       let sqlStr = text[0];
-      for (let i = 1; i <= args.length; ++i) {
+      const len = args.length - 1;
+      for (let i = 1; i <= len; ++i) {
         sqlStr += '$' + i + text[i];
       }
-      return [sqlStr, args];
-    }
-    if (args.length == 0) {
-      return [text, void 0];
+      return [sqlStr, args.slice(1)];
     }
 
-    const arg0 = args[0];
-    if (Array.isArray(arg0)) {
-      return [text, arg0];
-    }
-
-    const posMap = {}, params = [];
-    let count = 0;
-    text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] ?? (
-      params.push(arg0[key]),
-      (posMap[key] = `$${++count}`)));
-    return [text, params];
+    return args;
   };
 
+  const oidQuery = (client, sql, values, oids) => client.withConn((conn) => query(conn, sql, values, oids));
+
   class Client {
-    constructor(url, name) {
+    constructor(url, name, formatOptions) {
       this[tx$] = Symbol();
       this._url = url;
       this.name = name;
+      this.formatOptions = formatOptions;
     }
 
     [inspect$]() {
@@ -191,7 +195,7 @@ define((require, exports, module) => {
 
     async schemaName() {
       if (this._schemaName === void 0) {
-        this._schemaName = (await this.query('SELECT current_schema'))[0].current_schema;
+        this._schemaName = (await oidQuery(this, 'SELECT current_schema'))[0].current_schema;
       }
       return this._schemaName;
     }
@@ -214,36 +218,36 @@ define((require, exports, module) => {
 
     async withConn(func) {
       const tx = util.thread[this[tx$]];
-      if (tx !== void 0) {
-        return await func.call(this, tx.conn);
-      }
+      if (tx !== void 0) return func.call(this, tx.conn);
       try {
-        return await func.call(this, await getConn(this));
+        return func.call(this, await getConn(this));
       } finally {
         releaseConn(this);
       }
     }
 
-    query(text, ...args) {
-      const tp = normalizeQuery(text, args);
-      return this.withConn((conn) => query(conn, tp[0], tp[1]));
+    query(...args) {
+      return this.withConn((conn) => query(conn, ...normalizeQuery(args)));
     }
 
-    async explainQuery(text, ...args) {
-      const tp = normalizeQuery(text, args);
-      return (await this.withConn((conn) => query(conn, 'EXPLAIN ANALYZE ' + tp[0], tp[1])))
+    async explainQuery(...args) {
+      args = normalizeQuery(args);
+      args[0] = 'EXPLAIN ANALYZE ' + args[0];
+      return (await this.withConn((conn) => query(conn, ...args)))
         .map((d) => d['QUERY PLAN']).join('\n');
     }
 
-    async timeLimitQuery(text, params, {timeout=20000, timeoutMessage='Query took too long to run'}={}) {
-      return await this.transaction(async (tx) => {
+    timeLimitQuery(...args) {
+      const last = args.at(-1);
+      const {timeout=20000, timeoutMessage='Query took too long to run'} = args.pop();
+      return this.transaction(async (tx) => {
         try {
           const {conn} = tx;
           await query(conn, 'set local statement_timeout to ' + timeout);
-          const tp = normalizeQuery(text, [params]);
-          return await query(conn, tp[0], tp[1]);
+          args = normalizeQuery(args);
+          return await query(conn, ...args);
         } catch (ex) {
-          if (ex.sqlState === '57014') {
+          if (ex.error === 504) {
             throw new koru.Error(504, timeoutMessage);
           }
           throw ex;
@@ -264,7 +268,7 @@ define((require, exports, module) => {
     }
 
     dropTable(name) {
-      return this.query(`DROP TABLE IF EXISTS "${name}"`);
+      return oidQuery(this, `DROP TABLE IF EXISTS "${name}"`);
     }
 
     get inTransaction() {return util.thread[this[tx$]]?.transaction != null}
@@ -337,10 +341,10 @@ define((require, exports, module) => {
             tx.transaction = 'COMMIT';
             await query(tx.conn, 'BEGIN');
             return await func.call(this, tx);
-          } catch (ex) {
+          } catch (err) {
             tx.transaction = 'ROLLBACK';
-            if (ex !== 'abort') {
-              throw ex;
+            if (err !== 'abort') {
+              throw err;
             }
           } finally {
             const command = tx.transaction;
@@ -359,13 +363,15 @@ define((require, exports, module) => {
 
   Client.prototype[private$] = {tx$};
 
-  Client.prototype.aryToSqlStr = aryToSqlStr;
-  Client.prototype.columnsToInsValues = (columns) => `(${columns.map((k) => `"${k}"`).join(',')})
-values (${columns.map((k) => `{$${k}}`).join(',')})`;
-
   class Connection {
     constructor(client, callback) {
-      this.conn = new Libpq(client._url, (err) => callback(err, this));
+      this.conn = new PgConn(PgType).connect(client._url, (err) => {
+        if (err == null && PgType[oidsLoaded$] === void 0) {
+          PgType.assignOids(this.conn).then(() => {callback(err, this)}, callback);
+        } else {
+          callback(err, this);
+        }
+      });
       this.count = 0;
       this.savepoint = 0;
       this.transaction = null;
@@ -375,20 +381,21 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
   const queryWhere = async (table, sql, where, suffix) => {
     table._ready !== true && await table._ensureTable();
 
-    let values;
-    if (where) {
+    let values, oids;
+    if (where !== void 0) {
       values = [];
-      where = table.where(where, values);
+      oids = [];
+      where = table.where(where, values, oids);
     }
     if (where === void 0) {
       if (suffix) sql += suffix;
-      return table._client.query(sql);
+      return oidQuery(table._client, sql);
     }
 
     sql = sql + ' WHERE ' + where;
     if (suffix) sql += suffix;
 
-    return await table._client.query(sql, values);
+    return table._client.withConn((conn) => query(conn, sql, values, oids));
   };
 
   class Table {
@@ -454,7 +461,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     async autoCreate() {
       await readColumns(this);
       const {schema} = this;
-      if (this._columns.length === 0) {
+      if (this._colMap === void 0) {
         const fields = ['_id text collate "C" PRIMARY KEY'];
         if (schema) {
           for (let col in schema) {
@@ -467,7 +474,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           }
         }
 
-        await this._client.query(`CREATE TABLE IF NOT EXISTS "${this._name}" (${fields.join(',')})`);
+        await oidQuery(this._client, `CREATE TABLE IF NOT EXISTS "${this._name}" (${fields.join(',')})`);
         await readColumns(this);
       } else if (schema) {
         await updateSchema(this, schema);
@@ -478,29 +485,20 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return this._client.transaction((tx) => func.call(this, tx));
     }
 
-    async insert(params, suffix) {
-      this._ready !== true && await this._ensureTable();
-
-      params = toColumns(this, params);
-
-      let sql = `INSERT INTO "${this._name}" (${params.cols.map((col) => '"' + col + '"')
-      .join(',')}) values (${params.cols.map((c, i) => '$' + (i + 1)).join(',')})`;
-
-      if (suffix) sql += ` ${suffix}`;
-
-      try {
-        return await performTransaction(this, sql, params);
-      } catch (ex) {
-        if (ex.sqlState === '23505') {
-          throw new koru.Error(409, ex.message);
-        }
-        throw ex;
-      }
+    insert(params, suffix) {
+      return withColumns(
+        this, params,
+        (conn, cols) => {
+          const sql = `INSERT INTO "${this._name}" (${cols.names.map((col) => '"' + col + '"')
+          .join(',')}) values (${cols.names.map((c, i) => '$' + (i + 1)).join(',')})`;
+          return execute(conn, suffix !== void 0 ? sql + ' ' + suffix : sql, cols);
+        },
+      );
     }
 
-    async values(rowSet, cols) {
+    async toColumns(rowSet, cols) {
       this._ready !== true && await this._ensureTable();
-      return toColumns(this, rowSet, cols).values;
+      return toColumns(this, rowSet, cols);
     }
 
     async ensureIndex(keys, options={}) {
@@ -509,36 +507,38 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       const name = this._name + '_' + cols.join('_');
       cols = cols.map((col) => '"' + col + (keys[col] === -1 ? '" DESC' : '"'));
       const unique = options.unique ? 'UNIQUE ' : '';
-      try {
-        await this._client.query('CREATE ' + unique + 'INDEX "' +
-                                 name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
-      } catch (ex) {
-        if (ex.sqlState !== '42P07') {
-          throw ex;
-        }
-      }
+      return oidQuery(this._client, 'CREATE ' + unique + 'INDEX IF NOT EXISTS "' +
+                      name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
     }
 
     updateById(id, params) {
-      const {sql, set} = buildUpdate(this, params);
-
-      set.values.push(id);
-
-      return performTransaction(this, `${sql} WHERE _id=$${set.values.length}`, set);
+      return buildUpdate(this, params, (conn, sql, cols) => {
+        cols.values.push(id);
+        cols.oids.push(getColumnOId(this, '_id'));
+        return execute(conn, `${sql} WHERE _id=$${cols.values.length}`, cols);
+      });
     }
 
     update(whereParams, params) {
-      const {sql, set} = buildUpdate(this, params);
-
-      const where = this.where(whereParams, set.values);
-
-      return performTransaction(this, where === void 0 ? sql : `${sql} WHERE ${where}`, set);
+      return buildUpdate(this, params, (conn, sql, cols) => {
+        const where = this.where(whereParams, cols.values, cols.oids);
+        return execute(conn, where === void 0 ? sql : `${sql} WHERE ${where}`, cols);
+      });
     }
 
-    where(query, whereValues) {
+    remove(whereParams) {
+      const sql = `DELETE FROM "${this._name}"`;
+      const cols = {};
+      const whereSql = whereParams && this.where(whereParams, cols.values = [], cols.oids = []);
+      return this._client.withConn((conn) => execute(
+        conn, whereSql === void 0 ? sql : `${sql} WHERE ${whereSql}`, cols));
+    }
+
+    where(query, whereValues, whereOids) {
+      assert(whereOids !== void 0);
       if (query == null) return;
       if (this._ready !== true) {
-        return this._ensureTable().then(() => this.where(query, whereValues));
+        return this._ensureTable().then(() => this.where(query, whereValues, whereOids));
       }
 
       const colMap = this._colMap;
@@ -546,7 +546,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       let count = whereValues.length;
       let fields;
 
-      const inArray = (qkey, result, value, isIn) => {
+      const inArray = (colSpec, qkey, result, value, isIn) => {
         let where;
         switch (value ? value.length : 0) {
         case 0:
@@ -554,10 +554,12 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           return;
         case 1:
           whereValues.push(value[0]);
+          whereOids.push(colSpec.oid);
           where = qkey + ' IN ($' + ++count + ')';
           break;
         default:
-          whereValues.push(aryToSqlStr(value));
+          whereValues.push(value);
+          whereOids.push(PgType.toArrayOid(colSpec.oid) ?? 0);
           where = qkey + ' = ANY($' + ++count + ')';
         }
         result.push(isIn ? where : 'NOT (' + where + ')');
@@ -573,6 +575,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           for (;i < value.length; ++i) {
             sqlStr += '$' + (++count) + strings[i];
             whereValues.push(value[i]);
+            whereOids.push(0);
           }
           result.push(sqlStr);
         } else {
@@ -583,16 +586,18 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
             items.forEach((item) => {
               ++count;
               whereValues.push(item);
+              whereOids.push(0);
             });
           } else if (value[0] instanceof SQLStatement) {
             const statment = value[0];
-            statment.convertArgs(items, whereValues);
+            statment.convertArgs(items, whereValues, whereOids);
             result.push(statment.text);
           } else {
             result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
               const tag = paramNos[key];
               if (tag !== void 0) return tag;
               whereValues.push(items[key]);
+              whereOids.push(0);
               return paramNos[key] = '$' + ++count;
             }));
           }
@@ -612,6 +617,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
             if (value == null) {
               result.push(`${qkey}=$${++count}`);
               whereValues.push(null);
+              whereOids.push(25);
               continue;
             }
           } else {
@@ -638,116 +644,126 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
             }
           }
 
-          const colSpec = colMap[key];
+          const colSpec = colMap[key] ?? UNKNOWN_COLUMN;
 
-          if (value != null) switch (colSpec?.data_type) {
-            case 'ARRAY':
-            if (typeof value === 'object') {
-              if (Array.isArray(value)) {
-                result.push(qkey + ' && $' + ++count);
-                whereValues.push(aryToSqlStr(value));
-                continue;
-              } else {
-                let vk; for (vk in value) {break}
-                switch (vk) {
-                case '$in':
+          if (value != null) {
+            if (colSpec.arraydim != 0) {
+              if (typeof value === 'object') {
+                if (Array.isArray(value)) {
                   result.push(qkey + ' && $' + ++count);
-                  whereValues.push(aryToSqlStr(value[vk]));
+                  whereValues.push(value);
+                  whereOids.push(colSpec.oid);
                   continue;
-                case '$nin':
-                  result.push('NOT(' + qkey + ' && $' + ++count + ')');
-                  whereValues.push(aryToSqlStr(value[vk]));
-                  continue;
+                } else {
+                  let vk; for (vk in value) {break}
+                  switch (vk) {
+                  case '$in':
+                    result.push(qkey + ' && $' + ++count);
+                    whereValues.push(value[vk]);
+                    whereOids.push(colSpec.oid);
+                    continue;
+                  case '$nin':
+                    result.push('NOT(' + qkey + ' && $' + ++count + ')');
+                    whereValues.push(value[vk]);
+                    whereOids.push(colSpec.oid);
+                    continue;
+                  }
                 }
               }
-            }
-            result.push('$' + ++count + '= ANY(' + qkey + ')');
-            whereValues.push(value);
-            break;
-            case 'jsonb':
-            if (typeof value === 'object') {
-              if (value.$elemMatch) {
-                const subvalue = value.$elemMatch;
-                const columns = [];
-                for (let subcol in subvalue) {
-                  columns.push(mapType(subcol, subvalue[subcol]));
+              result.push('$' + ++count + '= ANY(' + qkey + ')');
+              whereValues.push(value);
+              whereOids.push(PgType.fromArrayOid(colSpec.oid));
+            } else if (colSpec.isJson) {
+              if (typeof value === 'object') {
+                if (value.$elemMatch !== void 0) {
+                  const subvalue = value.$elemMatch;
+                  const columns = [];
+                  for (let subcol in subvalue) {
+                    columns.push(mapType(subcol, subvalue[subcol]));
+                  }
+                  const q = [];
+                  foundIn(subvalue, q);
+                  result.push('jsonb_typeof(' + qkey +
+                              ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset(' + qkey +
+                              ') as __x(' + columns.join(',') + ') where ' + q.join(' AND ') + ')');
+                  continue;
                 }
                 const q = [];
-                foundIn(subvalue, q);
-                result.push('jsonb_typeof(' + qkey +
-                            ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset(' + qkey +
-                            ') as __x(' + columns.join(',') + ') where ' + q.join(' AND ') + ')');
-                continue;
-              }
-              const q = [];
-              ++count; whereValues.push(value);
-              q.push(qkey + '=$' + count);
-              if (Array.isArray(value)) {
-                q.push('EXISTS(SELECT * FROM jsonb_array_elements($' +
-                       count + ') where value=' + qkey + ')');
-              }
+                ++count; whereValues.push(value);
+                whereOids.push(3802);
+                q.push(qkey + '=$' + count);
+                if (Array.isArray(value)) {
+                  q.push('EXISTS(SELECT * FROM jsonb_array_elements($' +
+                         count + ') where value=' + qkey + ')');
+                }
 
-              q.push('(jsonb_typeof(' + qkey + ') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements(' +
-                     qkey + ') where value=$' + count + '))');
+                q.push('(jsonb_typeof(' + qkey + ') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements(' +
+                       qkey + ') where value=$' + count + '))');
 
-              result.push('(' + q.join(' OR ') + ')');
+                result.push('(' + q.join(' OR ') + ')');
+              } else {
+                result.push(qkey + '=$' + ++count);
+                whereValues.push(value);
+                whereOids.push(3802);
+              }
             } else {
-              result.push(qkey + '=$' + ++count);
-              whereValues.push(JSON.stringify(value));
-            }
-            break;
-            default:
-            if (typeof value === 'object') {
-              if (Array.isArray(value)) {
-                inArray(qkey, result, value, true);
-                break;
-              } else if (value.constructor === Object) {
-                let regex;
-                for (const vk in value) {
-                  const op = OPS[vk];
-                  if (op !== void 0) {
-                    result.push(qkey + op + '$' + ++count);
-                    whereValues.push(value[vk]);
-                    continue;
-                  } else {
-                    switch (vk) {
-                    case '$regex':
-                    case '$options':
-                      if (regex) break;
-                      regex = value.$regex;
-                      let options = value.$options;
-                      if (regex.constructor === RegExp) {
-                        [regex, options] = regexToText(regex);
-                      }
-                      result.push(qkey + (
-                        options !== void 0 && options.indexOf('i') !== -1 ? '~*$' : '~$') + ++count);
-                      whereValues.push(regex);
+              if (typeof value === 'object') {
+                if (Array.isArray(value)) {
+                  inArray(colSpec, qkey, result, value, true);
+                  break;
+                } else if (value.constructor === Object) {
+                  let regex;
+                  for (const vk in value) {
+                    const op = OPS[vk];
+                    if (op !== void 0) {
+                      result.push(qkey + op + '$' + ++count);
+                      whereValues.push(value[vk]);
+                      whereOids.push(colSpec.oid);
                       continue;
-                    case '$ne': case '!=': {
-                      const sv = value[vk];
-                      if (sv == null) {
-                        result.push(qkey + ' IS NOT NULL');
-                      } else {
-                        result.push('(' + qkey + ' <> $' + ++count + ' OR ' + qkey + ' IS NULL)');
-                        whereValues.push(sv);
+                    } else {
+                      switch (vk) {
+                      case '$regex':
+                      case '$options':
+                        if (regex) break;
+                        regex = value.$regex;
+                        let options = value.$options;
+                        if (regex.constructor === RegExp) {
+                          [regex, options] = regexToText(regex);
+                        }
+                        result.push(qkey + (
+                          options !== void 0 && options.indexOf('i') !== -1 ? '~*$' : '~$') + ++count);
+                        whereValues.push(regex);
+                        whereOids.push(25);
+                        continue;
+                      case '$ne': case '!=': {
+                        const sv = value[vk];
+                        if (sv == null) {
+                          result.push(qkey + ' IS NOT NULL');
+                        } else {
+                          result.push('(' + qkey + ' <> $' + ++count + ' OR ' + qkey + ' IS NULL)');
+                          whereValues.push(sv);
+                          whereOids.push(colSpec.oid);
+                        }
+                      } continue;
+                      case '$in':
+                      case '$nin':
+                        inArray(colSpec, qkey, result, value[vk], vk === '$in');
+                        continue;
+                      default:
+                        result.push(qkey + '=$' + ++count);
+                        whereValues.push(value);
+                        whereOids.push(colSpec.oid);
                       }
-                    } continue;
-                    case '$in':
-                    case '$nin':
-                      inArray(qkey, result, value[vk], vk === '$in');
-                      continue;
-                    default:
-                      result.push(qkey + '=$' + ++count);
-                      whereValues.push(value);
                     }
+                    break;
                   }
                   break;
                 }
-                break;
               }
+              result.push(qkey + '=$' + ++count);
+              whereValues.push(value);
+              whereOids.push(colSpec.oid);
             }
-            result.push(qkey + '=$' + ++count);
-            whereValues.push(value);
           }
         }
       };
@@ -758,6 +774,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
         if (query.singleId) {
           whereSql.push('"_id"=$' + ++count);
           whereValues.push(query.singleId);
+          whereOids.push(0);
         }
 
         query._wheres !== void 0 && foundIn(query._wheres, whereSql);
@@ -794,7 +811,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
 
     async findById(id) {
       this._ready !== true && await this._ensureTable();
-      return (await this._client.query('SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1', [id]))[0];
+      return (await oidQuery(this._client, 'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1', [id]))[0];
     }
 
     async findOne(where, fields) {
@@ -806,14 +823,15 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       const table = this;
       let sql = 'SELECT ' + selectFields(this, options?.fields) + ' FROM "' + this._name + '"';
 
-      let values;
+      let values, oids;
       if (where != void 0) {
         values = [];
-        where = table.where(where, values);
+        oids = [];
+        where = table.where(where, values, oids);
       }
 
       if (where === void 0) {
-        return new Cursor(this, sql, null, options);
+        return new Cursor(this, sql, void 0, void 0, options);
       }
 
       if (isPromise(where)) {
@@ -822,12 +840,13 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       } else {
         sql += ' WHERE ' + where;
       }
-      return new Cursor(this, sql, values, options);
+      return new Cursor(this, sql, values, oids, options);
     }
 
     show(where) {
       const values = [];
-      return ` WHERE ${this.where(where, values)} (${util.inspect(values)})`;
+      const oids = [];
+      return ` WHERE ${this.where(where, values, oids)}, (${util.inspect(values)}); oids: ${util.inspect(oids)}`;
     }
 
     async exists(where) {
@@ -839,16 +858,10 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       return + (await queryWhere(this, `SELECT count(*) FROM "${this._name}"`, where))[0].count;
     }
 
-    remove(where) {
-      return this._client.withConn((conn) => queryWhere(this, `DELETE FROM "${this._name}"`, where));
-    }
-
     truncate() {
-      return this._client.withConn((conn) => this._client.query(`TRUNCATE TABLE "${this._name}"`));
+      return this._client.withConn((conn) => oidQuery(this._client, `TRUNCATE TABLE "${this._name}"`));
     }
   }
-
-  Table.prototype.aryToSqlStr = aryToSqlStr;
 
   const initCursor = async (cursor) => {
     if (cursor.table._ready !== true) await cursor.table._ensureTable();
@@ -878,26 +891,27 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       const cname = 'c' + (++cursorCount).toString(36);
       if (tx !== void 0 && tx.transaction !== null) {
         cursor._inTran = true;
-        await client.query('DECLARE ' + cname + ' CURSOR FOR ' + sql, cursor._values);
+        await oidQuery(client, 'DECLARE ' + cname + ' CURSOR FOR ' + sql, cursor._values, cursor._oids);
       } else {
         await client.transaction(async () => {
           await getConn(client); // so cursor is valid outside transaction
-          await client.query('DECLARE ' + cname + ' CURSOR WITH HOLD FOR ' + sql, cursor._values);
+          await oidQuery(client, 'DECLARE ' + cname + ' CURSOR WITH HOLD FOR ' + sql, cursor._values, cursor._oids);
         });
       }
       cursor._name = cname;
     } else {
-      cursor._rows = await client.query(sql, cursor._values);
+      cursor._rows = await oidQuery(client, sql, cursor._values, cursor._oids);
       cursor._index = 0;
       cursor._name = 'all';
     }
   };
 
   class Cursor {
-    constructor(table, sql, values, options) {
+    constructor(table, sql, values, oids, options) {
       this.table = table;
       this._sql = sql;
       this._values = values;
+      this._oids = oids;
       this._name = void 0;
 
       if (options) for (const op in options) {
@@ -911,7 +925,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     async close() {
       if (this._name !== void 0 && this._name !== 'all') {
         try {
-          await this.table._client.query('CLOSE ' + this._name);
+          await oidQuery(this.table._client, 'CLOSE ' + this._name);
         } finally {
           this._name = void 0;
           if (this._inTran) {
@@ -938,7 +952,10 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
         }
       } else {
         const c = count === void 0 ? 1 : count;
-        const result = await this.table._client.query('FETCH ' + c + ' ' + this._name);
+        const result = await oidQuery(this.table._client, 'FETCH ' + c + ' ' + this._name);
+        if (typeof result === 'string') {
+          return;
+        }
         return count === void 0 ? result[0] : result;
       }
     }
@@ -974,60 +991,50 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     }
   }
 
-  const toColumns = (table, params, cols=Object.keys(params)) => {
+  const getColumnOId = (table, column) => table._colMap[column]?.oid ?? 0;
+
+  const toColumns = (table, params, names=Object.keys(params)) => {
     const needCols = autoSchema ? {} : void 0;
-    const values = new Array(cols.length);
+    const values = new Array(names.length);
+    const oids = new Array(names.length);
     const colMap = table._colMap;
 
-    cols.forEach((col, i) => {
-      let value = params[col];
+    names.forEach((name, i) => {
+      let value = params[name];
       if (value === void 0) value = null;
-      const desc = colMap[col];
-      if (desc) {
-        switch (desc.data_type) {
-        case 'ARRAY':
-          value = aryToSqlStr(value);
-          break;
-        case 'jsonb':
-        case 'json':
-          value = value == null ? null : JSON.stringify(value);
-          break;
-        case 'date':
-        case 'timestamp with time zone':
-        case 'timestamp without time zone':
-          if (value) {
-            if (value.toISOString) {
-              value = value?.toISOString();
-            } else {
-              let date = new Date(value);
-              if (! isNaN(+date)) {
-                value = date.toISOString();
-              }
-            }
-          }
-          break;
-        }
+      const desc = colMap[name];
+
+      if (desc !== void 0) {
+        oids[i] = desc.oid;
+      } else {
+        oids[i] = 0;
       }
       values[i] = value;
 
-      if (needCols !== void 0 && ! desc) {
-        needCols[col] = mapType(col, params[col]);
+      if (needCols !== void 0 && desc === void 0) {
+        needCols[name] = mapType(name, params[name]);
       }
     });
 
-    const res = {cols, values};
-    if (needCols) res.needCols = needCols;
+    const res = {names, values, oids};
+    if (! util.isObjEmpty(needCols)) res.needCols = needCols;
     return res;
+  };
+
+  const execute = async (conn, sql, columns) => {
+    const tag = await query(conn, sql, columns.values, columns.oids);
+    const ridx = tag.lastIndexOf(' ');
+    return ridx == -1 ? tag : +tag.slice(ridx + 1);
   };
 
   const performTransaction = (table, sql, params) => {
     if (table.schema || util.isObjEmpty(params.needCols)) {
-      return table._client.withConn((conn) => query(conn, sql, params.values));
+      return table._client.withConn((conn) => query(conn, sql, params.values, params.oids));
     }
 
     return table._client.transaction(async (conn) => {
       await addColumns(table, params.needCols);
-      return await table._client.query(sql, params.values);
+      return table._client.withConn((conn) => query(conn, sql, params.values, params.oids));
     });
   };
 
@@ -1107,7 +1114,7 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
       const tx = util.thread[client[tx$]];
       let literal = colSchema.default;
       if (type === 'jsonb') {
-        literal = tx.conn.escapeLiteral(JSON.stringify(literal)) + '::jsonb';
+        literal = escapeLiteral(JSON.stringify(literal)) + '::jsonb';
       } else {
         switch (typeof literal) {
         case 'number':
@@ -1115,11 +1122,11 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
           break;
         case 'object':
           if (Array.isArray(literal)) {
-            literal = tx.conn.escapeLiteral(aryToSqlStr(literal)) + '::' + type;
+            literal = escapeLiteral(PgType.aryToSqlStr(literal)) + '::' + type;
             break;
           }
         default:
-          literal = tx.conn.escapeLiteral(literal) + '::' + type;
+          literal = escapeLiteral(literal) + '::' + type;
         }
       }
       defaultVal = ` DEFAULT ${literal}`;
@@ -1147,26 +1154,37 @@ values (${columns.map((k) => `{$${k}}`).join(',')})`;
     const prefix = `ALTER TABLE "${table._name}" ADD COLUMN `;
     const client = table._client;
 
-    await client.query(Object.keys(needCols).map((col) => prefix + needCols[col]).join(';'));
+    await oidQuery(client, Object.keys(needCols).map((col) => prefix + needCols[col]).join(';'));
 
     await readColumns(table);
   };
 
   const readColumns = async (table) => {
-    const colQuery = `SELECT * FROM information_schema.columns
-WHERE table_name = '${table._name}' AND table_schema = '${await table._client.schemaName()}'`;
-    table._columns = await table._client.query(colQuery);
-    table._colMap = util.toMap('column_name', null, table._columns);
+    const colQuery = `SELECT attname as name, atttypid::int4 as oid, attndims as arrayDim, attnum as order,
+(select collname from pg_collation as c where c.oid = attcollation AND c.collname <> 'default') as collation_name
+FROM pg_attribute
+WHERE attrelid = to_regclass('${await table._client.schemaName()}."${table._name}"')::oid
+AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
+    const columns = await oidQuery(table._client, colQuery);
+    if (columns.length == 0) {
+      table._colMap = void 0;
+    } else {
+      table._colMap = {};
+      for (const col of columns) {
+        col.isJson = !! JSON_OIDS[col.oid];
+        table._colMap[col.name] = col;
+      }
+    }
   };
+
+  const DEFAULT_FORMAT_OPTIONS = {excludeNulls: true};
 
   const Driver = {
     isPG: true,
 
-    aryToSqlStr,
-
     get defaultDb() {
       if (! defaultDb) {
-        defaultDb = new Client(module.config().url, 'default');
+        defaultDb = new Client(module.config().url, 'default', module.config().formatOptions ?? DEFAULT_FORMAT_OPTIONS);
       }
       return defaultDb;
     },
@@ -1176,8 +1194,6 @@ WHERE table_name = '${table._name}' AND table_schema = '${await table._client.sc
     connect(url, name) {
       return new Client(url, name);
     },
-
-    Libpq,
 
     get config() {return module.config()},
   };

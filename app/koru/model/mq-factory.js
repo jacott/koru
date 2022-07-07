@@ -176,7 +176,7 @@ select _id,"dueAt",message from "${table._name}"
     mqdb[ready$] = true;
     const {table} = mqdb;
     await table._ensureTable();
-    if (table._columns.length == 0) {
+    if (table._colMap === void 0) {
       await dbBroker.db.query(TABLE_SCHEMA.replace(/_message_queue/g, table._name));
     }
   };

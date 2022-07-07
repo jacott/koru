@@ -2,28 +2,38 @@ define((require) => {
   'use strict';
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
 
-  const encoder = new globalThis.TextEncoder();
-  const decoder = new globalThis.TextDecoder();
+  let decodeString, encodeString;
+  if (isServer) {
+    const {utf8Slice} = Buffer.prototype;
 
-  const decodeString = (u8) => {
-    if (u8.length > 2 && u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
-      return '\ufeff' + decoder.decode(u8);
-    }
-    return decoder.decode(u8);
-  };
+    decodeString = (v, s, e) => utf8Slice.call(v, s, e);
+    encodeString = (v) => Buffer.from(v.toString());
+  } else {
+    const encoder = new globalThis.TextEncoder();
+    const decoder = new globalThis.TextDecoder();
+
+    decodeString = (v, s, e) => {
+      const u8 = v.subarray(s, e);
+      if (u8.length > 2 && u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
+        return '\ufeff' + decoder.decode(u8);
+      }
+      return decoder.decode(u8);
+    };
+    encodeString = (v) => encoder.encode(v);
+  }
 
   const utf8to16 = (buffer, i=0, end) => {
     if (end === undefined) {
       const len = buffer.length;
       for (end = i; end < len && buffer[end] !== 0xff; ++end)
         ;
-      return [decodeString(buffer.subarray(i, end)), Math.min(len, end + 1)];
+      return [decodeString(buffer, i, end), Math.min(len, end + 1)];
     }
-    return [decodeString(buffer.subarray(i, end)), end];
+    return [decodeString(buffer, i, end), end];
   };
 
   const utf16to8 = (out, str) => {
-    out.append(encoder.encode(str));
+    out.appendUtf8Str(str);
   };
 
   const tTerm = 0;
@@ -56,11 +66,8 @@ define((require) => {
 
   const toStringFunc = Object.prototype.toString;
 
-  const tmpAb = new ArrayBuffer(8);
-  const tmpDv = new DataView(tmpAb);
-  const tmpU8 = new Uint8Array(tmpAb);
-
   const decode = (buffer, index, dict) => {
+    const dv = new DataView(buffer.buffer, buffer.byteOffset);
     const byte = buffer[index++];
 
     switch (byte) {
@@ -70,23 +77,17 @@ define((require) => {
     case tFalse: return [false, index];
     case tEmptyString: return ['', index];
     case tInt8:
-      tmpU8[0] = buffer[index];
-      return [tmpDv.getInt8(0), index + 1];
+      return [dv.getInt8(index), index + 1];
     case tInt16:
-      tmpU8.set(buffer.subarray(index, index + 2), 0);
-      return [tmpDv.getInt16(0), index + 2];
+      return [dv.getInt16(index), index + 2];
     case tInt32:
-      tmpU8.set(buffer.subarray(index, index + 4), 0);
-      return [tmpDv.getInt32(0), index + 4];
+      return [dv.getInt32(index), index + 4];
     case tDec4:
-      tmpU8.set(buffer.subarray(index, index + 4), 0);
-      return [tmpDv.getInt32(0) / 10000, index + 4];
+      return [dv.getInt32(index) / 10000, index + 4];
     case tFloat64:
-      tmpU8.set(buffer.subarray(index, index + 8), 0);
-      return [tmpDv.getFloat64(0), index + 8];
+      return [dv.getFloat64(index), index + 8];
     case tDate:
-      tmpU8.set(buffer.subarray(index, index + 8), 0);
-      return [new Date(tmpDv.getFloat64(0)), index + 8];
+      return [new Date(dv.getFloat64(index)), index + 8];
     case tString:
       return utf8to16(buffer, index);
     case tDictString:
@@ -109,8 +110,8 @@ define((require) => {
           break;
         case tSparseLarge:
           result = sparseResult;
-          tmpU8.set(buffer.subarray(index + 1, result[1] = index + 5), 0);
-          count += tmpDv.getUint32(0);
+          result[1] = index + 5;
+          count += dv.getUint32(index + 1);
           break;
         default:
           result = decode(buffer, index, dict);
@@ -133,8 +134,7 @@ define((require) => {
     case tDict:
       return decode(buffer, decodeDict(buffer, index, dict), dict);
     case tBinary: {
-      tmpU8.set(buffer.subarray(index, index + 4), 0);
-      const len = tmpDv.getUint32(0);
+      const len = dv.getUint32(index);
       index += 4;
       return [buffer.slice(index, index + len), index + len];
     }}
@@ -155,7 +155,7 @@ define((require) => {
     switch (typeof object) {
     case 'string':
       if (object === '') {
-        return buffer.push(tEmptyString);
+        return buffer.appendByte(tEmptyString);
       }
 
       if (object.length !== 1) {
@@ -163,12 +163,12 @@ define((require) => {
               ? addToDict(dict, object)
               : getStringCode(dict, object);
         if (dkey != -1) {
-          buffer.push(tDictString, dkey >> 8, dkey & 0xff);
+          buffer.appendByte(tDictString).appendByte(dkey >> 8).appendByte(dkey & 0xff);
           return;
         }
       }
       const index = buffer.length;
-      buffer.push(tSmString);
+      buffer.appendByte(tSmString);
       utf16to8(buffer, object);
       const len = buffer.length - index - 1;
       if (len < 128) {
@@ -176,104 +176,93 @@ define((require) => {
       }
 
       buffer.set(index, tString);
-      buffer.push(0xff);
+      buffer.appendByte(0xff);
       return;
     case 'number':
       if (object === Math.floor(object) && object >= 0 && object < tSmNumber) {
-        return buffer.push(object | tSmNumber);
+        return buffer.appendByte(object | tSmNumber);
       }
 
-      tmpDv.setInt8(0, object);
-      if (tmpDv.getInt8(0) === object) {
-        return buffer.push(tInt8, tmpU8[0]);
+      if (object == Math.floor(object)) {
+        if (object > -129 && object < 128) {
+          buffer.appendByte(tInt8).writeInt8(object);
+          return;
+        }
+
+        if (object > -32769 && object < 32768) {
+          buffer.appendByte(tInt16).writeInt16BE(object);
+          return;
+        }
+
+        if (object > -2147483649 && object < 2147483648) {
+          buffer.appendByte(tInt32).writeInt32BE(object);
+          return;
+        }
       }
 
-      tmpDv.setInt16(0, object);
-      if (tmpDv.getInt16(0) === object) {
-        return buffer.push(tInt16, tmpU8[0], tmpU8[1]);
-      }
 
-      tmpDv.setInt32(0, object);
-      if (tmpDv.getInt32(0) === object) {
-        buffer.push(tInt32);
-        buffer.append(tmpU8.subarray(0, 4));
+      // // up to 4 decimals
+      const dec4 = object * 10000;
+      if (dec4 === Math.floor(dec4) && dec4 > -2147483649 && dec4 < 2147483648) {
+        buffer.appendByte(tDec4).writeInt32BE(dec4);
         return;
       }
 
-      // up to 4 decimals
-      tmpDv.setInt32(0, object * 10000);
-      if (tmpDv.getInt32(0) === object * 10000) {
-        buffer.push(tDec4);
-        buffer.append(tmpU8.subarray(0, 4));
-        return;
-      }
-
-      tmpDv.setFloat64(0, object);
-
-      buffer.push(tFloat64);
-      buffer.append(tmpU8);
+      buffer.appendByte(tFloat64).writeDoubleBE(object);
       return;
     case 'boolean':
-      return buffer.push(object === true ? tTrue : tFalse);
+      return buffer.appendByte(object === true ? tTrue : tFalse);
     case 'undefined':
-      return buffer.push(tUndef);
+      return buffer.appendByte(tUndef);
     case 'function':
       throw new Error('serializing functions not supportd');
     }
 
-    if (object === null) return buffer.push(tNull);
+    if (object === null) return buffer.appendByte(tNull);
 
     const constructor = object.constructor;
 
     if (constructor === Object || constructor === void 0) {
-      buffer.push(constructor === void 0 ? tNullObject : tObject);
+      buffer.appendByte(constructor === void 0 ? tNullObject : tObject);
       let len = buffer.length;
       for (let key in object) {
         const value = object[key];
         if (typeof value === 'symbol') continue;
         const dkey = addToDict(dict, key);
         if (dkey == -1) throw new Error('Dictionary overflow');
-        buffer.push(dkey >> 8, dkey & 0xff);
+        buffer.appendByte(dkey >> 8).appendByte(dkey & 0xff);
         encode(buffer, value, dict);
       }
       if (len === buffer.length) {
         buffer.set(len - 1, constructor === void 0 ? tEmptyNullObject : tEmptyObject);
       } else {
-        buffer.push(tTerm);
+        buffer.appendByte(tTerm);
       }
     } else if (constructor === Array) {
       if (object.length == 0) {
-        buffer.push(tEmptyArray);
+        buffer.appendByte(tEmptyArray);
       } else {
-        buffer.push(tArray);
+        buffer.appendByte(tArray);
         let last = -1;
         object.forEach((o, index) => {
           const diff = index - last - 1;
           if (diff !== 0) {
             if (diff < 256) {
-              buffer.push(tSparseSmall);
-              tmpDv.setInt8(0, diff);
-              buffer.push(tmpU8[0]);
+              buffer.appendByte(tSparseSmall).appendByte(diff);
             } else {
               if (diff > 4294967294) throw new Error('sparse array too sparse');
-              buffer.push(tSparseLarge);
-              tmpDv.setUint32(0, diff);
-              buffer.append(tmpU8.subarray(0, 4));
+              buffer.appendByte(tSparseLarge).writeUInt32BE(diff);
             }
           }
           last = index;
           encode(buffer, o, dict);
         });
-        buffer.push(tTerm);
+        buffer.appendByte(tTerm);
       }
     } else if (constructor === Date) {
-      buffer.push(tDate);
-      tmpDv.setFloat64(0, object.getTime());
-      buffer.append(tmpU8);
+      buffer.appendByte(tDate).writeDoubleBE(object.getTime());
     } else if (object instanceof Uint8Array) {
-      buffer.push(tBinary);
-      tmpDv.setUint32(0, object.byteLength);
-      buffer.append(tmpU8.subarray(0, 4));
+      buffer.appendByte(tBinary).writeUInt32BE(object.byteLength);
       buffer.append(object);
     } else {
       throw new Error('type is unserializable: ' + constructor);
@@ -316,7 +305,7 @@ define((require) => {
     dict.c2k.push(name);
     if (dict.buffer !== void 0) {
       utf16to8(dict.buffer, name);
-      dict.buffer.push(0xff);
+      dict.buffer.appendByte(0xff);
     }
     return index;
   };
@@ -363,7 +352,7 @@ define((require) => {
     openEncoder: (type, globalDict) => {
       const buffer = new Uint8ArrayBuilder(1024);
       let dict = newLocalDict();
-      dict.buffer.push(type.charCodeAt(0));
+      dict.buffer.appendByte(type.charCodeAt(0));
 
       const dicts = [globalDict, dict];
 
@@ -380,7 +369,7 @@ define((require) => {
         encode() {
           const b = dict.buffer;
           length = b.length;
-          b.push(tTerm);
+          b.appendByte(tTerm);
           b.append(buffer.subarray());
 
           return b.subarray();
@@ -392,13 +381,13 @@ define((require) => {
 
       const dicts = [globalDict, newLocalDict()];
       const dictBuilder = dicts[1].buffer;
-      dictBuilder.push(type.charCodeAt(0));
+      dictBuilder.appendByte(type.charCodeAt(0));
 
       const len = args.length;
       for (let i = 0; i < len; ++i)
         encode(buffer, args[i], dicts);
 
-      dictBuilder.push(tTerm);
+      dictBuilder.appendByte(tTerm);
 
       dictBuilder.append(buffer.subarray());
       return dictBuilder.subarray();
@@ -438,7 +427,7 @@ define((require) => {
 
     addToDict,
     encodeDict: ({buffer}) => {
-      buffer.push(tTerm);
+      buffer.appendByte(tTerm);
       return buffer.subarray();
     },
     decodeDict,

@@ -24,7 +24,7 @@ define((require) => {
       async insert(doc) {
         const model = doc.constructor;
         await TransQueue.transaction(notNested(model.db), async () => {
-          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? void 0 : 'RETURNING _id');
           if (Array.isArray(result)) {
             doc.attributes._id = result[0]._id;
           }

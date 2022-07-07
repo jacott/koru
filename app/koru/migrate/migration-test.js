@@ -96,13 +96,13 @@ isServer && define((require, exports, module) => {
 
         //[#
 
-        assert.equals(Label._colMap._id.data_type, 'text');
+        assert.equals(Label._colMap._id.oid, 25);
         assert.equals(Label._colMap._id.collation_name, 'C');
 
-        assert.equals(Label._colMap.name.data_type, 'text');
+        assert.equals(Label._colMap.name.oid, 25);
         assert.equals(Label._colMap.name.collation_name, void 0);
 
-        assert.equals(Label._colMap.backgroundColor.data_type, 'text');
+        assert.equals(Label._colMap.backgroundColor.oid, 25);
         assert.equals(Label._colMap.backgroundColor.collation_name, 'C');
 
         await client.query('INSERT INTO "Label" (_id, "name") values ($1,$2)', [
@@ -139,7 +139,7 @@ isServer && define((require, exports, module) => {
         assert.same(indexes[1].indexdef.replace(/public\./g, ''),
                     'CREATE UNIQUE INDEX "Label_name__id" ON "Label" USING btree (name DESC, _id)');
 
-        sut.addMigration('20151003T20-30-20-create-label', (mig) => {
+        await sut.addMigration('20151003T20-30-20-create-label', (mig) => {
           assert(false, 'should not run twice');
         });
 
@@ -176,12 +176,9 @@ isServer && define((require, exports, module) => {
         const doc = (await client.query('SELECT * from "TestTable"'))[0];
         assert.same(doc.foo, 2);
         refute.hasOwn(doc, '_id');
-        try {
-          await client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, 'foo']);
-          assert.fail('expected throw');
-        } catch (err) {
-          assert.exception(err, {sqlState: '23505'});
-        }
+        await assert.exception(
+          () => client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, 'foo']),
+          {code: '23505'});
       });
 
       test('no primary key', async () => {
@@ -392,21 +389,21 @@ isServer && define((require, exports, module) => {
               //[
               define(() => (mig) => {
                 mig.reversible({
-                  add(client) {
-                    client.query(`alter table "Book" rename column name to title`);
-                    client.query(`insert into "Book" (_id, title) values ('book123', 'Emma')`);
+                  async add(client) {
+                    await client.query(`alter table "Book" rename column name to title`);
+                    await client.query(`insert into "Book" (_id, title) values ('book123', 'Emma')`);
                   },
-                  revert(client) {
-                    client.query(`delete from "Book"`);
-                    client.query(`alter table "Book" rename column title to name`);
+                  async revert(client) {
+                    await client.query(`delete from "Book"`);
+                    await client.query(`alter table "Book" rename column title to name`);
                   },
                   resetTables: ['Book'],
                 });
               });
         //]
         await sut.addMigration('20151004T20-30-20-reversible', migBody);
-
         assert.same((await client.query('select title from "Book" '))[0].title, 'Emma');
+
 
         // reverse
 
@@ -473,12 +470,7 @@ isServer && define((require, exports, module) => {
 
     test('rollback on error', async () => {
       const dir = migDir();
-      try {
-        await sut.migrateTo(dir, 'zz');
-        assert.fail('expected throw');
-      } catch (err) {
-        assert.exception(err, {sqlState: '42703'});
-      }
+      await assert.exception(() => sut.migrateTo(dir, 'zz'), {code: '42703'});
 
       assert.equals(await client.query('SELECT baz from "TestTable"'), []);
     });

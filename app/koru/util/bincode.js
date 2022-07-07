@@ -124,7 +124,7 @@ define((require) => {
   class Decoder {
     constructor(u8, config={...defaultConfig}) {
       this[buffer$] = u8;
-      this[dataView$] = new DataView(u8.buffer);
+      this[dataView$] = new DataView(u8.buffer, u8.byteOffset);
       this[length$] = 0;
       this.isLittleEndian = !! config.littleEndian;
     }

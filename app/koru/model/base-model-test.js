@@ -169,7 +169,7 @@ define((require, exports, module) => {
       Book.define({module});
       assert.exception(() => {
         Book.assertFound(null);
-      }, {error: 404, message: 'Book Not found [404]'});
+      }, {error: 404, message: 'Book Not found'});
 
       refute.exception(() => {
         const book = Book.build();
@@ -1033,7 +1033,7 @@ define((require, exports, module) => {
             assert.equals(err.reason, {_id: [['not_unique']]});
           } else {
             assert.equals(err.error, 409);
-            assert.equals(err.reason, m(/duplicate key/));
+            assert.equals(err.message, m(/duplicate key/));
           }
         }
       });

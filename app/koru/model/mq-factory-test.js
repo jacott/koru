@@ -96,7 +96,7 @@ isServer && define((require, exports, module) => {
       test('_initTableSchema', async () => {
         const {dbs$} = MQFactory[private$];
         stub(dbBroker.db, 'query');
-        stubProperty(mqFactory[dbs$].current, 'table', {value: {_name: 'Test_TABEL', _columns: [], _ensureTable: stub()}});
+        stubProperty(mqFactory[dbs$].current, 'table', {value: {_name: 'Test_TABEL', _ensureTable: stub()}});
         await mqFactory._initTableSchema();
         const schema = dbBroker.db.query.args(0, 0);
         dbBroker.db.query.restore();
@@ -341,7 +341,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         const q = mqFactory.getQueue('foo');
 
         stub(q.mqdb.table, '_ensureTable').invokes((c) => {
-          c.thisValue._columns = [];
+          c.thisValue._colMap = void 0;
           return Promise.resolve();
         });
 
@@ -484,7 +484,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         await queue.add({dueAt: new Date(now + 10), message: {my: 'message'}});
         await queue.add({dueAt: new Date(now + 20), message: {another: 'message'}});
 
-        await queue.remove('2');
+        await queue.remove(2);
 
         assert.equals(await queue.peek(5), [m.field('_id', 1)]);
         //]

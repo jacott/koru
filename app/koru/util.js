@@ -1196,6 +1196,7 @@ define((require) => {
 
     voidFunc: () => {},
     trueFunc: () => true,
+    identityFunc: identity,
     throwFunc: (error) => {throw error},
 
     async asyncArrayFrom(asyncIterator) {

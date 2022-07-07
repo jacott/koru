@@ -8,6 +8,8 @@ define((require, exports, module) => {
 
   const Uint8ArrayBuilder = require('./uint8-array-builder');
 
+  const decoder = new globalThis.TextDecoder();
+
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('constructor', () => {
       /**
@@ -18,11 +20,14 @@ define((require, exports, module) => {
       //[
       const b1 = new Uint8ArrayBuilder();
       b1.set(0, 1);
-      assert.same(b1.subarray().buffer.byteLength, 4);
+      assert.same(b1.initialCapacity, 4);
+      assert.same(b1.currentCapacity, 4);
+      b1.set(4, 2);
 
       const b2 = new Uint8ArrayBuilder(2);
       b2.set(0, 1);
-      assert.same(b2.subarray().buffer.byteLength, 2);
+      assert.same(b2.initialCapacity, 2);
+      assert.same(b2.currentCapacity, 2);
       //]
     });
 
@@ -41,7 +46,7 @@ define((require, exports, module) => {
       assert.equals(Array.from(b1.subarray()), [1, 2, 3, 4, 5]);
       assert.equals(Array.from(b1.subarray(2, 4)), [3, 4]);
 
-      assert.same(b1.subarray().constructor, Uint8Array);
+      assert(b1.subarray() instanceof Uint8Array);
       refute.same(b1.subarray(), b1.subarray());
       assert.same(b1.subarray().buffer, b1.subarray().buffer);
       //]
@@ -106,7 +111,6 @@ define((require, exports, module) => {
       assert.same(b.length, 2);
 
       assert.equals(b.subarray(), new Uint8Array([1, 2]));
-      assert.same(b.subarray().buffer.byteLength, 4);
       //]
     });
 
@@ -115,11 +119,101 @@ define((require, exports, module) => {
       b.grow(4);
 
       assert.equals(b.subarray(), new Uint8Array([0, 0, 0, 0]));
-      assert.equals(new Uint8Array(b.subarray().buffer).length, 8);
+      assert.equals(b.currentCapacity, 8);
 
-      b.grow(4, 13);
+      b.grow(4, 9);
       assert.equals(b.subarray(), new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
-      assert.equals(new Uint8Array(b.subarray().buffer).length, 34);
+      assert.equals(b.currentCapacity, 34);
+    });
+
+    test('set, push', () => {
+      const b1 = new Uint8ArrayBuilder();
+
+      b1.push(1);
+      b1.push(2);
+
+      const b2 = new Uint8ArrayBuilder();
+
+      b2.set(0, 1);
+      b2.set(1, 2);
+
+      assert.equals(b1, b2);
+    });
+
+    test('writeInt8', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeInt8(-1, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 3]));
+      b.writeInt8(10);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 3, 10]));
+    });
+
+    test('writeInt32BE', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeInt32BE(-1, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 3]));
+      b.writeInt32BE(10);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 3, 0, 0, 0, 10]));
+    });
+
+    test('writeUInt32BE', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeUInt32BE(0xfeedface, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xfe, 0xed, 0xfa, 0xce, 3]));
+      b.writeUInt32BE(10);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xfe, 0xed, 0xfa, 0xce, 3, 0, 0, 0, 10]));
+    });
+
+    test('writeBigInt64BE', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeBigInt64BE(- 1n, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 3]));
+      b.writeBigInt64BE(1n);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 3,
+                                                  0, 0, 0, 0, 0, 0, 0, 1]));
+    });
+
+    test('writeFloatBE', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeFloatBE(-1.123, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0x8f, 0xbe, 0x77, 3]));
+      b.writeFloatBE(54.234e-15);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0x8f, 0xbe, 0x77, 3, 0x29, 0x74, 0x3f, 0x8b]));
+    });
+
+    test('writeDoubleBE', () => {
+      const b = new Uint8ArrayBuilder(0);
+      b.appendByte(1);
+      b.writeDoubleBE(-1.123, 3);
+      b.appendByte(3);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0xf1, 0xf7, 0xce, 0xd9, 0x16, 0x87, 0x2b, 3]));
+      b.writeDoubleBE(54.234e-15);
+      assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0xf1, 0xf7, 0xce, 0xd9, 0x16, 0x87, 0x2b, 3,
+                                                  0x3d, 0x2e, 0x87, 0xf1, 0x6f, 0xa9, 0xf5, 0xa8]));
+    });
+
+    test('appendUtf8Str', () => {
+      const b = new Uint8ArrayBuilder(0);
+      assert.equals(b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝'), 44);
+
+      assert.equals(b.appendUtf8Str(' hello '), 7);
+      assert.equals(b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝'), 44);
+      b.appendUtf8Str(' world ');
+      b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
+
+      assert.equals(decoder.decode(b.subarray()),
+                    '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 hello 🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 world ' +
+                    '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
     });
 
     test('append', () => {
@@ -130,14 +224,18 @@ define((require, exports, module) => {
       //[
       const b = new Uint8ArrayBuilder();
 
-      b.append(new Uint8Array([1, 2]));
+      b.append([]);
 
-      assert.equals(b.subarray(), new Uint8Array([1, 2]));
+      b.set(0, 16);
 
-      b.append(new Uint8Array([3, 4, 5]));
+      b.append(new Uint8Array([1, 2, 3, 4]));
 
-      assert.equals(b.subarray(), new Uint8Array([1, 2, 3, 4, 5]));
-      assert.same(b.subarray().buffer.byteLength, 10);
+      assert.equals(b.subarray(), new Uint8Array([16, 1, 2, 3, 4]));
+
+      b.append(new Uint8Array([5, 6, 7, 8, 9, 10, 11, 12, 13, 14]));
+
+      assert.equals(b.subarray(), new Uint8Array([16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]));
+      assert.same(b.currentCapacity, 30);
       //]
     });
 

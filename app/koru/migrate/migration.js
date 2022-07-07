@@ -141,12 +141,12 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
       this._client = client;
     }
 
-    async addMigration(name, callback) {
-      await this._doMigration(true, name, callback);
+    addMigration(name, callback) {
+      return this._doMigration(true, name, callback);
     }
 
-    async revertMigration(name, callback) {
-      await this._doMigration(false, name, callback);
+    revertMigration(name, callback) {
+      return this._doMigration(false, name, callback);
     }
 
     async recordAllMigrations(dirPath) {
@@ -200,9 +200,9 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
       return this._migrations;
     }
 
-    async _doMigration(add, name, callback) {
+    _doMigration(add, name, callback) {
       const client = this._client;
-      await client.transaction(async (tx) => {
+      return client.transaction(async (tx) => {
         if ((await this.migrationExists(name)) === add) return;
 
         const mc = new Commander();

@@ -168,7 +168,7 @@ define((require, exports, module) => {
       Book.define({module});
       assert.exception(() => {
         Book.assertFound(null);
-      }, {error: 404, message: 'Book Not found [404]'});
+      }, {error: 404, message: 'Book Not found'});
 
       refute.exception(() => {
         const book = Book.build();

@@ -3,9 +3,9 @@ isServer && define((require, exports, module) => {
   /**
    * Interface to PostgreSQL.
    *
-   * @config url The default url to connect to; see
-   * [pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq - Connection Strings](
-   * http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING)
+   * @config url The default url to connect to; see [libpq - Connection
+   * Strings](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for
+   * examples. Note ssl is not support at this time.
    *
    **/
   const TH              = require('koru/test-helper');
@@ -170,7 +170,7 @@ isServer && define((require, exports, module) => {
         api.protoMethod();
         //[
         try {
-          assert.same((await pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b']))[0].a, 'ab');
+          assert.same((await pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'], {}))[0].a, 'ab');
 
           const ans = await pg.defaultDb.timeLimitQuery(
             `SELECT pg_sleep($1)`, [0.002], {timeout: 1, timeoutMessage: 'My message'});
@@ -181,19 +181,6 @@ isServer && define((require, exports, module) => {
         }
         //]
       });
-    });
-
-    test('Libpq', () => {
-      api.property('Libpq', {
-        info: `The underling database [PG interface](https://github.com/jacott/node-pg-libpq)`});
-
-      api.property('config', {info: 'Configuration for the database such as `url`'});
-
-      assert.equals(pg.Libpq.connect, m.func);
-
-      assert.equals(
-        pg.config.url,
-        "host=/var/run/postgresql dbname=korutest options='-c client_min_messages=ERROR'");
     });
 
     test('connection', async () => {
@@ -226,36 +213,26 @@ isServer && define((require, exports, module) => {
       assert.same(db.name, 'default');
 
       await db.query('CREATE TABLE "Foo" (_id text PRIMARY KEY, "foo" jsonb)');
-      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)',
-                     ['123', JSON.stringify({a: 1})]);
-      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)',
-                     ['456', JSON.stringify([1])]);
+      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', [123, {a: 1}]);
+      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', [456, {b: [1]}]);
 
       assert.same((await db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', ['']))[0].exists, true);
       assert.equals((await db.query('select 1+1 as a'))[0], {a: 2});
-      assert.equals(await db.query('select 1 as a; select 2 as b'), [{b: 2}]);
+      assert.equals(await db.query('select 1 as a; select 2 as b'), [{a: 1}, {b: 2}]);
     });
 
     test('isPG', () => {
       assert.same(pg.isPG, true);
     });
 
-    test('aryToSqlStr', () => {
-      const foo = pg.defaultDb.table('Foo');
-      assert.same(foo.aryToSqlStr, pg.aryToSqlStr);
-
-      assert.equals(pg.aryToSqlStr([1, 2, 'three', null]), '{1,2,three,NULL}');
-      assert.equals(pg.aryToSqlStr([[1, '"', 'three', null]]), '{{1,"\\"",three,NULL}}');
-    });
-
     test('bytea', async () => {
       const db = pg.defaultDb;
       await db.query('CREATE TABLE "Foo" (_id text PRIMARY KEY, "foo" bytea)');
-      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::bytea)',
+      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)',
                      ['123', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255])]);
 
       const results = await db.query('select * from "Foo"');
-      assert.equals(results[0].foo.toString('hex'), '000102030405060708feff');
+      assert.equals(Buffer.from(results[0].foo).toString('hex'), '000102030405060708feff');
     });
 
     test('insert suffix', async () => {
@@ -276,14 +253,10 @@ isServer && define((require, exports, module) => {
 
       await foo.insert({_id: 123});
       assert.isTrue(await foo.exists({_id: 123}));
-      try {
-        await foo.insert({_id: 123});
-        assert.fail('insert should have thrown');
-      } catch (err) {
-        assert.exception(err, {
-          error: 409, reason: m(/violates unique constraint "Foo_pkey"/),
-        });
-      }
+      await assert.exception(
+        () => foo.insert({_id: 123}),
+        {severity: 'ERROR', message: m(/duplicate key value/)},
+      );
     });
 
     test('Array insert', async () => {
@@ -313,15 +286,20 @@ isServer && define((require, exports, module) => {
         widget: 'object',
       });
 
+      const values = [];
+      const oids = [];
+      const where = await foo.where({widget: {$elemMatch: {id: '1', value: {$in: [50, 10]}}}}, values, oids);
+
+      assert.equals(where, `jsonb_typeof("widget") = 'array' AND ` +
+                    `EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) ` +
+                    `where "id"=$1 AND "value" = ANY($2))`);
+      assert.equals(values, ['1', [50, 10]]);
+      assert.equals(oids, [0, 0]);
+
       await foo.insert(
         {_id: '123', widget: [{id: '1', value: 200}, {id: '5', value: 500}, {id: '2', value: 100}]});
       await foo.insert(
         {_id: '234', widget: [{id: '1', value: 100}, {id: '4', value: 400}, {id: '3', value: 200}]});
-
-      const values = [];
-      const where = foo.where({widget: {$elemMatch: {id: '1', value: {$in: [50, 10]}}}}, values);
-      assert.equals(where, `jsonb_typeof("widget") = 'array' AND EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) where "id"=$1 AND "value" = ANY($2))`);
-      assert.equals(values, ['1', '{50,10}']);
 
       assert.equals(await foo.count({widget: {$elemMatch: {id: '1', value: {$in: null}}}}), 0);
       assert.equals(await foo.count({widget: {$elemMatch: {id: '1', value: {$in: [100, 200]}}}}), 2);
@@ -359,9 +337,12 @@ isServer && define((require, exports, module) => {
         createdOn: new Date(2015, 5, 12),
         updatedAt: new Date(2014, 11, 27, 23, 45, 55),
       };
-      assert.equals(await foo.values(data), ['"a"', '{11,23,44}', '2015-06-12T00:00:00.000Z', '2014-12-27T23:45:55.000Z']);
+      assert.equals(await foo.toColumns(data),
+                    {names: Object.keys(data), values: Array.from(Object.values(data)), oids: [3802, 1007, 1082, 1114]});
+
       data.widget = [1, 2, {a: 3}];
-      assert.equals(await foo.values(data, ['createdOn', 'widget']), ['2015-06-12T00:00:00.000Z', '[1,2,{"a":3}]']);
+      assert.equals(await foo.toColumns(data, ['createdOn', 'widget']),
+                    {names: ['createdOn', 'widget'], values: [data.createdOn, data.widget], oids: [1082, 3802]});
     });
 
     test('json', async () => {
@@ -388,12 +369,12 @@ isServer && define((require, exports, module) => {
       await foo.insert({_id: '123', widget: [1, 2, 3]});
       await foo.insert({_id: '456', widget: [3, 4]});
 
+      assert.equals(await foo.count({widget: {$nin: [1, 3]}}), 0);
+      assert.equals(await foo.count({widget: {$nin: [4, 5]}}), 1);
+      assert.equals(await foo.count({widget: {$in: [1, 3]}}), 2);
       assert.equals(await foo.count({widget: 2}), 1);
       assert.equals(await foo.count({widget: 3}), 2);
       assert.equals(await foo.count({widget: 5}), 0);
-      assert.equals(await foo.count({widget: {$in: [1, 3]}}), 2);
-      assert.equals(await foo.count({widget: {$nin: [1, 3]}}), 0);
-      assert.equals(await foo.count({widget: {$nin: [4, 5]}}), 1);
       assert.equals(await foo.count({widget: {$in: []}}), 0);
       assert.equals(await foo.count({widget: {$nin: []}}), 2);
     });
@@ -409,12 +390,11 @@ isServer && define((require, exports, module) => {
       await foo.insert({_id: '123', createdOn});
 
       assert.equals(await foo.count({createdOn}), 1);
-      assert.equals(await foo.count({createdOn: new Date(2015, 3, 5)}), 0);
       assert.equals(await foo.count({createdOn: '2015/04/04'}), 1);
-      assert.equals(await foo.values({createdOn: '2015/04/04'}),
-                    ['2015-04-04T00:00:00.000Z']);
-      assert.equals(await foo.values({createdOn: new Date('2015/04/04').getTime()}),
-                    ['2015-04-04T00:00:00.000Z']);
+      assert.equals(await foo.count({createdOn: createdOn.getTime()}), 1);
+      assert.equals(await foo.count({createdOn: new Date(2015, 3, 5)}), 0);
+      assert.equals((await foo.toColumns({createdOn: '2015/04/04'})).oids,
+                    [1082]);
     });
 
     test('$regex', async () => {
@@ -455,18 +435,15 @@ isServer && define((require, exports, module) => {
       });
 
       test('bad sql', async () => {
-        const cursor = foo.find({age: 'hello'});
+        const cursor = foo.find({agex: 'hello'});
 
-        try {
+        await assert.exception(async () => {
           try {
-            await cursor.next();
+            const ans = await cursor.next();
           } finally {
             await cursor.close();     // should not raise error
           }
-          assert.fail('expected to throw');
-        } catch (err) {
-          assert.exception(err, {message: m(/invalid input syntax.*hello/)});
-        }
+        }, {code: '42703'});
       });
 
       test('array param', async () => {
@@ -498,13 +475,13 @@ isServer && define((require, exports, module) => {
                                               {likeE: '%e', four: 'Four'}]}), 4);
         assert.equals(await foo.count({$sql: ['name like $1 OR name = $2', ['%e', 'Four']]}), 4);
         assert.equals(foo.show({$sql: ['{$one} + {$two} + {$one}', {one: 11, two: 22, three: 33}]}),
-                      ' WHERE $1 + $2 + $1 ([11, 22])');
+                      ' WHERE $1 + $2 + $1, ([11, 22]); oids: [0, 0]');
       });
 
       test('fields', async () => {
-        assert.equals(await foo.findOne({_id: 'one0'}, {name: true}), {_id: 'one0', name: 'one'});
         assert.equals(await foo.findOne({_id: 'one0'}, {version: false, age: false}), {
           _id: 'one0', name: 'one', createdAt: m.date});
+        assert.equals(await foo.findOne({_id: 'one0'}, {name: true}), {_id: 'one0', name: 'one'});
         await foo.transaction(async () => {
           const c = foo.find({_id: 'one0'}, {fields: {name: true, age: true}});
           assert.equals(await c.next(), {
@@ -617,12 +594,10 @@ isServer && define((require, exports, module) => {
         await foo.ensureIndex({name: -1}, {unique: true});
 
         await foo.insert({_id: '1', name: 'Foo'});
-        try {
-          await foo.insert({_id: '2', name: 'Foo'});
-          assert.fail('expected throw');
-        } catch (err) {
-          assert.exception(err, {error: 409});
-        }
+        await assert.exception(
+          () => foo.insert({_id: '2', name: 'Foo'}),
+          {code: '23505'},
+        );
 
         await foo.ensureIndex({name: -1}, {unique: true});
         await foo.ensureIndex({name: 1, _id: -1});
@@ -661,12 +636,9 @@ isServer && define((require, exports, module) => {
       });
 
       test("can't add field", async () => {
-        try {
-          await foo.update({name: 'abc'}, {foo: 'eee'});
-          assert.fail('expected throw');
-        } catch (err) {
-          assert.exception(err, {sqlState: '42703'});
-        }
+        await assert.exception(
+          () => foo.update({name: 'abc'}, {foo: 'eee'}),
+          {code: '42703'});
       });
 
       test('abort startTransaction, endTransaction', async () => {
