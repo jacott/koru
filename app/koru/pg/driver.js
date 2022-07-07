@@ -224,10 +224,6 @@ define((require, exports, module) => {
       }
     }
 
-    async findOne(text, params) {
-      return (await this.query(text, params)).rows[0];
-    }
-
     query(text, ...args) {
       const tp = normalizeQuery(text, args);
       return this.withConn((conn) => query(conn, tp[0], tp[1]));
