@@ -53,18 +53,20 @@ define((require, exports, module) => {
       return this[buffer$][index];
     }
 
-    grow(n) {
-      if (this[length$] === 0) {
+    grow(n, cap=n) {
+      assert(cap >= n, 'cap < n');
+      const curLen = this[length$];
+      if (curLen === 0) {
         this[length$] = n;
-        this[buffer$] = new Uint8Array(Math.max(this.initialCapacity, n << 1));
+        this[buffer$] = new Uint8Array(Math.max(this.initialCapacity, cap << 1));
 
         return;
       }
       let u8 = this[buffer$];
 
-      const newLength = n + this[length$];
-      if (newLength > u8.length) {
-        this[buffer$] = resizeBuffer(u8, newLength << 1);
+      const newLength = n + curLen;
+      if (curLen + cap > u8.length) {
+        this[buffer$] = resizeBuffer(u8, (curLen + cap) << 1);
         this[dataView$] = void 0;
       }
       this[length$] = newLength;

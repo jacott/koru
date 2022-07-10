@@ -115,6 +115,11 @@ define((require, exports, module) => {
       b.grow(4);
 
       assert.equals(b.subarray(), new Uint8Array([0, 0, 0, 0]));
+      assert.equals(new Uint8Array(b.subarray().buffer).length, 8);
+
+      b.grow(4, 13);
+      assert.equals(b.subarray(), new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
+      assert.equals(new Uint8Array(b.subarray().buffer).length, 34);
     });
 
     test('append', () => {
