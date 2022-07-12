@@ -1,10 +1,14 @@
 define((require) => {
   'use strict';
   const koru            = require('koru');
+  const util            = require('koru/util');
   const Test            = require('./main');
   const session         = require('../session/base');
 
   process.on('unhandledRejection', (error) => {
+    if (! (error instanceof Error)) {
+      error = util.inspect(error);
+    }
     const msg = 'Unhandled Rejection ' + error;
     const {Core} = Test;
     if (Core.test != null) {
@@ -14,7 +18,6 @@ define((require) => {
     }
     koru.unhandledException(error);
   });
-
 
   Test.testHandle = (cmd, msg) => {session.remoteControl.testHandle(cmd + msg)};
 

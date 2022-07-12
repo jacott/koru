@@ -520,7 +520,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
              ? 'Test timed out'
              : (err === 'wrongReturn'
                 ? 'Unexpected return value'
-                : err.toString())));
+                : util.extractError(new Error(typeof (err) === 'string' ? err : util.inspect(err))))));
     }
     if (Core.test.mode !== 'running') {
       Core.sendErrors(test);
