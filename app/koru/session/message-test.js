@@ -99,7 +99,7 @@ define((require, exports, module) => {
       assert.same(result.constructor, void 0);
     });
 
-    test('empty null object', () => {
+    test('nonempty null object', () => {
       const obj = Object.create(null);
       obj.x = 1;
       assert.equals(_encode(obj), v.ans = [8, 120, 255, 0, 22, 1, 0, 65, 0]);
@@ -191,8 +191,7 @@ define((require, exports, module) => {
     });
 
     test('binary', () => {
-      const ab = new ArrayBuffer(20);
-      const u8 = new Uint8Array(ab);
+      const u8 = new Uint8Array(20);
 
       for (let i = 0; i < 20; ++i) {
         u8[i] = i;
@@ -400,7 +399,7 @@ define((require, exports, module) => {
         push(arg);
       const u8 = encode();
 
-      assert.same(u8.constructor, Uint8Array);
+      assert(u8 instanceof Uint8Array);
 
       assert.equals(Array.from(u8), [
         77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
@@ -418,7 +417,7 @@ define((require, exports, module) => {
         1, 2, {foo: 'bar', [Symbol()]: 'notme'}]);
       const data = [];
 
-      assert.same(u8.constructor, Uint8Array);
+      assert(u8 instanceof Uint8Array);
 
       data.forEach.call(u8, (b) => {data.push(b)});
       assert.equals(data, [
@@ -431,7 +430,7 @@ define((require, exports, module) => {
       const u8 = message.encodeMessage('P', [], v.gDict);
       const data = [];
 
-      assert.same(u8.constructor, Uint8Array);
+      assert(u8 instanceof Uint8Array);
 
       data.forEach.call(u8, (b) => {data.push(b)});
       assert.equals(data, [80, 0]);

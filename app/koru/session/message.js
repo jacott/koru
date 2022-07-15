@@ -270,7 +270,7 @@ define((require) => {
       buffer.push(tDate);
       tmpDv.setFloat64(0, object.getTime());
       buffer.append(tmpU8);
-    } else if (constructor === Uint8Array) {
+    } else if (object instanceof Uint8Array) {
       buffer.push(tBinary);
       tmpDv.setUint32(0, object.byteLength);
       buffer.append(tmpU8.subarray(0, 4));
