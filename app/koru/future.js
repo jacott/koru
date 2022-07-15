@@ -2,9 +2,8 @@ define(() => {
   'use strict';
 
   const makePromise = (future) => new Promise((resolve, reject) => {
-    future.isResolved = false;
-    future.resolve = (arg) => (future.isResolved = true, resolve(arg));
-    future.reject = (arg) => (future.isResolved = true, reject(arg));
+    future.resolve = (arg) => (future.resolve = void 0, resolve(arg));
+    future.reject = (arg) => (future.resolve = void 0, reject(arg));
   });
 
   class Future {
@@ -18,6 +17,8 @@ define(() => {
         return result;
       });
     }
+
+    get isResolved() {return this.resolve === void 0}
   }
 
   return Future;
