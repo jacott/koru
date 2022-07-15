@@ -6,7 +6,13 @@ define((require) => {
   const KoruError       = require('koru/koru-error');
   const util            = require('./util');
 
+  const {inspect$} = require('koru/symbols');
+
   util.engine = 'Server';
+
+  Buffer.prototype[inspect$] = function () {
+    return '    Buffer(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') + ')';
+  }
 
   util.waitCallback = (future, callTimeout=util.thread.callTimeout ?? 20*1000) => {
     let cto = callTimeout === 0

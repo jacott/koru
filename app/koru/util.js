@@ -5,7 +5,7 @@ define((require) => {
   const Stacktrace      = require('./stacktrace');
   const util            = require('./util-base');
 
-  const {withId$} = require('koru/symbols');
+  const {withId$, inspect$} = require('koru/symbols');
   const {hasOwn} = util;
 
   const {is} = Object;
@@ -196,6 +196,10 @@ define((require) => {
     }
     return a < b ? -1 : 1;
   };
+
+  Uint8Array.prototype[inspect$] = function () {
+    return 'Uint8Array(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') + ')';
+  }
 
   util.merge(util, {
     DAY: 1000*60*60*24,
