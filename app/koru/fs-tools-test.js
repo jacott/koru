@@ -3,7 +3,7 @@ isServer && define((require, exports, module) => {
   /**
    * Convenience wrapper around some node `fs` functions
    */
-  const TH              = require('koru/model/test-db-helper');
+  const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
   const fsp = requirejs.nodeRequire('fs/promises');
@@ -13,9 +13,6 @@ isServer && define((require, exports, module) => {
   const fst = require('./fs-tools');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
-    beforeEach(() => TH.startTransaction());
-    afterEach(() => TH.rollbackTransaction());
-
     test('readlinkIfExists', async () => {
       api.method();
       //[
