@@ -781,7 +781,7 @@ define((require, exports, module) => {
         }
 
         if (type === 'comment') {
-          indent.appendComment(token);
+          indent.appendComment(token.replace(/^\n[^\S\n]*\n[^/]*\n([^\S\n]*\/)/, '\n\n$1'));
         } else {
           indent.append(token, type);
         }

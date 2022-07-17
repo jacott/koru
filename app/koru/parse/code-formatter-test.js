@@ -71,7 +71,7 @@ x()`;
 
       test('comments', () => {
         assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1,/*<*/2/*>*/,3/*)*/)`);
-        assert.equals(reformat('a = {\n  b,\n\n // c1\n  c\n}'), 'a = {\n  b,\n\n  // c1\n  c,\n}');
+        assert.equals(reformat('a = {\n  b,\n\n\n\n\n // c1\n  c\n}'), 'a = {\n  b,\n\n  // c1\n  c,\n}');
         assert.equals(reformat('a = {\n  b,\n\n // c1\n}'), 'a = {\n  b,\n\n  // c1\n}');
         assert.equals(reformat('{\na(); // c1\n}'), '{\n  a(); // c1\n}');
         assert.equals(reformat('{\na();   // c1\nb();// c2\n}'), '{\n  a();   // c1\n  b();// c2\n}');
