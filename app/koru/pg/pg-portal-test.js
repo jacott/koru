@@ -93,6 +93,30 @@ isServer && define((require, exports, module) => {
       assert.same(p[private$].state, 86);
     });
 
+    test('prepared (named) statements', async () => {
+      p = conn.portal('');
+      p.parse('ps1', `select * from unnest(Array[$1,2,3], Array[4,5,6]) as x(a,b);`, 1);
+      let b = p.prepareValues();
+      p.addParamOid(encodeBinary(b, 1, 21));
+      p.describe();
+
+      let rows = await readResult(p);
+      refute(p.error);
+      assert.same(p.getCompleted(), 'SELECT 3');
+      await p.close();
+      assert.equals(rows[0], {'0:a,23': 1, '1:b,23': 4});
+
+      p = conn.portal('');
+      b = p.bindNamed('ps1', 1);
+      p.addParamOid(encodeBinary(b, 100, 21));
+      p.describe();
+
+      rows = await readResult(p);
+      refute(p.error);
+      assert.same(p.getCompleted(), 'SELECT 3');
+      assert.equals(rows[0], {'0:a,23': 100, '1:b,23': 4});
+    });
+
     test('maxRows', async () => {
       await startTransaction();
 
@@ -207,13 +231,14 @@ isServer && define((require, exports, module) => {
       await p.close();
 
       p = conn.portal();
-      p.parse('', `SELECT $1 + $2`, 2);
+      p.parse('ps2', `SELECT $1 + $2`, 2);
       p.addParamOid(23);
       p.addParamOid(23);
       await p.describeStatement(true);
 
       refute(p.error);
       assert.same(p[private$].state, 22);
+      assert.equals(p.getColumn(0).oid, 23);
     });
 
     test('simple binding', async () => {

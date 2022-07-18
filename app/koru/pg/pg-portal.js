@@ -196,7 +196,7 @@ define((require, exports, module) => {
 
     let pos = pv.parsePos + 1;
     u8b.writeInt32BE(u8b.length - pos, pos);
-    pos += portal.queryU8.length + 1+5;
+    pos += portal.queryU8.length + portal.psU8name.length + 6;
     u8b.writeInt16BE((u8b.length - pos - 2) >> 2, pos);
   };
 
@@ -209,6 +209,26 @@ define((require, exports, module) => {
     resultFormatAdded || u8b.appendByte(0).appendByte(0);
     let pos = pv.bindPos + 1;
     u8b.writeInt32BE(u8b.length - pos, pos);
+  };
+
+  const prepValues = (portal, formatCodes) => {
+    const pv = portal[private$];
+    const {u8b} = pv;
+    const {psU8name, u8name} = portal;
+
+    pv.bindPos = u8b.length;
+
+    u8b.appendByte(BBYTE).append(ZERO32)
+      .append(u8name).appendByte(0)
+      .append(psU8name).appendByte(0);
+
+    u8b.writeInt16BE(formatCodes.length);
+    for (const code of formatCodes) u8b.writeInt16BE(code);
+
+    u8b.writeInt16BE(pv.paramCount);
+    pv.setState(P_BIND_START);
+
+    return u8b;
   };
 
   class PgPortal {
@@ -247,13 +267,31 @@ define((require, exports, module) => {
       return this;
     }
 
+    bindNamed(name, paramCount, formatCodes=BINARY_CODES) {
+      assert(typeof name === 'string' && name !== '' && typeof paramCount === 'number' && paramCount >= 0, E_BAD_ARGS);
+      const pv = this[private$];
+      assert(pv.state == 0, 'bindNamed may only be called on new portal');
+      pv.setState(P_BIND_START);
+
+      pv.paramCount = paramCount;
+      pv.paramsAdded = 0;
+      this.psName = name;
+      const {u8b} = pv;
+
+      this.psU8name = utf8Encode(name);
+
+      return prepValues(this, formatCodes);
+    }
+
     addParamOid(oid) {
       const pv = this[private$];
 
       if (pv.isState(P_PARSE_START, P_CLOSED)) {
         pv.u8b.writeInt32BE(oid);
       } else if (pv.isState(P_BIND_START, P_CLOSED)) {
-        pv.u8b.dataView.setInt32(pv.paramOidPos + (pv.paramsAdded) * 4, oid);
+        if (pv.isState(P_PARSED)) {
+          pv.u8b.dataView.setInt32(pv.paramOidPos + (pv.paramsAdded) * 4, oid);
+        }
       } else {
         throw new Error('addParamOid may not be used here; use after parse/prepareValues');
       }
@@ -277,21 +315,7 @@ define((require, exports, module) => {
                'prepareValues may only be called on a parsed portal');
       }
 
-      const {psU8name, u8name} = this;
-
-      pv.bindPos = u8b.length;
-
-      u8b.appendByte(BBYTE).append(ZERO32)
-        .append(u8name).appendByte(0)
-        .append(psU8name).appendByte(0);
-
-      u8b.writeInt16BE(formatCodes.length);
-      for (const code of formatCodes) u8b.writeInt16BE(code);
-
-      u8b.writeInt16BE(pv.paramCount);
-      pv.setState(P_BIND_START);
-
-      return u8b;
+      return prepValues(this, formatCodes);
     }
 
     addResultFormat(resultCodes=BINARY_CODES) {
@@ -335,7 +359,7 @@ define((require, exports, module) => {
     describe(sync = false) {
       if (this.error !== void 0) return;
       const pv = this[private$];
-      assert(pv.isState(P_PARSED | P_BOUND, P_LOCKED | P_CLOSED | P_FETCHING | P_BIND_START),
+      assert(pv.isState(P_PARSED | P_BIND_START | P_BOUND, P_LOCKED | P_CLOSED | P_FETCHING),
              'portal not in correct state to issue describe');
 
       finishParse(this, pv);
