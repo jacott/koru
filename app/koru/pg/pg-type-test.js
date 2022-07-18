@@ -71,9 +71,8 @@ isServer && define((require, exports, module) => {
           const b = p.prepareValues([]);
           p.addResultFormat([1]);
           p.describe();
-          const query = p.execute();
           const result = {};
-          await query.fetch((row) => {
+          await p.fetch((row) => {
             for (const {desc, rawValue} of row) {
               result[desc.name] = PgType.decodeBinary(desc.oid, rawValue);
             }
@@ -89,9 +88,8 @@ isServer && define((require, exports, module) => {
           const b = p.prepareValues([]);
           p.addResultFormat([0]);
           p.describe();
-          const query = p.execute();
           const result = {};
-          await query.fetch((row) => {
+          await p.fetch((row) => {
             for (const {desc, rawValue} of row) {
               result[desc.name] = PgType.decodeText(desc.oid, rawValue);
             }
@@ -110,9 +108,8 @@ isServer && define((require, exports, module) => {
           p.addParamOid(PgType.encodeBinary(b, [], 1009));
           p.addResultFormat([1]);
           p.describe();
-          const query = p.execute();
           const result = {};
-          await query.fetch((row) => {
+          await p.fetch((row) => {
             for (const {desc, rawValue} of row) {
               result[desc.name] = PgType.decodeBinary(desc.oid, rawValue);
             }

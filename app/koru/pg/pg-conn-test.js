@@ -153,7 +153,7 @@ isServer && define((require, exports, module) => {
       const connect = (formatOptions) => new PgConn(PgType, formatOptions).connect({
         dbname: process.env.KORU_DB,
         port: 5432,
-        options: '-c application_name=koru',
+        options: '-c application_name=korutest',
       });
 
       before(async () => {

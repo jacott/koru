@@ -2,161 +2,236 @@ define((require, exports, module) => {
   'use strict';
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const util            = require('koru/util');
-  const {PgMessage, PgRow, simpleCmd, buildColumns, utf8Encode} = require('./pg-util');
+  const {PgMessage, PgRow, simpleCmd, buildColumns, utf8Encode, State} = require('./pg-util');
 
   const {private$, inspect$} = require('koru/symbols');
 
-  const P_PARSE = 10;
-  const P_PARSED = 11;
-  const P_BIND = 20;
-  const P_BOUND = 21;
-  const P_EXECUTE = 30;
-  const P_CLOSING = 40;
-  const P_CLOSED = 50;
-  const P_NEW = 60;
+  const P_LOCKED = 1;
+  const P_CLOSED = 2;
+  const P_DATA_SENT = 4;
+  const P_PARSE_START = 8;
+  const P_PARSED = 16;
+  const P_BIND_START = 32;
+  const P_BOUND = 64;
+  const P_FETCHING = 128;
+  const P_MORE = 256;
 
   const E_MISSING_PREPARE_VALUES = 'missing PgPortal#prepareValues';
   const E_MISSING_PARSE = 'missing PgPortal#parse';
   const E_PARAM_COUNT_MISMATCH = 'PgPortal#addParamOid call count does not match parse paramCount';
-  const E_BAD_PARSE_ARGS = 'invalid arguments: usage parse(name:string, query:string, paramCount:number)';
+  const E_BAD_ARGS = 'invalid arguments';
 
   const FLUSH = simpleCmd('H');
   const SYNC = simpleCmd('S');
 
+  const ZERO32 = new Uint8Array(4);
+
   const [
-    PCMD, BCMD, DCMD, ECMD,
-  ] = 'PBDE'.split('').map((c) => c.charCodeAt(0));
+    CBYTE, PBYTE, SBYTE, BBYTE, DBYTE, EBYTE,
+  ] = 'CPSBDE'.split('').map((c) => c.charCodeAt(0));
 
   const BINARY_CODES = [1];
 
-  const portalListen = async (portal, init, complete) => {
-    const pv = portal[private$];
-    const {conn} = portal;
+  class PortalState {
+    constructor(portal) {
+      this.portal = portal;
+      this.state = 0;
+      this.u8b = new Uint8ArrayBuilder(0);
+      this.raw = {desc: void 0, row: void 0};
+    }
 
-    const currentState = pv.state;
+    get conn() {return this.portal.conn}
 
-    const ready = () => {
-      conn.unlock();
-      if (pv.state === P_CLOSING) pv.state = P_CLOSED;
-      complete(portal.error);
+    get isClosed() {return (this.state & P_CLOSED) != 0}
+    get canFetch() {return ! this.isState(P_FETCHING | P_LOCKED | P_CLOSED) || this.isState(P_MORE, P_LOCKED | P_CLOSED)}
+
+    setClosed() {
+      this.state = P_CLOSED | (this.state & ~(P_FETCHING | P_MORE));
+    }
+
+    send(u8=this.u8b.subarray()) {
+      this.setState(P_DATA_SENT);
+      this.conn.socket.write(u8);
+      this.u8b.length = 0;
+    }
+
+    done() {}
+
+    closePortal() {
+      const {portal} = this;
+      if (this.isClosed) return portal.error;
+      if (! this.isState(P_DATA_SENT)) {
+        this.setClosed();
+        return portal.error;
+      }
+      return new Promise((resolve) => {
+        this.nextRow = void 0;
+        if (this.isState(P_LOCKED)) {
+          const done = this.done;
+          this.done = (error) => {
+            done(error);
+            this.closePortal().resolve(error);
+          };
+        } else {
+          return lockPortal(
+            portal,
+            () => {
+              this.setClosed();
+              const b = this.u8b;
+              b.length = 0;
+              b.appendByte(CBYTE).writeInt32BE(4+1 + portal.u8name.length + 1);
+              b.appendByte(PBYTE).append(portal.u8name).appendByte(0);
+              b.append(SYNC);
+              this.send();
+              portal.conn[private$].sendNext();
+              resolve(portal.error);
+            },
+            resolve,
+          );
+        }
+      });
+    }
+
+    closeComplete() {
+      this.setClosed();
       return true;
-    };
+    }
 
-    const describing = currentState === pv.describeState;
-    pv.describeState = void 0;
+    isState(allow, disallow=0) {return (this.state & allow) != 0 && (this.state & disallow) == 0}
+    clearState(mask) {this.state &= ~mask}
+    setState(mask) {this.state |= mask}
 
-    const stateFunction = (state) => () => {
-      pv.completeState = state;
-      if (currentState === state && ! describing) {
-        ready();
+    ready() {
+      this.done(this.portal.error);
+      return true;
+    }
+
+    error(err) {
+      this.portal.error ??= err;
+      this.nextRow = void 0;
+      this.setClosed();
+      if (err.severity === 'FATAL') {
+        this.ready();
+        return true;
       }
       return true;
+    }
+    addRowDesc(data) {
+      if (this.isClosed) return true;
+      this.raw.columns = void 0;
+      this.raw.desc = data;
+      return true;
+    }
+    addParameterDescription(data) {
+      if (this.portal.error !== void 0) return true;
+      // TODO GJ
+      return true;
+    }
+    addRow(data) {
+      if (this.portal.error !== void 0) return true;
+      try {
+        this.raw.row = data;
+        return this.nextRow !== void 0 && this.nextRow(this.row ??= new PgRow(this.raw)) !== false;
+      } catch (err) {
+        this.portal.error ??= err;
+        return true;
+      }
+    }
+    portalSuspended() {
+      this.setState(P_MORE);
+      return true;
+    }
+    commandComplete(data) {
+      if (this.portal.error !== void 0) return true;
+      this.complete = data;
+      return true;
+    }
+  }
+
+  PortalState.prototype.parseComplete = util.trueFunc;
+  PortalState.prototype.bindComplete = util.trueFunc;
+
+  const unlockPortal = (pv) => {
+    if (pv.isState(P_LOCKED)) {
+      pv.portal.conn.unlock();
+      pv.clearState(P_LOCKED);
+    }
+  };
+
+  const lockPortal = async (portal, init, done) => {
+    const pv = portal[private$];
+    assert(! pv.isState(P_LOCKED));
+    pv.setState(P_LOCKED);
+
+    pv.done = (err) => {
+      portal.error ??= err;
+      unlockPortal(pv);
+
+      if (! pv.isClosed) {
+        if (portal.name === '' && (portal.conn.state !== State.READY_IN_TRANSACTION || ! pv.isState(P_MORE))) {
+          pv.setClosed();
+        }
+      }
+      done(portal.error);
     };
 
-    pv.raw ??= {desc: void 0, row: void 0};
-    const row = new PgRow(pv.raw);
+    await portal.conn.lock(pv);
 
-    await conn.lock({
-      ready,
-      error: (err) => {
-        portal.error ??= err;
-        if (err.severity === 'FATAL') {
-          ready();
-          return;
-        }
-        pv.u8b.length = 0;
-        if (pv.state < P_EXECUTE) {
-          conn.socket.write(SYNC);
-        } else if (pv.state === P_EXECUTE) {
-          pv.state = P_CLOSING;
-        }
-        return true;
-      },
-      addRowDesc: (data) => {
-        if (portal.error !== void 0) return true;
-        pv.raw.columns = void 0;
-        pv.raw.desc = data;
-        if (describing) ready();
-        return true;
-      },
-      addRow: (data) => {
-        if (portal.error !== void 0) return true;
-        try {
-          pv.raw.row = data;
-          return pv.nextRow !== void 0 && pv.nextRow(row) !== false;
-        } catch (err) {
-          portal.error ??= err;
-          return true;
-        }
-      },
-      commandComplete: (data) => {
-        if (portal.error !== void 0) return true;
-        pv.complete = data;
-        return true;
-      },
-      parseComplete: stateFunction(P_PARSED),
-      bindComplete: stateFunction(P_BOUND),
-    });
-
-    if (pv.state === P_CLOSED) {
-      conn.unlock();
-      complete();
+    if (pv.isClosed) {
+      unlockPortal(pv);
+      done(portal.error);
       return;
     }
 
     if (init() === false) {
-      conn.unlock();
+      unlockPortal(pv);
     }
   };
 
   const finishParse = (portal, pv) => {
-    if (pv.state !== P_PARSE) return;
-    pv.state = P_PARSED;
+    if (! pv.isState(P_PARSE_START, P_CLOSED)) return;
+    pv.setState(P_PARSED);
+    pv.clearState(P_PARSE_START);
     const {u8b} = pv;
 
-    const u8 = pv.u8b.subarray();
-
     let pos = pv.parsePos + 1;
-    const dv = u8b.dataView;
-    dv.setInt32(pos, u8b.length - pos);
+    u8b.writeInt32BE(u8b.length - pos, pos);
     pos += portal.queryU8.length + 1+5;
-    dv.setInt16(pos, (u8b.length - pos - 2) >> 2);
+    u8b.writeInt16BE((u8b.length - pos - 2) >> 2, pos);
   };
 
   const finishBind = (portal, pv, resultFormatAdded=false) => {
-    if (pv.state !== P_BIND) return;
+    if (! pv.isState(P_BIND_START, P_CLOSED)) return;
     assert(pv.paramsAdded == pv.paramCount, E_PARAM_COUNT_MISMATCH);
-    pv.state = P_BOUND;
+    pv.setState(P_BOUND);
+    pv.clearState(P_BIND_START);
     const {u8b} = pv;
-    resultFormatAdded || u8b.grow(2);
+    resultFormatAdded || u8b.appendByte(0).appendByte(0);
     let pos = pv.bindPos + 1;
-    const dv = u8b.dataView;
-    dv.setInt32(pos, u8b.length - pos);
+    u8b.writeInt32BE(u8b.length - pos, pos);
   };
 
   class PgPortal {
     constructor(conn, portalName) {
       this.conn = conn;
-      this.isClosed = false;
       this.name = portalName;
       this.u8name = utf8Encode(portalName);
-      this[private$] = {
-        state: P_NEW,
-        u8b: new Uint8ArrayBuilder(0),
-      };
+      this[private$] = new PortalState(this);
     }
 
     [inspect$]() {return `PgPortal(${this.name})`}
 
+    get isClosed() {return this[private$].isClosed}
+
     parse(name='', query, paramCount) {
-      assert(typeof query === 'string' && typeof paramCount === 'number' && paramCount >= 0, E_BAD_PARSE_ARGS);
+      assert(typeof query === 'string' && typeof paramCount === 'number' && paramCount >= 0, E_BAD_ARGS);
       const pv = this[private$];
-      assert(pv.state === P_NEW, 'parse may only be called on new portal');
+      assert(pv.state == 0, 'parse may only be called on new portal');
+      pv.setState(P_PARSE_START);
 
       pv.paramCount = paramCount;
       pv.paramsAdded = 0;
       this.psName = name;
-      pv.state = P_PARSE;
       const {u8b} = pv;
 
       pv.parsePos = u8b.length;
@@ -164,22 +239,20 @@ define((require, exports, module) => {
       const psU8name = this.psU8name = utf8Encode(name);
       const u8query = this.queryU8 = utf8Encode(query);
 
-      u8b.grow(7 + psU8name.length + u8query.length + 2);
+      u8b.appendByte(PBYTE).append(ZERO32)
+        .append(psU8name).appendByte(0)
+        .append(u8query).appendByte(0)
+        .appendByte(0).appendByte(0);
 
-      const u8 = u8b.subarray();
-      u8[0] = PCMD;
-      u8.set(psU8name, 5);
-      let pos = 6 + psU8name.length;
-      u8.set(u8query, pos);
       return this;
     }
 
     addParamOid(oid) {
       const pv = this[private$];
 
-      if (pv.state === P_PARSE) {
+      if (pv.isState(P_PARSE_START, P_CLOSED)) {
         pv.u8b.writeInt32BE(oid);
-      } else if (pv.state === P_BIND) {
+      } else if (pv.isState(P_BIND_START, P_CLOSED)) {
         pv.u8b.dataView.setInt32(pv.paramOidPos + (pv.paramsAdded) * 4, oid);
       } else {
         throw new Error('addParamOid may not be used here; use after parse/prepareValues');
@@ -195,54 +268,75 @@ define((require, exports, module) => {
 
       const pv = this[private$];
       const {u8b} = pv;
-      const cState = pv.state;
-      if (cState === P_PARSE) {
+      if (pv.isState(P_PARSE_START, P_CLOSED)) {
         pv.paramOidPos = u8b.length - (pv.paramsAdded * 4);
         u8b.grow(4 * (pv.paramCount - pv.paramsAdded));
         finishParse(this, pv);
       } else {
-        assert(cState === P_PARSED, 'prepareValues may only be called on a parsed portal');
+        assert((pv.state & (P_PARSED | P_BIND_START | P_BOUND)) == P_PARSED,
+               'prepareValues may only be called on a parsed portal');
       }
 
       const {psU8name, u8name} = this;
 
-      let pos = pv.bindPos = u8b.length;
+      pv.bindPos = u8b.length;
 
-      u8b.grow(psU8name.length + u8name.length + 5+2+2 + (formatCodes.length) * 2 + 2, pv.paramCount * 6);
+      u8b.appendByte(BBYTE).append(ZERO32)
+        .append(u8name).appendByte(0)
+        .append(psU8name).appendByte(0);
 
-      const u8 = u8b.subarray();
-      const dv = u8b.dataView;
-      u8[pos] = BCMD;
-      u8.set(u8name, pos + 5);
-      pos += 6 + u8name.length;
-      u8.set(psU8name, pos);
-      dv.setInt16(pos += 1 + psU8name.length, formatCodes.length);
-      for (const code of formatCodes) dv.setInt16(pos += 2, code);
-      dv.setInt16(pos += 2, pv.paramCount);
-      pv.state = P_BIND;
+      u8b.writeInt16BE(formatCodes.length);
+      for (const code of formatCodes) u8b.writeInt16BE(code);
+
+      u8b.writeInt16BE(pv.paramCount);
+      pv.setState(P_BIND_START);
 
       return u8b;
     }
 
     addResultFormat(resultCodes=BINARY_CODES) {
       const pv = this[private$];
-      assert(pv.state === P_BIND, E_MISSING_PREPARE_VALUES);
+      assert(pv.isState(P_BIND_START, P_CLOSED), E_MISSING_PREPARE_VALUES);
 
       const {u8b} = pv;
 
-      let pos = u8b.length;
-      u8b.grow(2 + resultCodes.length * 2);
-      const dv = u8b.dataView;
-
-      dv.setInt16(pos, resultCodes.length);
-      for (const code of resultCodes) dv.setInt16(pos += 2, code);
+      u8b.writeInt16BE(resultCodes.length);
+      for (const code of resultCodes) u8b.writeInt16BE(code);
 
       finishBind(this, pv, true);
     }
 
-    describe() {
+    describeStatement(sync = false) {
+      const pv = this[private$];
+      if (! pv.isState(P_PARSED | P_PARSE_START, P_CLOSED)) {
+        assert(false, 'portal not in correct state to issue describe ' + pv.state);
+      }
+
+      finishParse(this, pv);
+
+      const {u8name} = this;
+
+      pv.describeState = pv.state;
+      const {u8b} = pv;
+
+      let pos = u8b.length;
+
+      u8b.appendByte(DBYTE).writeInt32BE(u8name.length + 6);
+      u8b.appendByte(SBYTE).append(u8name).appendByte(0);
+
+      if (sync) {
+        return new Promise((resolve) => lockPortal(this, () => {
+          pv.u8b.append(SYNC);
+          pv.send();
+        }, resolve));
+      }
+    }
+
+    describe(sync = false) {
       if (this.error !== void 0) return;
       const pv = this[private$];
+      assert(pv.isState(P_PARSED | P_BOUND, P_LOCKED | P_CLOSED | P_FETCHING | P_BIND_START),
+             'portal not in correct state to issue describe');
 
       finishParse(this, pv);
       finishBind(this, pv);
@@ -254,138 +348,66 @@ define((require, exports, module) => {
 
       let pos = u8b.length;
 
-      let len = 6 + u8name.length + 1;
+      u8b.appendByte(DBYTE).writeInt32BE(u8name.length + 6);
+      u8b.appendByte(PBYTE).append(u8name).appendByte(0);
 
-      u8b.grow(len);
-      const u8 = u8b.subarray(pos);
-      const dv = new DataView(u8.buffer, u8.byteOffset);
-      u8[0] = DCMD;
-      dv.setInt32(1, u8.length - 1);
-      u8[5] = PCMD;
-      u8.set(u8name, 6);
+      if (sync) {
+        return new Promise((resolve) => lockPortal(this, () => {
+          pv.u8b.append(SYNC);
+          pv.send();
+        }, resolve));
+      }
     }
 
-    execute(maxRows=0) {
-      const portal = this;
-      if (portal.error !== void 0) return;
-      const pv = portal[private$];
-
-      finishParse(portal, pv);
-      finishBind(portal, pv);
-
-      assert(pv.state === P_BOUND, E_MISSING_PREPARE_VALUES);
-
-      const cpv = portal.conn[private$];
-
-      pv.state = P_EXECUTE;
-
-      let execState = 1;
-
-      return {
-        fetch: (callback) => {
-          if (pv.state != P_EXECUTE || execState != 1) return;
-
-          return new Promise((resolve) => portalListen(
-            portal, () => {
-              if (pv.state !== P_EXECUTE || execState != 1) {
-                resolve(this.error);
-                return false;
-              }
-              const {u8name} = portal;
-              const {u8b} = pv;
-
-              let pos = u8b.length;
-
-              let len = 5 + u8name.length + 1+4;
-              u8b.grow(len);
-              let u8 = u8b.subarray(pos);
-              const dv = new DataView(u8.buffer, u8.byteOffset);
-
-              u8[0] = ECMD;
-              dv.setInt32(1, u8.length - 1);
-              u8.set(u8name, 5);
-
-              if (maxRows !== 0) {
-                dv.setInt32(u8 - 4, maxRows);
-              }
-
-              pv.u8b.append(SYNC);
-
-              portal.conn.socket.write(pv.u8b.subarray());
-              pv.u8b.length = 0;
-
-              pv.nextRow = callback;
-            }, () => {
-              execState = 0;
-              pv.state = P_CLOSED;
-              resolve(this.error);
-            }));
-        },
-
-        close: (err) => {
-          portal.error ??= err;
-          if (execState != 2) {
-            if (execState == 1) {
-              execState = -1;
-              pv.state = P_CLOSED;
-            }
-            return portal.error;
-          }
-
-          execState = -1;
-          return new Promise((res) => {
-            pv.nextRow = util.voidFunc;
-            cpv.sendNext();
-          });
-        },
-
-        getCompleted: () => {
-          const result = pv.complete && pv.complete.subarray(0, -1).utf8Slice();
-          pv.isExecuting && cpv.sendNext();
-          return result;
-        },
-        get isExecuting() {return execState > 0},
-        get error() {return portal.error},
-      };
-    }
-
-    flush() {
-      if (this.error !== void 0) return;
+    fetch(callback, maxRows=0) {
+      assert(typeof maxRows === 'number' && typeof callback === 'function', E_BAD_ARGS);
       const pv = this[private$];
-      if (pv.state >= P_EXECUTE) return;
+      assert(pv.canFetch, 'fetch not allowed here');
 
       finishParse(this, pv);
       finishBind(this, pv);
 
-      return new Promise((resolve) => portalListen(this, () => {
-        if (this.error !== void 0 || pv.state >= P_EXECUTE) {
-          resolve(this.error);
-          return false;
-        }
+      assert(pv.isState(P_BOUND), E_MISSING_PREPARE_VALUES);
 
-        pv.u8b.append(FLUSH);
-        this.conn.socket.write(pv.u8b.subarray());
-        pv.u8b.length = 0;
-      }, resolve));
+      return new Promise((resolve) => lockPortal(
+        this, () => {
+          const {state} = pv;
+          pv.setState(P_FETCHING);
+          pv.clearState(P_MORE);
+
+          const {u8name} = this;
+          const {u8b} = pv;
+
+          let pos = u8b.length;
+
+          u8b.appendByte(EBYTE).writeInt32BE(5 + u8name.length + 4);
+
+          u8b.append(u8name).appendByte(0)
+            .writeInt32BE(maxRows);
+
+          pv.u8b.append(SYNC);
+
+          pv.send();
+
+          pv.nextRow = callback;
+        }, resolve));
     }
 
-    close() {
+    close(err) {
       const pv = this[private$];
-
-      const {state} = pv;
-
-      pv.u8b.length = 0;
-      if (state >= P_EXECUTE) {
-        if (state === P_EXECUTE) pv.state = P_CLOSING;
-        return;
-      }
-
-      pv.state = P_CLOSING;
-
-      return new Promise((resolve) => portalListen(this, () => {
-        this.conn.socket.write(SYNC);
-      }, resolve));
+      if (pv.isClosed) return this.error;
+      this.error ??= err;
+      return pv.closePortal();
     }
+
+    getCompleted() {
+      const pv = this[private$];
+      const result = pv.complete && pv.complete.subarray(0, -1).utf8Slice();
+      pv.isExecuting && this.conn[private$].sendNext();
+      return result;
+    }
+    get isExecuting() {return this[private$].isState(P_FETCHING)}
+    get isMore() {return this[private$].isState(P_MORE)}
 
     getColumn(n) {
       const pv = this[private$];

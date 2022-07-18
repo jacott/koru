@@ -159,7 +159,7 @@ define((require, exports, module) => {
   }
 
   const execParams = (client, name, queryStr, paramValues, paramOids, resultFormatCodes) => {
-    const {types: {encodeText, encodeBinary, guessOid}} = client;
+    const {types: {encodeBinary, guessOid}} = client;
 
     const port = client.conn.portal();
     const oidCount = paramOids?.length ?? 0;
@@ -172,7 +172,7 @@ define((require, exports, module) => {
     }
     port.addResultFormat(resultFormatCodes);
     port.describe();
-    return port.execute();
+    return port;
   };
 
   class PgClient {
@@ -188,17 +188,13 @@ define((require, exports, module) => {
 
     isClosed() {return this.conn.isClosed()}
 
-    execRows(queryString, paramValues, paramOids, resultFormatCodes) {
-      const query = paramValues === void 0
-            ? this.conn.exec(queryString)
-            : execParams(this, '', queryString, paramValues, paramOids, resultFormatCodes);
-
+    buildForEach(query, queryString, paramValues) {
       const {types: {decodeText, decodeBinary}, formatOptions: {excludeNulls=true}} = this;
 
       return {
         fetch: async (callback) => {
           try {
-            while (query.isExecuting) {
+            do {
               await query.fetch((row) => {
                 const rec = {};
                 for (const {desc, rawValue} of row) {
@@ -216,7 +212,8 @@ define((require, exports, module) => {
                 }
                 return callback(rec);
               });
-            }
+              if (query.error !== void 0) throw query.error;
+            } while (query.isExecuting);
           } catch (err) {
             err = await query.close(err);
             throw (err instanceof Error) ? err : new PgError(err);
@@ -231,21 +228,34 @@ define((require, exports, module) => {
       };
     }
 
-    async exec(queryString, paramValues, paramOids, resultFormatCodes) {
+    async fetchRows(query) {
       try {
-        const query = this.execRows(queryString, paramValues, paramOids, resultFormatCodes);
         let ans;
         const result = [];
-        while (query.isExecuting) {
+        do {
           await query.fetch((row) => {result.push(row)});
+          if (query.error) throw query.error;
           const t = query.getCompleted();
           ans = result.length == 0 && t[0] !== 'S' ? t : result;
-        }
+        } while (query.isExecuting);
         return ans;
       } catch (err) {
         if (err instanceof Error) throw err;
         throw new PgError(err);
       }
+    }
+
+    execRows(queryString, paramValues, paramOids, resultFormatCodes) {
+      return this.buildForEach(
+        paramValues === void 0
+          ? this.conn.exec(queryString)
+          : execParams(this, '', queryString, paramValues, paramOids, resultFormatCodes),
+        queryString, paramValues,
+      );
+    }
+
+    async exec(queryString, paramValues, paramOids, resultFormatCodes) {
+      return this.fetchRows(this.execRows(queryString, paramValues, paramOids, resultFormatCodes));
     }
   }
 

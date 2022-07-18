@@ -7,15 +7,14 @@ define((require, exports, module) => {
   return {
     createReadySocket: (path, conn) => new Promise((resolve, reject) => {
       const socket = net.createConnection(path, () => resolve(socket));
-      socket.on('error', (err) => {conn.close(); new TH.Core.AssertionError(err)});
+      socket.on('error', (err) => {conn?.close(); new TH.Core.AssertionError(err)});
     }),
 
-    readResult: async (query) => {
+    readResult: async (query, maxRows=0) => {
       const result = [];
-      while (query.isExecuting) {
+      do {
         await query.fetch((row) => {
           const rec = {};
-          assert.isTrue(query.isExecuting);
           for (const {desc, rawValue} of row) {
             rec[`${desc.index}:${desc.name},${desc.oid}`] =
               rawValue && (
@@ -24,8 +23,8 @@ define((require, exports, module) => {
                   : decodeBinary(desc.oid, rawValue));
           }
           result.push(rec);
-        });
-      }
+        }, maxRows);
+      } while (query.isExecuting);
 
       return result;
     },

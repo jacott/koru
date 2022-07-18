@@ -57,6 +57,9 @@ define((require, exports, module) => {
   // NoData
   addCommand('n', util.trueFunc);
 
+  // CloseComplete
+  addCommand('3', (pgConn, data) => pgConn[listener$].closeComplete(data));
+
   // ReadyForQuery
   addCommand('Z', (pgConn, [ts]) => {
     const state = pgConn[private$].state = ts === BE_IDLE
@@ -80,11 +83,17 @@ define((require, exports, module) => {
   // RowDescription
   addCommand('T', (pgConn, data) => pgConn[listener$].addRowDesc(data));
 
+  // ParameterDescription
+  addCommand('t', (pgConn, data) => pgConn[listener$].addParameterDescription(data));
+
   // DataRow
   addCommand('D', (pgConn, data) => pgConn[listener$].addRow(data));
 
   // CommandComplete
   addCommand('C', (pgConn, data) => pgConn[listener$].commandComplete(data));
+
+  // PortalSuspended
+  addCommand('s', (pgConn, data) => pgConn[listener$].portalSuspended(data));
 
   const makeCloseError = (message) => (message instanceof PgMessage)
         ? message
@@ -98,6 +107,8 @@ define((require, exports, module) => {
       this[listener$] = null;
       (this[mutex$] = new PgMutex()).lock();
     }
+
+    get state() {return this[private$].state}
 
     async lock(listener) {
       const error = await this[mutex$].lock();
@@ -313,7 +324,7 @@ define((require, exports, module) => {
         return fetch(callback);
       };
 
-      const fetch = (callback) => {
+      const fetch = (callback=util.voidFunc) => {
         if (error !== void 0 || execState < 1) return error;
         if (execState == 1) return initFetch(callback);
         if (lastRow === null) {
