@@ -115,6 +115,38 @@ define((require, exports, module) => {
       //]
     });
 
+    test('mapObjectToArray', () => {
+      /**
+       * Map (and filter) an object to array. If the `mapper` returns `undefined` then the
+       * value is filtered out of the results
+       **/
+      api.method();
+      //[
+      const obj = {a: 1, b: 2, c: 3, d: 4};
+      const mapped = Enumerable.mapObjectToArray(obj, (n, v, i) => (i == 2) ? undefined : 2 * v);
+      assert.equals(mapped.length, 3);
+      assert.equals(mapped, [2, 4, 8]);
+      //]
+    });
+
+    test('mapObjectIter', () => {
+      /**
+       * return an iterator over an object while mapping (and filtering). If the `mapper` returns
+       * `undefined` then the value is filtered out of the iterator results
+       **/
+      api.method();
+      //[
+      const obj = {a: 1, b: 2, c: 3, d: 4};
+      const names = [], values = [];
+      for (const [n, v] of Enumerable.mapObjectIter(obj, (n, v, i) => (i == 2) ? undefined : 2 * v)) {
+        names.push(n);
+        values.push(v);
+      }
+      assert.equals(names, ['a', 'b', 'd']);
+      assert.equals(values, [2, 4, 8]);
+      //]
+    });
+
     test('map', () => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the

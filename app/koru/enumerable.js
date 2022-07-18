@@ -75,6 +75,24 @@ define(() => {
 
     get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
 
+    static mapObjectToArray(object, mapper) {
+      let i = -1;
+      const result = [];
+      for (const name in object) {
+        const ans = mapper(name, object[name], ++i);
+        if (ans !== void 0) result.push(ans);
+      }
+      return result;
+    }
+
+    static *mapObjectIter(object, mapper) {
+      let i = -1;
+      for (const name in object) {
+        const ans = mapper(name, object[name], ++i);
+        if (ans !== void 0) yield [name, ans];
+      }
+    }
+
     static count(to, from=1, step=1) {
       return new Enumerable(function *() {
         for (let i = from; i <= to; i += step) yield i;
