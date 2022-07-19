@@ -59,19 +59,46 @@ define((require, exports, module) => {
   PgMessage.prototype.code = '500';
   PgMessage.prototype.message = 'Unexpected result';
 
+  const COL_FIELDS = {
+    name: (u8, pos, strEnd) => u8.utf8Slice(pos, strEnd),
+    order: (u8, pos, strEnd) => u8.readInt16BE(strEnd + 5),
+    oid: (u8, pos, strEnd) => u8.readInt32BE(strEnd + 7),
+    size: (u8, pos, strEnd) => u8.readInt16BE(strEnd + 11),
+    mod: (u8, pos, strEnd) => u8.readInt32BE(strEnd + 13),
+    format: (u8, pos, strEnd) => u8.readInt16BE(strEnd + 17),
+  };
+
   const buildNameOidColumns = (u8) => {
     const columns = [];
 
-    const dv = new DataView(u8.buffer, u8.byteOffset);
-    const len = dv.getInt16(0);
-
+    const len = u8.readInt16BE(0);
     let pos = 2, strEnd = -1;
 
     for (let i = 0; i < len; ++i) {
       strEnd = u8.indexOf(0, pos);
       columns.push({
-        name: u8.subarray(pos, strEnd).toString(),
-        oid: dv.getInt32(strEnd + 7), format: dv.getInt16(strEnd + 17)});
+        name: u8.utf8Slice(pos, strEnd),
+        oid: u8.readInt32BE(strEnd + 7),
+        format: u8.readInt16BE(strEnd + 17)});
+      pos = strEnd + 19;
+    }
+
+    return columns;
+  };
+
+  const buildColumns = (u8, fields) => {
+    const columns = [];
+
+    const len = u8.readInt16BE(0);
+    let pos = 2, strEnd = -1;
+
+    for (let i = 0; i < len; ++i) {
+      strEnd = u8.indexOf(0, pos);
+      const col = {};
+      for (const name of fields) {
+        col[name] = COL_FIELDS[name](u8, pos, strEnd);
+      }
+      columns.push(col);
       pos = strEnd + 19;
     }
 
@@ -91,11 +118,10 @@ define((require, exports, module) => {
   };
 
   const forEachColumn = (u8, callback) => {
-    const dv = new DataView(u8.buffer, u8.byteOffset);
-    const len = dv.getInt16(0);
+    const len = u8.readInt16BE(0);
     let pos = 2;
     for (let i = 0; i < len; ++i) {
-      const flen = dv.getInt32(pos);
+      const flen = u8.readInt32BE(pos);
       pos += 4;
       if (flen == -1) {
         callback(null, i);
@@ -114,6 +140,7 @@ define((require, exports, module) => {
     simpleCmd,
     forEachColumn,
     buildNameOidColumns,
+    buildColumns,
     getRow,
     utf8Encode: (v) => Buffer.from(v.toString()),
     listener$,

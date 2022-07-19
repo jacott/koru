@@ -1,7 +1,7 @@
 define((require, exports, module) => {
   'use strict';
   const PgError         = require('koru/pg/pg-error');
-  const {getRow, forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
+  const {getRow, forEachColumn, buildNameOidColumns, buildColumns} = require('koru/pg/pg-util');
   const util            = require('koru/util');
 
   let nameCounter = 0;
@@ -47,7 +47,7 @@ define((require, exports, module) => {
       let {columns} = this;
       let rec;
       const port = this.#buildQuery(client, args);
-      if (columns === void 0) port.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+      if (columns === void 0) port.describe((rawColumns) => {columns = this.columns = buildNameOidColumns(rawColumns)});
 
       const getValue = client.buildGetValue();
       const err = await port.fetch((rawRow) => {
@@ -65,7 +65,7 @@ define((require, exports, module) => {
       let {columns} = this;
       let rec;
       const port = this.#buildQuery(client, args);
-      if (columns === void 0) port.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+      if (columns === void 0) port.describe((rawColumns) => {columns = this.columns = buildNameOidColumns(rawColumns)});
 
       const rows = [];
       const getValue = client.buildGetValue();
@@ -77,6 +77,18 @@ define((require, exports, module) => {
       }
       if (port.isMore) await port.close();
       return rows.length == 0 ? tagToCount(port.getCompleted()) : rows;
+    }
+
+    async describe(client, fields, ...args) {
+      const {excludeNulls=true} = client.formatOptions;
+      let rec;
+      const port = this.#buildQuery(client, args);
+      let {columns} = this;
+      const err = await port.describe((rawColumns) => {columns = this.columns = buildColumns(rawColumns, fields)}, true);
+      if (err !== void 0) {
+        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      }
+      return columns;
     }
 
     #buildQuery(client, args) {

@@ -35,12 +35,21 @@ isServer && define((require, exports, module) => {
             .addOids([21]);
 
       assert.equals(await ps1.fetchOne(client, {p1: 5}, [2]), {a: 2, b: 5});
+      const {columns} = ps1;
 
       ps1.queryStr = void 0; // not needed
       assert.equals(await ps1.fetchOne(client, {p1: 6}, [1]), {a: 1, b: 4});
+      assert.same(ps1.columns, columns);
+      assert.equals(columns, [{name: 'a', oid: 23, format: 0}, {name: 'b', oid: 23, format: 0}]);
     });
 
-    test('execute', async () => {
+    test('describe', async () => {
+      const ps = new PgPrepSql(`SELECT * from unnest(Array[1,2,2], Array[4,5,6]) as x(a,b)`);
+      assert.equals(await ps.describe(client, ['name', 'oid', 'size']), [
+        {name: 'a', oid: 23, size: 4}, {name: 'b', oid: 23, size: 4}]);
+    });
+
+    test('execute with rows', async () => {
       const oparams = {a1: 1, a2: 2, a3: 3, b1: 4, b2: 5, b3: 6};
       const colMap = {};
       for (const name in oparams) {
@@ -56,9 +65,18 @@ isServer && define((require, exports, module) => {
         {a: 'a1', b: 1}, {a: 'a2', b: 2}, {a: 'a3', b: 3},
       ]);
 
+      const {columns} = ps1;
+
       ps1.queryStr = void 0; // not needed
       assert.equals(await ps1.execute(client, {a1: 'ax1', a2: 'ax2'}, ['ax3', 11, 22], {b3: 33}), [
         {a: 'ax1', b: 11}, {a: 'ax2', b: 22}, {a: 'ax3', b: 33}]);
+
+      assert.same(ps1.columns, columns);
+    });
+
+    test('execute now rows', async () => {
+      const ps = new PgPrepSql(`set search_path TO DEFAULT`);
+      assert.equals(await ps.execute(client), 'SET');
     });
   });
 });
