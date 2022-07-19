@@ -31,7 +31,7 @@ define((require) => {
   const core_sha256 = (
     m, l, H,
   ) => {
-    let a, b, c, d, e, f, g, h, i, j, t1, t2;
+    let a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0, i = 0, j = 0, t1 = 0, t2 = 0;
 
     m[l >> 5] |= 0x80 << (24 - l % 32);
     m[((l + 64 >> 9) << 4) + 15] = l;
