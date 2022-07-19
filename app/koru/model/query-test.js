@@ -392,7 +392,6 @@ define((require, exports, module) => {
       await fred.$update('name', 'Eric');
       assert.calledWith(oc, DocChange.delete(fred.$reload()));
 
-
       /** stop cancels observer **/
       handle.stop();
 
@@ -625,7 +624,10 @@ define((require, exports, module) => {
 
     group('updates', () => {
       beforeEach(async () => {await TH.startTransaction()});
-      afterEach(async () => {await TH.rollbackTransaction()});
+      afterEach(async () => {
+        TestModel.docs._ps_findById = void 0;
+        await TH.rollbackTransaction();
+      });
 
       test('update one', async () => {
         const st = new Query(TestModel).onId(v.foo._id);
@@ -691,7 +693,6 @@ define((require, exports, module) => {
         const st = new Query(TestModel).onId(v.foo._id);
 
         assert.same(await st.update({name: 'new name', age: undefined}), 1);
-
         assert.equals((await v.foo.$reload(true)).attributes, {_id: 'foo123', name: 'new name', gender: 'm'});
       });
 

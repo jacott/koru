@@ -167,10 +167,9 @@ isServer && define((require, exports, module) => {
       test('execRows', async () => {
         const query = client.execRows(`SELECT 1+2 as a`);
         const result = [];
-        while (query.isExecuting) {
+        do {
           await query.fetch((row) => {result.push(row)});
-          query.getCompleted();
-        }
+        } while (query.isExecuting);
 
         assert.equals(result, [{a: 3}]);
       });

@@ -157,5 +157,14 @@ define((require, exports, module) => {
     subarray(spos=0, epos=this.length) {return this[buffer$]?.subarray(spos, epos) ?? EMPTY_U8}
   }
 
+  if (isServer) {
+    Object.defineProperty(Uint8ArrayBuilder.prototype, 'buffer', {
+      get() {
+        return this[buffer$]},
+      enumerable: false,
+      configurable: true,
+    });
+  }
+
   return Uint8ArrayBuilder;
 });

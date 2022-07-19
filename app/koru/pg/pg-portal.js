@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const util            = require('koru/util');
-  const {PgMessage, PgRow, simpleCmd, buildColumns, utf8Encode, State} = require('./pg-util');
+  const {PgMessage, simpleCmd, utf8Encode, State} = require('./pg-util');
 
   const {private$, inspect$} = require('koru/symbols');
 
@@ -37,7 +37,7 @@ define((require, exports, module) => {
       this.portal = portal;
       this.state = 0;
       this.u8b = new Uint8ArrayBuilder(0);
-      this.raw = {desc: void 0, row: void 0};
+      this.rawColumns = void 0;
     }
 
     get conn() {return this.portal.conn}
@@ -118,8 +118,7 @@ define((require, exports, module) => {
     }
     addRowDesc(data) {
       if (this.isClosed) return true;
-      this.raw.columns = void 0;
-      this.raw.desc = data;
+      this.rawColumns = data;
       return true;
     }
     addParameterDescription(data) {
@@ -130,8 +129,7 @@ define((require, exports, module) => {
     addRow(data) {
       if (this.portal.error !== void 0) return true;
       try {
-        this.raw.row = data;
-        return this.nextRow !== void 0 && this.nextRow(this.row ??= new PgRow(this.raw)) !== false;
+        return this.nextRow !== void 0 && this.nextRow(data) !== false;
       } catch (err) {
         this.portal.error ??= err;
         return true;
@@ -432,11 +430,7 @@ define((require, exports, module) => {
     }
     get isExecuting() {return this[private$].isState(P_FETCHING)}
     get isMore() {return this[private$].isState(P_MORE)}
-
-    getColumn(n) {
-      const pv = this[private$];
-      return (pv.columns ??= buildColumns(pv.raw))[n];
-    }
+    get rawColumns() {return this[private$].rawColumns}
   }
 
   return PgPortal;

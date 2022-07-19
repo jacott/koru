@@ -8,6 +8,8 @@ isServer && define((require, exports, module) => {
    * examples. Note ssl is not support at this time.
    *
    **/
+  const koru            = require('koru');
+  const Enumerable      = require('koru/enumerable');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -324,25 +326,20 @@ isServer && define((require, exports, module) => {
       assert.equals(await foo.count({'widget.a.b': [{c: 2}, {c: 3}]}), 0);
     });
 
-    test('values', async () => {
+    test('_colMap', async () => {
       const foo = pg.defaultDb.table('Foo', {
         widget: 'object',
         lots: 'integer[]',
         createdOn: 'date',
         updatedAt: 'timestamp',
       });
-      const data = {
-        widget: 'a',
-        lots: [11, 23, 44],
-        createdOn: new Date(2015, 5, 12),
-        updatedAt: new Date(2014, 11, 27, 23, 45, 55),
-      };
-      assert.equals(await foo.toColumns(data),
-                    {names: Object.keys(data), values: Array.from(Object.values(data)), oids: [3802, 1007, 1082, 1114]});
-
-      data.widget = [1, 2, {a: 3}];
-      assert.equals(await foo.toColumns(data, ['createdOn', 'widget']),
-                    {names: ['createdOn', 'widget'], values: [data.createdOn, data.widget], oids: [1082, 3802]});
+      await foo._ensureTable();
+      assert.equals(Enumerable.mapObjectToArray(foo._colMap, (n, v) => v), [
+        {name: '_id', oid: 25, arraydim: 0, order: 1, collation_name: 'C', isJson: false},
+        {name: 'widget', oid: 3802, arraydim: 0, order: 2, isJson: true},
+        {name: 'lots', oid: 1007, arraydim: 1, order: 3, isJson: false},
+        {name: 'createdOn', oid: 1082, arraydim: 0, order: 4, isJson: false},
+        {name: 'updatedAt', oid: 1114, arraydim: 0, order: 5, isJson: false}]);
     });
 
     test('json', async () => {
@@ -393,8 +390,7 @@ isServer && define((require, exports, module) => {
       assert.equals(await foo.count({createdOn: '2015/04/04'}), 1);
       assert.equals(await foo.count({createdOn: createdOn.getTime()}), 1);
       assert.equals(await foo.count({createdOn: new Date(2015, 3, 5)}), 0);
-      assert.equals((await foo.toColumns({createdOn: '2015/04/04'})).oids,
-                    [1082]);
+      assert.equals(foo._colMap.createdOn.oid, 1082);
     });
 
     test('$regex', async () => {
@@ -546,7 +542,7 @@ isServer && define((require, exports, module) => {
 
     group('Static table', () => {
       let foo;
-      before(() => {
+      before(async () => {
         foo = pg.defaultDb.table('Foo', {
           name: 'text',
           age: {type: 'number', default: 10},
@@ -559,7 +555,11 @@ isServer && define((require, exports, module) => {
       });
 
       afterEach(async () => {
-        await foo._client.query('truncate "Foo"');
+        try {
+          await foo._client.query('truncate "Foo"');
+        } catch (err) {
+          koru.unhandledException(err);
+        }
       });
 
       test('_resetTable and cursor with where', async () => {

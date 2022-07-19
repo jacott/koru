@@ -7,7 +7,7 @@ define((require, exports, module) => {
   const PgPortal        = require('koru/pg/pg-portal');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const util            = require('koru/util');
-  const {PgMessage, PgRow, State, simpleCmd, utf8Encode} = require('./pg-util');
+  const {PgMessage, State, simpleCmd, utf8Encode} = require('./pg-util');
 
   const {private$, inspect$} = require('koru/symbols');
 
@@ -36,20 +36,19 @@ define((require, exports, module) => {
   addCommand('S', (pgConn, data) => {
     let i = 0;
     let np = data.indexOf(0);
-    const name = data.subarray(i, np).toString();
+    const name = data.utf8Slice(i, np);
     i = np + 1;
     np = data.indexOf(0, i);
-    const value = data.subarray(i, np).toString();
+    const value = data.utf8Slice(i, np);
     pgConn.runtimeParams[name] = value;
     return true;
   });
 
   // BackendKeyData
   addCommand('K', (pgConn, data) => {
-    const dv = new DataView(data.buffer, data.byteOffset);
     pgConn.cancel = {
-      processId: dv.getInt32(0),
-      secretKey: dv.getInt32(4),
+      processId: data.readInt32BE(0),
+      secretKey: data.readInt32BE(4),
     };
     return true;
   });
@@ -145,27 +144,30 @@ define((require, exports, module) => {
         }
       };
 
-      const buf = new Uint8ArrayBuilder(40);
-      buf.grow(8);
-      buf.set(5, 3);
+      const ub = new Uint8ArrayBuilder(100);
+      ub.grow(8);
+      ub.set(5, 3);
       const {options} = this;
       for (const name in options) {
-        buf.appendUtf8Str(`${name}\0${options[name]}\0`);
+        ub.appendUtf8Str(`${name}\0${options[name]}\0`);
       }
-      buf.set(buf.length, 0);
+      ub.set(ub.length, 0);
+      ub.writeInt32BE(ub.length, 0);
 
-      const startup = buf.subarray();
-      let dv = new DataView(startup.buffer, startup.byteOffset);
-      dv.setInt32(0, startup.length);
+      const startup = ub.subarray();
 
       socket.write(startup);
-      buf.length = 0;
+      ub.length = 0;
 
-      let msgs, len, pos;
+      let len, pos;
 
-      const onData = (data) => {
-        buf.append(data);
-        checkBuf(buf.subarray());
+      const checkBuf = (data) => {
+        ub.append(data);
+        len = ub.length;
+        if (len < 5) return;
+        pos = 0;
+        socket.pause();
+        sendNext();
       };
 
       const close = pv.close = (reason) => {
@@ -173,7 +175,7 @@ define((require, exports, module) => {
         releaseLock();
         pv.state = State.CLOSED;
         error ??= makeCloseError(reason);
-        socket.removeListener('data', onData);
+        socket.removeListener('data', checkBuf);
         socket.write(TERMINATE);
         if (f.isResolved) {
           const listener = this[listener$];
@@ -196,10 +198,10 @@ define((require, exports, module) => {
 
       const sendNext = pv.sendNext = () => {
         while (len - pos > 4) {
-          const expLen = dv.getInt32(pos + 1);
+          const expLen = ub.buffer.readInt32BE(pos + 1);
           if (len - pos < expLen) break;
-          const data = msgs.subarray(pos + 1+4, expLen + pos + 1);
-          const cmdType = msgs[pos];
+          const data = ub.subarray(pos + 1+4, expLen + pos + 1);
+          const cmdType = ub.buffer[pos];
           const cmd = BECMD[cmdType];
           pos += expLen + 1;
           let more = true;
@@ -213,24 +215,14 @@ define((require, exports, module) => {
           if (! more) return;
         }
 
-        dv = void 0;
-        const rem = buf.subarray(pos);
-        buf.length = 0;
-        buf.append(rem);
+        len = ub.length - pos;
+        len != 0 && ub.buffer.copy(ub.buffer, 0, pos);
+        ub.length = len;
+        pos = 0;
         socket.resume();
       };
 
-      const checkBuf = (input) => {
-        len = buf.length;
-        if (len < 5) return;
-        pos = 0;
-        dv = new DataView(input.buffer, input.byteOffset);
-        msgs = input;
-        socket.pause();
-        sendNext();
-      };
-
-      socket.on('data', onData);
+      socket.on('data', checkBuf);
 
       return f.promise;
     }
@@ -251,12 +243,11 @@ define((require, exports, module) => {
 
       let done, nextRow;
 
-      let complete, error, lastRow;
+      let complete, error;
       let execState = 1;
+      let rawColumns;
 
       const initFetch = async (callback) => {
-        const raw = {desc: void 0, row: void 0};
-
         const ready = () => {
           conn.unlock();
           execState = 0;
@@ -268,24 +259,18 @@ define((require, exports, module) => {
           ready,
           error: (err) => {
             error ??= err;
-            if (err.severity == 'FATAL') {
-              ready();
-              return;
-            }
+            nextRow = void 0;
             return true;
           },
           addRowDesc: (data) => {
             if (error !== void 0) return true;
-            raw.columns = void 0;
-            raw.desc = data;
+            rawColumns = data;
             return true;
           },
           addRow: (data) => {
             if (error !== void 0) return true;
             try {
-              lastRow ??= new PgRow(raw);
-              raw.row = data;
-              return nextRow !== void 0 && nextRow(lastRow) !== false;
+              return nextRow !== void 0 && nextRow(data) !== false;
             } catch (err) {
               error ??= err;
               return true;
@@ -294,8 +279,6 @@ define((require, exports, module) => {
           commandComplete: (data) => {
             if (error !== void 0) return true;
             complete = data;
-            nextRow = void 0;
-            lastRow = null;
             done?.(error);
             return false;
           },
@@ -311,13 +294,13 @@ define((require, exports, module) => {
 
         execState = 2;
 
-        const utf8 = utf8Encode(str);
+        const utf8 = Buffer.from(str);
 
-        const u8 = new Uint8Array(6 + utf8.length);
+        const u8 = Buffer.allocUnsafe(6 + utf8.length);
         u8[0] = QCMD;
-        const dv = new DataView(u8.buffer, u8.byteOffset);
-        dv.setInt32(1, u8.length - 1);
-        u8.set(utf8, 5);
+        u8.writeInt32BE(u8.length - 1, 1);
+        utf8.copy(u8, 5);
+        u8[u8.length - 1] = 0;
 
         conn.socket.write(u8);
 
@@ -325,25 +308,14 @@ define((require, exports, module) => {
       };
 
       const fetch = (callback=util.voidFunc) => {
+        complete = void 0;
         if (error !== void 0 || execState < 1) return error;
         if (execState == 1) return initFetch(callback);
-        if (lastRow === null) {
-          lastRow = void 0;
-          return error;
-        }
         return new Promise(async (resolve) => {
           done = (error) => {
-            done = void 0;
             resolve(error);
           };
           nextRow = callback;
-          if (lastRow !== void 0) {
-            try {
-              if (callback(lastRow) === false) return;
-            } catch (err) {
-              error ??= err;
-            }
-          }
           pv.sendNext();
         });
       };
@@ -374,10 +346,10 @@ define((require, exports, module) => {
 
         get isExecuting() {return execState != 0},
         getCompleted: () => {
-          const result = complete && complete.subarray(0, -1).toString();
-          execState > 0 && pv.sendNext();
+          const result = complete && complete.utf8Slice(0, complete.length - 1);
           return result;
         },
+        get rawColumns() {return rawColumns},
         get error() {return error},
       };
     }

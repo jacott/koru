@@ -29,6 +29,7 @@ define((require, exports, module) => {
   const MIN32INT = 2 * (1 << 31);
   const MAX32INT = -1 - MIN32INT;
 
+  const ZERO32 = new Uint8Array(4);
   const U8_NULL = new Uint8Array([255, 255, 255, 255]);
   const U8_TEXT_NULL = new Uint8Array([78, 85, 76, 76]);
   const U8_EMPTY_QUOTED_STRING = new Uint8Array([34, 34]);
@@ -102,21 +103,19 @@ define((require, exports, module) => {
 
     let hasNulls = false;
 
-    const d = b.dataView;
-
     let pos = startPos;
 
     const elmOid = arrayElementOids[oid];
     const encode = binaryEncoders[elmOid];
 
-    d.setInt32(0 + pos, dims.length);
-    d.setInt32(8 + pos, elmOid);
+    b.writeInt32BE(dims.length, pos);
+    b.writeInt32BE(elmOid, 8 + pos);
 
     pos += 12;
 
     for (let i = 0; i < dims.length; ++i) {
-      d.setInt32(pos, dims[i]);
-      d.setInt32(pos + 4, 1);
+      b.writeInt32BE(dims[i], pos);
+      b.writeInt32BE(1, pos + 4);
       pos += 8;
     }
 
@@ -133,10 +132,10 @@ define((require, exports, module) => {
             hasNulls = true;
             b.append(U8_NULL);
           } else {
-            b.grow(4);
+            b.append(ZERO32);
             const s = b.length;
             encode(b, v, elmOid);
-            b.dataView.setInt32(s - 4, b.length - s);
+            b.writeInt32BE(b.length - s, s - 4);
           }
         }
       }
@@ -144,7 +143,7 @@ define((require, exports, module) => {
 
     writeArray(v, 0);
 
-    b.dataView.setInt32(startPos + 4, hasNulls ? 1 : 0);
+    b.writeInt32BE(hasNulls ? 1 : 0, startPos + 4);
   };
 
   const textArrayEncoder = (b, v, oid) => {
@@ -491,10 +490,10 @@ define((require, exports, module) => {
 
   const PgType = {
     encodeText: (buf, v, oid) => {
-      buf.grow(4);
+      buf.append(ZERO32);
       const s = buf.length;
       v == null ? buf.append(U8_TEXT_NULL) : textEncoders[oid](buf, v, oid);
-      buf.dataView.setInt32(s - 4, buf.length - s);
+      buf.writeInt32BE(buf.length - s, s - 4);
       return oid;
     },
     decodeText: (oid, v) => (textDecoders[oid] ?? textDecodeNative)(v, oid),
@@ -502,7 +501,7 @@ define((require, exports, module) => {
       if (v == null) {
         buf.append(U8_NULL);
       } else {
-        buf.grow(4);
+        buf.append(ZERO32);
         const s = buf.length;
         const encoder = binaryEncoders[oid];
         assert(encoder !== void 0, () => `${oid} not in binaryEncoders`);

@@ -1,10 +1,12 @@
 define((require, exports, module) => {
   'use strict';
+  const Enumerable      = require('koru/enumerable');
   const Future          = require('koru/future');
   const Observable      = require('koru/observable');
   const PgConn          = require('koru/pg/pg-conn');
   const PgType          = require('koru/pg/pg-type');
   const SQLStatement    = require('koru/pg/sql-statement');
+  const PgPrepSql       = require('./pg-prep-sql');
   const koru            = require('../main');
   const match           = require('../match');
   const Pool            = require('../pool-server');
@@ -93,27 +95,19 @@ define((require, exports, module) => {
 
   const query = (conn, text, params, paramOids) => conn.exec(text, params, paramOids);
 
-  const withColumns = async (table, params, callback) => {
+  const ensureColumns = async (table, params, callback) => {
     table._ready !== true && await table._ensureTable();
 
-    const columns = toColumns(table, params);
-    if (columns.needCols !== void 0 && table.schema === void 0) {
+    const needCols = autoSchema ? checkColumns(table, params) : void 0;
+    if (needCols !== void 0 && table.schema === void 0) {
       return table._client.transaction(async () => {
-        await addColumns(table, columns.needCols);
-        return table._client.withConn(async (conn) => callback(conn, toColumns(table, params)));
+        await addColumns(table, needCols);
+        return table._client.withConn((conn) => callback(conn));
       });
     } else {
-      return table._client.withConn(async (conn) => callback(conn, columns));
+      return table._client.withConn((conn) => callback(conn));
     }
   };
-
-  const buildUpdate = (table, params, callback) => withColumns(
-    table, params, (conn, columns) => callback(
-      conn,
-      `UPDATE "${table._name}" SET ${columns.names.map((col, i) => '"' + col + '"=$' + (i + 1)).join(',')}`,
-      columns,
-    ),
-  );
 
   const selectFields = (table, fields) => {
     if (fields === void 0) return '*';
@@ -220,7 +214,7 @@ define((require, exports, module) => {
       const tx = util.thread[this[tx$]];
       if (tx !== void 0) return func.call(this, tx.conn);
       try {
-        return func.call(this, await getConn(this));
+        return await func.call(this, await getConn(this));
       } finally {
         releaseConn(this);
       }
@@ -398,13 +392,24 @@ define((require, exports, module) => {
     return table._client.withConn((conn) => query(conn, sql, values, oids));
   };
 
+  const buildUpdate = (table, params, callback) => ensureColumns(table, params, (conn) => {
+    let i = 0;
+    const sql = `UPDATE "${table._name}" SET ${Enumerable.mapObjectToArray(params, (n) => `"${n}"=$${++i}`).join(',')}`;
+    return callback(conn, sql, i);
+  });
+
+  const addPs = (table, ps) => (table._ps_cache.set(ps.queryStr, ps), ps);
+
   class Table {
     #schema = void 0;
+
     constructor(name, schema, client) {
       this._name = name;
+      this.#schema = schema;
       this._client = client;
       this._ready = void 0;
-      this.#schema = schema;
+      this._ps_cache = new Map();
+      this._ps_findById = void 0;
     }
 
     [inspect$]() {return `PgTable("${this._name}")`}
@@ -485,20 +490,18 @@ define((require, exports, module) => {
       return this._client.transaction((tx) => func.call(this, tx));
     }
 
-    insert(params, suffix) {
-      return withColumns(
+    insert(params, suffix='') {
+      return ensureColumns(
         this, params,
-        (conn, cols) => {
-          const sql = `INSERT INTO "${this._name}" (${cols.names.map((col) => '"' + col + '"')
-          .join(',')}) values (${cols.names.map((c, i) => '$' + (i + 1)).join(',')})`;
-          return execute(conn, suffix !== void 0 ? sql + ' ' + suffix : sql, cols);
+        (conn) => {
+          let indexes = '';
+          const cols = Enumerable.mapObjectToArray(params, (n, v, i) => (
+            indexes += `${i == 0 ? '$1' : ',$' + (i + 1)}`, `"${n}"`)).join(',');
+          const sql = `INSERT INTO "${this._name}" (${cols}) values (${indexes})${suffix}`;
+          return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)))
+            .execute(conn, params);
         },
       );
-    }
-
-    async toColumns(rowSet, cols) {
-      this._ready !== true && await this._ensureTable();
-      return toColumns(this, rowSet, cols);
     }
 
     async ensureIndex(keys, options={}) {
@@ -511,18 +514,21 @@ define((require, exports, module) => {
                       name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
     }
 
-    updateById(id, params) {
-      return buildUpdate(this, params, (conn, sql, cols) => {
-        cols.values.push(id);
-        cols.oids.push(getColumnOId(this, '_id'));
-        return execute(conn, `${sql} WHERE _id=$${cols.values.length}`, cols);
-      });
+    updateById(_id, params) {
+      return buildUpdate(this, params, (conn, sql, len) => (
+        sql += ` WHERE _id=$${len + 1}`,
+        (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)
+                                          .addOids([this._colMap._id.oid]))).execute(conn, params, [_id])
+      ));
     }
 
     update(whereParams, params) {
-      return buildUpdate(this, params, (conn, sql, cols) => {
-        const where = this.where(whereParams, cols.values, cols.oids);
-        return execute(conn, where === void 0 ? sql : `${sql} WHERE ${where}`, cols);
+      return buildUpdate(this, params, (conn, sql, len) => {
+        const values = [], oids = [];
+        const where = this.where(whereParams, values, oids, len);
+        if (where !== void 0) sql += ` WHERE ${where}`;
+        return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)
+                                                 .addOids(oids))).execute(conn, params, values);
       });
     }
 
@@ -534,16 +540,15 @@ define((require, exports, module) => {
         conn, whereSql === void 0 ? sql : `${sql} WHERE ${whereSql}`, cols));
     }
 
-    where(query, whereValues, whereOids) {
+    where(query, whereValues, whereOids, count=whereValues.length) {
       assert(whereOids !== void 0);
       if (query == null) return;
       if (this._ready !== true) {
-        return this._ensureTable().then(() => this.where(query, whereValues, whereOids));
+        return this._ensureTable().then(() => this.where(query, whereValues, whereOids, count));
       }
 
       const colMap = this._colMap;
       const whereSql = [];
-      let count = whereValues.length;
       let fields;
 
       const inArray = (colSpec, qkey, result, value, isIn) => {
@@ -809,9 +814,12 @@ define((require, exports, module) => {
       return queryWhere(this, 'SELECT * FROM "' + this._name + '"', where);
     }
 
-    async findById(id) {
+    async findById(_id) {
       this._ready !== true && await this._ensureTable();
-      return (await oidQuery(this._client, 'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1', [id]))[0];
+
+      const ps = this._ps_findById ??= new PgPrepSql(
+        'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1').addOids([this._colMap._id.oid]);
+      return this._client.withConn((conn) => ps.fetchOne(conn, [_id]));
     }
 
     async findOne(where, fields) {
@@ -993,32 +1001,15 @@ define((require, exports, module) => {
 
   const getColumnOId = (table, column) => table._colMap[column]?.oid ?? 0;
 
-  const toColumns = (table, params, names=Object.keys(params)) => {
-    const needCols = autoSchema ? {} : void 0;
-    const values = new Array(names.length);
-    const oids = new Array(names.length);
+  const checkColumns = (table, params) => {
+    const needCols = {};
     const colMap = table._colMap;
 
-    names.forEach((name, i) => {
-      let value = params[name];
-      if (value === void 0) value = null;
-      const desc = colMap[name];
+    for (const name in params) {
+      if (colMap[name] === void 0) needCols[name] = mapType(name, params[name]);
+    }
 
-      if (desc !== void 0) {
-        oids[i] = desc.oid;
-      } else {
-        oids[i] = 0;
-      }
-      values[i] = value;
-
-      if (needCols !== void 0 && desc === void 0) {
-        needCols[name] = mapType(name, params[name]);
-      }
-    });
-
-    const res = {names, values, oids};
-    if (! util.isObjEmpty(needCols)) res.needCols = needCols;
-    return res;
+    for (const _ in needCols) return needCols;
   };
 
   const execute = async (conn, sql, columns) => {
@@ -1153,6 +1144,9 @@ define((require, exports, module) => {
   const addColumns = async (table, needCols) => {
     const prefix = `ALTER TABLE "${table._name}" ADD COLUMN `;
     const client = table._client;
+
+    table._ps_findById = void 0;
+    table._ps_cache = new Map();
 
     await oidQuery(client, Object.keys(needCols).map((col) => prefix + needCols[col]).join(';'));
 

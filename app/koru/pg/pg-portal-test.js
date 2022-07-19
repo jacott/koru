@@ -2,6 +2,7 @@ isServer && define((require, exports, module) => {
   'use strict';
   const Future          = require('koru/future');
   const {encodeBinary, encodeText} = require('koru/pg/pg-type');
+  const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
   const TH              = require('koru/test');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const PgProtocol      = require('./pg-protocol');
@@ -37,15 +38,19 @@ isServer && define((require, exports, module) => {
       }
     });
 
-    const startTransaction = async () => {
-      after(async () => {
-        const q = conn.exec('rollback');
+    const simpleExec = async (str) => {
+      let comp;
+      const q = conn.exec(str);
+      do {
         await q.fetch();
-        assert.same(q.getCompleted(), 'ROLLBACK');
-      });
-      const q = conn.exec('begin');
-      await q.fetch();
-      assert.same(q.getCompleted(), 'BEGIN');
+        comp ??= q.getCompleted();
+      } while(q.isExecuting);
+      return comp;
+    };
+
+    const startTransaction = async () => {
+      after(async () => {assert.same(await simpleExec('rollback'), 'ROLLBACK')});
+      assert.same(await simpleExec('begin'), 'BEGIN');
     };
 
     test('parse error', async () => {
@@ -127,7 +132,7 @@ isServer && define((require, exports, module) => {
 
       const rows = [];
 
-      let error = await p.fetch((row) => rows.push(row), 2);
+      let error = await p.fetch((row) => rows.push(1), 2);
       refute(error);
       assert.isTrue(p.isMore);
       assert.isTrue(p.isExecuting);
@@ -135,9 +140,7 @@ isServer && define((require, exports, module) => {
       assert.equals(rows.length, 2);
       assert.same(p.getCompleted(), void 0);
 
-      const q2 = conn.exec('select 1');
-      await q2.fetch();
-      assert.same(q2.getCompleted(), 'SELECT 1');
+      assert.same(await simpleExec('select 1'), 'SELECT 1');
 
       error = await p.fetch((row) => rows.push(row), 2);
       refute(error);
@@ -238,7 +241,8 @@ isServer && define((require, exports, module) => {
 
       refute(p.error);
       assert.same(p[private$].state, 22);
-      assert.equals(p.getColumn(0).oid, 23);
+      const columns = buildNameOidColumns(p.rawColumns);
+      assert.equals(columns[0].oid, 23);
     });
 
     test('simple binding', async () => {
@@ -251,19 +255,21 @@ isServer && define((require, exports, module) => {
       p.addResultFormat([1]);
       await p.describe(true);
 
-      const col0 = p.getColumn(0);
+      const columns = buildNameOidColumns(p.rawColumns);
+
+      const col0 = columns[0];
       assert.same(col0.name, '?column?');
       assert.same(col0.oid, 25);
       assert.same(col0.format, 1);
-      assert.same(col0.size, -1);
-      assert.same(col0.typeModifier, -1);
+      // assert.same(col0.size, -1);
+      // assert.same(col0.typeModifier, -1);
 
-      const col1 = p.getColumn(2);
-      assert.same(col1.name, 'col3');
-      assert.same(col1.oid, 16);
-      assert.same(col1.format, 1);
-      assert.same(col1.size, 1);
-      assert.same(col1.typeModifier, -1);
+      const col2 = columns[2];
+      assert.same(col2.name, 'col3');
+      assert.same(col2.oid, 16);
+      assert.same(col2.format, 1);
+      // assert.same(col1.size, 1);
+      // assert.same(col1.typeModifier, -1);
     });
 
     test('mixed binding', async () => {
@@ -278,19 +284,21 @@ isServer && define((require, exports, module) => {
 
       assert.equals(await readResult(p), [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
 
-      const col0 = p.getColumn(0);
+      const columns = buildNameOidColumns(p.rawColumns);
+
+      const col0 = columns[0];
       assert.same(col0.name, '?column?');
       assert.same(col0.oid, 23);
       assert.same(col0.format, 1);
-      assert.same(col0.size, 4);
-      assert.same(col0.typeModifier, -1);
+      // assert.same(col0.size, 4);
+      // assert.same(col0.typeModifier, -1);
 
-      const col1 = p.getColumn(1);
+      const col1 = columns[1];
       assert.same(col1.name, 'col2');
       assert.same(col1.oid, 701);
       assert.same(col1.format, 1);
-      assert.same(col1.size, 8);
-      assert.same(col1.typeModifier, -1);
+      // assert.same(col1.size, 8);
+      // assert.same(col1.typeModifier, -1);
     });
 
     test('no params execute', async () => {

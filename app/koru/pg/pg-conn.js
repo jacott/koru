@@ -5,6 +5,7 @@ define((require, exports, module) => {
   'use strict';
   const PgError         = require('koru/pg/pg-error');
   const PgProtocol      = require('koru/pg/pg-protocol');
+  const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
 
   const INVALID_CONNECTION_STRING = {
     severity: 'FATAL',
@@ -188,31 +189,46 @@ define((require, exports, module) => {
 
     isClosed() {return this.conn.isClosed()}
 
-    buildForEach(query, queryString, paramValues) {
-      const {types: {decodeText, decodeBinary}, formatOptions: {excludeNulls=true}} = this;
+    buildGetValue() {
+      const {types: {decodeText, decodeBinary}} = this;
 
+      return (desc, rawValue) => {
+        if (rawValue == null) return null;
+        const value = desc.format == 1
+              ? decodeBinary(desc.oid, rawValue)
+              : decodeText(desc.oid, rawValue);
+        if (value === void 0) {
+          throw {message: `unknown oid ${desc.oid} for column: ${desc.name}`};
+        }
+        return value;
+      };
+    }
+
+    buildForEach(query, queryString, paramValues) {
+      let completed;
       return {
         fetch: async (callback) => {
+          const {excludeNulls=true} = this.formatOptions;
+          const getValue = this.buildGetValue();
           try {
             do {
-              await query.fetch((row) => {
+              let columns;
+              await query.fetch((rawRow) => {
+                columns ??= buildNameOidColumns(query.rawColumns);
                 const rec = {};
-                for (const {desc, rawValue} of row) {
-                  if (rawValue == null) {
-                    if (! excludeNulls) rec[desc.name] = null;
-                  } else {
-                    const value = desc.format == 1
-                          ? decodeBinary(desc.oid, rawValue)
-                          : decodeText(desc.oid, rawValue);
-                    if (value === void 0) {
-                      throw {message: `unknown oid ${desc.oid} for column: ${desc.name}`};
-                    }
+                forEachColumn(rawRow, (rawValue, i) => {
+                  const desc = columns[i];
+                  const value = getValue(desc, rawValue);
+                  if (! excludeNulls || value !== null) {
                     rec[desc.name] = value;
                   }
-                }
-                return callback(rec);
+                });
+                callback(rec);
               });
               if (query.error !== void 0) throw query.error;
+              if (query.isExecuting || completed === void 0) {
+                completed = query.getCompleted();
+              }
             } while (query.isExecuting);
           } catch (err) {
             err = await query.close(err);
@@ -220,20 +236,16 @@ define((require, exports, module) => {
           }
         },
         get isExecuting() {return query.isExecuting},
-        getCompleted: () => {
-          const {error} = query;
-          if (error !== void 0) throw new PgError(error, queryString, paramValues);
-          return query.getCompleted();
-        },
+        getCompleted: () => completed,
       };
     }
 
-    async fetchRows(query) {
+    async fetchRows(query, maxRows) {
       try {
         let ans;
         const result = [];
         do {
-          await query.fetch((row) => {result.push(row)});
+          await query.fetch((row) => {result.push(row)}, maxRows);
           if (query.error) throw query.error;
           const t = query.getCompleted();
           ans = result.length == 0 && t[0] !== 'S' ? t : result;

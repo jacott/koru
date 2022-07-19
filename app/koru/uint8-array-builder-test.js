@@ -50,6 +50,10 @@ define((require, exports, module) => {
       refute.same(b1.subarray(), b1.subarray());
       assert.same(b1.subarray().buffer, b1.subarray().buffer);
       //]
+
+      if (isServer) {
+        assert.same(b1.buffer.buffer, b1.subarray().buffer);
+      }
     });
 
     test('dataView', () => {
