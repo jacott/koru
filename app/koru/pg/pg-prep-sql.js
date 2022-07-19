@@ -47,11 +47,11 @@ define((require, exports, module) => {
       let {columns} = this;
       let rec;
       const port = this.#buildQuery(client, args);
-      if (columns === void 0) port.describe();
+      if (columns === void 0) port.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
 
       const getValue = client.buildGetValue();
       const err = await port.fetch((rawRow) => {
-        rec ??= getRow(columns ??= buildNameOidColumns(port.rawColumns), getValue, rawRow, excludeNulls);
+        rec ??= getRow(columns, getValue, rawRow, excludeNulls);
       }, 2);
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
@@ -65,12 +65,12 @@ define((require, exports, module) => {
       let {columns} = this;
       let rec;
       const port = this.#buildQuery(client, args);
-      if (columns === void 0) port.describe();
+      if (columns === void 0) port.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
 
       const rows = [];
       const getValue = client.buildGetValue();
       const err = await port.fetch((rawRow) => {
-        rows.push(getRow(columns ??= buildNameOidColumns(port.rawColumns), getValue, rawRow, excludeNulls));
+        rows.push(getRow(columns, getValue, rawRow, excludeNulls));
       });
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);

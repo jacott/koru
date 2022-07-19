@@ -76,8 +76,8 @@ isServer && define((require, exports, module) => {
           const query = conn.exec(`select '{"a":"b"}'::jsonb;`);
           while (query.isExecuting) {
             let columns;
+            query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
             await query.fetch((rawRow) => {
-              columns ??= buildNameOidColumns(query.rawColumns);
               const rec = {};
               forEachColumn(rawRow, (rawValue, i) => {
                 const {name, oid} = columns[i];
@@ -121,11 +121,11 @@ isServer && define((require, exports, module) => {
       test('exec', async () => {
         const results = [];
         const query = conn.exec(`select * from unnest(Array[1,2,3], Array[4,5,6]) as x(a,b);`);
-        let columns;
         const completed = [];
+        let columns;
+        query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
         do {
           await query.fetch((rawRow) => {
-            columns ??= buildNameOidColumns(query.rawColumns);
             const rec = {};
             forEachColumn(rawRow, (rawValue, i) => {
               rec[columns[i].name] = decodeText(25, rawValue);
@@ -182,9 +182,9 @@ select * from unnest(Array[7,8,9], Array[4,5,6]) as x(a,b);
 END;`);
         const results = [];
         let columns;
+        query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
         do {
           await query.fetch((rawRow) => {
-            columns ??= buildNameOidColumns(query.rawColumns);
             const rec = {};
             forEachColumn(rawRow, (rawValue, i) => {
               rec[columns[i].name] = rawValue.toString();

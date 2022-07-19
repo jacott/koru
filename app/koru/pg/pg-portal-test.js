@@ -6,7 +6,7 @@ isServer && define((require, exports, module) => {
   const TH              = require('koru/test');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const PgProtocol      = require('./pg-protocol');
-  const {createReadySocket, readResult} = require('./pg-test-helper');
+  const {createReadySocket, runQuery, readResult} = require('./pg-test-helper');
 
   const net = requirejs.nodeRequire('node:net');
 
@@ -56,7 +56,7 @@ isServer && define((require, exports, module) => {
     test('parse error', async () => {
       p = conn.portal();
       p.parse('', `SELECT $1 + $2`, 0);
-      await p.describeStatement(true);
+      await p.describeStatement(void 0, true);
       assert(p.error);
       assert.exception(
         p.error,
@@ -103,7 +103,6 @@ isServer && define((require, exports, module) => {
       p.parse('ps1', `select * from unnest(Array[$1,2,3], Array[4,5,6]) as x(a,b);`, 1);
       let b = p.prepareValues();
       p.addParamOid(encodeBinary(b, 1, 21));
-      p.describe();
 
       let rows = await readResult(p);
       refute(p.error);
@@ -114,7 +113,6 @@ isServer && define((require, exports, module) => {
       p = conn.portal('');
       b = p.bindNamed('ps1', 1);
       p.addParamOid(encodeBinary(b, 100, 21));
-      p.describe();
 
       rows = await readResult(p);
       refute(p.error);
@@ -228,7 +226,7 @@ isServer && define((require, exports, module) => {
     test('parse okay', async () => {
       p = conn.portal();
       p.parse('', `SELECT $1::int4 + $2`, 0);
-      await p.describeStatement(true);
+      await p.describeStatement(void 0, true);
       assert.same(p[private$].state, 22);
       refute(p.error);
       await p.close();
@@ -237,11 +235,11 @@ isServer && define((require, exports, module) => {
       p.parse('ps2', `SELECT $1 + $2`, 2);
       p.addParamOid(23);
       p.addParamOid(23);
-      await p.describeStatement(true);
+      let columns;
+      await p.describeStatement((rawColumns) => {columns = buildNameOidColumns(rawColumns)}, true);
 
       refute(p.error);
       assert.same(p[private$].state, 22);
-      const columns = buildNameOidColumns(p.rawColumns);
       assert.equals(columns[0].oid, 23);
     });
 
@@ -253,9 +251,8 @@ isServer && define((require, exports, module) => {
         .addParamOid(encodeBinary(b, 123.456, 701))
         .addParamOid(encodeBinary(b, true, 16));
       p.addResultFormat([1]);
-      await p.describe(true);
-
-      const columns = buildNameOidColumns(p.rawColumns);
+      let columns;
+      await p.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)}, true);
 
       const col0 = columns[0];
       assert.same(col0.name, '?column?');
@@ -280,11 +277,9 @@ isServer && define((require, exports, module) => {
         .addParamOid(encodeText(b, 123, 23));
       p.addResultFormat([1]);
 
-      p.describe();
+      const {result, columns} = await runQuery(p, 0, null);
 
-      assert.equals(await readResult(p), [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
-
-      const columns = buildNameOidColumns(p.rawColumns);
+      assert.equals(result, [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
 
       const col0 = columns[0];
       assert.same(col0.name, '?column?');
@@ -306,7 +301,6 @@ isServer && define((require, exports, module) => {
       p.parse('', `SELECT '{abc}'::text[] as a`, 0);
       const b = p.prepareValues([]);
       p.addResultFormat([0]);
-      p.describe();
       const results = await readResult(p);
 
       refute(p.error);
@@ -330,7 +324,6 @@ isServer && define((require, exports, module) => {
         .addParamOid(encodeText(b, 123, 23))
         .addParamOid(encodeBinary(b, 'hello', 25));
       p.addResultFormat([0, 1, 1, 0, 0, 1, 1, 0, 1, 0]);
-      p.describe();
       const results = await readResult(p);
 
       refute(p.error);

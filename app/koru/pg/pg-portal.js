@@ -37,7 +37,7 @@ define((require, exports, module) => {
       this.portal = portal;
       this.state = 0;
       this.u8b = new Uint8ArrayBuilder(0);
-      this.rawColumns = void 0;
+      this.rowDescCallback = void 0;
     }
 
     get conn() {return this.portal.conn}
@@ -118,8 +118,7 @@ define((require, exports, module) => {
     }
     addRowDesc(data) {
       if (this.isClosed) return true;
-      this.rawColumns = data;
-      return true;
+      return this.rowDescCallback?.(data) !== false;
     }
     addParameterDescription(data) {
       if (this.portal.error !== void 0) return true;
@@ -328,11 +327,13 @@ define((require, exports, module) => {
       finishBind(this, pv, true);
     }
 
-    describeStatement(sync = false) {
+    describeStatement(callback, sync = false) {
       const pv = this[private$];
       if (! pv.isState(P_PARSED | P_PARSE_START, P_CLOSED)) {
         assert(false, 'portal not in correct state to issue describe ' + pv.state);
       }
+
+      pv.rowDescCallback = callback;
 
       finishParse(this, pv);
 
@@ -354,11 +355,13 @@ define((require, exports, module) => {
       }
     }
 
-    describe(sync = false) {
+    describe(callback, sync = false) {
       if (this.error !== void 0) return;
       const pv = this[private$];
       assert(pv.isState(P_PARSED | P_BIND_START | P_BOUND, P_LOCKED | P_CLOSED | P_FETCHING),
              'portal not in correct state to issue describe');
+
+      pv.rowDescCallback = callback;
 
       finishParse(this, pv);
       finishBind(this, pv);
@@ -430,7 +433,6 @@ define((require, exports, module) => {
     }
     get isExecuting() {return this[private$].isState(P_FETCHING)}
     get isMore() {return this[private$].isState(P_MORE)}
-    get rawColumns() {return this[private$].rawColumns}
   }
 
   return PgPortal;

@@ -245,7 +245,7 @@ define((require, exports, module) => {
 
       let complete, error;
       let execState = 1;
-      let rawColumns;
+      let rowDescCallback;
 
       const initFetch = async (callback) => {
         const ready = () => {
@@ -264,8 +264,7 @@ define((require, exports, module) => {
           },
           addRowDesc: (data) => {
             if (error !== void 0) return true;
-            rawColumns = data;
-            return true;
+            return rowDescCallback?.(data) !== false;
           },
           addRow: (data) => {
             if (error !== void 0) return true;
@@ -345,11 +344,11 @@ define((require, exports, module) => {
         },
 
         get isExecuting() {return execState != 0},
+        describe: (callback) => {rowDescCallback = callback},
         getCompleted: () => {
           const result = complete && complete.utf8Slice(0, complete.length - 1);
           return result;
         },
-        get rawColumns() {return rawColumns},
         get error() {return error},
       };
     }

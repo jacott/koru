@@ -213,8 +213,8 @@ define((require, exports, module) => {
           try {
             do {
               let columns;
+              query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
               await query.fetch((rawRow) => {
-                columns ??= buildNameOidColumns(query.rawColumns);
                 const rec = {};
                 forEachColumn(rawRow, (rawValue, i) => {
                   const desc = columns[i];
