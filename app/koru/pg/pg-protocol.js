@@ -56,6 +56,9 @@ define((require, exports, module) => {
   // NoData
   addCommand('n', util.trueFunc);
 
+  // EmptyQueryResponse
+  addCommand('I', (pgConn) => pgConn[listener$].error((PgMessage.error('EmptyQueryResponse'))));
+
   // CloseComplete
   addCommand('3', (pgConn, data) => pgConn[listener$].closeComplete(data));
 
@@ -87,6 +90,9 @@ define((require, exports, module) => {
 
   // DataRow
   addCommand('D', (pgConn, data) => pgConn[listener$].addRow(data));
+
+  // CommandComplete
+  addCommand('C', (pgConn, data) => pgConn[listener$].commandComplete(data));
 
   // CommandComplete
   addCommand('C', (pgConn, data) => pgConn[listener$].commandComplete(data));
@@ -208,9 +214,7 @@ define((require, exports, module) => {
           if (cmd !== void 0) {
             more = cmd(this, data);
           } else {
-            this[listener$].error({
-              severity: 'FATAL',
-              message: `Unknown response message: '${String.fromCharCode(cmdType)}'\n`});
+            this[listener$].error(PgMessage.error(`Unknown response message: '${String.fromCharCode(cmdType)}'\n`));
           }
           if (! more) return;
         }
@@ -233,9 +237,7 @@ define((require, exports, module) => {
 
     isClosed() {return this[private$].state === State.CLOSED}
 
-    portal(name='') {
-      return new PgPortal(this, name);
-    }
+    portal(name='') {return new PgPortal(this, name)}
 
     exec(str) {
       const conn = this;

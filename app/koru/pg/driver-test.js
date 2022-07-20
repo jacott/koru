@@ -432,7 +432,6 @@ isServer && define((require, exports, module) => {
 
       test('bad sql', async () => {
         const cursor = foo.find({agex: 'hello'});
-
         await assert.exception(async () => {
           try {
             const ans = await cursor.next();

@@ -229,7 +229,7 @@ define((require, exports, module) => {
             } while (query.isExecuting);
           } catch (err) {
             err = await query.close(err);
-            throw (err instanceof Error) ? err : new PgError(err);
+            throw (err instanceof Error) ? err : new PgError(err, queryString, paramValues);
           }
         },
         get isExecuting() {return query.isExecuting},
@@ -246,7 +246,7 @@ define((require, exports, module) => {
           query.commandComplete((t) => {tag = t});
           await query.fetch((row) => {result.push(row)}, maxRows);
           if (query.error) throw query.error;
-          ans = result.length == 0 && tag[0] !== 'S' ? tag : result;
+          ans = result.length == 0 && ! tag.startsWith('SELECT ') ? tag : result;
         } while (query.isExecuting);
         return ans;
       } catch (err) {

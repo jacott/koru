@@ -110,10 +110,6 @@ define((require, exports, module) => {
       this.portal.error ??= err;
       this.nextRow = void 0;
       this.setClosed();
-      if (err.severity === 'FATAL') {
-        this.ready();
-        return true;
-      }
       return true;
     }
     addRowDesc(data) {

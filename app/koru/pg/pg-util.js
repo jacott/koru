@@ -35,6 +35,8 @@ define((require, exports, module) => {
   };
 
   class PgMessage {
+    constructor() {}
+
     [inspect$]() {
       return `PgMessage({${this.severity}: ${util.qstr(this.message)}, code: "${this.code}"})`;
     }
@@ -53,6 +55,13 @@ define((require, exports, module) => {
 
       return message;
     };
+
+    static error(message) {
+      const m = new PgMessage();
+      m.severity = 'ERROR';
+      m.message = message;
+      return m;
+    }
   }
 
   PgMessage.prototype.severity = 'FATAL';

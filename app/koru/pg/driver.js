@@ -383,13 +383,17 @@ define((require, exports, module) => {
     }
     if (where === void 0) {
       if (suffix) sql += suffix;
-      return oidQuery(table._client, sql);
+    } else {
+      sql = sql + ' WHERE ' + where;
+      if (suffix) sql += suffix;
+    }
+    for (let i = oids.length; i < values.length; ++i) {
+      oids.push(PgType.guessOid(values[i]));
     }
 
-    sql = sql + ' WHERE ' + where;
-    if (suffix) sql += suffix;
-
-    return table._client.withConn((conn) => query(conn, sql, values, oids));
+    return table._client.withConn(
+      (conn) => (table._ps_cache.get(sql) ?? addPs(table, new PgPrepSql(sql, '').setOids(oids)))
+        .execute(conn, values));
   };
 
   const buildUpdate = (table, params, callback) => ensureColumns(table, params, (conn) => {
@@ -430,6 +434,11 @@ define((require, exports, module) => {
       this._ready = void 0;
     }
 
+    withConn(callback) {
+      return this._ready ? this._client.withConn(callback) : this._ensureTable()
+        .then(() => this._client.withConn(callback));
+    }
+
     async _ensureTable() {
       if (this._ready === true) return;
 
@@ -442,7 +451,7 @@ define((require, exports, module) => {
         } finally {
           handle.stop();
         }
-        return await this._ensureTable();
+        return this._ensureTable();
       }
 
       this._ready = null;
@@ -495,10 +504,13 @@ define((require, exports, module) => {
         this, params,
         (conn) => {
           let indexes = '';
-          const cols = Enumerable.mapObjectToArray(params, (n, v, i) => (
-            indexes += `${i == 0 ? '$1' : ',$' + (i + 1)}`, `"${n}"`)).join(',');
-          const sql = `INSERT INTO "${this._name}" (${cols}) values (${indexes})${suffix}`;
-          return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)))
+          let cols = '';
+          const names = Enumerable.mapObjectToArray(params, (n, v, i) => (
+            cols += (i == 0 ? '' : ',') + `"${n}"`,
+            indexes += `${i == 0 ? '$1' : ',$' + (i + 1)}`,
+            n));
+          const sql = `INSERT INTO "${this._name}" (${cols}) values (${indexes}) ${suffix}`;
+          return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setMapped(names, this._colMap)))
             .execute(conn, params);
         },
       );
@@ -517,9 +529,11 @@ define((require, exports, module) => {
     updateById(_id, params) {
       return buildUpdate(this, params, (conn, sql, len) => (
         sql += ` WHERE _id=$${len + 1}`,
-        (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)
-                                          .addOids([this._colMap._id.oid]))).execute(conn, params, [_id])
-      ));
+        (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper(
+          len + 1, ([params, _id], callback) => {
+            for (const name in params) callback(params[name], this._colMap[name]?.oid);
+            callback(_id, 25);
+          }))).execute(conn, [params, _id])));
     }
 
     update(whereParams, params) {
@@ -527,8 +541,13 @@ define((require, exports, module) => {
         const values = [], oids = [];
         const where = this.where(whereParams, values, oids, len);
         if (where !== void 0) sql += ` WHERE ${where}`;
-        return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).addMap(params, this._colMap)
-                                                 .addOids(oids))).execute(conn, params, values);
+
+        return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper().setParamMapper(
+          len + values.length, ([params, values], callback) => {
+            for (const name in params) callback(params[name], this._colMap[name]?.oid);
+            let index = len - 1;
+            for (const v of values) callback(v, oids[++index]);
+          }))).execute(conn, [params, values]);
       });
     }
 
@@ -818,7 +837,7 @@ define((require, exports, module) => {
       this._ready !== true && await this._ensureTable();
 
       const ps = this._ps_findById ??= new PgPrepSql(
-        'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1').addOids([this._colMap._id.oid]);
+        'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1').setOids([this._colMap._id.oid]);
       return this._client.withConn((conn) => ps.fetchOne(conn, [_id]));
     }
 
@@ -899,7 +918,9 @@ define((require, exports, module) => {
       const cname = 'c' + (++cursorCount).toString(36);
       if (tx !== void 0 && tx.transaction !== null) {
         cursor._inTran = true;
-        await oidQuery(client, 'DECLARE ' + cname + ' CURSOR FOR ' + sql, cursor._values, cursor._oids);
+        sql = 'DECLARE ' + cname + ' CURSOR FOR ' + sql;
+        const ps = (cursor.table._ps_cache.get(sql) ?? addPs(cursor.table, new PgPrepSql(sql).setOids(cursor._oids)));
+        await client.withConn((conn) => ps.execute(conn, cursor._values));
       } else {
         await client.transaction(async () => {
           await getConn(client); // so cursor is valid outside transaction
@@ -908,19 +929,23 @@ define((require, exports, module) => {
       }
       cursor._name = cname;
     } else {
-      cursor._rows = await oidQuery(client, sql, cursor._values, cursor._oids);
+      const ps = (cursor.table._ps_cache.get(sql) ?? addPs(cursor.table, new PgPrepSql(sql).setOids(cursor._oids)));
+      cursor._rows = await client.withConn((conn) => ps.execute(conn, cursor._values));
       cursor._index = 0;
       cursor._name = 'all';
     }
   };
 
   class Cursor {
-    constructor(table, sql, values, oids, options) {
+    constructor(table, sql, values=[], oids=[], options) {
       this.table = table;
       this._sql = sql;
       this._values = values;
       this._oids = oids;
       this._name = void 0;
+      for (let i = oids.length; i < values.length; ++i) {
+        oids.push(PgType.guessOid(values[i]));
+      }
 
       if (options) for (const op in options) {
         const func = this[op];
