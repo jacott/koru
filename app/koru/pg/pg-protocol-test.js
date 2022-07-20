@@ -4,7 +4,7 @@ isServer && define((require, exports, module) => {
   const {decodeText}    = require('koru/pg/pg-type');
   const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
   const TH              = require('koru/test');
-  const {createReadySocket, readResult} = require('./pg-test-helper');
+  const {createReadySocket, runQuery} = require('./pg-test-helper');
 
   const {private$} = require('koru/symbols');
 
@@ -28,13 +28,13 @@ isServer && define((require, exports, module) => {
       });
 
       test('test scheduling', async () => {
-        const q1 = readResult(conn.exec(`select 1 as q1`));
-        const q2 = readResult(conn.exec(`select 2 as q2`));
+        const p1 = runQuery(conn.exec(`select 1 as q1`));
+        const p2 = runQuery(conn.exec(`select 2 as q2`));
 
-        const [ans1, ans2] = await Promise.all([q1, q2]);
+        const [q1, q2] = await Promise.all([p1, p2]);
 
-        assert.equals(ans1, [{'0:q1,23': 1}]);
-        assert.equals(ans2, [{'0:q2,23': 2}]);
+        assert.equals(q1.rows, [{'0:q1,23': 1}]);
+        assert.equals(q2.rows, [{'0:q2,23': 2}]);
       });
 
       test('bad connect', async () => {
@@ -74,9 +74,10 @@ isServer && define((require, exports, module) => {
         const results = [];
         try {
           const query = conn.exec(`select '{"a":"b"}'::jsonb;`);
-          while (query.isExecuting) {
-            let columns;
+          do {
+            let columns, tag;
             query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+            query.commandComplete((t) => {tag = t});
             await query.fetch((rawRow) => {
               const rec = {};
               forEachColumn(rawRow, (rawValue, i) => {
@@ -86,9 +87,9 @@ isServer && define((require, exports, module) => {
               results.push(rec);
             });
             if (query.isExecuting) {
-              assert.equals(query.getCompleted(), 'SELECT 1');
+              assert.equals(tag, 'SELECT 1');
             }
-          }
+          } while (query.isExecuting);
           assert.equals(results, [{jsonb: {a: 'b'}}]);
         } catch (err) {
           assert.fail(JSON.stringify(err));
@@ -103,6 +104,7 @@ isServer && define((require, exports, module) => {
         const q = conn.exec(`set client_min_messages = 'debug5'`);
 
         const completed = [];
+        q.commandComplete((tag) => {completed.push(tag)});
         do {
           await q.fetch((row) => {
             const rec = {};
@@ -110,10 +112,9 @@ isServer && define((require, exports, module) => {
               rec[field.desc.name] = field.rawValue.toString();
             }
           });
-          completed.push(q.getCompleted());
         } while(q.isExecuting);
 
-        assert.equals(completed, ['SET', void 0]);
+        assert.equals(completed, ['SET']);
 
         assert.calledOnceWith(cb2, m((m) => m.severity === 'DE' + 'BUG' && m.code === '00000'));
       });
@@ -124,6 +125,7 @@ isServer && define((require, exports, module) => {
         const completed = [];
         let columns;
         query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+        query.commandComplete((tag) => completed.push(tag));
         do {
           await query.fetch((rawRow) => {
             const rec = {};
@@ -133,7 +135,6 @@ isServer && define((require, exports, module) => {
             results.push(rec);
           });
           refute(query.error);
-          query.isExecuting && completed.push(query.getCompleted());
         } while(query.isExecuting);
 
         assert.equals(completed, ['SELECT 3']);
@@ -183,6 +184,7 @@ END;`);
         const results = [];
         let columns;
         query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+        query.commandComplete((tag) => results.push(tag));
         do {
           await query.fetch((rawRow) => {
             const rec = {};
@@ -191,8 +193,6 @@ END;`);
             });
             rows.push(rec);
           });
-          if (query.getCompleted() === void 0) break;
-          results.push(query.getCompleted());
         } while (query.isExecuting);
 
         assert.equals(rows, [

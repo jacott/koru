@@ -140,7 +140,7 @@ define((require, exports, module) => {
     }
     commandComplete(data) {
       if (this.portal.error !== void 0) return true;
-      this.complete = data;
+      this.ccCallback?.(data.utf8Slice(0, data.length - 1));
       return true;
     }
   }
@@ -425,12 +425,7 @@ define((require, exports, module) => {
       return pv.closePortal();
     }
 
-    getCompleted() {
-      const pv = this[private$];
-      const result = pv.complete && pv.complete.subarray(0, -1).utf8Slice();
-      pv.isExecuting && this.conn[private$].sendNext();
-      return result;
-    }
+    commandComplete(callback) {this[private$].ccCallback = callback}
     get isExecuting() {return this[private$].isState(P_FETCHING)}
     get isMore() {return this[private$].isState(P_MORE)}
   }

@@ -6,7 +6,7 @@ isServer && define((require, exports, module) => {
   const TH              = require('koru/test');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const PgProtocol      = require('./pg-protocol');
-  const {createReadySocket, runQuery, readResult} = require('./pg-test-helper');
+  const {createReadySocket, runQuery} = require('./pg-test-helper');
 
   const net = requirejs.nodeRequire('node:net');
 
@@ -41,10 +41,8 @@ isServer && define((require, exports, module) => {
     const simpleExec = async (str) => {
       let comp;
       const q = conn.exec(str);
-      do {
-        await q.fetch();
-        comp ??= q.getCompleted();
-      } while(q.isExecuting);
+      q.commandComplete((t) => {comp = t});
+      await q.fetch();
       return comp;
     };
 
@@ -104,20 +102,24 @@ isServer && define((require, exports, module) => {
       let b = p.prepareValues();
       p.addParamOid(encodeBinary(b, 1, 21));
 
-      let rows = await readResult(p);
-      refute(p.error);
-      assert.same(p.getCompleted(), 'SELECT 3');
-      await p.close();
-      assert.equals(rows[0], {'0:a,23': 1, '1:b,23': 4});
+      {
+        const result = await runQuery(p);
+        refute(p.error);
+        assert.same(result.tag, 'SELECT 3');
+        await p.close();
+        assert.equals(result.rows[0], {'0:a,23': 1, '1:b,23': 4});
+      }
 
       p = conn.portal('');
       b = p.bindNamed('ps1', 1);
       p.addParamOid(encodeBinary(b, 100, 21));
 
-      rows = await readResult(p);
-      refute(p.error);
-      assert.same(p.getCompleted(), 'SELECT 3');
-      assert.equals(rows[0], {'0:a,23': 100, '1:b,23': 4});
+      {
+        const result = await runQuery(p, 0, 'name');
+        refute(p.error);
+        assert.same(result.tag, 'SELECT 3');
+        assert.equals(result.rows[0], {a: 100, b: 4});
+      }
     });
 
     test('maxRows', async () => {
@@ -129,14 +131,16 @@ isServer && define((require, exports, module) => {
       p.addParamOid(encodeBinary(b, 1, 21));
 
       const rows = [];
+      let tag;
 
+      p.commandComplete((t) => {tag = t});
       let error = await p.fetch((row) => rows.push(1), 2);
       refute(error);
       assert.isTrue(p.isMore);
       assert.isTrue(p.isExecuting);
       assert.isFalse(p.isClosed);
       assert.equals(rows.length, 2);
-      assert.same(p.getCompleted(), void 0);
+      assert.same(tag, void 0);
 
       assert.same(await simpleExec('select 1'), 'SELECT 1');
 
@@ -145,7 +149,7 @@ isServer && define((require, exports, module) => {
       assert.isTrue(p.isExecuting);
       assert.equals(rows.length, 3);
       assert.isFalse(p.isMore);
-      assert.same(p.getCompleted(), 'SELECT 1');
+      assert.same(tag, 'SELECT 1');
 
       assert.isFalse(p.isClosed);
     });
@@ -277,18 +281,18 @@ isServer && define((require, exports, module) => {
         .addParamOid(encodeText(b, 123, 23));
       p.addResultFormat([1]);
 
-      const {result, columns} = await runQuery(p, 0, null);
+      const result = await runQuery(p);
 
-      assert.equals(result, [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
+      assert.equals(result.rows, [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
 
-      const col0 = columns[0];
+      const col0 = result.columns[0];
       assert.same(col0.name, '?column?');
       assert.same(col0.oid, 23);
       assert.same(col0.format, 1);
       // assert.same(col0.size, 4);
       // assert.same(col0.typeModifier, -1);
 
-      const col1 = columns[1];
+      const col1 = result.columns[1];
       assert.same(col1.name, 'col2');
       assert.same(col1.oid, 701);
       assert.same(col1.format, 1);
@@ -301,16 +305,16 @@ isServer && define((require, exports, module) => {
       p.parse('', `SELECT '{abc}'::text[] as a`, 0);
       const b = p.prepareValues([]);
       p.addResultFormat([0]);
-      const results = await readResult(p);
+      const result = await runQuery(p);
 
       refute(p.error);
 
-      assert.equals(results, [
+      assert.equals(result.rows, [
         {
           '0:a,1009': ['abc'],
         },
       ]);
-      assert.equals(p.getCompleted(), 'SELECT 1');
+      assert.equals(result.tag, 'SELECT 1');
     });
 
     test('execute with nulls', async () => {
@@ -324,12 +328,12 @@ isServer && define((require, exports, module) => {
         .addParamOid(encodeText(b, 123, 23))
         .addParamOid(encodeBinary(b, 'hello', 25));
       p.addResultFormat([0, 1, 1, 0, 0, 1, 1, 0, 1, 0]);
-      const results = await readResult(p);
+      const result = await runQuery(p);
 
       refute(p.error);
-      assert.equals(p.getCompleted(), 'SELECT 1');
+      assert.equals(result.tag, 'SELECT 1');
 
-      assert.equals(results, [
+      assert.equals(result.rows, [
         {
           '0:th,25': 'hello',
           '1:tw,25': 'world',

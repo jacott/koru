@@ -67,6 +67,8 @@ define((require, exports, module) => {
       const port = this.#buildQuery(client, args);
       if (columns === void 0) port.describe((rawColumns) => {columns = this.columns = buildNameOidColumns(rawColumns)});
 
+      let tag;
+      port.commandComplete((t) => {tag = t});
       const rows = [];
       const getValue = client.buildGetValue();
       const err = await port.fetch((rawRow) => {
@@ -76,7 +78,7 @@ define((require, exports, module) => {
         throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
       }
       if (port.isMore) await port.close();
-      return rows.length == 0 ? tagToCount(port.getCompleted()) : rows;
+      return rows.length == 0 ? tagToCount(tag) : rows;
     }
 
     async describe(client, fields, ...args) {

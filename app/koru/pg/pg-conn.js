@@ -226,9 +226,6 @@ define((require, exports, module) => {
                 callback(rec);
               });
               if (query.error !== void 0) throw query.error;
-              if (query.isExecuting || completed === void 0) {
-                completed = query.getCompleted();
-              }
             } while (query.isExecuting);
           } catch (err) {
             err = await query.close(err);
@@ -236,7 +233,7 @@ define((require, exports, module) => {
           }
         },
         get isExecuting() {return query.isExecuting},
-        getCompleted: () => completed,
+        commandComplete: (callback) => query.commandComplete(callback),
       };
     }
 
@@ -245,10 +242,11 @@ define((require, exports, module) => {
         let ans;
         const result = [];
         do {
+          let tag;
+          query.commandComplete((t) => {tag = t});
           await query.fetch((row) => {result.push(row)}, maxRows);
           if (query.error) throw query.error;
-          const t = query.getCompleted();
-          ans = result.length == 0 && t[0] !== 'S' ? t : result;
+          ans = result.length == 0 && tag[0] !== 'S' ? tag : result;
         } while (query.isExecuting);
         return ans;
       } catch (err) {

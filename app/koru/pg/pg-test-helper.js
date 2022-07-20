@@ -6,9 +6,10 @@ define((require, exports, module) => {
   const net             = requirejs.nodeRequire('node:net');
 
   const doQuery = async (query, maxRows=0, field) => {
-    const result = [];
-    let columns;
+    const rows = [];
+    let columns, tag;
     query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+    query.commandComplete((t) => {tag = t});
     do {
       await query.fetch((rawRow) => {
         const rec = {};
@@ -20,11 +21,11 @@ define((require, exports, module) => {
               ? decodeText(oid, rawValue)
               : decodeBinary(oid, rawValue));
         });
-        result.push(rec);
+        rows.push(rec);
       }, maxRows);
     } while (query.isExecuting);
 
-    return {result, columns};
+    return {rows, columns, tag};
   };
 
   return {
@@ -33,8 +34,6 @@ define((require, exports, module) => {
       socket.on('error', (err) => {conn?.close(); new TH.Core.AssertionError(err)});
     }),
 
-    runQuery: (query, maxRows, field='name') => doQuery(query, maxRows, field),
-
-    readResult: async (query, maxRows, field) => (await doQuery(query, maxRows, field)).result,
+    runQuery: (query, maxRows, field) => doQuery(query, maxRows, field),
   };
 });

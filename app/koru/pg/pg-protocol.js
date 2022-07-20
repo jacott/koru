@@ -243,7 +243,7 @@ define((require, exports, module) => {
 
       let done, nextRow;
 
-      let complete, error;
+      let ccCallback, error;
       let execState = 1;
       let rowDescCallback;
 
@@ -277,9 +277,9 @@ define((require, exports, module) => {
           },
           commandComplete: (data) => {
             if (error !== void 0) return true;
-            complete = data;
+            ccCallback?.(data.utf8Slice(0, data.length - 1));
             done?.(error);
-            return false;
+            return true;
           },
         });
 
@@ -307,7 +307,6 @@ define((require, exports, module) => {
       };
 
       const fetch = (callback=util.voidFunc) => {
-        complete = void 0;
         if (error !== void 0 || execState < 1) return error;
         if (execState == 1) return initFetch(callback);
         return new Promise(async (resolve) => {
@@ -345,10 +344,7 @@ define((require, exports, module) => {
 
         get isExecuting() {return execState != 0},
         describe: (callback) => {rowDescCallback = callback},
-        getCompleted: () => {
-          const result = complete && complete.utf8Slice(0, complete.length - 1);
-          return result;
-        },
+        commandComplete: (callback) => {ccCallback = callback},
         get error() {return error},
       };
     }

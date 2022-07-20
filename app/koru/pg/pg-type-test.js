@@ -3,7 +3,7 @@ isServer && define((require, exports, module) => {
   const PgConn          = require('koru/pg/pg-conn');
   const TH              = require('koru/test');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const {readResult}    = require('./pg-test-helper');
+  const {runQuery}      = require('./pg-test-helper');
 
   const {stub, spy, util} = TH;
 
@@ -72,8 +72,8 @@ isServer && define((require, exports, module) => {
           const b = p.prepareValues([]);
           p.addResultFormat([1]);
           p.describe();
-          const result = await readResult(p, 0, 'name');
-          assert.equals(result[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], ['d']], c: []});
+          const result = await runQuery(p, 0, 'name');
+          assert.equals(result.rows[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], ['d']], c: []});
         });
 
         test('to text', async () => {
@@ -83,9 +83,9 @@ isServer && define((require, exports, module) => {
           const b = p.prepareValues([]);
           p.addResultFormat([0]);
           p.describe();
-          const result = await readResult(p, 0, 'name');
+          const result = await runQuery(p, 0, 'name');
           refute(p.error);
-          assert.equals(result[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], ['d']], c: []});
+          assert.equals(result.rows[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], ['d']], c: []});
         });
 
         test('bin to bin', async () => {
@@ -98,9 +98,9 @@ isServer && define((require, exports, module) => {
           p.addParamOid(PgType.encodeBinary(b, [], 1009));
           p.addResultFormat([1]);
           p.describe();
-          const result = await readResult(p, 0, 'name');
+          const result = await runQuery(p, 0, 'name');
           refute(p.error);
-          assert.equals(result[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], [''], ['d']], c: []});
+          assert.equals(result.rows[0], {a: [[2, 3], [null, 4]], b: [['a'], [null], ['c'], [''], ['d']], c: []});
         });
       });
     });
