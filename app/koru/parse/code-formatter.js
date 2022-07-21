@@ -212,6 +212,19 @@ define((require, exports, module) => {
       this.print(node.body);
     }
 
+    printBlockOrStatement(body, sameLine) {
+      if (body.type === 'BlockStatement' ||
+          (body.loc.start.line === sameLine && body.loc.end.line)) {
+        this.writeGap();
+        this.print(body);
+        body.type === 'BlockStatement' && this.noSemiColon();
+      } else {
+        this.write(' ');
+        this.convertToBlock(body);
+        this.noSemiColon();
+      }
+    }
+
     printForLoop(type, node) {
       this.write('for ');
       node.await && this.write('await ');
@@ -224,9 +237,7 @@ define((require, exports, module) => {
       this.advance(node.right.start);
       this.print(node.right);
       this.writeAdvance(')');
-      this.writeGap();
-      this.print(node.body);
-      node.body.type === 'BlockStatement' && this.noSemiColon();
+      this.printBlockOrStatement(node.body, node.right.loc.end.line);
     }
 
     singleSemicolon() {
@@ -582,9 +593,7 @@ define((require, exports, module) => {
       }
       node.update === null || this.print(node.update);
       this.writeAdvance(')');
-      this.writeGap();
-      this.print(node.body);
-      node.body.type === 'BlockStatement' && this.noSemiColon();
+      this.printBlockOrStatement(node.body, (node.update ?? node.test ?? node.init)?.loc.end.line ?? node.loc.start.line);
     }
 
     SwitchCase(node) {

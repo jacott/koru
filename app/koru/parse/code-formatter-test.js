@@ -166,11 +166,14 @@ x()`;
       });
 
       test('for in', () => {
+        assert.equals(reformat('for (  b in c  ) \n  d\n'), `for (b in c) {\n  d;\n}\n`);
         assert.equals(reformat('for (const   a   in   b  ) c;'), `for (const a in b) c`);
         assert.equals(reformat('for (b in c) {\n  d\n};\n'), `for (b in c) {\n  d;\n}\n`);
       });
 
       test('for i', () => {
+        assert.equals(reformat('for \n(\n;\n;\n)  ++i;\n'), 'for (;;) {\n  ++i;\n}\n');
+        assert.equals(reformat('for(let i = 0;i < 4;++i)   \n ++i;\n'), 'for (let i = 0; i < 4; ++i) {\n  ++i;\n}\n');
         assert.equals(reformat('for(;a;) break\n'), 'for (;a;) break;\n');
         assert.equals(reformat('for(a;;) break\n'), 'for (a;;) break;\n');
         assert.equals(reformat('for(;;) break\n'), 'for (;;) break;\n');
