@@ -1,0 +1,84 @@
+#!/usr/bin/env -S node
+// -*- js2 -*-
+const path = require('path');
+const fs = require('fs');
+let program = require('commander');
+
+global.isServer = true;
+global.isClient = false;
+global.isTest = false;
+
+const koruPackage = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')));
+
+const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
+
+const load = (command) => function (...args) {
+  this.koruVersion = koruPackage.version;
+  this.koruPackage = koruPackage;
+  program = null;
+  require('../lib/'+command).apply(this, args);
+};
+
+switch (match != null ? match[1] : process.argv[2]) {
+case '--version':
+  console.log(koruPackage.version);
+  process.exit(0);
+
+case 'generate': case 'g':
+  load('generate')(program);
+  break;
+
+case 'db-':
+  load('db-commands')(program);
+  break;
+
+case void 0:
+  process.argv[2] = 'help';
+case '-h': case '--help': case 'help':
+  const p = program;
+  load('db-commands')(program, 'help');
+  program = p;
+
+default:
+  program
+    .command('new [name]')
+    .option('--link', 'link to global koru instead of local install')
+    .option('-p, --pretend', 'Run but do not make any changes')
+    .option('--force', 'overwrite existing files')
+    .description('create a new (or update an existing) application called name')
+    .action(load('new'));
+
+  program
+    .command('generate', null)
+    .alias('g')
+    .usage('GENERATOR [args] [options]')
+    .description(`create things in you project`);
+
+  program
+    .command('test')
+    .usage('[--isolated] [--config filename.js] [--port=number] [-s] [-c] [testModule] [testNamePrefix]')
+    .option('--isolated', 'Start up server and headless browser to run the tests')
+    .option('--config <filename>', 'Customize the settings before running tests. Use --config=help for help')
+    .option('--port <number>', 'Start up server on specified port '+
+            '(defaults to env KORU_PORT or; 3001 for isolated; otherwise 3000)')
+    .option('-s, --server', 'Only run server tests')
+    .option('-c, --client', 'Only run client tests')
+    .description(`run tests. Unless --isolated is used the tests expect the server and browser to already be started and connected.
+
+The following ENV variables override the defaults:
+
+KORU_PORT node server listen port. Defaults to 3001.
+KORU_BROWSER the browser to run. Defaults to google-browser.
+KORU_BROWSER_DEBUGGING_PORT remote-debugging-port for browser. Defaults to 9222.
+ `)
+    .action(load('test'));
+
+  program.parse(process.argv);
+
+  if (program !== null) {
+    if (program.rawArgs.length > 2) {
+      console.error('Unexpected command: ', program.rawArgs[2]);
+      process.exit(1);
+    }
+  }
+}

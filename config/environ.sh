@@ -8,7 +8,9 @@ export LANG="en_US"
 export LANGUAGE="en_US:en"
 export LC_ALL="en_US.UTF-8"
 
-. "${0%/*}"/../lib/koru-env.sh "$@"
+export KORU_ENV="test"
+
+. "${0%/*}"/../lib/koru-env.sh "test"
 
 if [[ $KORU_ENV != test ]]; then
     abort "$KORU_ENV env not supported for koru development; use test"

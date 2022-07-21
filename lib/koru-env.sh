@@ -1,7 +1,7 @@
 #!/bin/bash
 
 abort() {
-    echo $*
+    echo >&2 $*
     exit 1
 }
 
