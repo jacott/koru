@@ -94,7 +94,7 @@ define((require) => {
       assert.fail('Argument is not a spy/stub', 1);
   };
 
-  Core.assert.benchMark = ({subject, duration=1000, control=empty, setup=empty}) => {
+  Core.assert.benchmark = ({subject, duration=1000, control=empty, setup=empty}) => {
     setup();
     subject();
     setup();
