@@ -116,11 +116,11 @@ isServer && define((require, exports, module) => {
           assert.calledWith(net.createConnection, {port: 5432, host: 'test.com', keepAlive: true});
 
           socket.once.yieldAndReset();
+          assert.equals(connect.firstCall.args, [socket, 'pw']);
           const pgproto = connect.firstCall.thisValue;
 
           assert.equals(pgproto.options, {
             user: 'me',
-            password: 'pw',
             database: 'mydb',
             application_name: 'myapp',
           });

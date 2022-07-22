@@ -1,4 +1,5 @@
 const net = require('node:net');
+const crypto = require('node:crypto');
 
 define((require, exports, module) => {
   'use strict';
@@ -15,8 +16,8 @@ define((require, exports, module) => {
 
   const [
     BE_IDLE, BE_IN_TRANSACTION,
-    QCMD,
-  ] = 'ITQ'.split('').map((c) => c.charCodeAt(0));
+    QCMD, pCMD,
+  ] = 'ITQp'.split('').map((c) => c.charCodeAt(0));
 
   const TERMINATE = simpleCmd('X');
 
@@ -26,10 +27,98 @@ define((require, exports, module) => {
     BECMD[char.charCodeAt(0)] = callback;
   };
 
+  const SASL_AUTH = Buffer.from('SCRAM-SHA-256');
+  const SASL_PRELUDE = Buffer.from('n,,n=*,r=');
+
+  const cmpU8 = (a, b) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
+  const ub = new Uint8ArrayBuilder(100);
+
+  const sasl = (pgConn) => {
+    ub.length = 0;
+    const nonce = pgConn[private$].nonce = Buffer.from(crypto.randomBytes(18).toString('base64'));
+    ub.appendByte(pCMD).writeInt32BE(SASL_AUTH.length + 1 + SASL_PRELUDE.length + nonce.length + 4+4);
+    ub.append(SASL_AUTH).appendByte(0);
+    ub.writeInt32BE(SASL_PRELUDE.length + nonce.length);
+    ub.append(SASL_PRELUDE).append(nonce);
+    pgConn.socket.write(ub.subarray());
+    return true;
+  };
+
+  const hmac = (key, x) => crypto.createHmac('sha256', key).update(x).digest();
+
+  const sha256 = (x) => crypto.createHash('sha256').update(x).digest();
+
+  const xor = (a, b) => {
+    const length = Math.max(a.length, b.length);
+    const buffer = Buffer.allocUnsafe(length);
+    for (let i = 0; i < length; i++) {
+      buffer[i] = a[i] ^ b[i];
+    }
+    return buffer;
+  };
+
+  const saslCont = (pgConn, data) => {
+    const pv = pgConn[private$];
+    const res = data.utf8Slice(4).split(',').reduce((a, v) => (a[v[0]] = v.slice(2), a), {});
+    const saltedPassword = crypto.pbkdf2Sync(
+      pv.password,
+      Buffer.from(res.s, 'base64'),
+      parseInt(res.i), 32,
+      'sha256',
+    );
+
+    const clientKey = hmac(saltedPassword, 'Client Key');
+
+    const auth = 'n=*,r=' + pv.nonce + ',' +
+          'r=' + res.r + ',s=' + res.s + ',i=' + res.i +
+          ',c=biws,r=' + res.r;
+
+    pv.serverSignature = hmac(hmac(saltedPassword, 'Server Key'), auth).toString('base64');
+    ub.length = 0;
+    ub.appendByte(pCMD).writeInt32BE(0);
+    ub.appendUtf8Str('c=biws,r=' + res.r + ',p=' + xor(clientKey, hmac(sha256(clientKey), auth)).toString('base64'));
+    ub.writeInt32BE(ub.length - 1, 1);
+
+    pgConn.socket.write(ub.subarray());
+    return true;
+  };
+
+  const saslFinal = (pgConn, data) => {
+    if (data.utf8Slice(6) === pgConn[private$].serverSignature) return true;
+    pgConn[listener$].error(PgMessage.fatal('Invalid password'));
+    return false;
+  };
+
   // Authentication
   addCommand('R', (pgConn, data) => {
     // TODO GJ I feel like we should do more here
-    return true;
+    const type = data.readInt32BE(0);
+    if (type == 0) return true;
+    if (type == 10) {
+      let i = 4;
+      while (true) {
+        const np = data.indexOf(0, i);
+        if (np == -1 || i == np) break;
+        if (cmpU8(SASL_AUTH, data.subarray(i, np))) {
+          return sasl(pgConn);
+        }
+        i = np + 1;
+      }
+    } else if (type == 11) {
+      return saslCont(pgConn, data);
+    } else if (type == 12) {
+      return saslFinal(pgConn, data);
+    }
+
+    pgConn[listener$].error(PgMessage.fatal('Unimplemented Authentication message (' + type + ')'));
+    return false;
   });
 
   // ParameterStatus
@@ -134,9 +223,10 @@ define((require, exports, module) => {
       return oldCallback;
     }
 
-    connect(socket) {
+    connect(socket, password) {
       this.socket = socket;
       const pv = this[private$];
+      pv.password = password;
       assert(pv.state === State.NEW_CONN, 'Invalid use of connect');
       pv.state = State.CONNECTING;
       const f = new Future();

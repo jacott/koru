@@ -1,6 +1,7 @@
 isServer && define((require, exports, module) => {
   'use strict';
   const Future          = require('koru/future');
+  const PgError         = require('koru/pg/pg-error');
   const {decodeText}    = require('koru/pg/pg-type');
   const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
   const TH              = require('koru/test');
@@ -17,9 +18,10 @@ isServer && define((require, exports, module) => {
       let conn;
 
       before(async () => {
-        conn = await new PgProtocol({
+        conn = new PgProtocol({
           user: process.env.USER, database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
-        }).connect(await createReadySocket('/var/run/postgresql/.s.PGSQL.5432', conn));
+        });
+        await conn.connect(await createReadySocket('/var/run/postgresql/.s.PGSQL.5432', conn));
       });
 
       after(() => {
@@ -56,6 +58,33 @@ isServer && define((require, exports, module) => {
           line: m.number,
           routine: m.string,
         });
+      });
+
+      test('password connect', async () => {
+        after(() => runQuery(conn.exec(`DROP USER IF EXISTS "testuser1"`)));
+
+        const result = await runQuery(conn.exec(
+          `CREATE ROLE "testuser1" SUPERUSER LOGIN PASSWORD '123'`));
+
+        const c2 = new PgProtocol({
+          user: 'testuser1', database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
+        });
+
+        await assert.exception(
+          async () => c2.connect(await createReadySocket({host: 'localhost', port: 5432}, c2), '1234'),
+          {code: '28P01'},
+        );
+
+        const c3 = new PgProtocol({
+          user: 'testuser1', database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
+        });
+        let err;
+        try {
+          await c3.connect(await createReadySocket({host: 'localhost', port: 5432}, c3), '123');
+        } catch (_err) {
+          err = _err;
+        }
+        refute(err);
       });
 
       test('runtimeParams', () => {

@@ -80,6 +80,7 @@ define((require, exports, module) => {
   const FILTERED_OPTIONS = {
     ...SOCKET_OPTONS,
     dbname: true, options: true,
+    password: true,
   };
 
   const FALSEY = {false: true, 0: true, f: true};
@@ -97,6 +98,7 @@ define((require, exports, module) => {
       connOpts.user = options.user ?? process.env.USER;
       if (options.dbname !== void 0) connOpts.database = options.dbname;
       if (options.options !== void 0) connOpts.options = options.options;
+      const {password} = options;
       for (const name in options) {
         if (FILTERED_OPTIONS[name] === void 0) connOpts[name] = options[name];
       }
@@ -122,7 +124,7 @@ define((require, exports, module) => {
 
       const p = new Promise((resolve, reject) => {
         socket.once('connect', () => {
-          new PgProtocol(connOpts).connect(socket).then((conn) => {
+          new PgProtocol(connOpts).connect(socket, password).then((conn) => {
             client.conn = conn;
             resolve(client);
           }, (err) => {

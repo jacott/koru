@@ -25,13 +25,15 @@ define((require, exports, module) => {
       }, maxRows);
     } while (query.isExecuting);
 
+    refute(query.error);
+
     return {rows, columns, tag};
   };
 
   return {
     createReadySocket: (path, conn) => new Promise((resolve, reject) => {
       const socket = net.createConnection(path, () => resolve(socket));
-      socket.on('error', (err) => {conn?.close(); new TH.Core.AssertionError(err)});
+      socket.on('error', (err) => {conn?.close()});
     }),
 
     runQuery: (query, maxRows, field) => doQuery(query, maxRows, field),

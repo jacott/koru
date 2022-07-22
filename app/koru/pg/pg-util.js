@@ -56,6 +56,12 @@ define((require, exports, module) => {
       return message;
     };
 
+    static fatal(message) {
+      const m = new PgMessage();
+      m.message = message;
+      return m;
+    }
+
     static error(message) {
       const m = new PgMessage();
       m.severity = 'ERROR';
