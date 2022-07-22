@@ -269,13 +269,14 @@ x()`;
       });
 
       test('Method defs', () => {
+        assert.equals(reformat('function a (   ) {    return x;;;   }'), 'function a() {return x}');
+        assert.equals(reformat('class A {get a (   ) {    return x;;;   }}'), 'class A {get a() {return x}}');
         assert.equals(reformat('class A {set [x](v) {}}'), 'class A {set [x](v) {}}');
         assert.equals(reformat('class A {\n  a(x, y) {\n  }\n}'), 'class A {\n  a(x, y) {}\n}');
         assert.equals(reformat('a = function   *   ( a, b,c) {}'), 'a = function *(a, b, c) {}');
         assert.equals(reformat('function   *  a   ( a, b,c)\n {}'), 'function *a(a, b, c) {}');
         assert.equals(reformat('class A {constructor   ( v ) {}}'), 'class A {constructor(v) {}}');
         assert.equals(reformat('class A {[   foo  ] ( v ) {}}'), 'class A {[foo](v) {}}');
-        assert.equals(reformat('class A {get a (   ) {}}'), 'class A {get a() {}}');
         assert.equals(reformat('class A {\n  static  async   a (a,b  ) {}}'),
                       'class A {\n  static async a(a, b) {}}');
         assert.equals(reformat('class A {\nstatic  * a (a,b  ) {}}'), 'class A {\n  static *a(a, b) {}}');
@@ -399,7 +400,8 @@ a();
       });
 
       test('test arrow functions', () => {
-        assert.equals(reformat('arg1=>{arg1("bar")}'), "(arg1) => {arg1('bar')}");
+        assert.equals(reformat('arg1=>{    arg1("bar");    }'), "(arg1) => {arg1('bar')}");
+        assert.equals(reformat('arg1=>{    \n\n\n;;;\n\n    }'), '(arg1) => {}');
         assert.equals(reformat("(_, m1) => (addresses.push(m1), '')"), "(_, m1) => (addresses.push(m1), '')");
         assert.equals(reformat('async ()=>{arg1()}'), 'async () => {arg1()}');
       });

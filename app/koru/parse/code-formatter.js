@@ -117,10 +117,35 @@ define((require, exports, module) => {
       }
     }
 
-    printBlock(body) {
+    printBlock(body, parent) {
       if (body.length == 0) return;
       let p = void 0;
       let minIdx = this.inputPoint;
+      let last;
+      for (let i = body.length - 1; i >= 0; --i) {
+        last = body[i];
+        if (last.type !== 'EmptyStatement') break;
+      }
+      if (last === void 0 || last.type === 'EmptyStatement') {
+        return;
+      }
+
+      if (last.loc.end.line === parent?.loc.start.line) {
+        for (const n of body) {
+          if (n.type !== 'EmptyStatement') {
+            if (n !== last) break;
+            this.advance(n.start);
+            if (n.type === 'ReturnStatement') {
+              this.ReturnStatement(n);
+              this.noSemiColon();
+            } else {
+              this.print(n);
+            }
+            return;
+          }
+        }
+      }
+
       for (const n of body) {
         if (n.type === 'EmptyStatement') {
           minIdx = n.end;
@@ -523,10 +548,7 @@ define((require, exports, module) => {
 
     TryStatement(node) {
       this.write('try ');
-      this.write('{');
-      this.advance(this.indexOf('{', node.block.start));
-      this.printBlock(node.block.body);
-      this.writeAdvance('}');
+      this.BlockStatement(node.block);
       if (node.handler != null) {
         this.write(' ');
         this.advance(node.handler.start);
@@ -536,18 +558,12 @@ define((require, exports, module) => {
         this.print(node.handler.param);
         this.write(')');
         this.write(' ');
-        this.write('{');
-        this.advance(this.indexOf('{', node.handler.body.start));
-        this.printBlock(node.handler.body.body);
-        this.writeAdvance('}');
+        this.BlockStatement(node.handler.body);
       }
       if (node.finalizer != null) {
         this.write(' ');
         this.write('finally ');
-        this.write('{');
-        this.advance(this.indexOf('{', node.finalizer.start));
-        this.printBlock(node.finalizer.body);
-        this.writeAdvance('}');
+        this.BlockStatement(node.finalizer);
       }
       this.noSemiColon();
     }
@@ -742,8 +758,13 @@ define((require, exports, module) => {
       }
       this.write(' ');
       this.writeAdvance('=>');
-      this.writeGap();
-      this.print(node.body);
+      if (node.body.type === 'BlockStatement') {
+        this.write(' ');
+        this.BlockStatement(node.body);
+      } else {
+        this.writeGap();
+        this.print(node.body);
+      }
     }
 
     Program(node) {
@@ -751,12 +772,12 @@ define((require, exports, module) => {
     }
 
     ClassBody(node) {
-      this.printBlock(node.body);
+      this.BlockStatement(node);
     }
 
     BlockStatement(node) {
       this.writeAdvance('{');
-      this.printBlock(node.body);
+      this.printBlock(node.body, node);
       this.writeAdvance('}');
     }
   }
