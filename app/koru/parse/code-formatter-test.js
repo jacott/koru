@@ -225,6 +225,8 @@ x()`;
       });
 
       test('WhileStatement', () => {
+        assert.equals(reformat('do\n\n {\na()\n}\nwhile   (   a < b  )  ;'), 'do {\n  a();\n} while (a < b)\n');
+        assert.equals(reformat('do\n\n \na();\n\nwhile   (   a < b  )  ;'), 'do a(); while (a < b)\n');
         assert.equals(reformat('while (b) {\na();\n}\n'), 'while (b) {\n  a();\n}\n');
         assert.equals(reformat('  while(  abc  )\n  yin();'), '  while (abc) {\n    yin();\n  }');
         assert.equals(reformat('while(\n  abc ||\ndef  )    {}'), 'while (\n  abc ||\n  def) {}');

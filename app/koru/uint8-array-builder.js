@@ -34,7 +34,7 @@ define((require, exports, module) => {
       const u8 = b[buffer$];
       do {
         u8[lw++] = 0;
-      } while(lw < grow);
+      } while (lw < grow)
       b[lw$] = Math.max(lw, grow + fill);
     } else if (lw < grow + fill) {
       b[lw$] = grow + fill;

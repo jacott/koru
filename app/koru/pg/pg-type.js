@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const util            = require('koru/util');
   const {qstr, identityFunc} = require('koru/util');
+  const util            = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -553,7 +553,7 @@ define((require, exports, module) => {
         await query.fetch((n) => {
           registerOid(n.typname, n.oid, n.typarray);
         });
-      } while(query.isExecuting);
+      } while (query.isExecuting)
     },
   };
 

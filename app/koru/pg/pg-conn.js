@@ -15,7 +15,7 @@ define((require, exports, module) => {
   const findStrEnd = (str, delim, pos) => {
     for (let i = pos; i < str.length; ++i) {
       const c = str[i];
-      if (c === '\\') { ++i} else if (c === delim) {
+      if (c === '\\') {++i} else if (c === delim) {
         return i;
       }
     }
@@ -228,7 +228,7 @@ define((require, exports, module) => {
                 callback(rec);
               });
               if (query.error !== void 0) throw query.error;
-            } while (query.isExecuting);
+            } while (query.isExecuting)
           } catch (err) {
             err = await query.close(err);
             throw (err instanceof Error) ? err : new PgError(err, queryString, paramValues);
@@ -249,7 +249,7 @@ define((require, exports, module) => {
           await query.fetch((row) => {result.push(row)}, maxRows);
           if (query.error) throw query.error;
           ans = result.length == 0 && ! tag.startsWith('SELECT ') ? tag : result;
-        } while (query.isExecuting);
+        } while (query.isExecuting)
         return ans;
       } catch (err) {
         if (err instanceof Error) throw err;

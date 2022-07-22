@@ -23,7 +23,7 @@ define((require, exports, module) => {
         });
         rows.push(rec);
       }, maxRows);
-    } while (query.isExecuting);
+    } while (query.isExecuting)
 
     refute(query.error);
 

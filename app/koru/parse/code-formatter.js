@@ -676,6 +676,23 @@ define((require, exports, module) => {
       }
     }
 
+    DoWhileStatement(node) {
+      if (node.body.type === 'BlockStatement') {
+        this.write('do ');
+        this.BlockStatement(node.body);
+        this.write(' while ');
+      } else {
+        this.write('do ');
+        this.advance(node.body.start);
+        this.print(node.body);
+        this.catchup(node.body.end);
+        this.write('; while ');
+      }
+      this.printTest(node.test);
+      this.advance(node.end);
+      this.noSemiColon();
+    }
+
     LabeledStatement(node) {
       this.write(node.label.name);
       this.write(': ');
