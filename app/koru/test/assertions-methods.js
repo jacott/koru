@@ -163,6 +163,75 @@ define((require) => {
     };
   };
 
+  Core.assert.asyncBenchmark = async ({subject, duration=1000, control=empty, setup=empty}) => {
+    await setup();
+    await subject();
+    await setup();
+    await control();
+
+    let _count = 0, st = 0;
+    let result;
+    setup();
+    let endAt = Date.now() + Math.floor(duration / 6);
+    st = performance.now();
+    while (endAt > Date.now()) {
+      result = await subject(_count, result);
+      ++_count;
+    }
+    await setup();
+    const count = _count;
+    for (let i = 0; i < count; ++i) {
+      result = await control(i, result);
+    }
+
+    await setup();
+    st = performance.now();
+    for (let i = 0; i < count; ++i) {
+      result = await control(i, result);
+    }
+    let control1 = (performance.now() - st) / count;
+
+    await setup();
+    st = performance.now();
+    for (let i = 0; i < count; ++i) {
+      result = await subject(i, result);
+    }
+
+    let subject1 = (performance.now() - st) / count;
+
+    await setup();
+    st = performance.now();
+    for (let i = 0; i < count; ++i) {
+      result = await control(i, result);
+    }
+    const control2 = (performance.now() - st) / count;
+
+    await setup();
+    st = performance.now();
+    for (let i = 0; i < count; ++i) {
+      result = await subject(i, result);
+    }
+    const subject2 = (performance.now() - st) / count;
+
+    const error = Math.abs(control1 - control2) + Math.abs(subject1 - subject2);
+
+    let rounding = 10 ** (Math.floor(Math.log(error) / Math.log(10)));
+    if (rounding == 0) rounding = 0.00000001;
+
+    const ns = Math.round(1000000 * Math.round(
+      (subject1 + subject2 - control1 - control2) * 0.5 / rounding) * rounding);
+
+    return {
+      ns,
+      error: Math.round(1000000 * Math.ceil(error * 0.5 / rounding) * rounding),
+      controllNs: Math.round(1000000 * Math.round(
+        (control1 + control2) * 0.5 / rounding) * rounding),
+
+      subjectlNs: Math.round(1000000 * Math.round(
+        (subject1 + subject2) * 0.5 / rounding) * rounding),
+    };
+  };
+
   ga.add('same', {
     assert(actual, expected) {
       const result = actual === expected;
