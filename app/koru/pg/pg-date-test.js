@@ -37,6 +37,9 @@ isServer && define((require, exports, module) => {
         let time = new Date(Date.UTC(2012, 3, 5, 6, 7, 8, 23));
         const date = new Date(Date.UTC(2012, 3, 5));
 
+        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990000], [1114], [0]), [{a: new Date(1658566990000)}]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990001], [1114], [0]), [{a: new Date(1658566990001)}]);
+
         assert.equals(await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`), [{a: time}]);
         assert.equals(await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`, [], [], [1]), [{a: time}]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1114]), [{a: time}]);

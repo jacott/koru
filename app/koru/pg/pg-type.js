@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const {qstr, identityFunc} = require('koru/util');
   const util            = require('koru/util');
+  const {qstr, identityFunc} = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -369,7 +369,6 @@ define((require, exports, module) => {
   const getInt32 = (v) => v.readInt32BE(0);
   const setInt64 = (buf, v) => buf.writeBigInt64BE(BigInt(v));
   const getInt64 = (v) => Number(v.readBigInt64BE(0));
-  const getBigInt64 = (v) => v.readBigInt64BE(0);
 
   const setJsonb = (buf, v) => buf.appendByte(1).append(Buffer.from(JSON.stringify(v)));
   const getJsonb = (v) => JSON.parse(v.subarray(1));
@@ -557,7 +556,7 @@ define((require, exports, module) => {
     },
   };
 
-  const helpers = {setInt32, getInt32, setInt64, getBigInt64, textDecodeInt};
+  const helpers = {textDecodeInt};
 
   PgDate.register(PgType, helpers);
 

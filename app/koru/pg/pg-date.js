@@ -62,9 +62,9 @@ define(() => {
   const ts2text = (v) => date2text(v) +
         ` ${dd(v.getUTCHours())}:${dd(v.getUTCMinutes())}:${dd(v.getUTCSeconds())}.${dd(v.getUTCMilliseconds(), 3)}`;
   const text2ts = (str) => {
-    const m = /^(\d{2,4})-(\d\d?)-(\d\d?) *(\d\d?):(\d\d?):(\d\d?).(\d\d?\d?)/.exec(str);
+    const m = /^(\d{2,4})-(\d\d?)-(\d\d?) *(\d\d?):(\d\d?):(\d\d?)(?:.(\d\d?\d?))?/.exec(str);
     if (m === null) return new Date(NaN);
-    return new Date(Date.UTC(+ m[1], + m[2] - 1, + m[3], + m[4], + m[5], + m[6], +m[7].padEnd(3, '0')));
+    return new Date(Date.UTC(+ m[1], + m[2] - 1, + m[3], + m[4], + m[5], + m[6], +(m[7] ?? '000').padEnd(3, '0')));
   };
 
   const coerceToDate = (v) => {
@@ -80,16 +80,16 @@ define(() => {
 
     date2j, j2date,
 
-    register: ({registerName, registerOid}, {setInt32, getInt32, setInt64, getBigInt64, textDecodeInt}) => {
+    register: ({registerName, registerOid}, {textDecodeInt}) => {
       registerName('date',
-                   (buf, v) => setInt32(buf, date2j(coerceToDate(v)) - POSTGRES_EPOCH_JDATE),
-                   (v) => j2date(getInt32(v) + POSTGRES_EPOCH_JDATE),
+                   (buf, v) => buf.writeInt32BE(date2j(coerceToDate(v)) - POSTGRES_EPOCH_JDATE),
+                   (v) => j2date(v.readInt32BE(0) + POSTGRES_EPOCH_JDATE),
                    (buf, v) => buf.appendUtf8Str(date2text(coerceToDate(v))),
                    (v) => text2date(v.utf8Slice()));
 
       registerName('timestamp',
-                   (buf, v) => setInt64(buf, ts2int8(BigInt.asIntN(64, BigInt(coerceToDate(v).getTime())))),
-                   (v) => int82ts(getBigInt64(v)),
+                   (buf, v) => buf.writeBigInt64BE(ts2int8(BigInt.asIntN(64, BigInt(coerceToDate(v).getTime())))),
+                   (v) => int82ts(v.readBigInt64BE(0)),
                    (buf, v) => buf.appendUtf8Str(ts2text(coerceToDate(v))),
                    (v) => text2ts(v.utf8Slice()));
       registerOid('timestamp', 1114, 1115);
