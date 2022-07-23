@@ -28,7 +28,7 @@ define((require, exports, module) => {
 
   Object.defineProperty(ModelMap, 'db', {
     enumerable: false, configurable: true,
-    get: () => dbs[dbBroker.dbId] || newDB(dbBroker.dbId),
+    get: () => dbs[dbBroker.dbId] ?? newDB(dbBroker.dbId),
     set: (db) => dbBroker.dbId = db.name,
   });
 
@@ -157,7 +157,7 @@ define((require, exports, module) => {
       session.defineRpc('save', function (modelName, id, changes) {
         const model = ModelMap[modelName],
               docs = model.docs,
-              doc = docs[id || changes._id],
+              doc = docs[id ?? changes._id],
               now = util.newDate();
 
         if (doc !== undefined) {

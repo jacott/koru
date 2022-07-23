@@ -69,7 +69,7 @@ define((require, exports, module) => {
     destroyModel(model, drop) {
       if (! model) return;
       const rd = _resetDocs[model.modelName];
-      rd !== void 0 && rd();
+      rd?.();
       if (drop === 'drop') {
         return model.db.dropTable(model.modelName);
       }
@@ -167,7 +167,7 @@ define((require, exports, module) => {
 
         if (doc.attributes._id == null) {
           if (! model.$fields._id.auto) {
-            changes._id = changes._id || Random.id();
+            changes._id ??= Random.id();
           }
           _support._addUserIds(changes, model.userIds, util.thread.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
@@ -292,13 +292,13 @@ define((require, exports, module) => {
         },
         onAnyChange: (callback) => anyChange.add(callback),
         onChange(callback) {
-          const subject = model.db[notifyMap$] || (model.db[notifyMap$] = new Observable());
+          const subject = model.db[notifyMap$] ??= new Observable();
           return subject.onChange(callback);
         },
         get docs() {
           if (this.db === void 0) return;
-          docs = docs || db[dbMap$];
-          if (docs) return docs;
+          docs = docs ?? db[dbMap$];
+          if (docs !== void 0) return docs;
 
           db[dbMap$] = docs = db.table(model.modelName, model.$fields);
           return docs;

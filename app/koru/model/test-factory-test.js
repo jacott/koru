@@ -23,8 +23,7 @@ define((require, exports, module) => {
 
   const Module = module.constructor;
 
-  class Book extends Model.BaseModel {
-  }
+  class Book extends Model.BaseModel {}
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     before(async () => {
@@ -216,8 +215,7 @@ define((require, exports, module) => {
          * * otherwise create a factory default document for the reference.
          */
 
-        class Chapter extends Model.BaseModel {
-        }
+        class Chapter extends Model.BaseModel {}
         Chapter.define({module, name: 'Chapter', fields: {
           number: 'number', book_id: 'belongs_to',
         }});

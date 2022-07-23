@@ -392,7 +392,7 @@ define((require, exports, module) => {
     }
 
     return table._client.withConn(
-      (conn) => (table._ps_cache.get(sql) ?? addPs(table, new PgPrepSql(sql, '').setOids(oids)))
+      (conn) => (table._ps_cache.get(sql) ?? addPs(table, new PgPrepSql(sql).setOids(oids)))
         .execute(conn, values));
   };
 

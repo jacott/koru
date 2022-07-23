@@ -452,7 +452,7 @@ define((require) => {
 
   const exceptionAsync = async (self, name, expError, p) => {
     try {
-      self.message = ((await p) || '').toString();
+      self.message = await p;
       self.name = 'none was thrown';
     } catch (ex) {
       return assertException(self, ex, name, expError);
@@ -469,7 +469,7 @@ define((require) => {
           return exceptionAsync(this, name, expError, p);
         }
 
-        this.message = (p || '').toString();
+        this.message = p;
         this.name = 'none was thrown';
       } catch (ex) {
         return assertException(this, ex, name, expError);
@@ -477,8 +477,8 @@ define((require) => {
       return false;
     },
 
-    assertMessage: 'Expected an exception: {$name} {$message}',
-    refuteMessage: 'Did not expect exception: {$name} {$message}',
+    assertMessage: 'Expected an exception: {$name}; returned ({i$message})',
+    refuteMessage: 'Did not expect exception: {$name}',
   });
 
   ga.add('className', {

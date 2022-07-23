@@ -197,7 +197,7 @@ define((require) => {
       super(attributes, {});
       this.model = Model[modelName];
       this._useSave = '';
-      if (! this.model) throw new Error('Model: "' + modelName + '" not found');
+      if (this.model === void 0) throw new Error('Model: "' + modelName + '" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
     }
 

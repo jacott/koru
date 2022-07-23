@@ -17,9 +17,15 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     before(async () => {
+      await TH.startTransaction();
       TestModel = Model.define('TestModel').defineFields({
-        name: 'text', age: 'number', gender: 'text', hobby: 'text'});
-      await TestModel.query.count(); // ensure table created
+        name: 'text', age: 'number', gender: 'text', hobby: 'text',
+        ages: 'integer[]',
+        foo: 'jsonb', x: 'integer[]',
+        html: 'object',
+        cogs: 'text[]',
+      });
+      await TestModel.query.count();
     });
 
     beforeEach(async () => {
@@ -32,13 +38,14 @@ define((require, exports, module) => {
     });
 
     afterEach(async () => {
+      if (isClient) TestModel.query.remove();
       await TH.rollbackTransaction();
       v = {};
     });
 
     after(async () => {
-      await Model._destroyModel('TestModel', 'drop');
-      TestModel = void 0;
+      Model._destroyModel('TestModel');
+      await TH.rollbackTransaction();
     });
 
     test('limit', async () => {
@@ -53,27 +60,26 @@ define((require, exports, module) => {
     });
 
     test('un/match array element', async () => {
-      TestModel.defineFields({aoo: 'object'});
-      await v.foo.$onThis.update('aoo', [{a: 1, b: 2}, {a: 1, b: 3}]);
+      await v.foo.$onThis.update('foo', [{a: 1, b: 2}, {a: 1, b: 3}]);
 
-      assert.same(await TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
+      assert.same(await TestModel.query.whereNot('foo', {a: 1, b: 3}).count(), 1);
 
-      await v.bar.$onThis.update('aoo', {a: 2, b: 2});
+      await v.bar.$onThis.update('foo', {a: 2, b: 2});
 
       if (isServer) {
-        assert.same(await TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
-        assert.same(await TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
+        assert.same(await TestModel.where('foo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+        assert.same(await TestModel.where('foo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
 
-        assert.same(await TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
-        assert.same(await TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+        assert.same(await TestModel.query.whereNot('foo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
+        assert.same(await TestModel.query.whereNot('foo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
       }
 
-      assert.same(await TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
-      assert.same(await TestModel.where('aoo', {a: 1, b: 1}).count(), 0);
-      assert.same(await TestModel.query.where('aoo', {a: 1}).count(), 0);
+      assert.same(await TestModel.where('foo', {a: 1, b: 3}).count(), 1);
+      assert.same(await TestModel.where('foo', {a: 1, b: 1}).count(), 0);
+      assert.same(await TestModel.query.where('foo', {a: 1}).count(), 0);
 
-      assert.same(await TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
-      assert.same(await TestModel.query.whereNot('aoo', {a: 1, b: 1}).count(), 2);
+      assert.same(await TestModel.query.whereNot('foo', {a: 1, b: 3}).count(), 1);
+      assert.same(await TestModel.query.whereNot('foo', {a: 1, b: 1}).count(), 2);
     });
 
     test('$ne', async () => {
@@ -279,7 +285,6 @@ define((require, exports, module) => {
     });
 
     test('subField', async () => {
-      TestModel.defineFields({html: 'object'});
       await v.foo.$updatePartial(
         'html', ['div.0.b', 'hello', 'input.$partial', ['id', 'world']],
         'name', ['$append', '.suffix'],
@@ -292,7 +297,6 @@ define((require, exports, module) => {
     });
 
     test('arrays', async () => {
-      TestModel.defineFields({ages: 'integer[]'});
       await v.foo.$update('ages', [5]);
       v.multi = await TestModel.create({ages: [6, 7, 8]});
 
@@ -623,7 +627,9 @@ define((require, exports, module) => {
     });
 
     group('updates', () => {
-      beforeEach(async () => {await TH.startTransaction()});
+      beforeEach(async () => {
+        await TH.startTransaction();
+      });
       afterEach(async () => {
         TestModel.docs._ps_findById = void 0;
         await TH.rollbackTransaction();
@@ -640,8 +646,6 @@ define((require, exports, module) => {
       });
 
       test('update partial field', async () => {
-        TestModel.defineFields({foo: 'object'});
-
         const handle = TestModel.onChange(v.ob = stub());
         after(() => handle.stop());
         const st = new Query(TestModel).onId(v.foo._id);
@@ -674,7 +678,6 @@ define((require, exports, module) => {
       });
 
       test('update arrays', async () => {
-        TestModel.defineFields({foo: 'jsonb', x: 'integer[]'});
         const st = new Query(TestModel).onId(v.foo._id);
 
         await st.update({name: 'new Name', $partial: {
@@ -753,7 +756,6 @@ define((require, exports, module) => {
       });
 
       test('addItems, removeItems', async () => {
-        TestModel.defineFields({cogs: 'text[]'});
         after(TestModel.onChange(v.onChange = stub()));
 
         await TestModel.query.onId(v.foo._id).addItems('cogs', ['a']);
