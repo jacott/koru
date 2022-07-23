@@ -5,7 +5,7 @@ define((require, exports, module) => {
   'use strict';
   const PgError         = require('koru/pg/pg-error');
   const PgProtocol      = require('koru/pg/pg-protocol');
-  const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
+  const {forEachColumn, buildNameOidColumns, tagToCount} = require('koru/pg/pg-util');
 
   const INVALID_CONNECTION_STRING = {
     severity: 'FATAL',
@@ -250,7 +250,7 @@ define((require, exports, module) => {
           if (query.error) throw query.error;
           ans = result.length == 0 && ! tag.startsWith('SELECT ') ? tag : result;
         } while (query.isExecuting)
-        return ans;
+        return tagToCount(ans);
       } catch (err) {
         if (err instanceof Error) throw err;
         throw new PgError(err);

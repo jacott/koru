@@ -89,8 +89,11 @@ define((require, exports, module) => {
       stub(koru, 'unhandledException');
       let innerThread;
       let future = new Future();
+      const fin1 = stub().throws('simple'), fin2 = stub();
       const prog = async () => {
+        util.thread.finally(fin1);
         await future.promise;
+        util.thread.finally(fin2);
         return innerThread = util.thread;
       };
       const ans = koru.runFiber(prog);
@@ -102,12 +105,15 @@ define((require, exports, module) => {
       refute.same(util.thread, innerThread);
       assert.same(await ans, innerThread);
 
+      assert.called(fin1);
+      assert(fin2.calledAfter(fin1));
+
       future = new Future();
 
       koru.runFiber(prog);
       await 1;
 
-      refute.called(koru.unhandledException);
+      assert.calledOnceWith(koru.unhandledException, 'simple');
       future.reject('reject');
 
       await 1; await 2;

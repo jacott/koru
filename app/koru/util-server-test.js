@@ -23,7 +23,7 @@ define((require, exports, module) => {
       let other;
       globalThis.__koruThreadLocal.run({}, () => {other = util.thread});
       refute.same(util.thread, other);
-      assert.equals(util.thread, TH.match.baseObject);
+      assert.equals(util.thread.finally, m.func);
       assert.equals(other, TH.match.baseObject);
     });
 

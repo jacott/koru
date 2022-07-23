@@ -1,5 +1,6 @@
 define((require, exports, module) => {
   'use strict';
+  const KoruThread      = require('koru/koru-thread');
   const util            = require('./util-server');
 
   const TWENTY_DAYS = 20 * util.DAY;
@@ -70,25 +71,46 @@ define((require, exports, module) => {
       },
 
       runFiber(func) {
-        return globalThis.__koruThreadLocal.run({}, () => {
-          const ans = func();
-          if (isPromise(ans)) {
-            return ans.catch(koru.unhandledException);
+        const thread = new KoruThread();
+        return globalThis.__koruThreadLocal.run(thread, () => {
+          let ans;
+          try {
+            ans = func();
+          } catch (err) {
+            try {
+              koru.unhandledException(err);
+            } catch (err) {
+              console.error(err);
+            }
           }
+          if (isPromise(ans)) {
+            return ans.catch(koru.unhandledException).finally(() => KoruThread.runFinally(thread));
+          }
+          KoruThread.runFinally(thread);
           return ans;
         });
       },
 
       fiberConnWrapper(func, conn, data) {
         dbBroker !== null || require(['koru/model/db-broker'], (value) => dbBroker = value);
-        const thread = {userId: conn.userId, connection: conn};
+        const thread = new KoruThread(conn);
 
         return globalThis.__koruThreadLocal.run(thread, () => {
           dbBroker.db = conn.db;
-          const ans = func(conn, data);
-          if (isPromise(ans)) {
-            return ans.catch(koru.unhandledException);
+          let ans;
+          try {
+            ans = func(conn, data);
+          } catch(err) {
+            try {
+              koru.unhandledException(err);
+            } catch (err) {
+              console.error(err);
+            }
           }
+          if (isPromise(ans)) {
+            return ans.catch(koru.unhandledException).finally(() => KoruThread.runFinally(thread));
+          }
+          KoruThread.runFinally(thread);
           return ans;
         });
       },
@@ -98,5 +120,7 @@ define((require, exports, module) => {
      * _afTimeout is used by client session; do not override in tests
      **/
     koru._afTimeout = koru.afTimeout;
+
+    KoruThread.koru = koru;
   };
 });

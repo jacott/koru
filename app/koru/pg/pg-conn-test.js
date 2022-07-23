@@ -169,7 +169,7 @@ isServer && define((require, exports, module) => {
         const result = [];
         do {
           await query.fetch((row) => {result.push(row)});
-        } while (query.isExecuting);
+        } while (query.isExecuting)
 
         assert.equals(result, [{a: 3}]);
       });
@@ -183,9 +183,9 @@ isServer && define((require, exports, module) => {
 
       test('begin/rollback', async () => {
         assert.equals(await client.exec(`BEGIN`), 'BEGIN');
-        assert.equals(await client.exec(`create table "Test1" (_id TEXT PRIMARY KEY, v int4)`), 'CREATE TABLE');
-        assert.equals(await client.exec(`insert into "Test1" VALUES ('hello')`), 'INSERT 0 1');
-        assert.equals(await client.exec(`insert into "Test1" VALUES ('world', $1)`, [123]), 'INSERT 0 1');
+        assert.equals(await client.exec(`create table "Test1" (_id TEXT PRIMARY KEY, v int4)`), 0);
+        assert.equals(await client.exec(`insert into "Test1" VALUES ('hello')`), 1);
+        assert.equals(await client.exec(`insert into "Test1" VALUES ('world', $1)`, [123]), 1);
         assert.equals(await client.exec(`SELECT * from "Test1"`), [{_id: 'hello'}, {_id: 'world', v: 123}]);
         assert.equals(await client.exec(
           `SELECT table_name FROM information_schema.columns WHERE table_name = $1 and column_name = $2`,

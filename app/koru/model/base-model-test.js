@@ -65,8 +65,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module, fields: {
         title: 'text',
         pages: {type: 'number', number: {'>': 0}},
@@ -134,8 +133,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module});
 
       Book.defineFields({
@@ -164,8 +162,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module});
       assert.exception(() => {
         Book.assertFound(null);
@@ -185,8 +182,7 @@ define((require, exports, module) => {
       api.protoMethod();
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({
         module,
         fields: {
@@ -207,8 +203,7 @@ define((require, exports, module) => {
     });
 
     group('validation', () => {
-      class Book extends ValidatorHelper.ModelStub {
-      }
+      class Book extends ValidatorHelper.ModelStub {}
       Book.modelName = 'Book';
 
       Book.registerValidator(TextValidator);

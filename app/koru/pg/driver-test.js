@@ -143,6 +143,19 @@ isServer && define((require, exports, module) => {
         //]
       });
 
+      test('ensuredTran', async () => {
+        let tx;
+        await koru.runFiber(async () => {
+          const client = pg.defaultDb;
+          assert.same(client.existingTran, void 0);
+
+          tx = await client.startAutoEndTran();
+          assert.same(tx.transaction, 'COMMIT');
+        });
+
+        assert.same(tx.transaction, null);
+      });
+
       test('explainQuery', async () => {
         /**
          * Run an EXPLAIN ANALYZE on given query and return result text.

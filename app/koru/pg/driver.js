@@ -56,8 +56,7 @@ define((require, exports, module) => {
   };
 
   const getConn = async (client) => {
-    const {thread} = util, sym = client[tx$];
-    const tx = thread[sym] ?? (thread[sym] = await fetchPool(client).acquire());
+    const tx = util.thread[client[tx$]] ??= await fetchPool(client).acquire();
 
     if (tx.conn === void 0 || tx.conn.isClosed()) {
       tx.conn = await new PgConn(PgType, client.formatOptions).connect(client._url);
@@ -210,6 +209,8 @@ define((require, exports, module) => {
       return releaseConn(this);
     }
 
+    get existingTran() {return util.thread[this[tx$]]}
+
     async withConn(func) {
       const tx = util.thread[this[tx$]];
       if (tx !== void 0) return func.call(this, tx.conn);
@@ -278,6 +279,11 @@ define((require, exports, module) => {
         await query(tx.conn, 'BEGIN');
       }
       return tx;
+    }
+
+    startAutoEndTran() {
+      util.thread.finally(() => this.endTransaction());
+      return this.startTransaction();
     }
 
     async endTransaction(abort) {
@@ -837,7 +843,7 @@ define((require, exports, module) => {
       this._ready !== true && await this._ensureTable();
 
       const ps = this._ps_findById ??= new PgPrepSql(
-        'SELECT * FROM "' + this._name + '" WHERE _id = $1 LIMIT 1').setOids([this._colMap._id.oid]);
+        'SELECT * FROM "' + this._name + '" WHERE _id=$1 LIMIT 1').setOids([this._colMap._id.oid]);
       return this._client.withConn((conn) => ps.fetchOne(conn, [_id]));
     }
 
@@ -1037,11 +1043,7 @@ define((require, exports, module) => {
     for (const _ in needCols) return needCols;
   };
 
-  const execute = async (conn, sql, columns) => {
-    const tag = await query(conn, sql, columns.values, columns.oids);
-    const ridx = tag.lastIndexOf(' ');
-    return ridx == -1 ? tag : +tag.slice(ridx + 1);
-  };
+  const execute = async (conn, sql, columns) => query(conn, sql, columns.values, columns.oids);
 
   const performTransaction = (table, sql, params) => {
     if (table.schema || util.isObjEmpty(params.needCols)) {

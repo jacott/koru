@@ -159,5 +159,9 @@ define((require, exports, module) => {
     getRow,
     utf8Encode: (v) => Buffer.from(v.toString()),
     listener$,
+    tagToCount: (tag='') => {
+      const ridx = tag.lastIndexOf(' ');
+      return ridx == -1 ? tag : +tag.slice(ridx + 1) || 0;
+    },
   };
 });

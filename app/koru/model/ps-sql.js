@@ -29,6 +29,8 @@ define((require, exports, module) => {
 
     fetch(params) {return this.table.withConn((conn) => (this.#pgsql ??= this.#initPs()).fetch(conn, params))}
 
+    execute(params) {return this.table.withConn((conn) => (this.#pgsql ??= this.#initPs()).execute(conn, params))}
+
     async value(params, defValue) {
       const rec = (await this.fetchOne(params));
       for (const name in rec) return rec[name];

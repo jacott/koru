@@ -39,7 +39,7 @@ isServer && define((require, exports, module) => {
       ps1.queryStr = void 0; // not needed
       assert.equals(await ps1.fetchOne(client, {p1: 6, p2: 1}), {a: 1, b: 4});
       assert.same(ps1.columns, columns);
-      assert.equals(columns, [{name: 'a', oid: 23, format: 0}, {name: 'b', oid: 23, format: 0}]);
+      assert.equals(columns, [{name: 'a', oid: 23, format: 1}, {name: 'b', oid: 23, format: 1}]);
     });
 
     test('describe', async () => {
@@ -69,6 +69,7 @@ isServer && define((require, exports, module) => {
         {a: 'ax1', b: 11}, {a: 'ax2', b: 22}, {a: 'ax3', b: 33}]);
 
       assert.same(ps1.columns, columns);
+      assert.equals(columns, [{name: 'a', oid: 25, format: 1}, {name: 'b', oid: 21, format: 1}]);
     });
 
     test('execute no rows', async () => {

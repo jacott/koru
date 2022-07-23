@@ -1,8 +1,9 @@
 isServer && define((require, exports, module) => {
   'use strict';
   /**
-   * A Prepared query that is automatticaly named for reused on DB connections.
+   * An optimized Model query using sql for where statement.
    *
+   * Note: all queries must be ran from withing a transaction
    */
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
@@ -11,7 +12,7 @@ isServer && define((require, exports, module) => {
 
   const {stub, spy, util} = TH;
 
-  const PsSql = require('./ps-sql');
+  const SqlQuery = require('./sql-query');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let Book;
@@ -19,6 +20,8 @@ isServer && define((require, exports, module) => {
       await TH.startTransaction();
       Book = class extends BaseModel {
         authorize() {}
+
+        get summary() {return `${this.title} by ${this.author}`}
       };
       Book.define({
         name: 'Book',
@@ -74,18 +77,21 @@ isServer && define((require, exports, module) => {
       /**
        * Create a prepared query.
        *
-       * Note: The query is lazily prepared including parsing the string and deriving parameter types.
+       * Note: The query is lazily prepared including parsing the string and deriving parameter
+       * types.
+       *
+       * Can also be called as `Model#sqlWhere(queryStr)`
 
        * @param queryStr The sql query string, with symbolic parameters, to prepare
 
        * @param model models used to resolve symbolic parameter types
 
        */
-      const PsSql = api.class();
+      const SqlQuery = api.class();
       //[
-      const bigBooks = new PsSql(`SELECT sum("pageCount") FROM "Book" WHERE "pageCount" > {$pageCount}`, Book);
+      const bigBooks = new SqlQuery(Book, `"pageCount" > {$pageCount} ORDER BY "pageCount"`);
 
-      assert.equals(await bigBooks.fetchOne({pageCount: 300}), {sum: 1214});
+      assert.same(await bigBooks.fetchOne({pageCount: 300}), await Book.findBy('title', 'Pride and Prejudice'));
       //]
     });
 
@@ -95,9 +101,9 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`, Book);
+      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals(await byAuthor.fetchOne({author: 'Dima Zales'}), {title: 'Limbo'});
+      assert.equals(await byAuthor.fetchOne({author: 'Dima Zales'}), await Book.findBy('title', 'Limbo'));
       //]
     });
 
@@ -107,41 +113,44 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`, Book);
+      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals(await byAuthor.fetch({author: 'Dima Zales'}), [{title: 'Limbo'}, {title: 'Oasis'}]);
+      assert.equals((await byAuthor.fetch({author: 'Dima Zales'})).map((d) => d.summary),
+                    ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
       //]
     });
 
-    test('execute', async () => {
+    test('values', async () => {
       /**
-       * execute statement returning the tag count and closing the portal.
+       * return an asyncIterator over the rows returned from the query.
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`UPDATE "Book" set "pageCount" = -1 WHERE "author" = {$author}`, Book);
+      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals(await byAuthor.execute({author: 'Dima Zales'}), 2);
-      assert.equals(await new PsSql(`SELECT count(1) FROM "Book" WHERE "pageCount" = -1`, Book).value(), 2);
+      const titles = [];
+
+      for await (const row of byAuthor.values({author: 'Dima Zales'})) {
+        titles.push(row.summary);
+      }
+
+      assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
       //]
     });
 
-    test('value', async () => {
+    test('forEach', async () => {
       /**
-       * Convience wrapper around {##fetchOne} which returns one value from the row if found else the default value
+       * call callback for each row returned from the query.
        */
       api.protoMethod();
       //[
-      const countByAuthor = new PsSql(`SELECT count(1) FROM "Book" WHERE "author" = {$author}`, Book);
+      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals(await countByAuthor.value({author: 'Dima Zales'}), 2);
+      const titles = [];
 
-      const bigBooks = new PsSql(
-        `SELECT title FROM "Book" WHERE "pageCount" > {$pageCount} ORDER BY "pageCount" DESC`, Book);
+      await byAuthor.forEach({author: 'Dima Zales'}, (row) => titles.push(row.summary));
 
-      assert.equals(await bigBooks.value({pageCount: 3000}, 'No book is that big'), 'No book is that big');
-      assert.equals(await bigBooks.value({pageCount: 300}, 'No book is that big'), 'The Eye of the World');
-
+      assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
       //]
     });
   });
