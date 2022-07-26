@@ -37,5 +37,13 @@ define((require, exports, module) => {
     }),
 
     runQuery: (query, maxRows, field) => doQuery(query, maxRows, field),
+
+    simpleExec: async (conn, str) => {
+      let comp;
+      const q = conn.exec(str);
+      q.commandComplete((t) => {comp = t});
+      await q.fetch();
+      return comp;
+    },
   };
 });

@@ -1,5 +1,6 @@
-const net = require('node:net');
 const crypto = require('node:crypto');
+const net = require('node:net');
+const {Readable, Writable} = require('node:stream');
 
 define((require, exports, module) => {
   'use strict';
@@ -16,10 +17,11 @@ define((require, exports, module) => {
 
   const [
     BE_IDLE, BE_IN_TRANSACTION,
-    QCMD, pCMD,
-  ] = 'ITQp'.split('').map((c) => c.charCodeAt(0));
+    QCMD, dCMD, pCMD,
+  ] = 'ITQdp'.split('').map((c) => c.charCodeAt(0));
 
   const TERMINATE = simpleCmd('X');
+  const COPY_DONE = simpleCmd('c');
 
   const BECMD = [];
 
@@ -94,6 +96,16 @@ define((require, exports, module) => {
     if (data.utf8Slice(6) === pgConn[private$].serverSignature) return true;
     pgConn[listener$].error(PgMessage.fatal('Invalid password'));
     return false;
+  };
+
+  const mapColFormat = (data, offset) => {
+    const len = data.readInt16BE(offset);
+    const result = [];
+    offset += 2;
+    for (let i = 0; i < len; ++i) {
+      result.push(data.readInt16BE(offset + i * 2));
+    }
+    return result;
   };
 
   // Authentication
@@ -183,15 +195,42 @@ define((require, exports, module) => {
   // CommandComplete
   addCommand('C', (pgConn, data) => pgConn[listener$].commandComplete(data));
 
-  // CommandComplete
-  addCommand('C', (pgConn, data) => pgConn[listener$].commandComplete(data));
-
   // PortalSuspended
   addCommand('s', (pgConn, data) => pgConn[listener$].portalSuspended(data));
+
+  // CopyBothResponse
+  addCommand('W', (pgConn, data) => pgConn[listener$].copyBothResponse(data));
+
+  // CopyInResponse
+  addCommand('G', (pgConn, data) => pgConn[listener$].copyInResponse(data));
+
+  // CopyOutResponse
+  addCommand('H', (pgConn, data) => pgConn[listener$].copyOutResponse(data));
+
+  // CopyData
+  addCommand('d', (pgConn, data) => pgConn[listener$].copyData(data));
+
+  // CopyDone
+  addCommand('c', (pgConn, data) => pgConn[listener$].copyDone(data));
+
+  // CopyFail
+  addCommand('f', (pgConn, data) => pgConn[listener$].copyFail(data));
 
   const makeCloseError = (message) => (message instanceof PgMessage)
         ? message
         : new PgMessage({message: message ?? 'connection closed'});
+
+  const writeQuery = (conn, str) => {
+    const utf8 = Buffer.from(str);
+
+    const u8 = Buffer.allocUnsafe(6 + utf8.length);
+    u8[0] = QCMD;
+    u8.writeInt32BE(u8.length - 1, 1);
+    utf8.copy(u8, 5);
+    u8[u8.length - 1] = 0;
+
+    conn.socket.write(u8);
+  };
 
   class PgProtocol {
     constructor(options) {
@@ -329,6 +368,147 @@ define((require, exports, module) => {
 
     portal(name='') {return new PgPortal(this, name)}
 
+    copyFromStream(str, callback) {
+      const conn = this;
+      const pv = conn[private$];
+
+      return new Promise((resolve, reject) => {
+        let paused = true;
+
+        let error;
+
+        const {socket} = conn;
+
+        const header = Buffer.allocUnsafe(5);
+        header[0] = dCMD;
+
+        const stream = new Writable({
+          write: (chunk, encoding, callback) => {
+            if (typeof chunk === 'string') chunk = Buffer.from(chunk, encoding);
+            socket.cork();
+            header.writeInt32BE(chunk.length + 4, 1);
+            socket.write(header);
+            socket.write(chunk, void 0, callback);
+            socket.uncork();
+          },
+
+          destroy: () => {
+            socket.write(COPY_DONE);
+          },
+
+          autoDestroy: true,
+        });
+
+        const notAllowed = (data) => {
+          if (error === void 0) {
+            error = PgMessage.error('Not a COPY FROM STDIN query');
+            stream.destroy(error);
+          }
+          return true;
+        };
+
+        conn.lock({
+          ready: () => {
+            conn.unlock();
+            if (error === void 0) {
+              resolve();
+            } else {
+              reject(error);
+            }
+            return true;
+          },
+          error: (err) => {
+            if (error === void 0) {
+              error = err;
+            }
+            return true;
+          },
+
+          copyInResponse: (data) => {
+            try {
+              callback(stream, {isText: data[0] === 0, cols: mapColFormat(data, 1)});
+            } catch (err) {
+              error ??= err;
+            }
+            return true;
+          },
+
+          copyOutResponse: notAllowed,
+          addRowDesc: notAllowed,
+          copyDone: util.trueFunc,
+          copyData: util.trueFunc,
+          addRow: util.trueFunc,
+          commandComplete: util.trueFunc,
+        }).then(() => {
+          writeQuery(conn, str);
+        });
+      });
+    }
+
+    copyToStream(str, formatCallback) {
+      const conn = this;
+      const pv = conn[private$];
+
+      let paused = false;
+
+      const stream = new Readable({
+        read: () => {
+          if (paused) {
+            paused = false;
+            pv.sendNext();
+          }
+        },
+        destroy: (err, cb) => {cb(err)},
+        autoDestroy: true,
+      });
+
+      let error;
+
+      const notAllowed = (data) => {
+        if (error === void 0) {
+          error = PgMessage.error('Not a COPY TO STDOUT query');
+          stream.destroy(error);
+        }
+        return true;
+      };
+
+      conn.lock({
+        ready: () => {
+          conn.unlock();
+          error === void 0 && stream.push(null);
+          return true;
+        },
+        error: (err) => {
+          if (error === void 0) {
+            error = err;
+            stream.destroy(error);
+          }
+          return true;
+        },
+
+        copyOutResponse: (data) => {
+          formatCallback?.(data[0] === 0, mapColFormat(data, 1));
+          return true;
+        },
+
+        copyData: (data) => {
+          if (stream.push(data)) return true;
+          paused = true;
+          return false;
+        },
+
+        copyInResponse: notAllowed,
+        addRowDesc: notAllowed,
+        copyDone: util.trueFunc,
+        addRow: util.trueFunc,
+        commandComplete: util.trueFunc,
+      }).then(async () => {
+        writeQuery(conn, str);
+      });
+
+      return stream;
+    }
+
     exec(str) {
       const conn = this;
       const pv = conn[private$];
@@ -340,15 +520,13 @@ define((require, exports, module) => {
       let rowDescCallback;
 
       const initFetch = async (callback) => {
-        const ready = () => {
-          conn.unlock();
-          execState = 0;
-          done?.(error);
-          return true;
-        };
-
         await conn.lock({
-          ready,
+          ready: () => {
+            conn.unlock();
+            execState = 0;
+            done?.(error);
+            return true;
+          },
           error: (err) => {
             error ??= err;
             nextRow = void 0;
@@ -385,15 +563,7 @@ define((require, exports, module) => {
 
         execState = 2;
 
-        const utf8 = Buffer.from(str);
-
-        const u8 = Buffer.allocUnsafe(6 + utf8.length);
-        u8[0] = QCMD;
-        u8.writeInt32BE(u8.length - 1, 1);
-        utf8.copy(u8, 5);
-        u8[u8.length - 1] = 0;
-
-        conn.socket.write(u8);
+        writeQuery(conn, str);
 
         return fetch(callback);
       };

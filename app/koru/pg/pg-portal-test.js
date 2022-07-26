@@ -6,7 +6,7 @@ isServer && define((require, exports, module) => {
   const TH              = require('koru/test');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const PgProtocol      = require('./pg-protocol');
-  const {createReadySocket, runQuery} = require('./pg-test-helper');
+  const {createReadySocket, runQuery, simpleExec} = require('./pg-test-helper');
 
   const net = requirejs.nodeRequire('node:net');
 
@@ -38,17 +38,9 @@ isServer && define((require, exports, module) => {
       }
     });
 
-    const simpleExec = async (str) => {
-      let comp;
-      const q = conn.exec(str);
-      q.commandComplete((t) => {comp = t});
-      await q.fetch();
-      return comp;
-    };
-
     const startTransaction = async () => {
-      after(async () => {assert.same(await simpleExec('rollback'), 'ROLLBACK')});
-      assert.same(await simpleExec('begin'), 'BEGIN');
+      after(async () => {assert.same(await simpleExec(conn, 'rollback'), 'ROLLBACK')});
+      assert.same(await simpleExec(conn, 'begin'), 'BEGIN');
     };
 
     test('parse error', async () => {
@@ -142,7 +134,7 @@ isServer && define((require, exports, module) => {
       assert.equals(rows.length, 2);
       assert.same(tag, void 0);
 
-      assert.same(await simpleExec('select 1'), 'SELECT 1');
+      assert.same(await simpleExec(conn, 'select 1'), 'SELECT 1');
 
       error = await p.fetch((row) => rows.push(row), 2);
       refute(error);
@@ -365,7 +357,7 @@ isServer && define((require, exports, module) => {
       b = p.prepareValues();
       p.addParamOid(encodeBinary(b, 1, 23));
       const result = [];
-      await p.fetch((row) => { result.push(row)});
+      await p.fetch((row) => {result.push(row)});
       refute(p.error);
       assert.equals(result, [m.object]);
     });

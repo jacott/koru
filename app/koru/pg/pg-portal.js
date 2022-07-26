@@ -21,7 +21,6 @@ define((require, exports, module) => {
   const E_PARAM_COUNT_MISMATCH = 'PgPortal#addParamOid call count does not match parse paramCount';
   const E_BAD_ARGS = 'invalid arguments';
 
-  const FLUSH = simpleCmd('H');
   const SYNC = simpleCmd('S');
 
   const ZERO32 = new Uint8Array(4);
@@ -392,7 +391,6 @@ define((require, exports, module) => {
 
       return new Promise((resolve) => lockPortal(
         this, () => {
-          const {state} = pv;
           pv.setState(P_FETCHING);
           pv.clearState(P_MORE);
 

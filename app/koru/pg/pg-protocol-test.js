@@ -5,7 +5,7 @@ isServer && define((require, exports, module) => {
   const {decodeText}    = require('koru/pg/pg-type');
   const {forEachColumn, buildNameOidColumns} = require('koru/pg/pg-util');
   const TH              = require('koru/test');
-  const {createReadySocket, runQuery} = require('./pg-test-helper');
+  const {createReadySocket, runQuery, simpleExec} = require('./pg-test-helper');
 
   const {private$} = require('koru/symbols');
 
@@ -61,10 +61,9 @@ isServer && define((require, exports, module) => {
       });
 
       test('password connect', async () => {
-        after(() => runQuery(conn.exec(`DROP USER IF EXISTS "testuser1"`)));
+        after(() => simpleExec(conn, `DROP USER IF EXISTS "testuser1"`));
 
-        const result = await runQuery(conn.exec(
-          `CREATE ROLE "testuser1" SUPERUSER LOGIN PASSWORD '123'`));
+        await simpleExec(conn, `CREATE ROLE "testuser1" SUPERUSER LOGIN PASSWORD '123'`);
 
         const c2 = new PgProtocol({
           user: 'testuser1', database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
@@ -118,7 +117,7 @@ isServer && define((require, exports, module) => {
             if (query.isExecuting) {
               assert.equals(tag, 'SELECT 1');
             }
-          } while (query.isExecuting);
+          } while (query.isExecuting)
           assert.equals(results, [{jsonb: {a: 'b'}}]);
         } catch (err) {
           assert.fail(JSON.stringify(err));
@@ -141,11 +140,47 @@ isServer && define((require, exports, module) => {
               rec[field.desc.name] = field.rawValue.toString();
             }
           });
-        } while(q.isExecuting);
+        } while (q.isExecuting)
 
         assert.equals(completed, ['SET']);
 
         assert.calledOnceWith(cb2, m((m) => m.severity === 'DE' + 'BUG' && m.code === '00000'));
+      });
+
+      test('copyToStream', async () => {
+        let result = '';
+        const format = {};
+        const copy = conn.copyToStream(
+          `COPY (SELECT * FROM unnest(Array[1,2,3], Array[4,5,6]) as x(a,b)) TO STDOUT`,
+          (isText, cols) => {format.isText = isText, format.cols = cols},
+        );
+        copy.on('data', (chunk) => {result += chunk});
+        try {
+          await new Promise((resolve, reject) => {
+            copy.on('error', reject);
+            copy.on('end', resolve);
+          });
+        } catch (err) {
+          refute(err);
+        }
+
+        assert.equals(format, {isText: true, cols: [0, 0]});
+
+        assert.equals(result, "1\t4\n2\t5\n3\t6\n");
+      });
+
+      test('copyFromStream', async () => {
+        await simpleExec(conn, 'BEGIN');
+        await simpleExec(conn, 'CREATE TABLE ab (a int2, b int2)');
+        after(() => simpleExec(conn, 'ROLLBACK'));
+
+        await conn.copyFromStream(`COPY ab FROM STDIN`, (stream, format) => {
+          stream.write("1\t4\n2\t5\n3\t6\n");
+          stream.end();
+        });
+
+        assert.equals((await runQuery(conn.exec('SELECT * from ab'))).rows, [
+          {'0:a,21': 1, '1:b,21': 4}, {'0:a,21': 2, '1:b,21': 5}, {'0:a,21': 3, '1:b,21': 6}]);
       });
 
       test('exec', async () => {
@@ -164,7 +199,7 @@ isServer && define((require, exports, module) => {
             results.push(rec);
           });
           refute(query.error);
-        } while(query.isExecuting);
+        } while (query.isExecuting)
 
         assert.equals(completed, ['SELECT 3']);
 
@@ -222,7 +257,7 @@ END;`);
             });
             rows.push(rec);
           });
-        } while (query.isExecuting);
+        } while (query.isExecuting)
 
         assert.equals(rows, [
           {a: '1', b: '4'}, {a: '2', b: '5'}, {a: '3', b: '6'},
