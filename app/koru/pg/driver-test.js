@@ -781,6 +781,7 @@ isServer && define((require, exports, module) => {
       });
 
       test('remove', async () => {
+        foo._ready = false;
         assert.same(await foo.remove({_id: '123'}), 1);
 
         assert.equals(await foo.query({}), [{_id: '456', name: 'abc'}]);

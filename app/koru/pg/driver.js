@@ -557,7 +557,8 @@ define((require, exports, module) => {
       });
     }
 
-    remove(whereParams) {
+    async remove(whereParams) {
+      this._ready !== true && await this._ensureTable();
       const sql = `DELETE FROM "${this._name}"`;
       const cols = {};
       const whereSql = whereParams && this.where(whereParams, cols.values = [], cols.oids = []);
