@@ -208,19 +208,14 @@ define((require, exports, module) => {
     });
 
     test('overrideRemove', async () => {
-      const TestModel = Model.define('TestModel', {
-        overrideRemove: v.overrideRemove = stub(),
-      }).defineFields({name: 'text'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      TestModel.overrideRemove = stub();
 
       const removeSpy = spy(TestModel.prototype, '$remove');
-      const doc = await TestModel.create({name: 'remove me'});
 
-      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', doc._id);
+      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'id123');
 
-      assert.calledWith(v.overrideRemove, 'u123');
-      const model = v.overrideRemove.firstCall.thisValue;
-      assert.same(model.constructor, TestModel);
-      assert.same(model.name, 'remove me');
+      assert.calledWith(TestModel.overrideRemove, 'u123', 'id123');
 
       refute.called(removeSpy);
     });

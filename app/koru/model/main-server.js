@@ -184,16 +184,16 @@ define((require, exports, module) => {
 
       const ID_ERROR = {baseName: '_id'};
 
-      session.defineRpc('save', async function (modelName, id, changes) {
+      session.defineRpc('save', function (modelName, id, changes) {
         const {userId} = this;
         Val.allowAccessIf(userId);
         Val.assertCheck(id, 'string', ID_ERROR);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        await TransQueue.transaction(model.db, async () => {
-          if (model.overrideSave != null) {
-            return await model.overrideSave(id, changes, userId);
-          }
+        if (model.overrideSave != null) {
+          return model.overrideSave(id, changes, userId);
+        }
+        return TransQueue.transaction(model.db, async () => {
           let doc = await model.findById(id ?? changes._id);
 
           const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
@@ -219,23 +219,22 @@ define((require, exports, module) => {
         _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
-      session.defineRpc('remove', async function (modelName, id) {
+      session.defineRpc('remove', function (modelName, id) {
         const userId = this.userId;
         Val.allowAccessIf(userId);
         Val.ensureString(id);
         Val.ensureString(modelName);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        await TransQueue.transaction(model.db, async () => {
+        if (model.overrideRemove !== void 0) {
+          return model.overrideRemove(userId, id);
+        }
+        return TransQueue.transaction(model.db, async () => {
           const doc = await model.findById(id);
           Val.allowIfFound(doc, '_id');
-          if (doc.overrideRemove != null) {
-            await doc.overrideRemove(userId);
-          } else {
-            assertAuthorize(doc);
-            await doc.authorize(userId, {remove: true});
-            await doc.$remove();
-          }
+          assertAuthorize(doc);
+          await doc.authorize(userId, {remove: true});
+          await doc.$remove();
         });
       });
 
