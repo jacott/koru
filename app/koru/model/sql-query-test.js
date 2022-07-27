@@ -100,6 +100,8 @@ isServer && define((require, exports, module) => {
        * Fetch one or zero rows from the query and close the portal.
        */
       api.protoMethod();
+      Book.docs._colMap = void 0;
+      Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
@@ -112,6 +114,8 @@ isServer && define((require, exports, module) => {
        * Fetch zero or more rows from the query and close the portal.
        */
       api.protoMethod();
+      Book.docs._colMap = void 0;
+      Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
@@ -125,6 +129,8 @@ isServer && define((require, exports, module) => {
        * return an asyncIterator over the rows returned from the query.
        */
       api.protoMethod();
+      Book.docs._colMap = void 0;
+      Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
@@ -143,6 +149,8 @@ isServer && define((require, exports, module) => {
        * call callback for each row returned from the query.
        */
       api.protoMethod();
+      Book.docs._colMap = void 0;
+      Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 

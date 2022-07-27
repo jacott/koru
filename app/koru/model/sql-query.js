@@ -20,7 +20,7 @@ define((require, exports, module) => {
       this.model = model;
     }
 
-    #initPs() {
+    async #initPs() {
       const parts = this.queryStr.split(/\{\$(\w+)\}/);
       const posMap = {}, nameMap = [];
       const last = parts.length - 1;
@@ -29,22 +29,26 @@ define((require, exports, module) => {
         const name = parts[i + 1];
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
       }
+
+      const table = this.model.docs;
+
+      table._ready !== true && await table._ensureTable();
       const ps = new PgPrepSql(text + parts[last]);
 
-      ps.setMapped(nameMap, this.model.docs._colMap);
+      ps.setMapped(nameMap, table._colMap);
       return ps;
     };
 
     async fetchOne(params) {
       const {model} = this;
-      const rec = await (this.#pgsql ??= this.#initPs()).fetchOne(conn(model) ?? await auto(model), params);
+      const rec = await (this.#pgsql ??= await this.#initPs()).fetchOne(conn(model) ?? await auto(model), params);
       return rec === void 0 ? rec : model[makeDoc$](rec);
     }
 
     async fetch(params) {
       const {model} = this;
       const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= this.#initPs());
+      const ps = (this.#pgsql ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {rows.push(model[makeDoc$](rec))}));
@@ -55,7 +59,7 @@ define((require, exports, module) => {
     async forEach(params, callback) {
       const {model} = this;
       const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= this.#initPs());
+      const ps = (this.#pgsql ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {callback(model[makeDoc$](rec))}));
       if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, params);
@@ -64,7 +68,7 @@ define((require, exports, module) => {
     async *values(params) {
       const {model} = this;
       const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= this.#initPs());
+      const ps = (this.#pgsql ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
       let promise, resolve;
