@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const util            = require('koru/util');
   const {qstr, identityFunc} = require('koru/util');
+  const util            = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -52,8 +52,10 @@ define((require, exports, module) => {
   const textDecoderNames = {};
   const arrayEncoderNames = {};
 
-  const assert = (truthy, message) => {
-    if (! truthy) throw new PgError({message});
+  const assert = (truthy, message='assert failed') => {
+    if (truthy) return;
+    if (typeof message === 'function') message = message();
+    throw new PgError({message: message.toString()});
   };
 
   const registerName = (
@@ -301,13 +303,15 @@ define((require, exports, module) => {
     textDecoders[oid] = textDecoderNames[name];
     arrayTextEncoders[oid] = arrayEncoderNames[name];
 
-    arrayElementOids[arrayOid] = oid;
-    elementArrayOids[oid] = arrayOid;
+    if (arrayOid != 0) {
+      arrayElementOids[arrayOid] = oid;
+      elementArrayOids[oid] = arrayOid;
 
-    binaryEncoders[arrayOid] = binaryArrayEncoder;
-    binaryDecoders[arrayOid] = binaryArrayDecoder;
-    textEncoders[arrayOid] = textArrayEncoder;
-    textDecoders[arrayOid] = textArrayDecoder;
+      binaryEncoders[arrayOid] = binaryArrayEncoder;
+      binaryDecoders[arrayOid] = binaryArrayDecoder;
+      textEncoders[arrayOid] = textArrayEncoder;
+      textDecoders[arrayOid] = textArrayDecoder;
+    }
 
     if (coerceTo !== void 0) {
       registerCoerce(oid, coerceTo);
@@ -376,6 +380,9 @@ define((require, exports, module) => {
   const getJson = (v) => JSON.parse(v);
 
   const setJsonText = (v) => Buffer.from(JSON.stringify(v));
+
+  registerName('void', util.voidFunc, util.voidFunc);
+  registerOid('void', 2278, 0);
 
   registerName('bool', setBool, getBool,
                (buf, v) => buf.append(v ? S_t : S_f),

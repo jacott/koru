@@ -199,7 +199,7 @@ define((require, exports, module) => {
         const value = desc.format == 1
               ? decodeBinary(desc.oid, rawValue)
               : decodeText(desc.oid, rawValue);
-        if (value === void 0) {
+        if (value === void 0 && desc.oid !== 2278) {
           throw {message: `unknown oid ${desc.oid} for column: ${desc.name}`};
         }
         return value;

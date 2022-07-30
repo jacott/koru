@@ -44,6 +44,13 @@ isServer && define((require, exports, module) => {
         client.destroy();
       });
 
+      test('void', async () => {
+        assert.equals(await client.exec(`SELECT '123'::void as a`, [], [0], [0]), [{a: void 0}]);
+        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [0]), [{a: void 0}]);
+        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [1]), [{a: void 0}]);
+        assert.equals(await client.exec(`SELECT $1::void as a, $2 as b`, ['123', 1], [2278, 21], [1]), [{a: void 0, b: 1}]);
+      });
+
       test('text', async () => {
         const a = 'my message';
 
