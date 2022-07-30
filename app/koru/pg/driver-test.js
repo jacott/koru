@@ -147,10 +147,10 @@ isServer && define((require, exports, module) => {
         let tx;
         await koru.runFiber(async () => {
           const client = pg.defaultDb;
-          assert.same(client.existingTran, void 0);
+          assert.same(client.existingTran.savepoint, -1);
 
           tx = await client.startAutoEndTran();
-          assert.same(tx.transaction, 'COMMIT');
+          assert.same(tx.savepoint, 0);
         });
 
         assert.same(tx.transaction, null);
@@ -188,7 +188,7 @@ isServer && define((require, exports, module) => {
           assert.same((await pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'], {}))[0].a, 'ab');
 
           const ans = await pg.defaultDb.timeLimitQuery(
-            `SELECT pg_sleep($1)`, [0.002], {timeout: 1, timeoutMessage: 'My message'});
+            `SELECT pg_sleep($1)`, [1.002], {timeout: 1, timeoutMessage: 'My message'});
           assert.fail('Expected timeout ');
         } catch (e) {
           if (e.error !== 504) throw e;
@@ -680,11 +680,12 @@ isServer && define((require, exports, module) => {
             await foo.updateById('123', {name: 'a2'});
             assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
           }
-          assert.same(await client.endTransaction('abort'), 1);
+          assert.same(await client.endTransaction('abort'), 0);
+          assert.isTrue(client.inTransaction);
 
           assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
         }
-        assert.same(await client.endTransaction('abort'), 0);
+        assert.same(await client.endTransaction('abort'), -1);
         assert.isFalse(client.inTransaction);
         assert.equals((await foo.findOne({_id: '123'})).name, 'abc');
         try {
@@ -746,6 +747,7 @@ isServer && define((require, exports, module) => {
         } catch (ex) {
           if (ex !== 'abort') throw ex;
         }
+        foo._resetTable();
         assert.msg('should not  have a foo column')
           .equals(await foo.findOne({_id: '123'}), {_id: '123', name: 'abc'});
       });

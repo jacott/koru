@@ -35,7 +35,7 @@ define((require, exports, module) => {
         }
       }
 
-      if (level === 0) {
+      if (level == -1) {
         Factory.inTransaction || Factory.clear();
       } else {
         Factory.endTransaction();

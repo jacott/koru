@@ -248,9 +248,7 @@ define((require, exports, module) => {
           return _support.performBumpVersion(this.constructor, this._id, this._version);
         },
 
-        transaction(model, func) {
-          return model.db.transaction(func);
-        },
+        transaction: (model, func) => model.db.transaction(func),
 
         remote(model, name, func) {
           return function (...args) {

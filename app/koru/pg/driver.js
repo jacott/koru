@@ -33,12 +33,11 @@ define((require, exports, module) => {
     '<=': '<=',
   };
 
-  const pool$ = Symbol(), oidsLoaded$ = Symbol(), tx$ = Symbol();
+  const pool$ = Symbol(), count$ = Symbol(), oidsLoaded$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
 
   let clientCount = 0;
   let cursorCount = 0;
-  let conns = 0;
 
   const autoSchema = !! module.config().autoSchema;
 
@@ -55,23 +54,39 @@ define((require, exports, module) => {
     defaultDb = null;
   };
 
-  const getConn = async (client) => {
-    const tx = util.thread[client[tx$]] ??= await fetchPool(client).acquire();
+  const getTransction = (client) => util.thread[client[tx$]] ??= new Transaction();
 
-    if (tx.conn === void 0 || tx.conn.isClosed()) {
-      tx.conn = await new PgConn(PgType, client.formatOptions).connect(client._url);
+  const acquireConn = async (client) => {
+    const conn = await fetchPool(client).acquire();
+    conn[count$] = 0;
+    const tx = getTransction(client);
+    if (tx.actualSavepoint < tx.savepoint) {
+      ++conn[count$];
+      let str = '';
+      if (tx.actualSavepoint == -1) {
+        str = 'BEGIN';
+        tx.actualSavepoint = 0;
+      }
+      while (tx.actualSavepoint < tx.savepoint) {
+        str += ';SAVEPOINT s' + ++tx.actualSavepoint;
+      }
+      await conn.exec(str);
     }
+    return conn;
+  };
 
-    ++tx.count;
-
-    return tx.conn;
+  const getConn = async (client) => {
+    const conn = getTransction(client).conn ??= await acquireConn(client);
+    ++conn[count$];
+    return conn;
   };
 
   const releaseConn = (client) => {
-    const tx = util.thread[client[tx$]];
-    if (tx !== void 0 && --tx.count === 0) {
-      fetchPool(client).release(tx);
-      util.thread[client[tx$]] = void 0;
+    const tx = getTransction(client);
+    if (tx.conn === void 0) return;
+    if (--tx.conn[count$] === 0) {
+      fetchPool(client).release(tx.conn);
+      tx.conn = void 0;
     }
   };
 
@@ -80,14 +95,8 @@ define((require, exports, module) => {
     if (pool !== void 0) return pool;
     return client[pool$] = new Pool({
       name: client.name,
-      create(callback) {
-        ++conns;
-        new Connection(client, callback);
-      },
-      destroy(tx) {
-        --conns;
-        tx.conn.destroy();
-      },
+      create: (callback) => newConnection(client, callback),
+      destroy: (conn) => conn.destroy(),
       idleTimeoutMillis: 30*1000,
     });
   };
@@ -209,13 +218,13 @@ define((require, exports, module) => {
       return releaseConn(this);
     }
 
-    get existingTran() {return util.thread[this[tx$]]}
+    get existingTran() {return getTransction(this)}
 
-    async withConn(func) {
-      const tx = util.thread[this[tx$]];
-      if (tx !== void 0) return func.call(this, tx.conn);
+    async withConn(callback) {
+      const {conn} = getTransction(this);
+      if (conn !== void 0) return callback.call(this, conn);
       try {
-        return await func.call(this, await getConn(this));
+        return await callback.call(this, await getConn(this));
       } finally {
         releaseConn(this);
       }
@@ -237,15 +246,17 @@ define((require, exports, module) => {
       const {timeout=20000, timeoutMessage='Query took too long to run'} = args.pop();
       return this.transaction(async (tx) => {
         try {
-          const {conn} = tx;
-          await query(conn, 'set local statement_timeout to ' + timeout);
+          const conn = await getConn(this);
+          await conn.exec('set local statement_timeout to ' + timeout);
           args = normalizeQuery(args);
           return await query(conn, ...args);
-        } catch (ex) {
-          if (ex.error === 504) {
+        } catch (err) {
+          if (err.error === 504) {
             throw new koru.Error(504, timeoutMessage);
           }
-          throw ex;
+          throw err;
+        } finally {
+          releaseConn(this);
         }
       });
     }
@@ -266,116 +277,106 @@ define((require, exports, module) => {
       return oidQuery(this, `DROP TABLE IF EXISTS "${name}"`);
     }
 
-    get inTransaction() {return util.thread[this[tx$]]?.transaction != null}
+    get inTransaction() {return getTransction(this).savepoint != -1}
 
-    async startTransaction() {
-      await getConn(this); // ensure connection
-      const tx = util.thread[this[tx$]];
-      if (tx.transaction !== null) {
-        ++tx.savepoint;
-        await query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
-      } else {
+    startTransaction() {
+      const tx = getTransction(this);
+      if (++tx.savepoint == 0) {
         tx.transaction = 'COMMIT';
-        await query(tx.conn, 'BEGIN');
+      } else if (tx.actualSavepoint != -1) {
+        let str = '';
+        while (tx.actualSavepoint < tx.savepoint) {
+          str += 'SAVEPOINT s' + ++tx.actualSavepoint + ';';
+        }
+        return tx.conn.exec(str).then(() => tx);
       }
       return tx;
     }
 
-    startAutoEndTran() {
+    async startAutoEndTran() {
+      if (this.inTransaction) throw new Error('startAutoEndTran not allowed in existing transaction');
+      const tx = this.startTransaction();
       util.thread.finally(() => this.endTransaction());
-      return this.startTransaction();
+      tx.conn = await acquireConn(this);
+      return tx;
     }
 
     async endTransaction(abort) {
-      const tx = util.thread[this[tx$]];
-      if (tx == null || tx.transaction === null) {
-        throw new Error('No transaction in progress!');
+      const tx = getTransction(this);
+      if (tx.savepoint == -1) throw new Error('No transaction in progress!');
+      if (tx.savepoint > tx.actualSavepoint) {
+        if (--tx.savepoint == -1) {
+          tx.transaction = null;
+        }
+        return tx.savepoint;
       }
-      const {savepoint} = tx;
+
       try {
         const isAbort = tx.transaction !== 'COMMIT' || abort === 'abort';
-        if (savepoint != 0) {
-          --tx.savepoint;
+        if (tx.savepoint > 0) {
           if (isAbort) {
-            tx.conn.isClosed() || await query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + savepoint);
+            tx.conn.isClosed() || await query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + tx.savepoint);
           } else {
-            await query(tx.conn, 'RELEASE SAVEPOINT s' + savepoint);
+            await tx.conn.exec('RELEASE SAVEPOINT s' + tx.savepoint);
           }
         } else {
           const command = isAbort ? 'ROLLBACK' : 'COMMIT';
           tx.transaction = null;
           if (! tx.conn.isClosed()) {
-            await query(tx.conn, command);
+            await tx.conn.exec(command);
           }
         }
       } finally {
-        releaseConn(this);
+        --tx.savepoint;
+        if (--tx.actualSavepoint == -1) {
+          releaseConn(this);
+        }
       }
-      return savepoint;
+
+      return tx.savepoint;
     }
 
-    async transaction(func) {
-      await getConn(this); // ensure connection
-      const tx = util.thread[this[tx$]];
+    async transaction(callback) {
+      const tx = await this.startTransaction();
+      const {transaction} = tx;
+      tx.transaction = 'COMMIT';
+      let err;
       try {
-        if (tx.transaction !== null) {
-          ++tx.savepoint;
-          let ex;
-          try {
-            await query(tx.conn, 'SAVEPOINT s' + tx.savepoint);
-            const result = await func.call(this, tx);
-            await query(tx.conn, 'RELEASE SAVEPOINT s' + tx.savepoint);
-            return result;
-          } catch (ex1) {
-            ex = ex1;
-            tx.conn.isClosed() || await query(tx.conn, 'ROLLBACK TO SAVEPOINT s' + tx.savepoint);
-            if (ex === 'abort') {
-              ex = null;
-            }
-          } finally {
-            --tx.savepoint;
-            if (ex) throw ex;
-          }
-        } else {
-          try {
-            tx.transaction = 'COMMIT';
-            await query(tx.conn, 'BEGIN');
-            return await func.call(this, tx);
-          } catch (err) {
-            tx.transaction = 'ROLLBACK';
-            if (err !== 'abort') {
-              throw err;
-            }
-          } finally {
-            const command = tx.transaction;
-            tx.transaction = null;
-            if (! tx.conn.isClosed()) {
-              await query(tx.conn, command);
-            }
-          }
-        }
+        return await callback.call(this, tx);
+      } catch (_err) {
+        err = _err;
       } finally {
-        releaseConn(this);
+        await this.endTransaction(err && 'abort');
+        if (this.inTransaction) {
+          tx.transaction = transaction;
+        }
+        if (err !== 'abort' && err !== void 0) throw err;
       }
     }
   }
+
   Client.prototype.exec = Client.prototype.query;
 
   Client.prototype[private$] = {tx$};
 
-  class Connection {
-    constructor(client, callback) {
-      this.conn = new PgConn(PgType).connect(client._url, (err) => {
-        if (err == null && PgType[oidsLoaded$] === void 0) {
-          PgType.assignOids(this.conn).then(() => {callback(err, this)}, callback);
-        } else {
-          callback(err, this);
-        }
-      });
-      this.count = 0;
-      this.savepoint = 0;
-      this.transaction = null;
-    }
+  const newConnection = (client, callback) => {
+    new PgConn(PgType).connect(client._url, (err, conn) => {
+      conn[count$] = 0;
+      if (err == null && PgType[oidsLoaded$] === void 0) {
+        PgType.assignOids(conn).then(() => {
+          callback(err, conn)}, callback);
+      } else {
+        callback(err, conn);
+      }
+    });
+  };
+
+  class Transaction {
+    conn = void 0;
+    count = 0;
+    actualSavepoint = -1;
+    savepoint = -1;
+    transaction = null;
   }
 
   const queryWhere = async (table, sql, where, suffix) => {
@@ -437,6 +438,8 @@ define((require, exports, module) => {
     }
 
     _resetTable() {
+      this._ps_findById = void 0;
+      this._ps_cache = new Map();
       this._ready = void 0;
     }
 
@@ -901,7 +904,7 @@ define((require, exports, module) => {
     if (cursor.table._ready !== true) await cursor.table._ensureTable();
     if (isPromise(cursor._sql)) cursor._sql = await cursor._sql;
     const client = cursor.table._client;
-    const tx = util.thread[client[tx$]];
+    const tx = getTransction(client);
     let sql = cursor._sql;
 
     if (cursor._sort) {
@@ -1130,7 +1133,7 @@ define((require, exports, module) => {
     const type = pgFieldType(richType);
 
     if (typeof colSchema === 'object' && colSchema.default != null) {
-      const tx = util.thread[client[tx$]];
+      const tx = getTransction(client);
       let literal = colSchema.default;
       if (type === 'jsonb') {
         literal = escapeLiteral(JSON.stringify(literal)) + '::jsonb';

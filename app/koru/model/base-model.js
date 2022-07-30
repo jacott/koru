@@ -155,9 +155,7 @@ define((require, exports, module) => {
       return doc;
     }
 
-    static transaction(func) {
-      return _support.transaction(this, func);
-    }
+    static transaction(func) {return _support.transaction(this, func)}
 
     static toId(docOrId) {
       return typeof docOrId === 'string'
@@ -323,9 +321,6 @@ define((require, exports, module) => {
 
       return this;
     }
-
-
-
 
     /**
      * Instance methods

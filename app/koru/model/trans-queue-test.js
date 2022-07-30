@@ -13,17 +13,15 @@ define((require, exports, module) => {
   const TransQueue = require('./trans-queue');
   const sut = TransQueue;
 
-  let v = {};
-
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    let TestModel;
     before(() => {
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      TestModel = Model.define('TestModel').defineFields({name: 'text'});
     });
 
     after(async () => {
       await Model._destroyModel('TestModel', 'drop');
       util.thread.date = void 0;
-      v = {};
     });
 
     test('transaction', () => {
@@ -43,6 +41,20 @@ define((require, exports, module) => {
         inTrans = TransQueue.isInTransaction();
       });
       assert.isTrue(inTrans);
+      //]
+    });
+
+    test('nonNested', async () => {
+      api.method();
+      //[
+      let level = -1;
+      await TransQueue.nonNested(TestModel, async () => {
+        assert.isTrue(TransQueue.inTransaction);
+        await TransQueue.nonNested(TestModel, () => {
+          level = isClient ? 0 : TestModel.db.existingTran.savepoint;
+        });
+      });
+      assert.same(level, 0);
       //]
     });
 
@@ -194,12 +206,12 @@ define((require, exports, module) => {
 
       assert.isFalse(sut.isInTransaction());
 
-      const result = sut.transaction(v.TestModel, () => {
+      const result = sut.transaction(TestModel, () => {
         assert.isTrue(sut.isInTransaction());
         assert.same(now, util.dateNow());
         sut.onAbort(err1);
         sut.onSuccess(stub1);
-        sut.transaction(v.TestModel, () => sut.onSuccess(() => {
+        sut.transaction(TestModel, () => sut.onSuccess(() => {
           sut.finally(fin1);
           assert.same(now, util.dateNow()); // ensure same time as top transaction
 
@@ -225,7 +237,7 @@ define((require, exports, module) => {
       stub1.reset();
       stub2.reset();
 
-      sut.transaction(v.TestModel, () => {
+      sut.transaction(TestModel, () => {
         assert.same(now + 1, util.dateNow()); // ensure time unique to transaction
 
         sut.onSuccess(stub1);
@@ -262,13 +274,13 @@ define((require, exports, module) => {
 
       assert.isFalse(sut.isInTransaction());
 
-      const result = await sut.transaction(v.TestModel, async () => {
+      const result = await sut.transaction(TestModel, async () => {
         await 1;
         assert.isTrue(sut.isInTransaction());
         assert.same(now, util.dateNow());
         sut.onAbort(err1);
         sut.onSuccess(stub1);
-        await sut.transaction(v.TestModel, () => sut.onSuccess(async () => {
+        await sut.transaction(TestModel, () => sut.onSuccess(async () => {
           await 1;
           sut.finally(fin1);
           assert.same(now, util.dateNow()); // ensure same time as top transaction
@@ -295,7 +307,7 @@ define((require, exports, module) => {
       stub1.reset();
       stub2.reset();
 
-      await sut.transaction(v.TestModel, () => {
+      await sut.transaction(TestModel, () => {
         assert.same(now + 1, util.dateNow()); // ensure time unique to transaction
 
         sut.onSuccess(stub1);
@@ -311,12 +323,12 @@ define((require, exports, module) => {
     });
 
     test('simple success', async () => {
-      assert.same(await sut.transaction(v.TestModel, () => 'result'), 'result');
+      assert.same(await sut.transaction(TestModel, () => 'result'), 'result');
     });
 
     test('simple exception', async () => {
       try {
-        await sut.transaction(v.TestModel, () => {throw new Error('an error')});
+        await sut.transaction(TestModel, () => {throw new Error('an error')});
         assert.fail('expect throw');
       } catch (err) {
         assert.exception(err, {message: 'an error'});
@@ -340,15 +352,15 @@ define((require, exports, module) => {
       const fin1 = stub();
       const fin2 = stub();
 
-      assert.exception(() => sut.transaction(v.TestModel, () => {
+      assert.exception(() => sut.transaction(TestModel, () => {
         sut.onAbort(err1);
         sut.onAbort(err2);
         sut.onSuccess(stub1);
         sut.finally(fin1);
-        sut.transaction(v.TestModel, () => {
+        sut.transaction(TestModel, () => {
           sut.onSuccess(stub2);
           try {
-            sut.transaction(v.TestModel, () => {
+            sut.transaction(TestModel, () => {
               sut.finally(fin2);
               sut.onAbort(err3);
               throw new Error('err3');
@@ -370,7 +382,7 @@ define((require, exports, module) => {
       assert.called(fin1);
       assert.called(fin2);
 
-      sut.transaction(v.TestModel, () => {
+      sut.transaction(TestModel, () => {
         sut.onSuccess(stub1);
       });
 
@@ -407,17 +419,17 @@ define((require, exports, module) => {
       });
 
       try {
-        await sut.transaction(v.TestModel, async () => {
+        await sut.transaction(TestModel, async () => {
           await 1;
           sut.onAbort(err1);
           sut.onAbort(err2);
           sut.onSuccess(stub1);
           sut.finally(fin1);
-          await sut.transaction(v.TestModel, async () => {
+          await sut.transaction(TestModel, async () => {
             await 1;
             sut.onSuccess(stub2);
             try {
-              await sut.transaction(v.TestModel, async () => {
+              await sut.transaction(TestModel, async () => {
                 await 1;
                 sut.finally(fin2);
                 sut.onAbort(err3);
@@ -444,7 +456,7 @@ define((require, exports, module) => {
       assert.called(fin1);
       assert.called(fin2);
 
-      await sut.transaction(v.TestModel, () => {
+      await sut.transaction(TestModel, () => {
         sut.onSuccess(stub1);
       });
 

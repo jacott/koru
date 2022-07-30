@@ -43,6 +43,15 @@ define((require) => {
   const runListAsync = async (list, i) => {for (;i < list.length; ++i) await list[i]()};
 
   const TransQueue = {
+    nonNested(db, body) {
+      if (this.inTransaction) return body();
+
+      if (db.db !== void 0) db = db.db;
+      return this.transaction(db.inTransaction ? void 0 : db, body);
+    },
+
+    get inTransaction() {return util.thread[success$] !== void 0},
+
     transaction: (db, body) => {
       let prevTime;
       const {thread} = util;
