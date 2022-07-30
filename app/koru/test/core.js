@@ -44,7 +44,7 @@ define((require) => {
     throw new Core.AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
   };
 
-  const assert = (truth, msg) => {
+  const assert = (truth, msg='Expected truthness') => {
     ++Core.assertCount;
     let {__msg} = Core;
     const ep = elidePoint;
@@ -53,10 +53,9 @@ define((require) => {
 
     if (truth) return truth;
 
-    msg = msg || 'Expected truthness';
     if (__msg) {
       if (typeof __msg === 'function') __msg = __msg();
-      msg = `${__msg}; ${msg}`;
+      msg = `${__msg}; ${typeof msg === 'function' ? msg() : msg.toString()}`;
     }
     fail(msg, ep);
   };

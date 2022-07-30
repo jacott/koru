@@ -5,7 +5,7 @@ define((require, exports, module) => {
 
   const {hasOwnProperty} = Object.prototype;
 
-  globalThis.assert = (truthy) => {if (! truthy) throw new Error('assertion failed')};
+  globalThis.assert = (truthy, msg='assertion failed') => {if (! truthy) throw new Error(msg.toString())};
 
   const isPromise = (object) => typeof object?.then === 'function';
 
