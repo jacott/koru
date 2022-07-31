@@ -216,6 +216,21 @@ isServer && define((require, exports, module) => {
       assert.same(conn2.name, 'conn2');
     });
 
+    test('can call getConn twice without wait', async () => {
+      const db = pg.defaultDb;
+      const c1p = db._getConn();
+      const c2p = db._getConn();
+
+      try {
+        const c1 = await c1p;
+        const c2 = await c2p;
+        assert.same(c1, c2);
+      } finally {
+        db._releaseConn();
+        db._releaseConn();
+      }
+    });
+
     test('defaultDb', async () => {
       /**
        * Return the default Client database connection.
@@ -672,6 +687,8 @@ isServer && define((require, exports, module) => {
 
           await foo.updateById('123', {name: 'a1'});
 
+          assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
+
           assert.same(await client.startTransaction(), tx);
           {
             assert.isTrue(client.inTransaction);
@@ -682,9 +699,9 @@ isServer && define((require, exports, module) => {
           }
           assert.same(await client.endTransaction('abort'), 0);
           assert.isTrue(client.inTransaction);
-
           assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
         }
+
         assert.same(await client.endTransaction('abort'), -1);
         assert.isFalse(client.inTransaction);
         assert.equals((await foo.findOne({_id: '123'})).name, 'abc');

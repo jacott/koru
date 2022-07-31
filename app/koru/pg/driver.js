@@ -6,6 +6,7 @@ define((require, exports, module) => {
   const PgConn          = require('koru/pg/pg-conn');
   const PgType          = require('koru/pg/pg-type');
   const SQLStatement    = require('koru/pg/sql-statement');
+  const SimpleMutex     = require('koru/util/simple-mutex');
   const PgPrepSql       = require('./pg-prep-sql');
   const koru            = require('../main');
   const match           = require('../match');
@@ -33,7 +34,7 @@ define((require, exports, module) => {
     '<=': '<=',
   };
 
-  const pool$ = Symbol(), count$ = Symbol(), oidsLoaded$ = Symbol(), tx$ = Symbol();
+  const pool$ = Symbol(), mutex$ = Symbol(), count$ = Symbol(), oidsLoaded$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
 
   let clientCount = 0;
@@ -60,6 +61,7 @@ define((require, exports, module) => {
     const conn = await fetchPool(client).acquire();
     conn[count$] = 0;
     const tx = getTransction(client);
+    assert(tx.actualSavepoint == -1);
     if (tx.actualSavepoint < tx.savepoint) {
       ++conn[count$];
       let str = '';
@@ -76,9 +78,14 @@ define((require, exports, module) => {
   };
 
   const getConn = async (client) => {
-    const conn = getTransction(client).conn ??= await acquireConn(client);
-    ++conn[count$];
-    return conn;
+    await client[mutex$].lock();
+    try {
+      const conn = getTransction(client).conn ??= await acquireConn(client);
+      ++conn[count$];
+      return conn;
+    } finally {
+      client[mutex$].unlock();
+    }
   };
 
   const releaseConn = (client) => {
@@ -185,6 +192,7 @@ define((require, exports, module) => {
       this._url = url;
       this.name = name;
       this.formatOptions = formatOptions;
+      this[mutex$] = new SimpleMutex();
     }
 
     [inspect$]() {
