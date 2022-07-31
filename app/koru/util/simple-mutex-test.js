@@ -6,7 +6,7 @@ define((require, exports, module) => {
 
   const {stub, spy, util} = TH;
 
-  const PgMutex = require('./pg-mutex');
+  const SimpleMutex = require('./simple-mutex');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('multiple waiting', async () => {
@@ -16,7 +16,7 @@ define((require, exports, module) => {
         return msg;
       };
 
-      const mutex = new PgMutex();
+      const mutex = new SimpleMutex();
       const l1 = mutex.lock();
       const l2 = mutex.lock().then(addMe);
       const l3 = mutex.lock().then(addMe);

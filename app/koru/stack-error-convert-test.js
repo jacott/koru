@@ -3,7 +3,7 @@ isServer && define((require, exports, module) => {
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const Future          = require('koru/future');
-  const Mutex           = require('koru/mutex');
+  const SimpleMutex     = require('koru/util/simple-mutex');
   const TH              = require('./test-helper');
 
   const fsp = requirejs.nodeRequire('fs/promises');
@@ -66,8 +66,8 @@ isServer && define((require, exports, module) => {
 
       const BasicSourceMapConsumer = consumer.constructor;
 
-      const lock = spy(Mutex.prototype, 'lock');
-      const unlock = spy(Mutex.prototype, 'unlock');
+      const lock = spy(SimpleMutex.prototype, 'lock');
+      const unlock = spy(SimpleMutex.prototype, 'unlock');
       const destroy = spy(BasicSourceMapConsumer.prototype, 'destroy');
 
       assert.equals(

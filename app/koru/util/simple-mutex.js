@@ -3,7 +3,7 @@ define((require, exports, module) => {
 
   const head$ = Symbol(), tail$ = Symbol();
 
-  class PgMutex {
+  class SimpleMutex {
     constructor() {
       this[head$] = void 0;
       this[tail$] = void 0;
@@ -32,5 +32,5 @@ define((require, exports, module) => {
     }
   }
 
-  return PgMutex;
+  return SimpleMutex;
 });

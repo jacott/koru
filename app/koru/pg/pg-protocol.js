@@ -5,10 +5,10 @@ const {Readable, Writable} = require('node:stream');
 define((require, exports, module) => {
   'use strict';
   const Future          = require('koru/future');
-  const PgMutex         = require('koru/pg/pg-mutex');
   const PgPortal        = require('koru/pg/pg-portal');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const util            = require('koru/util');
+  const SimpleMutex     = require('koru/util/simple-mutex');
   const {PgMessage, State, simpleCmd, utf8Encode} = require('./pg-util');
 
   const {private$, inspect$} = require('koru/symbols');
@@ -238,7 +238,7 @@ define((require, exports, module) => {
       this.runtimeParams = {};
       this[private$] = {state: State.NEW_CONN, sendNext: void 0};
       this[listener$] = null;
-      (this[mutex$] = new PgMutex()).lock();
+      (this[mutex$] = new SimpleMutex()).lock();
     }
 
     get state() {return this[private$].state}

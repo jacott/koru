@@ -5,7 +5,7 @@ define((require) => {
   'use strict';
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
-  const Mutex           = require('koru/mutex');
+  const SimpleMutex     = require('koru/util/simple-mutex');
 
   const {SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
@@ -17,7 +17,7 @@ define((require) => {
     start: ({sourceMapDir, prefix='.', lineAdjust=0}) => {
       let consumer = null;
       let lastFileName = '';
-      const mutex = new Mutex();
+      const mutex = new SimpleMutex();
 
       const destroyConsumer = () => {
         if (consumer !== null) {
