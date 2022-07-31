@@ -326,7 +326,7 @@ define((require) => {
       checkDb();
       tx.push([last, seqGen]);
       last = Object.assign({}, last);
-      dbVars.seqGen = seqGen = Object.assign({}, seqGen);
+      dbVars.seqGen = seqGen = util.deepCopy({}, seqGen);
     },
 
     endTransaction() {

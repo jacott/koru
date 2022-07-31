@@ -14,6 +14,9 @@ define((require) => {
       if (typeof id === 'object' && id !== null) {
         id = id._id;
       }
+      if (isServer) {
+        (util.thread.connection ??= {}).userId = id;
+      }
       if (func === void 0) {
         TH.stubProperty(util.thread, 'userId', {value: id});
         return;
@@ -24,6 +27,9 @@ define((require) => {
         func();
       } finally {
         util.thread.userId = oldId;
+        if (isServer) {
+          util.thread.connection.userId = oldId;
+        }
       }
     },
 

@@ -13,14 +13,10 @@ define((require, exports, module) => {
     DBTranCounter: 0,
 
     async startTransaction(txClient=Model.db) {
-      ++TestDBHelper.DBTranCounter;
       Model.db = txClient;
       const tx = await txClient.startTransaction();
-      if (tx.savepoint == 0) {
-        tx.transaction = 'ROLLBACK';
-      } else {
-        Factory.startTransaction();
-      }
+      Factory.startTransaction();
+      ++TestDBHelper.DBTranCounter;
     },
 
     async rollbackTransaction(txClient=Model.db) {
@@ -35,11 +31,7 @@ define((require, exports, module) => {
         }
       }
 
-      if (level == -1) {
-        Factory.inTransaction || Factory.clear();
-      } else {
-        Factory.endTransaction();
-      }
+      Factory.endTransaction();
     },
   };
 
