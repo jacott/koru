@@ -243,22 +243,16 @@ define((require, exports, module) => {
       });
 
       util.merge(_support, {
-        resetDocs(model) {
-          if (_resetDocs[model.modelName] !== void 0) {
-            _resetDocs[model.modelName]();
-          }
-        },
+        resetDocs(model) {_resetDocs[model.modelName]?.()},
         bumpVersion() {
           return _support.performBumpVersion(this.constructor, this._id, this._version);
         },
 
         transaction: (model, func) => model.db.transaction(func),
 
-        remote(model, name, func) {
-          return function (...args) {
-            Val.allowAccessIf(this.userId);
-            return model.db.transaction(() => (func.apply(this, args)));
-          }
+        remote: (model, name, func) => function (...args) {
+          Val.allowAccessIf(this.userId != null);
+          return model.db.transaction(() => (func.apply(this, args)));
         },
       });
     },

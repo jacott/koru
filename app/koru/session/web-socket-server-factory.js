@@ -125,13 +125,10 @@ define((require, exports, module) => {
       unload,
       load,
       totalSessions: 0,
-      rpc(name, ...args) {
-        return session._rpcs[name].apply(util.thread, args);
-      },
+      rpc: (name, ...args) => session._rpcs[name].apply(util.thread.connection, args),
+
       onConnection,
-      stop() {
-        session.wss.close();
-      },
+      stop() {session.wss.close()},
 
       registerGlobalDictionaryAdder(module, adder) {
         globalDictAdders[module.id] = adder;
