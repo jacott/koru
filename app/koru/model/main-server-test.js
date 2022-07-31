@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const Future          = require('koru/future');
   const koru            = require('koru/main');
+  const BaseModel       = require('koru/model/base-model');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
   const Query           = require('koru/model/query');
@@ -316,40 +317,46 @@ define((require, exports, module) => {
 
     test('saveRpc existing', async () => {
       const validate = stub();
+      const authorize = stub();
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub(),
+        authorize,
         validate,
       }).defineFields({name: 'text'});
 
-      v.doc = await TestModel.create({name: 'foo'});
+      const doc = await TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.onChangeSpy = stub());
+      const onChangeSpy = stub();
+      TestModel.onChange(onChangeSpy);
 
       await assert.accessDenied(
-        () => session._rpcs.save.call({userId: null}, 'TestModel', v.doc._id, {name: 'bar'}));
+        () => session._rpcs.save.call({userId: null}, 'TestModel', doc._id, {name: 'bar'}));
 
       await assert.exception(() =>
-        session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'x' + v.doc._id, {name: 'bar'}),
+        session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'x' + doc._id, {name: 'bar'}),
         {error: 404, reason: {_id: [['not_found']]}});
 
-      assert.same(v.doc.$reload().name, 'foo');
+      assert.same(doc.$reload().name, 'foo');
 
       spy(TransQueue, 'onSuccess');
 
       assert.calledOnce(validate);
 
-      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {name: 'bar'});
+      spy(BaseModel, 'remoteSave');
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', doc._id, {name: 'bar'});
+
+      assert.calledOnceWith(BaseModel.remoteSave, TestModel, doc._id, {name: 'bar'}, 'u123');
+      assert.isPromise(BaseModel.remoteSave.firstCall.returnValue);
 
       assert.calledTwice(validate);
 
-      assert.same(v.doc.$reload().name, 'bar');
+      assert.same(doc.$reload().name, 'bar');
 
-      assert.calledOnce(v.onChangeSpy);
+      assert.calledOnce(onChangeSpy);
       await TransQueue.onSuccess.yield();
-      assert.calledTwice(v.onChangeSpy);
-      assert.calledWithExactly(v.auth, 'u123');
+      assert.calledTwice(onChangeSpy);
+      assert.calledWithExactly(authorize, 'u123');
 
-      assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
+      assert.equals(authorize.firstCall.thisValue.attributes, doc.attributes);
     });
 
     test('saveRpc partial no modification', async () => {
@@ -428,33 +435,38 @@ define((require, exports, module) => {
     });
 
     test('removeRpc', async () => {
+      const authorize = stub();
       const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub(),
+        authorize,
       }).defineFields({name: 'text'});
 
       spy(TestModel.db, 'transaction');
 
-      v.doc = await TestModel.create({name: 'foo'});
+      const doc = await TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.onChangeSpy = stub());
+      const onChangeSpy = stub();
+      TestModel.onChange(onChangeSpy);
 
       await assert.accessDenied(
-        () => session._rpcs.remove.call({userId: null}, 'TestModel', v.doc._id));
+        () => session._rpcs.remove.call({userId: null}, 'TestModel', doc._id));
 
       await assert.exception(
-        () => session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'x' + v.doc._id),
+        () => session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'x' + doc._id),
         {error: 404, reason: {_id: [['not_found']]}});
 
       spy(TransQueue, 'onSuccess');
 
-      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', v.doc._id);
+      spy(BaseModel, 'remoteRemove');
+      await session._rpcs.remove.call({userId: 'u123'}, 'TestModel', doc._id);
 
-      refute(await TestModel.findById(v.doc._id));
+      assert.calledOnceWith(BaseModel.remoteRemove, TestModel, doc._id, 'u123');
+      assert.isPromise(BaseModel.remoteRemove.firstCall.returnValue);
+      refute(await TestModel.findById(doc._id));
 
-      assert.calledOnce(v.onChangeSpy);
+      assert.calledOnce(onChangeSpy);
       await TransQueue.onSuccess.yield();
-      assert.calledTwice(v.onChangeSpy);
-      assert.calledWith(v.auth, 'u123', {remove: true});
+      assert.calledTwice(onChangeSpy);
+      assert.calledWith(authorize, 'u123', {remove: true});
 
       assert.calledThrice(TestModel.db.transaction);
     });

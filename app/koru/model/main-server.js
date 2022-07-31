@@ -82,6 +82,35 @@ define((require, exports, module) => {
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 
+      BaseModel.remoteSave = (model, id, changes, userId) => TransQueue.transaction(model.db, async () => {
+        let doc = await model.findById(id ?? changes._id);
+
+        const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
+              changes;
+        if (id != null) {
+          Val.allowIfFound(doc, '_id');
+          doc.changes = topLevel;
+        } else {
+          if (doc !== void 0) return; // replay or duplicate id so don't update, don't throw error
+          doc = new model(null, topLevel);
+        }
+        assertAuthorize(doc);
+        await doc.authorize(userId);
+        if (topLevel !== changes && topLevel !== void 0) {
+          Changes.updateCommands(changes, doc.changes, topLevel);
+          doc.changes = changes;
+        }
+        await doc.$save('assert');
+      });
+
+      BaseModel.remoteRemove = (model, id, userId) => TransQueue.transaction(model.db, async () => {
+        const doc = await model.findById(id);
+        Val.allowIfFound(doc, '_id');
+        assertAuthorize(doc);
+        await doc.authorize(userId, {remove: true});
+        await doc.$remove();
+      });
+
       const prepareIndex = (model, args) => {
         let filterTest;
         if (typeof args[args.length - 1] === 'function') {
@@ -193,26 +222,7 @@ define((require, exports, module) => {
         if (model.overrideSave != null) {
           return model.overrideSave(id, changes, userId);
         }
-        return TransQueue.transaction(model.db, async () => {
-          let doc = await model.findById(id ?? changes._id);
-
-          const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
-                changes;
-          if (id != null) {
-            Val.allowIfFound(doc, '_id');
-            doc.changes = topLevel;
-          } else {
-            if (doc !== void 0) return; // replay or duplicate id so don't update, don't throw error
-            doc = new model(null, topLevel);
-          }
-          assertAuthorize(doc);
-          await doc.authorize(userId);
-          if (topLevel !== changes && topLevel !== void 0) {
-            Changes.updateCommands(changes, doc.changes, topLevel);
-            doc.changes = changes;
-          }
-          await doc.$save('assert');
-        });
+        return BaseModel.remoteSave(model, id, changes, userId);
       });
 
       session.defineRpc('bumpVersion', function (modelName, id, version) {
@@ -229,13 +239,7 @@ define((require, exports, module) => {
         if (model.overrideRemove !== void 0) {
           return model.overrideRemove(userId, id);
         }
-        return TransQueue.transaction(model.db, async () => {
-          const doc = await model.findById(id);
-          Val.allowIfFound(doc, '_id');
-          assertAuthorize(doc);
-          await doc.authorize(userId, {remove: true});
-          await doc.$remove();
-        });
+        return BaseModel.remoteRemove(model, id, userId);
       });
 
       util.merge(_support, {
