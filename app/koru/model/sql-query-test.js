@@ -132,7 +132,7 @@ isServer && define((require, exports, module) => {
       Book.docs._colMap = void 0;
       Book.docs._ready = false;
       //[
-      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
+      const byAuthor = Book.sqlWhere(`author = {$author} ORDER BY "pageCount"`);
 
       const titles = [];
 

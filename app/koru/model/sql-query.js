@@ -24,7 +24,7 @@ define((require, exports, module) => {
       const parts = this.queryStr.split(/\{\$(\w+)\}/);
       const posMap = {}, nameMap = [];
       const last = parts.length - 1;
-      let text = `SELECT * FROM "${this.model.modelName}" WHERE`;
+      let text = `SELECT * FROM "${this.model.modelName}" WHERE `;
       for (let i = 0; i < last; i += 2) {
         const name = parts[i + 1];
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
@@ -52,7 +52,7 @@ define((require, exports, module) => {
       const port = ps.portal(c, '', params);
       const rows = [];
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {rows.push(model[makeDoc$](rec))}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, params);
+      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       return rows;
     }
 
@@ -62,7 +62,7 @@ define((require, exports, module) => {
       const ps = (this.#pgsql ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {callback(model[makeDoc$](rec))}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, params);
+      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
     }
 
     async *values(params) {
@@ -86,7 +86,7 @@ define((require, exports, module) => {
         setPromise();
         if (rec === void 0) {
           const err = await errp;
-          if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, params);
+          if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
           return;
         }
         yield model[makeDoc$](rec);
