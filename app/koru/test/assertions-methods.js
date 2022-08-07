@@ -843,22 +843,15 @@ define((require) => {
 
   ga.add('specificAttributes', {
     assert(actual, expected) {
-      if (! (actual && expected)) {
-        this.actual = actual;
-        this.expected = expected;
-        return ! this._asserting;
-      }
-      if (Array.isArray(expected)) {
-        this.actual = actual = actual.map((row, i) => util.extractKeys(
-          row && row.attributes ? row.attributes : row, expected[i]));
-      } else {
-        if (actual && actual.attributes) {
-          actual = actual.attributes;
+      if (actual !== void 0) {
+        if (Array.isArray(expected)) {
+          this.actual = actual = actual.map((row, i) => util.extractKeys(
+            row && row.attributes ? row.attributes : row, expected[i]));
+        } else {
+          if (actual.attributes !== void 0) actual = actual.attributes;
+          if (expected !== void 0) actual = util.extractKeys(actual, expected);
         }
-
-        this.actual = actual = util.extractKeys(actual, expected);
       }
-      this.expected = expected;
 
       if (! deepEqual(actual, expected, this, 'diff')) {
         return false;

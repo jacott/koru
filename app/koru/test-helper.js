@@ -208,21 +208,20 @@ define((require) => {
 
   ga.add('attributesEqual', {
     assert(actual, expected, exclude) {
-      if (! (actual && expected)) {
-        this.actual = actual;
-        this.expected = expected;
-        return ! this._asserting;
+      if (actual !== void 0) {
+        if (! Array.isArray(actual)) actual = [actual];
+        if (actual[0] && actual[0].attributes) {
+          actual = actual.map((i) => i.attributes);
+        }
+        actual = mapFields(actual, exclude);
       }
-      if (! Array.isArray(actual)) actual = [actual];
-      if (! Array.isArray(expected)) expected = [expected];
-      if (actual[0] && actual[0].attributes) {
-        actual = actual.map((i) => i.attributes);
+      if (expected !== void 0) {
+        if (! Array.isArray(expected)) expected = [expected];
+        if (expected[0] && expected[0].attributes) {
+          expected = expected.map((i) => i.attributes);
+        }
+        expected = mapFields(expected, exclude);
       }
-      if (expected[0] && expected[0].attributes) {
-        expected = expected.map((i) => i.attributes);
-      }
-      actual = mapFields(actual, exclude);
-      expected = mapFields(expected, exclude);
       this.actual = actual;
       this.expected = expected;
 
