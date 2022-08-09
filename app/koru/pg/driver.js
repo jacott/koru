@@ -369,8 +369,8 @@ define((require, exports, module) => {
 
   const newConnection = (client, callback) => {
     new PgConn(PgType).connect(client._url, (err, conn) => {
-      conn[count$] = 0;
       if (err == null && PgType[oidsLoaded$] === void 0) {
+        conn[count$] = 0;
         PgType.assignOids(conn).then(() => {
           callback(err, conn)}, callback);
       } else {
