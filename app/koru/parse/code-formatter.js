@@ -81,7 +81,7 @@ define((require, exports, module) => {
         this.skipOver();
         let p;
         for (const n of params) {
-          if (p !== void 0) {
+          if (p !== undefined) {
             if ((n?.leadingComments?.length ?? 0) != 0 || (p?.trailingComments?.length ?? 0) != 0) {
               this.writeAdvance(',');
               this.skipOver(SameLineWsOrCommaRE);
@@ -119,14 +119,14 @@ define((require, exports, module) => {
 
     printBlock(body, parent) {
       if (body.length == 0) return;
-      let p = void 0;
+      let p = undefined;
       let minIdx = this.inputPoint;
       let last;
       for (let i = body.length - 1; i >= 0; --i) {
         last = body[i];
         if (last.type !== 'EmptyStatement') break;
       }
-      if (last === void 0 || last.type === 'EmptyStatement') {
+      if (last === undefined || last.type === 'EmptyStatement') {
         return;
       }
 
@@ -151,7 +151,7 @@ define((require, exports, module) => {
           minIdx = n.end;
           continue;
         }
-        if (p !== void 0) {
+        if (p !== undefined) {
           const noSemi = p.type === 'BlockStatement';
           if (this.isSameLine(n)) {
             noSemi || this.write(';');
@@ -292,7 +292,7 @@ define((require, exports, module) => {
       if (newlineBeforeOperator || this.isAtNewline()) {
         this.write('\n');
         if (indentRight != indent.lineIndent) {
-          indentRight = void 0;
+          indentRight = undefined;
         } else if (++this[extraIndent$] == 1) {
           if (isInc) {
             indent.lineIndent = indentRight;
@@ -302,11 +302,11 @@ define((require, exports, module) => {
         }
         if (! newlineBeforeOperator) this.advance(this.inputPoint + 1);
       } else {
-        indentRight = void 0;
+        indentRight = undefined;
         spacing && this.write(' ');
       }
       this.advancePrintNode(node.right);
-      if (indentRight !== void 0) {
+      if (indentRight !== undefined) {
         if (--this[extraIndent$] == 0) indent.lineIndent = indentRight;
       }
     }
@@ -412,6 +412,11 @@ define((require, exports, module) => {
     }
 
     UnaryExpression(node) {
+      if (node.operator === 'void' && node.argument.type === 'NumericLiteral') {
+        this.write('undefined');
+        this.advance(node.argument.end);
+        return;
+      }
       this.writeAdvance(node.operator);
       if (/\w/.test(node.operator.at(-1)) ||
           (node.operator === '!'
@@ -809,13 +814,13 @@ define((require, exports, module) => {
         throw err;
       }
 
-      if (ast === void 0) return input;
+      if (ast === undefined) return input;
 
       let pt = '';
 
       const write = (token, type) => {
         pt = printer.lastToken;
-        if (StringOrComment[type] === void 0) {
+        if (StringOrComment[type] === undefined) {
           printer.lastToken = token;
           if (token === ';' && pt.endsWith(';')) return;
         }

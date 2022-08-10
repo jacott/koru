@@ -109,6 +109,8 @@ x()`;
       });
 
       test('UnaryExpression', () => {
+        assert.equals(reformat('void    123'), `undefined`);
+        assert.equals(reformat('void    a()'), `void a()`);
         assert.equals(reformat('typeof a'), 'typeof a');
         assert.equals(reformat('-   [a].toString()'), '-[a].toString()');
         assert.equals(reformat('-   a()'), '-a()');
@@ -117,7 +119,6 @@ x()`;
         assert.equals(reformat('-   i'), '-i');
         assert.equals(reformat('-++i'), '- ++i');
         assert.equals(reformat('-i++'), '- i++');
-        assert.equals(reformat('void    123'), `void 123`);
         assert.equals(reformat('- 123'), `-123`);
         assert.equals(reformat('+ 123'), `+123`);
         assert.equals(reformat('!   (   12,true   )'), `! (12, true)`);
@@ -395,7 +396,7 @@ a();
         const text = 'if (\n' +
               '  u === (5 * (3+7) *\n' +
               '         4 * 3)) {\n' +
-              '  (t === void 0 ? x : t)[key] = undo;\n' +
+              '  (t === undefined ? x : t)[key] = undo;\n' +
               '}';
 
         assert.equals(reformat(text), text);
