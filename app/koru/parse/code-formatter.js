@@ -37,6 +37,13 @@ define((require, exports, module) => {
         node.operator === operator &&
         (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
 
+  const writeAsync = (self, node) => {
+    if (node.async) {
+      self.writeAdvance('async');
+      self.writeGap();
+    }
+  };
+
   class MyPrinter extends JsPrinter {
     advancePrintNode(node) {
       this.skipOver();
@@ -211,10 +218,7 @@ define((require, exports, module) => {
     }
 
     printFunction(node) {
-      if (node.async) {
-        this.writeAdvance('async');
-        this.write(' ');
-      }
+      writeAsync(this, node);
       if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
         this.writeAdvance('function');
         this.write(' ');
@@ -769,7 +773,7 @@ define((require, exports, module) => {
     }
 
     ArrowFunctionExpression(node) {
-      node.async && this.writeAdvance('async ');
+      writeAsync(this, node);
       this.skipOver();
       if (this.input[this.inputPoint] === '(') {
         this.printList('(', ')', node, node.params);

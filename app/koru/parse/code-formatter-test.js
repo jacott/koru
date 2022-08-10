@@ -403,10 +403,11 @@ a();
       });
 
       test('test arrow functions', () => {
+        assert.equals(reformat('async()=>{arg1()}'), 'async () => {arg1()}');
+        assert.equals(reformat('async    ()   =>   {   arg1();    }'), 'async () => {arg1()}');
         assert.equals(reformat('arg1=>{    arg1("bar");    }'), "(arg1) => {arg1('bar')}");
         assert.equals(reformat('arg1=>{    \n\n\n;;;\n\n    }'), '(arg1) => {}');
         assert.equals(reformat("(_, m1) => (addresses.push(m1), '')"), "(_, m1) => (addresses.push(m1), '')");
-        assert.equals(reformat('async ()=>{arg1()}'), 'async () => {arg1()}');
       });
 
       test('complex 1', () => {
