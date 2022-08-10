@@ -68,12 +68,13 @@ define((require) => {
       return this;
     }
 
-    afterPromises(func) {
+    afterPromises(callback) {
       const p = this.waitPromises();
       if (p !== void 0) {
-        this.addPromise(p.then(func));
+        this.addPromise(p.then(callback));
       } else {
-        func();
+        const p = callback();
+        if (isPromise(p)) this.addPromise(p);
       }
       return this;
     }
