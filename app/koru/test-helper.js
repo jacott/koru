@@ -63,14 +63,21 @@ define((require) => {
   const ga = Core.assertions;
 
   ga.add('difference', {
-    assert(options, body) {
+    assert(options, callback) {
       const {by} = options;
       const counter = options.counter ||
             (options.model ? () => options.model.query.count() : () => options.query.count());
-      this.before = +counter();
-      body();
-      this.after = +counter();
-      return this.after - this.before === by;
+      return ifPromise(counter(), async (before) => {
+        this.before = before;
+        await callback();
+        this.after = await counter();
+        return this.after - this.before === by;
+      }, (before) => {
+        this.before = before;
+        callback();
+        this.after = counter();
+        return this.after - this.before === by;
+      });
     },
 
     message: 'a difference of {0}. Before {$before}, after {$after}',
