@@ -16,9 +16,9 @@ define((require, exports, module) => {
 
     let preInit = true;
 
-    const mockRequire = (name, exp) => {
+    const mockRequire = (name, exp={}) => {
       if (preInit) {
-        return exps[name] = exp || {};
+        return exps[name] = exp;
       } else {
         const exp = exps[name];
         if (exp === void 0) {
@@ -65,6 +65,7 @@ define((require, exports, module) => {
 
     return {
       mockRequire,
+      get exports() {return exps},
       init,
       mockModule,
       start: () => start(),
