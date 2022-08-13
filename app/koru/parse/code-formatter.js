@@ -808,17 +808,19 @@ define((require, exports, module) => {
     }
   }
 
+  const convertErrors = (errors) => errors.map((e) => ({reason: e.toString(), start: e.pos}));
+
   return {
-    reformat: (input, {initialIndent=-1, tabWidth=2, ignoreSyntaxError=false}={}) => {
+    reformat: (input, {initialIndent=-1, tabWidth=2}={}) => {
       let ast;
       try {
         ast = parse(input);
       } catch (err) {
-        if (ignoreSyntaxError && err.name === 'SyntaxError') return input;
-        throw err;
+        if (err.name !== 'SyntaxError') throw err;
+        return {errors: convertErrors([err])};
       }
 
-      if (ast === undefined) return input;
+      if (ast.errors.length != 0) return {errors: convertErrors(ast.errors)};
 
       let pt = '';
 
@@ -854,7 +856,7 @@ define((require, exports, module) => {
       printer.print(ast);
       printer.catchup(ast.end);
 
-      return indent.complete();
+      return {source: indent.complete()};
     },
   };
 });

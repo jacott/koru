@@ -12,6 +12,7 @@ define((require, exports, module) => {
     allowSuperOutsideMethod: true,
     allowUndeclaredExports: true,
     createParenthesizedExpressions: true,
+    errorRecovery: true,
     plugins: ['classProperties', 'classStaticBlock']};
 
   const last = (a) => a[a.length - 1];
@@ -27,14 +28,14 @@ define((require, exports, module) => {
       for (let path = this.parentPath; path !== null; path = path.scope.parentPath) {
         const {bindings} = path.scope;
         for (const n in bindings) {
-          if (list[n] === void 0) list[n] = bindings[n];
+          if (list[n] === undefined) list[n] = bindings[n];
         }
       }
       return list;
     }
 
     get(name) {
-      if (this.bindings[name] !== void 0) return this.bindings[name];
+      if (this.bindings[name] !== undefined) return this.bindings[name];
       for (let path = this.parentPath; path !== null; path = path.scope.parentPath) {
         return path.scope.get(name);
       }
@@ -62,7 +63,7 @@ define((require, exports, module) => {
         scope.bindings[n.id.name] = {isLive: true, node: n};
       } else if (type === 'VariableDeclaration' && n.kind === 'var') {
         walker.VariableDeclaration(n, scope, false);
-      } else if (HoistNodes[type] === void 0) {
+      } else if (HoistNodes[type] === undefined) {
         for (const a of VISITOR_KEYS[type]) {
           walkHoistScope(walker, scope, n[a]);
         }
@@ -97,7 +98,7 @@ define((require, exports, module) => {
 
     walk(node, scope) {
       this.callback(node, scope);
-      if (this[node.type] !== void 0) {
+      if (this[node.type] !== undefined) {
         this[node.type](node, scope);
       } else {
         this.withScope(node, (scope) => {

@@ -4,7 +4,9 @@ isServer && define((require, exports, module) => {
 
   const {stub, spy, util} = TH;
 
-  const {reformat} = require('./code-formatter');
+  const codeFormatter = require('./code-formatter');
+
+  const reformat = (...args) => codeFormatter.reformat(...args).source;
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let text;
@@ -156,6 +158,7 @@ x()`;
 
       test('array', () => {
         assert.equals(reformat('a = [1,2,3,4]'), `a = [1, 2, 3, 4]`);
+        assert.equals(reformat('const [a,b,c] = d;'), 'const [a, b, c] = d;');
         assert.equals(reformat('const [a,b,c] = d;'), 'const [a, b, c] = d;');
       });
 
