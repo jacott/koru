@@ -1,8 +1,8 @@
-define((require)=>{
+define((require) => {
   'use strict';
-  const {private$} = require('koru/symbols');
+  const {private$}      = require('koru/symbols');
 
   return {
-    [private$]: {makeDoc$: Symbol()}
+    [private$]: {makeDoc$: Symbol()},
   };
 });

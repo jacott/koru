@@ -42,7 +42,7 @@ define((require, exports, module) => {
         module: v.mod = {id: 'test-model', onUnload},
         fields: {name: 'text'},
         proto: {
-          foo() {return this.name;},
+          foo() {return this.name},
         },
       });
 
@@ -275,7 +275,7 @@ define((require, exports, module) => {
        * @see BaseModel.define
        */
       const onUnload = stub();
-      const module = new Module(void 0, '/foo/test-model');
+      const module = new Module(undefined, '/foo/test-model');
       module.onUnload = onUnload;
       const TestModel = Model.define(module, {t1: 123});
       assert.same(Model.TestModel, TestModel);

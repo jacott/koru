@@ -1,4 +1,4 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const MockPromise     = require('koru/test/mock-promise');
@@ -11,32 +11,32 @@ isClient && define((require, exports, module)=>{
 
   let v = {};
 
-  const canIUse = ()=> !! (
+  const canIUse = () => !! (
     window.IDBKeyRange && window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes);
 
   if (! canIUse()) {
-    TH.testCase(module, ({test})=>{
-      test("not supported", ()=>{
-        koru.info("Browser not supported");
+    TH.testCase(module, ({test}) => {
+      test('not supported', () => {
+        koru.info('Browser not supported');
         refute(canIUse());
       });
     });
     return;
   }
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       MockPromise.stubPromise();
     });
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("deleteDatabase", ()=>{
+    test('deleteDatabase', () => {
       const idb = new sut(1);
       const _addPending = stub();
       idb._dbs.foo = {
-        _addPending
+        _addPending,
       };
       const req = idb.deleteDatabase('foo');
       const onsuccess = stub();
@@ -47,15 +47,15 @@ isClient && define((require, exports, module)=>{
       assert.called(onsuccess);
     });
 
-    test("onupgradeneeded", ()=>{
+    test('onupgradeneeded', () => {
       v.idb = new sut(1);
       const req = v.idb.open('foo', 2);
-      req.onupgradeneeded = event =>{
-        const objectStore = event.target.result.createObjectStore('userCache', {keyPath: "url"});
-        objectStore.createIndex("timestamp", "timestamp", {unique: false});
+      req.onupgradeneeded = (event) => {
+        const objectStore = event.target.result.createObjectStore('userCache', {keyPath: 'url'});
+        objectStore.createIndex('timestamp', 'timestamp', {unique: false});
       };
       let db;
-      req.onsuccess = event =>{
+      req.onsuccess = (event) => {
         db = event.target.result;
       };
       MockPromise._poll();
@@ -63,11 +63,11 @@ isClient && define((require, exports, module)=>{
       assert(db._store.userCache);
 
       const req2 = v.idb.open('foo', 2);
-      req2.onupgradeneeded = event =>{
-        assert.fail("Should not need upgrading");
+      req2.onupgradeneeded = (event) => {
+        assert.fail('Should not need upgrading');
       };
       let db2;
-      req.onsuccess = event =>{
+      req.onsuccess = (event) => {
         db2 = event.target.result;
       };
       MockPromise._poll();
@@ -75,8 +75,8 @@ isClient && define((require, exports, module)=>{
       assert.same(db, db2);
     });
 
-    group("objectStore", ()=>{
-      beforeEach(()=>{
+    group('objectStore', () => {
+      beforeEach(() => {
         v.idb = new sut(1);
         const req = v.idb.open('foo', 1);
         req.onsuccess = ({target: {result}}) => {
@@ -93,7 +93,7 @@ isClient && define((require, exports, module)=>{
         };
       });
 
-      test("get", ()=>{
+      test('get', () => {
         v.t1.get('r1').onsuccess = ({target: {result}}) => {
           v.ans = result;
         };
@@ -101,7 +101,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.ans, v.r1);
       });
 
-      test("getAll", ()=>{
+      test('getAll', () => {
         v.t1.getAll()
           .onsuccess = ({target: {result}}) => {v.ans = result};
         v.idb._run();
@@ -114,7 +114,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.ans, [v.r2, v.r3]);
       });
 
-      test("openCursor", ()=>{
+      test('openCursor', () => {
         v.ans = [];
         v.t1.openCursor()
           .onsuccess = ({target: {result}}) => {
@@ -140,7 +140,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.ans, [v.r3, v.r2]);
       });
 
-      test("count", ()=>{
+      test('count', () => {
         v.t1.count()
           .onsuccess = ({target: {result}}) => {v.ans = result};
         v.idb._run();
@@ -153,7 +153,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.ans, 2);
       });
 
-      test("put", ()=>{
+      test('put', () => {
         const rec = {_id: 'q1', name: 'Samantha', age: 25};
         v.t1.put(rec)
           .onsuccess = ({target: {result}}) => {v.ans = result};
@@ -162,7 +162,7 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.t1.docs.q1, rec);
       });
 
-      test("clear", ()=>{
+      test('clear', () => {
         const tx = v.db.transaction(['t1'], 'readwrite');
         let ans = 'nofinished';
         tx.objectStore('t1').clear()
@@ -173,7 +173,7 @@ isClient && define((require, exports, module)=>{
         assert.same(ans, undefined);
       });
 
-      test("createIndex", ()=>{
+      test('createIndex', () => {
         v.t1Name = v.t1.createIndex('name', 'name');
         v.t1Name.get('Ronald')
           .onsuccess = ({target: {result}}) => {v.ans = result};
@@ -186,16 +186,16 @@ isClient && define((require, exports, module)=>{
         assert.equals(v.ans, v.r3);
       });
 
-      group("index", ()=>{
-        beforeEach(()=>{
+      group('index', () => {
+        beforeEach(() => {
           v.t1Name = v.t1.createIndex('name', 'name');
         });
 
-        test("index", ()=>{
+        test('index', () => {
           assert.same(v.t1.index('name'), v.t1Name);
         });
 
-        test("getAll", ()=>{
+        test('getAll', () => {
           v.t1Name.getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
@@ -210,12 +210,12 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      group("multi path index", ()=>{
-        beforeEach(()=>{
+      group('multi path index', () => {
+        beforeEach(() => {
           v.t1Name = v.t1.createIndex('name', ['name', 'age']);
         });
 
-        test("get.", ()=>{
+        test('get.', () => {
           v.t1Name.get(['Ronald', 4])
             .onsuccess = ({target: {result}}) => {v.ans = result};
           v.idb._run();
@@ -227,7 +227,7 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.ans, v.r3);
         });
 
-        test("getAll", ()=>{
+        test('getAll', () => {
           v.t1Name.getAll(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
@@ -241,7 +241,7 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.ans, [v.r4, v.r2, v.r1]);
         });
 
-        test("count", ()=>{
+        test('count', () => {
           v.t1Name.count(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
             .onsuccess = ({target: {result}}) => {v.ans = result};
 
@@ -255,7 +255,7 @@ isClient && define((require, exports, module)=>{
           assert.equals(v.ans, 3);
         });
 
-        test("openCursor", ()=>{
+        test('openCursor', () => {
           v.ans = [];
           v.t1Name.openCursor(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
             .onsuccess = ({target: {result}}) => {
@@ -269,7 +269,6 @@ isClient && define((require, exports, module)=>{
           v.idb._run();
           assert.equals(v.ans, [v.r4, v.r2, v.r1]);
           assert.equals(v.t1.docs, {r3: {_id: 'r3', name: 'Allan', age: 3}});
-
         });
       });
     });

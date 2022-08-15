@@ -25,7 +25,7 @@ define((require, exports, module) => {
   const BaseModel = require('./base-model');
 
   const newBookModule = () => {
-    const bm = new Module(void 0, 'book');
+    const bm = new Module(undefined, 'book');
     module.onUnload = () => {};
     return bm;
   };
@@ -64,8 +64,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module, fields: {
         title: 'text',
         pages: {type: 'number', number: {'>': 0}},
@@ -133,8 +132,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module});
 
       Book.defineFields({
@@ -163,8 +161,7 @@ define((require, exports, module) => {
 
       const module = newBookModule();
       //[
-      class Book extends BaseModel {
-      }
+      class Book extends BaseModel {}
       Book.define({module});
       assert.exception(() => {
         Book.assertFound(null);
@@ -178,8 +175,7 @@ define((require, exports, module) => {
     });
 
     group('validation', () => {
-      class Book extends ValidatorHelper.ModelStub {
-      }
+      class Book extends ValidatorHelper.ModelStub {}
       Book.modelName = 'Book';
 
       Book.registerValidator(TextValidator);
@@ -217,7 +213,7 @@ define((require, exports, module) => {
         book.attributes.pages = -1;
 
         // original$ exists
-        book[original$] = void 0;
+        book[original$] = undefined;
         refute(book.$isValid());
 
         book[original$] = {pages: -2};
@@ -541,7 +537,7 @@ define((require, exports, module) => {
 
         book.author = 'T & T';
         book.$assertValid();
-        assert.same(book[error$], void 0);
+        assert.same(book[error$], undefined);
         //]
       });
 
@@ -570,7 +566,7 @@ define((require, exports, module) => {
 
           book.author = 'T & T';
           assert.isTrue(book.$save());
-          assert.same(book[error$], void 0);
+          assert.same(book[error$], undefined);
 
           assert.same(book.$reload().author, 'T & T');
           //]
@@ -612,7 +608,7 @@ define((require, exports, module) => {
 
           book.author = 'T & T';
           book.$save('assert');
-          assert.same(book[error$], void 0);
+          assert.same(book[error$], undefined);
 
           assert.same(book.$reload().author, 'T & T');
           //]
@@ -717,7 +713,7 @@ define((require, exports, module) => {
           Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
           const sut = Book.build();
-          sut.publisher_id = '';
+          sut.publisher_id = null;
           assert.same(sut.changes.publisher_id, undefined);
         });
 

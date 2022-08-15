@@ -32,8 +32,7 @@ define((require, exports, module) => {
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let Book;
     before(() => {
-      Book = class extends BaseModel {
-      };
+      Book = class extends BaseModel {};
       Book.define({
         name: 'Book',
         fields: {title: 'text', author: 'text', pages: 'number', index: 'object'},
@@ -269,8 +268,9 @@ define((require, exports, module) => {
 
         const map = (iter) => {
           const ans = [];
-          for (const dc of iter)
+          for (const dc of iter) {
             ans.push(dc.clone());
+          }
           return ans.sort((a, b) => {
             a = a._id; b = b._id;
             return a === b ? 0 : a < b ? -1 : 1;

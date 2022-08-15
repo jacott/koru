@@ -496,7 +496,7 @@ define((require, exports, module) => {
       assert.equals(ans, {
         model: TestModel,
         sort: ['a', 'b', 'c', -1, 'd'],
-        filterTest: void 0,
+        filterTest: undefined,
         from: [-1, 'c', 1, 'd'],
         stop: util.voidFunc,
       });

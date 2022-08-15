@@ -46,7 +46,7 @@ define((require, exports, module) => {
 
   const asyncFindById = async (model, id) => {
     const rec = await model.docs.findById(id);
-    if (rec !== void 0) {
+    if (rec !== undefined) {
       const doc = new model(rec);
       model._$docCacheSet(doc);
       return doc;
@@ -57,13 +57,13 @@ define((require, exports, module) => {
     if (id == null) return;
     if (typeof id !== 'string') throw new Error('invalid id: ' + id);
     let doc = this._$docCacheGet(id);
-    if (doc === void 0) {
+    if (doc === undefined) {
       return asyncFindById(this, id);
     }
     return doc;
   }
 
-  const assertAuthorize = (doc) => {Val.allowAccessIf(doc.authorize !== void 0, doc)};
+  const assertAuthorize = (doc) => {Val.allowAccessIf(doc.authorize !== undefined, doc)};
 
   const ModelEnv = {
     destroyModel(model, drop) {
@@ -91,12 +91,12 @@ define((require, exports, module) => {
           Val.allowIfFound(doc, '_id');
           doc.changes = topLevel;
         } else {
-          if (doc !== void 0) return; // replay or duplicate id so don't update, don't throw error
+          if (doc !== undefined) return; // replay or duplicate id so don't update, don't throw error
           doc = new model(null, topLevel);
         }
         assertAuthorize(doc);
         await doc.authorize(userId);
-        if (topLevel !== changes && topLevel !== void 0) {
+        if (topLevel !== changes && topLevel !== undefined) {
           Changes.updateCommands(changes, doc.changes, topLevel);
           doc.changes = changes;
         }
@@ -146,7 +146,7 @@ define((require, exports, module) => {
 
       BaseModel[makeDoc$] = function (attrs) {
         const doc = this._$docCacheGet(attrs._id);
-        if (doc === void 0) {
+        if (doc === undefined) {
           const doc = new this(attrs);
           this._$docCacheSet(doc);
           return doc;
@@ -162,9 +162,9 @@ define((require, exports, module) => {
       const clearDocChanges = (doc) => {
         const model = doc.constructor;
         doc.changes = {};
-        if (doc[error$] !== void 0) doc[error$] = void 0;
+        if (doc[error$] !== undefined) doc[error$] = undefined;
         doc.$clearCache();
-        if (model._$docCacheGet(doc._id) === void 0) {
+        if (model._$docCacheGet(doc._id) === undefined) {
           model._$docCacheSet(doc);
         }
 
@@ -173,7 +173,7 @@ define((require, exports, module) => {
 
       const fullReload = async (doc) => {
         const rec = await doc.constructor.docs.findById(doc._id);
-        if (rec === void 0) {
+        if (rec === undefined) {
           doc.attributes = {};
         } else {
           doc.attributes = rec;
@@ -236,7 +236,7 @@ define((require, exports, module) => {
         Val.ensureString(modelName);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        if (model.overrideRemove !== void 0) {
+        if (model.overrideRemove !== undefined) {
           return model.overrideRemove(userId, id);
         }
         return BaseModel.remoteRemove(model, id, userId);
@@ -264,15 +264,15 @@ define((require, exports, module) => {
       let docs, db;
 
       _resetDocs[model.modelName] = () => {
-        if (db !== void 0) {
-          db[dbMap$] = void 0;
-          db = docs = void 0;
+        if (db !== undefined) {
+          db[dbMap$] = undefined;
+          db = docs = undefined;
         }
       };
 
       const getDc = () => {
         const dc = util.thread[docCache$];
-        return model.db === dc?.$db ? dc : void 0;
+        return model.db === dc?.$db ? dc : undefined;
       };
 
       util.merge(model, {
@@ -291,9 +291,9 @@ define((require, exports, module) => {
           return subject.onChange(callback);
         },
         get docs() {
-          if (this.db === void 0) return;
+          if (this.db === undefined) return;
           docs = docs ?? db[dbMap$];
-          if (docs !== void 0) return docs;
+          if (docs !== undefined) return docs;
 
           db[dbMap$] = docs = db.table(model.modelName, model.$fields);
           return docs;
@@ -301,7 +301,7 @@ define((require, exports, module) => {
         get db() {
           const tdb = dbBroker.db;
           if (tdb !== db) {
-            docs = void 0;
+            docs = undefined;
             db = tdb;
           }
           return db;
@@ -312,7 +312,7 @@ define((require, exports, module) => {
         _$docCacheSet: (doc) => {
           const thread = util.thread;
           let dc = getDc();
-          if (dc === void 0 || dc.$db !== model.db) {
+          if (dc === undefined || dc.$db !== model.db) {
             dc = util.createDictionary();
             dc.$db = model.db;
             thread[docCache$] = dc;
@@ -323,13 +323,13 @@ define((require, exports, module) => {
         _$docCacheDelete: (doc) => {
           if (doc._id) {
             const dc = getDc();
-            if (dc !== void 0) {
+            if (dc !== undefined) {
               delete dc[doc._id];
             }
           }
         },
 
-        _$docCacheClear: () => {util.thread[docCache$] = void 0},
+        _$docCacheClear: () => {util.thread[docCache$] = undefined},
       });
     },
   };

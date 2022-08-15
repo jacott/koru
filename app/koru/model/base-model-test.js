@@ -27,7 +27,7 @@ define((require, exports, module) => {
   const BaseModel = require('./base-model');
 
   const newBookModule = () => {
-    const bm = new Module(void 0, 'book');
+    const bm = new Module(undefined, 'book');
     module.onUnload = () => {};
     return bm;
   };
@@ -196,7 +196,7 @@ define((require, exports, module) => {
       book.attributes.pages = -1;
 
       // original$ exists
-      book[original$] = void 0;
+      book[original$] = undefined;
       refute(await book.$isValid());
       assert.equals(book[error$], {pages: [['is_invalid']]});
       //]
@@ -241,7 +241,7 @@ define((require, exports, module) => {
         book.attributes.pages = -1;
 
         // original$ exists
-        book[original$] = void 0;
+        book[original$] = undefined;
         refute(book.$isValid());
 
         book[original$] = {pages: -2};
@@ -610,7 +610,7 @@ define((require, exports, module) => {
 
         book.author = 'T & T';
         await book.$assertValid();
-        assert.same(book[error$], void 0);
+        assert.same(book[error$], undefined);
         //]
       });
 
@@ -639,7 +639,7 @@ define((require, exports, module) => {
 
           book.author = 'T & T';
           assert.isTrue(await book.$save());
-          assert.same(book[error$], void 0);
+          assert.same(book[error$], undefined);
 
           assert.same((await book.$reload(true)).author, 'T & T');
           //]
@@ -681,7 +681,7 @@ define((require, exports, module) => {
 
           book.author = 'T & T';
           await book.$save('assert');
-          assert.same(book[error$], void 0);
+          assert.same(book[error$], undefined);
 
           assert.same((await book.$reload(true)).author, 'T & T');
           //]
@@ -793,7 +793,7 @@ define((require, exports, module) => {
           Book.defineFields({publisher_id: {type: 'belongs_to'}});
 
           const sut = Book.build();
-          sut.publisher_id = '';
+          sut.publisher_id = null;
           assert.same(sut.changes.publisher_id, undefined);
         });
 

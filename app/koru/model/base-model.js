@@ -50,17 +50,17 @@ define((require, exports, module) => {
       try {
         await i.value.callback(doc, err);
       } catch (err1) {
-        if (err === void 0) err = err1;
+        if (err === undefined) err = err1;
       }
     }
-    if (err !== void 0) {
+    if (err !== undefined) {
       throw err;
     }
   };
 
   const callWhenFinally = (doc, err) => {
     const subj = doc.constructor[observers$].whenFinally;
-    if (subj !== void 0) {
+    if (subj !== undefined) {
       const iter = subj[Symbol.iterator]();
       for (let i = iter.next(); ! i.done; i = iter.next()) {
         let p;
@@ -70,11 +70,11 @@ define((require, exports, module) => {
             return p.then(() => callAsyncWhenFinally(iter, doc, err));
           }
         } catch (err1) {
-          if (err === void 0) err = err1;
+          if (err === undefined) err = err1;
         }
       }
     }
-    if (err !== void 0) {
+    if (err !== undefined) {
       throw err;
     }
   };
@@ -97,7 +97,7 @@ define((require, exports, module) => {
       if (dbIdField !== undefined) {
         this[dbIdField] = dbBroker.dbId;
       }
-      if (attributes != null && attributes._id !== void 0) {
+      if (attributes?._id != null) {
         // existing record
         this.attributes = attributes;
         this.changes = changes;
@@ -148,7 +148,7 @@ define((require, exports, module) => {
       const doc = new this({});
       attributes = attributes == null ? {} : deepCopy(attributes);
 
-      if (attributes._id && ! allow_id) {
+      if (attributes._id != null && ! allow_id) {
         attributes._id = null;
       }
       attributes == null || Object.assign(doc.changes, deepCopy(attributes));
@@ -229,10 +229,10 @@ define((require, exports, module) => {
       if (! name) {
         throw new Error('Model requires a name');
       }
-      if (ModelMap[name] !== void 0) {
+      if (ModelMap[name] !== undefined) {
         throw new Error(`Model '${name}' already defined`);
       }
-      if (module !== void 0) {
+      if (module !== undefined) {
         this._module = module;
         module.onUnload(() => ModelMap._destroyModel(name));
       }
@@ -265,10 +265,10 @@ define((require, exports, module) => {
         let _options = fields[field];
         const options = (typeof _options === 'string') ? {type: _options} : _options;
         const func = TYPE_MAP[options.type];
-        func !== void 0 && func(this, field, options);
+        func?.(this, field, options);
         setUpValidators(this, field, options);
 
-        if (options.default !== void 0) this._defaults[field] = options.default;
+        if (options.default !== undefined) this._defaults[field] = options.default;
         if (! options.pseudo_field) {
           $fields[field] = options;
           if (options.accessor !== false) defineField(proto, field, options.accessor);
@@ -326,7 +326,7 @@ define((require, exports, module) => {
      * Instance methods
      **/
 
-    get _id() {return this.attributes._id || this.changes._id}
+    get _id() {return this.attributes._id ?? this.changes._id}
 
     get classMethods() {return this.constructor}
 
@@ -335,7 +335,7 @@ define((require, exports, module) => {
     [inspect$]() {
       const type = this.constructor;
       const name = this[type[inspectField$]];
-      const arg2 = name === void 0 ? '' : `, "${name}"`;
+      const arg2 = name === undefined ? '' : `, "${name}"`;
       return `Model.${type.modelName}("${this._id}"${arg2})`;
     }
 
@@ -372,16 +372,16 @@ define((require, exports, module) => {
 
       let promises = [];
 
-      if (fVTors !== void 0) {
+      if (fVTors !== undefined) {
         for (const field in fVTors) {
           const validators = fVTors[field];
-          if (validators !== void 0) {
+          if (validators !== undefined) {
             const value = this[field];
             for (const vTor in validators) {
               const args = validators[vTor];
               if (! args[2].changesOnly || (
                 (original$ in this)
-                  ? this[original$] === void 0 || this[original$][field] !== value
+                  ? this[original$] === undefined || this[original$][field] !== value
                   : this.$hasChanged(field))) {
                 const p = args[0].call(Val, this, field, args[1], args[2]);
                 isPromise(p) && promises.push(p);
@@ -391,7 +391,7 @@ define((require, exports, module) => {
         }
       }
 
-      if (this.validate !== void 0) {
+      if (this.validate !== undefined) {
         const p = this.validate();
         isPromise(p) && promises.push(p);
       }
@@ -409,7 +409,7 @@ define((require, exports, module) => {
 
     $equals(other) {
       if (this === other) return true;
-      return other && other._id && this._id && this._id === other._id &&
+      return other?._id != null && this?._id === other._id &&
         this.constructor === other.constructor;
     }
 
@@ -600,7 +600,7 @@ define((require, exports, module) => {
     _addUserIds(changes, userIds, user_id) {
       if (userIds) {
         for (const key in userIds) {
-          changes[key] = changes[key] || user_id;
+          changes[key] ??= user_id;
         }
       }
     },
@@ -619,7 +619,7 @@ define((require, exports, module) => {
     if (value === null) value = undefined;
     if (value === doc.attributes[field]) {
       if (hasOwn(changes, field)) {
-        if (value === void 0 && doc.constructor._defaults[field] !== void 0) {
+        if (value === undefined && doc.constructor._defaults[field] !== undefined) {
           changes[field] = deepCopy(doc.constructor._defaults[field]);
         } else {
           delete doc.changes[field];
@@ -650,9 +650,9 @@ define((require, exports, module) => {
   const defineField = (proto, field, accessor) => {
     Object.defineProperty(proto, field, {
       configurable: true,
-      get: (accessor && accessor.get) || getValue(field),
+      get: accessor?.get ?? getValue(field),
 
-      set: (accessor && accessor.set) || setValue(field),
+      set: accessor?.set ?? setValue(field),
     });
   };
 
@@ -677,7 +677,7 @@ define((require, exports, module) => {
     }
   };
 
-  const getValidators = (model, field) => model._fieldValidators[field] || (model._fieldValidators[field] = {});
+  const getValidators = (model, field) => model._fieldValidators[field] ??= {};
 
   const TYPE_MAP = {
     belongs_to_dbId(model, field, options) {
@@ -691,16 +691,16 @@ define((require, exports, module) => {
     },
 
     belongs_to(model, field, options) {
-      if (options.accessor === void 0) {
+      if (options.accessor === undefined) {
         options.accessor = {
           get: getValue(field),
-          set(value) {setField(this, field, value || void 0)},
+          set(value) {setField(this, field, value ?? undefined)},
         };
       }
       const name = field.replace(/_id$/, '');
       let bt = options.model, btName;
       if (! bt) {
-        btName = options.modelName || util.capitalize(name);
+        btName = options.modelName ?? util.capitalize(name);
         bt = ModelMap[btName];
         options.model = bt;
       }
@@ -713,14 +713,14 @@ define((require, exports, module) => {
 
     user_id_on_create(model, field, options) {
       TYPE_MAP.belongs_to.call(this, model, field, options);
-      model.userIds = model.userIds || {};
+      model.userIds ??= {};
       model.userIds[field] = 'create';
     },
 
     has_many(model, field, options) {
       let bt = options.model, name;
       if (! bt) {
-        name = options.modelName || util.capitalize(util.sansId(field));
+        name = options.modelName ?? util.capitalize(util.sansId(field));
         bt = ModelMap[name];
         options.model = bt;
       }
@@ -729,10 +729,10 @@ define((require, exports, module) => {
 
     auto_timestamp(model, field) {
       if (/create/i.test(field)) {
-        model.createTimestamps = model.createTimestamps || {};
+        model.createTimestamps ??= {};
         model.createTimestamps[field] = true;
       } else {
-        model.updateTimestamps = model.updateTimestamps || {};
+        model.updateTimestamps ??= {};
         model.updateTimestamps[field] = true;
       }
     },

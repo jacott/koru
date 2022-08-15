@@ -1,11 +1,11 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Changes         = require('koru/changes');
   const match           = require('koru/match');
 
   const {inspect, hasOwn} = require('koru/util');
 
-  const {inspect$}      = require('koru/symbols');
+  const {inspect$} = require('koru/symbols');
 
   const changes$ = Symbol(), id$ = Symbol(), type$ = Symbol(), undo$ = Symbol(), doc$ = Symbol();
 
@@ -17,7 +17,7 @@ define((require)=>{
     del: 'delete',
   };
 
-  const setContents = (dc, id, type, doc, undo)=>{
+  const setContents = (dc, id, type, doc, undo) => {
     if (dc[type$] !== type) {
       dc[type$] = type;
       if (type !== 'chg') {
@@ -62,8 +62,8 @@ define((require)=>{
     }
 
     [inspect$]() {
-      return `DocChange.${fullType[this[type$]]}(${inspect(this[doc$])}`+
-        `${this[type$] === 'chg' ? ', '+inspect(this[undo$]) : ''}, ${inspect(this.flag)})`;
+      return `DocChange.${fullType[this[type$]]}(${inspect(this[doc$])}` +
+        `${this[type$] === 'chg' ? ', ' + inspect(this[undo$]) : ''}, ${inspect(this.flag)})`;
     }
 
     get type() {return this[type$]} set type(v) {throw new Error(NOT_ALLOWED)}
@@ -80,15 +80,16 @@ define((require)=>{
 
     hasField(field) {
       const undo = this[undo$];
-      if (typeof undo !== 'string')
+      if (typeof undo !== 'string') {
         return Changes.has(undo, field);
+      }
 
       const doc = this[doc$];
       return doc[field] !== undefined;
     }
 
     hasSomeFields(...fields) {
-      for(let i = 0; i < fields.length; ++i) {
+      for (let i = 0; i < fields.length; ++i) {
         if (this.hasField(fields[i])) return true;
       }
 
@@ -96,7 +97,7 @@ define((require)=>{
     }
 
     get changes() {
-      return this[changes$] || (this[changes$] = this[doc$].$invertChanges(this[undo$]));
+      return this[changes$] ??= this[doc$].$invertChanges(this[undo$]);
     }
 
     *subDocKeys(field) {
@@ -117,15 +118,14 @@ define((require)=>{
       const u = undo.$partial[field];
       if (! Array.isArray(u)) return;
 
-      for(let i = 0; i < u.length; i+=2) {
+      for (let i = 0; i < u.length; i += 2) {
         const k = u[i];
         if (k === '$replace') {
-          const was = u[i+1] || {}, now = this[doc$][field];
+          const was = u[i + 1] ?? {}, now = this[doc$][field];
 
           for (const k in was) if (now[k] === undefined) yield k;
           for (const k in now) if (was[k] === undefined) yield k;
           return;
-
         } else {
           const idx = k.indexOf('.');
           yield idx === -1 ? k : k.slice(0, idx);
@@ -143,19 +143,19 @@ define((require)=>{
 
         if (now === null || typeof now !== 'object') {
           for (const k in was) yield setContents(dc, k, 'del', was[k]);
-
         } else if (was === null || typeof was !== 'object') {
           for (const k in now) yield setContents(dc, k, 'add', now[k]);
-
         } else {
-          for (const k in was)
+          for (const k in was) {
             if (now[k] === undefined) yield setContents(dc, k, 'del', was[k]);
+          }
 
           for (const k in now) {
-            if (was[k] === undefined)
+            if (was[k] === undefined) {
               yield setContents(dc, k, 'add', now[k]);
-            else
+            } else {
               yield setContents(dc, k, 'chg', now[k], {$partial: {$replace: was[k]}});
+            }
           }
         }
         return;
@@ -164,75 +164,77 @@ define((require)=>{
       const u = undo.$partial[field];
       if (! Array.isArray(u)) return;
 
-      const now = this[doc$][field] || {};
+      const now = this[doc$][field] ?? {};
 
       const composite = {};
 
-      for(let i = 0; i < u.length; i+=2) {
+      for (let i = 0; i < u.length; i += 2) {
         const k = u[i];
         if (k === '$replace') {
-          const was = u[i+1] || {};
+          const was = u[i + 1] ?? {};
 
-          for (const k in was)
+          for (const k in was) {
             if (now[k] === undefined) yield setContents(dc, k, 'del', was[k]);
+          }
           for (const k in now) {
-            if (was[k] === undefined)
+            if (was[k] === undefined) {
               yield setContents(dc, k, 'add', now[k]);
-            else
+            } else {
               yield setContents(dc, k, 'chg', now[k], {$partial: {$replace: was[k]}});
+            }
           }
           return;
-
         } else {
           const idx = k.indexOf('.');
           if (idx == -1) {
-            const ov = u[i+1];
+            const ov = u[i + 1];
             const nv = now[k];
-            if (ov == null)
+            if (ov == null) {
               yield setContents(dc, k, 'add', nv);
-            else {
-              if (nv == null)
+            } else {
+              if (nv == null) {
                 yield setContents(dc, k, 'del', ov);
-              else {
+              } else {
                 yield setContents(dc, k, 'chg', now[k], ov);
               }
             }
           } else {
             const id = k.slice(0, idx);
-            const rem = k.slice(idx+1);
+            const rem = k.slice(idx + 1);
             if (rem === '$partial') {
-              const cmd = u[i+1];
+              const cmd = u[i + 1];
               if (Array.isArray(cmd)) {
-                if (cmd[0] === '$replace' && cmd[1] == null)
+                if (cmd[0] === '$replace' && cmd[1] == null) {
                   yield setContents(dc, id, 'add', now[id]);
-                else {
+                } else {
                   const undo = {};
-                  for(let j = 0; j < cmd.length; j+=2) {
+                  for (let j = 0; j < cmd.length; j += 2) {
                     const idx = k.indexOf('.');
                     const field = cmd[j];
-                    const v = cmd[j+1];
-                    const fidx = field.indexOf(".");
-                    if (fidx === -1)
+                    const v = cmd[j + 1];
+                    const fidx = field.indexOf('.');
+                    if (fidx === -1) {
                       undo[field] = Array.isArray(v) ? ['$replace', v] : v;
-                    else
+                    } else {
                       undo[field.slice(0, fidx)] = v;
+                    }
                   }
                   yield setContents(dc, id, 'chg', now[id], {$partial: undo});
                 }
               }
             } else {
               const ov = composite[id] || (composite[id] = {});
-              const ridx = rem.indexOf(".");
+              const ridx = rem.indexOf('.');
               if (ridx === -1) {
-                ov[rem] = u[i+1];
+                ov[rem] = u[i + 1];
               } else {
-                const sr = rem.slice(ridx+1);
+                const sr = rem.slice(ridx + 1);
                 if (sr === '$partial') {
-                  ov[rem.slice(0, ridx)] = u[i+1];
+                  ov[rem.slice(0, ridx)] = u[i + 1];
                 } else {
                   const sw = rem.slice(0, ridx);
-                  const su = ov[sw] || (ov[sw] = []);
-                  su.push(rem.slice(ridx+1), u[i+1]);
+                  const su = ov[sw] ??= [];
+                  su.push(rem.slice(ridx + 1), u[i + 1]);
                 }
               }
             }

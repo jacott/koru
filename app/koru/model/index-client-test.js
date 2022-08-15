@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const BTree           = require('koru/btree');
   const DocChange       = require('koru/model/doc-change');
@@ -11,8 +11,8 @@ define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       Model._destroyModel('TestModel', 'drop');
       dbBroker.clearDbId();
       delete Model._databases.foo;
@@ -20,7 +20,7 @@ define((require, exports, module)=>{
       v = {};
     });
 
-    test("lookup direction -1 bug on client", ()=>{
+    test('lookup direction -1 bug on client', () => {
       const TestModel = Model.define('TestModel').defineFields({
         order: 'number',
         name: 'text',
@@ -40,7 +40,7 @@ define((require, exports, module)=>{
       const btree = idx.entries[1];
     });
 
-    test("filtering", ()=>{
+    test('filtering', () => {
       const TestModel = Model.define('TestModel').defineFields({
         id1: 'text',
         id2: 'text',
@@ -49,7 +49,7 @@ define((require, exports, module)=>{
       dbBroker.setMainDbId('foo');
       const index = TestModel.addUniqueIndex(
         'id1', 1, 'id2', '_id',
-        q =>{q.where('archived', null)}
+        (q) => {q.where('archived', null)},
       );
 
       const doc1 = TestModel.create({_id: 'doc1', id1: 'a', id2: 'b'});
@@ -68,9 +68,9 @@ define((require, exports, module)=>{
       assert.same(index.entries.b, undefined);
     });
 
-    group("id1, id2", ()=>{
+    group('id1, id2', () => {
       let TestModel;
-      beforeEach(()=>{
+      beforeEach(() => {
         TestModel = Model.define('TestModel').defineFields({
           id1: 'text',
           id2: 'text',
@@ -85,8 +85,8 @@ define((require, exports, module)=>{
         v.doc3 = TestModel.create({_id: 'doc3', id1: '1', id2: '4'});
       });
 
-      group("btree", ()=>{
-        beforeEach(()=>{
+      group('btree', () => {
+        beforeEach(() => {
           TestModel.defineFields({
             points: 'number',
             updatedAt: 'timestamp',
@@ -105,7 +105,7 @@ define((require, exports, module)=>{
           v.sortedIndex = TestModel.addIndex('id2', -1, 'points', 'updatedAt');
         });
 
-        test("en-US compare", ()=>{
+        test('en-US compare', () => {
           v.sortedIndex = TestModel.addIndex('id1', 1, 'updatedAt', 'name', -1, 'code', 'updatedAt');
           const updatedAt = new Date();
           const n1 = TestModel.create({
@@ -120,11 +120,11 @@ define((require, exports, module)=>{
           const tree = v.sortedIndex.entries.x;
           assert(tree instanceof BTree);
 
-          assert.equals(Array.from(tree).map(d=>d.name+d.code), [
+          assert.equals(Array.from(tree).map((d) => d.name + d.code), [
             'davidax', 'davidTx', 'Helen', 'AlanTx']);
         });
 
-        test("fully sorted", ()=>{
+        test('fully sorted', () => {
           v.sortedIndex = TestModel.addIndex(-1, 'points', 'updatedAt');
 
           const tree = v.sortedIndex.entries;
@@ -154,7 +154,7 @@ define((require, exports, module)=>{
              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}]);
         });
 
-        test("add", ()=>{
+        test('add', () => {
           const iter = v.sortedIndex.lookup({id2: '4'});
           assert.isFunction(iter.next);
 
@@ -174,12 +174,12 @@ define((require, exports, module)=>{
 
           const iter2 = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
           assert.equals(Array.from(iter2), [
-            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}
+            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'},
           ]);
 
           const reverseCursor = v.sortedIndex.lookup(
             {id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)},
-            {direction: -1}
+            {direction: -1},
           );
           assert(reverseCursor.next);
           assert.equals(Array.from(reverseCursor), [
@@ -188,13 +188,13 @@ define((require, exports, module)=>{
           ]);
 
           assert.equals(
-            Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map(d=>d._id),
+            Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map((d) => d._id),
             ['a4', 'doc1', 'doc3']);
 
           assert(v.sortedIndex.entries[4] instanceof BTree);
         });
 
-        test("remove", ()=>{
+        test('remove', () => {
           v.doc2.$remove();
           assert.same(v.sortedIndex.lookup({id2: '2'}), undefined);
 
@@ -209,7 +209,7 @@ define((require, exports, module)=>{
           assert.equals(v.sortedIndex.lookup({}), {});
         });
 
-        test("change same tree", ()=>{
+        test('change same tree', () => {
           const tree = v.sortedIndex.entries[4];
           assert.equals(tree.size, 2);
           v.doc3.$update('points', 3);
@@ -228,21 +228,20 @@ define((require, exports, module)=>{
           ]);
         });
 
-        test("change different tree", ()=>{
+        test('change different tree', () => {
           v.doc3.$update('id2', '2');
 
           const tree2 = v.sortedIndex.entries[2];
           assert.equals(tree2.size, 2);
 
-
           const tree4 = v.sortedIndex.entries[4];
           assert.equals(tree4.size, 1);
 
-          assert.equals(Array.from(tree2).map(d => d._id), ['doc2', 'doc3']);
+          assert.equals(Array.from(tree2).map((d) => d._id), ['doc2', 'doc3']);
         });
       });
 
-      test("changing dbId", ()=>{
+      test('changing dbId', () => {
         dbBroker.dbId = 'bar';
 
         const bar1 = TestModel.create({id1: '3', id2: '4'});
@@ -269,13 +268,13 @@ define((require, exports, module)=>{
         assert.same(v.idx.lookup({id1: '4', id2: '4'}), v.doc1._id);
       });
 
-      test("adding", ()=>{
+      test('adding', () => {
         assert.same(v.idx.lookup({id1: '3', id2: '4'}), v.doc1._id);
 
-        assert.equals(v.idx.lookup({id2: '4'}), {'1': v.doc3._id, '3': v.doc1._id});
+        assert.equals(v.idx.lookup({id2: '4'}), {1: v.doc3._id, 3: v.doc1._id});
       });
 
-      test("changing", ()=>{
+      test('changing', () => {
         v.doc1.id1 = '4';
         v.doc1.$$save();
 
@@ -284,10 +283,10 @@ define((require, exports, module)=>{
 
         v.doc2.$update({id2: '4'});
 
-        assert.equals(v.idx.lookup({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
+        assert.equals(v.idx.lookup({}), {4: {4: v.doc1._id, 2: v.doc2._id, 1: v.doc3._id}});
       });
 
-      test("nullToUndef keys", ()=>{
+      test('nullToUndef keys', () => {
         v.doc1.id2 = null;
         v.doc1.$$save();
 
@@ -295,19 +294,19 @@ define((require, exports, module)=>{
           2: {2: 'doc2'}, 4: {1: 'doc3'}, undefined: {3: 'doc1'}});
       });
 
-      test("null in data", ()=>{
+      test('null in data', () => {
         const doc = TestModel.create({id1: '1', id2: null});
 
         assert.same(v.idx.lookup({id1: '1', id2: undefined}), doc._id);
       });
 
-      test("deleting", ()=>{
+      test('deleting', () => {
         v.doc1.$remove();
 
-        assert.equals(v.idx.lookup({}), {'4': {'1': v.doc3._id}, '2': {'2': v.doc2._id}});
+        assert.equals(v.idx.lookup({}), {4: {1: v.doc3._id}, 2: {2: v.doc2._id}});
       });
 
-      test("removing wrong object", ()=>{
+      test('removing wrong object', () => {
         assert.calledOnce(v.obSpy);
 
         const doc = {_id: 'diff', id2: '4', id1: '3', $withChanges(undo) {
@@ -319,18 +318,18 @@ define((require, exports, module)=>{
         assert.equals(v.idx.lookup({id2: '4', id1: '3'}), v.doc1._id);
       });
 
-      test("reload", ()=>{
+      test('reload', () => {
         const docs = v.idx.lookup({});
         docs['x'] = 'junk';
 
         v.idx.reload();
 
-        assert.equals(Object.keys(v.idx.lookup({})), ["2", "4"]);
+        assert.equals(Object.keys(v.idx.lookup({})), ['2', '4']);
 
         assert.equals(v.idx.lookup({id2: '4'}), {1: 'doc3', 3: 'doc1'});
       });
 
-      test("addIndex", ()=>{
+      test('addIndex', () => {
         const id1Idx = TestModel.addIndex('id1');
 
         TestModel.create({_id: 'tm1', id1: '2', id2: '5'});
@@ -339,17 +338,17 @@ define((require, exports, module)=>{
           1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
       });
 
-      test("addIndex with condition", ()=>{
+      test('addIndex with condition', () => {
         Model._destroyModel('TestModel', 'drop');
         TestModel = Model.define('TestModel').defineFields({
           id1: 'text',
           id2: 'text',
         });
 
-        v.test = doc => {
+        v.test = (doc) => {
           return doc.id2 === '4';
         };
-        const id1Idx = TestModel.addIndex('id1', q => q.where(v.test));
+        const id1Idx = TestModel.addIndex('id1', (q) => q.where(v.test));
 
         const tm1 = TestModel.create({_id: 'tm1', id1: '2', id2: '6'});
         const tm2 = TestModel.create({_id: 'tm2', id1: '1', id2: '4'});
@@ -364,7 +363,7 @@ define((require, exports, module)=>{
         assert.equals(id1Idx.lookup({id1: '1'}), {tm2: 'tm2', tm3: 'tm3'});
       });
 
-      test("reloadAll", ()=>{
+      test('reloadAll', () => {
         const id1Idx = TestModel.addIndex('id1');
 
         assert.same(TestModel._indexUpdate.indexes.size, 2);
@@ -374,9 +373,9 @@ define((require, exports, module)=>{
 
         TestModel._indexUpdate.reloadAll();
 
-        assert.equals(Object.keys(v.idx.lookup({})), ["2", "4"]);
+        assert.equals(Object.keys(v.idx.lookup({})), ['2', '4']);
 
-        assert.equals(Object.keys(id1Idx.lookup({})), ["1", "2", "3"]);
+        assert.equals(Object.keys(id1Idx.lookup({})), ['1', '2', '3']);
       });
     });
   });

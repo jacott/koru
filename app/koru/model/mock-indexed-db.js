@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const TH              = require('koru/test/main');
   const util            = require('koru/util');
@@ -41,10 +41,12 @@ define((require)=>{
     }
 
     createObjectStore(name, options) {
-      if (typeof options.keyPath !== 'string')
+      if (typeof options.keyPath !== 'string') {
         throw new Error('MockIndexedDB only supports strings for keyPath');
-      if (this._store[name])
-        throw new Error("MockIndexedDB already has objectStore: "+ name);
+      }
+      if (this._store[name]) {
+        throw new Error('MockIndexedDB already has objectStore: ' + name);
+      }
       return this._store[name] = new ObjectStore(name, this, options.keyPath);
     }
 
@@ -64,8 +66,9 @@ define((require)=>{
       this.store = store;
       store.getAll(query).onsuccess = ({target: {result}}) => {
         this._data = result;
-        if (direction === 'prev')
+        if (direction === 'prev') {
           this._data.reverse();
+        }
         this._position = -1;
         this._onsuccess = onsuccess;
         this.continue();
@@ -94,33 +97,36 @@ define((require)=>{
       this.options = options;
       this.docs = os.docs;
       this[idField$] = os[idField$];
-      this.compare = Array.isArray(keyPath) ? (
-        ar, br) => {
-          const av = values(ar, keyPath), bv = values(br, keyPath);
-          for(let i = 0; i < keyPath.length; ++i) {
-            const a = av[i], b = bv[i];
-            if (a != b) {
-              return a < b ? -1 : 1;
+      this.compare = Array.isArray(keyPath)
+        ? (
+          ar, br) => {
+            const av = values(ar, keyPath), bv = values(br, keyPath);
+            for (let i = 0; i < keyPath.length; ++i) {
+              const a = av[i], b = bv[i];
+              if (a != b) {
+                return a < b ? -1 : 1;
+              }
             }
+            return compareById(ar, br);
           }
-          return compareById(ar, br);
-        } : (ar, br) => {
-          const {[keyPath]: a} = ar, {[keyPath]: b} = br;
-          return a < b ? -1 : a === b ? compareById(ar, br) : 1;
-        };
+      : (ar, br) => {
+        const {[keyPath]: a} = ar, {[keyPath]: b} = br;
+        return a < b ? -1 : a === b ? compareById(ar, br) : 1;
+      };
     }
 
     get(key) {
       const self = this;
       const {docs, db} = this.os;
-      if (Array.isArray(self.keyPath) && ! Array.isArray(key))
+      if (Array.isArray(self.keyPath) && ! Array.isArray(key)) {
         key = [key];
+      }
       return {
         set onsuccess(f) {
           const result = util.deepCopy(
             findDoc(docs, self.keyPath, key)
               .sort(self.compare)[0]);
-          db._addPending(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -131,10 +137,10 @@ define((require)=>{
       return {
         set onsuccess(f) {
           const result = Object.keys(docs)
-                  .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
-                  .map(k => util.deepCopy(docs[k]))
-                  .sort(self.compare);
-          db._addPending(() => {f({target: {result}});});
+                .filter((k) => ! query || query.includes(values(docs[k], self.keyPath)))
+                .map((k) => util.deepCopy(docs[k]))
+                .sort(self.compare);
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -146,11 +152,11 @@ define((require)=>{
       return {
         set onsuccess(f) {
           const result = Object.keys(docs)
-                  .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
-                  .map(k => docs[k])
-                  .sort(self.compare)
-                  .map(d => d[idField]);
-          db._addPending(() => {f({target: {result}});});
+                .filter((k) => ! query || query.includes(values(docs[k], self.keyPath)))
+                .map((k) => docs[k])
+                .sort(self.compare)
+                .map((d) => d[idField]);
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -180,21 +186,23 @@ define((require)=>{
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
             (s, k) => s + (! query || query.includes(values(docs[k], self.keyPath)) ? 1 : 0), 0);
-          db._addPending(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
   }
 
   function values(rec, keyPath) {
-    return Array.isArray(keyPath) ? keyPath.map(f => rec[f]) : (rec[keyPath] || '');
+    return Array.isArray(keyPath) ? keyPath.map((f) => rec[f]) : (rec[keyPath] || '');
   }
 
   function findDoc(docs, keyPath, key) {
-    const matcher = Array.isArray(keyPath) ? (
-      doc => key.every(
-        (v, i) => doc[keyPath[i]] === v
-      )) : doc => doc[keyPath] === key;
+    const matcher = Array.isArray(keyPath)
+          ? (
+            (doc) => key.every(
+              (v, i) => doc[keyPath[i]] === v,
+            ))
+          : (doc) => doc[keyPath] === key;
     const ans = [];
     for (let id in docs) {
       const doc = docs[id];
@@ -221,7 +229,7 @@ define((require)=>{
       return {
         set onsuccess(f) {
           const result = util.deepCopy(docs[id]);
-          db._addPending(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -231,9 +239,9 @@ define((require)=>{
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).sort()
-                  .filter(k => ! query || query.includes(k))
-                  .map(k => util.deepCopy(docs[k]));
-          db._addPending(() => {f({target: {result}});});
+                .filter((k) => ! query || query.includes(k))
+                .map((k) => util.deepCopy(docs[k]));
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -253,7 +261,7 @@ define((require)=>{
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
             (s, k) => s + (! query || query.includes(k) ? 1 : 0), 0);
-          db._addPending(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -265,7 +273,7 @@ define((require)=>{
       return {
         set onsuccess(f) {
           const result = doc[idField];
-          db._addPending(() => {f({target: {result}});});
+          db._addPending(() => {f({target: {result}})});
         },
       };
     }
@@ -289,8 +297,9 @@ define((require)=>{
     }
 
     createIndex(name, keyPath, options) {
-      if (this.indexes[name])
-        throw new Error(this.name + " index already exists: "+name);
+      if (this.indexes[name]) {
+        throw new Error(this.name + ' index already exists: ' + name);
+      }
 
       return this.indexes[name] = new Index(this, name, keyPath, options);
     }
@@ -314,10 +323,11 @@ define((require)=>{
       return {
         result: db,
         set onupgradeneeded(func) {
-          if (oldVersion !== newVersion)
+          if (oldVersion !== newVersion) {
             db._addPending(() => {
               func({oldVersion, newVersion, target: {result: db, transaction: db.transaction()}});
             });
+          }
         },
         set onsuccess(func) {
           db._addPending(() => {
@@ -338,7 +348,7 @@ define((require)=>{
     }
 
     _scheduleRun() {
-      Promise.resolve().then(() =>{
+      Promise.resolve().then(() => {
         this._run();
       });
     }
@@ -359,10 +369,10 @@ define((require)=>{
         delete this._dbs[name];
         return {
           set onsuccess(func) {
-            idb._addPending(()=>{
+            idb._addPending(() => {
               func({target: {result: null}});
             });
-          }
+          },
         };
       }
     }
