@@ -124,6 +124,23 @@ define((require, exports, module) => {
       }
     }
 
+    printDirectives(directives) {
+      if (directives == null || directives.length == 0) return;
+      this.skipOverNl(1);
+      for (const {value} of directives) {
+        if (value.type === 'DirectiveLiteral') {
+          this.skipOver();
+          this.StringLiteral(value);
+          this.advance(value.end);
+          this.skipOver(SameLineWsOrSemiRE);
+          this.write(';');
+           this.skipOverNl(2);
+        } else {
+          this.print(value);
+        }
+      }
+    }
+
     printBlock(body, parent) {
       if (body.length == 0) return;
       let p = undefined;
@@ -238,6 +255,7 @@ define((require, exports, module) => {
       this.printList('(', ')', node, node.params);
       this.write(' ');
       this.advance(node.body.start);
+      this.printDirectives(node.directives);
       this.print(node.body);
     }
 
@@ -320,17 +338,17 @@ define((require, exports, module) => {
       this.write(' ');
       this.advance(node.argument.start);
       this.print(node.argument);
+      this.advance(node.end);
     }
 
     printKeywordOption(node, keyword, argument) {
       this.write(keyword);
-      if (argument === null) {
-        this.advance(node.end);
-      } else {
+      if (argument !== null) {
         this.write(' ');
         this.advance(argument.start);
         this.print(argument);
       }
+      this.advance(node.end);
     }
 
     printObjectKey(key) {
@@ -794,6 +812,7 @@ define((require, exports, module) => {
     }
 
     Program(node) {
+      this.printDirectives(node.directives);
       this.printBlock(node.body);
     }
 
@@ -803,6 +822,7 @@ define((require, exports, module) => {
 
     BlockStatement(node) {
       this.writeAdvance('{');
+      this.printDirectives(node.directives);
       this.printBlock(node.body, node);
       this.writeAdvance('}');
     }
