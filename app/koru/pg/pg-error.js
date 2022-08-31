@@ -25,11 +25,15 @@ define((require, exports, module) => {
         message += ` (${code})`;
       }
       if (typeof this.queryStr === 'string') {
+        let s = this.queryStr;
         if (position !== void 0) {
-          message += '\n\n' + this.queryStr + `\n${''.padEnd(position - 1, '-')}^`;
-        } else {
-          message += '\n\n' + this.queryStr;
+          const i = s.lastIndexOf('\n', position);
+          let j = s.indexOf('\n', position);
+          if (j == -1) j = s.length;
+          s = `${s.slice(0, j)}\n${''.padEnd(position - 2 - i, '-')}^${s.slice(j)}`;
+
         }
+        message += '\n\n' + s;
       }
       if (hint !== void 0) {
         message += '\nHint: ' + hint;
