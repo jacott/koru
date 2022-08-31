@@ -49,7 +49,7 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
     dbBroker.db = mq.mqdb.table._client;
     const {name, [timer$]: timer,
            mqdb: {[action$]: actions, [retryInterval$]: retryIntervals}} = mq;
-    timer.handle = undefined; timer.dueAt = 0;
+    timer.dueAt = 0;
     mq.error = undefined;
     try {
       const [rec] = await mq.peek(1, util.newDate());
@@ -58,6 +58,7 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
         await mq.remove(rec._id);
       }
 
+      timer.handle = undefined;
       return await queueNext(mq);
     } catch (err) {
       const retryInterval = typeof err.retryAfter === 'number'
@@ -86,6 +87,7 @@ select "dueAt" from "${table._name}" where name = $1
   };
 
   const queueFor = (mq, dueAt) => {
+    assert(dueAt >= 0, 'dueAt not >= 0');
     if (mq.error !== undefined) return;
     const timer = mq[timer$];
     if (timer.handle !== undefined) {

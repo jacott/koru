@@ -631,7 +631,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
         await koru.setTimeout.yieldAndReset();
         assert.equals(v.args, undefined);
-        assert.calledTwice(koru.setTimeout);
+        assert.calledOnce(koru.setTimeout);
 
         await koru.setTimeout.yieldAndReset();
 
