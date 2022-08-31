@@ -168,7 +168,6 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         assert.equals(v.altArgs[0].message, 'alt hello');
         assert.same(v.db, v.defDb);
 
-
         /** back to orig db **/
         dbBroker.db = v.defDb;
 
@@ -200,7 +199,6 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         mqFactory.deregisterQueue('bar');
         assert.same(await mqFactory.getQueue('bar'), undefined);
         assert.called(bar.deregister);
-
 
         /** can restart deregisterd queue **/
 
@@ -341,7 +339,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         const q = mqFactory.getQueue('foo');
 
         stub(q.mqdb.table, '_ensureTable').invokes((c) => {
-          c.thisValue._colMap = void 0;
+          c.thisValue._colMap = undefined;
           return Promise.resolve();
         });
 
@@ -632,7 +630,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         await queue.add({message: [4, 5, 6]});
 
         await koru.setTimeout.yieldAndReset();
-        assert.equals(v.args, void 0);
+        assert.equals(v.args, undefined);
         assert.calledTwice(koru.setTimeout);
 
         await koru.setTimeout.yieldAndReset();

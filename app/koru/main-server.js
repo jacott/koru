@@ -5,6 +5,8 @@ define((require, exports, module) => {
 
   const TWENTY_DAYS = 20 * util.DAY;
 
+  const EMPTY = {};
+
   return (koru) => {
     koru.onunload(module, 'reload');
 
@@ -38,8 +40,8 @@ define((require, exports, module) => {
         if (type === 'D') {
           console.log('D> ' + util.inspect(args));
         } else {
-          const {connection, userId} = util.thread;
-          console.log(type + '> ' + (connection === void 0
+          const {connection, userId} = util.thread ?? EMPTY;
+          console.log(type + '> ' + (connection === undefined
                                      ? ''
                                      : userId + ' on ' + connection.engine + ' ' +
                                      connection.remoteAddress + ':' + connection.sessId + ':\n') +
@@ -100,7 +102,7 @@ define((require, exports, module) => {
           let ans;
           try {
             ans = func(conn, data);
-          } catch(err) {
+          } catch (err) {
             try {
               koru.unhandledException(err);
             } catch (err) {
