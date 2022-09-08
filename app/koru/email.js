@@ -1,24 +1,19 @@
 define((require) => {
   'use strict';
   const Future          = require('koru/future');
-
   const NodeMailer      = requirejs.nodeRequire('nodemailer');
   const SmtpStub        = requirejs.nodeRequire('nodemailer-stub-transport');
   const urlModule       = requirejs.nodeRequire('url');
 
   const Email = {
-    send(options) {
-      const future = new Future();
-      Email._transport.sendMail(options, future.resolve);
-
-      return future.promise;
-    },
+    send: (options) => new Promise((resolve) => {Email._transport.sendMail(options, resolve)}),
 
     initPool(urlOrTransport) {
       if (typeof urlOrTransport === 'string') {
         const mailUrl = urlModule.parse(urlOrTransport);
-        if (mailUrl.protocol !== 'smtp:')
+        if (mailUrl.protocol !== 'smtp:') {
           throw new Error("Email protocol must be 'smtp'");
+        }
 
         const port = +(mailUrl.port);
         let auth = false;
@@ -34,15 +29,14 @@ define((require) => {
           host: mailUrl.hostname || 'localhost',
           secure: false,
           requireTLS: port == 465,
-          auth: auth
+          auth,
         });
-
       } else {
-        if (urlOrTransport === void 0) {
+        if (urlOrTransport === undefined) {
           urlOrTransport = SmtpStub();
 
           urlOrTransport.on('log', (info) => {
-            switch(info.type) {
+            switch (info.type) {
             case 'message':
               console.log(info.message
                           .replace(/=([A-F0-9]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
@@ -63,7 +57,7 @@ define((require) => {
       // throw exception by default
       send(options, callback) {
         throw new Error('Email has not been initialized');
-      }
+      },
     },
   };
 

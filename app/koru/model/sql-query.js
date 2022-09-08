@@ -1,6 +1,5 @@
 define((require, exports, module) => {
   'use strict';
-  const Future          = require('koru/future');
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const PgError         = require('koru/pg/pg-error');
@@ -14,7 +13,7 @@ define((require, exports, module) => {
   const auto = async (model) => (await model.db.startAutoEndTran()).conn;
 
   class SqlQuery {
-    #pgsql = void 0;
+    #pgsql = undefined;
     constructor(model, queryStr) {
       this.queryStr = queryStr;
       this.model = model;
@@ -42,7 +41,7 @@ define((require, exports, module) => {
     async fetchOne(params) {
       const {model} = this;
       const rec = await (this.#pgsql ??= await this.#initPs()).fetchOne(conn(model) ?? await auto(model), params);
-      return rec === void 0 ? rec : model[makeDoc$](rec);
+      return rec === undefined ? rec : model[makeDoc$](rec);
     }
 
     async fetch(params) {
@@ -52,7 +51,7 @@ define((require, exports, module) => {
       const port = ps.portal(c, '', params);
       const rows = [];
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {rows.push(model[makeDoc$](rec))}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       return rows;
     }
 
@@ -62,7 +61,7 @@ define((require, exports, module) => {
       const ps = (this.#pgsql ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {callback(model[makeDoc$](rec))}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
     }
 
     async *values(params) {
@@ -78,15 +77,14 @@ define((require, exports, module) => {
 
       const pv = c.conn[private$];
 
-      const future = new Future();
-      const errp = port.fetch(ps._readyQuery(c, port, (rec) => (resolve(rec), rec === void 0)));
+      const errp = port.fetch(ps._readyQuery(c, port, (rec) => (resolve(rec), rec === undefined)));
       errp.then(() => resolve());
       while (true) {
         const rec = await promise;
         setPromise();
-        if (rec === void 0) {
+        if (rec === undefined) {
           const err = await errp;
-          if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+          if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
           return;
         }
         yield model[makeDoc$](rec);

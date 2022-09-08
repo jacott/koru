@@ -1,7 +1,6 @@
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
-  const Future          = require('koru/future');
   const IdleCheck       = require('koru/idle-check').singleton;
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
@@ -15,12 +14,12 @@ define((require, exports, module) => {
   const BINARY = {binary: true};
 
   const filterAttrs = (attrs, filter) => {
-    if (filter === void 0) return attrs;
+    if (filter === undefined) return attrs;
 
     const result = {};
 
     for (const key in attrs) {
-      if (filter[key] === void 0) result[key] = attrs[key];
+      if (filter[key] === undefined) result[key] = attrs[key];
     }
     return result;
   };
@@ -84,7 +83,7 @@ define((require, exports, module) => {
 
     send(type, data) {
       try {
-        this.ws === null || this.ws.send(type + (data === void 0 ? '' : data));
+        this.ws === null || this.ws.send(type + (data === undefined ? '' : data));
       } catch (ex) {
         koru.info('send exception', ex);
         this.close();
@@ -106,7 +105,7 @@ define((require, exports, module) => {
     }
 
     sendBinary(type, data) {
-      this.sendEncoded(data === void 0 ? type : this.encodeMessage(type, data));
+      this.sendEncoded(data === undefined ? type : this.encodeMessage(type, data));
     }
 
     batchMessage(type, data) {
@@ -169,15 +168,16 @@ define((require, exports, module) => {
       this[userId$] = userId;
       util.thread.userId = userId;
       if (userId !== this._session.DEFAULT_USER_ID) {
-        const future = new Future();
-        crypto.randomBytes(36, (err, ans) => {
-          if (err) {
-            future.reject(err);
-          } else {
-            future.resolve(ans);
-          }
+        const bytes = await new Promise((resolve, reject) => {
+          crypto.randomBytes(36, (err, ans) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(ans);
+            }
+          });
         });
-        this.sessAuth = this.sessId + '|' + (await future.promise).toString('base64')
+        this.sessAuth = this.sessId + '|' + bytes.toString('base64')
           .replace(/\=+$/, ''); // js2-mode doesn't like /=.../
         this.send('VS', `${userId}:${this.sessAuth}`);
       } else {
@@ -192,7 +192,7 @@ define((require, exports, module) => {
     }
 
     get userId() {return this[userId$]}
-    set userId(v) {throw new Error('use setUserId');}
+    set userId(v) {throw new Error('use setUserId')}
 
     static buildUpdate(dc) {
       const {doc, model: {modelName}} = dc;

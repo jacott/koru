@@ -12,7 +12,7 @@ define((require) => {
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
-  const notNested = (db) => db.inTransaction ? void 0 : db;
+  const notNested = (db) => db.inTransaction ? undefined : db;
 
   return (Query, condition, notifyAC$) => {
     const notify = async (docChange) => {
@@ -24,7 +24,7 @@ define((require) => {
       async insert(doc) {
         const model = doc.constructor;
         await TransQueue.transaction(notNested(model.db), async () => {
-          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? void 0 : 'RETURNING _id');
+          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? undefined : 'RETURNING _id');
           if (Array.isArray(result)) {
             doc.attributes._id = result[0]._id;
           }
@@ -67,7 +67,7 @@ define((require) => {
             break;
           default:
             const value = values[field];
-            if (value === void 0) {
+            if (value === undefined) {
               qs.push(`("${field}" is not null or ("${field}" is null and`);
             } else {
               qs.push(`("${field}" ${cmp} {$${field}} or ("${field}" = {$${field}} and`);
@@ -76,7 +76,7 @@ define((require) => {
         });
         if (excludeFirst) {
           qs.push('false');
-        } else if (values._id === void 0) {
+        } else if (values._id === undefined) {
           qs.push('true');
         } else {
           qs.push(`_id ${cmp}= {$_id}`);
@@ -88,9 +88,9 @@ define((require) => {
       withIndex(idx, params, options) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params).sort(...idx.sort);
-        if (idx.filterTest !== void 0) this.where(idx.filterTest);
+        if (idx.filterTest !== undefined) this.where(idx.filterTest);
         this._index = idx;
-        if (options !== void 0) {
+        if (options !== undefined) {
           const {direction=1, from, to, excludeFrom=false, excludeTo=false} = options;
           if (direction === -1) this.reverseSort();
           if (from) {
@@ -127,13 +127,13 @@ define((require) => {
         const future = new Future();
         const handle = this.model.onChange(async () => {
           const doc = await query.fetchOne();
-          if (doc) future.resolve(doc);
+          if (doc !== undefined) future.resolve(doc);
         });
         let timer;
         try {
           const doc = await this.fetchOne();
           if (doc) return doc;
-          timer = koru.setTimeout(() => {future.resolve()}, timeout);
+          timer = koru.setTimeout(future.resolve, timeout);
           return await future.promise;
         } finally {
           handle.stop();
@@ -168,14 +168,14 @@ define((require) => {
           const doc = await this.fetchOne();
           doc && (await func(doc));
         } else {
-          const hasFields = this._fields !== void 0;
+          const hasFields = this._fields !== undefined;
           const {model} = this;
           const options = {};
           if (hasFields) options.fields = this._fields;
           const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for (let rec = await cursor.next(); rec !== void 0; rec = await cursor.next()) {
+            for (let rec = await cursor.next(); rec !== undefined; rec = await cursor.next()) {
               if ((await func(hasFields ? rec : model[makeDoc$](rec))) === true) {
                 break;
               }
@@ -245,7 +245,7 @@ define((require) => {
             ++count;
             const attrs = doc.attributes;
 
-            if (this._incs !== void 0) for (let field in this._incs) {
+            if (this._incs !== undefined) for (let field in this._incs) {
               origChanges[field] = attrs[field] + this._incs[field];
             }
 
@@ -273,7 +273,7 @@ define((require) => {
 
       async fetchOne() {
         let rec;
-        const hasFields = this._fields !== void 0;
+        const hasFields = this._fields !== undefined;
         if (this._sort && ! this.singleId) {
           const options = {limit: 1};
           if (this._sort) options.sort = this._sort;
@@ -287,7 +287,7 @@ define((require) => {
         } else {
           rec = await this.model.docs.findOne(this, this._fields);
         }
-        if (rec === void 0) return;
+        if (rec === undefined) return;
         return hasFields ? rec : this.model[makeDoc$](rec);
       },
     });
@@ -297,14 +297,14 @@ define((require) => {
         const doc = await this.fetchOne();
         doc && (yield doc);
       } else {
-        const hasFields = this._fields !== void 0;
+        const hasFields = this._fields !== undefined;
         const {model} = this;
         const options = {};
         if (hasFields) options.fields = this._fields;
         const cursor = model.docs.find(this, options);
         try {
           applyCursorOptions(this, cursor);
-          for (let rec = await cursor.next(); rec !== void 0; rec = await cursor.next()) {
+          for (let rec = await cursor.next(); rec !== undefined; rec = await cursor.next()) {
             if (await (yield (hasFields ? rec : model[makeDoc$](rec))) === true) {
               break;
             }

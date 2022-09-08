@@ -2,7 +2,6 @@ define((require, exports, module) => {
   'use strict';
   const SRP             = require('koru/crypto/srp');
   const Email           = require('koru/email');
-  const Future          = require('koru/future');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');
   const Val             = require('koru/model/validation');
@@ -82,25 +81,26 @@ define((require, exports, module) => {
   };
 
   const makeScrypt = async (password, salt=crypto.randomBytes(16)) => {
-    const future = new Future();
-    crypto.scrypt(
-      password, salt, 64,
-      void 0, (err, key) => {
-        if (err) {
-          future.reject(err);
-        } else {
-          future.resolve(key);
-        }
-      });
+    const scrypt = await new Promise((resolve, reject) => {
+      crypto.scrypt(
+        password, salt, 64,
+        undefined, (err, key) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(key);
+          }
+        });
+    });
 
-    const key = (await future.promise).toString('hex');
+    const key = (await scrypt).toString('hex');
     return {type: 'scrypt', salt: salt.toString('hex'), key};
   };
 
   let running = false;
 
   const stop = () => {
-    emailConfig = void 0;
+    emailConfig = undefined;
     if (! running) return;
     running = false;
     session.unprovide('V');
@@ -135,8 +135,8 @@ define((require, exports, module) => {
       Val.ensureString(token);
       const parts = token.split('-');
       const lu = await UserLogin.findById(parts[0]);
-      if (lu !== void 0) {
-        if (lu.password !== void 0 && lu.password.type === 'scrypt') {
+      if (lu !== undefined) {
+        if (lu.password !== undefined && lu.password.type === 'scrypt') {
           password = await makeScrypt(password);
         } else {
           Val.assertCheck(password, VERIFIER_SPEC);
@@ -144,7 +144,7 @@ define((require, exports, module) => {
 
         if (lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
           lu.password = password;
-          lu.resetToken = lu.resetTokenExpire = void 0;
+          lu.resetToken = lu.resetTokenExpire = undefined;
           const loginToken = lu.makeToken();
           await lu.$$save();
           return [lu, loginToken];
@@ -161,7 +161,7 @@ define((require, exports, module) => {
 
     async verifyClearPassword(email, password) {
       const doc = await UserLogin.findBy('email', email);
-      if (doc === void 0 || doc.password === void 0) return;
+      if (doc === undefined || doc.password === undefined) return;
 
       if (doc.password.type === 'scrypt') {
         try {
@@ -193,7 +193,7 @@ define((require, exports, module) => {
       const doc = emailOrId.indexOf('@') === -1
             ? await UserLogin.findById(emailOrId)
             : await UserLogin.findBy('email', emailOrId);
-      if (doc !== void 0 && doc.unexpiredTokens()[token] !== void 0) {
+      if (doc !== undefined && doc.unexpiredTokens()[token] !== undefined) {
         return doc;
       }
     },
@@ -273,9 +273,9 @@ define((require, exports, module) => {
 
     async logoutOtherClients(_id, token) {
       const lu = await UserLogin.findById(_id);
-      if (lu !== void 0) {
+      if (lu !== undefined) {
         const mod = {};
-        if (lu.tokens[token] !== void 0) {
+        if (lu.tokens[token] !== undefined) {
           mod[token] = lu.tokens[token];
           await UserLogin.where({_id: lu._id}).update('tokens', mod);
           return lu;
@@ -285,7 +285,7 @@ define((require, exports, module) => {
   };
 
   const assertScryptPassword = async (doc, password) => {
-    if (doc === void 0 || doc.password == null ||
+    if (doc === undefined || doc.password == null ||
         doc.password.type !== 'scrypt') {
       throw new koru.Error(403, 'failure');
     }
@@ -324,7 +324,7 @@ define((require, exports, module) => {
       this.secure = doc;
       return this._session.rpc(method, ...args);
     } finally {
-      this.secure = void 0;
+      this.secure = undefined;
     }
   }
 
@@ -332,7 +332,7 @@ define((require, exports, module) => {
 
   async function SRPBegin(request) {
     const doc = await UserLogin.findBy('email', request.email);
-    if (doc === void 0 || doc.password == null) throw new koru.Error(403, 'failure');
+    if (doc === undefined || doc.password == null) throw new koru.Error(403, 'failure');
     const srp = new SRP.Server(doc.password);
     this.$srp = srp;
     this.$srpUserAccount = doc;
@@ -369,7 +369,7 @@ define((require, exports, module) => {
 
     Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
-    if (UserAccount.interceptChangePassword !== void 0) {
+    if (UserAccount.interceptChangePassword !== undefined) {
       await UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
     } else {
       await this.$srpUserAccount.$update({password: response.newPassword});
@@ -394,14 +394,14 @@ define((require, exports, module) => {
   session.defineRpc('logoutOtherClients', async function (data) {
     if (this.userId === this._session.DEFAULT_USER_ID) return;
     const [_id, token] = getToken(data);
-    if (token !== void 0 && await UserAccount.logoutOtherClients(_id, token)) {
+    if (token !== undefined && await UserAccount.logoutOtherClients(_id, token)) {
       const conns = session.conns;
       for (let sessId in conns) {
         if (sessId === this.sessId) continue;
         const curr = conns[sessId];
 
         if (curr.userId === this.userId) {
-          curr.setUserId(void 0);
+          curr.setUserId(undefined);
         }
       }
     }
@@ -426,7 +426,7 @@ define((require, exports, module) => {
     case 'X': { // logout me
       const [_id, token] = getToken(data.slice(1));
       token && await UserAccount.logout(_id, token);
-      await conn.setUserId(void 0); // will send a VS + VC. See server-connection
+      await conn.setUserId(undefined); // will send a VS + VC. See server-connection
     } break;
     }
   }
