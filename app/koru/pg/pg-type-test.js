@@ -15,7 +15,7 @@ isServer && define((require, exports, module) => {
       const buf = new Uint8ArrayBuilder();
       assert.same(oid, PgType.encodeBinary(buf, value, oid));
       const u8 = buf.subarray();
-      if (u8Result !== void 0) {
+      if (u8Result !== undefined) {
         assert.equals(Array.from(u8).slice(4), u8Result);
       }
       assert.same(buf.dataView.getInt32(0), buf.length - 4);
@@ -45,10 +45,10 @@ isServer && define((require, exports, module) => {
       });
 
       test('void', async () => {
-        assert.equals(await client.exec(`SELECT '123'::void as a`, [], [0], [0]), [{a: void 0}]);
-        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [0]), [{a: void 0}]);
-        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [1]), [{a: void 0}]);
-        assert.equals(await client.exec(`SELECT $1::void as a, $2 as b`, ['123', 1], [2278, 21], [1]), [{a: void 0, b: 1}]);
+        assert.equals(await client.exec(`SELECT '123'::void as a`, [], [0], [0]), [{a: undefined}]);
+        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [0]), [{a: undefined}]);
+        assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [1]), [{a: undefined}]);
+        assert.equals(await client.exec(`SELECT $1::void as a, $2 as b`, ['123', 1], [2278, 21], [1]), [{a: undefined, b: 1}]);
       });
 
       test('text', async () => {
@@ -191,7 +191,7 @@ isServer && define((require, exports, module) => {
       assert.same(guessOid([]), 1009);
       assert.same(guessOid([[null], [123], [-345]]), 1005);
       assert.same(guessOid([[null], [123], [123456789]]), 1007);
-      assert.same(guessOid([[{}, {}], [{}, {}], [{}, {}]]), 3807);
+      assert.same(guessOid([[{}, {}], [{}, {}], [{}, {}]]), 3802);
       assert.same(guessOid([[{}, {}], [{}, {}], [{}, {}, {}]]), 3802);
 
       assert.same(guessOid({}), 3802);

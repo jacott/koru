@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const {qstr, identityFunc} = require('koru/util');
   const util            = require('koru/util');
+  const {qstr, identityFunc} = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -198,7 +198,7 @@ define((require, exports, module) => {
     const elmOid = v.readInt32BE(8);
     assert(elmOid === arrayElementOids[oid], 'array element type mismatch');
     const elmDecoder = binaryDecoders[elmOid];
-    assert(elmDecoder !== void 0, () => 'Unhandled array binary format element: ' + elmOid);
+    assert(elmDecoder !== undefined, () => 'Unhandled array binary format element: ' + elmOid);
     assert(binaryDecoders);
     let pos = 12 + dim * 8;
     const readArray = (cdim) => {
@@ -237,7 +237,7 @@ define((require, exports, module) => {
 
   const textArrayDecoder = (v, oid) => {
     const elmOid = arrayElementOids[oid];
-    assert(elmOid !== void 0, 'unknown array element');
+    assert(elmOid !== undefined, 'unknown array element');
     const elmDecoder = textDecoders[elmOid];
 
     const delim = S_DEFAULT_DELIM;  // TODO this can be different for some types. Need to set from pg_type
@@ -278,7 +278,7 @@ define((require, exports, module) => {
           return result;
         } else {
           const token = fetchToken();
-          assert(token !== void 0, E_INVALID_ARRAY_FORMAT);
+          assert(token !== undefined, E_INVALID_ARRAY_FORMAT);
           result.push(n !== S_QUOTE && isNullToken(token) ? null : elmDecoder(token, elmOid));
         }
       }
@@ -313,7 +313,7 @@ define((require, exports, module) => {
       textDecoders[arrayOid] = textArrayDecoder;
     }
 
-    if (coerceTo !== void 0) {
+    if (coerceTo !== undefined) {
       registerCoerce(oid, coerceTo);
     }
   };
@@ -459,7 +459,7 @@ define((require, exports, module) => {
     if (ary.length == 0) return 1009;
     const dims = [];
 
-    let oid = void 0;
+    let oid = undefined;
 
     const checkIndexs = (ary, depth) => {
       for (const n of ary) {
@@ -476,8 +476,8 @@ define((require, exports, module) => {
           checkIndexs(n, depth + 1);
         } else {
           const c = guessOid(n);
-          if (c === void 0) return;
-          if (oid == void 0) {
+          if (c === undefined) return;
+          if (oid == undefined) {
             oid = c;
           } else if (oid != c) {
             oid = coerce(oid, c) ?? coerce(c, oid) ?? -1;
@@ -489,8 +489,9 @@ define((require, exports, module) => {
 
     checkIndexs(ary, 0);
 
-    if (oid !== void 0 && oid != -1) {
-      return elementArrayOids[oid];
+    if (oid !== undefined && oid != -1) {
+      const ans = elementArrayOids[oid];
+      return ans === 3807 ? 3802 : ans;
     }
   };
 
@@ -510,7 +511,7 @@ define((require, exports, module) => {
         buf.append(ZERO32);
         const s = buf.length;
         const encoder = binaryEncoders[oid];
-        assert(encoder !== void 0, () => `${oid} not in binaryEncoders`);
+        assert(encoder !== undefined, () => `${oid} not in binaryEncoders`);
         encoder(buf, v, oid);
         buf.writeInt32BE(buf.length - s, s - 4);
       }
@@ -534,7 +535,7 @@ define((require, exports, module) => {
 
     guessOid: (v) => {
       const oid = guessOid(v);
-      if (oid === void 0) throw new Error('unsupported javascript type ' + util.inspect(v));
+      if (oid === undefined) throw new Error('unsupported javascript type ' + util.inspect(v));
       return oid;
     },
 
