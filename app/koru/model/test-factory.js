@@ -58,7 +58,7 @@ define((require) => {
 
     addPromise(p) {
       if (isPromise(p)) {
-        if (this[promises$] === void 0) {
+        if (this[promises$] === undefined) {
           this[promises$] = [p];
         } else {
           this[promises$].push(p);
@@ -70,7 +70,7 @@ define((require) => {
 
     afterPromises(callback) {
       const p = this.waitPromises();
-      if (p !== void 0) {
+      if (p !== undefined) {
         this.addPromise(p.then(callback));
       } else {
         const p = callback();
@@ -81,8 +81,8 @@ define((require) => {
 
     waitPromises() {
       const promises = this[promises$];
-      if (promises !== void 0) {
-        this[promises$] = void 0;
+      if (promises !== undefined) {
+        this[promises$] = undefined;
         return waitInSequence(promises).then(() => this.waitPromises());
       }
     }
@@ -165,22 +165,22 @@ define((require) => {
 
   const asyncAddRef = async (self, p, ref, refId, modelName) => {
     const doc = await p;
-    if (doc === void 0) {
+    if (doc === undefined) {
       doc = last[ref] ?? last[util.uncapitalize(modelName)];
     }
     if (doc == null) {
       const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
-      if (func === void 0) {
+      if (func === undefined) {
         throw new Error("can't find factory create for " + modelName);
       }
       doc = await func();
     }
-    self.defaults[refId] = doc._id === void 0 ? doc : doc._id;
+    self.defaults[refId] = doc._id === undefined ? doc : doc._id;
     return self;
   };
 
   const asyncAfterCreate = (self, doc) => {
-    if (self._afterCreate !== void 0) {
+    if (self._afterCreate !== undefined) {
       const p = self._afterCreate.notify(doc, self);
       if (isPromise(p)) return p.then(() => doc);
     }
@@ -198,7 +198,7 @@ define((require) => {
       super(attributes, {});
       this.model = Model[modelName];
       this._useSave = '';
-      if (this.model === void 0) throw new Error('Model: "' + modelName + '" not found');
+      if (this.model === undefined) throw new Error('Model: "' + modelName + '" not found');
       Object.assign(this.defaults, this.model._defaults, defaults);
     }
 
@@ -217,23 +217,23 @@ define((require) => {
             }
             doc = p;
           }
-          if (doc === void 0) {
+          if (doc === undefined) {
             doc = last[ref] ?? last[util.uncapitalize(modelName)];
           }
           if (doc == null) {
             const func = Factory['create' + util.capitalize(ref)] ?? Factory['create' + modelName];
-            if (func === void 0) {
+            if (func === undefined) {
               throw new Error("can't find factory create for " + modelName);
             }
             const p = func();
             if (isPromise(p)) {
               return this.addPromise(
-                p.then((doc) => {this.defaults[refId] = doc._id === void 0 ? doc : doc._id}));
+                p.then((doc) => {this.defaults[refId] = doc._id === undefined ? doc : doc._id}));
             } else {
               doc = p;
             }
           }
-          this.defaults[refId] = doc._id === void 0 ? doc : doc._id;
+          this.defaults[refId] = doc._id === undefined ? doc : doc._id;
         }
       });
       return this;
@@ -445,13 +445,17 @@ define((require) => {
 
   const buildFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    return def.call(
-      Factory, buildAttributes(key, traitsAndAttributes)).build();
+    const attrs = buildAttributes(key, traitsAndAttributes);
+    if (isPromise(attrs)) {
+      return attrs.then((attrs) => def.call(Factory, attrs).build());
+    } else {
+      return def.call(Factory, attrs).build();
+    }
   };
 
   const asyncCreate = async (p, key, traitsAndAttributes) => {
     const result = await p;
-    if (postCreate[key] !== void 0) {
+    if (postCreate[key] !== undefined) {
       return postCreate[key](result, key, traitsAndAttributes);
     } else {
       return last[key.substring(0, 1).toLowerCase() + key.substring(1)] = result;
@@ -460,32 +464,58 @@ define((require) => {
 
   const createFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    const result = def.call(Factory, buildAttributes(key, traitsAndAttributes)).create();
+    const attrs = buildAttributes(key, traitsAndAttributes);
+    let result;
+    if (isPromise(attrs)) {
+      result = attrs.then((attrs) => def.call(Factory, attrs).create());
+    } else {
+      result = def.call(Factory, attrs).create();
+    }
     if (isPromise(result)) {
       return asyncCreate(result, key, traitsAndAttributes);
     }
 
-    if (postCreate[key] !== void 0) {
+    if (postCreate[key] !== undefined) {
       return postCreate[key](result, key, traitsAndAttributes);
     } else {
       return last[key.substring(0, 1).toLowerCase() + key.substring(1)] = result;
     }
   };
 
+  const resolvePromiseAttrs = async (list) => {
+    const attrs = list[0];
+    for (let i = 1; i < list.length; ++i) {
+      Object.assign(attrs, await list[i]);
+    }
+
+    return attrs;
+  };
+
   const buildAttributes = (key, args) => {
     const attributes = {}, keyTraits = traits[key] ?? {};
+    let promise, result;
     for (let i = 0; i < args.length; ++i) {
       if (typeof args[i] === 'string') {
         const trait = keyTraits[args[i]];
         if (! trait) throw new Error('unknown trait "' + args[i] + '" for ' + key);
-        Object.assign(attributes, typeof trait === 'function'
-                      ? trait.call(keyTraits, attributes, args, i)
-                      : trait);
-      } else if (args[i]) {
-        Object.assign(attributes, args[i]);
+        result = typeof trait === 'function'
+          ? trait.call(keyTraits, attributes, args, i)
+          : trait;
+      } else if (args[i] !== undefined) {
+        result = args[i];
+      }
+      if (promise !== undefined || isPromise(result)) {
+        (promise ??= [attributes]).push(result);
+      } else {
+        Object.assign(attributes, result);
       }
     }
-    return attributes;
+
+    if (promise === undefined) {
+      return attributes;
+    } else {
+      return resolvePromiseAttrs(promise);
+    }
   };
 
   return Factory;
