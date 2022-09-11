@@ -181,9 +181,9 @@ isServer && define((require, exports, module) => {
         );
       });
 
-      test('begin/rollback', async () => {
+      test('tags', async () => {
         assert.equals(await client.exec(`BEGIN`), 'BEGIN');
-        assert.equals(await client.exec(`create table "Test1" (_id TEXT PRIMARY KEY, v int4)`), 0);
+        assert.equals(await client.exec(`create table "Test1" (_id TEXT PRIMARY KEY, v int4)`), 'CREATE TABLE');
         assert.equals(await client.exec(`insert into "Test1" VALUES ('hello')`), 1);
         assert.equals(await client.exec(`insert into "Test1" VALUES ('world', $1)`, [123]), 1);
         assert.equals(await client.exec(`SELECT * from "Test1"`), [{_id: 'hello'}, {_id: 'world', v: 123}]);
@@ -192,6 +192,10 @@ isServer && define((require, exports, module) => {
           ['Test1', 'v'],
         ), [{table_name: 'Test1'}]);
 
+        assert.equals(await client.exec(`declare cl1 cursor FOR SELECT _id FROM "Test1"`), 'DECLARE CURSOR');
+        assert.equals(await client.exec(`fetch 1 cl1`), [{_id: 'hello'}]);
+        assert.equals(await client.exec(`fetch 1 cl1`), [{_id: 'world'}]);
+        assert.equals(await client.exec(`close cl1`), 'CLOSE CURSOR');
         assert.equals(await client.exec(`ROLLBACK`), 'ROLLBACK');
       });
 

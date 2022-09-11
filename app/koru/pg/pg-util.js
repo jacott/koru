@@ -49,7 +49,7 @@ define((require, exports, module) => {
         const np = data.indexOf(0, ++i);
         if (np == -1) break;
         const value = data.subarray(i, np).toString();
-        message[MessageMap[key] ?? key] = MessageNumberMap[key] === void 0 ? value : +value;
+        message[MessageMap[key] ?? key] = MessageNumberMap[key] === undefined ? value : +value;
         i = np + 1;
       }
 
@@ -161,7 +161,7 @@ define((require, exports, module) => {
     listener$,
     tagToCount: (tag='') => {
       const ridx = tag.lastIndexOf(' ');
-      return ridx == -1 ? tag : +tag.slice(ridx + 1) || 0;
+      return ridx == -1 ? tag : +tag.slice(ridx + 1) || tag;
     },
   };
 });

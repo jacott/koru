@@ -69,7 +69,7 @@ define((require, exports, module) => {
     if (str.length === 0) return {};
     if (/^postgresq?l?:\/\//.test(str)) return parseUrlOptions(str);
     const options = splitToNameValue(str);
-    if (options === void 0) throw new PgError(INVALID_CONNECTION_STRING);
+    if (options === undefined) throw new PgError(INVALID_CONNECTION_STRING);
     return options;
   };
 
@@ -96,11 +96,11 @@ define((require, exports, module) => {
       if (typeof options === 'string') options = parseOptions(options);
       const connOpts = {};
       connOpts.user = options.user ?? process.env.USER;
-      if (options.dbname !== void 0) connOpts.database = options.dbname;
-      if (options.options !== void 0) connOpts.options = options.options;
+      if (options.dbname !== undefined) connOpts.database = options.dbname;
+      if (options.options !== undefined) connOpts.options = options.options;
       const {password} = options;
       for (const name in options) {
-        if (FILTERED_OPTIONS[name] === void 0) connOpts[name] = options[name];
+        if (FILTERED_OPTIONS[name] === undefined) connOpts[name] = options[name];
       }
       let socket;
       const host = options.host ?? '/var/run/postgresql';
@@ -110,7 +110,7 @@ define((require, exports, module) => {
         const socketOpts = {port: 5432};
         for (const name in options) {
           const sn = SOCKET_OPTONS[name];
-          if (sn !== void 0) socketOpts[sn] = options[name];
+          if (sn !== undefined) socketOpts[sn] = options[name];
         }
         const {keepAlive} = socketOpts;
         if (typeof keepAlive === 'number') {
@@ -120,7 +120,7 @@ define((require, exports, module) => {
         }
         socket = net.createConnection(socketOpts);
       }
-      if (socket === void 0) throw new Error('Invalid connection argument');
+      if (socket === undefined) throw new Error('Invalid connection argument');
 
       const p = new Promise((resolve, reject) => {
         socket.once('connect', () => {
@@ -135,7 +135,7 @@ define((require, exports, module) => {
 
         socket.on('error', (err) => {
           const sql = {severity: 'FATAL', message: err.toString()};
-          if (client.conn === void 0) {
+          if (client.conn === undefined) {
             reject(sql);
           } else {
             socket.destroy();
@@ -145,7 +145,7 @@ define((require, exports, module) => {
         });
       });
 
-      if (callback === void 0) return p.catch(async (err) => {
+      if (callback === undefined) return p.catch(async (err) => {
         if (err instanceof Error) throw err;
         throw new PgError(err);
       });
@@ -178,6 +178,9 @@ define((require, exports, module) => {
     return port;
   };
 
+  const ROW_RETURNING = {S: true, F: true};
+  const isRowReturningTag = (tag) => ROW_RETURNING[tag[0]] ?? false;
+
   class PgClient {
     constructor(types, formatOptions={}) {
       this.types = types;
@@ -199,7 +202,7 @@ define((require, exports, module) => {
         const value = desc.format == 1
               ? decodeBinary(desc.oid, rawValue)
               : decodeText(desc.oid, rawValue);
-        if (value === void 0 && desc.oid !== 2278) {
+        if (value === undefined && desc.oid !== 2278) {
           throw {message: `unknown oid ${desc.oid} for column: ${desc.name}`};
         }
         return value;
@@ -227,7 +230,7 @@ define((require, exports, module) => {
                 });
                 callback(rec);
               });
-              if (query.error !== void 0) throw query.error;
+              if (query.error !== undefined) throw query.error;
             } while (query.isExecuting)
           } catch (err) {
             err = await query.close(err);
@@ -241,16 +244,14 @@ define((require, exports, module) => {
 
     async fetchRows(query, maxRows) {
       try {
-        let ans;
         const result = [];
+        let ans, tag;
         do {
-          let tag;
           query.commandComplete((t) => {tag = t});
           await query.fetch((row) => {result.push(row)}, maxRows);
           if (query.error) throw query.error;
-          ans = result.length == 0 && ! tag.startsWith('SELECT ') ? tag : result;
         } while (query.isExecuting)
-        return tagToCount(ans);
+        return result.length != 0 || isRowReturningTag(tag) ? result : tagToCount(tag);
       } catch (err) {
         if (err instanceof Error) throw err;
         throw new PgError(err);
@@ -259,7 +260,7 @@ define((require, exports, module) => {
 
     execRows(queryString, paramValues, paramOids, resultFormatCodes) {
       return this.buildForEach(
-        paramValues === void 0
+        paramValues === undefined
           ? this.conn.exec(queryString)
           : execParams(this, '', queryString, paramValues, paramOids, resultFormatCodes),
         queryString, paramValues,
