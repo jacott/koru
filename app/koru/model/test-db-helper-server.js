@@ -12,9 +12,9 @@ define((require, exports, module) => {
 
     DBTranCounter: 0,
 
-    async startTransaction(txClient=Model.db) {
+    startTransaction(txClient=Model.db) {
       Model.db = txClient;
-      const tx = await txClient.startTransaction();
+      const tx = txClient.startTransaction();
       Factory.startTransaction();
       ++TestDBHelper.DBTranCounter;
     },
