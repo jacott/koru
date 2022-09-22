@@ -44,6 +44,11 @@ isServer && define((require, exports, module) => {
         client.destroy();
       });
 
+      test('oidToName', () => {
+        assert.same(PgType.oidToName(25), 'text');
+        assert.same(PgType.oidToName(1007), 'int4[]');
+      });
+
       test('void', async () => {
         assert.equals(await client.exec(`SELECT '123'::void as a`, [], [0], [0]), [{a: undefined}]);
         assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [0]), [{a: undefined}]);

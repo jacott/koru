@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const util            = require('koru/util');
   const {qstr, identityFunc} = require('koru/util');
+  const util            = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -35,6 +35,7 @@ define((require, exports, module) => {
   const U8_EMPTY_QUOTED_STRING = new Uint8Array([34, 34]);
 
   const coerceMap = [];
+  const oidNameMap = [];
 
   const binaryEncoders = [];
   const binaryDecoders = [];
@@ -302,6 +303,8 @@ define((require, exports, module) => {
     textEncoders[oid] = textEncoderNames[name];
     textDecoders[oid] = textDecoderNames[name];
     arrayTextEncoders[oid] = arrayEncoderNames[name];
+    oidNameMap[oid] = name;
+    oidNameMap[arrayOid] = name + '[]';
 
     if (arrayOid != 0) {
       arrayElementOids[arrayOid] = oid;
@@ -532,6 +535,8 @@ define((require, exports, module) => {
 
     toArrayOid: (oid) => elementArrayOids[oid],
     fromArrayOid: (oid) => arrayElementOids[oid],
+
+    oidToName: (oid) => oidNameMap[oid],
 
     guessOid: (v) => {
       const oid = guessOid(v);
