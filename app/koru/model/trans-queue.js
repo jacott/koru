@@ -12,7 +12,7 @@ define((require) => {
       if (firstLevel) {
         while (list != null) {
           const l = list;
-          list = void 0;
+          list = undefined;
           thread[success$] = null;
           await runListAsync(l, 0);
           list = thread[success$];
@@ -22,7 +22,7 @@ define((require) => {
     } catch (err) {
       if (firstLevel) {
         const list = thread[abort$];
-        if (list !== void 0) await runListAsync(list, 0);
+        if (list !== undefined) await runListAsync(list, 0);
       }
       throw err;
     } finally {
@@ -36,30 +36,40 @@ define((require) => {
     const {thread} = util;
     thread.date = prevTime;
     const list = thread[finally$];
-    thread[success$] = thread[abort$] = thread[finally$] = void 0;
-    if (list !== void 0) await runListAsync(list, 0, true);
+    thread[success$] = thread[abort$] = thread[finally$] = undefined;
+    if (list !== undefined) await runListAsync(list, 0, true);
   };
 
   const runListAsync = async (list, i) => {for (;i < list.length; ++i) await list[i]()};
 
   const TransQueue = {
     nonNested(db, body) {
-      if (this.inTransaction) return body();
+      if (body === undefined) {
+        body = db;
+        db = undefined;
+      }
+      if (db?.db !== undefined) db = db.db;
+      if (db === undefined) {
+        return this.inTransaction ? body() : this.transaction(undefined, body);
+      }
 
-      if (db.db !== void 0) db = db.db;
-      return this.transaction(db.inTransaction ? void 0 : db, body);
+      if (this.inTransaction) {
+        return db.inTransaction ? body() : db.transaction((tx) => body.call(db, tx));
+      }
+
+      return this.transaction(db.inTransaction ? undefined : db, body);
     },
 
-    get inTransaction() {return util.thread[success$] !== void 0},
+    get inTransaction() {return util.thread[success$] !== undefined},
 
     transaction: (db, body) => {
       let prevTime;
       const {thread} = util;
       let list = thread[success$];
-      let firstLevel = list === void 0;
+      let firstLevel = list === undefined;
       if (firstLevel) {
         list = thread[success$] = [];
-        thread[abort$] = thread[finally$] = void 0;
+        thread[abort$] = thread[finally$] = undefined;
         prevTime = thread.date;
         let now = util.dateNow();
         if (now === lastTime) {
@@ -68,15 +78,15 @@ define((require) => {
         thread.date = lastTime = now;
       }
 
-      if (body === void 0) {
+      if (body === undefined) {
         body = db;
-        db = void 0;
+        db = undefined;
       }
 
       let p;
 
       try {
-        const result = db === void 0 ? body() : db.transaction((tx) => body.call(db, tx));
+        const result = db === undefined ? body() : db.transaction((tx) => body.call(db, tx));
         if (isPromise(result)) {
           const _firstLevel = firstLevel;
           firstLevel = false;
@@ -86,7 +96,7 @@ define((require) => {
         if (firstLevel) {
           while (list != null) {
             const l = list;
-            list = void 0;
+            list = undefined;
             thread[success$] = null;
 
             for (let i = 0; i < l.length; ++i) l[i]();
@@ -112,7 +122,7 @@ define((require) => {
           if (isPromise(p)) return p;
           thread.date = prevTime;
           const list = thread[finally$];
-          thread[success$] = thread[abort$] = thread[finally$] = void 0;
+          thread[success$] = thread[abort$] = thread[finally$] = undefined;
           if (list) for (let i = 0; i < list.length; ++i) {
             const p = list[i]();
             if (isPromise(p)) {
@@ -124,9 +134,9 @@ define((require) => {
     },
 
     finally: (func) => {
-      if (util.thread[success$] === void 0) return func();
+      if (util.thread[success$] === undefined) return func();
       const list = util.thread[finally$];
-      if (list === void 0) {
+      if (list === undefined) {
         util.thread[finally$] = [func];
       } else {
         list.push(func);
@@ -135,7 +145,7 @@ define((require) => {
 
     onSuccess: (func) => {
       let list = util.thread[success$];
-      if (list !== void 0) {
+      if (list !== undefined) {
         if (list === null) list = util.thread[success$] = [];
         list.push(func);
       } else {
@@ -144,16 +154,16 @@ define((require) => {
     },
 
     onAbort: (func) => {
-      if (util.thread[success$] === void 0) return;
+      if (util.thread[success$] === undefined) return;
       const list = util.thread[abort$];
-      if (list === void 0) {
+      if (list === undefined) {
         util.thread[abort$] = [func];
       } else {
         list.push(func);
       }
     },
 
-    isInTransaction: () => util.thread[success$] !== void 0,
+    isInTransaction: () => util.thread[success$] !== undefined,
 
     _clearLastTime: () => {lastTime = null},
   };

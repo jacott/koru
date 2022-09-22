@@ -21,7 +21,7 @@ define((require, exports, module) => {
 
     after(async () => {
       await Model._destroyModel('TestModel', 'drop');
-      util.thread.date = void 0;
+      util.thread.date = undefined;
     });
 
     test('transaction', () => {
@@ -47,15 +47,28 @@ define((require, exports, module) => {
     test('nonNested', async () => {
       api.method();
       //[
-      let level = -1;
       await TransQueue.nonNested(TestModel, async () => {
         assert.isTrue(TransQueue.inTransaction);
         await TransQueue.nonNested(TestModel, () => {
-          level = isClient ? 0 : TestModel.db.existingTran.savepoint;
+          assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
         });
       });
-      assert.same(level, 0);
       //]
+    });
+
+    test('DB nonNested', async () => {
+      await TransQueue.transaction(async () => {
+        assert.isTrue(TransQueue.inTransaction);
+        await TransQueue.nonNested(TestModel, async () => {
+          assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+          await TransQueue.nonNested(TestModel, async () => {
+            assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+            await TransQueue.nonNested(() => {
+              assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+            });
+          });
+        });
+      });
     });
 
     test('isInTransaction', () => {
@@ -200,7 +213,7 @@ define((require, exports, module) => {
       const fin1 = stub();
 
       const now = util.thread.date = Date.now();
-      after(() => {util.thread.date = void 0});
+      after(() => {util.thread.date = undefined});
 
       sut._clearLastTime();
 
@@ -268,7 +281,7 @@ define((require, exports, module) => {
       });
 
       const now = util.thread.date = Date.now();
-      after(() => {util.thread.date = void 0});
+      after(() => {util.thread.date = undefined});
 
       sut._clearLastTime();
 
