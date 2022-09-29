@@ -909,8 +909,15 @@ define((require, exports, module) => {
   }
 
   const initCursor = async (cursor) => {
+    const v = cursor._values;
     if (cursor.table._ready !== true) await cursor.table._ensureTable();
     if (isPromise(cursor._sql)) cursor._sql = await cursor._sql;
+
+    const {_oids, _values} = cursor;
+    for (let i = _oids.length; i < _values.length; ++i) {
+      _oids.push(PgType.guessOid(_values[i]));
+    }
+
     const client = cursor.table._client;
     const tx = getTransction(client);
     let sql = cursor._sql;
@@ -961,9 +968,6 @@ define((require, exports, module) => {
       this._values = values;
       this._oids = oids;
       this._name = undefined;
-      for (let i = oids.length; i < values.length; ++i) {
-        oids.push(PgType.guessOid(values[i]));
-      }
 
       if (options) for (const op in options) {
         const func = this[op];

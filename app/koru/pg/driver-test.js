@@ -603,6 +603,18 @@ isServer && define((require, exports, module) => {
         assert.same(foo._ready, true);
       });
 
+      test('not enough oids', async () => {
+        foo._resetTable();
+        const c = foo.find({});
+        c._sql = c._sql.then((sql) => {
+          c._values.push('123');
+          return sql + ' WHERE _id = $1';
+        });
+        assert.equals(await c.next(), {_id: '123', name: 'abc', age: 10});
+        assert.equals(c._values, ['123']);
+        assert.equals(c._oids, [25]);
+      });
+
       test('_resetTable and cursor without where', async () => {
         assert.same(foo._ready, true);
         foo._resetTable();
