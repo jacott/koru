@@ -39,7 +39,7 @@ define((require) => {
     }
     if (tree.unique) {
       const cn = insertUnique(tree.root, tree.compare, node.value, node);
-      if (cn !== void 0) return cn;
+      if (cn !== undefined) return cn;
     } else {
       insert(tree.root, tree.compare, node.value, node);
     }
@@ -68,7 +68,7 @@ define((require) => {
 
     find(value) {
       const node = this.findNode(value);
-      return node === void 0 ? void 0 : node.value;
+      return node === undefined ? undefined : node.value;
     }
 
     add(value) {
@@ -87,7 +87,7 @@ define((require) => {
     }
 
     deleteNode(n) {
-      if (n === void 0 || n[red$] === void 0) return;
+      if (n === undefined || n[red$] === undefined) return;
 
       let {root} = this;
       --this[size$];
@@ -158,7 +158,7 @@ define((require) => {
         }
       }
 
-      n[red$] = void 0;
+      n[red$] = undefined;
       return n;
     }
 
@@ -189,8 +189,10 @@ define((require) => {
           n = n[left$];
         } else {
           if (n[right$] === null) {
-            n = n[up$];
-            return n !== null && compare(value, n.value) < 0 ? n : null;
+            while (true) {
+              n = n[up$];
+              if (n === null || compare(value, n.value) < 0) return n;
+            }
           }
           n = n[right$];
         }
@@ -206,8 +208,10 @@ define((require) => {
         if (cmp === 0) return n;
         if (cmp < 0) {
           if (n[left$] === null) {
-            n = n[up$];
-            return n !== null && compare(value, n.value) > 0 ? n : null;
+            while (true) {
+              n = n[up$];
+              if (n === null || compare(value, n.value) > 0) return n;
+            }
           }
           n = n[left$];
         } else {
@@ -220,8 +224,9 @@ define((require) => {
 
     _recalcSize() {
       let size = 0;
-      for (let n = this.firstNode; n !== null; n = this.nextNode(n))
+      for (let n = this.firstNode; n !== null; n = this.nextNode(n)) {
         ++size;
+      }
       return this[size$] = size;
     }
 
@@ -279,7 +284,7 @@ define((require) => {
       const {compare} = this;
       if (direction == 1) {
         let node, nn;
-        if (from === void 0) {
+        if (from === undefined) {
           node = this.firstNode;
         } else {
           node = this.nodeFrom(from);
@@ -290,18 +295,18 @@ define((require) => {
         }
         for (;node != null; node = nn) {
           nn = nextNode(node);
-          if (to !== void 0) {
+          if (to !== undefined) {
             const res = compare(to, node.value);
             if (excludeTo ? res <= 0 : res < 0) return;
           }
           yield node;
-          if (nn !== null && nn[red$] === void 0) {
+          if (nn !== null && nn[red$] === undefined) {
             break;
           }
         }
       } else if (direction == -1) {
         let node, nn;
-        if (from === void 0) {
+        if (from === undefined) {
           node = this.lastNode;
         } else {
           node = this.nodeTo(from);
@@ -312,12 +317,12 @@ define((require) => {
         }
         for (;node != null; node = nn) {
           nn = previousNode(node);
-          if (to !== void 0) {
+          if (to !== undefined) {
             const res = compare(to, node.value);
             if (excludeTo ? res >= 0 : res > 0) return;
           }
           yield node;
-          if (nn !== null && nn[red$] === void 0) {
+          if (nn !== null && nn[red$] === undefined) {
             break;
           }
         }
@@ -325,7 +330,7 @@ define((require) => {
     }
 
     *values(opts) {
-      if (opts === void 0) {
+      if (opts === undefined) {
         yield* this[Symbol.iterator]();
       } else {
         for (const node of this.nodes(opts)) yield node.value;
@@ -450,7 +455,7 @@ define((require) => {
       if (cmp === 0) return n;
       n = cmp < 0 ? n[left$] : n[right$];
     }
-    return void 0;
+    return undefined;
   };
 
   const ic1 = (n) => {

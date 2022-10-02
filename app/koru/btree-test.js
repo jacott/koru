@@ -89,7 +89,7 @@ r  5 *
     });
 
     test('unique tree', () => {
-      const tree = new BTree(void 0, true);
+      const tree = new BTree(undefined, true);
       tree.add(5);
       tree.add(5);
       tree.add(4);
@@ -128,6 +128,9 @@ r      130 *
         /**
          * find node equal or greater than value
          **/
+        tree = new BTree();
+        insertNodes(tree, [100, 50, 20, 110, 120, 130, 95].reverse());
+        assert.same(tree.nodeFrom(119).value, 120);
         api.protoMethod();
         init();
         //[#
@@ -160,6 +163,7 @@ l  0 *
         const n130 = tree.lastNode;
         assert.same(n130.value, 130);
 
+        assert.same(tree.nodeTo(51).value, 50);
         assert.same(tree.nodeTo(200), n130);
         assert.same(tree.nodeTo(10), null);
         assert.same(tree.nodeTo(95).value, 95);
@@ -186,8 +190,9 @@ r  20 *
       test('firstNode, nextNode', () => {
         init();
         const ans = [];
-        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
+        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n)) {
           ans.push(n.value);
+        }
 
         assert.equals(ans, [20, 50, 95, 100, 110, 120, 130]);
       });
@@ -204,8 +209,9 @@ l  0 *
 r  200 *
 `);
         const ans = [];
-        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
+        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n)) {
           ans.push(n.value);
+        }
 
         assert.equals(ans, [0, 50, 200]);
       });
@@ -246,8 +252,9 @@ r            1000
         `);
         const ans = [];
 
-        for (let n = tree.lastNode; n !== null; n = tree.previousNode(n))
+        for (let n = tree.lastNode; n !== null; n = tree.previousNode(n)) {
           ans.push(n.value);
+        }
 
         assert.equals(ans, Array.from(tree).reverse());
       });
@@ -285,12 +292,12 @@ r            1000
       insertNodes(tree, [100, 200, 50, 150, 250]);
 
       assert.same(tree.find(50), 50);
-      assert.same(tree.find(49), void 0);
+      assert.same(tree.find(49), undefined);
       assert.same(tree.find(150), 150);
       //]
 
-      assert.same(tree.find(120), void 0);
-      assert.same(tree.find(300), void 0);
+      assert.same(tree.find(120), undefined);
+      assert.same(tree.find(300), undefined);
     });
 
     test('findNode', () => {
@@ -310,12 +317,12 @@ r            1000
       insertNodes(tree, [100, 200, 50, 150, 250]);
 
       assert.same(tree.findNode(50).value, 50);
-      assert.same(tree.findNode(49), void 0);
+      assert.same(tree.findNode(49), undefined);
       assert.same(tree.findNode(150).value, 150);
       //]
 
-      assert.same(tree.findNode(120), void 0);
-      assert.same(tree.findNode(300), void 0);
+      assert.same(tree.findNode(120), undefined);
+      assert.same(tree.findNode(300), undefined);
     });
 
     test('insert balancing case 1,2,3', () => {
@@ -545,7 +552,7 @@ r    63
       const iter = tree.nodes({from: 100, to: 250});
       assert.same(iter.next().value.value, 100);
       tree.delete(150);
-      assert.same(iter.next().value, void 0);
+      assert.same(iter.next().value, undefined);
     });
 
     test('delete prev while iterating', () => {
@@ -554,7 +561,7 @@ r    63
       const iter = tree.nodes({from: 250, to: 100, direction: -1});
       assert.same(iter.next().value.value, 250);
       tree.delete(200);
-      assert.same(iter.next().value, void 0);
+      assert.same(iter.next().value, undefined);
     });
 
     group('trivial delete', () => {
@@ -611,7 +618,7 @@ r    250 *
         assert.same(n[up$].value, 50);
 
         assert.same(tree.deleteNode(n), n);
-        assert.same(tree.deleteNode(n), void 0);
+        assert.same(tree.deleteNode(n), undefined);
       });
 
       test('deleteNode with two-children and right has left child', () => {
@@ -844,7 +851,7 @@ l    10
 r    70
 r  100
 `);
-        assert.same(tree.delete(80), void 0);
+        assert.same(tree.delete(80), undefined);
         assert.same(tree.size, 5);
       });
 
