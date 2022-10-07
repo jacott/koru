@@ -27,7 +27,7 @@ define((require, exports, module) => {
     return qstr(id);
   };
 
-  if (String.prototype.at === void 0) {
+  if (String.prototype.at === undefined) {
     const value = function at(n) {
       // Convert the argument to an integer
       n = Math.trunc(n) || 0;
@@ -40,7 +40,7 @@ define((require, exports, module) => {
     }
 
     for (let C of [Array, String, Uint8Array]) {
-      if (C.prototype.at === void 0) {
+      if (C.prototype.at === undefined) {
         Object.defineProperty(C.prototype, 'at',
                               {value,
                                writable: true,
@@ -85,7 +85,7 @@ define((require, exports, module) => {
             r.push('Error(`' + o.toString() + '`)');
           }
           for (const p in o) {
-            if (r.length > Math.max(i, 10)) {
+            if (r.length > Math.max(i, 50)) {
               r.push('...more');
               break;
             }
