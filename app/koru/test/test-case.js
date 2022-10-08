@@ -58,7 +58,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     const {test} = Core;
     let prev = node;
 
-    for (node = node.next; node !== void 0; node = node.next) {
+    for (node = node.next; node !== undefined; node = node.next) {
       if (node[temp$] === true) {
         list.removeNode(node, prev);
       } else {
@@ -83,10 +83,10 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
   const runCallbacks = (list) => {
-    if (list === void 0) return;
+    if (list === undefined) return;
     const {test} = Core;
     let prev;
-    for (let node = list.front; node !== void 0; node = node.next) {
+    for (let node = list.front; node !== undefined; node = node.next) {
       if (node[temp$] === true) {
         list.removeNode(node, prev);
       } else {
@@ -97,9 +97,9 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         value.stop();
       } else if (typeof value === 'function') {
         const promise = value.call(test);
-        if (promise !== void 0) {
+        if (promise !== undefined) {
           assertIsPromise(promise, value);
-          return node.next === void 0
+          return node.next === undefined
             ? promise
             : promise.then(() => runAsyncCallbacks(list, node));
         }
@@ -110,7 +110,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
             func.stop();
           } else {
             const promise = func.call(test);
-            if (promise !== void 0) {
+            if (promise !== undefined) {
               assertIsPromise(promise, func);
               return i > 0
                 ? promise.then(() => {runListAndAsyncCallbacks(value, i - 1, list, node)})
@@ -133,24 +133,24 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const runTearDowns = (tc, common) => {
     currentTC = tc;
-    if (tc === void 0) return;
+    if (tc === undefined) return;
 
     const sameTC = tc === common;
     const once = tc[once$];
 
     const promise = runCallbacks(tc[after$]);
 
-    if (promise !== void 0) {
+    if (promise !== undefined) {
       return promise.then(async () => {
         if (sameTC) {
-          if (once !== void 0) return;
+          if (once !== undefined) return;
         }
-        if (once !== void 0) {
+        if (once !== undefined) {
           await runOnceCallbacks(once.after);
         }
         const pTc = tc.tc;
-        if (pTc === void 0) {
-          common === void 0 && reset(tc);
+        if (pTc === undefined) {
+          common === undefined && reset(tc);
         } else {
           await runTearDowns(pTc, sameTC ? pTc : common);
         }
@@ -158,14 +158,14 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
 
     if (sameTC) {
-      if (once !== void 0) return;
-    } else if (once !== void 0) {
+      if (once !== undefined) return;
+    } else if (once !== undefined) {
       const promise = runOnceCallbacks(once.after);
-      if (promise !== void 0) {
+      if (promise !== undefined) {
         return promise.then(() => {
           const pTc = tc.tc;
-          if (pTc === void 0) {
-            common === void 0 && reset(tc);
+          if (pTc === undefined) {
+            common === undefined && reset(tc);
           } else {
             return runTearDowns(pTc, sameTC ? pTc : common);
           }
@@ -173,8 +173,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       }
     }
     const pTc = tc.tc;
-    if (pTc === void 0) {
-      common === void 0 && reset(tc);
+    if (pTc === undefined) {
+      common === undefined && reset(tc);
     } else {
       return runTearDowns(pTc, sameTC ? pTc : common);
     }
@@ -182,27 +182,27 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const runSetups = (tc, common) => {
     currentTC = tc;
-    if (tc === void 0) return;
+    if (tc === undefined) return;
 
     const sameTC = tc === common;
     const once = tc[once$];
 
-    if (! sameTC || once === void 0) {
+    if (! sameTC || once === undefined) {
       const pTc = tc.tc;
       const promise = runSetups(pTc, sameTC ? pTc : common);
-      if (promise !== void 0) {
+      if (promise !== undefined) {
         return promise.then(async () => {
           currentTC = tc;
-          if (once !== void 0) {
+          if (once !== undefined) {
             await runOnceCallbacks(once.before);
           }
           await runCallbacks(tc[before$]);
         });
       }
       currentTC = tc;
-      if (once !== void 0) {
+      if (once !== undefined) {
         const promise = runOnceCallbacks(once.before);
-        if (promise !== void 0) {
+        if (promise !== undefined) {
           return promise.then(() => runCallbacks(tc[before$]));
         }
       }
@@ -211,13 +211,13 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   };
 
   const commonTC = (ot, nt) => {
-    if (ot === void 0 || nt === void 0) {
+    if (ot === undefined || nt === undefined) {
       return;
     }
 
     let otc = ot.tc, ntc = nt.tc;
 
-    if (otc === void 0 || ntc === void 0) {
+    if (otc === undefined || ntc === undefined) {
       return;
     }
 
@@ -236,14 +236,14 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   const after = (tc, func) => (tc[after$] || (tc[after$] = new LinkedList())).addFront(func);
 
   const reset = (tc) => {
-    tc[before$] = tc[after$] = tc[once$] = void 0;
+    tc[before$] = tc[after$] = tc[once$] = undefined;
   };
 
   class TestCase {
     constructor(name, tc, body) {
       this.name = name;
       this.tc = tc;
-      this.level = tc === void 0 ? 0 : tc.level + 1;
+      this.level = tc === undefined ? 0 : tc.level + 1;
       this.body = body;
     }
 
@@ -279,7 +279,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
       const fn = this.fullName(name);
 
-      if (Core.runArg === void 0 || fn.indexOf(Core.runArg) !== -1) {
+      if (Core.runArg === undefined || fn.indexOf(Core.runArg) !== -1) {
         ++Core.testCount;
         if (skipped) {
           ++Core.skipCount;
@@ -296,7 +296,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const restorSpy = (spy) => () => {spy.restore && spy.restore()};
 
-  Core.testCase = (name, body) => new TestCase(name, void 0, body);
+  Core.testCase = (name, body) => new TestCase(name, undefined, body);
 
   Object.defineProperty(Core, 'currentTestCase', {get: () => currentTC});
 
@@ -358,7 +358,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       return {name, line};
     }
 
-    get moduleId() {return this.topTC.moduleId;}
+    get moduleId() {return this.topTC.moduleId}
   }
 
   Test.prototype.onEnd = Test.prototype.after;
@@ -381,7 +381,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     before: (body) => currentTC.before(body),
     after: (body) => {
       const {test} = Core;
-      if (test === void 0) {
+      if (test === undefined) {
         currentTC.after(body);
       } else {
         test.after(body);
@@ -450,21 +450,21 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     currTest.mode = 'before';
     const promise = Core.runCallBacks('testStart', currTest);
     nextFunc = setup;
-    return promise === void 0 ? setup() : promise;
+    return promise === undefined ? setup() : promise;
   };
 
   const setup = () => {
     const promise = runSetups(currTest.tc, common);
     nextFunc = runTest;
-    return promise === void 0 ? runTest() : promise;
+    return promise === undefined ? runTest() : promise;
   };
 
   const runDone = () => {
     let isDone = false, resolve, reject;
     const done = (err) => {
       isDone = true;
-      if (resolve !== void 0) {
-        err === void 0 ? resolve() : reject(err);
+      if (resolve !== undefined) {
+        err === undefined ? resolve() : reject(err);
       }
     };
     currTest.body(done);
@@ -479,16 +479,16 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     const promise = currTest.body.length === 1
           ? runDone()
           : currTest.body();
-    return promise == void 0 ? tearDown() : promise;
+    return promise == undefined ? tearDown() : promise;
   };
 
   const tearDown = () => {
     common = commonTC(currTest, nextTest);
     nextFunc = testEnd;
-    currTest.errors === void 0 && checkAssertionCount(currTest, assertCount);
+    currTest.errors === undefined && checkAssertionCount(currTest, assertCount);
     currTest.mode = 'after';
     const promise = runTearDowns(currTest.tc, common);
-    return promise === void 0 ? testEnd() : promise;
+    return promise === undefined ? testEnd() : promise;
   };
 
   const testEnd = () => {
@@ -505,7 +505,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const handleError = (err) => {
     const {test} = Core;
-    if (test === void 0) return false;
+    if (test === undefined) return false;
     test.success = false;
     if (err === 'abortTests') {
       Core.abort(err);
@@ -547,10 +547,10 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
 
   const runNext = () => {
     while (true) {
-      if (Core.abortMode !== void 0) {
+      if (Core.abortMode !== undefined) {
         if (Core.abortMode === 'end') {
-          nextFunc = (Core.test !== void 0 && Core.test.mode !== 'after') ? tearDown : testStart;
-          nextTest = void 0;
+          nextFunc = (Core.test !== undefined && Core.test.mode !== 'after') ? tearDown : testStart;
+          nextTest = undefined;
           nt = tests.length;
         } else {
           return;
@@ -558,18 +558,18 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       }
       if (nextFunc === testStart) {
         if (nt == tests.length) {
-          Core.lastTest = Core.test = tests = void 0;
+          Core.lastTest = Core.test = tests = undefined;
           Core.runCallBacks('end');
           return;
         }
         Core.lastTest = lastTest = currTest;
         currTest = Core.test = tests[nt];
         tests[nt++] = null;
-        nextTest = nt < tests.length ? tests[nt] : void 0;
+        nextTest = nt < tests.length ? tests[nt] : undefined;
       }
       try {
         const promise = nextFunc();
-        if (promise !== void 0) {
+        if (promise !== undefined) {
           assertIsPromise(promise);
           asyncTimeout = setTimeout(timeExpired, MAX_TIME);
           promise.then(runAsyncNext, handleAsyncError);
@@ -584,13 +584,17 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
   Core.start = (testCases, runNextWrapper) => {
     tests = [];
     nt = assertCount = 0;
-    Core.test = Core.lastTest = void 0;
-    lastTest = currTest = nextTest = common = nextFunc = void 0;
+    Core.test = Core.lastTest = undefined;
+    lastTest = currTest = nextTest = common = nextFunc = undefined;
     nextFunc = testStart;
+
+    while (util[isTest].length != 0) {
+      util[isTest].pop()(Core);
+    }
 
     for (let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
-      if (tc === void 0) continue;
+      if (tc === undefined) continue;
 
       skipped = false;
 

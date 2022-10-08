@@ -1,43 +1,37 @@
-define((require) => {
+define((require, exports, module) => {
   'use strict';
   const util            = require('koru/util');
 
-  const success$ = Symbol(), finally$ = Symbol(), abort$ = Symbol();
-  let lastTime = null;
+  const tq$ = Symbol();
 
-  const asyncTransactionResult = async (list, firstLevel, prevTime, p) => {
-    const {thread} = util;
+  let lastTime = 0;
+
+  const asyncTransactionResult = async (tq, prevTq, prevTime, p) => {
     try {
       const result = await p;
-      if (firstLevel) {
-        while (list != null) {
-          const l = list;
-          list = undefined;
-          thread[success$] = null;
-          await runListAsync(l, 0);
-          list = thread[success$];
-        }
+      while (tq.success != null) {
+        const l = tq.success;
+        tq.success = null;
+        await runListAsync(l, 0);
       }
       return result;
     } catch (err) {
-      if (firstLevel) {
-        const list = thread[abort$];
-        if (list !== undefined) await runListAsync(list, 0);
-      }
+      const l = tq.abort;
+      if (l !== undefined) await runListAsync(l, 0);
       throw err;
     } finally {
-      if (firstLevel) {
-        await runFinallyAsync(prevTime);
-      }
+      await runFinallyAsync(tq, prevTq, prevTime);
     }
   };
 
-  const runFinallyAsync = async (prevTime) => {
+  const runFinallyAsync = async (tq, prevTq, prevTime) => {
     const {thread} = util;
-    thread.date = prevTime;
-    const list = thread[finally$];
-    thread[success$] = thread[abort$] = thread[finally$] = undefined;
-    if (list !== undefined) await runListAsync(list, 0, true);
+    if (prevTq === undefined) {
+      thread.date = prevTime;
+    }
+    const l = tq.finally;
+    thread[tq$] = prevTq;
+    if (l !== undefined) await runListAsync(l, 0);
   };
 
   const runListAsync = async (list, i) => {for (;i < list.length; ++i) await list[i]()};
@@ -60,20 +54,17 @@ define((require) => {
       return this.transaction(db.inTransaction ? undefined : db, body);
     },
 
-    get inTransaction() {return util.thread[success$] !== undefined},
+    get inTransaction() {return util.thread[tq$] !== undefined},
 
     transaction: (db, body) => {
-      let prevTime;
       const {thread} = util;
-      let list = thread[success$];
-      let firstLevel = list === undefined;
-      if (firstLevel) {
-        list = thread[success$] = [];
-        thread[abort$] = thread[finally$] = undefined;
-        prevTime = thread.date;
-        let now = util.dateNow();
-        if (now === lastTime) {
-          now = lastTime += 1;
+      const prevTq = thread[tq$];
+      const tq = thread[tq$] = {success: undefined, abort: undefined, finally: undefined};
+      let prevTime = thread.date;
+      let now = util.dateNow();
+      if (prevTq === undefined) {
+        if (now <= lastTime) {
+          now = lastTime + 1;
         }
         thread.date = lastTime = now;
       }
@@ -85,88 +76,76 @@ define((require) => {
 
       let p;
 
-      try {
-        const result = db === undefined ? body() : db.transaction((tx) => body.call(db, tx));
-        if (isPromise(result)) {
-          const _firstLevel = firstLevel;
-          firstLevel = false;
-          return asyncTransactionResult(list, _firstLevel, prevTime, result);
-        }
+      const inner = (tx) => {
+        try {
+          const result = body.call(db, tx);
+          if (isPromise(result)) {
+            return p = asyncTransactionResult(tq, prevTq, prevTime, result);
+          }
 
-        if (firstLevel) {
-          while (list != null) {
-            const l = list;
-            list = undefined;
-            thread[success$] = null;
+          while (tq.success != null) {
+            const l = tq.success;
+            tq.success = null;
 
             for (let i = 0; i < l.length; ++i) l[i]();
-            list = thread[success$];
           }
-        }
-        return result;
-      } catch (ex) {
-        if (firstLevel) {
-          const list = thread[abort$];
-          if (list) for (let i = 0; i < list.length; ++i) {
-            p = list[i]();
+          return result;
+        } catch (ex) {
+          const l = tq.abort;
+          if (l != null) for (let i = 0; i < l.length; ++i) {
+            p = l[i]();
             if (isPromise(p)) {
-              p = p.then(() => runListAsync(list, i + 1));
-              if (firstLevel) p = p.finally(() => runFinallyAsync(prevTime));
-              break;
+              return p.then(() => runListAsync(l, i + 1).then(() => Promise.reject(ex)))
+                .finally(() => runFinallyAsync(tq, prevTq, prevTime));
             }
           }
-        }
-        throw ex;
-      } finally {
-        if (firstLevel) {
+          throw ex;
+        } finally {
           if (isPromise(p)) return p;
-          thread.date = prevTime;
-          const list = thread[finally$];
-          thread[success$] = thread[abort$] = thread[finally$] = undefined;
-          if (list) for (let i = 0; i < list.length; ++i) {
-            const p = list[i]();
+          if (prevTq === undefined) {
+            thread.date = prevTime;
+          }
+          const l = tq.finally;
+          thread[tq$] = prevTq;
+          if (l) for (let i = 0; i < l.length; ++i) {
+            p = l[i]();
             if (isPromise(p)) {
-              return p.then(() => runListAsync(list, i + 1));
+              return p.then(() => runListAsync(l, i + 1));
             }
           }
         }
-      }
+      };
+
+      return db === undefined ? inner() : db.transaction(inner);
     },
 
-    finally: (func) => {
-      if (util.thread[success$] === undefined) return func();
-      const list = util.thread[finally$];
-      if (list === undefined) {
-        util.thread[finally$] = [func];
-      } else {
-        list.push(func);
-      }
+    finally: (callback) => {
+      const tq = util.thread[tq$];
+      if (tq === undefined) return callback();
+      (tq.finally ??= []).push(callback);
     },
 
-    onSuccess: (func) => {
-      let list = util.thread[success$];
-      if (list !== undefined) {
-        if (list === null) list = util.thread[success$] = [];
-        list.push(func);
-      } else {
-        func();
-      }
+    onSuccess: (callback) => {
+      let tq = util.thread[tq$];
+      if (tq === undefined) return callback();
+      (tq.success ??= []).push(callback);
     },
 
-    onAbort: (func) => {
-      if (util.thread[success$] === undefined) return;
-      const list = util.thread[abort$];
-      if (list === undefined) {
-        util.thread[abort$] = [func];
-      } else {
-        list.push(func);
-      }
+    onAbort: (callback) => {
+      const tq = util.thread[tq$];
+      if (tq === undefined) return;
+      (tq.abort ??= []).push(callback);
     },
 
-    isInTransaction: () => util.thread[success$] !== undefined,
+    isInTransaction: () => util.thread[tq$] !== undefined,
 
-    _clearLastTime: () => {lastTime = null},
+    _clearLastTime: () => {lastTime = 0},
   };
+
+  if (isTest) {
+    // called from test-case Core.start
+    (util[isTest] ??= []).push((Core) => Core.onTestStart(module, () => {lastTime = 0}));
+  }
 
   return TransQueue;
 });

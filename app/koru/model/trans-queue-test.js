@@ -99,20 +99,26 @@ define((require, exports, module) => {
 
     test('onSuccess', () => {
       /**
-       * Register a function to be called if the most outer transaction finishes successfully or if
+       * Register a callback to be run if the transaction finishes successfully or if
        * no transaction is running.
 
-       * @param func the function to run on success.
+       * @param callback the function to run on success.
        **/
       api.method();
+      //[
       const func1 = stub();
+      const func2 = stub();
       TransQueue.transaction(() => {
+        TransQueue.onSuccess(func2);
         TransQueue.transaction(() => {
           TransQueue.onSuccess(func1);
+          refute.called(func1);   // not called until outer transaction finishes
         });
-        refute.called(func1);   // not called until outer transaction finishes
+        assert.calledOnce(func1);
+        refute.called(func2);
       });
-      assert.calledOnce(func1);
+      return;
+      assert.calledOnce(func2);
 
       func1.reset();
       TransQueue.onSuccess(func1); // called now since no transaction
@@ -128,69 +134,89 @@ define((require, exports, module) => {
         if (ex !== 'abort') throw ex;
       }
       refute.called(func1);     // not called since transaction aborted
+      //]
     });
 
     test('onAbort', () => {
       /**
-       * Register a function to be called if the most outer transaction aborts.
+       * Register a callback to be run if the transaction aborts.
 
-       * @param func the function to run only if aborted.
+       * @param callback the function to run only if aborted.
        **/
       api.method();
+      //[
       const func1 = stub();
+      const func2 = stub();
       try {
         TransQueue.transaction(() => {
+          TransQueue.onAbort(func2);
           try {
             TransQueue.transaction(() => {
-              TransQueue.onAbort(func1);
-              throw 'abort';
+              try {
+                TransQueue.onAbort(func1);
+                throw 'abort';
+              } finally {
+                refute.called(func1);   // not called until outer transaction finishes
+              }
             });
+          } catch (err) {
+            throw err;
           } finally {
-            refute.called(func1);   // not called until outer transaction finishes
+            assert.calledOnce(func1);
+            refute.called(func2);
           }
         });
       } catch (ex) {
         if (ex !== 'abort') throw ex;
       }
       assert.calledOnce(func1);
+      assert.calledOnce(func2);
 
       func1.reset();
       TransQueue.transaction(() => {
         TransQueue.onAbort(func1);
       });
       refute.called(func1);
+      //]
     });
 
     test('finally', () => {
       /**
-       * Register a function to be called when the most outer transaction finishes either
+       * Register a callback to be run when the transaction finishes either
        * successfully or by aborting.
 
-       * @param func the function to run on transaction end.
+       * @param callback the function to run on transaction end.
        **/
       api.method();
+      //[
       const func1 = stub();
+      const func2 = stub();
       try {
         TransQueue.transaction(() => {
+          TransQueue.finally(func2);
           try {
             TransQueue.transaction(() => {
               TransQueue.finally(func1);
+              refute.called(func1);   // not called until outer transaction finishes
               throw 'abort';
             });
           } finally {
-            refute.called(func1);   // not called until outer transaction finishes
+            assert.calledOnce(func1);
+            refute.called(func2);
           }
         });
       } catch (ex) {
         if (ex !== 'abort') throw ex;
       }
       assert.calledOnce(func1);
+      assert.calledOnce(func2);
 
       func1.reset();
       TransQueue.transaction(() => {
         TransQueue.finally(func1);
       });
       assert.calledOnce(func1);
+      //]
     });
 
     test('async finally', async () => {
@@ -206,59 +232,61 @@ define((require, exports, module) => {
       assert.equals(order, [1, 2, 3]);
     });
 
-    isClient && test('success', () => {
-      const stub1 = stub();
-      const stub2 = stub();
-      const err1 = stub();
-      const fin1 = stub();
+    if (isClient) {
+      test('success', () => {
+        const stub1 = stub();
+        const stub2 = stub();
+        const err1 = stub();
+        const fin1 = stub();
 
-      const now = util.thread.date = Date.now();
-      after(() => {util.thread.date = undefined});
+        const now = util.thread.date = Date.now();
+        after(() => {util.thread.date = undefined});
 
-      sut._clearLastTime();
+        sut._clearLastTime();
 
-      assert.isFalse(sut.isInTransaction());
+        assert.isFalse(sut.isInTransaction());
 
-      const result = sut.transaction(TestModel, () => {
-        assert.isTrue(sut.isInTransaction());
-        assert.same(now, util.dateNow());
-        sut.onAbort(err1);
-        sut.onSuccess(stub1);
-        sut.transaction(TestModel, () => sut.onSuccess(() => {
-          sut.finally(fin1);
-          assert.same(now, util.dateNow()); // ensure same time as top transaction
-
-          sut.onSuccess(stub2); // double nested should still fire
+        const result = sut.transaction(TestModel, () => {
           assert.isTrue(sut.isInTransaction());
-          refute.called(stub2);
-        }));
-        refute.called(stub1);
+          assert.same(now, util.dateNow());
+          sut.onAbort(err1);
+          sut.onSuccess(stub1);
+          sut.transaction(TestModel, () => sut.onSuccess(() => {
+            sut.finally(fin1);
+            assert.same(now, util.dateNow()); // ensure same time as top transaction
+
+            sut.onSuccess(stub2); // double nested should still fire
+            assert.isTrue(sut.isInTransaction());
+            refute.called(stub2);
+          }));
+          refute.called(stub1);
+          assert.called(stub2);
+          assert.called(fin1);
+          return 'success';
+        });
+
+        assert.same(now, util.dateNow());
+
+        assert.same(result, 'success');
+        assert.called(stub1);
+        assert(stub2.calledBefore(stub1));
+        refute.called(err1);
+
+        assert.called(fin1);
+
+        stub1.reset();
+        stub2.reset();
+
+        sut.transaction(TestModel, () => {
+          assert.same(now + 1, util.dateNow()); // ensure time unique to transaction
+
+          sut.onSuccess(stub1);
+        });
+
+        assert.called(stub1);
         refute.called(stub2);
-        refute.called(fin1);
-        return 'success';
       });
-
-      assert.same(now, util.dateNow());
-
-      assert.same(result, 'success');
-      assert.called(stub1);
-      assert(stub2.calledAfter(stub1));
-      refute.called(err1);
-
-      assert.called(fin1);
-
-      stub1.reset();
-      stub2.reset();
-
-      sut.transaction(TestModel, () => {
-        assert.same(now + 1, util.dateNow()); // ensure time unique to transaction
-
-        sut.onSuccess(stub1);
-      });
-
-      assert.called(stub1);
-      refute.called(stub2);
-    });
+    }
 
     test('success async', async () => {
       const order = [];
@@ -356,52 +384,53 @@ define((require, exports, module) => {
       });
     });
 
-    isClient && test('exception', () => {
-      const stub1 = stub();
-      const stub2 = stub();
-      const err1 = stub();
-      const err2 = stub();
-      const err3 = stub();
-      const fin1 = stub();
-      const fin2 = stub();
+    if (isClient) {
+      test('exception', () => {
+        const stub1 = stub();
+        const stub2 = stub();
+        const err1 = stub();
+        const err2 = stub();
+        const err3 = stub();
+        const fin1 = stub();
+        const fin2 = stub();
 
-      assert.exception(() => sut.transaction(TestModel, () => {
-        sut.onAbort(err1);
-        sut.onAbort(err2);
-        sut.onSuccess(stub1);
-        sut.finally(fin1);
+        assert.exception(() => sut.transaction(TestModel, () => {
+          sut.onAbort(err1);
+          sut.onAbort(err2);
+          sut.onSuccess(stub1);
+          sut.finally(fin1);
+          sut.transaction(TestModel, () => {
+            sut.onSuccess(stub2);
+            try {
+              sut.transaction(TestModel, () => {
+                sut.finally(fin2);
+                sut.onAbort(err3);
+                throw new Error('err3');
+              });
+            } catch (ex) {}
+          });
+          refute.called(fin1);
+          assert.called(fin2);
+          // err3 should not be called
+          throw new Error('an error: ' + err3.called);
+        }), {message: 'an error: true'});
+
+        refute.called(stub1);
+        assert.called(stub2);
+
+        assert.called(err1);
+        assert.called(err2);
+        assert.called(err3);
+        assert.called(fin1);
+        assert.called(fin2);
+
         sut.transaction(TestModel, () => {
-          sut.onSuccess(stub2);
-          try {
-            sut.transaction(TestModel, () => {
-              sut.finally(fin2);
-              sut.onAbort(err3);
-              throw new Error('err3');
-            });
-          } catch (ex) {}
+          sut.onSuccess(stub1);
         });
-        refute.called(fin1);
-        refute.called(fin2);
-        // err3 should not be called
-        throw new Error('an error: ' + err3.called);
-      }), {message: 'an error: false'});
 
-      refute.called(stub1);
-      refute.called(stub2);
-
-      assert.called(err1);
-      assert.called(err2);
-      assert.called(err3);
-      assert.called(fin1);
-      assert.called(fin2);
-
-      sut.transaction(TestModel, () => {
-        sut.onSuccess(stub1);
+        assert.called(stub1);
       });
-
-      assert.called(stub1);
-      refute.called(stub2);
-    });
+    }
 
     test('exception async', async () => {
       const order = [];
@@ -451,17 +480,17 @@ define((require, exports, module) => {
             } catch (ex) {}
           });
           refute.called(fin1);
-          refute.called(fin2);
+          assert.called(fin2);
           // err3 should not be called
           throw new Error('an error: ' + err3.called);
         });
         assert.fail('expect throw');
       } catch (err) {
-        assert.exception(err, {message: 'an error: false'});
+        assert.exception(err, {message: 'an error: true'});
       }
 
       refute.called(stub1);
-      refute.called(stub2);
+      assert.called(stub2);
 
       assert.called(err1);
       assert.called(err2);
@@ -474,7 +503,6 @@ define((require, exports, module) => {
       });
 
       assert.called(stub1);
-      refute.called(stub2);
     });
 
     test('no transaction', () => {
