@@ -30,16 +30,16 @@ define((require, exports, module) => {
       simDocsFor,
 
       revertSimChanges() {
-        return TransQueue.transaction(() => {
+        return TransQueue.nonNested(() => {
           const dbs = Model._databases && Model._databases[dbBroker.dbId];
-          if (dbs === void 0) return;
+          if (dbs === undefined) return;
 
           for (const modelName in dbs) {
             const model = Model[modelName];
             const modelDocs = model && model.docs;
-            if (modelDocs === void 0) continue;
+            if (modelDocs === undefined) continue;
             const docs = dbs[modelName].simDocs;
-            if (docs === void 0) continue;
+            if (docs === undefined) continue;
             dbs[modelName].simDocs = createDictionary();
             const delDc = DocChange.delete(null, 'simComplete'),
                   addDc = DocChange.add(null, 'simComplete'),
@@ -47,27 +47,27 @@ define((require, exports, module) => {
             for (const id in docs) {
               const doc = modelDocs[id];
               let [revert, apply] = docs[id];
-              if (apply !== void 0) {
+              if (apply !== undefined) {
                 if (revert === 'del') {
                   revert = apply;
-                } else if (typeof apply === 'object' && apply._id === void 0) {
+                } else if (typeof apply === 'object' && apply._id === undefined) {
                   Changes.merge(revert, apply);
                 } else {
                   revert = apply;
                 }
               }
               if (revert === 'del') {
-                if (doc === void 0) {
+                if (doc === undefined) {
                   Query[notifyAC$](delDc._set(new model({_id: id})));
                 } else {
                   delete modelDocs[id];
                   notify(delDc._set(doc));
                 }
-              } else if (doc === void 0) {
-                if (revert._id === void 0) revert._id = id;
+              } else if (doc === undefined) {
+                if (revert._id === undefined) revert._id = id;
                 notify(addDc._set(modelDocs[id] = new model(revert)));
               } else {
-                if (revert._id !== void 0) {
+                if (revert._id !== undefined) {
                   const attrs = doc.attributes;
                   for (const key in attrs) {
                     if (! hasOwn(revert, key)) {
@@ -78,7 +78,7 @@ define((require, exports, module) => {
                 const undo = Changes.applyAll(doc.attributes, revert);
                 let hasKeys; for (hasKeys in undo) break;
                 changeDc._set(doc, undo);
-                if (hasKeys === void 0) {
+                if (hasKeys === undefined) {
                   Query[notifyAC$](changeDc);
                 } else {
                   notify(changeDc);
@@ -90,7 +90,7 @@ define((require, exports, module) => {
       },
 
       insert(doc) {
-        return TransQueue.transaction(() => {
+        return TransQueue.nonNested(() => {
           const model = doc.constructor;
           if (session.state.pendingCount() != 0) {
             recordChange(model, doc._id, 'del');
@@ -102,28 +102,28 @@ define((require, exports, module) => {
       },
 
       _insertAttrs(model, attrs) {
-        if (attrs._id === void 0) attrs._id = Random.id();
+        if (attrs._id === undefined) attrs._id = Random.id();
         model.docs[attrs._id] = new model(attrs);
       },
 
       insertFromServer(model, attrs) {
-        return TransQueue.transaction(() => {
+        return TransQueue.nonNested(() => {
           const id = attrs._id;
           const doc = model.docs[id];
           if (session.state.pendingCount() != 0) {
             if (fromServer(model, id, attrs)) {
-              if (doc !== void 0) doc[stopGap$] = void 0;
+              if (doc !== undefined) doc[stopGap$] = undefined;
               return;
             }
           }
 
-          if (doc !== void 0) {
+          if (doc !== undefined) {
             // already exists; convert to update
-            doc[stopGap$] = void 0;
+            doc[stopGap$] = undefined;
             const old = doc.attributes;
             for (const key in old) {
-              if (attrs[key] === void 0) {
-                attrs[key] = void 0;
+              if (attrs[key] === undefined) {
+                attrs[key] = undefined;
               }
             }
             for (const key in attrs) {
@@ -158,7 +158,7 @@ define((require, exports, module) => {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params);
         const {filterTest} = idx;
-        if (filterTest !== void 0) this.where((doc) => filterTest.matches(doc));
+        if (filterTest !== undefined) this.where((doc) => filterTest.matches(doc));
         this._index = {idx, params, options};
         return this;
       },
@@ -203,11 +203,11 @@ define((require, exports, module) => {
       },
 
       forEach(func) {
-        if (this.singleId !== void 0) {
+        if (this.singleId !== undefined) {
           const doc = this.findOne(this.singleId);
-          doc !== void 0 && func(doc);
+          doc !== undefined && func(doc);
         } else {
-          if (this._sort !== void 0) {
+          if (this._sort !== undefined) {
             const results = [];
             findMatching.call(this, (doc) => results.push(doc));
             results.sort(this.compare);
@@ -227,15 +227,15 @@ define((require, exports, module) => {
 
       count(max) {
         let count = 0;
-        if (this.model === void 0) return 0;
+        if (this.model === undefined) return 0;
         const docs = this.docs;
         this.forEach((doc) => ++count === max);
         return count;
       },
 
       exists() {
-        if (this.singleId !== void 0) {
-          return this.findOne(this.singleId) !== void 0;
+        if (this.singleId !== undefined) {
+          return this.findOne(this.singleId) !== undefined;
         } else {
           return this.count(1) === 1;
         }
@@ -243,13 +243,13 @@ define((require, exports, module) => {
 
       findOne(id) {
         const doc = this.docs[id];
-        return doc !== void 0 && this.matches(doc, doc.attributes)
+        return doc !== undefined && this.matches(doc, doc.attributes)
           ? (this._fields ? doc.attributes : doc)
-          : void 0;
+          : undefined;
       },
 
       remove() {
-        return TransQueue.transaction(() => {
+        return TransQueue.nonNested(() => {
           let count = 0;
 
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
@@ -281,7 +281,7 @@ define((require, exports, module) => {
               ? {[changesOrField]: value}
               : changesOrField;
 
-        if (origChanges._id !== void 0) {
+        if (origChanges._id !== undefined) {
           delete origChanges._id;
         }
 
@@ -289,7 +289,7 @@ define((require, exports, module) => {
         this.isFromServer === '' && Model._support._updateTimestamps(
           origChanges, model.updateTimestamps, util.newDate());
 
-        return TransQueue.transaction(() => {
+        return TransQueue.nonNested(() => {
           let count = 0;
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
@@ -304,7 +304,7 @@ define((require, exports, module) => {
               ++count;
               const attrs = doc.attributes;
 
-              if (this._incs !== void 0) for (const field in this._incs) {
+              if (this._incs !== undefined) for (const field in this._incs) {
                 origChanges[field] = attrs[field] + this._incs[field];
               }
 
@@ -326,11 +326,11 @@ define((require, exports, module) => {
     });
 
     Query.prototype[Symbol.iterator] = function *() {
-      if (this.singleId !== void 0) {
+      if (this.singleId !== undefined) {
         const doc = this.findOne(this.singleId);
-        doc !== void 0 && (yield doc);
+        doc !== undefined && (yield doc);
       } else {
-        if (this._sort !== void 0) {
+        if (this._sort !== undefined) {
           const results = [];
           findMatching.call(this, (doc) => results.push(doc));
           results.sort(this.compare);
@@ -344,9 +344,9 @@ define((require, exports, module) => {
 
     function *g_findMatching(q) {
       let {_limit} = q || 0;
-      if (q.model === void 0) return;
+      if (q.model === undefined) return;
 
-      if (q._index !== void 0) {
+      if (q._index !== undefined) {
         const {idx, params, options} = q._index;
         const orig = dbBroker.dbId, thisDb = q._dbId || orig;
         let lu;
@@ -357,13 +357,13 @@ define((require, exports, module) => {
           lu = idx.lookup(params, options);
           dbBroker.dbId = orig;
         }
-        if (lu !== void 0) {
+        if (lu !== undefined) {
           yield* g_findByIndex(q, lu, options, {_limit});
         }
       } else {
         for (const id in q.docs) {
           const doc = q.findOne(id);
-          if (doc !== void 0 && ((yield doc) === true || --_limit == 0)) {
+          if (doc !== undefined && ((yield doc) === true || --_limit == 0)) {
             break;
           }
         }
@@ -373,13 +373,13 @@ define((require, exports, module) => {
     function *g_findByIndex(query, idx, options, v) {
       if (typeof idx === 'string') {
         const doc = query.findOne(idx);
-        return doc !== void 0 && ((yield doc) === true || --v._limit == 0);
-      } else if (idx[Symbol.iterator] !== void 0) {
+        return doc !== undefined && ((yield doc) === true || --v._limit == 0);
+      } else if (idx[Symbol.iterator] !== undefined) {
         if (idx.cursor) idx = idx.cursor(options);
         for (const rec of idx) {
-          if (rec !== void 0) {
+          if (rec !== undefined) {
             const doc = query.findOne(rec._id);
-            if (doc !== void 0 && ((yield doc) === true || --v._limit == 0)) {
+            if (doc !== undefined && ((yield doc) === true || --v._limit == 0)) {
               return true;
             }
           }
@@ -389,7 +389,7 @@ define((require, exports, module) => {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc !== void 0 && ((yield doc) === true || --v._limit == 0)) {
+            if (doc !== undefined && ((yield doc) === true || --v._limit == 0)) {
               return true;
             }
           } else if ((yield* g_findByIndex(query, value, options, v)) === true) {
@@ -403,7 +403,7 @@ define((require, exports, module) => {
     const notify = (docChange) => {
       docChange.doc.$clearCache();
       docChange.model._indexUpdate.notify(docChange); // first: update indexes
-      docChange.flag === void 0 &&
+      docChange.flag === undefined &&
         Model._support.callAfterLocalChange(docChange); // next:  changes originated here
 
       Query[notifyAC$](docChange); // notify anyChange
@@ -411,11 +411,11 @@ define((require, exports, module) => {
     };
 
     function findMatching(func) {
-      if (this.model === void 0) return;
+      if (this.model === undefined) return;
 
-      let _limit = this._sort !== void 0 || this._limit == null ? 0 : this._limit;
+      let _limit = this._sort !== undefined || this._limit == null ? 0 : this._limit;
 
-      if (this._index !== void 0) {
+      if (this._index !== undefined) {
         const {idx, params, options} = this._index;
         const orig = dbBroker.dbId, thisDb = this._dbId || orig;
         let lu;
@@ -427,11 +427,11 @@ define((require, exports, module) => {
           dbBroker.dbId = orig;
         }
 
-        lu !== void 0 && findByIndex(this, lu, options, func, {_limit});
+        lu !== undefined && findByIndex(this, lu, options, func, {_limit});
       } else {
         for (const id in this.docs) {
           const doc = this.findOne(id);
-          if (doc === void 0) continue;
+          if (doc === undefined) continue;
           if (func(doc) === true || --_limit == 0) {
             break;
           }
@@ -441,16 +441,16 @@ define((require, exports, module) => {
 
     const findOneByIndex = (query, id, func, v) => {
       const doc = query.findOne(id);
-      return doc !== void 0 && (func(doc) === true || --v._limit == 0);
+      return doc !== undefined && (func(doc) === true || --v._limit == 0);
     };
 
     const findByIndex = (query, idx, options, func, v) => {
       if (typeof idx === 'string') {
         return findOneByIndex(query, idx, func, v);
-      } else if (idx[Symbol.iterator] !== void 0) {
-        if (idx.values !== void 0) idx = idx.values(options);
+      } else if (idx[Symbol.iterator] !== undefined) {
+        if (idx.values !== undefined) idx = idx.values(options);
         for (const rec of idx) {
-          if (rec !== void 0 && findOneByIndex(query, rec._id, func, v)) {
+          if (rec !== undefined && findOneByIndex(query, rec._id, func, v)) {
             return true;
           }
         }
@@ -459,7 +459,7 @@ define((require, exports, module) => {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc !== void 0 && (func(doc) === true || --v._limit == 0)) {
+            if (doc !== undefined && (func(doc) === true || --v._limit == 0)) {
               return true;
             }
           } else if (findByIndex(query, value, options, func, v) === true) {
@@ -473,13 +473,13 @@ define((require, exports, module) => {
     const fromServer = (model, id, changes) => {
       const modelName = model.modelName;
       const docs = Model._getProp(model.dbId, modelName, 'simDocs');
-      if (docs === void 0) return false;
+      if (docs === undefined) return false;
       const keys = docs[id];
-      if (keys === void 0) return false;
+      if (keys === undefined) return false;
 
-      if (changes === void 0) {
+      if (changes === undefined) {
         keys[1] = 'del';
-      } else if (keys[1] === void 0 || keys[1] === 'del') {
+      } else if (keys[1] === undefined || keys[1] === 'del') {
         keys[1] = changes;
       } else {
         Changes.merge(keys[1], changes);
@@ -492,12 +492,12 @@ define((require, exports, module) => {
       const docs = simDocsFor(model);
       const keys = docs[id];
       undo = util.deepCopy(undo);
-      if (keys === void 0) {
-        docs[id] = [undo, void 0];
+      if (keys === undefined) {
+        docs[id] = [undo, undefined];
       } else {
         const curr = keys[0];
         if (typeof curr !== 'string') {
-          if (curr !== void 0 && typeof undo !== 'string') {
+          if (curr !== undefined && typeof undo !== 'string') {
             Changes.merge(undo, curr);
           }
           keys[0] = undo;

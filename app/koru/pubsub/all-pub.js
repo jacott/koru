@@ -4,7 +4,6 @@ define((require, exports, module) => {
   const DLinkedList     = require('koru/dlinked-list');
   const LinkedList      = require('koru/linked-list');
   const DocChange       = require('koru/model/doc-change');
-  const TransQueue      = require('koru/model/trans-queue');
   const Val             = require('koru/model/validation');
   const ModelListMixin  = require('koru/pubsub/model-list-mixin');
   const Publication     = require('koru/pubsub/publication');
@@ -58,7 +57,7 @@ define((require, exports, module) => {
     stop() {
       super.stop();
       const {union} = this.constructor;
-      union !== void 0 && union.removeSub(this);
+      union !== undefined && union.removeSub(this);
     }
 
     static resetConfig() {
@@ -68,7 +67,7 @@ define((require, exports, module) => {
   }
   AllPub.resetConfig();
   AllPub.Union = AllUnion;
-  AllPub.union = void 0;
+  AllPub.union = undefined;
 
   return AllPub;
 });

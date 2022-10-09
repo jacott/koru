@@ -32,7 +32,7 @@ define((require, exports, module) => {
        * @param {koru/pg/driver::Client} [db] an optional database connection which has a
        * `transaction` method.
 
-       * @param {function} body the function to run within the transaction.
+       * @param body the function to run within the transaction.
        **/
       api.method();
       //[
@@ -44,31 +44,63 @@ define((require, exports, module) => {
       //]
     });
 
-    test('nonNested', async () => {
-      api.method();
-      //[
-      await TransQueue.nonNested(TestModel, async () => {
-        assert.isTrue(TransQueue.inTransaction);
-        await TransQueue.nonNested(TestModel, () => {
-          assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
-        });
-      });
-      //]
-    });
+    group('nonNested', () => {
+      /**
+       * Ensure we a in a transaction. If a DB is supplied ensure we a wrapped in a DB transaction
 
-    test('DB nonNested', async () => {
-      await TransQueue.transaction(async () => {
-        assert.isTrue(TransQueue.inTransaction);
+       * @param [db] An optional dataBase client or Model to start transaction in
+       * @param body the function to run within the transaction
+       */
+
+      beforeEach(() => {
+        api.method();
+      });
+
+      test('no existing transaction', async () => {
+        //[
+        // No existing transaction
         await TransQueue.nonNested(TestModel, async () => {
-          assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
-          await TransQueue.nonNested(TestModel, async () => {
+          assert.isTrue(TransQueue.inTransaction);
+          await TransQueue.nonNested(TestModel, () => {
             assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
-            await TransQueue.nonNested(() => {
+          });
+        });
+        //]
+      });
+
+      test('no wrapped DB transaction', async () => {
+        //[
+        // No wrapped DB transaction
+        await TransQueue.transaction(async () => {
+          assert.isTrue(TransQueue.inTransaction);
+          await TransQueue.nonNested(TestModel, async () => {
+            TransQueue.onSuccess(() => {
               assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+            });
+            assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+            await TransQueue.nonNested(TestModel, async () => {
+              assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+              await TransQueue.nonNested(() => {
+                assert.same(isClient ? 0 : TestModel.db.existingTran.savepoint, 0);
+              });
             });
           });
         });
+        //]
       });
+
+      if (isServer) {
+        test('existing DB transaction', async () => {
+          //[
+          // Server Only: existing DB transaction
+          await TestModel.db.transaction(async () => {
+            await TransQueue.nonNested(TestModel, async () => {
+              assert.same(TestModel.db.existingTran.savepoint, 0);
+            });
+          });
+          //]
+        });
+      }
     });
 
     test('isInTransaction', () => {

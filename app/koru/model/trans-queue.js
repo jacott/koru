@@ -48,7 +48,7 @@ define((require, exports, module) => {
       }
 
       if (this.inTransaction) {
-        return db.inTransaction ? body() : db.transaction((tx) => body.call(db, tx));
+        return db.inTransaction ? body() : this.transaction(db, body);
       }
 
       return this.transaction(db.inTransaction ? undefined : db, body);

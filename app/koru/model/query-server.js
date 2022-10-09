@@ -12,8 +12,6 @@ define((require) => {
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
-  const notNested = (db) => db.inTransaction ? undefined : db;
-
   return (Query, condition, notifyAC$) => {
     const notify = async (docChange) => {
       await Query[notifyAC$](docChange);
@@ -23,7 +21,7 @@ define((require) => {
     util.merge(Query, {
       async insert(doc) {
         const model = doc.constructor;
-        await TransQueue.transaction(notNested(model.db), async () => {
+        await TransQueue.nonNested(model.db, async () => {
           const result = await model.docs.insert(doc.attributes, doc.attributes._id ? undefined : 'RETURNING _id');
           if (Array.isArray(result)) {
             doc.attributes._id = result[0]._id;
@@ -198,7 +196,7 @@ define((require) => {
         const {model} = this;
         const {docs} = model;
         const onSuccess = [];
-        await TransQueue.transaction(notNested(model.db), async (tran) => {
+        await TransQueue.nonNested(model.db, async (tran) => {
           await this.forEach(async (doc) => {
             ++count;
             await Model._support.callBeforeObserver('beforeRemove', doc);
@@ -234,7 +232,7 @@ define((require) => {
         let count = 0;
         let onSuccess = [], onAbort = [];
 
-        await TransQueue.transaction(notNested(model.db), async (tran) => {
+        await TransQueue.nonNested(model.db, async (tran) => {
           const {docs} = model;
           TransQueue.onAbort(() => {
             onAbort.forEach((doc) => model._$docCacheDelete(doc));
