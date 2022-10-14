@@ -10,7 +10,7 @@ define((require, exports, module) => {
   const parseOpts = {module: true, bare_returns: true};
 
   const defaultHandler = (req, res, path, error) => {
-    const ans = origDefaultHandler !== void 0 && origDefaultHandler(req, res, path, error);
+    const ans = origDefaultHandler !== undefined && origDefaultHandler(req, res, path, error);
     if (ans !== false || path !== expPath) return ans;
     res.writeHead(200, {'Content-Type': 'application/x-javascript'});
     res.end(repSrc);
@@ -22,7 +22,7 @@ define((require, exports, module) => {
 
     for (let i = sourceStart.length - 1; i >= 0; --i) {
       const ch = sourceStart[i];
-      if (/\W/.test(ch)) {
+      if (/[^$\w]/.test(ch)) {
         if (ch === '.') {
           return sourceStart.slice(0, i + (sourceStart[i - 1] === '?' ? 1 : 0)) + rep + ')._' + sourceEnd;
         }
@@ -61,7 +61,7 @@ define((require, exports, module) => {
       }
     }
 
-    return sourceStart.slice(0, interceptPrefix == '' ? void 0 : - interceptPrefix.length) +
+    return sourceStart.slice(0, interceptPrefix == '' ? undefined : - interceptPrefix.length) +
       'globalThis' + rep + '})._' + sourceEnd;
   };
 
@@ -75,7 +75,7 @@ define((require, exports, module) => {
 
     class ServerIntercept extends Intercept {
       static finishIntercept() {
-        if (expPath === void 0) return;
+        if (expPath === undefined) return;
         if (! initHandler) {
           initHandler = true;
           WebServer.deregisterHandler('DEFAULT');
@@ -85,11 +85,11 @@ define((require, exports, module) => {
             unloadId = '';
           }
         }
-        origDefaultHandler = void 0;
+        origDefaultHandler = undefined;
         super.finishIntercept();
         ctx.loadModule = loadModule;
         ctx.readFileSync = readFileSync;
-        repSrc = expPath = void 0;
+        repSrc = expPath = undefined;
       }
 
       static sendResult(cand) {
@@ -100,7 +100,7 @@ define((require, exports, module) => {
       static breakPoint(id, sourceStart, interceptPrefix, sourceEnd) {
         intercepting = id;
         expPath = '/' + id + '.js';
-        Intercept.interceptObj = void 0;
+        Intercept.interceptObj = undefined;
 
         repSrc = parseCode(sourceStart, interceptPrefix, sourceEnd);
 

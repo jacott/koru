@@ -29,8 +29,8 @@ define((require, exports, module) => {
 
     const logHandle = (msg) => {
       const connection = util.thread?.connection;
-      const key = connection === void 0 ? 'Server' : connection.engine;
-      if (connection !== void 0) msg = connection.sessId + ': ' + msg;
+      const key = connection === undefined ? 'Server' : connection.engine;
+      if (connection !== undefined) msg = connection.sessId + ': ' + msg;
       console.log(key + ' ' + msg);
       try {
         ws.send('L' + key + '\x00' + msg);
@@ -84,8 +84,9 @@ define((require, exports, module) => {
               cs.pendingTests = [apt];
             } else {
               const pt = cs.pendingTests = [];
-              for (let i = 0; i < len; ++i)
+              for (let i = 0; i < len; ++i) {
                 pt.push([]);
+              }
 
               const ctLen = apt.length;
               for (let i = 0; i < ctLen; ++i) {
@@ -123,7 +124,7 @@ define((require, exports, module) => {
           for (let i = 1; i < data.length; ++i) {
             if (data[i] == 255) {
               const arg = decoder.decode(data.subarray(prev, i));
-              if (cmd === void 0) {
+              if (cmd === undefined) {
                 cmd = arg;
               } else {
                 args.push(arg);

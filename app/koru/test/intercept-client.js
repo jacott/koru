@@ -1,10 +1,10 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Test            = require('koru/test');
   const Core            = require('koru/test/core');
 
-  return Intercept => {
+  return (Intercept) => {
     const {ctx} = module;
 
     let intercepting = false;
@@ -15,7 +15,7 @@ define((require, exports, module)=>{
       static sendResult(cand) {
         if (! providing) {
           providing = true;
-          Test.session.provide('D', data => {
+          Test.session.provide('D', (data) => {
             Test.testHandle('ID' + JSON.stringify(ClientIntercept.objectSource(data)));
           });
         }

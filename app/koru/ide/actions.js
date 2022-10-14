@@ -7,14 +7,14 @@ define((require, exports, module) => {
   return {
     handle: (cmd, ws, clients, data) => {
       let action = Actions[cmd];
-      if (action === void 0) {
+      if (action === undefined) {
         const id = module.normalizeId('./' + cmd);
         action = require(id);
         const mod = module.get(id);
-        mod.onUnload(() => {Actions[cmd] = void 0;});
+        mod.onUnload(() => {Actions[cmd] = undefined});
         Actions[cmd] = action;
       }
       action(ws, clients, data);
-    }
+    },
   };
 });

@@ -12,7 +12,7 @@ define((require, exports, module) => {
 
   const setMdnUrl = (info) => {
     const url = CoreJsTypes.mdnUrl(info.object.replace(/\.prototype$/, ''));
-    if (url !== void 0) {
+    if (url !== undefined) {
       info.url = url + '/' + info.name;
     }
   };
@@ -31,7 +31,7 @@ define((require, exports, module) => {
   const getModuleId = (object) => {
     if (object == null || object === Object || object === Function) return;
     const moduleId = ctx._exportMap?.get(object)?.[0].id;
-    if (moduleId !== void 0) {
+    if (moduleId !== undefined) {
       return moduleId;
     } else {
       return getModuleId(object.constructor) ?? getModuleId(Object.getPrototypeOf(object));
@@ -54,24 +54,24 @@ define((require, exports, module) => {
 
     static objectName(object) {
       const ans = this.objectFunction(object);
-      if (ans === void 0) return '';
+      if (ans === undefined) return '';
       if (ans === object) return CoreJsTypes.objectName(object) ?? ans.name;
       return CoreJsTypes.objectName(object) ?? ans.name + '.prototype';
     }
 
     static objectSource(name) {
-      if (Intercept.interceptObj === void 0) return null;
+      if (Intercept.interceptObj === undefined) return null;
 
       const ans = this.lookup(Intercept.locals, name) ?? this.lookup(Intercept.interceptObj, name);
 
       const isLocal = Intercept.interceptObj === globalThis;
 
-      if (ans === void 0) return null;
+      if (ans === undefined) return null;
 
       const {object, propertyType, value} = ans;
 
       const info = {
-        object: Intercept.objectName(isLocal ? void 0 : object),
+        object: Intercept.objectName(isLocal ? undefined : object),
         name,
         propertyType,
         value: util.inspect(value),
@@ -102,7 +102,7 @@ define((require, exports, module) => {
         if (typeof value.constructor === 'function' &&
             value.constructor !== Object) {
           const coreName = CoreJsTypes.objectName(value.constructor);
-          if (coreName === void 0) {
+          if (coreName === undefined) {
             setSource(object, info, value.constructor);
           } else {
             url = CoreJsTypes.mdnUrl(coreName);
@@ -110,18 +110,18 @@ define((require, exports, module) => {
         }
 
         const coreName = CoreJsTypes.objectName(value);
-        if (coreName !== void 0) {
+        if (coreName !== undefined) {
           url = CoreJsTypes.mdnUrl(coreName);
         }
 
-        if (url !== void 0) {
+        if (url !== undefined) {
           info.url = url;
           info.propertyType = 'native ' + info.propertyType;
         }
       }
 
       const moduleId = getModuleId(value);
-      if (moduleId !== void 0) info.moduleId = moduleId;
+      if (moduleId !== undefined) info.moduleId = moduleId;
 
       return info;
     }
@@ -134,11 +134,11 @@ define((require, exports, module) => {
   const recurseLoc = (object, name) => {
     if (object == null) return;
     const desc = Object.getOwnPropertyDescriptor(object, name);
-    if (desc === void 0) {
+    if (desc === undefined) {
       return recurseLoc(Object.getPrototypeOf(object), name);
     }
-    if (desc.get !== void 0) return {object, value: desc.get, propertyType: 'get'};
-    if (desc.set !== void 0) return {object, value: desc.set, propertyType: 'set'};
+    if (desc.get !== undefined) return {object, value: desc.get, propertyType: 'get'};
+    if (desc.set !== undefined) return {object, value: desc.set, propertyType: 'set'};
     return {object, value: desc.value, propertyType: 'value'};
   };
 
@@ -149,13 +149,13 @@ define((require, exports, module) => {
 
   function intercept(prefix, locals) {
     Core.abortMode = 'end';
-    if (InterceptThrow.interceptObj === void 0) {
-      const self = locals === void 0 ? this : globalThis;
+    if (InterceptThrow.interceptObj === undefined) {
+      const self = locals === undefined ? this : globalThis;
       Intercept.interceptObj = self;
       Intercept.locals = locals;
       interceptPrefix = prefix;
       const map = new Map();
-      if (locals !== void 0) recurse(locals, locals, map);
+      if (locals !== undefined) recurse(locals, locals, map);
       recurse(self, self, map);
       const cand = Array.from(map.values()).sort((a, b) => a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
       Intercept.sendResult('C' + JSON.stringify(cand));
@@ -172,13 +172,13 @@ define((require, exports, module) => {
       if (interceptPrefix === name.slice(0, interceptPrefix.length) &&
           ! ans.has(name) && name !== 'constructor' && name.slice(0, 2) !== '__' && isNaN(+name)) {
         const desc = Object.getOwnPropertyDescriptor(obj, name);
-        let type = desc.get !== void 0 ? 'G' : typeof desc.value === 'function' ? 'F' : 'P';
+        let type = desc.get !== undefined ? 'G' : typeof desc.value === 'function' ? 'F' : 'P';
         let sample = '';
         let v = null;
 
         try {
           v = orig[name];
-          if (typeof v !== 'object' && v !== void 0) sample = v.toString();
+          if (typeof v !== 'object' && v !== undefined) sample = v.toString();
         } catch (err) {
           sample = err.toString();
         }
