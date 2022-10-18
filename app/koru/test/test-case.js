@@ -465,6 +465,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       isDone = true;
       if (resolve !== undefined) {
         err === undefined ? resolve() : reject(err);
+      } else if (err !== undefined) {
+        throw err;
       }
     };
     currTest.body(done);
