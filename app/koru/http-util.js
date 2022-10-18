@@ -2,11 +2,10 @@ define((require) => {
   'use strict';
   const koru            = require('koru');
   const Future          = require('koru/future');
+  const HttpError       = requirejs.nodeRequire('koru/lib/http-error');
   const util            = require('koru/util');
-
-  const stream = requirejs.nodeRequire('stream');
-  const zlib = requirejs.nodeRequire('zlib');
-  const HttpError = requirejs.nodeRequire('../lib/http-error');
+  const stream          = requirejs.nodeRequire('node:stream');
+  const zlib            = requirejs.nodeRequire('node:zlib');
 
   const DAY24 = 24 * util.DAY;
 
@@ -28,14 +27,14 @@ define((require) => {
           const ans = config?.onSuccess(await func());
           if (isPromise(ans)) await ans;
         }).catch((err) => {
-          if (config.isRetry === void 0 ? err.statusCode >= 500 : config.isRetry(err)) {
+          if (config.isRetry === undefined ? err.statusCode >= 500 : config.isRetry(err)) {
             config.timer = koru.setTimeout(
               wrapper,
               Math.min(
                 config.maxDelay,
                 (2 ** config.retryCount++) * config.minDelay + Math.floor(Math.random() * config.variance)),
             );
-          } else if (config.onFailure === void 0) {
+          } else if (config.onFailure === undefined) {
             koru.unhandledException(err);
           } else {
             config.onFailure(err);
@@ -108,12 +107,12 @@ define((require) => {
     },
 
     renderContent(response, {data, contentType, encoding='utf-8', prefix, eTag}) {
-      if (data === void 0) {
+      if (data === undefined) {
         response.writeHead(204, {'Content-Length': 0});
         response.end('');
         return;
       }
-      if (contentType === void 0) {
+      if (contentType === undefined) {
         if (typeof data === 'string') {
           contentType = 'text';
         } else {
@@ -126,12 +125,12 @@ define((require) => {
       }
 
       const header = {
-        'Content-Length': (prefix === void 0 ? 0 : prefix.length) + data.length,
+        'Content-Length': (prefix === undefined ? 0 : prefix.length) + data.length,
         'Content-Type': `${contentType}; charset=${encoding}`,
       };
-      if (eTag !== void 0) header.ETag = `W/"${eTag}"`;
+      if (eTag !== undefined) header.ETag = `W/"${eTag}"`;
       response.writeHead(200, header);
-      if (prefix !== void 0) response.write(prefix);
+      if (prefix !== undefined) response.write(prefix);
       response.end(data);
     },
   };

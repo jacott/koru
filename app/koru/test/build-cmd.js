@@ -14,12 +14,12 @@ define((require, exports, module) => {
 
   const BuildCmd = {
     async runTests(session, type, pattern='', callback) {
-      const cTests = type !== 'server' ? [] : void 0;
-      const sTests = type !== 'client' ? [] : void 0;
+      const cTests = type !== 'server' ? [] : undefined;
+      const sTests = type !== 'client' ? [] : undefined;
 
       const pushPath = (path) => {
-        cTests !== void 0 && ! path.match(/\bserver\b/i) && cTests.push(path);
-        sTests !== void 0 && ! path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
+        cTests !== undefined && ! path.match(/\bserver\b/i) && cTests.push(path);
+        sTests !== undefined && ! path.match(/\bclient\b|\bui\b/i) && sTests.push(path);
       };
 
       const findAll = async (dir, exDirs) => {
@@ -84,7 +84,7 @@ define((require, exports, module) => {
       if (type !== 'client') {
         const dest = module.toUrl('test/server-ready.js');
         if (module.ctx.modules['test/server-ready']) {
-          await new Promise((resolve, reject)=>{
+          await new Promise((resolve, reject) => {
             BuildCmd.serverReady = resolve;
             fs.unlinkSync(dest);
           });
@@ -96,7 +96,7 @@ define((require, exports, module) => {
       }
 
       callback(type, {
-        server: type === 'client' ? void 0 : () => {
+        server: type === 'client' ? undefined : () => {
           require(['./server', 'test/server-ready'], (TH, serverReady) => {
             serverReady(koru, BuildCmd);
             TH.run(pattern, sTests);

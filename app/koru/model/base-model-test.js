@@ -1,3 +1,4 @@
+//;no-client-async
 define((require, exports, module) => {
   'use strict';
   /**
@@ -955,6 +956,7 @@ define((require, exports, module) => {
         assert.equals((await doc.$reload(true)).title, 'testing 123');
       });
 
+      //;client-async
       test('$savePartial calls save', async () => {
         const {Book} = v;
         const doc = await Book.create({_id: '123', title: 'testing'});
@@ -964,6 +966,7 @@ define((require, exports, module) => {
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
+      //;no-client-async
 
       test('$$savePartial calls save', async () => {
         const {Book} = v;

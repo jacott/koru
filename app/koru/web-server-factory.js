@@ -4,14 +4,16 @@ define((require, exports, module) => {
   const IdleCheck       = require('./idle-check').singleton;
   const koru            = require('./main');
   const util            = require('./util');
-  const http            = requirejs.nodeRequire('http');
-  const parseurl        = requirejs.nodeRequire('parseurl');
-  const Path            = requirejs.nodeRequire('path');
+  const http            = requirejs.nodeRequire('node:http');
+  const Path            = requirejs.nodeRequire('node:path');
+  const {URL}           = requirejs.nodeRequire('node:url');
 
   let send = requirejs.nodeRequire('send');
 
-  function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
+  function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}, transform) {
     const koruParent = Path.join(koru.libDir, 'app');
+
+    const baseUrl = `http://${host}`;
 
     const handlers = {};
 
@@ -67,7 +69,8 @@ define((require, exports, module) => {
         const error = (err, msg) => {sendError(res, err, msg)};
         IdleCheck.inc();
         try {
-          let path = parseurl(req).pathname;
+          const url = new URL(req.url, baseUrl);
+          let path = url.pathname;
           let reqRoot = root;
 
           if (path === '/') {
@@ -91,13 +94,19 @@ define((require, exports, module) => {
 
           m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
-          if (m === null || await compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]) === void 0) {
+          if (m === null || await compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]) === undefined) {
             if (handlers.DEFAULT === undefined ||
                 await handlers.DEFAULT(req, res, path, error) === false) {
-              send(req, path, {root: reqRoot, index: false})
-                .on('error', error)
-                .on('directory', error)
-                .pipe(res);
+              const tfm = transform?.(req, path);
+              const opts = {root: reqRoot, index: false};
+              if (tfm !== undefined) {
+                tfm(send, req, path, opts, res);
+              } else {
+                send(req, path, opts)
+                  .on('error', error)
+                  .on('directory', error)
+                  .pipe(res);
+              }
             }
           }
         } catch (ex) {
@@ -126,11 +135,12 @@ define((require, exports, module) => {
       requestListener,
 
       send,
-      parseurl,
       notFound,
 
       parseUrlParams(req) {
-        return util.searchStrToMap((typeof req === 'string' ? req : req.url).split('?', 2)[1]);
+        const url = typeof req === 'string' ? req : req.url;
+        const idx = url.indexOf('?');
+        return idx == -1 ? {} : util.searchStrToMap(url.slice(idx + 1));
       },
 
       // testing
@@ -145,12 +155,12 @@ define((require, exports, module) => {
         } else {
           koru.onunload(module, () => {webServer.deregisterHandler(key)});
         }
-        if (handlers[key] !== void 0) throw new Error(key + ' already registered as a web-server hander');
+        if (handlers[key] !== undefined) throw new Error(key + ' already registered as a web-server hander');
         handlers[key] = func;
       },
 
       deregisterHandler(key) {
-        handlers[key] = void 0;
+        handlers[key] = undefined;
       },
 
       getHandler(key) {

@@ -30,12 +30,12 @@ define((require, exports, module) => {
   let count = 0;
 
   const onTestEnd = (api, func) => {
-    if (api[onEnd$] === void 0) {
+    if (api[onEnd$] === undefined) {
       const foo = count++;
       const onEnd = api[onEnd$] = () => {
         if (api[onEnd$] !== onEnd) return;
-        api[onEnd$] = void 0;
-        api.target = void 0;
+        api[onEnd$] = undefined;
+        api.target = undefined;
         const {callbacks} = onEnd;
         onEnd.callbacks = [];
         callbacks.forEach((cb) => cb());
@@ -44,12 +44,12 @@ define((require, exports, module) => {
       TH.after(onEnd);
     }
     let {target} = api;
-    if (target !== void 0) {
+    if (target !== undefined) {
       target.test = getTestLevel();
       api[onEnd$].callbacks.push(() => {extractBodyExample(target, target.test)});
     }
 
-    func === void 0 || api[onEnd$].callbacks.push(func);
+    func === undefined || api[onEnd$].callbacks.push(func);
   };
 
   const createSubjectName = (subject, tc) => {
@@ -191,10 +191,10 @@ define((require, exports, module) => {
       case 'object':
         if (options != null) {
           const info = options.info || options.intro;
-          if (info !== void 0) {
+          if (info !== undefined) {
             if (typeof info === 'function') {
               property.info = info(savedValue);
-              if (property.info === void 0) {
+              if (property.info === undefined) {
                 property.info = docComment(info);
               }
             } else {
@@ -255,12 +255,12 @@ define((require, exports, module) => {
     let calls = details.calls.slice(details[callLength$]);
     details.calls.length = Math.min(details[callLength$] || 0, details.calls.length);
 
-    if (! isNew || body !== void 0) {
+    if (! isNew || body !== undefined) {
       body = jsParser.shiftIndent(body.replace(/^\s*\n/, '')).replace(/ +$/, '');
       if (details.calls.length !== 0 && ! isNew) {
         const last = details.calls[details.calls.length - 1];
         details.calls.length -= 1;
-        if (last.body !== void 0) {
+        if (last.body !== undefined) {
           body = last.body + body;
         }
         if (last.calls.length != 0) {
@@ -277,7 +277,7 @@ define((require, exports, module) => {
     try {
       return typeof body === 'function' && body();
     } finally {
-      if (api.target !== void 0) {
+      if (api.target !== undefined) {
         addBody(api.target, extractFnBody(body), isNew);
       }
     }
@@ -431,7 +431,7 @@ define((require, exports, module) => {
         return `${key}(){}`;
       }
 
-      return `${key}: ${util.inspect(item, 3, 150)}`;});
+      return `${key}: ${util.inspect(item, 3, 150)}`});
     return `{${display.join(', ').slice(0, 150)}}`;
   };
 
@@ -482,7 +482,7 @@ define((require, exports, module) => {
         this.properties = this.protoProperties =
         this.currentComment = this.target =
         this.propertyName = this.initInstExample =
-        this.initExample = void 0;
+        this.initExample = undefined;
 
       this.methods = Object.create(null);
       this.protoMethods = Object.create(null);
@@ -504,8 +504,8 @@ define((require, exports, module) => {
 
     static module({subjectModule, subjectName, pseudoModule, initExample, initInstExample}={}) {
       const tc = TH.Core.currentTestCase;
-      if (pseudoModule !== void 0) {
-        subjectModule = new Module(void 0, toId(tc));
+      if (pseudoModule !== undefined) {
+        subjectModule = new Module(undefined, toId(tc));
         subjectModule.ctx = ctx;
         subjectModule.exports = pseudoModule;
       } else {
@@ -676,7 +676,7 @@ define((require, exports, module) => {
       const ThisAPI = this.constructor;
 
       let ans = this.innerSubjects[subjectName];
-      if (ans === void 0) {
+      if (ans === undefined) {
         this.innerSubjects[subjectName] = ans =
           new ThisAPI(this, subject, subjectName);
         ThisAPI._moduleMap.set(
@@ -686,7 +686,7 @@ define((require, exports, module) => {
 
       if (propertyName) ans.propertyName = propertyName;
 
-      if (options.abstract !== void 0) {
+      if (options.abstract !== undefined) {
         ans.abstract = typeof options.abstract === 'string'
           ? options.abstract
           : docComment(options.abstract);
@@ -694,11 +694,11 @@ define((require, exports, module) => {
         ans.abstract = docComment();
       }
 
-      if (options.initExample !== void 0) {
+      if (options.initExample !== undefined) {
         ans.initExample = options.initExample;
       }
 
-      if (options.initInstExample !== void 0) {
+      if (options.initInstExample !== undefined) {
         ans.initInstExample = options.initInstExample;
       }
 
@@ -822,7 +822,7 @@ define((require, exports, module) => {
 
     topic({name, intro}={}) {
       const test = this[level$] = getTestLevel();
-      if (name === void 0) name = test.name.replace(/^.*test (.*?)\.?$/, '$1');
+      if (name === undefined) name = test.name.replace(/^.*test (.*?)\.?$/, '$1');
       const topics = this.topics || (this.topics = {});
 
       this.target = topics[name] = {
@@ -885,7 +885,7 @@ define((require, exports, module) => {
       procMethods(protoMethods);
       procMethods(customMethods);
 
-      if (topics !== void 0) {
+      if (topics !== undefined) {
         procMethods(topics);
       }
 
@@ -1102,8 +1102,8 @@ define((require, exports, module) => {
     property() {}
     comment() {}
     topic() {return STUB_TOPIC}
-    example(body) {return typeof body === 'function' && body();}
-    exampleCont(body) {return typeof body === 'function' && body();}
+    example(body) {return typeof body === 'function' && body()}
+    exampleCont(body) {return typeof body === 'function' && body()}
     method() {}
     protoMethod() {}
     protoProperty() {}

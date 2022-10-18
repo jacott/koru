@@ -1,3 +1,1 @@
-define(() => {
-  return requirejs.nodeRequire('../lib/http-json');
-});
+define(() => requirejs.nodeRequire('koru/lib/http-json'));

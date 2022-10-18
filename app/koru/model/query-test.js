@@ -483,7 +483,7 @@ define((require, exports, module) => {
     });
 
     test('exists', async () => {
-      api.method();
+      api.protoMethod();
       //[
       assert.same(await new Query(TestModel).exists(), true);
       assert.same(await new Query(TestModel).where({_id: 'notfound'}).exists(), false);
@@ -492,9 +492,12 @@ define((require, exports, module) => {
     });
 
     test('notExists', async () => {
+      api.protoMethod();
+      //[
       assert.same(await new Query(TestModel).notExists(), false);
       assert.same(await new Query(TestModel).where({_id: 'notfound'}).notExists(), true);
       assert.same(await new Query(TestModel).notExists({_id: v.foo._id}), false);
+      //]
     });
 
     group('matches', () => {

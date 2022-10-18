@@ -1,4 +1,3 @@
-window.requirejs = window.yaajs;
 define((require, exports, module) => {
   'use strict';
   const startup         = require('startup-client');

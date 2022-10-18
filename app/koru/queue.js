@@ -13,15 +13,15 @@ define((require) => (type) => {
     constructor(name) {
       this.name = name;
       this.isPending = this.running = false;
-      this.head = this.tail = void 0;
+      this.head = this.tail = undefined;
     }
 
     async add(func) {
       if (this.running) {
         this.isPending = true;
         const future = new Future();
-        future.next = void 0;
-        if (this.head === void 0) {
+        future.next = undefined;
+        if (this.head === undefined) {
           this.head = this.tail = future;
         } else {
           this.tail = this.tail.next = future;
@@ -39,11 +39,11 @@ define((require) => (type) => {
         error = ex;
       }
 
-      if (this.head !== void 0) {
+      if (this.head !== undefined) {
         const future = this.head;
         this.head = future.next;
-        if (this.head === void 0) {
-          this.tail = void 0;
+        if (this.head === undefined) {
+          this.tail = undefined;
           this.isPending = false;
         }
         future.resolve();
@@ -58,7 +58,7 @@ define((require) => (type) => {
 
   if (queues) {
     return (name, func) => {
-      return (queues[name] || (queues[name] = new Queue(name))).add(func);
+      return (queues[name] ??= new Queue(name)).add(func);
     };
   } else {
     return new Queue();

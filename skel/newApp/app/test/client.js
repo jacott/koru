@@ -1,5 +1,3 @@
-window.requirejs = window.yaajs;
-
 window.history.replaceState(null, document.title = 'Test Mode', '/');
 
 define((require, exports, module) => {

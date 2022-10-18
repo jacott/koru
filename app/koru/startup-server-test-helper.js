@@ -12,7 +12,7 @@ define((require, exports, module) => {
     const Module = module.constructor;
     const targetId = module.id.slice(0, -5);
 
-    const mockModule = new Module(void 0, targetId);
+    const mockModule = new Module(undefined, targetId);
 
     let preInit = true;
 
@@ -21,7 +21,7 @@ define((require, exports, module) => {
         return exps[name] = exp;
       } else {
         const exp = exps[name];
-        if (exp === void 0) {
+        if (exp === undefined) {
           throw new TH.Core.AssertionError("mockRequire can't find " + name, 1);
         }
         exp[called$] = true;
@@ -32,7 +32,7 @@ define((require, exports, module) => {
     const checkExports = (reject) => {
       for (const name in exps) {
         const exp = exps[name];
-        if (exp[called$] === void 0) {
+        if (exp[called$] === undefined) {
           reject(new TH.Core.AssertionError(`require not called on '${name}'`, 2));
           return false;
         }
@@ -41,9 +41,9 @@ define((require, exports, module) => {
     };
 
     const init = () => new Promise((resolve, reject) => {
-      const origDefine = global.__yaajsVars__.define;
+      const origDefine = global.__requirejsVars__.define;
 
-      intercept(global.__yaajsVars__, 'define', (body) => {
+      intercept(global.__requirejsVars__, 'define', (body) => {
         StartupServerBody = body;
         origDefine({});
       });

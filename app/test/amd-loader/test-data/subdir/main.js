@@ -1,0 +1,1 @@
+define({value: "main module"});

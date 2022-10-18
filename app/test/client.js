@@ -1,5 +1,3 @@
-window.requirejs = window.yaajs;
-
 window.history.replaceState(null, '', '/');
 
 define((require, exports, module)=>{

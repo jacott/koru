@@ -36,7 +36,7 @@ isServer && define((require, exports, module) => {
           future.resolve(data);
         },
       };
-      webServer = void 0;
+      webServer = undefined;
       api.module();
     });
 
@@ -125,6 +125,26 @@ isServer && define((require, exports, module) => {
       await future.promise;
 
       assert.called(bar);
+    });
+
+    test('transform', async () => {
+      webServer = WebServerFactory('localhost', '9876', '/', '', {}, (req, pathname) => {
+        if (pathname.endsWith('.js') && ! pathname.endsWith('-server.js') && ! pathname.endsWith('-client.js')) {
+          return (send, req, path, opts, res) => {
+            res.writeHead('x');
+            res.end();
+          };
+        }
+      });
+
+      const future = new Future();
+
+      const req = {url: '/path/file.js?abc=123'}, res = {end() {future.resolve()}, writeHead: stub()};
+      webServer.requestListener(req, res);
+
+      await future.promise;
+
+      assert.calledWith(res.writeHead, 'x');
     });
 
     test('async specials', async () => {

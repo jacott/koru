@@ -10,7 +10,7 @@ isServer && define((require, exports, module) => {
 
    * @config defaultPage defaults to `/index.html`: used when no path is supplied in the url.
 
-   * @config indexjs the file to serve for `/index.js` or `require.js`; defaults to `yaajs.js`
+   * @config indexjs the file to serve for `/index.js` or `require.js`; defaults to `amd-loader`
 
    * @config indexjsmap the file to serve for `/index.js.map`; defaults to `index.js.map`
 

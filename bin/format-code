@@ -7,7 +7,7 @@ global.isServer = true;
 global.isClient = false;
 global.isTest = false;
 
-const {topDir, system, loadEnv, withKoru} = require('../lib/script-utils');
+const {topDir, system, loadEnv, withKoru} = require('koru/lib/script-utils');
 let dryRun = false;
 const argv = process.argv.filter((a) => {
   if (a === '--dry-run') {

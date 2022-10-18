@@ -61,7 +61,7 @@ define(['require', 'koru/util-base'], (require, util) => {
             continue;
           }
         } else if (isTestAssert &&
-                   /(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) &&
+                   /(?:^|\/)(?:koru\/test\/|koru\/lib|node_modules\/|\.build\/)/.test(url) &&
                    ! /-test\.js$/.test(url)) {
           if (/koru\/test\/(?:client|test-case).js$/.test(url)) {
             break;
@@ -87,8 +87,8 @@ define(['require', 'koru/util-base'], (require, util) => {
 
     const isTestAssert = isTest && error.name === 'AssertionError';
     const ns = error[normalizedStack$];
-    if (ns !== void 0) return ns;
-    while (error[replacementError$] !== void 0) {
+    if (ns !== undefined) return ns;
+    while (error[replacementError$] !== undefined) {
       error = error[replacementError$];
     }
     return error[normalizedStack$] = normalizedStack(error, error[elideFrames$], isTestAssert);

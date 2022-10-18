@@ -1,4 +1,4 @@
-isServer && define((require, exports, module)=>{
+isServer && define((require, exports, module) => {
   'use strict';
   const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
@@ -15,11 +15,11 @@ isServer && define((require, exports, module)=>{
 
   const {parent$} = apiToHtml[isTest];
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("P Value", ()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('P Value', () => {
       const json = {
         'my/mod': {
-          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          subject: {name: 'MyMod', ids: [], abstracts: []},
           methods: {
             m1: {
               sig: 'm1(options)',
@@ -27,13 +27,13 @@ isServer && define((require, exports, module)=>{
 m1 intro
 @param options.a opta doc,
 `,
-              calls: [[[["P", {b: 123}]
+              calls: [[[['P', {b: 123}],
                        ]],
-                      [[["P", {a: ["M", 'koru/test/api'], b: ['U', 'undefined']}]
+                      [[['P', {a: ['M', 'koru/test/api'], b: ['U', 'undefined']}],
                        ]]],
-            }
-          }
-        }
+            },
+          },
+        },
       };
 
       const html = apiToHtml('Foo', json, sourceHtml);
@@ -42,30 +42,29 @@ m1 intro
       assert.equals(result, [
         {td: 'options.a'},
         {td: {href: '#koru/test/api', a: ['api']}},
-        {class: 'jsdoc-info', td: m(o => /opta doc/.test(util.inspect(o)))}
+        {class: 'jsdoc-info', td: m((o) => /opta doc/.test(util.inspect(o)))},
       ]);
-
     });
 
-    test("no-more-examples", ()=>{
+    test('no-more-examples', () => {
       const json = {
         'my/mod': {
-          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          subject: {name: 'MyMod', ids: [], abstracts: []},
           methods: {
             m1: {
               sig: 'm1(options)',
               intro: `m1 intro`,
-              "calls": [
+              calls: [
                 {
                   // missing body
-                  "calls": [[[
-                    ["O", "Model.Book()"]
-                  ]]]
-                }
-              ]
-            }
-          }
-        }
+                  calls: [[[
+                    ['O', 'Model.Book()'],
+                  ]]],
+                },
+              ],
+            },
+          },
+        },
       };
 
       const html = apiToHtml('Foo', json, sourceHtml);
@@ -74,23 +73,22 @@ m1 intro
       assert.equals(result, [
         {td: 'options'},
         {td: {href: m(/mozilla/), target: m.string, a: ['object']}},
-        {class: 'jsdoc-info', td: {}}
+        {class: 'jsdoc-info', td: {}},
       ]);
-
     });
 
-    test("properties", ()=>{
+    test('properties', () => {
       const json = {
         'my/mod': {
-          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          subject: {name: 'MyMod', ids: [], abstracts: []},
           properties: {
             singleton: {
-              value: ["Oi", "{my:singleton}", 'my/mod'],
-              "info": "prints ${value}"
+              value: ['Oi', '{my:singleton}', 'my/mod'],
+              info: 'prints ${value}',
             },
             _id: {value: 'id-value'},
-          }
-        }
+          },
+        },
       };
 
       const html = apiToHtml('Foo', json, sourceHtml);
@@ -100,69 +98,69 @@ m1 intro
         {h1: 'Properties'},
         {table: {tbody: [
           {tr: [
-            {class: "searchable", td: '_id'},
+            {class: 'searchable', td: '_id'},
             {td: {a: ['string'], href: TH.match(/mozilla.*String/), target: '_blank'}},
             {class: 'jsdoc-info', 'data-env': 'server',
              td: {class: 'jsdoc-value', code: '"id-value"'}},
           ]},
           {tr: [
-            {class: "searchable", td: 'singleton'},
+            {class: 'searchable', td: 'singleton'},
             {td: {a: ['MyMod'], href: '#my/mod'}},
             {class: 'jsdoc-info', 'data-env': 'server', td: {div: [
               {p: [
                 'prints ',
                 {class: 'jsdoc-value', code: '{my:singleton}'},
               ]},
-              '\n'
+              '\n',
             ]}},
           ]},
         ]}},
       ]);
     });
 
-    group("requireLine", ()=>{
-      test("simple", ()=>{
+    group('requireLine', () => {
+      test('simple', () => {
         const json = {
           'my/mod': {
-            subject: {name: 'MyMod', ids: [], abstracts: [],},
-            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
-          }
+            subject: {name: 'MyMod', ids: [], abstracts: []},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]]}},
+          },
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
         const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0].textContent;
 
-        assert.equals(result, 'const MyMod = require('+
-                      '"my/mod");'); // stop yaajs thinking it's a require
+        assert.equals(result, 'const MyMod = require(' +
+                      '"my/mod");'); // stop amd-loader thinking it's a require
       });
 
-      test("property subject", ()=>{
+      test('property subject', () => {
         const json = {
           'my/mod.m1': {
-            subject: {name: 'MyMod', ids: [], abstracts: [],},
-            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
-          }
+            subject: {name: 'MyMod', ids: [], abstracts: []},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]]}},
+          },
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
         const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0];
 
-        assert.equals(result.textContent, 'const MyMod = require('+
+        assert.equals(result.textContent, 'const MyMod = require(' +
                       '"my/mod").m1;');
 
         assert.equals(Dom.htmlToJson(result).div.length, 12);
       });
 
-      test(":: subject no initExample", ()=>{
+      test(':: subject no initExample', () => {
         const json = {
           'my/mod': {
-            subject: {name: 'MyMod', ids: [], abstracts: [],},
+            subject: {name: 'MyMod', ids: [], abstracts: []},
           },
           'my/mod::m1': {
-            subject: {name: 'M1', ids: [], abstracts: [],},
-            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
-            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}}
-          }
+            subject: {name: 'M1', ids: [], abstracts: []},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]]}},
+            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}},
+          },
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
@@ -170,7 +168,7 @@ m1 intro
         let meth = Dom.textToHtml(html).getElementsByClassName('jsdoc-example')[0];
         let req = meth.childNodes[0];
 
-        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(req.textContent, 'const MyMod = req' + 'uire("my/mod");');
         assert.equals(Dom.htmlToJson(req).div.length, 10);
 
         let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
@@ -178,22 +176,22 @@ m1 intro
 
         req = pmeth.parentNode.childNodes[0];
 
-        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(req.textContent, 'const MyMod = req' + 'uire("my/mod");');
         assert.equals(Dom.htmlToJson(req).div.length, 10);
       });
 
-      test(":: subject with initExample", ()=>{
+      test(':: subject with initExample', () => {
         const json = {
           'my/mod': {
-            subject: {name: 'MyMod', ids: [], abstracts: [],},
+            subject: {name: 'MyMod', ids: [], abstracts: []},
           },
           'my/mod::m1': {
             initExample: 'const myM1 = MyMod.Foo();',
             initInstExample: 'const m1Inst = myM1.instance();',
-            subject: {name: 'M1', ids: [], abstracts: [],},
-            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
-            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}}
-          }
+            subject: {name: 'M1', ids: [], abstracts: []},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]]}},
+            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}},
+          },
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
@@ -201,7 +199,7 @@ m1 intro
         let meth = Dom.textToHtml(html).getElementsByClassName('jsdoc-example')[0];
 
         let req = meth.childNodes[0];
-        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(req.textContent, 'const MyMod = req' + 'uire("my/mod");');
         assert.equals(Dom.htmlToJson(req).div.length, 10);
 
         let ex = meth.childNodes[1];
@@ -210,31 +208,30 @@ m1 intro
 
         let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
-
       });
     });
 
-    group("mapArgs", ()=>{
+    group('mapArgs', () => {
       const {mapArgs} = apiToHtml[isTest];
 
-      test("named args", ()=>{
+      test('named args', () => {
         const ans = mapArgs('constructor({arg1, arg2})', [{
           body: 'theBody(goes.here)',
           calls: [
-            [ [], [ 'O', 'Book' ] ],
+            [[], ['O', 'Book']],
             [
               [
                 [
                   'P',
                   {
                     arg1: ['F', 'arg1Func'],
-                    arg2: 'arg 2'
-                  }
-                ]
+                    arg2: 'arg 2',
+                  },
+                ],
               ],
-              [ 'O', 'Book' ]
-            ]
-          ]
+              ['O', 'Book'],
+            ],
+          ],
         }]);
 
         assert.equals(ans.args, ['arg1', 'arg2']);
@@ -245,8 +242,8 @@ m1 intro
       });
     });
 
-    group("jsdocToHtml", ()=>{
-      test("list", ()=>{
+    group('jsdocToHtml', () => {
+      test('list', () => {
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           ' before\n\n* one\n* two',
@@ -256,11 +253,11 @@ m1 intro
           div: [
             {p: ' before'}, '\n',
             {ul: ['\n', {li: 'one'}, '\n', {li: 'two'}, '\n']},
-            '\n'
+            '\n',
           ]});
       });
 
-      test("escape {{", ()=>{
+      test('escape {{', () => {
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           '{{{topic:hello}}',
@@ -269,55 +266,55 @@ m1 intro
         assert.equals(Dom.htmlToJson(div), {div: [{p: '{{topic:hello}}'}, '\n']});
       });
 
-      test("{{topic:name}}", ()=>{
+      test('{{topic:name}}', () => {
         const json = {
-          "koru/pubsub/main": {
-            "id": "koru/pubsub/overview",
-            "subject": {
-              "name": "Overview",
-              "abstract": "Some text\n{{topic:../publication:publishing a model}}\n"+
-                "An external example {{example:../publication:publishing a model:2}}"
+          'koru/pubsub/main': {
+            id: 'koru/pubsub/overview',
+            subject: {
+              name: 'Overview',
+              abstract: 'Some text\n{{topic:../publication:publishing a model}}\n' +
+                'An external example {{example:../publication:publishing a model:2}}',
             },
           },
-          "koru/pubsub/publication": {
-            "id": "koru/pubsub/publication",
-            "subject": {
-              "name": "Publication",
-              "abstract": ""
+          'koru/pubsub/publication': {
+            id: 'koru/pubsub/publication',
+            subject: {
+              name: 'Publication',
+              abstract: '',
             },
-            "methods": {},
-            "protoMethods": {},
-            "customMethods": {},
-            "topics": {
-              "publishing a model": {
-                "test": "koru/pubsub/publication test publishing a model.",
-                "intro": "text begin {{example:0}} more text {{example:1}} end text",
-                "calls": [
+            methods: {},
+            protoMethods: {},
+            customMethods: {},
+            topics: {
+              'publishing a model': {
+                test: 'koru/pubsub/publication test publishing a model.',
+                intro: 'text begin {{example:0}} more text {{example:1}} end text',
+                calls: [
                   {
-                    "body": "class Book extends Publication {\n}\n",
-                    "calls": []
+                    body: 'class Book extends Publication {\n}\n',
+                    calls: [],
                   },
                   {
-                    "body": "Book.Union = class extends Publication.Union {}",
-                    "calls": []
+                    body: 'Book.Union = class extends Publication.Union {}',
+                    calls: [],
                   },
                   {
-                    "body": "ExampleThree()",
-                    "calls": []
+                    body: 'ExampleThree()',
+                    calls: [],
                   },
-                ]
-              }
+                ],
+              },
             },
-          }
+          },
         };
 
         apiToHtml.makeTree(json);
 
-        const api = json["koru/pubsub/main"];
+        const api = json['koru/pubsub/main'];
 
         const abstractMap = {};
         const abstract = apiToHtml.jsdocToHtml(
-          api, api.subject.abstract, abstractMap
+          api, api.subject.abstract, abstractMap,
         );
 
         assert.equals(Dom.htmlToJson(abstract), {
@@ -332,7 +329,7 @@ m1 intro
                   {class: 'k', span: 'class'}, ' ',
                   {class: 'nc', span: 'Book'}, ' ',
                   {class: 'k', span: 'extends'}, ' ', {class: 'nx', span: 'Publication'},
-                  ' {\n}']}
+                  ' {\n}']},
             },
             ' more text ',
             {class: 'jsdoc-example highlight',
@@ -344,7 +341,7 @@ m1 intro
                  {class: 'k', span: 'class'}, ' ',
                  {class: 'k', span: 'extends'}, ' ',
                  {class: 'nx', span: 'Publication'}, '.',
-                 {class: 'na', span: 'Union'}, ' {}'
+                 {class: 'na', span: 'Union'}, ' {}',
                ]}},
             ' end text',
             {p: ''},
@@ -353,15 +350,15 @@ m1 intro
               class: 'jsdoc-example highlight',
               pre: {
                 class: 'highlight', div: [
-                  {class: 'nx', span: 'ExampleThree'}, '()']
-              }
+                  {class: 'nx', span: 'ExampleThree'}, '()'],
+              },
             },
-            {p: ''}, '\n'
-          ]
+            {p: ''}, '\n',
+          ],
         });
       });
 
-      test("{#module/link}", ()=>{
+      test('{#module/link}', () => {
         function abstract() {
           /**
            * Abstract
@@ -388,7 +385,7 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           json['this/start/module'],
           api._docComment(abstract),
-          {}
+          {},
         );
 
         assert.equals(Dom.htmlToJson(div), {
@@ -400,8 +397,7 @@ m1 intro
               ' ',
               {a: ['Module.method'], class: 'jsdoc-link', href: '#my/module.method'},
               '\n', {a: ['mod#protoMethod'], class: 'jsdoc-link',
-                     href: '#my/mod#protoMethod'}
-              , ' ',
+                     href: '#my/mod#protoMethod'}, ' ',
               {a: ['thisModMethod'], class: 'jsdoc-link',
                href: '#this/start/module.thisModMethod'},
               '\n',
@@ -419,50 +415,50 @@ m1 intro
               '\n',
               {a: ['Child'], class: 'jsdoc-link',
                href: '#this/start/module/child'}]},
-            '\n'
+            '\n',
           ]});
       });
 
-      test("@param", ()=>{
+      test('@param', () => {
         const json = {
-          "koru/test/api": {
-            "id": "koru/test/api",
-            "subject": {
-              "name": "API",
-              "abstract": "topAbstracr"
+          'koru/test/api': {
+            id: 'koru/test/api',
+            subject: {
+              name: 'API',
+              abstract: 'topAbstracr',
             },
-            "methods": {
-              "class": {
-                "test": "koru/test/api test class.",
-                "sig": "class(options)",
-                "intro": "myAbs\n"+
-                  "@param {string} [options.sig] sigParam\n"+
-                  "@param {function|string} [options.intro] introParam\n"+
-                  "@returns returnParam",
-                "calls": [
+            methods: {
+              class: {
+                test: 'koru/test/api test class.',
+                sig: 'class(options)',
+                intro: 'myAbs\n' +
+                  '@param {string} [options.sig] sigParam\n' +
+                  '@param {function|string} [options.intro] introParam\n' +
+                  '@returns returnParam',
+                calls: [
                   {
-                    "body": "theBody",
-                    "calls": [
-                      [[], ["O", "Book"]],
-                      [[["P", {
-                        "sig": "function Hobbit({name}) {}",
-                        "intro": "It is a dangerous thing Frodo"}]],
-                       ["O", "Book"]]
-                    ]
-                  }
-                ]
-              }
+                    body: 'theBody',
+                    calls: [
+                      [[], ['O', 'Book']],
+                      [[['P', {
+                        sig: 'function Hobbit({name}) {}',
+                        intro: 'It is a dangerous thing Frodo'}]],
+                       ['O', 'Book']],
+                    ],
+                  },
+                ],
+              },
             },
-          }
+          },
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
         const result = Dom.textToHtml(html);
 
         let found;
-        Dom.walkNode(result, node =>{
+        Dom.walkNode(result, (node) => {
           if (node.tagName === 'H1' && /Parameters/.test(node.textContent)) {
-            Dom.walkNode(node.parentNode, node =>{
+            Dom.walkNode(node.parentNode, (node) => {
               if (node.tagName === 'TBODY') {
                 found = node;
                 return true;
@@ -474,8 +470,8 @@ m1 intro
 
         const params = Dom.htmlToJson(found).tbody;
 
-        const mozType = (type)=>({
-          href: m(new RegExp("mozilla.*Global_Objects.*"+type)),
+        const mozType = (type) => ({
+          href: m(new RegExp('mozilla.*Global_Objects.*' + type)),
           target: '_blank', a: [type.toLowerCase()]});
 
         const aString = mozType('String');
@@ -485,7 +481,7 @@ m1 intro
           tr: [
             {td: '[options.sig]'},
             {td: aString},
-            {class: 'jsdoc-info', td: {div: [{p: 'sigParam'}, '\n']}}
+            {class: 'jsdoc-info', td: {div: [{p: 'sigParam'}, '\n']}},
           ]});
 
         assert.equals(params[1], {
@@ -493,23 +489,23 @@ m1 intro
           tr: [
             {td: '[options.intro]'},
             {td: [
-              mozType("Function"),
+              mozType('Function'),
               '\u200a/\u200a',
               aString,
             ]},
-            {class: 'jsdoc-info', td: {div: [{p: 'introParam'}, '\n']}}
+            {class: 'jsdoc-info', td: {div: [{p: 'introParam'}, '\n']}},
           ]});
 
         assert.equals(params[2], {
           class: 'jsdoc-method-returns',
           tr: [
             {td: {h1: 'Returns'}},
-            {td: mozType("Object")},
-            {class: 'jsdoc-info', td: {div: [{p: 'returnParam'}, '\n']}}
+            {td: mozType('Object')},
+            {class: 'jsdoc-info', td: {div: [{p: 'returnParam'}, '\n']}},
           ]});
       });
 
-      test("@config", ()=>{
+      test('@config', () => {
         function abstract() {
           /**
            * Abstract
@@ -523,30 +519,29 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          apiMap
+          apiMap,
         );
 
         assert.equals(Dom.htmlToJson(div), {
           div: [
             {p: 'Abstract'}, '\n',
-          ]
+          ],
         });
 
         assert.equals(apiMap, {
-          ':config:': {cfg1: TH.match(html => {
+          ':config:': {cfg1: TH.match((html) => {
             assert.equals(Dom.htmlToJson(html), {div: [
               {p: [
                 'markup ',
-                {a: ['module'], class: 'jsdoc-link', href: '#this/module'}
+                {a: ['module'], class: 'jsdoc-link', href: '#this/module'},
               ]}, '\n',
             ]});
             return true;
-          })}
+          })},
         });
-
       });
 
-      test("@deprecated", ()=>{
+      test('@deprecated', () => {
         function abstract() {
           /**
            * Abstract
@@ -558,7 +553,7 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          {}
+          {},
         );
 
         assert.equals(Dom.htmlToJson(div), {
@@ -567,13 +562,13 @@ m1 intro
             {class: 'jsdoc-deprecated', div: [
               {h1: 'Deprecated'},
               {p: ['use ', {class: 'jsdoc-link', href: '#this/module', a: ['module']}, ' instead']},
-              "\n",
+              '\n',
             ]},
-          ]
+          ],
         });
       });
 
-      test("normal link", ()=>{
+      test('normal link', () => {
         function abstract() {
           /**
            * A [normal](#link) link
@@ -582,18 +577,18 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          {}
+          {},
         );
 
         assert.equals(Dom.htmlToJson(div), {
           div: [
             {p: ['A ', {a: ['normal'], href: '#link'}, ' link']},
-            '\n'
+            '\n',
           ]});
       });
 
-      test("highlight js", ()=>{
-        const abstract = ()=>{
+      test('highlight js', () => {
+        const abstract = () => {
           /**
            * ```js
            * alert("hello");
@@ -603,19 +598,19 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          {}
+          {},
         );
 
         assert.equals(Dom.htmlToJson(div), {
           div: [{pre: {class: 'language-js', code: [{
             class: 'highlight',
             div: [{
-              class: 'nx', span: 'alert'
-            }, '(', {class: 's', span: '\"hello\"'}, ');']}, "\n"]}}, "\n"]});
+              class: 'nx', span: 'alert',
+            }, '(', {class: 's', span: '\"hello\"'}, ');']}, '\n']}}, '\n']});
       });
 
-      test("highlight html", ()=>{
-        const abstract = ()=>{
+      test('highlight html', () => {
+        const abstract = () => {
           /**
            * ```html
            * <span id="s1">hello</span>
@@ -625,7 +620,7 @@ m1 intro
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          {}
+          {},
         );
 
         assert.equals(Dom.htmlToJson(div), {
@@ -633,8 +628,8 @@ m1 intro
             class: 'highlight',
             div: ['<', {class: 'nf', span: 'span'}, ' ',
                   {class: 'nv', span: 'id'}, '=', {class: 's', span: '"s1"'},
-                  '>hello</', {class: 'nf', span: 'span'}, '>']
-          }, "\n"]}}, "\n"]});
+                  '>hello</', {class: 'nf', span: 'span'}, '>'],
+          }, '\n']}}, '\n']});
       });
     });
   });

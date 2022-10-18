@@ -590,8 +590,10 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     lastTest = currTest = nextTest = common = nextFunc = undefined;
     nextFunc = testStart;
 
-    while (util[isTest].length != 0) {
-      util[isTest].pop()(Core);
+    if (util[isTest] !== undefined) {
+      while (util[isTest].length != 0) {
+        util[isTest].pop()(Core);
+      }
     }
 
     for (let i = 0; i < testCases.length; ++i) {
