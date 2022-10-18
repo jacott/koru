@@ -241,6 +241,14 @@ define((require, exports, module) => {
         }
       },
 
+      notExists() {
+        if (this.singleId !== undefined) {
+          return this.findOne(this.singleId) === undefined;
+        } else {
+          return this.count(1) === 0;
+        }
+      },
+
       findOne(id) {
         const doc = this.docs[id];
         return doc !== undefined && this.matches(doc, doc.attributes)

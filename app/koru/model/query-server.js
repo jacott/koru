@@ -218,9 +218,9 @@ define((require) => {
         }
       },
 
-      exists() {
-        return this.model.docs.exists(this);
-      },
+      exists() {return this.model.docs.exists(this)},
+
+      notExists() {return this.model.docs.notExists(this)},
 
       async update(changesOrField={}, value) {
         const origChanges = (typeof changesOrField === 'string')

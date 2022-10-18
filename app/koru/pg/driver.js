@@ -898,6 +898,7 @@ define((require, exports, module) => {
       return (await queryWhere(this, `SELECT EXISTS (SELECT 1 FROM "${this._name}"`,
                                where, ')'))[0].exists;
     }
+    async notExists(where) {return ! await this.exists(where)}
 
     async count(where) {
       return + (await queryWhere(this, `SELECT count(*) FROM "${this._name}"`, where))[0].count;

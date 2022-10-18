@@ -482,10 +482,19 @@ define((require, exports, module) => {
       assert.same(await new Query(TestModel).count(), 2);
     });
 
-    test('exisits', async () => {
+    test('exists', async () => {
+      api.method();
+      //[
       assert.same(await new Query(TestModel).exists(), true);
       assert.same(await new Query(TestModel).where({_id: 'notfound'}).exists(), false);
       assert.same(await new Query(TestModel).exists({_id: v.foo._id}), true);
+      //]
+    });
+
+    test('notExists', async () => {
+      assert.same(await new Query(TestModel).notExists(), false);
+      assert.same(await new Query(TestModel).where({_id: 'notfound'}).notExists(), true);
+      assert.same(await new Query(TestModel).notExists({_id: v.foo._id}), false);
     });
 
     group('matches', () => {
@@ -631,7 +640,7 @@ define((require, exports, module) => {
         await TH.startTransaction();
       });
       afterEach(async () => {
-        TestModel.docs._ps_findById = void 0;
+        TestModel.docs._ps_findById = undefined;
         await TH.rollbackTransaction();
       });
 

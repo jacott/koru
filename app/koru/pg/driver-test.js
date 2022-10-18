@@ -811,6 +811,11 @@ isServer && define((require, exports, module) => {
         assert.isFalse(await foo.exists({name: 'abcx'}));
       });
 
+      test('notExists', async () => {
+        assert.isFalse(await foo.notExists({name: 'abc'}));
+        assert.isTrue(await foo.notExists({name: 'abcx'}));
+      });
+
       test('remove', async () => {
         foo._ready = false;
         assert.same(await foo.remove({_id: '123'}), 1);
