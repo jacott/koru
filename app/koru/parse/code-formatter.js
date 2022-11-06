@@ -134,7 +134,7 @@ define((require, exports, module) => {
           this.advance(value.end);
           this.skipOver(SameLineWsOrSemiRE);
           this.write(';');
-           this.skipOverNl(2);
+          this.skipOverNl(2);
         } else {
           this.print(value);
         }
@@ -762,6 +762,7 @@ define((require, exports, module) => {
     }
 
     StringLiteral(node) {
+      this.advance(node.start);
       const raw = node.extra.raw;
       this.write(raw?.[0] === "'" ? raw : qstr(node.value), 'string');
       this.advance(node.end);
@@ -812,6 +813,7 @@ define((require, exports, module) => {
     }
 
     Program(node) {
+      this.print(node.interpreter);
       this.printDirectives(node.directives);
       this.printBlock(node.body);
     }

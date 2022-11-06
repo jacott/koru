@@ -62,7 +62,12 @@ x()`;
     });
 
     test('directives', () => {
-      assert.equals(reformat('() => {\n\n"use strict"\n\n\n\nab()\n}\n'), "() => {\n  'use strict';\n\n  ab();\n};\n");
+      assert.equals(reformat('#!/usr/bin/env node\n"use strict"\ndefine("123")'),
+                    "#!/usr/bin/env node\n'use strict';\ndefine('123')");
+      assert.equals(reformat('() => {//;comment\n"use strict"\n\n\n\nab()\n}\n'),
+                    "() => {//;comment\n  'use strict';\n\n  ab();\n};\n");
+      assert.equals(reformat('() => {\n\n"use strict"\n\n\n\nab()\n}\n'),
+                    "() => {\n  'use strict';\n\n  ab();\n};\n");
     });
 
     test('labels', () => {
