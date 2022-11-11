@@ -20,11 +20,21 @@ define((require, exports, module) => {
 
     after(() => Model._destroyModel('TestModel', 'drop'));
 
-    beforeEach(async () => {
+    beforeEach(() => {
       api.module({subjectModule: module.get('./query'), subjectName: 'Query'});
-      await TH.startTransaction();
+      TH.startTransaction();
     });
-    afterEach(async () => {await TH.rollbackTransaction()});
+    afterEach(() => TH.rollbackTransaction());
+
+    test('exists', async () => {
+      assert.isTrue(await TestModel.exists({_id: ['foo123', 'foo456'], age: 5}));
+      assert.isFalse(await TestModel.exists({_id: ['foo123', 'foo456'], age: 4}));
+      assert.isFalse(await TestModel.exists({_id: {$nin: ['foo213', 'foo456']}, age: 4}));
+      assert.isFalse(await TestModel.exists({_id: {$in: ['foo123']}, age: 4}));
+      assert.isFalse(await TestModel.exists({name: {$regex: 'f.O'}, age: 4}));
+      assert.isFalse(await TestModel.exists({name: {$regex: 'f.O', $options: 'i'}, age: 4}));
+      assert.isTrue(await TestModel.exists({name: {$regex: 'f.O', $options: 'i'}, age: 5}));
+    });
 
     test('fields', async () => {
       assert.equals(await TestModel.query.fields('age').fetchOne(), {_id: 'foo123', age: 5});

@@ -752,7 +752,7 @@ define((require, exports, module) => {
               if (typeof value === 'object') {
                 if (Array.isArray(value)) {
                   inArray(colSpec, qkey, result, value, true);
-                  break;
+                  continue;
                 } else if (value.constructor === Object) {
                   let regex;
                   for (const vk in value) {
@@ -799,7 +799,7 @@ define((require, exports, module) => {
                     }
                     break;
                   }
-                  break;
+                  continue;
                 }
               }
               result.push(qkey + '=$' + ++count);
