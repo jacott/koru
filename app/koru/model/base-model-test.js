@@ -972,8 +972,9 @@ define((require, exports, module) => {
         const {Book} = v;
         const doc = await Book.create({_id: '123', title: 'testing'});
         const assertSave = stub(doc, '$save').withArgs('assert').returns(Promise.resolve(true));
-        const ans = await doc.$$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
-        assert.same(ans, doc);
+        const ans = doc.$$savePartial('title', ['$append', '.sfx'], 'pages', ['bar', 'abc']);
+        assert.isPromise(ans);
+        assert.isTrue(await ans);
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
 

@@ -352,7 +352,7 @@ define((require, exports, module) => {
     }
 
     $$savePartial(...args) {
-      savePartial(this, args, 'assert'); return this;
+      return savePartial(this, args, 'assert');;
     }
 
     $isValid() {
