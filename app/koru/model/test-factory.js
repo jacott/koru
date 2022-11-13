@@ -445,12 +445,8 @@ define((require) => {
 
   const buildFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    const attrs = buildAttributes(key, traitsAndAttributes);
-    if (isPromise(attrs)) {
-      return attrs.then((attrs) => def.call(Factory, attrs).build());
-    } else {
-      return def.call(Factory, attrs).build();
-    }
+    return ifPromise(buildAttributes(key, traitsAndAttributes), attrs => ifPromise(
+      def.call(Factory, attrs), b => b.build()));
   };
 
   const asyncCreate = async (p, key, traitsAndAttributes) => {
@@ -464,13 +460,8 @@ define((require) => {
 
   const createFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    const attrs = buildAttributes(key, traitsAndAttributes);
-    let result;
-    if (isPromise(attrs)) {
-      result = attrs.then((attrs) => def.call(Factory, attrs).create());
-    } else {
-      result = def.call(Factory, attrs).create();
-    }
+    const result = ifPromise(buildAttributes(key, traitsAndAttributes),
+                             (attrs) => ifPromise(def.call(Factory, attrs), b => b.create()));
     if (isPromise(result)) {
       return asyncCreate(result, key, traitsAndAttributes);
     }
