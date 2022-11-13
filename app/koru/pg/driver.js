@@ -638,8 +638,10 @@ define((require, exports, module) => {
             result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
               const tag = paramNos[key];
               if (tag !== undefined) return tag;
-              whereValues.push(items[key]);
-              whereOids.push(0);
+              const val = items[key];
+              whereValues.push(val);
+              const {oid} = colMap[key] ?? UNKNOWN_COLUMN;
+              whereOids.push(Array.isArray(val) ? PgType.toArrayOid(oid) ?? 0 : oid);
               return paramNos[key] = '$' + ++count;
             }));
           }

@@ -14,8 +14,8 @@ define((require, exports, module) => {
     let TestModel, foo;
     before(async () => {
       TestModel = Model.define('TestModel').defineFields({
-        name: 'text', age: 'number', nested: 'object'});
-      foo = await TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
+        name: 'text', age: 'number', height: 'real'});
+      foo = await TestModel.create({_id: 'foo123', name: 'foo', age: 5, height: 1.234});
     });
 
     after(() => Model._destroyModel('TestModel', 'drop'));
@@ -101,6 +101,14 @@ define((require, exports, module) => {
       //]
 
       assert.same((await TestModel.query.whereSql(new SQLStatement(`name = 'foo2'`)).fetchOne()).name, 'foo2');
+
+      // test oid assignment.
+      // should handle casting types to match columns
+      assert.same((await TestModel.query.whereSql(
+        `height > {$height}`, {height: 1}).fetchOne()).name, 'foo');
+
+      assert.same((await TestModel.query.whereSql(
+        `height > {$height}`, {height: 1.1}).fetchOne()).name, 'foo');
     });
 
     test('notify', async () => {
@@ -137,7 +145,7 @@ define((require, exports, module) => {
 
       test('already exists', async () => {
         spy(koru, 'setTimeout');
-        assert.equals(foo.attributes, (await TestModel.onId(foo._id).waitForOne(10)).attributes);
+        assert.specificAttributes((await TestModel.onId(foo._id).waitForOne(10)).attributes, {_id: foo._id, age: 5});
         refute.called(koru.setTimeout);
       });
 
