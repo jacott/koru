@@ -1,4 +1,3 @@
-/* global Intl */
 define((require) => {
   'use strict';
   const match           = require('./match');
@@ -1093,7 +1092,7 @@ define((require) => {
         return func();
       } finally {
         thread.date = dates.pop();
-        if (dates.length == 0) thread.dates = void 0;
+        if (dates.length == 0) thread.dates = undefined;
       }
     },
 
@@ -1207,7 +1206,7 @@ define((require) => {
 
     voidToNull: (object) => {
       for (const name in object) {
-        if (object[name] === void 0) object[name] = null;
+        if (object[name] === undefined) object[name] = null;
       }
       return object;
     },
