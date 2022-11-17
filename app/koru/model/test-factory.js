@@ -322,6 +322,19 @@ define((require) => {
     }
   }
 
+  const asyncCreateList = async (factory, p, number, list, func, create, args, i) => {
+    list.push(await p);
+
+    for (; i < number; ++i) {
+      func !== undefined && await func.apply(args, [i, args.at(-1)]);
+      list.push(await create.apply(this, args));
+
+    }
+
+    return list;
+  };
+
+
   const Factory = {
     startTransaction() {
       checkDb();
@@ -380,24 +393,27 @@ define((require) => {
       checkDb();
       const list = [];
 
-      const func = typeof args[0] === 'function' ? args.shift() : null;
+      const func = typeof args[0] === 'function' ? args.shift() : undefined;
 
-      if (args.length === 0 || typeof args[args.length - 1] === 'string') {
+      if (args.length === 0 || typeof args.at(-1) === 'string') {
         args.push({});
       }
 
-      let ps = false;
+      const create = this[creator];
 
       for (let i = 0; i < number; ++i) {
-        const p = func?.apply(args, [i, args[args.length - 1]]);
-        ifPromise(p, () => {
-          const p2 = this[creator].apply(this, args);
-          if (isPromise(p) || isPromise(p2)) ps = true;
-          list.push(p2);
-        });
+        if (func !== undefined) {
+          const p = func.apply(args, [i, args.at(-1)]);
+          if (isPromise(p)) {
+            return asyncCreateList(this, p.then(() => create.apply(this, args)), number, list, func, create, args, i+1);
+          }
+        }
+        const p2 = create.apply(this, args);
+        if (isPromise(p2)) {
+          return asyncCreateList(this, p2, number, list, func, create, args, i+1);
+        }
+        list.push(p2);
       }
-
-      if (ps) return Promise.all(list);
       return list;
     },
 

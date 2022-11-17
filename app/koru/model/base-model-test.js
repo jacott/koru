@@ -966,7 +966,6 @@ define((require, exports, module) => {
 
         assert.equals(doc.changes, {$partial: {title: ['$append', '.sfx'], pages: ['bar', 'abc']}});
       });
-      //;no-client-async
 
       test('$$savePartial calls save', async () => {
         const {Book} = v;
@@ -981,6 +980,7 @@ define((require, exports, module) => {
         assert.calledOnce(assertSave);
         assert.same(assertSave.firstCall.thisValue, doc);
       });
+      //;no-client-async
 
       test('$hasChanged', () => {
         const {Book} = v;

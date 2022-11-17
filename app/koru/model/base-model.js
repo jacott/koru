@@ -262,7 +262,7 @@ define((require, exports, module) => {
       let $fields = this.$fields;
       if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
       for (const field in fields) {
-        let _options = fields[field];
+        const _options = fields[field];
         const options = (typeof _options === 'string') ? {type: _options} : _options;
         const func = TYPE_MAP[options.type];
         func?.(this, field, options);

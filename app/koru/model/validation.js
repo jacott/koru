@@ -48,7 +48,7 @@ define((require) => {
       const check1 = (obj, subSpec, name) => {
         if (typeof subSpec === 'string') {
           if (obj == null) return;
-          if (match[subSpec] && match[subSpec].test(obj)) {
+          if (match[subSpec]?.test(obj)) {
             return;
           }
           bad(name, obj, subSpec);
@@ -106,8 +106,7 @@ define((require) => {
         func(doc, field, value, {
           onError(name, obj) {
             if (name) {
-              Val.addError(doc, field, 'is_invalid',
-                           name, typeof obj === 'string' ? obj : obj && obj[error$]);
+              Val.addError(doc, field, 'is_invalid', name, typeof obj === 'string' ? obj : obj?.[error$]);
             } else {
               Val.addError(doc, field, 'is_invalid');
             }
@@ -123,7 +122,7 @@ define((require) => {
           ? {
             __proto__: options,
             onError(name, obj) {
-              if (obj && obj[error$] !== undefined) {
+              if (obj?.[error$] !== undefined) {
                 reason = obj[error$];
               } else if (name) {
                 reason = {}; reason[name] = [['is_invalid']];
@@ -183,8 +182,7 @@ define((require) => {
 
     validateField(doc, field, spec) {
       for (const name in spec) {
-        const validator = validators[name];
-        validator && validator.call(this, doc, field, spec[name], spec);
+        validators[name]?.call(this, doc, field, spec[name], spec);
       }
 
       if (doc[error$] !== undefined) return false;
@@ -336,14 +334,16 @@ define((require) => {
     },
 
     transferErrors: (field, from, to) => {
-      const errors = from[error$] && from[error$][field];
+      const errors = from[error$]?.[field];
       if (errors === undefined) return;
 
-      errors.forEach((err) => {Val.addError(to, field, ...err)});
+      for (const err of errors) {
+        Val.addError(to, field, ...err)
+      }
     },
 
     addSubErrors(doc, field, subErrors) {
-      const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$];
+      const errors = doc[error$] ??= {};
       for (const name in subErrors) {
         const fullname = `${field}.${name}`;
         const fieldErrors = errors[fullname];
