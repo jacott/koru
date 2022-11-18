@@ -30,7 +30,7 @@ define((require, exports, module) => {
 
     beforeEach(() => {
       TH.noInfo();
-      v.myModule = new Module(void 0, 'mymodule');
+      v.myModule = new Module(undefined, 'mymodule');
       v.myModule.onUnload = after;
     });
 
@@ -371,9 +371,9 @@ define((require, exports, module) => {
 
       module.onUnload.yieldAll();
 
-      assert.same(Val.validators('normalize'), void 0);
-      assert.same(Val.validators('inclusion'), void 0);
-      assert.same(Val.validators('required'), void 0);
+      assert.same(Val.validators('normalize'), undefined);
+      assert.same(Val.validators('inclusion'), undefined);
+      assert.same(Val.validators('required'), undefined);
       //]
     });
 
@@ -400,7 +400,33 @@ define((require, exports, module) => {
 
       Val.deregister('fooStub');
 
-      assert.same(Val.validators('fooStub'), void 0);
+      assert.same(Val.validators('fooStub'), undefined);
+    });
+
+    test('validateFieldAsync', async () => {
+      let errors = 'set';
+      let fieldOpts;
+      Val.register(v.myModule, {async addIt(doc, field, x, _fieldOpts) {
+        await 1;
+        await 2;
+        fieldOpts = _fieldOpts;
+        doc[field] += x;
+        doc[error$] = errors;
+      }});
+      const doc = {age: 10};
+
+      await Val.validateFieldAsync(doc, 'age', {type: 'number', addIt: 5});
+      assert.equals(fieldOpts, {type: 'number', addIt: 5});
+
+      assert.same(doc[error$], 'set');
+      assert.same(doc.age, 15);
+
+      doc.age = 'x';
+      errors = undefined;
+      await Val.validateFieldAsync(doc, 'age', {type: 'number', addIt: 5});
+
+      assert.equals(doc[error$], {age: [['wrong_type', 'number']]});
+      assert.same(doc.age, 'x5');
     });
 
     test('validateField', () => {
@@ -484,6 +510,36 @@ define((require, exports, module) => {
       assert.modelErrors(doc, {bar: 'unexpected_field'});
 
       assert.msg('null doc should be false').isFalse(matcher.test(null));
+    });
+
+    test('matchFieldsAsync', async () => {
+      Val.register(v.myModule, {async divByx(doc, field, x) {
+        await 1;
+        await 2;
+        if (doc[field] % x !== 0) {
+          await 3;
+          this.addError(doc, field, 'is_invalid');
+        }
+      }});
+
+      const matcher = Val.matchFieldsAsync({
+        even: {type: 'number', divByx: 2},
+        mod4: {type: 'number', divByx: 4},
+      });
+
+      let doc = {even: 6, mod4: 5};
+      assert.isFalse(await matcher.test(doc));
+      assert.modelErrors(doc, {mod4: 'is_invalid'});
+
+      doc.mod4 = 4;
+      assert.isTrue(await matcher.test(doc));
+      assert.same(doc[error$], undefined);
+
+      doc = {mod5: 3};
+      assert.isFalse(await matcher.test(doc));
+      assert.modelErrors(doc, {mod5: 'unexpected_field'});
+
+      assert.msg('null doc should be false').isFalse(await matcher.test(null));
     });
   });
 });

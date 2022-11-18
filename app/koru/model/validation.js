@@ -18,12 +18,12 @@ define((require) => {
     error$,
     Error: {
       msgFor(doc, field, other_error) {
-        const errors = field !== void 0
+        const errors = field !== undefined
               ? (doc[error$] ?? doc)[field]
               : (Array.isArray(doc) ? doc : [[doc.toString()]]);
-        if (errors !== void 0) {
+        if (errors !== undefined) {
           return errors.map(format.translate).join(', ');
-        } else if (other_error !== void 0) {
+        } else if (other_error !== undefined) {
           return ResourceString.en[other_error];
         } else {
           return null;
@@ -47,11 +47,9 @@ define((require) => {
       const {onError, altSpec, baseName: name, filter} = options;
       const check1 = (obj, subSpec, name) => {
         if (typeof subSpec === 'string') {
-          if (obj == null) return;
-          if (match[subSpec]?.test(obj)) {
-            return;
+          if (obj != null) {
+            match[subSpec]?.test(obj) || bad(name, obj, subSpec);
           }
-          bad(name, obj, subSpec);
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
@@ -88,15 +86,16 @@ define((require) => {
         throw false;
       };
 
+      let r;
+
       try {
         check1(obj, spec, name);
-        return true;
-      } catch (ex) {
-        if (ex === false) {
-          return false;
-        }
-        throw ex;
+      } catch (err) {
+        r = err === false ? null : err;
       }
+
+      if (r == null) return r === undefined;
+      throw r;
     },
 
     nestedFieldValidator: (func) => function (field) {
@@ -159,11 +158,33 @@ define((require) => {
           }
         }
 
-        for (const field in fieldSpec)
+        for (const field in fieldSpec) {
           Val.validateField(doc, field, fieldSpec[field]);
+        }
 
         return doc[error$] === undefined;
-      }, name || {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
+      }, name ?? {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
+      m.$spec = fieldSpec;
+      return m;
+    },
+
+    matchFieldsAsync(fieldSpec, name) {
+      const m = match(async (doc) => {
+        if (doc === null || typeof doc !== 'object') return false;
+        if (doc[error$] !== undefined) doc[error$] = undefined;
+        for (const field in doc) {
+          if (! hasOwn(fieldSpec, field)) {
+            Val.addError(doc, field, 'unexpected_field');
+            return false;
+          }
+        }
+
+        for (const field in fieldSpec) {
+          await Val.validateFieldAsync(doc, field, fieldSpec[field]);
+        }
+
+        return doc[error$] === undefined;
+      }, name ?? {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
     },
@@ -189,6 +210,22 @@ define((require) => {
 
       const value = doc[field];
       if (value != null && ! Val.check(value, spec.type)) {
+        Val.addError(doc, field, 'wrong_type', spec.type);
+        return;
+      }
+
+      return doc[error$] === undefined;
+    },
+
+    async validateFieldAsync(doc, field, spec) {
+      for (const name in spec) {
+        await validators[name]?.call(this, doc, field, spec[name], spec);
+      }
+
+      if (doc[error$] !== undefined) return false;
+
+      const value = doc[field];
+      if (value != null && ! await Val.check(value, spec.type)) {
         Val.addError(doc, field, 'wrong_type', spec.type);
         return;
       }
@@ -321,14 +358,14 @@ define((require) => {
 
     addError: (doc, field, ...args) => {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
-            fieldErrors = errors[field] || (errors[field] = []);
+            fieldErrors = errors[field] ??= [];
 
       fieldErrors.push(args);
     },
 
     addErrorIfNone: (doc, field, ...args) => {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$];
-      if (errors[field] === void 0) {
+      if (errors[field] === undefined) {
         errors[field] = [args];
       }
     },
@@ -338,7 +375,7 @@ define((require) => {
       if (errors === undefined) return;
 
       for (const err of errors) {
-        Val.addError(to, field, ...err)
+        Val.addError(to, field, ...err);
       }
     },
 
@@ -364,7 +401,7 @@ define((require) => {
 
   const accessDenied = (details, nolog) => {
     const reason = 'Access denied';
-    const error = new koru.Error(403, details === void 0 ? reason : reason + ' - ' +
+    const error = new koru.Error(403, details === undefined ? reason : reason + ' - ' +
                                  (details?.[inspect$]?.() ?? (details?.toString?.())));
 
     if (! nolog && ! util.thread.suppressAccessDenied) {
