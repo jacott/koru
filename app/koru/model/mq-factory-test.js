@@ -96,8 +96,25 @@ isServer && define((require, exports, module) => {
       test('_initTableSchema', async () => {
         const {dbs$} = MQFactory[private$];
         stub(dbBroker.db, 'query');
-        stubProperty(mqFactory[dbs$].current, 'table', {value: {_name: 'Test_TABEL', _ensureTable: stub()}});
-        await mqFactory._initTableSchema();
+        const order = [];
+        const f1 = new Future();
+        const f2 = new Future();
+        stubProperty(mqFactory[dbs$].current, 'table', {
+          value: {_name: 'Test_TABEL', async _ensureTable() {
+            await 1;
+            order.push(1);
+          }, async readColumns() {
+            f2.resolve();
+            await f1.promise;
+            order.push(2);
+          }}});
+        const p = mqFactory._initTableSchema().then(() => {order.push(3)});
+        order.push(0);
+        await f2.promise;
+        f1.resolve();
+        await p;
+        assert.equals(order, [0, 1, 2, 3]);
+
         const schema = dbBroker.db.query.args(0, 0);
         dbBroker.db.query.restore();
         assert.equals(schema, `
@@ -197,7 +214,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         const bar = mqFactory.getQueue('bar');
         spy(bar, 'deregister');
         mqFactory.deregisterQueue('bar');
-        assert.same(await mqFactory.getQueue('bar'), undefined);
+        assert.same(mqFactory.getQueue('bar'), undefined);
         assert.called(bar.deregister);
 
         /** can restart deregisterd queue **/
@@ -219,6 +236,22 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         await koru.setTimeout.yieldAndReset();
 
         assert.equals(v.msg.message, 'p1');
+      });
+
+      test('purge inits', async () => {
+        mqFactory.registerQueue({name: 'q1', local: true, action(...args) {}});
+        const q1 = mqFactory.getQueue('q1');
+        assert.same(q1.mqdb.table._colMap, undefined);
+        await q1.purge();
+        assert.same(q1.mqdb.table._colMap._id.oid, 20);
+      });
+
+      test('remove inits', async () => {
+        mqFactory.registerQueue({name: 'q1', local: true, action(...args) {}});
+        const q1 = mqFactory.getQueue('q1');
+        assert.same(q1.mqdb.table._colMap, undefined);
+        await q1.remove(123);
+        assert.same(q1.mqdb.table._colMap._id.oid, 20);
       });
 
       test('start', async () => {

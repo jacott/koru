@@ -102,6 +102,16 @@ select "dueAt" from "${table._name}" where name = $1
       () => action(mq), Math.min(util.DAY, Math.max(0, dueAt - util.dateNow())));
   };
 
+  const initTable = async (mqdb) => {
+    mqdb[ready$] = true;
+    const {table} = mqdb;
+    await table._ensureTable();
+    if (table._colMap === undefined) {
+      await dbBroker.db.query(TABLE_SCHEMA.replace(/_message_queue/g, table._name));
+      await table.readColumns();
+    }
+  };
+
   class MQ {
     constructor(mqdb, name, startupDelay) {
       this.mqdb = mqdb;
@@ -139,6 +149,7 @@ select "dueAt" from "${table._name}" where name = $1
     }
 
     async purge() {
+      this.mqdb[ready$] || await initTable(this.mqdb);
       this.deregister();
       await this.mqdb.table.remove({name: this.name});
     }
@@ -168,20 +179,12 @@ select _id,"dueAt",message from "${table._name}"
 `, [this.name]);
     }
 
-    remove(_id) {
+    async remove(_id) {
+      this.mqdb[ready$] || await initTable(this.mqdb);
       const {table} = this.mqdb;
       return table._client.query(`delete from "${table._name}" where _id = $1`, [_id]);
     }
   }
-
-  const initTable = async (mqdb) => {
-    mqdb[ready$] = true;
-    const {table} = mqdb;
-    await table._ensureTable();
-    if (table._colMap === undefined) {
-      await dbBroker.db.query(TABLE_SCHEMA.replace(/_message_queue/g, table._name));
-    }
-  };
 
   class MQDB {
     constructor(tableName, actions, retryIntervals) {
