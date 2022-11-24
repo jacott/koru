@@ -210,6 +210,21 @@ define((require, exports, module) => {
       assert.equals(data, {foo: {a: 1, b: 'hello there'}});
     });
 
+    test('async check', async () => {
+      const Match = match.constructor;
+      const test = new Match(async (v) => {
+        await 1;
+        return v % 2 == 0;
+      });
+      const asyncMatch = {f1: new Match(() => true), f2: test, f3: test, f4: test};
+
+      const data = {f1: 123, f2: 455, f3: 788, f4: 123};
+      assert.isFalse(await Val.check(data, asyncMatch, {onError(name, obj, subSpec) {
+        Val.addError(data, name, 'is_invalid');
+      }}));
+      assert.equals(data[error$], {f2: [['is_invalid']], f4: [['is_invalid']]});
+    });
+
     test('assertCheck', () => {
       assert.exception(() => {
         Val.assertCheck(1, 'string');

@@ -14,6 +14,19 @@ define((require) => {
 
   const ID_SPEC = {_id: 'id'};
 
+  const awaitCheckPromises = async (promises) => {
+    let r;
+    for (const p of promises) {
+      try {
+        if (! await p && r === undefined) r = null;
+      } catch (e) {
+        r ??= e === false ? null : e;
+      }
+    }
+    if (r == null) return r === undefined;
+    throw r;
+  };
+
   const Val = {
     error$,
     Error: {
@@ -44,11 +57,12 @@ define((require) => {
     },
 
     check(obj, spec, options={}) {
+      let promises;
       const {onError, altSpec, baseName: name, filter} = options;
       const check1 = (obj, subSpec, name) => {
         if (typeof subSpec === 'string') {
-          if (obj != null) {
-            match[subSpec]?.test(obj) || bad(name, obj, subSpec);
+          if (obj != null && ! match[subSpec]?.test(obj)) {
+            bad(name, obj, subSpec);
           }
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
@@ -74,8 +88,15 @@ define((require) => {
               }
             }
           }
-        } else if (! (match.isMatch(subSpec) && subSpec.test(obj))) {
+        } else if (! (match.isMatch(subSpec))) {
           bad(name, obj, subSpec);
+        } else {
+          const p = subSpec.test(obj);
+          if (isPromise(p)) {
+            (promises ??= []).push(p.then((r) => (r || onError?.(name, obj, subSpec))));
+          } else if (! p) {
+            bad(name, obj, subSpec);
+          }
         }
       };
 
@@ -92,6 +113,10 @@ define((require) => {
         check1(obj, spec, name);
       } catch (err) {
         r = err === false ? null : err;
+      }
+
+      if (promises !== undefined) {
+        return awaitCheckPromises(promises);
       }
 
       if (r == null) return r === undefined;
