@@ -19,6 +19,14 @@ define(() => {
   const RM_RF = {force: true, recursive: true};
 
   return {
+    appendData: async (path, data) => {
+      const fh = await fsp.open(path, 'a', 0o644);
+      try {
+        return await fh.write(data);
+      } finally {
+        await fh.close();
+      }
+    },
     mkdir: fsp.mkdir,
     readFile: fsp.readFile,
     readdir: fsp.readdir,

@@ -3,6 +3,7 @@ isServer && define((require, exports, module) => {
   /**
    * Convenience wrapper around some node `fs` functions
    */
+  const Future          = require('koru/future');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -21,10 +22,52 @@ isServer && define((require, exports, module) => {
       fsp.readlink.withArgs('accessdenied').invokes(async (c) => {throw {code: 'EACCESS'}});
       fsp.readlink.withArgs('iamasymlink').returns(Promise.resolve('pointinghere'));
 
-      assert.same(await fst.readlinkIfExists('idontexist'), void 0);
+      assert.same(await fst.readlinkIfExists('idontexist'), undefined);
       assert.same(await fst.readlinkIfExists('iamasymlink'), 'pointinghere');
       await assert.exception(() => fst.readlinkIfExists('accessdenied'), {code: 'EACCESS'});
       //]
+    });
+
+    test('appendData', async () => {
+      api.method();
+      const f1 = new Future();
+      const f2 = new Future();
+      const fh = {
+        async write(...args) {
+          const action = await f1.promiseAndReset();
+          f2.resolve(['write', args]);
+          if (typeof action === 'string') {
+            return action;
+          } else {
+            throw action;
+          }
+        },
+        async close() {
+          f2.resolve('close ' + await f1.promiseAndReset());
+        },
+      };
+      stub(fsp, 'open').invokes(async (c) => {
+        const fh = await f1.promiseAndReset();
+        f2.resolve(c.args);
+        return fh;
+      });
+
+      //[
+      const ans = fst.appendData('/my/file.txt', 'extra data');
+      //]
+      let done = false;
+      ans.then((ans) => (done = true, ans));
+
+      f1.resolve(fh);
+      assert.equals(await f2.promiseAndReset(), ['/my/file.txt', 'a', 420]);
+      f1.resolve('success');
+      assert.equals(await f2.promiseAndReset(), ['write', ['extra data']]);
+      f1.resolve('done');
+      await 1;
+      assert.isFalse(done);
+      assert.equals(await f2.promiseAndReset(), 'close done');
+      assert.same(await ans, 'success');
+      assert.isTrue(done);
     });
   });
 });
