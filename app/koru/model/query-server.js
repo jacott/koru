@@ -31,7 +31,7 @@ define((require) => {
           TransQueue.onAbort(() => model._$docCacheDelete(doc));
           const dc = DocChange.add(doc);
           await Model._support.callAfterLocalChange(dc);
-          await TransQueue.onSuccess(async () => {await notify(dc)});
+          await TransQueue.onSuccess(() => notify(dc));
         });
       },
 
@@ -205,7 +205,11 @@ define((require) => {
             await Model._support.callAfterLocalChange(DocChange.delete(doc));
             onSuccess.push(doc);
           });
-          TransQueue.onSuccess(() => {onSuccess.forEach((doc) => notify(DocChange.delete(doc)))});
+          TransQueue.onSuccess(async () => {
+            for (const doc of onSuccess) {
+              await notify(DocChange.delete(doc));
+            }
+          });
         });
         return count;
       },
@@ -235,7 +239,7 @@ define((require) => {
         await TransQueue.nonNested(model.db, async (tran) => {
           const {docs} = model;
           TransQueue.onAbort(() => {
-            onAbort.forEach((doc) => model._$docCacheDelete(doc));
+            for (const doc of onAbort) model._$docCacheDelete(doc);
           });
           const where = {_id: ''};
           await this.forEach(async (doc) => {

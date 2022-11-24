@@ -113,12 +113,15 @@ define((require, exports, module) => {
 
     test('notify', async () => {
       let isInTransaction = false, count = 0;
-      const onChange = (dc) => {
+      after(TestModel.onChange(async (dc) => {
+        await 1;
+      }));
+      after(TestModel.onChange(async (dc) => {
+        await 1;
         isInTransaction = TransQueue.isInTransaction();
         ++count;
-      };
+      }));
 
-      after(TestModel.onChange(onChange));
       const doc1 = await TestModel.create({name: 'doc1'});
 
       assert.same(count, 1);

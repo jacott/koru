@@ -352,7 +352,7 @@ define((require, exports, module) => {
     }
 
     $$savePartial(...args) {
-      return savePartial(this, args, 'assert');;
+      return savePartial(this, args, 'assert');
     }
 
     $isValid() {
@@ -501,7 +501,9 @@ define((require, exports, module) => {
       return callWhenFinally(doc, err);
     }
 
-    return ifPromise(p, () => performInsert_3(doc));
+    return isPromise(p)
+      ? p.then(() => performInsert_3(doc), (err) => callWhenFinally(doc, err))
+      : performInsert_3(doc);
   };
 
   const performUpdate_2 = (doc, attrs) => {
@@ -512,7 +514,9 @@ define((require, exports, module) => {
       return callWhenFinally(doc, err);
     }
 
-    return ifPromise(p, () => performUpdate_3(doc));
+    return isPromise(p)
+      ? p.then(() => performUpdate_3(doc), (err) => callWhenFinally(doc, err))
+      : performUpdate_3(doc);
   };
 
   const performInsert_3 = (doc) => {
@@ -528,8 +532,9 @@ define((require, exports, module) => {
       return callWhenFinally(doc, err);
     }
 
-    if (isPromise(p)) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
-    return callWhenFinally(doc);
+    return isPromise(p)
+      ? p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err))
+      : callWhenFinally(doc);
   };
 
   const performUpdate_3 = (doc) => {
@@ -547,8 +552,9 @@ define((require, exports, module) => {
       return callWhenFinally(doc, err);
     }
 
-    if (isPromise(p)) return p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err));
-    return callWhenFinally(doc);
+    return isPromise(p)
+      ? p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err))
+      : callWhenFinally(doc);
   };
 
   const _support = {
@@ -570,7 +576,9 @@ define((require, exports, module) => {
         return callWhenFinally(doc, err);
       }
 
-      return ifPromise(p, () => performInsert_2(doc));
+      return isPromise(p)
+        ? p.then(() => performInsert_2(doc), (err) => callWhenFinally(doc, err))
+        : performInsert_2(doc);
     },
 
     performUpdate(doc, changes) {
@@ -584,7 +592,9 @@ define((require, exports, module) => {
         return callWhenFinally(doc, err);
       }
 
-      return ifPromise(p, () => performUpdate_2(doc));
+      return isPromise(p)
+        ? p.then(() => performUpdate_2(doc), (err) => callWhenFinally(doc, err))
+        : performUpdate_2(doc);
     },
 
     _updateTimestamps(changes, timestamps, now) {

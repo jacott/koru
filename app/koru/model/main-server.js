@@ -283,7 +283,7 @@ define((require, exports, module) => {
             if (isPromise(p)) return p.then(() => anyChange.notify(...args));
           }
 
-          anyChange.notify(...args);
+          return anyChange.notify(...args);
         },
         onAnyChange: (callback) => anyChange.add(callback),
         onChange(callback) {

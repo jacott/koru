@@ -1,3 +1,4 @@
+//;no-client-async
 define((require, exports, module) => {
   'use strict';
   /**
@@ -61,14 +62,38 @@ define((require, exports, module) => {
       await ModelEnv.destroyModel(TestModel, 'drop');
     });
 
+    test('notify onAnyChange but no async onChange', async () => {
+      const Book = Model.define('Book').defineFields({name: 'text'});
+
+      const anyChanges = [];
+      after(Book.onAnyChange(async (arg) => {
+        await 1;
+        anyChanges.push(1, arg);
+      }));
+      after(Book.onAnyChange(async (arg) => {
+        anyChanges.push(2, arg);
+        await 1;
+      }));
+      const p = Book.notify('testing');
+      if (isServer) {
+        assert.isPromise(p);
+        assert.equals(anyChanges, []);
+        await p;
+      } else {
+        assert.same(p, undefined);
+      }
+      assert.equals(anyChanges, [1, 'testing', 2, 'testing']);
+    });
+
     group('observering', () => {
       beforeEach(async () => {
         v.Book = Model.define('Book').defineFields({name: 'text'});
         v.tc = await v.Book.create({name: 'foo'});
 
         v.obs = {};
-        const obCalled = (doc, type, partials) => {
+        const obCalled = async (doc, type, partials) => {
           const args = [util.merge({}, doc.attributes), util.merge({}, doc.changes)];
+          await 1;
           if (partials !== undefined) {
             args.push(util.merge({}, partials));
           }
@@ -84,6 +109,28 @@ define((require, exports, module) => {
         after(v.Book.whenFinally((doc, ex) => {
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
         }));
+      });
+
+      test('notify', async () => {
+        const {Book, tc, obs} = v;
+        const anyChanges = [];
+        after(Book.onAnyChange(async (arg) => {
+          await 1;
+          anyChanges.push(1, arg);
+        }));
+        after(Book.onAnyChange(async (arg) => {
+          anyChanges.push(2, arg);
+          await 1;
+        }));
+        const p = Book.notify('testing');
+        if (isServer) {
+          assert.isPromise(p);
+          assert.equals(anyChanges, []);
+          await p;
+        } else {
+          assert.same(p, undefined);
+        }
+        assert.equals(anyChanges, [1, 'testing', 2, 'testing']);
       });
 
       test('remove calls', async () => {
@@ -122,7 +169,6 @@ define((require, exports, module) => {
 
       test('create calls', async () => {
         after(v.Book.onChange(v.onChange = stub()).stop);
-
         v.tc = await v.Book.create({name: 'foo'});
         assert.calledOnceWith(v.onChange, DocChange.add(m((doc) => doc.attributes === v.tc.attributes)));
 
