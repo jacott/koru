@@ -615,6 +615,13 @@ isServer && define((require, exports, module) => {
         assert.equals(c._oids, [25]);
       });
 
+      test('readColumns', async () => {
+        foo._resetTable();
+        foo._colMap = undefined;
+        await foo.readColumns();
+        assert.equals(foo._colMap._id.oid, 25);
+      });
+
       test('_resetTable and cursor without where', async () => {
         assert.same(foo._ready, true);
         foo._resetTable();

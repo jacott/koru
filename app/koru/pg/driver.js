@@ -456,11 +456,13 @@ define((require, exports, module) => {
         .then(() => this._client.withConn(callback));
     }
 
+    readColumns() {return readColumns(this)}
+
     async _ensureTable() {
       if (this._ready === true) return;
 
       if (typeof this._ready === 'object') {
-        if (this._ready === null) this._ready = new Observable();
+        this._ready ??= new Observable();
         const future = new Future();
         const handle = this._ready.add(future.resolve);
         try {
@@ -481,7 +483,7 @@ define((require, exports, module) => {
       const subject = this._ready;
       this._ready = true;
       if (subject !== null) {
-        subject.notify();
+        await subject.notify();
       }
     }
 
