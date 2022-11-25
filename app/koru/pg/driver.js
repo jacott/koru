@@ -242,6 +242,8 @@ define((require, exports, module) => {
       return this.withConn((conn) => query(conn, ...normalizeQuery(args)));
     }
 
+    oidQuery(sql, values, oids) {return oidQuery(this, sql, values, oids)}
+
     async explainQuery(...args) {
       args = normalizeQuery(args);
       args[0] = 'EXPLAIN ANALYZE ' + args[0];

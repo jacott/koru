@@ -143,6 +143,13 @@ isServer && define((require, exports, module) => {
         //]
       });
 
+      test('oidQuery', async () => {
+        // 700 = float4
+        assert.equals(
+          Math.floor((await pg.defaultDb.oidQuery(`SELECT $1 + $2 as ans`, [1, 2.3], [700, 700]))[0].ans * 100),
+          329);
+      });
+
       test('ensuredTran', async () => {
         let tx;
         await koru.runFiber(async () => {
