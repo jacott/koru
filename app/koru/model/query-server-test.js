@@ -111,6 +111,11 @@ define((require, exports, module) => {
         `height > {$height}`, {height: 1.1}).fetchOne()).name, 'foo');
     });
 
+    test('async map', async () => {
+      const doc2 = await TestModel.create({_id: 'doc2', name: 'doc2'});
+      assert.equals(await TestModel.query.sort('_id').map(async (d) => d._id), ['doc2', 'foo123']);
+    });
+
     test('notify', async () => {
       let isInTransaction = false, count = 0;
       after(TestModel.onChange(async (dc) => {

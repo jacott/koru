@@ -187,7 +187,12 @@ define((require) => {
 
       async map(func) {
         const results = [];
-        await this.forEach((doc) => {results.push(func(doc))});
+        const pushAsync = (p) => p.then((v) => {results.push(v)});
+        await this.forEach((doc) => {
+          const p = func(doc);
+          if (isPromise(p)) return pushAsync(p);
+          results.push(p);
+        });
         return results;
       },
 
