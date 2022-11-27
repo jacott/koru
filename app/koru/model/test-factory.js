@@ -325,22 +325,20 @@ define((require) => {
   const asyncCreateList = async (factory, p, number, list, func, create, args, i) => {
     list.push(await p);
 
-    for (; i < number; ++i) {
+    for (;i < number; ++i) {
       func !== undefined && await func.apply(args, [i, args.at(-1)]);
       list.push(await create.apply(this, args));
-
     }
 
     return list;
   };
-
 
   const Factory = {
     startTransaction() {
       checkDb();
       tx.push([last, seqGen]);
       last = Object.assign({}, last);
-      dbVars.seqGen = seqGen = util.deepCopy({}, seqGen);
+      dbVars.seqGen = seqGen = Object.assign({}, seqGen);
     },
 
     endTransaction() {
@@ -405,12 +403,12 @@ define((require) => {
         if (func !== undefined) {
           const p = func.apply(args, [i, args.at(-1)]);
           if (isPromise(p)) {
-            return asyncCreateList(this, p.then(() => create.apply(this, args)), number, list, func, create, args, i+1);
+            return asyncCreateList(this, p.then(() => create.apply(this, args)), number, list, func, create, args, i + 1);
           }
         }
         const p2 = create.apply(this, args);
         if (isPromise(p2)) {
-          return asyncCreateList(this, p2, number, list, func, create, args, i+1);
+          return asyncCreateList(this, p2, number, list, func, create, args, i + 1);
         }
         list.push(p2);
       }
@@ -461,8 +459,8 @@ define((require) => {
 
   const buildFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
-    return ifPromise(buildAttributes(key, traitsAndAttributes), attrs => ifPromise(
-      def.call(Factory, attrs), b => b.build()));
+    return ifPromise(buildAttributes(key, traitsAndAttributes), (attrs) => ifPromise(
+      def.call(Factory, attrs), (b) => b.build()));
   };
 
   const asyncCreate = async (p, key, traitsAndAttributes) => {
@@ -477,7 +475,7 @@ define((require) => {
   const createFunc = (key, def) => (...traitsAndAttributes) => {
     checkDb();
     const result = ifPromise(buildAttributes(key, traitsAndAttributes),
-                             (attrs) => ifPromise(def.call(Factory, attrs), b => b.create()));
+                             (attrs) => ifPromise(def.call(Factory, attrs), (b) => b.create()));
     if (isPromise(result)) {
       return asyncCreate(result, key, traitsAndAttributes);
     }
