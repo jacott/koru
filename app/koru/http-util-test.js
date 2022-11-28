@@ -154,6 +154,14 @@ isServer && define((require, exports, module) => {
           headers: {
             'content-type': 'application/json;charset=UTF-8',
           },
+        }, '')), {});
+
+        assert.equals(await sut.readBody(new HttpHelper.RequestStub({
+          url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+          method: 'GET',
+          headers: {
+            'content-type': 'application/json;charset=UTF-8',
+          },
         }, rawBody)), rawBody);
 
         assert.equals(await sut.readBody(new HttpHelper.RequestStub({

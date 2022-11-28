@@ -89,11 +89,12 @@ define((require) => {
       let data;
       let body;
       try {
-        body = (await future.promise) ?? '{}';
+        body = (await future.promise);
       } catch (ex) {
         throw new koru.Error(...ex);
       }
       if (asJson) {
+        if (body === '') return {};
         try {
           data = JSON.parse(body);
         } catch (ex) {

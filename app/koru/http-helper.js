@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const util            = require('koru/util');
@@ -16,15 +16,16 @@ define((require)=>{
 
     _setBody(input='') {
       this._input = Buffer.isBuffer(input) || typeof input === 'string'
-        ? input : JSON.stringify(input);
+        ? input
+        : JSON.stringify(input);
       this.headers = this.headers || {};
       this.headers['content-length'] = this._input.length;
     }
 
     _read() {
-      if (this._input === '')
+      if (this._input === '') {
         this.push(null);
-      else {
+      } else {
         const buf = Buffer.from(this._input, 'utf8');
         this._input = '';
         this.push(buf);
@@ -34,7 +35,7 @@ define((require)=>{
     [inspect$]() {
       return `request.url("${this.url}")`;
     }
-  };
+  }
 
   return {
     RequestStub,
@@ -43,15 +44,15 @@ define((require)=>{
       v.output = [];
       return {
         writeHead: koru._TEST_.test.stub(),
-        write: data =>{
+        write: (data) => {
           refute(v.ended);
           v.output.push(data);
         },
-        end: data =>{
+        end: (data) => {
           v.output.push(data);
           v.ended = true;
-        }
+        },
       };
-    }
+    },
   };
 });
