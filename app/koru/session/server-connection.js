@@ -163,6 +163,7 @@ define((require, exports, module) => {
     }
 
     async setUserId(userId) {
+      userId ??= undefined;
       const oldId = this[userId$];
       if (! userId) userId = this._session.DEFAULT_USER_ID;
       this[userId$] = userId;

@@ -23,7 +23,7 @@ define((require, exports, module) => {
       util.merge(conn, {
         get userId() {return userId},
         set userId(v) {throw new Error('set not allowed; use setUserId');},
-        setUserId(v) {userId = v; return origSetUserId.call(this, v)}});
+        setUserId(v) {v ??= undefined;userId = v; return origSetUserId.call(this, v)}});
       conn.sendBinary = stub();
       conn.sendEncoded = stub();
       conn.added = stub();

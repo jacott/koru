@@ -304,7 +304,16 @@ isServer && define((require, exports, module) => {
       refute.exception(() => conn.sendBinary('M', [1, 2, 3]));
     });
 
-    test('set userId and DEFAULT_USER_ID', async () => {
+    test('setUserId', async () => {
+      const conn = new ServerConnection(session, v.ws, {}, 888, v.sessClose = stub());
+      await conn.setUserId('u456');
+      assert.same(conn.userId, 'u456');
+
+      await conn.setUserId(null);
+      assert.same(conn.userId, undefined);
+    });
+
+    test('setUserId and DEFAULT_USER_ID', async () => {
       stubProperty(session, 'DEFAULT_USER_ID', {value: 'public'});
       const conn = new ServerConnection(session, v.ws, {}, 888, v.sessClose = stub());
       stub(crypto, 'randomBytes').yields(null, {
@@ -390,7 +399,7 @@ isServer && define((require, exports, module) => {
                     ['C', ['Book', 'book1', {name: 'new name'}]]);
 
       assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1)),
-                    ['R', ['Book', 'book1', void 0]]);
+                    ['R', ['Book', 'book1', undefined]]);
 
       assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1, 'stopped')),
                     ['R', ['Book', 'book1', 'stopped']]);
@@ -442,7 +451,7 @@ isServer && define((require, exports, module) => {
         //[
         conn.removed('Book', 'id123');
 
-        assert.calledWith(conn.sendBinary, 'R', ['Book', 'id123', void 0]);
+        assert.calledWith(conn.sendBinary, 'R', ['Book', 'id123', undefined]);
         //]
       });
 
