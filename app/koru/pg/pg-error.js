@@ -16,7 +16,7 @@ define((require, exports, module) => {
       this.paramValues = paramValues;
       this.severity = details.severity;
       this.code = details.code;
-      this.error = TRANSLATE[this.code] ?? 400;
+      this.error = TRANSLATE[this.code] ?? 500;
     }
 
     toString() {
