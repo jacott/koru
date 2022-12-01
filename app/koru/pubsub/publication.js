@@ -64,13 +64,13 @@ define((require, exports, module) => {
         Session.provide('Q', onSubscribe);
       }
 
-      if (this[pubName$] !== void 0) {
+      if (this[pubName$] !== undefined) {
         delete _pubs[this[pubName$]];
       }
 
       Session.addToDict(v);
       this[pubName$] = v;
-      if (v !== void 0) _pubs[v] = this;
+      if (v !== undefined) _pubs[v] = this;
     }
 
     static set module(module) {
@@ -89,14 +89,16 @@ define((require, exports, module) => {
 
   Publication.delete = deletePublication;
 
+  const logUnexpectedError = (err) => {err.error < 500 || koru.unhandledException(err)};
+
   async function onSubscribe([id, msgId, name, args, lastSubscribed]) {
     util.thread.action = 'subscribe ' + name;
     const subs = this._subs;
     if (subs == null) return; // we are closed
 
-    if (name === void 0) {
+    if (name === undefined) {
       const sub = subs[id];
-      if (sub !== void 0) {
+      if (sub !== undefined) {
         stopped(sub);
         sub.stop();
       }
@@ -105,22 +107,18 @@ define((require, exports, module) => {
 
     if (name === null) {
       const sub = subs[id];
-      if (sub === void 0) return;
+      if (sub === undefined) return;
       try {
         this.sendBinary('Q', [id, msgId, 0, await TransQueue.transaction(() => sub.onMessage(args))]);
-      } catch (ex) {
-        if (ex.error === void 0) {
-          koru.unhandledException(ex);
-          this.sendBinary('Q', [id, msgId, 500, ex.toString()]);
-        } else {
-          this.sendBinary('Q', [id, msgId, - ex.error, ex.reason]);
-        }
+      } catch (err) {
+        logUnexpectedError(err);
+        this.sendBinary('Q', [id, msgId, -(err.error ?? 500), err.reason ?? err.toString()]);
       }
       return;
     }
 
     const Sub = _pubs[name];
-    if (Sub === void 0) {
+    if (Sub === undefined) {
       const msg = 'unknown publication: ' + name;
       this.sendBinary('Q', [id, msgId, 500, msg]);
       koru.info(msg);
@@ -130,20 +128,16 @@ define((require, exports, module) => {
         let subStartTime;
         await TransQueue.transaction(() => {
           subStartTime = util.dateNow();
-          sub = subs[id] || (subs[id] = new Sub({id, conn: this, lastSubscribed}));
+          sub = subs[id] ??= new Sub({id, conn: this, lastSubscribed});
           return sub.init(args);
         });
-        subs[id] !== void 0 && this.sendBinary('Q', [
+        subs[id] !== undefined && this.sendBinary('Q', [
           id, msgId, 200, sub.lastSubscribed = subStartTime]); // ready
 
-      } catch (ex) {
-        if (ex.error === void 0) {
-          koru.unhandledException(ex);
-          this.sendBinary('Q', [id, msgId, 500, ex.toString()]);
-        } else {
-          this.sendBinary('Q', [id, msgId, ex.error, ex.reason]);
-        }
-        if (sub !== void 0) {
+      } catch (err) {
+        logUnexpectedError(err);
+        this.sendBinary('Q', [id, msgId, err.error ?? 500, err.reason ?? err.toString()]);
+        if (sub !== undefined) {
           stopped(sub);
           sub.stop();
         }

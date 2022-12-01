@@ -263,7 +263,7 @@ isServer && define((require, exports, module) => {
         onMessage(message) {//]
           super.onMessage(message); //[#
           const name = message.addShelf;
-          if (name !== void 0) {
+          if (name !== undefined) {
             this.args.shelf.push(name);
             Book.where({shelf: name}).forEach((doc) => {
               this.conn.sendBinary('A', ['Book', doc._id, doc.attributes]);
@@ -410,12 +410,32 @@ isServer && define((require, exports, module) => {
 
       let now = util.dateNow(); intercept(util, 'dateNow', () => now);
 
-      await conn.onSubscribe('sub1', 1, 'Library', void 0, now - 30 * util.DAY);
+      await conn.onSubscribe('sub1', 1, 'Library', undefined, now - 30 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, now]);
 
       conn.sendBinary.reset();
-      await conn.onSubscribe('sub2', 1, 'Library', void 0, now - 31 * util.DAY);
+      await conn.onSubscribe('sub2', 1, 'Library', undefined, now - 31 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub2', 1, 400, {lastSubscribed: 'too_old'}]);
+    });
+
+    test('logUnexpectedError', async () => {
+      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+
+      const err = new koru.Error(500, 'testing');
+
+      class Library extends Publication {
+        init() {
+          throw err;
+        }
+      }
+      Library.pubName = 'Library';
+
+      stub(koru, 'unhandledException');
+
+      await conn.onSubscribe('sub1', 1, 'Library', undefined, now - util.DAY);
+
+      assert.calledWith(koru.unhandledException, err);
+      assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 500, 'testing']);
     });
 
     test('userId', async () => {
@@ -435,14 +455,14 @@ isServer && define((require, exports, module) => {
       /**
        * The default behavior is to do nothing. Override this if an userId change needs to be handled.
        **/
-      after(() => {util.thread.userId = void 0});
+      after(() => {util.thread.userId = undefined});
       api.protoMethod();
       //[
       class Library extends Publication {
         async userIdChanged(newUID, oldUID) {//]
           await 1;
           super.userIdChanged(newUID, oldUID); //[#
-          if (newUID === void 0) this.stop();
+          if (newUID === undefined) this.stop();
         }
       }
       Library.pubName = 'Library';
@@ -451,7 +471,7 @@ isServer && define((require, exports, module) => {
       spy(sub, 'stop');
       await sub.conn.setUserId('uid123');
       refute.called(sub.stop);
-      await sub.conn.setUserId(void 0);
+      await sub.conn.setUserId(undefined);
       assert.called(sub.stop);
       //]
     });
