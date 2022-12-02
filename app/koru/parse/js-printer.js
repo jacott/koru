@@ -19,7 +19,7 @@ define((require, exports, module) => {
     while (idx > end) {
       --idx;
       const char = string[idx];
-      if (map[char] === void 0) {
+      if (map[char] === undefined) {
         return idx + 1;
       }
     }
@@ -29,7 +29,7 @@ define((require, exports, module) => {
   const lastRightMatchingIndex = (map, string, idx, end=string.length) => {
     while (idx < end) {
       const char = string[idx];
-      if (map[char] === void 0) {
+      if (map[char] === undefined) {
         return idx;
       }
       ++idx;
@@ -63,7 +63,7 @@ define((require, exports, module) => {
     inputPoint = 0;
     lastToken = '';
     lastLine = 0;
-    lastNode = void 0;
+    lastNode = undefined;
 
     constructor({input, write, ast=parse(input)}) {
       this.input = input;
@@ -89,7 +89,7 @@ define((require, exports, module) => {
         }
         this.catchup(node.start);
         const method = this[node.type];
-        if (method !== void 0) {
+        if (method !== undefined) {
           method.call(this, node);
         } else {
           for (const key of visitorKeys(node)) {
@@ -196,7 +196,7 @@ define((require, exports, module) => {
     }
 
     isAtWs() {
-      return WS_CHAR[this.input[this.inputPoint]] !== void 0;
+      return WS_CHAR[this.input[this.inputPoint]] !== undefined;
     }
 
     writeGapIfNeeded() {
@@ -209,15 +209,18 @@ define((require, exports, module) => {
       for (let i = this.inputPoint; i < len; ++i) {
         const char = input[i];
         if (char === '/') return ignorePadding ? i : this.inputPoint;
-        if (char === '\n' || WS_CHAR[char] === void 0) return i;
+        if (char === '\n' || WS_CHAR[char] === undefined) return i;
       }
       return -1;
     }
 
     skipOver(regex=SameLineWsRE, write=false) {
-      const {comments} = this.ast;
       const len = this.input.length;
       const re = regex.global && regex.sticky ? regex : new RegExp(regex.source, 'yg');
+      while (this.inputPoint === this.commentStart) {
+        if (this.inputPoint >= len) return;
+        this.addComment();
+      }
       while (this.inputPoint < len) {
         re.lastIndex = this.inputPoint;
         const m = re.exec(this.input);

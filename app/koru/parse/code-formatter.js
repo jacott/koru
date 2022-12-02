@@ -306,8 +306,8 @@ define((require, exports, module) => {
       const isInc = indent.lastDir > 0;
       let indentRight = indent.lineStartPadding;
       this.print(node.left);
-      spacing && this.write(' ');
       this.skipOver();
+      spacing && this.write(' ');
       const newlineBeforeOperator = this.isAtNewline();
       this.writeAdvance(operator);
       this.skipOver();
