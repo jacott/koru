@@ -16,11 +16,16 @@ define((require, exports, module) => {
     let currentTest;
     class AssertionError extends TH.Core.AssertionError {
       recordError() {}
+
+      toString() {
+        return this.message + '\n this is a test error message';
+      }
     }
 
     beforeEach(() => {
       currentTest = TH.Core.test;
     });
+
     test('normalize', () => {
       /**
        * Normalize the stack trace for an `error`. See {#.elideFrames} and {#.replaceStack} for

@@ -13,8 +13,8 @@ define(['require', 'koru/util-base'], (require, util) => {
   const stackHasMessage = isServer || new Error('abc').stack.slice(7, 10) === 'abc';
 
   const normalizedStack = (ex, elidePoint, isTestAssert) => {
-    const stackString = ex.userStack || (
-      stackHasMessage ? (ex.stack || '').slice(ex.toString().length) : ex.stack);
+    const stackString = ex.userStack ?? (
+      stackHasMessage ? (ex.stack ?? '').slice(ex.message.length) : ex.stack);
     if (typeof stackString !== 'string') return null;
 
     let parts = null, m = null,
