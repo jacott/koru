@@ -78,14 +78,13 @@ define((require) => {
     Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
   };
 
-  const field = (doc, name, options, extend) => {
-    options = options || {};
+  const field = (doc, name, options={}, extend) => {
     const data = {name, doc, options};
     if ('selectList' in options) {
-      return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
+      return ((options.type && Tpl[util.capitalize(options.type)]) ?? Tpl.Select).$autoRender(data);
     }
 
-    switch (options.type || 'text') {
+    switch (options.type ?? 'text') {
     case 'onOff':
       return OnOff.$autoRender(data);
     default:
@@ -97,7 +96,7 @@ define((require) => {
         return editor.$autoRender(data);
       }
 
-      data.type = options.type || 'text';
+      data.type = options.type ?? 'text';
       return Tpl.TextInput.$autoRender(data);
     }
   };
@@ -253,7 +252,7 @@ define((require) => {
         undo = doc.$invertChanges(changes);
       }
       if (doc.$save()) {
-        onChange && onChange(doc, changes, undo);
+        onChange?.(doc, changes, undo);
         return true;
       }
 
@@ -271,8 +270,8 @@ define((require) => {
       for (let i = 0; i < fields.length; ++i) {
         const fieldElm = fields[i];
         const name = fieldElm.getAttribute('name');
-        if (modelFields === undefined || modelFields[name]) {
-          doc[name] = fieldElm.value;
+        if ((modelFields === undefined || modelFields[name] !== undefined)) {
+          doc[name] = fieldElm.value || undefined;
         }
       }
 
@@ -281,7 +280,7 @@ define((require) => {
         const fieldElm = fields[i];
         const name = field.getAttribute('data-errorField');
 
-        if (modelFields[name]) {
+        if ((modelFields === undefined || modelFields[name] !== undefined)) {
           doc[name] = Tpl.getRadioValue(fieldElm, name);
         }
       }
@@ -297,9 +296,9 @@ define((require) => {
     },
 
     renderErrors(doc, form) {
-      const errors = doc[error$] ?? (doc instanceof koru.Error ? doc.reason : void 0);
+      const errors = doc[error$] ?? (doc instanceof koru.Error ? doc.reason : undefined);
       const otherMsgs = [];
-      let focus = null;
+      let focus;
       Tpl.clearErrors(form);
 
       if (errors !== undefined) {
@@ -308,17 +307,17 @@ define((require) => {
           if (msg) {
             const fieldElm = Tpl.renderError(form, field, msg);
             if (fieldElm) {
-              focus = focus || fieldElm;
+              focus ??= fieldElm;
             } else {
-              otherMsgs && otherMsgs.push([field, msg]);
+              otherMsgs?.push([field, msg]);
             }
           }
         }
-        if (otherMsgs.length > 0 && koru.unexpectedError !== void 0) {
+        if (otherMsgs.length > 0 && koru.unexpectedError !== undefined) {
           koru.unexpectedError('Save invalid', JSON.stringify(otherMsgs));
         }
 
-        focus && focus.focus();
+        focus?.focus();
         return true;
       }
 
@@ -339,16 +338,16 @@ define((require) => {
       if (! fieldElm) return;
 
       let msgElm = fieldElm.nextElementSibling, ms;
-      if (! (msgElm && Dom.hasClass(msgElm, 'errorMsg'))) {
+      if (msgElm?.classList.contains('errorMsg')) {
+        ms = msgElm.style;
+        ms.removeProperty('margin-top'); ms.removeProperty('margin-left');
+        ms.removeProperty('height'); ms.removeProperty('width');
+      } else {
         msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
         msgElm.appendChild(document.createElement('div'));
         fieldElm.parentNode.insertBefore(msgElm, fieldElm.nextElementSibling);
         ms = msgElm.style;
-      } else {
-        ms = msgElm.style;
-        ms.removeProperty('margin-top'); ms.removeProperty('margin-left');
-        ms.removeProperty('height'); ms.removeProperty('width');
       }
       Dom.setClass('error', msg, fieldElm);
       Dom.removeClass(msgElm, 'animate');
@@ -370,7 +369,7 @@ define((require) => {
     },
 
     addChangeFields(options) {
-      const action = options.action || 'change';
+      const action = options.action ?? 'change';
       const events = {};
       for (let i = 0; i < options.fields.length; ++i) {
         const field = options.fields[i];
@@ -407,7 +406,7 @@ define((require) => {
         for (const row of this.selectList()) {
           const id = row[0] != null ? row[0] : row._id;
           if (id == value) {
-            result = row[1] || row.name;
+            result = row[1] ?? row.name;
             found = true;
             break;
           }
@@ -423,10 +422,10 @@ define((require) => {
 
       Dom.setClass('noValue', ! found);
       Dom.removeChildren(button);
-      if (result && result.cloneNode) {
+      if (result?.cloneNode !== undefined) {
         button.appendChild(result.cloneNode(true));
       } else {
-        button.textContent = result || '';
+        button.textContent = result ?? '';
       }
     },
   });
@@ -482,7 +481,7 @@ define((require) => {
         classes: options.popupClass,
         onSelect(elm) {
           const data = $.data(elm);
-          button.textContent = data.name && data.name.nodeType ? data.name.textContent : data.name;
+          button.textContent = data.name?.nodeType ? data.name.textContent : data.name;
           const id = data._id;
           hidden.value = id;
           Dom.setClass('noValue', id == null, button);
@@ -584,7 +583,7 @@ define((require) => {
     },
 
     elmId(prefix) {
-      return (prefix || this.constructor.modelName) + '_' + this._id;
+      return (prefix ?? this.constructor.modelName) + '_' + this._id;
     },
 
     field(name, options) {
@@ -599,13 +598,13 @@ define((require) => {
         options = arg3;
       }
 
-      options = options || {};
+      options ??= {};
       const data = hasOwn(options, 'data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
         name,
         options,
         value: field(data, name, options, extend),
-        label: options.label || util.capitalize(util.humanize(name)),
+        label: options.label ?? util.capitalize(util.humanize(name)),
       });
     },
 
@@ -617,7 +616,7 @@ define((require) => {
       const content = data[name];
       if (content) {
         value.textContent = typeof content === 'object'
-          ? content.displayName || content.name || content
+          ? content.displayName ?? content.name ?? content
           : content;
       }
 
@@ -625,7 +624,7 @@ define((require) => {
         name,
         value,
         options,
-        label: options.label || util.capitalize(util.humanize(name)),
+        label: options.label ?? util.capitalize(util.humanize(name)),
       });
     },
 
@@ -636,7 +635,7 @@ define((require) => {
 
   Tpl.Button.$helpers({
     type() {
-      return this.type || 'button';
+      return this.type ?? 'button';
     },
   });
 
@@ -649,11 +648,11 @@ define((require) => {
     },
 
     on() {
-      return this.options.onLabel || 'On';
+      return this.options.onLabel ?? 'On';
     },
 
     off() {
-      return this.options.offLabel || 'Off';
+      return this.options.offLabel ?? 'Off';
     },
   });
 

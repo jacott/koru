@@ -180,6 +180,9 @@ isClient && define((require, exports, module) => {
       assert.equals(doc.other, undefined);
 
       assert.equals(Form.fillDoc({}, form), {bar: 'barVal', other: 'otherV'});
+
+      form.querySelector('[name=bar]').value = '';
+      assert.equals(Form.fillDoc({}, form), {bar: undefined, other: 'otherV'});
     });
 
     test('helper elmId', () => {
@@ -500,6 +503,12 @@ isClient && define((require, exports, module) => {
       assert.dom(form, function () {
         assert.dom('[name=bar].error+.errorMsg>div', 'bar msg');
         assert.dom('[name=foo].error+.errorMsg>div', "can't be blank");
+
+        Form.renderError(form, 'bar', 'msg 2');
+
+        refute.dom('.errorMsg+.errorMsg');
+
+        assert.dom('[name=bar].error+.errorMsg>div', 'msg 2');
 
         Form.renderError(form, 'bar', false);
 
