@@ -1,77 +1,76 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
-   * {#./rich-Text} validators.
+   * {#/koru/dom/rich-Text} validators.
    *
    * Enable with {#koru/model/validation.register;(module, RichTextValidator)} which is
    * conventionally done in `app/models/model.js`
    **/
   const Dom             = require('koru/dom');
+  const RichText        = require('koru/dom/rich-text');
   const ValidatorHelper = require('koru/model/validators/validator-helper');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const RichText        = require('./rich-text');
 
   const {stub, spy, intercept} = TH;
 
   const {error$} = require('koru/symbols');
 
-  const RichTextValidator = require('koru/ui/rich-text-validator');
+  const RichTextValidator = require('./rich-text-validator');
 
-  class Book extends ValidatorHelper.ModelStub {
-  }
+  class Book extends ValidatorHelper.ModelStub {}
   Book.registerValidator(RichTextValidator);
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    group("richText", ()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    group('richText', () => {
       /**
        * Validate field is rich text. Field error set to `'invalid_html'` if invalid.
        *
        * @param options use `'filter'` to remove any invalid markup.
        **/
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      test("valid RichText", ()=>{
+      test('valid RichText', () => {
         //[
         // Valid RichText
         Book.defineFields({
-          content: {type: 'text', richText: true}
+          content: {type: 'text', richText: true},
         });
 
-        const book = Book.build({content: RichText.fromHtml(Dom.h([{b: "once"}, "\nupon"]))});
+        const book = Book.build({content: RichText.fromHtml(Dom.h([{b: 'once'}, '\nupon']))});
 
         assert(book.$isValid());
         assert.equals(book.content, ['once\nupon', [11, 0, 0, 4]]);
 
         book.content = ['invalid', [22, -1]];
         refute(book.$isValid());
-        assert.equals(book[error$].content,[['invalid_html']]);
+        assert.equals(book[error$].content, [['invalid_html']]);
         //]
       });
 
-      test("valid text", ()=>{
+      test('valid text', () => {
         //[
         // valid text (string; not array)
         Book.defineFields({
-          content: {type: 'text', richText: true}
+          content: {type: 'text', richText: true},
         });
 
-        const book = Book.build({content: "just\ntext"});
+        const book = Book.build({content: 'just\ntext'});
 
         assert(book.$isValid());
         assert.equals(book.content, 'just\ntext');
         //]
       });
 
-      test("no Markup", ()=>{
+      test('no Markup', () => {
         //[
         // Valid RichText
         Book.defineFields({
-          content: {type: 'text', richText: true}
+          content: {type: 'text', richText: true},
         });
 
         const book = Book.build({content: [['one', 'two'], null]});
@@ -81,11 +80,11 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("bad but no changes", ()=>{
+      test('bad but no changes', () => {
         //[
         // only checks changes
-         Book.defineFields({
-          content: {type: 'text', richText: true}
+        Book.defineFields({
+          content: {type: 'text', richText: true},
         });
 
         const book = Book.build();
@@ -94,29 +93,29 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("invalid change", ()=>{
+      test('invalid change', () => {
         //[
         // invalid markup
         Book.defineFields({
-          content: {type: 'text', richText: true}
+          content: {type: 'text', richText: true},
         });
 
         const book = Book.build({content: [11, 2]});
 
         refute(book.$isValid());
-        assert.equals(book[error$].content,[['invalid_html']]);
+        assert.equals(book[error$].content, [['invalid_html']]);
         //]
       });
 
-      test("filtering with markup", ()=>{
+      test('filtering with markup', () => {
         //[
         // filter html to expected format
         Book.defineFields({
-          content: {type: 'text', richText: 'filter'}
+          content: {type: 'text', richText: 'filter'},
         });
 
         const book = Book.build({content: RichText.fromHtml(Dom.h({
-          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: "text-align:right;"}))});
+          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: 'text-align:right;'}))});
 
         assert.equals(book.content, ['a\nb', [7, 0, 1, 1, 0, 1, 20, 0, 0, 20, 1, 0]]);
 
@@ -125,17 +124,17 @@ define((require, exports, module)=>{
         assert.equals(book.content, ['a\nb', [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]]);
         assert.equals(Dom.htmlToJson(RichText.toHtml(book.content[0], book.content[1])), [{
           ol: [
-            {li: {style: "text-align: right;", div: 'a'}},
-            {li: {style: "text-align: right;", div: 'b'}}
+            {li: {style: 'text-align: right;', div: 'a'}},
+            {li: {style: 'text-align: right;', div: 'b'}},
           ]}]);
         //]
       });
 
-      test("filtering without markup", ()=>{
+      test('filtering without markup', () => {
         //[
         // filter no markup
         Book.defineFields({
-          content: {type: 'text', richText: 'filter'}
+          content: {type: 'text', richText: 'filter'},
         });
 
         const book = Book.build({content: ['bold', null]});
@@ -146,7 +145,7 @@ define((require, exports, module)=>{
       });
     });
 
-    group("richTextMarkup", ()=>{
+    group('richTextMarkup', () => {
       /**
        * Validate field (suffixed with `'Markup'`) contains rich text markup. The corresponding
        * plain text should be in adjacent field named without suffix. An error is set for field
@@ -155,11 +154,11 @@ define((require, exports, module)=>{
        * @param options use `'filter'` to remove any invalid markup.
        **/
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      test("valid", ()=>{
+      test('valid', () => {
         //[
         // Valid
         Book.defineFields({
@@ -167,7 +166,7 @@ define((require, exports, module)=>{
           contentMarkup: {type: 'text', richTextMarkup: true},
         });
 
-        const rt = RichText.fromHtml(Dom.h([{b: "once"}, "\nupon"]));
+        const rt = RichText.fromHtml(Dom.h([{b: 'once'}, '\nupon']));
 
         const book = Book.build({content: rt[0], contentMarkup: rt[1]});
 
@@ -181,7 +180,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("filtering", ()=>{
+      test('filtering', () => {
         //[
         // filter html to expected format
         Book.defineFields({
@@ -190,7 +189,7 @@ define((require, exports, module)=>{
         });
 
         const rt = RichText.fromHtml(Dom.h({
-          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: "text-align:right;"}));
+          div: {ol: [{li: 'a'}, {li: 'b'}]}, style: 'text-align:right;'}));
 
         const book = Book.build({content: rt[0], contentMarkup: rt[1]});
 
@@ -201,13 +200,13 @@ define((require, exports, module)=>{
         assert.equals(book.contentMarkup, [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]);
         assert.equals(Dom.htmlToJson(RichText.toHtml(book.content, book.contentMarkup)), [{
           ol: [
-            {li: {style: "text-align: right;", div: 'a'}},
-            {li: {style: "text-align: right;", div: 'b'}}
+            {li: {style: 'text-align: right;', div: 'a'}},
+            {li: {style: 'text-align: right;', div: 'b'}},
           ]}]);
         //]
       });
 
-      test("bad but no changes", ()=>{
+      test('bad but no changes', () => {
         //[
         // only checks changes
         Book.defineFields({
@@ -222,7 +221,7 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("bad change", ()=>{
+      test('bad change', () => {
         //[
         // only checks changes
         Book.defineFields({

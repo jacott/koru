@@ -1,11 +1,11 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const RichText        = require('koru/dom/rich-text');
   const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const Modal           = require('./modal');
-  const RichText        = require('./rich-text');
   const RichTextEditor  = require('./rich-text-editor');
   const TH              = require('./test-helper');
 
@@ -13,77 +13,76 @@ isClient && define((require, exports, module)=>{
 
   const sut = require('./rich-text-editor-toolbar');
 
-  let v= {};
+  let v = {};
 
-  const focusin = (inputElm)=>{
+  const focusin = (inputElm) => {
     inputElm.focus();
     TH.trigger(inputElm, 'focusin');
     TH.trigger(document, 'selectionchange');
   };
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.editor = sut.$autoRender({content: Dom.h([
-        {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
-      ]), options: {id: "Foo"}, extend: {
+        {b: 'Hello'}, ' ', {i: 'world'}, ' ', {a: 'the link', $href: '/link.html'},
+      ]), options: {id: 'Foo'}, extend: {
         mentions: {'@': {
           title: 'Mention someone',
           buttonClass: 'myButton',
-          list() {}
+          list() {},
         }}}});
 
       v.origText = v.editor.value;
       document.body.appendChild(v.editor);
-
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       TH.domTearDown();
       v = {};
     });
 
-    test("maxlength", ()=>{
+    test('maxlength', () => {
       Dom.remove(v.editor);
       const editor = sut.$autoRender({
         content: Dom.h('hello world!'),
         extend: {maxlength: 20},
       });
 
-      assert.dom(editor, ()=>{
+      assert.dom(editor, () => {
         const ctx = Dom.myCtx(editor);
-        assert.dom('>:last-child.ui-charCounter', counter =>{
+        assert.dom('>:last-child.ui-charCounter', (counter) => {
           assert.same(ctx.characterCounter.element, counter);
-          assert.dom('span', "12");
-          assert.dom('span+span', "20");
+          assert.dom('span', '12');
+          assert.dom('span+span', '20');
         });
       });
     });
 
-    group("with code", ()=>{
-      beforeEach(()=>{
+    group('with code', () => {
+      beforeEach(() => {
         assert.dom('.input', function () {
           this.focus();
-          this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
+          this.appendChild(Dom.h({pre: {div: 'one\ntwo'}}));
           const input = this;
           v.selectCode = function () {
             const node = input.querySelector('pre>div').firstChild;
             TH.setRange(node, 2);
             focusin(input);
-          };
+          }
         });
       });
 
-      test("data-mode", ()=>{
+      test('data-mode', () => {
         assert.dom('.rtToolbar[data-mode=standard]');
         v.selectCode();
-        assert.dom('.rtToolbar[data-mode=code]>.code', elm =>{
+        assert.dom('.rtToolbar[data-mode=code]>.code', (elm) => {
           assert.dom('button[name=language]');
           assert.dom('button[name=syntaxHighlight]');
           assert.dom('button[name=code].on');
         });
       });
 
-      test("set language", ()=>{
+      test('set language', () => {
         RichTextEditor.languageList = [['c', 'C'], ['lisp', 'Common Lisp, elisp']];
 
         v.selectCode();
@@ -106,11 +105,11 @@ isClient && define((require, exports, module)=>{
         assert.dom('[name=language]', 'Common Lisp');
       });
 
-      test("syntax highlight", ()=>{
+      test('syntax highlight', () => {
         v.selectCode();
 
         const syntaxHighlight = stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
-                                          .mode.actions, 'syntaxHighlight');
+          .mode.actions, 'syntaxHighlight');
         assert.dom('[name=syntaxHighlight]', '', function () {
           TH.pointerDownUp(this);
         });
@@ -119,15 +118,15 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("undo/redo", ()=>{
+    test('undo/redo', () => {
       const rte = Dom('#Foo.richTextEditor'), ctx = Dom.myCtx(rte);
       const inputElm = rte.querySelector('.input');
       focusin(inputElm);
 
-      assert.dom(rte, ()=>{
-        assert.dom('>.rtToolbar:first-child>span', span =>{
-          assert.dom('button[name=undo]', '', e =>{v.undo = e});
-          assert.dom('button[name=redo]', '', e =>{v.redo = e});
+      assert.dom(rte, () => {
+        assert.dom('>.rtToolbar:first-child>span', (span) => {
+          assert.dom('button[name=undo]', '', (e) => {v.undo = e});
+          assert.dom('button[name=redo]', '', (e) => {v.redo = e});
         });
       });
 
@@ -170,18 +169,18 @@ isClient && define((require, exports, module)=>{
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
     });
 
-    test("rendering", ()=>{
+    test('rendering', () => {
       const inputElm = Dom('#Foo.richTextEditor>.rtToolbar+.input');
-      assert.dom('#Foo.richTextEditor', ()=>{
-        assert.dom('>.rtToolbar:first-child>div', ()=>{
-          assert.dom('button[name=bold]', '', e =>{v.bold = e});
-          assert.dom('button[name=italic]', '', e =>{v.italic = e});
+      assert.dom('#Foo.richTextEditor', () => {
+        assert.dom('>.rtToolbar:first-child>div', () => {
+          assert.dom('button[name=bold]', '', (e) => {v.bold = e});
+          assert.dom('button[name=italic]', '', (e) => {v.italic = e});
           assert.dom('button[name=underline]', '');
-          assert.dom('button[name=link]', '', e => {v.link = e});
+          assert.dom('button[name=link]', '', (e) => {v.link = e});
           assert.dom('button[name=code]', '');
           assert.dom('button[name=strikeThrough]', '');
 
-          assert.dom('button[name=removeFormat]', removeFormat =>{
+          assert.dom('button[name=removeFormat]', (removeFormat) => {
             // I think the backslash upsets assert.dom
             assert.same(removeFormat.getAttribute('title'), 'Clear formatting [ctrl-\\]');
           });
@@ -193,15 +192,15 @@ isClient && define((require, exports, module)=>{
         });
 
         // check toolbar state after cusor moved
-        assert.dom(inputElm, ()=>{
-          assert.dom('b', 'Hello', elm =>{
+        assert.dom(inputElm, () => {
+          assert.dom('b', 'Hello', (elm) => {
             TH.setRange(elm, 0);
             Dom.ctx(elm).updateAllTags();
             focusin(inputElm);
             assert.className(v.bold, 'on');
             refute.className(v.italic, 'on');
           });
-          assert.dom('i', 'world', elm =>{
+          assert.dom('i', 'world', (elm) => {
             TH.setRange(elm, 1);
             Dom.ctx(elm).updateAllTags();
             refute.className(v.italic, 'on');
@@ -209,7 +208,7 @@ isClient && define((require, exports, module)=>{
             refute.className(v.bold, 'on');
             assert.className(v.italic, 'on');
           });
-          assert.dom('a', 'the link', elm =>{
+          assert.dom('a', 'the link', (elm) => {
             TH.setRange(elm, 1);
             Dom.ctx(elm).updateAllTags();
             refute.className(v.link, 'on');
@@ -219,7 +218,6 @@ isClient && define((require, exports, module)=>{
             refute.className(v.italic, 'on');
             assert.className(v.link, 'on');
           });
-
         });
 
         refute.dom('.rtLink');
@@ -228,7 +226,7 @@ isClient && define((require, exports, module)=>{
         TH.stubAfTimeout();
       });
 
-      assert.dom('.rtLink', elm =>{
+      assert.dom('.rtLink', (elm) => {
         assert.dom('.startTab:first-child');
         assert.dom('.endTab:nth-last-child(2)');
         assert(Modal.topModal.handleTab);
@@ -238,7 +236,7 @@ isClient && define((require, exports, module)=>{
 
       refute.dom('.rtLink');
 
-      assert.dom('i', 'world', elm =>{
+      assert.dom('i', 'world', (elm) => {
         TH.setRange(elm.firstChild, 3);
         focusin(elm.parentNode);
 
@@ -247,7 +245,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("changeing href", ()=>{
+    test('changeing href', () => {
       assert.dom('a', 'the link', function () {
         TH.setRange(this.firstChild, 1);
         TH.trigger(this, 'keyup');
@@ -267,7 +265,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("un/making bold", ()=>{
+    test('un/making bold', () => {
       assert.dom('.richTextEditor>.input', function () {
         this.focus();
         assert.dom('b', 'Hello', function () {
@@ -278,7 +276,7 @@ isClient && define((require, exports, module)=>{
       TH.trigger('[name=bold]', 'pointerup');
 
       assert.dom('.richTextEditor>.input', function () {
-        assert.msg('"Hello" should stil be bold if no pointerdown').dom('b', "Hello");
+        assert.msg('"Hello" should stil be bold if no pointerdown').dom('b', 'Hello');
       });
 
       TH.pointerDownUp('[name=bold]');
@@ -288,7 +286,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("un/making code", ()=>{
+    test('un/making code', () => {
       assert.dom('.richTextEditor>.input', function () {
         focusin(this);
         assert.dom('b', 'Hello', function () {
@@ -303,13 +301,14 @@ isClient && define((require, exports, module)=>{
         assert.same(this.innerHTML, 'H<span style=\"font-family: monospace;\">el</span>lo');
       });
 
-      if (! util.isFirefox)
+      if (! util.isFirefox) {
         assert.dom('[name=code].on'); // broken in firefox :/
-      TH.pointerDownUp('[name=code]');
+
+      } TH.pointerDownUp('[name=code]');
       assert.dom('[name=code]:not(.on)');
     });
 
-    test("mention button", ()=>{
+    test('mention button', () => {
       assert.dom('b', 'Hello', function () {
         TH.setRange(this.firstChild, 0);
         TH.trigger(this, 'keyup');
@@ -334,8 +333,8 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("font attributes", ()=>{
-      beforeEach(()=>{
+    group('font attributes', () => {
+      beforeEach(() => {
         assert.dom('b', 'Hello', function () {
           this.focus();
           TH.setRange(this.firstChild, 0, this.firstChild, 3);
@@ -344,7 +343,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("set fontName", ()=>{
+      test('set fontName', () => {
         RichText.mapFontNames({poster: 'foo font'});
         TH.pointerDownUp('.rtToolbar [name=fontName].select.text');
 
@@ -386,7 +385,7 @@ isClient && define((require, exports, module)=>{
         assert.dom('[name=fontName]', 'Sans serif');
       });
 
-      test("set fontSize", ()=>{
+      test('set fontSize', () => {
         TH.pointerDownUp('.rtToolbar [name=fontSize].select');
 
         assert.dom('.glassPane', function () {
@@ -394,15 +393,17 @@ isClient && define((require, exports, module)=>{
         });
 
         assert.dom('.input', function () {
-          if (Dom('font[size]'))
+          if (Dom('font[size]')) {
             assert.dom('b font[size="4"]', 'Hel');
-          else  assert.dom('b span', 'Hel', function () {
-            assert.same(this.style.fontSize, '1.2em');
-          });
+          } else {
+            assert.dom('b span', 'Hel', function () {
+              assert.same(this.style.fontSize, '1.2em');
+            });
+          }
         });
       });
 
-      test("set textAlign", ()=>{
+      test('set textAlign', () => {
         TH.pointerDownUp('.rtToolbar [name=textAlign].select');
 
         assert.dom('.glassPane .rtTextAlign', function () {
@@ -421,7 +422,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("set fontColor", ()=>{
+      test('set fontColor', () => {
         TH.pointerDownUp('.rtToolbar [name=fontColor].select');
 
         assert.dom('#ColorPicker', function () {
@@ -431,15 +432,15 @@ isClient && define((require, exports, module)=>{
 
         assert.dom('.input', function () {
           assert.dom('b span', 'Hel', function () {
-            assert.colorEqual(this.style.color, "#00ff00");
+            assert.colorEqual(this.style.color, '#00ff00');
           });
         });
       });
 
-      test("format misc", ()=>{
+      test('format misc', () => {
         TH.pointerDownUp('.rtToolbar [name=formatText].select', 'Normal text');
 
-        assert.dom('.glassPane .rtFormatText', ()=>{
+        assert.dom('.glassPane .rtFormatText', () => {
           assert.dom('li>[title="Normal [alt-ctrl-0]"]');
           assert.dom('li>span[title="Heading 1 [alt-ctrl-1]"]');
           assert.dom('li>[title="Heading 2 [alt-ctrl-2]"]');
@@ -452,11 +453,11 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("more", ()=>{
+    test('more', () => {
       assert.dom('.rtToolbar:not(.more)', function () {
-        TH.pointerDownUp("[name=more]");
+        TH.pointerDownUp('[name=more]');
         assert.className(this, 'more');
-        TH.pointerDownUp("[name=more]");
+        TH.pointerDownUp('[name=more]');
         refute.className(this, 'more');
       });
     });

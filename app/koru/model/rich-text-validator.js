@@ -1,11 +1,10 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Changes         = require('koru/changes');
+  const RichText        = require('koru/dom/rich-text');
   const util            = require('koru/util');
-  const RichText        = require('./rich-text');
 
-
-  const filter = (val)=>{
+  const filter = (val) => {
     if (val[0] == null && val[1] == null) return;
 
     const html = RichText.toHtml(val[0], val[1], document.createElement('div'));
@@ -18,24 +17,25 @@ define((require)=>{
   return {
     richText(doc, field, options) {
       const {changes} = doc;
-      if (changes != null && ! Changes.has(changes, field))
+      if (changes != null && ! Changes.has(changes, field)) {
         return;
+      }
 
       const val = doc[field];
 
-
-      if (typeof val === 'string')
+      if (typeof val === 'string') {
         return;
+      }
 
-      if (Array.isArray(val[0]))
-        val[0] = val[0].join("\n");
-
-
+      if (Array.isArray(val[0])) {
+        val[0] = val[0].join('\n');
+      }
 
       if (options === 'filter') {
         filter(val);
-        if (val[1] === null)
+        if (val[1] === null) {
           doc[field] = val[0];
+        }
         return;
       }
 
@@ -52,9 +52,9 @@ define((require)=>{
       field = markupField.slice(0, -6);
       const {changes} = doc;
       if (changes == null || (
-        ! Changes.has(changes, field) && ! Changes.has(changes, markupField)))
-        return;
-
+        ! Changes.has(changes, field) && ! Changes.has(changes, markupField))) {
+          return;
+        }
 
       const val = doc[field];
       const markup = doc[markupField];
@@ -67,10 +67,11 @@ define((require)=>{
         return;
       }
 
-      if (RichText.isValid(val, markup))
+      if (RichText.isValid(val, markup)) {
         return;
+      }
 
-      return this.addError(doc,field+'HTML','invalid_html');
+      return this.addError(doc, field + 'HTML', 'invalid_html');
     },
   };
 });

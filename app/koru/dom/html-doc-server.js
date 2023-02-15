@@ -14,10 +14,12 @@ define((require, exports, module) => {
   const {SVGNS} = Dom;
   const {escapeHTML, unescapeHTML} = htmlEncode;
 
+  const QUOT = '&quot;';
+
   const style$ = Symbol(),
-        prev$ = Symbol(), next$ = Symbol(), cssText$ = Symbol(),
-        pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
-        needBuild$ = Symbol(), attributes$ = Symbol(), doc$ = Symbol();
+  prev$ = Symbol(), next$ = Symbol(), cssText$ = Symbol(),
+  pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
+  needBuild$ = Symbol(), attributes$ = Symbol(), doc$ = Symbol();
 
   const cssParser = new CssSelectorParser();
 
@@ -195,7 +197,7 @@ define((require, exports, module) => {
             insertNodes(node.childNodes, this, i);
           } else {
             node.parentNode = this;
-            nodes.splice(i, 0, void 0);
+            nodes.splice(i, 0, undefined);
             attachNode(this, i, node);
           }
           return node;
@@ -226,7 +228,7 @@ define((require, exports, module) => {
     }
 
     get style() {
-      if (this[style$] !== void 0) return this[style$];
+      if (this[style$] !== undefined) return this[style$];
       return this[style$] = new Style(this);
     }
 
@@ -322,7 +324,7 @@ define((require, exports, module) => {
     createElement(tag) {return createHTMLElement(tag)}
     createElementNS(xmlns, tag) {
       const canon = Dom.CANONICAL_TAG_NAMES[tag];
-      if (canon === void 0) {
+      if (canon === undefined) {
         if (xmlns === SVGNS) {
           Dom.CANONICAL_TAG_NAMES[tag] = tag;
         } else {
@@ -368,10 +370,10 @@ define((require, exports, module) => {
       super(ELEMENT_NODE);
       const canon = Dom.CANONICAL_TAG_NAMES[tagName];
       const uc = tagName.toUpperCase();
-      if (canon === void 0 || canon !== tagName) {
+      if (canon === undefined || canon !== tagName) {
         this.tagName = uc;
       } else {
-        this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== void 0 ? uc : canon;
+        this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== undefined ? uc : canon;
       }
       this[attributes$] = {};
     }
@@ -389,16 +391,16 @@ define((require, exports, module) => {
     get outerHTML() {
       const tn = Dom.canonicalTagName(this);
       const attrs = this[attributes$];
-      const cssText = this[style$] !== void 0 ? origCssText(this.style) : void 0;
+      const cssText = this[style$] !== undefined ? origCssText(this.style) : undefined;
       let open = tn;
       if (util.isObjEmpty(attrs)) {
-        if (cssText) open += ' style="' + cssText + '"';
+        if (cssText) open += ' style="' + cssText.replace(/"/g, QUOT) + '"';
       } else {
         const oa = [tn];
         for (const attr in attrs) {
-          oa.push(attr + '="' + attrs[attr].replace(/"/g, '&quot;') + '"');
+          oa.push(attr + '="' + attrs[attr].replace(/"/g, QUOT) + '"');
         }
-        cssText !== void 0 && oa.push('style="' + cssText + '"');
+        cssText && oa.push('style="' + cssText + '"');
         open = oa.join(' ');
       }
 
@@ -432,8 +434,9 @@ define((require, exports, module) => {
       if (this.style.length != 0) {
         ans.push({name: 'style', value: origCssText(this.style)});
       }
-      for (let name in this[attributes$])
+      for (let name in this[attributes$]) {
         ans.push({name, value: this[attributes$][name]});
+      }
       return ans;
     }
 
@@ -543,6 +546,22 @@ define((require, exports, module) => {
     return style[cssText$];
   };
 
+  const normFontFamily = (text) => {
+    let result = '';
+    for (const name of text.split(/\s*,\s*/)) {
+      if (result !== '') result += ', ';
+      const n0 = name[0];
+      if (n0 === "'") {
+        result += name.replace(/'/g, '"');
+      } else if (n0 !== '"' && name.indexOf(' ') != -1) {
+        result += '"' + name + '"';
+      } else {
+        result += name;
+      }
+    }
+    return result;
+  };
+
   class Style {
     constructor(node) {
       this[styles$] = {};
@@ -556,7 +575,9 @@ define((require, exports, module) => {
     item(index) {return this[styleArray$][index]}
 
     setProperty(dname, value='') {
-      if (dname.slice(-5) === 'color' && value !== '') {
+      if (dname === 'font-family') {
+        value = normFontFamily(value);
+      } else if (value !== '' && dname.slice(-5) === 'color') {
         value = uColor.toRgbStyle(value);
       }
 
@@ -564,7 +585,7 @@ define((require, exports, module) => {
       const styles = this[styles$];
       const oldValue = styles[dname];
       if (oldValue === value) return;
-      if (oldValue === void 0) {
+      if (oldValue === undefined) {
         this[pos$][dname] = this[styleArray$].length;
         this[styleArray$].push(dname);
       }
@@ -577,7 +598,7 @@ define((require, exports, module) => {
 
     removeProperty(dname) {
       const styles = this[styles$];
-      if (styles[dname] !== void 0) {
+      if (styles[dname] !== undefined) {
         const poses = this[pos$];
         this[styleArray$].splice(poses[dname], 1);
         delete styles[dname];
@@ -588,20 +609,15 @@ define((require, exports, module) => {
 
     get cssText() {
       const sm = this[styles$];
-      return this[styleArray$].map((dname) => {
-        let value = sm[dname];
-        if (dname === 'font-family' && value.indexOf(' ') !== -1) {
-          value = "'" + value + "'";
-        }
-        return dname + ': ' + value + ';';
-      }).join(' ');
+      return this[styleArray$].map((dname) => dname + ': ' + sm[dname] + ';').join(' ');
     }
 
+    // TODO need to properly parse cssText
     set cssText(cssText) {
       this[cssText$] = cssText;
       const sm = this[styles$] = {};
       const sa = this[styleArray$] = [];
-      this[needBuild$] = false;
+      this[needBuild$] = cssText.indexOf('"') != -1;
       const styles = cssText.split(/\s*;\s*/);
       for (let i = 0; i < styles.length; ++i) {
         const style = styles[i];
@@ -613,7 +629,9 @@ define((require, exports, module) => {
         const dname = style.slice(0, idx);
         const name = util.camelize(dname);
         let value = style.slice(idx + 1).trim();
-        if (value !== '' && /color/.test(dname) && value.startsWith('#')) {
+        if (dname === 'font-family') {
+          value = normFontFamily(value);
+        } else if (value !== '' && dname.slice(-5) === 'color') {
           value = uColor.toRgbStyle(value);
         }
         sm[dname] = sm[name] = value;
@@ -623,26 +641,26 @@ define((require, exports, module) => {
   }
 
   ('text-align font-size font-family font-weight font-style text-decoration ' +
-   'border-color background-color color').split(' ').forEach((dname) => {
-     const name = util.camelize(dname);
-     function get() {return this[styles$][dname] || ''}
-     function set(value) {this.setProperty(dname, value)}
+    'border-color background-color color').split(' ').forEach((dname) => {
+      const name = util.camelize(dname);
+      function get() {return this[styles$][dname] || ''}
+      function set(value) {this.setProperty(dname, value)}
 
-     Object.defineProperty(Style.prototype, name, {
-       configurable: true,
-       get,
-       set,
-     });
+      Object.defineProperty(Style.prototype, name, {
+        configurable: true,
+        get,
+        set,
+      });
 
-     Object.defineProperty(Style.prototype, dname, {
-       configurable: true,
-       get,
-       set,
-     });
-   });
+      Object.defineProperty(Style.prototype, dname, {
+        configurable: true,
+        get,
+        set,
+      });
+    });
 
   module.onUnload(() => {
-    Object.defineProperty(global, 'document', {configurable: true, value: void 0});
+    Object.defineProperty(global, 'document', {configurable: true, value: undefined});
   });
 
   return HTMLDocument;

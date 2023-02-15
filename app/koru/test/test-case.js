@@ -6,8 +6,8 @@ define((require, exports, module) => {
   const stubber         = require('koru/test/stubber');
   const util            = require('koru/util');
 
-  const timeout$ = Symbol(), isDone$ = Symbol(),
-        after$ = Symbol(), once$ = Symbol(), temp$ = Symbol(), before$ = Symbol();
+  const timeout$ = Symbol(), isDone$ = Symbol(), after$ = Symbol();
+  const once$ = Symbol(), temp$ = Symbol(), before$ = Symbol();
 
   const MAX_TIME = 2000;
 
@@ -312,8 +312,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     after(func) {
       const tc = currentTC || this.tc;
       (isOnce
-       ? once(tc).after.addFront(func)
-       : after(tc, func))[temp$] = true;
+        ? once(tc).after.addFront(func)
+        : after(tc, func))[temp$] = true;
     }
 
     spy(...args) {
@@ -348,8 +348,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
         let idx = tcbody.indexOf(testbody);
 
         if (idx !== -1) {
-          for (let ni = tcbody.indexOf('\n'); ni !== -1 && ni < idx;
-               ni = tcbody.indexOf('\n', ni + 1)) {
+          for (let ni = tcbody.indexOf('\n'); ni !== -1 && ni < idx; ni = tcbody.indexOf('\n', ni + 1)) {
             ++line;
           }
         }
@@ -479,8 +478,8 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     currTest.mode = 'running';
     assertCount = Core.assertCount;
     const promise = currTest.body.length === 1
-          ? runDone()
-          : currTest.body();
+      ? runDone()
+      : currTest.body();
     return promise == undefined ? tearDown() : promise;
   };
 
@@ -513,16 +512,20 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
       Core.abort(err);
       return false;
     }
+    if (err?.name === 'intercept') {
+      Core.assertCount = -1;
+      return true;
+    }
     const isAssertionError = err instanceof Core.AssertionError;
     if (! isAssertionError) {
       (test.errors ??= []).push(
         (err instanceof Error)
           ? util.extractError(err)
           : (err === 'timeout'
-             ? 'Test timed out'
-             : (err === 'wrongReturn'
-                ? 'Unexpected return value'
-                : util.extractError(new Error(typeof (err) === 'string' ? err : util.inspect(err))))));
+            ? 'Test timed out'
+            : (err === 'wrongReturn'
+              ? 'Unexpected return value'
+              : util.extractError(new Error(typeof (err) === 'string' ? err : util.inspect(err))))));
     }
     if (Core.test.mode !== 'running') {
       Core.sendErrors(test);

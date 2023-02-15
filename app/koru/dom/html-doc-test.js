@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Server side implementation of the DOM tree.
@@ -11,7 +11,7 @@ define((require, exports, module)=>{
 
   const sut = require('./html-doc');
 
-  const assertConsistent = (node, index)=>{
+  const assertConsistent = (node, index) => {
     const {childNodes, parentNode} = node, len = childNodes.length;
 
     if (parentNode === null) {
@@ -23,7 +23,7 @@ define((require, exports, module)=>{
       assert(parentNode);
       assert.same(node.previousSibling.nextSibling, node);
       assert.same(node.previousSibling.parentNode, parentNode);
-      index === undefined || assert.same(node.previousSibling, parentNode.childNodes[index-1]);
+      index === undefined || assert.same(node.previousSibling, parentNode.childNodes[index - 1]);
     }
 
     if (node.nextSibling !== null) {
@@ -31,11 +31,11 @@ define((require, exports, module)=>{
       assert.same(node.nextSibling.previousSibling, node);
       assert.same(node.nextSibling.parentNode, parentNode);
       index === undefined ||
-        assert.same(node.nextSibling, parentNode.childNodes[index+1]);
+        assert.same(node.nextSibling, parentNode.childNodes[index + 1]);
     }
 
     let c = node.firstChild, i = 0;
-    for(; i < len; ++i, c = c.nextSibling) {
+    for (;i < len; ++i, c = c.nextSibling) {
       assert.same(childNodes[i], c);
       assert(c != null, `invalid child in ${node.tagName}: ${util.inspect(node)} at ${i}`);
       assertConsistent(c, i);
@@ -44,13 +44,12 @@ define((require, exports, module)=>{
     assert.same(i, len);
   };
 
-
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       document.body.textContent = '';
     });
 
-    test("getElementsByClassName", ()=>{
+    test('getElementsByClassName', () => {
       /**
        * Returns a list of all elements which have `className`.
        *
@@ -60,7 +59,7 @@ define((require, exports, module)=>{
       const html = Dom.h({div: [
         {},
         {div: [{class: 'foo bar'},
-               {div: {class: 'foo bar-foo'}}]}
+          {div: {class: 'foo bar-foo'}}]},
       ]});
 
       assertConsistent(html);
@@ -70,15 +69,14 @@ define((require, exports, module)=>{
       assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
     });
 
-    test("appendChild", ()=>{
-       const parent = Dom.h({div: [
+    test('appendChild', () => {
+      const parent = Dom.h({div: [
         {class: 'foo'},
         {class: 'old-node'},
       ]});
       assertConsistent(parent);
       const oldParent = Dom.h({div: {id: 'node1'}});
       const newNode = oldParent.firstChild;
-
 
       assert.same(oldParent.firstChild.id, 'node1');
       assertConsistent(parent);
@@ -91,13 +89,13 @@ define((require, exports, module)=>{
       assert.same(
         parent.appendChild(newNode),
         newNode);
-      assert.equals(util.map(oldParent.childNodes, n => n.outerHTML), ['<div id=\"node2\"></div>']);
+      assert.equals(util.map(oldParent.childNodes, (n) => n.outerHTML), ['<div id=\"node2\"></div>']);
 
       assert.same(newNode.parentNode, parent);
       assert.same(parent.lastChild, newNode);
     });
 
-    test("remove", ()=>{
+    test('remove', () => {
       const n = Dom.h({div: [{id: 'a'}, {id: 'b'}]});
 
       const lc = n.lastChild;
@@ -106,7 +104,7 @@ define((require, exports, module)=>{
       assertConsistent(n);
     });
 
-    test("replaceChild", ()=>{
+    test('replaceChild', () => {
       /**
        * Replace the `oldChild` with the `newChild`
        *
@@ -131,37 +129,37 @@ define((require, exports, module)=>{
       assertConsistent(oldNode);
     });
 
-    test("fragment to replaceChild", ()=>{
+    test('fragment to replaceChild', () => {
       const parent = Dom.h({div: [
         {class: 'foo', div: 'f'},
         {class: 'old-node', div: 'o'},
         {class: 'bar', div: 'bar'},
       ]});
-      const newNode = Dom.h(["x", "y", "z"]);
+      const newNode = Dom.h(['x', 'y', 'z']);
 
       const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
       assert.className(oldNode, 'old-node');
       refute(oldNode.parentNode);
       assertConsistent(oldNode);
       assertConsistent(parent);
-      assert.equals(util.map(parent.childNodes, i => i.textContent).join(''),
-                    'fxyzbar');
+      assert.equals(util.map(parent.childNodes, (i) => i.textContent).join(''),
+        'fxyzbar');
     });
 
-    test("setAttribute", ()=>{
+    test('setAttribute', () => {
       const elm = document.createElement('div');
       elm.setAttribute('width', 500);
       assert.same(elm.getAttribute('width'), '500');
     });
 
-    test("setAttributeNS", ()=>{
+    test('setAttributeNS', () => {
       const elm = document.createElement('div');
       elm.setAttributeNS(Dom.XHTMLNS, 'width', 500);
       assert.same(elm.getAttribute('width'), '500');
     });
 
-    test("doc fragment cloneNode", ()=>{
-       const df1 =Dom.h(['a', 'b', 'c']);
+    test('doc fragment cloneNode', () => {
+      const df1 = Dom.h(['a', 'b', 'c']);
       assertConsistent(df1);
 
       const df2 = df1.cloneNode();
@@ -169,30 +167,29 @@ define((require, exports, module)=>{
       assertConsistent(df2);
 
       const df3 = df1.cloneNode(true);
-      assert.equals(util.map(df3.childNodes, i => i.textContent), ['a', 'b', 'c']);
+      assert.equals(util.map(df3.childNodes, (i) => i.textContent), ['a', 'b', 'c']);
       refute.same(df1.firstChild, df3.firstChild);
       assertConsistent(df3);
     });
 
-    test("textNode is text", ()=>{
+    test('textNode is text', () => {
       const node = document.createTextNode(5);
       assert.same(node.textContent, '5');
     });
 
-    test("construction", ()=>{
+    test('construction', () => {
       const df = document.createDocumentFragment();
 
       const elm = document.createElement('div');
-      elm.textContent = "hello world";
+      elm.textContent = 'hello world';
 
       assert.same(elm.nodeType, 1);
       assert.same(elm.nodeType, document.ELEMENT_NODE);
 
       const elm2 = elm.cloneNode(true);
       elm2.appendChild(document.createTextNode(' alderaan'));
-      assert.same(elm.outerHTML, "<div>hello world</div>");
-      assert.same(elm2.outerHTML, "<div>hello world alderaan</div>");
-
+      assert.same(elm.outerHTML, '<div>hello world</div>');
+      assert.same(elm2.outerHTML, '<div>hello world alderaan</div>');
 
       const foo = document.createElement('foo');
       foo.textContent = 'bar';
@@ -209,46 +206,46 @@ define((require, exports, module)=>{
 
       const top = document.createElement('section');
 
-      elm.id = "top123";
+      elm.id = 'top123';
       assert.same(elm.className, '');
 
-      elm.className = "un deux trois";
-      assert.same(elm.className, "un deux trois");
+      elm.className = 'un deux trois';
+      assert.same(elm.className, 'un deux trois');
 
       top.appendChild(df);
 
-      assert.equals(util.map(top.childNodes[0].attributes, a => a.name+':'+a.value).sort(), ['class:un deux trois', 'id:top123']);
+      assert.equals(util.map(top.childNodes[0].attributes, (a) => a.name + ':' + a.value).sort(), ['class:un deux trois', 'id:top123']);
 
       assert.sameHtml(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
 
       assert.same(top.textContent, 'hello worldbar');
     });
 
-    test("comments", ()=>{
+    test('comments', () => {
       assert.same(document.COMMENT_NODE, 8);
       const comment = document.createComment('testing');
       assert.same(comment.nodeType, document.COMMENT_NODE);
       assert.same(comment.data, 'testing');
 
       const div = document.createElement('div');
-      div.innerHTML = "<!-- my comment-->";
+      div.innerHTML = '<!-- my comment-->';
 
       assert.equals(div.firstChild.textContent, ' my comment');
 
-      assert.same(div.innerHTML, "<!-- my comment-->");
+      assert.same(div.innerHTML, '<!-- my comment-->');
     });
 
-    test("style backgroundColor", ()=>{
+    test('style backgroundColor', () => {
       const top = document.createElement('div');
       assert.same(top.style.backgroundColor, '');
       top.style.backgroundColor = '#ffff00';
       assert.same(top.style.backgroundColor, 'rgb(255, 255, 0)');
       assert.same(top.getAttribute('style'), 'background-color: rgb(255, 255, 0);');
-      assert.equals(util.map(top.attributes, x=>`${x.name}:${x.value}`),
-                    ['style:background-color: rgb(255, 255, 0);']);
+      assert.equals(util.map(top.attributes, (x) => `${x.name}:${x.value}`),
+        ['style:background-color: rgb(255, 255, 0);']);
     });
 
-    test("style.cssText", ()=>{
+    test('style.cssText', () => {
       const top = document.createElement('div');
       top.setAttribute('style', 'border:1px solid red;font-weight:bold;color:#ff0000');
       assert.same(top.style.color, 'rgb(255, 0, 0)');
@@ -262,20 +259,28 @@ define((require, exports, module)=>{
       assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0);');
       top.style.textDecoration = 'underline';
       let i = 0;
-      for(; i < 8; ++i) {
-        if (/^text-decoration/.test(top.style.item(i)||''))
+      for (;i < 8; ++i) {
+        if (/^text-decoration/.test(top.style.item(i) || '')) {
           break;
+        }
       }
       assert.match(top.style.item(i), /^text-decoration/);
       assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;');
       assert.same(top.style.textAlign, '');
       assert.same(top.outerHTML, '<div style="font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;"></div>');
-      top.style.fontFamily = 'foo bar';
+      const ans = 'font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline; font-family: "foo bar";';
 
-      assert.match(top.style.cssText, /^font-weight: normal; color: rgb\(255, 0, 0\); text-decoration: underline; font-family: ['"]?foo\\? bar["']?;$/);
+      top.style.fontFamily = "'foo bar'";
+      assert.equals(top.style.cssText, ans);
+
+      top.style.fontFamily = 'foo bar';
+      assert.equals(top.style.cssText, ans);
+
+      top.style.fontFamily = '"foo bar"';
+      assert.equals(top.style.cssText, ans);
     });
 
-    test("insertBefore", ()=>{
+    test('insertBefore', () => {
       const top = document.createElement('div');
 
       const b = document.createElement('b');
@@ -299,17 +304,24 @@ define((require, exports, module)=>{
 
       assertConsistent(top);
       assert.same(top.childNodes[2].parentNode, top);
-      assert.sameHtml(util.map(top.childNodes, n=>n.tagName).join(''), 'IX1X2X3X4X5B');
+      assert.sameHtml(util.map(top.childNodes, (n) => n.tagName).join(''), 'IX1X2X3X4X5B');
     });
 
-    test("raw text", ()=>{
+    test('raw text', () => {
       const elm = document.createElement('div');
       const exp = elm.innerHTML = `<script>(1 < 2)</script>`;
 
       assert.equals(elm.innerHTML, exp);
     });
 
-    test("innerHTML", ()=>{
+    test('outerHTML attribute quotes', () => {
+      const html = document.createElement('p');
+      const text = `<p style="font-family: &quot;foo Face&quot;;">hello</p>`;
+      html.innerHTML = text;
+      assert.equals(html.innerHTML, text);
+    });
+
+    test('innerHTML', () => {
       const elm = document.createElement('div');
       const exp = elm.innerHTML = `<div id="top&quot;<123>" class="un deux trois">
 hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo>
@@ -323,20 +335,20 @@ if (i < 5) error("bad i");
 </script>
 </div>`;
 
-      assert.same(elm.firstChild.id, "top\"<123>");
+      assert.same(elm.firstChild.id, 'top"<123>');
       assert.same(elm.firstChild.firstChild.textContent, '\nhello <world>');
       assert.equals(elm.innerHTML, exp.replace(/&#62/, '&gt'));
     });
 
-    test("innerHTML invalid paragraphs", ()=>{
+    test('innerHTML invalid paragraphs', () => {
       const div = document.createElement('div');
       div.innerHTML = `<p>start<pre>middle</pre>end</p>\n`;
       assert.equals(div.outerHTML, '<div><p>start</p><pre>middle</pre>end<p></p>\n</div>');
     });
 
-    test("HTML entities", ()=>{
+    test('HTML entities', () => {
       const div = document.createElement('div');
-      div.innerHTML = "&lt;&quot;&quot;&gt;&#39;&amp;&nbsp;&euro;";
+      div.innerHTML = '&lt;&quot;&quot;&gt;&#39;&amp;&nbsp;&euro;';
       assert.same(div.firstChild.textContent, '<"">\'&\xa0\u20ac');
       assert.same(div.innerHTML, '&lt;""&gt;\'&amp;&nbsp;\u20ac');
     });

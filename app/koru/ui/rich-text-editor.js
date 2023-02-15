@@ -1,19 +1,19 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const RichText        = require('koru/dom/rich-text');
   const Observable      = require('koru/observable');
   const DomNav          = require('koru/ui/dom-nav');
   const DomUndo         = require('koru/ui/dom-undo');
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
-  const session         = require('../session/client-rpc');
   const ColorPicker     = require('./color-picker');
   const KeyMap          = require('./key-map');
   const Modal           = require('./modal');
-  const RichText        = require('./rich-text');
   const RichTextMention = require('./rich-text-mention');
   const SelectMenu      = require('./select-menu');
+  const session         = require('../session/client-rpc');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   const $ = Dom.current;
@@ -28,22 +28,23 @@ define((require, exports, module)=>{
     insertNode, getTag, selectNode, newline, normRange, selectRange,
   } = DomNav;
 
-
   const noop = util.voidFunc;
 
   const EMPTY_PRE = Dom.h({pre: document.createElement('BR'), 'data-lang': 'text'});
-  const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
+  const execCommand = (cmd, value) => document.execCommand(cmd, false, value);
 
-  const commandify = (func, cmd)=>{
+  const commandify = (func, cmd) => {
     switch (typeof func) {
     case 'function':
       return func;
     case 'boolean':
-      return func ? event =>{
-        execCommand(cmd);
-        const ctx = Tpl.$ctx(event.target);
-        notify(ctx, 'force', {});
-      } : noop;
+      return func
+        ? (event) => {
+          execCommand(cmd);
+          const ctx = Tpl.$ctx(event.target);
+          notify(ctx, 'force', {});
+        }
+        : noop;
     }
     for (const id in func) {
       func[id] = commandify(func[id], id);
@@ -65,14 +66,14 @@ define((require, exports, module)=>{
     [7, 'XXX large'],
   ];
 
-  FONT_SIZE_LIST.forEach(row => {
+  FONT_SIZE_LIST.forEach((row) => {
     row[1] = Dom.h({font: row[1], $size: row[0]});
   });
 
   execCommand('styleWithCSS', true);
 
-  const getModeNode = (ctx, elm)=>{
-    for(const editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
+  const getModeNode = (ctx, elm) => {
+    for (const editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
       switch (elm.tagName) {
       case 'PRE':
         return elm;
@@ -80,12 +81,13 @@ define((require, exports, module)=>{
     }
   };
 
-  const setMode = (ctx, range=Dom.getRange())=>{
+  const setMode = (ctx, range=Dom.getRange()) => {
     if (range === null) return;
     let elm = range.startContainer;
     if (elm === ctx.lastElm) {
-      if (! ctx.override || (range.collapsed && ctx.lastOffset === range.startOffset))
-      return;
+      if (! ctx.override || (range.collapsed && ctx.lastOffset === range.startOffset)) {
+        return;
+      }
     }
     elm = getModeNode(ctx, elm);
     switch (elm && elm.tagName) {
@@ -100,29 +102,30 @@ define((require, exports, module)=>{
     notify(ctx);
   };
 
-  const ensureLangues = (ctx)=>{
+  const ensureLangues = (ctx) => {
     if (languageList) return;
-    session.rpc('RichTextEditor.fetchLanguages', (err, result)=>{
+    session.rpc('RichTextEditor.fetchLanguages', (err, result) => {
       Tpl.languageList = result;
       notify(ctx, 'force');
     });
   };
 
-  const nodeRange = (elm, offset=0)=>{
+  const nodeRange = (elm, offset=0) => {
     const range = document.createRange();
     range.setStart(elm, offset);
     return range;
   };
 
-  const notify = (ctx, force, override)=>{
-    const range = Dom.getRange()  || nodeRange(ctx.inputElm);
-    const elm = range.startContainer.nodeType !== TEXT_NODE ?
-            range.startContainer.childNodes[range.startContainer.offset] || range.startContainer
-            : range.startContainer;
+  const notify = (ctx, force, override) => {
+    const range = Dom.getRange() || nodeRange(ctx.inputElm);
+    const elm = range.startContainer.nodeType !== TEXT_NODE
+      ? range.startContainer.childNodes[range.startContainer.offset] || range.startContainer
+      : range.startContainer;
 
     if (! force && ctx.lastElm === elm &&
-        (! ctx.override || (range.collapsed && ctx.lastOffset === range.startOffset)))
-      return;
+      (! ctx.override || (range.collapsed && ctx.lastOffset === range.startOffset))) {
+        return;
+      }
 
     ctx.override = override;
     ctx.lastElm = elm;
@@ -131,27 +134,27 @@ define((require, exports, module)=>{
     ctx.caretMoved.notify(override);
   };
 
-  const mentionKey = (ctx, code)=>{
+  const mentionKey = (ctx, code) => {
     let mentions = ctx.data.extend;
     mentions = mentions && mentions.mentions;
     if (! mentions) return;
     const id = String.fromCharCode(code);
-    if (mentions[id])
+    if (mentions[id]) {
       return id;
+    }
   };
 
-
-  const fontNode = (top, node)=>{
-    for(; node !== null && node !== top; node = node.parentNode) {
+  const fontNode = (top, node) => {
+    for (;node !== null && node !== top; node = node.parentNode) {
       if (node.nodeType === 1 &&
-          RichText.fontType(node.style.getPropertyValue('font-family')) !== '') {
-        return node;
-      }
+        RichText.fontType(node.style.getPropertyValue('font-family')) !== '') {
+          return node;
+        }
     }
     return top;
   };
 
-  const undoredo = (event, cmd) =>{
+  const undoredo = (event, cmd) => {
     const ctx = Tpl.$ctx(event.target);
     if (ctx.undo[cmd]()) {
       ctx.lastElm = undefined;
@@ -173,24 +176,27 @@ define((require, exports, module)=>{
     justifyRight: true,
     justifyFull: true,
     removeFormat: true,
-    fontName: event =>{
-      chooseFromMenu(event, {list: FONT_LIST}, (ctx, id)=>{
+    fontName: (event) => {
+      chooseFromMenu(event, {list: FONT_LIST}, (ctx, id) => {
         execCommand('fontName', RichText.fontIdToFace[id]);
-        if (Dom.getRange().collapsed)
+        if (Dom.getRange().collapsed) {
           return {font: id};
+        }
       });
     },
-    fontColor: (event)=>{
+    fontColor: (event) => {
       const ctx = Tpl.$ctx(event.target);
       const focus = ctx.inputElm;
 
       let range = Dom.getRange();
       let node = range === null ? DomNav.firstInnerMostNode(focus) : range.endContainer;
-      if (node && node.nodeType === TEXT_NODE)
+      if (node && node.nodeType === TEXT_NODE) {
         node = node.parentNode;
+      }
 
-      if (node === null)
+      if (node === null) {
         return;
+      }
 
       const style = window.getComputedStyle(node);
 
@@ -198,17 +204,16 @@ define((require, exports, module)=>{
       let bgColor = style.backgroundColor;
       bgColor = uColor.toRGB(bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor);
 
-
       const options = {
-        foreColor: fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor),
-        hiliteColor: bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor),
+        foreColor: fgColor.a < .1 ? '#ffffff' : uColor.rgb2hex(fgColor),
+        hiliteColor: bgColor.a < .1 ? '#ffffff' : uColor.rgb2hex(bgColor),
       };
       const typeElm = Tpl.FontColor.$autoRender(options);
 
       ctx.openDialog = true;
       ColorPicker.choose({
         color: fgColor, anchor: range || node,
-        customFieldset: typeElm, callback: color =>{
+        customFieldset: typeElm, callback: (color) => {
           ctx.openDialog = false;
           focus.focus();
           range && Dom.setRange(range);
@@ -220,14 +225,15 @@ define((require, exports, module)=>{
           color && execCommand(cmd, color);
         }});
     },
-    fontSize: (event)=>{
-      chooseFromMenu(event, {list: FONT_SIZE_LIST, classes: "fontSize"}, (ctx, id)=>{
+    fontSize: (event) => {
+      chooseFromMenu(event, {list: FONT_SIZE_LIST, classes: 'fontSize'}, (ctx, id) => {
         execCommand('fontSize', +id);
-        if (Dom.getRange().collapsed)
+        if (Dom.getRange().collapsed) {
           return {fontSize: id};
+        }
       });
     },
-    code: (event)=>{
+    code: (event) => {
       const range = Dom.getRange();
       const editor = Dom.getClosest(range.startContainer, '.input');
       if (editor === null) return;
@@ -238,17 +244,20 @@ define((require, exports, module)=>{
 
       if (sc.nodeType === TEXT_NODE && DomNav.rangeIsInline(range)) {
         if (! collapsed) {
-          if (range.startOffset == sc.nodeValue.length)
+          if (range.startOffset == sc.nodeValue.length) {
             sc = DomNav.nextNode(sc);
-          if (ec.nodeType === TEXT_NODE && range.endOffset == 0)
+          }
+          if (ec.nodeType === TEXT_NODE && range.endOffset == 0) {
             ec = DomNav.previousNode(ec);
+          }
         }
         const fn = fontNode(editor, sc),
-              fnFont = (ctx.override && ctx.override.font) || fn.style.getPropertyValue('font-family');
+        fnFont = (ctx.override && ctx.override.font) || fn.style.getPropertyValue('font-family');
         const efnFont = collapsed || ctx.override
-              ? fnFont : fontNode(editor, ec).style.getPropertyValue('font-family');
+          ? fnFont
+          : fontNode(editor, ec).style.getPropertyValue('font-family');
         let font = 'monospace';
-        if (fnFont ===  efnFont && fnFont === 'monospace') {
+        if (fnFont === efnFont && fnFont === 'monospace') {
           let pn = fn;
           while (pn !== editor) {
             pn = fontNode(editor, fn.previousSibling || fn.parentNode);
@@ -279,7 +288,7 @@ define((require, exports, module)=>{
         notify(ctx, 'force');
       }
     },
-    link: ()=>{
+    link: () => {
       const inputCtx = Tpl.$ctx();
 
       const aElm = getTag('A', inputCtx.inputElm);
@@ -287,11 +296,11 @@ define((require, exports, module)=>{
       if (! range) return;
 
       const dialog = Link.$autoRender({
-        range: range,
+        range,
         elm: aElm,
         link: aElm == null ? '' : aElm.getAttribute('href'),
         text: range.toString() || '',
-        inputCtx: inputCtx,
+        inputCtx,
         inputElm: inputCtx.inputElm,
       });
       const caretPos = Dom.getBoundingClientRect(range);
@@ -302,19 +311,19 @@ define((require, exports, module)=>{
       });
       const rtLink = dialog.firstChild;
       const rtPos = rtLink.getBoundingClientRect();
-      const caretPointerStyle  = rtLink.lastChild.style;
+      const caretPointerStyle = rtLink.lastChild.style;
       rtLink.classList.toggle('below', !! rtLink.style.getPropertyValue('top'));
-      caretPointerStyle.setProperty('left', (caretPos.left-rtPos.left)+'px');
+      caretPointerStyle.setProperty('left', (caretPos.left - rtPos.left) + 'px');
 
       dialog.querySelector('[name=link]').focus();
     },
-    mention: (event)=>{
+    mention: (event) => {
       const range = Dom.getRange();
       if (range === null) return;
 
       const button = event.target;
       const dialog = RichTextMention.$autoRender({
-        range: range,
+        range,
         type: button.getAttribute('data-type'),
         mentions: $.ctx.parentCtx.data.extend.mentions,
         inputCtx: $.ctx.parentCtx,
@@ -331,14 +340,14 @@ define((require, exports, module)=>{
     },
   });
 
-  for(let i = 0; i < 7; ++i) {
-    const cmd = i == 0 ? 'div' : 'H'+i;
-    actions['heading'+i] = () => {
+  for (let i = 0; i < 7; ++i) {
+    const cmd = i == 0 ? 'div' : 'H' + i;
+    actions['heading' + i] = () => {
       execCommand('formatBlock', cmd);
     };
   }
 
-  const mapActions = (keys, actions)=>{
+  const mapActions = (keys, actions) => {
     for (const name in keys) {
       const seqs = keys[name];
       keys[name] = Array.isArray(seqs) ? [...seqs, actions[name]] : [seqs, actions[name]];
@@ -347,124 +356,124 @@ define((require, exports, module)=>{
   };
 
   const commonActions = {
-    undo: event =>{undoredo(event.target, 'undo')},
-    redo: event =>{undoredo(event.target, 'redo')},
+    undo: (event) => {undoredo(event.target, 'undo')},
+    redo: (event) => {undoredo(event.target, 'redo')},
   };
 
   const CTRL_TO_META = {mapCtrlToMeta: true};
 
   const commonKeys = mapActions({
-    undo: ctrl+'Z',
-    redo: [ctrl+shift+'Z', ctrl+'Y'],
+    undo: ctrl + 'Z',
+    redo: [ctrl + shift + 'Z', ctrl + 'Y'],
   }, commonActions);
 
   const keyMap = KeyMap(commonKeys, CTRL_TO_META);
   keyMap.addKeys(mapActions({
-    bold: ctrl+'B',
-    italic: ctrl+'I',
-    underline: ctrl+'U',
-    strikeThrough: alt+shift+'5',
-    insertOrderedList: ctrl+shift+'7',
-    insertUnorderedList: ctrl+shift+'8',
-    outdent: ctrl+'Û',
-    indent: ctrl+'Ý',
-    link: ctrl+'K',
-    code: ctrl+'À',
-    justifyLeft: ctrl+shift+"L",
-    justifyCenter: ctrl+shift+"E",
-    justifyRight: ctrl+shift+"R",
-    justifyFull: ctrl+shift+"J",
-    removeFormat: ctrl+'Ü',
-    fontColor: ctrl+shift+'H',
-    fontName: ctrl+shift+'O',
+    bold: ctrl + 'B',
+    italic: ctrl + 'I',
+    underline: ctrl + 'U',
+    strikeThrough: alt + shift + '5',
+    insertOrderedList: ctrl + shift + '7',
+    insertUnorderedList: ctrl + shift + '8',
+    outdent: ctrl + 'Û',
+    indent: ctrl + 'Ý',
+    link: ctrl + 'K',
+    code: ctrl + 'À',
+    justifyLeft: ctrl + shift + 'L',
+    justifyCenter: ctrl + shift + 'E',
+    justifyRight: ctrl + shift + 'R',
+    justifyFull: ctrl + shift + 'J',
+    removeFormat: ctrl + 'Ü',
+    fontColor: ctrl + shift + 'H',
+    fontName: ctrl + shift + 'O',
   }, actions), CTRL_TO_META);
 
-  for(let i = 0; i < 7; ++i) {
-    const name = 'heading'+i;
-    keyMap.addKeys({[name]: [alt+ctrl+i, actions[name]]}, {mapCtrlToMeta: true});
+  for (let i = 0; i < 7; ++i) {
+    const name = 'heading' + i;
+    keyMap.addKeys({[name]: [alt + ctrl + i, actions[name]]}, {mapCtrlToMeta: true});
   }
 
-
-  const chooseFromMenu = (event, options, onSelect)=>{
+  const chooseFromMenu = (event, options, onSelect) => {
     const ctx = Tpl.$ctx(event.target);
     const origin = event.target;
 
     options = Object.assign({
-      onSelect: item =>{
+      onSelect: (item) => {
         const id = $.data(item)._id;
 
         // close dialog before notify to restore range
         Dom.remove(Dom.getClosest(item, '.glassPane'));
         notify(ctx, 'force', onSelect(ctx, id));
       },
-      onClose: ()=>{ctx.openDialog = null}
+      onClose: () => {ctx.openDialog = null},
     }, options);
 
-    options.boundingClientRect = ctx.inputElm.contains(event.target) ?
-      Dom.getBoundingClientRect(Dom.getRange()) :
-      event.target.getBoundingClientRect();
+    options.boundingClientRect = ctx.inputElm.contains(event.target)
+      ? Dom.getBoundingClientRect(Dom.getRange())
+      : event.target.getBoundingClientRect();
 
     ctx.openDialog = true;
     SelectMenu.popup(event.target, options);
   };
 
-  const insertFragContents = (frag, pn, before, notTag)=>{
+  const insertFragContents = (frag, pn, before, notTag) => {
     if (frag.length != 0) {
       const from = frag.firstChild;
       if (from === null) return;
       if (from.tagName === notTag) {
-        while(from.firstChild) pn.insertBefore(from.firstChild, before);
+        while (from.firstChild) pn.insertBefore(from.firstChild, before);
       } else {
         pn.insertBefore(frag, before);
       }
     }
   };
 
-  const syntaxHighlight = (inputElm)=>{
+  const syntaxHighlight = (inputElm) => {
     const ctx = Tpl.$ctx(inputElm);
     const pre = Dom.getClosest(ctx.lastElm, 'pre');
     Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
     const rt = RichText.fromHtml(pre, {includeTop: true});
     session.rpc(
       'RichTextEditor.syntaxHighlight',
-      pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), (err, result)=>{
+      pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/, ''), (err, result) => {
         Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
-        if (util.deepEqual(result, rt[1]))
+        if (util.deepEqual(result, rt[1])) {
           return;
+        }
         const range = Dom.getRange();
-        while(pre.firstChild !== null) pre.removeChild(pre.firstChild);
+        while (pre.firstChild !== null) pre.removeChild(pre.firstChild);
         let i = RichText.toHtml(rt[0], result).firstChild.firstChild;
-        while (i !== null ) {
+        while (i !== null) {
           const t = i;
           i = i.nextSibling;
           pre.appendChild(t);
         }
         setMode(ctx);
-      }
+      },
     );
   };
 
   const codeActions = commandify({
-    language: event =>{
+    language: (event) => {
       chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
-      }, (ctx, id)=>{
+      }, (ctx, id) => {
         const pre = Dom.getClosest(ctx.lastElm, 'pre');
         pre && pre.setAttribute('data-lang', id);
         codeMode.language = id;
         syntaxHighlight(event.target);
       });
     },
-    syntaxHighlight: event =>{syntaxHighlight(event.target)},
+    syntaxHighlight: (event) => {syntaxHighlight(event.target)},
 
     bold: false,
     italic: false,
     underline: false,
-    newline: ()=>{newline()},
-    code: (event)=>{
+    newline: () => {newline()},
+    code: (event) => {
       const ctx = Tpl.$ctx(event.target);
       const pre = Dom.getClosest(ctx.lastElm, 'pre');
       const pn = pre.parentNode;
@@ -473,13 +482,14 @@ define((require, exports, module)=>{
       const isLine = range.collapsed;
 
       let sc = isLine ? DomNav.rangeStartNode(range) || range.startContainer : null,
-          so = isLine && sc.nodeType === TEXT_NODE ? range.startOffset : 0,
-          ec = null;
+      so = isLine && sc.nodeType === TEXT_NODE ? range.startOffset : 0,
+      ec = null;
 
       const line = DomNav.restrictRange(isLine ? DomNav.selectLine(range) : range, pre);
 
-      if (isLine && line.startContainer.nodeType === TEXT_NODE)
+      if (isLine && line.startContainer.nodeType === TEXT_NODE) {
         line.setStart(line.startContainer.parentNode, Dom.nodeIndex(line.startContainer));
+      }
 
       const pre2Range = line.cloneRange();
       pre2Range.setEnd(pre, pre.childNodes.length);
@@ -511,8 +521,9 @@ define((require, exports, module)=>{
 
         DomNav.clearEmptyInline(pre);
 
-        if (pre.firstChild === null)
+        if (pre.firstChild === null) {
           pre.remove();
+        }
       }
 
       if (isLine) {
@@ -536,13 +547,13 @@ define((require, exports, module)=>{
 
   const codeKeyMap = KeyMap(commonKeys, CTRL_TO_META);
   codeKeyMap.addKeys(mapActions({
-    language: ctrl+'L',
-    bold: ctrl+'B',
-    italic: ctrl+'I',
-    underline: ctrl+'U',
-    syntaxHighlight: ctrl+shift+'H',
-    newline: "\x0d",
-    code: ctrl+'À',
+    language: ctrl + 'L',
+    bold: ctrl + 'B',
+    italic: ctrl + 'I',
+    underline: ctrl + 'U',
+    syntaxHighlight: ctrl + shift + 'H',
+    newline: "\r",
+    code: ctrl + 'À',
   }, codeActions), CTRL_TO_META);
 
   const optionKeys = {
@@ -567,26 +578,26 @@ define((require, exports, module)=>{
   });
 
   const standardMode = {
-    actions: actions,
+    actions,
     type: 'standard',
 
-    keyMap: keyMap,
+    keyMap,
 
-    paste: htmlText =>{
+    paste: (htmlText) => {
       const html = RichText.fromToHtml(Dom.textToHtml(`<div>${htmlText}</div>`));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
-    pasteText: text =>{
+    pasteText: (text) => {
       const URL_RE = /(\bhttps?:\/\/\S+)/;
 
       if (Tpl.handleHyperLink && URL_RE.test(text)) {
         const html = document.createElement('DIV');
-        text.split(/(\r?\n)/).forEach((line, oi)=>{
+        text.split(/(\r?\n)/).forEach((line, oi) => {
           if (oi % 2) {
             html.appendChild(document.createElement('BR'));
           } else {
-            line.split(URL_RE).forEach((part, index)=>{
+            line.split(URL_RE).forEach((part, index) => {
               if (index % 2) {
                 const elm = Tpl.handleHyperLink(part);
                 if (elm) {
@@ -612,10 +623,10 @@ define((require, exports, module)=>{
       }
 
       if ($.ctx.mentionState != null && $.ctx.mentionState < 3 &&
-          ++$.ctx.mentionState > 2) {
-        // we had a non printable key pressed; abort mention
-        RichTextMention.revertMention(this);
-      }
+        ++$.ctx.mentionState > 2) {
+          // we had a non printable key pressed; abort mention
+          RichTextMention.revertMention(this);
+        }
     },
   };
 
@@ -625,14 +636,14 @@ define((require, exports, module)=>{
 
     keyMap: codeKeyMap,
 
-    keydown: event =>{
+    keydown: (event) => {
       if (event.which === 40 && ! (event.ctrlKey || event.metaKey || event.altKey)) {
         return;
       }
       codeKeyMap.exec(event, 'ignoreFocus');
     },
 
-    paste: htmlText =>{
+    paste: (htmlText) => {
       const range = Dom.getRange();
       range.deleteContents();
       let i = RichText.fromToHtml(Dom.textToHtml(`<pre>${htmlText}</pre>`)).firstChild.firstChild;
@@ -662,7 +673,7 @@ define((require, exports, module)=>{
     value && inputElm.appendChild(value);
   }
 
-  const focusInput = (event)=>{
+  const focusInput = (event) => {
     const elm = event.currentTarget;
     const parent = elm.parentNode;
     const pCtx = Dom.myCtx(parent);
@@ -671,8 +682,9 @@ define((require, exports, module)=>{
     const focusout = event.type === 'focusout' && ! parent.contains(document.activeElement);
 
     if (focusout) {
-      if (currentDialog(elm))
+      if (currentDialog(elm)) {
         return;
+      }
       document.removeEventListener('selectionchange', pCtx.selectionchange);
       const data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
@@ -685,13 +697,13 @@ define((require, exports, module)=>{
     Dom.setClass('focus', ! focusout, parent);
   };
 
-  const currentDialog = (me)=>{
+  const currentDialog = (me) => {
     const ctx = Dom.myCtx(me.parentNode);
     return ctx && ctx.openDialog;
   };
 
   Tpl.$extend({
-    $created: (ctx, elm)=>{
+    $created: (ctx, elm) => {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
       ctx.caretMoved = new Observable();
@@ -701,7 +713,7 @@ define((require, exports, module)=>{
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
 
       const undo = ctx.undo = new DomUndo(ctx.inputElm);
-      ctx.selectionchange = ()=>{
+      ctx.selectionchange = () => {
         const range = Dom.getRange();
         if (range != null && ctx.inputElm.contains(range.startContainer)) {
           setMode(ctx, range);
@@ -710,7 +722,7 @@ define((require, exports, module)=>{
       };
     },
 
-    $destroyed: (ctx)=>{
+    $destroyed: (ctx) => {
       document.removeEventListener('selectionchange', ctx.selectionchange);
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
@@ -719,9 +731,10 @@ define((require, exports, module)=>{
 
     title: (title, action, mode) => modes[mode].keyMap.getTitle(title, action),
 
-    clear: elm =>{
-      if (! Dom.hasClass(elm, 'richTextEditor'))
+    clear: (elm) => {
+      if (! Dom.hasClass(elm, 'richTextEditor')) {
         elm = elm.parentNode;
+      }
       const ctx = Dom.ctx(elm);
       ctx.undo.disconnect();
       const input = ctx.inputElm;
@@ -731,7 +744,7 @@ define((require, exports, module)=>{
       notify(ctx, 'force', {});
     },
 
-    moveLeft: (editor, mark)=>{
+    moveLeft: (editor, mark) => {
       const range = selectRange(editor, 'char', -1);
       if (! range) return;
       if (! mark) {
@@ -743,16 +756,17 @@ define((require, exports, module)=>{
     execCommand,
     chooseFromMenu,
 
-    runAction: (ctx, id, event)=>{
+    runAction: (ctx, id, event) => {
       const cc = commonActions[id] || ctx.mode.actions[id];
       return cc(event);
     },
 
-    insert: (arg, inner)=>{
+    insert: (arg, inner) => {
       const range = Dom.getRange();
 
-      if (typeof arg === 'string')
+      if (typeof arg === 'string') {
         return execCommand('insertText', arg);
+      }
 
       let t;
       if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
@@ -764,7 +778,7 @@ define((require, exports, module)=>{
       } else {
         t = arg.outerHTML;
       }
-      return execCommand("insertHTML", t);
+      return execCommand('insertHTML', t);
     },
 
     get languageList() {return languageList},
@@ -772,38 +786,38 @@ define((require, exports, module)=>{
     set languageList(value) {
       languageList = value;
       Tpl.languageMap = {};
-      value && value.forEach(lang =>{Tpl.languageMap[lang[0]] = lang[1]});
+      value && value.forEach((lang) => {Tpl.languageMap[lang[0]] = lang[1]});
     },
 
-    modes: modes,
+    modes,
   });
 
   Tpl.$events({
-    input: event =>{
+    input: (event) => {
       const input = event.target;
       const fc = input.firstChild;
-      if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
+      if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR') {
         fc.remove();
+      }
 
-      util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), node =>{
+      util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), (node) => {
         switch (node.tagName) {
         case 'BLOCKQUOTE':
           node.removeAttribute('style');
           break;
         case 'SPAN':
-
           const st = node.style;
           const fs = st.fontSize;
           if (fs && fs.slice(-2) !== 'em') {
-            st.fontSize = FONT_SIZE_TO_EM[fs.replace(/^-[a-z]+-/,'')] || '3em';
-            st.lineHeight = "1em";
+            st.fontSize = FONT_SIZE_TO_EM[fs.replace(/^-[a-z]+-/, '')] || '3em';
+            st.lineHeight = '1em';
           }
           break;
         }
       });
     },
 
-    paste: event =>{
+    paste: (event) => {
       let foundText, type;
       const cb = event.clipboardData;
       if (! cb) return;
@@ -827,12 +841,12 @@ define((require, exports, module)=>{
       }
     },
 
-    'click a,button': event =>{event.preventDefault()},
+    'click a,button': (event) => {event.preventDefault()},
 
     keydown(event) {
       const mdEditor = this.parentNode;
 
-      switch(event.which) {
+      switch (event.which) {
       case 229: case 16:
         return;
       }
@@ -864,7 +878,7 @@ define((require, exports, module)=>{
           mentions: ctx.data.extend.mentions,
           inputCtx: ctx,
           inputElm: ctx.inputElm,
-          span: span,
+          span,
         });
         return;
       }
@@ -896,23 +910,23 @@ define((require, exports, module)=>{
   });
 
   Dom.registerHelpers({
-    richTextEditor: (content, options)=> Tpl.$autoRender({content: content, options: options}),
+    richTextEditor: (content, options) => Tpl.$autoRender({content, options}),
   });
 
   RichTextMention.init(Tpl);
 
   Link.$extend({
-    $created: (ctx)=>{
+    $created: (ctx) => {
       ctx.data.inputCtx.openDialog = true;
     },
 
-    $destroyed: (ctx)=>{
+    $destroyed: (ctx) => {
       Dom.setRange(ctx.data.range);
       ctx.data.inputElm.focus();
       ctx.data.inputCtx.openDialog = false;
     },
 
-    cancel: elm =>{Dom.remove(elm)},
+    cancel: (elm) => {Dom.remove(elm)},
   });
 
   Link.$events({

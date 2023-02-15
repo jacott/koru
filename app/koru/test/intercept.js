@@ -149,7 +149,7 @@ define((require, exports, module) => {
 
   function intercept(prefix, locals) {
     Core.abortMode = 'end';
-    if (InterceptThrow.interceptObj === undefined) {
+    if (Intercept.interceptObj === undefined) {
       const self = locals === undefined ? this : globalThis;
       Intercept.interceptObj = self;
       Intercept.locals = locals;
