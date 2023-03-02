@@ -87,8 +87,7 @@ define((require, exports, module) => {
       assert.same(API._instance.initExample, 'Init example');
       assert.same(API._instance.initInstExample, 'Init inst example');
 
-      class Book {
-      }
+      class Book {}
 
       API.module({subjectModule: {id: 'myMod2', exports: Book}});
 
@@ -140,14 +139,14 @@ define((require, exports, module) => {
           constructor() {this._chapters = []}
           newChapter() {
             const chapter = new this.constructor
-                  .Chapter(10);
+              .Chapter(10);
             this._chapters.push(chapter);
             return chapter;
           }
         }
         Book.Chapter = class {
           constructor(startPage) {this.page = startPage}
-          goto() {return this.page;}
+          goto() {return this.page}
         };
 
         API.module({
@@ -173,7 +172,7 @@ define((require, exports, module) => {
       assert.match(subjectApi.subject.toString(), /startPage/);
 
       const matchSubject = ['F', m((arg) => arg.prototype.goto),
-                            'new [Anonymous](startPage)'];
+        'new [Anonymous](startPage)'];
 
       assert.equals(API.instance.properties, {
         Chapter: {
@@ -251,12 +250,12 @@ define((require, exports, module) => {
           Color.define('blue', '#00f');
         });
         API.exampleCont('// comment\n');
-        API.exampleCont(() => {  assert.same(Color.colors.red, '#f00')});
+        API.exampleCont(() => {assert.same(Color.colors.red, '#f00')});
         assert.same(API.example(() => {return Color.define('green', '#0f0')}), '#0f0');
       });
 
       MainAPI.done();
-      assert.same(MainAPI._instance.target, void 0);
+      assert.same(MainAPI._instance.target, undefined);
 
       assert.equals(API.instance.methods.define, {
         test: TH.test,
@@ -289,7 +288,7 @@ assert.same(Color.colors.red, '#f00')`,
         fnord(a) {return a * 2},
       };
       API.module({subjectModule: {id: 'myMod', exports: fooBar},
-                  subjectName: 'fooBar'});
+        subjectName: 'fooBar'});
       API.method('fnord');
 
       //[
@@ -300,7 +299,7 @@ assert.same(Color.colors.red, '#f00')`,
       API.done();
 
       assert.equals(API.instance.methods.fnord.calls, [{
-        body: void 0,
+        body: undefined,
         calls: [m.any, m.any],
       }]);
     });
@@ -310,7 +309,7 @@ assert.same(Color.colors.red, '#f00')`,
         fnord(a) {return a * 2},
       };
       API.module({subjectModule: {id: 'myMod', exports: fooBar},
-                  subjectName: 'fooBar'});
+        subjectName: 'fooBar'});
       API.method('fnord');
 
       //[
@@ -397,7 +396,7 @@ assert.same(Color.colors.red, '#f00')`,
       let mockTest;
       const test = (name, body) => {
         const orig = Core.test;
-        if (mockTest !== void 0) return;
+        if (mockTest !== undefined) return;
         try {
           mockTest = Core.test = {
             mode: 'running',
@@ -440,7 +439,7 @@ assert.same(Color.colors.red, '#f00')`,
           let receipt;
           //[
           const book = Library.findBook('Dune');
-          if (book !== void 0) {
+          if (book !== undefined) {
             receipt = book.borrow();
           }
           //]
@@ -479,7 +478,7 @@ assert.same(Color.colors.red, '#f00')`,
       });
 
       const {target} = MainAPI._instance;
-      if (target !== void 0) {
+      if (target !== undefined) {
         const {calls} = target;
         target.calls = [];
         MainAPI.done();
@@ -607,7 +606,7 @@ assert.same(Color.colors.red, '#f00')`,
       test('get/set property', () => {
         MainAPI.example(() => {
           const book = {
-            get title() {return this._title;},
+            get title() {return this._title},
             set title(value) {this._title = value},
           };
 
@@ -714,7 +713,7 @@ assert.same(Color.colors.red, '#f00')`,
         constructor(title) {
           this.title = title;
         }
-        [inspect$]() {return `Book("${this.title}")`;}
+        [inspect$]() {return `Book("${this.title}")`}
       }
 
       API.module({subjectModule: {id: 'myMod', exports: Book}});
@@ -888,7 +887,7 @@ assert.same(Color.colors.red, '#f00')`,
       };
 
       API.module({subjectModule: {id: 'myMod', exports: fooBar},
-                  subjectName: 'fooBar'});
+        subjectName: 'fooBar'});
       API.method('fnord');
 
       assert.same(fooBar.fnord(5), 10);
@@ -928,7 +927,7 @@ assert.same(Color.colors.red, '#f00')`,
       assert.equals(API.instance.protoMethods['[Symbol.iterator]'], {
         test,
         sig: '*[Symbol.iterator]()',
-        intro: void 0,
+        intro: undefined,
         subject: ['F', ADT, 'ADT'],
         calls: [[[], ['O', ({}), '{}']]],
       });
@@ -950,7 +949,7 @@ assert.same(Color.colors.red, '#f00')`,
       assert.equals(API.instance.protoMethods['[foo$]'], {
         test,
         sig: '[foo$]()',
-        intro: void 0,
+        intro: undefined,
         subject: ['F', ADT, 'ADT'],
         calls: [[[], 'foo']],
       });
@@ -992,7 +991,6 @@ assert.same(Color.colors.red, '#f00')`,
       const plum = new Tree('Plum');
       assert.same(plum.prune(3), 7);
       assert.same(plum.prune(2), 5);
-
 
       /** Overriding subject.prototype **/
       const subject = {anything() {return 'I could be anything'}};
@@ -1053,7 +1051,7 @@ assert.same(Color.colors.red, '#f00')`,
         exports: {},
       }});
       TH.stubProperty(ctx.modules, 'foo-bar-test',
-                      {value: v.testModule = {}});
+        {value: v.testModule = {}});
 
       ctx.exportsModule.withArgs(m.is(v.subject.exports))
         .returns([v.subject]);
@@ -1081,7 +1079,7 @@ assert.same(Color.colors.red, '#f00')`,
       }
 
       assert.equals(api.serializeValue(['O', api, 'my api']),
-                    ['Oi', 'my api', 'koru/test/api']);
+        ['Oi', 'my api', 'koru/test/api']);
       assert.equals(api.serializeValue(['O', MainAPI]), ['M', 'koru/test/api']);
     });
 
@@ -1094,24 +1092,24 @@ assert.same(Color.colors.red, '#f00')`,
 
       assert.equals(v.ans = API.resolveObject(foo, 'foo'), ['O', 'foo']);
       assert.equals(v.ans = API.resolveObject(Object.create(foo), 'ext foo'),
-                    ['O', 'ext foo']);
+        ['O', 'ext foo']);
 
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
-      const myModule = new Module(void 0, 'myModule');
+      const myModule = new Module(undefined, 'myModule');
       assert.equals(API.resolveObject(myModule),
-                    ['Oi', '{Module:myModule}', 'Module']);
+        ['Oi', '{Module:myModule}', 'Module']);
       class MyExt extends Module {}
       assert.equals(API.resolveObject(MyExt),
-                    ['Os', 'MyExt', 'Module']);
+        ['Os', 'MyExt', 'Module']);
 
       API._moduleMap.set(APIModule, v.myApi = new API(null, APIModule,
-                                                      'MainAPI', [{id: 'koru/test/api'}]));
+        'MainAPI', [{id: 'koru/test/api'}]));
       API._mapSubject(API, APIModule);
 
       assert.equals(v.ans = API.resolveObject(v.myApi, 'myApi'),
-                    ['Oi', 'myApi', 'koru/test/api']);
+        ['Oi', 'myApi', 'koru/test/api']);
       assert.msg('should cache').same(API.resolveObject(v.myApi), v.ans);
 
       class SubApi extends API {}
@@ -1125,10 +1123,10 @@ assert.same(Color.colors.red, '#f00')`,
       assert.msg('should cache').same(API.resolveObject(S3ubApi), v.ans);
 
       assert.equals(API.resolveObject(new S2ubApi(), 's2()'),
-                    ['Oi', 's2()', 'koru/test/api']);
+        ['Oi', 's2()', 'koru/test/api']);
 
       assert.equals(API.resolveObject(Object.create(new S2ubApi()), 'ext s2()'),
-                    ['Oi', 'ext s2()', 'koru/test/api']);
+        ['Oi', 'ext s2()', 'koru/test/api']);
     });
 
     test('serialize', () => {
@@ -1347,8 +1345,8 @@ assert.same(Color.colors.red, '#f00')`,
         },
         topics: {
           'scene 1': {
-            sigPrefix: void 0,
-            sig: void 0,
+            sigPrefix: undefined,
+            sig: undefined,
             test: 'koru/test/api test serialize.',
             intro: 'Scene 1 intro',
             calls: [{

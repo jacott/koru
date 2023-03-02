@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const TH              = require('koru/test-helper');
   const API             = require('./api');
@@ -7,9 +7,9 @@ define((require, exports, module)=>{
 
   const ctx = module.ctx;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     let v = {};
-    beforeEach(()=>{
+    beforeEach(() => {
       test = TH.test;
       v.api = class extends API {};
       v.api.isRecord = true;
@@ -17,13 +17,13 @@ define((require, exports, module)=>{
       test.stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       v = {};
     });
 
-    test("_record", ()=>{
+    test('_record', async () => {
       const fooBar = {
-        fnord(a, b) {return API}
+        fnord(a, b) {return API},
       };
       const fooBarMod = {id: 'koru/test/api', exports: fooBar};
       const api = v.api.module({subjectName: 'fooBar'});
@@ -36,8 +36,8 @@ define((require, exports, module)=>{
         intro: 'Fnord ignores args; returns API',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [2, ['F', stub, 'stub'], ['O', Special, '{special}']], ['M', API]
-        ]]
+          [2, ['F', stub, 'stub'], ['O', Special, '{special}']], ['M', API],
+        ]],
       };
 
       api.protoMethods.zord = {
@@ -46,8 +46,8 @@ define((require, exports, module)=>{
         intro: 'introducing zord',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [false], undefined
-        ]]
+          [false], undefined,
+        ]],
       };
 
       api.customMethods.sentai = {
@@ -55,15 +55,15 @@ define((require, exports, module)=>{
         sig: 'sentai(a)',
         intro: 'introducing sentai',
         calls: [[
-          [1], 2
-        ]]
+          [1], 2,
+        ]],
       };
 
       stub(TH.session, 'sendBinary');
 
-      v.api._record();
+      await v.api._record();
 
-      assert.calledWith(TH.session.sendBinary, 'G', [TH.match(out => {
+      assert.calledWith(TH.session.sendBinary, 'G', [TH.match((out) => {
         assert.equals(out, {
           'koru/test/api-client': {
             id: 'koru/test/api-client',
@@ -78,9 +78,9 @@ define((require, exports, module)=>{
                 sig: 'fnord(a, b)',
                 intro: 'Fnord ignores args; returns API',
                 calls: [[
-                  [2, ['F', 'stub'], ['O', '{special}']], ['M', 'koru/test/api']
+                  [2, ['F', 'stub'], ['O', '{special}']], ['M', 'koru/test/api'],
                 ]],
-              }
+              },
             },
             protoMethods: {
               zord: {
@@ -89,9 +89,9 @@ define((require, exports, module)=>{
                 sig: 'zord(a)',
                 intro: 'introducing zord',
                 calls: [[
-                  [false]
+                  [false],
                 ]],
-              }
+              },
             },
             customMethods: {
               sentai: {
@@ -100,11 +100,11 @@ define((require, exports, module)=>{
                 sig: 'sentai(a)',
                 intro: 'introducing sentai',
                 calls: [[
-                  [1], 2
+                  [1], 2,
                 ]],
-              }
+              },
             },
-            topics: void 0,
+            topics: undefined,
             requires: ['koru/test/main', 'koru/util'],
           },
         });

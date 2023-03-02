@@ -1,13 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
-  return API =>{
-    const util  = require('koru/util');
-    const session = require('koru/session');
+  return (API) => {
+    const session         = require('koru/session');
+    const util            = require('koru/util');
 
-    const writeApi = (jsonFile, json)=>{
+    const writeApi = (jsonFile, json) => {
       const jsonOut = {};
       for (const key of Object.keys(json).sort()) {
         jsonOut[key] = json[key];
@@ -15,16 +15,15 @@ define((require, exports, module)=>{
       fs.writeFileSync(jsonFile, JSON.stringify(jsonOut, null, 2));
     };
 
-    const loadApi = jsonFile =>{
+    const loadApi = (jsonFile) => {
       try {
         return JSON.parse(fs.readFileSync(jsonFile));
-      }
-      catch (ex) {
+      } catch (ex) {
         return {};
       }
     };
 
-    session.provide('G', data =>{
+    session.provide('G', (data) => {
       const updates = data[0];
       const filename = `${API.OUT_DIR}/api-client.json`;
       const json = loadApi(filename);
@@ -36,13 +35,14 @@ define((require, exports, module)=>{
 
     API.OUT_DIR = path.resolve(module.toUrl('.'), '../../../../doc');
 
-    API._record = function () {
+    API._record = async function () {
+      await 1;
       const filename = `${this.OUT_DIR}/api-server.json`;
       const json = loadApi(filename);
       for (const api of this._moduleMap.values()) {
-        json[api.moduleName] = api.serialize((json[api.moduleName]||{}));
+        json[api.moduleName] = await api.serialize((json[api.moduleName] || {}));
       }
       writeApi(filename, json);
-    };
+    }
   };
 });

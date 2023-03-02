@@ -231,9 +231,9 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     return ntc;
   };
 
-  const once = (tc) => tc[once$] || (tc[once$] = {before: new LinkedList(), after: new LinkedList()});
-  const before = (tc, func) => (tc[before$] || (tc[before$] = new LinkedList())).addBack(func);
-  const after = (tc, func) => (tc[after$] || (tc[after$] = new LinkedList())).addFront(func);
+  const once = (tc) => tc[once$] ??= {before: new LinkedList(), after: new LinkedList()};
+  const before = (tc, func) => (tc[before$] ??= new LinkedList()).addBack(func);
+  const after = (tc, func) => (tc[after$] ??= new LinkedList()).addFront(func);
 
   const reset = (tc) => {
     tc[before$] = tc[after$] = tc[once$] = undefined;
@@ -294,7 +294,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
   }
 
-  const restorSpy = (spy) => () => {spy.restore && spy.restore()};
+  const restorSpy = (spy) => () => {spy.restore?.()};
 
   Core.testCase = (name, body) => new TestCase(name, undefined, body);
 
@@ -310,7 +310,7 @@ ${Core.test.name}` + (f ? ` Return is in code:\n ${f.toString()}` : ''));
     }
 
     after(func) {
-      const tc = currentTC || this.tc;
+      const tc = currentTC ?? this.tc;
       (isOnce
         ? once(tc).after.addFront(func)
         : after(tc, func))[temp$] = true;

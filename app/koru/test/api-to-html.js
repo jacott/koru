@@ -10,7 +10,7 @@ define((require) => {
   const marked          = requirejs.nodeRequire('marked');
 
   const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(),
-        node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
+  node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
 
   const {MDNDOC_URL} = coreJsTypes;
 
@@ -34,7 +34,7 @@ define((require) => {
     for (const id in json) {
       let node = tree;
       for (const part of id.split('/')) {
-        node = node[part] || (node[part] = {[parent$]: node, [name$]: part});
+        node = node[part] ??= {[parent$]: node, [name$]: part};
       }
       const api = json[id];
       api.id = id; api.top = json;
@@ -120,10 +120,10 @@ define((require) => {
       const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
 
       const functions = newInstance
-            ? [buildConstructor(
-              api, subject, newInstance, requireLine,
-            )]
-            : [];
+        ? [buildConstructor(
+          api, subject, newInstance, requireLine,
+        )]
+        : [];
 
       util.isObjEmpty(customMethods) ||
         util.append(functions, buildMethods(api, subject, customMethods, requireLine, 'custom'));
@@ -152,8 +152,8 @@ define((require) => {
       }
 
       let properties = util.isObjEmpty(api.properties)
-          ? []
-          : buildProperties(api, subject, api.properties);
+        ? []
+        : buildProperties(api, subject, api.properties);
 
       util.isObjEmpty(api.protoProperties) ||
         (properties = properties.concat(buildProperties(api, subject, api.protoProperties, 'proto')));
@@ -170,11 +170,11 @@ define((require) => {
           {class: 'jsdoc-module-sidebar', aside},
           {div: [
             config,
-            properties.length && {class: 'jsdoc-properties', div: [
+            properties.length != 0 && {class: 'jsdoc-properties', div: [
               {h1: 'Properties'},
               {table: {tbody: properties}},
             ]},
-            functions.length && {class: 'jsdoc-methods', div: [
+            functions.length != 0 && {class: 'jsdoc-methods', div: [
               {h1: 'Methods'},
               {div: functions},
             ]},
@@ -224,14 +224,14 @@ define((require) => {
         const property = properties[name];
         const value = Dom.h({class: 'jsdoc-value', code: valueToText(property.value)});
         const info = property.info
-              ? jsdocToHtml(
-                api,
-                property.info
-                  .replace(/\$\{value\}/, '[](#jsdoc-value)'),
-                argMap,
-                property,
-              )
-              : value;
+          ? jsdocToHtml(
+            api,
+            property.info
+              .replace(/\$\{value\}/, '[](#jsdoc-value)'),
+            argMap,
+            property,
+          )
+          : value;
         if (property.info) {
           const vref = findHref(info, '#jsdoc-value', true);
           if (vref) {
@@ -249,7 +249,7 @@ define((require) => {
           {class: 'searchable', td: proto ? '#' + name : name},
           {td: ap},
           {class: 'jsdoc-info', '$data-env': env(property),
-           td: info,
+            td: info,
           },
         ]});
 
@@ -261,7 +261,7 @@ define((require) => {
     return rows;
   };
 
-  const env = (obj) => obj.env || 'server';
+  const env = (obj) => obj.env ?? 'server';
 
   const mdRenderer = new marked.Renderer();
   const mdOptions = {
@@ -284,14 +284,14 @@ define((require) => {
       div.appendChild(ans);
     },
     alias: (api, row, argMap, div) => {
-      const container = div[alias$] || (div[alias$] = Dom.h({
-        class: 'jsdoc-alias', section: {h1: ['Aliases']}}));
+      const container = div[alias$] ??= Dom.h({
+        class: 'jsdoc-alias', section: {h1: ['Aliases']}});
       row = row.slice(6);
       const idx = row.indexOf(' ');
       const name = row.slice(0, idx == -1 ? undefined : idx);
       row = row.slice(name.length);
 
-      const desc = jsdocToHtml(api, row, {}).firstChild || Dom.h({});
+      const desc = jsdocToHtml(api, row, {}).firstChild ?? Dom.h({});
 
       desc.insertBefore(Dom.h({class: 'jsdoc-alias-term', code: [name]}), desc.firstChild);
       container.appendChild(desc);
@@ -305,11 +305,11 @@ define((require) => {
         koru.error(`Invalid param for api: ${api.id} line @${row}`);
       }
       const name = m[3], dotIdx = name.indexOf('.');
-      let profile = argMap[name] || (argMap[name] = {});
+      let profile = argMap[name] ??= {};
       if (dotIdx != -1) {
         const pName = name.slice(0, dotIdx);
-        const opts = argMap[pName] || (argMap[pName] = {});
-        const optNames = opts.optNames || (opts.optNames = {});
+        const opts = argMap[pName] ??= {};
+        const optNames = opts.optNames ??= {};
         optNames[name] = true;
         if (opts.subArgs !== undefined) {
           profile.types = opts.subArgs[name.slice(dotIdx + 1)];
@@ -324,7 +324,7 @@ define((require) => {
       if (! m) {
         koru.error(`Invalid config for api: ${api.id} line @${row}`);
       }
-      const profile = argMap[':config:'] || (argMap[':config:'] = {});
+      const profile = argMap[':config:'] ??= {};
       profile[m[1]] = jsdocToHtml(api, m[2], argMap);
     },
     returns: (api, row, argMap) => {
@@ -332,7 +332,7 @@ define((require) => {
       if (! m) {
         koru.error(`Invalid returns for api: ${api.id} line @${row}`);
       }
-      const profile = argMap[return$] || (argMap[return$] = {});
+      const profile = argMap[return$] ??= {};
       if (m[2]) profile.info = m[2];
       if (m[1]) overrideTypes(profile, m[1].slice(1, -1));
     },
@@ -348,7 +348,7 @@ define((require) => {
     const oldTypes = profile.types;
     const types = profile.types = {};
     typeArg.split('|').forEach((type) => {
-      types[type] = (oldTypes && oldTypes[type]) || type;
+      types[type] = oldTypes?.[type] ?? type;
     });
   };
 
@@ -392,11 +392,11 @@ define((require) => {
       }
     }
     if (mod) {
-      const destMod = mod && api.top && api.top[mod];
+      const destMod = mod && api.top?.[mod];
       if (destMod) {
         mod = mod.replace(/\/[^/]*$/, '/' + destMod.subject.name);
       }
-      text = isReplace ? method : `${idToText(mod)}${type || ''}${method}`;
+      text = isReplace ? method : `${idToText(mod)}${type ?? ''}${method}`;
     } else {
       href = api.id + href;
       text = method;
@@ -450,12 +450,12 @@ define((require) => {
           if (! needInit) return [];
           needInit = false;
           const mu = codeToHtml(
-            api.initInstExample || `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`,
+            api.initInstExample ?? `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`,
           );
           mu.classList.add('jsdoc-inst-init');
           return [mu];
         };
-        inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
+        inst = subject.instanceName ?? subject.name[0].toLowerCase() + subject.name.slice(1);
         sigJoin = '#';
       } else {
         if (api.initExample) {
@@ -491,8 +491,8 @@ define((require) => {
               if (! bodyExample) return [
                 {class: 'jsdoc-example-call highlight', div: [
                   {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
-                         '(', ...hlArgList(call[0]), ');']},
-                  (call[2] || call[1]) === undefined || {
+                    '(', ...hlArgList(call[0]), ');']},
+                  (call[2] ?? call[1]) === undefined || {
                     class: 'jsdoc-returns c1',
                     span: call[2] ? ` // ${call[2]}` : [' // returns ', valueToHtml(call[1])]},
                 ]},
@@ -525,7 +525,7 @@ define((require) => {
 
   const section = (api, div) => {
     div.id = `${api.id}${div.$name[0] === '#' ? '' : '.'}${div.$name}`;
-    div.class = `${div.class || ''} jsdoc-module-section`;
+    div.class = `${div.class ?? ''} jsdoc-module-section`;
     return div;
   };
 
@@ -593,7 +593,7 @@ define((require) => {
       return;
     }
 
-    const retTypes = ret && ret.types && extractTypes(api, ret);
+    const retTypes = ret?.types && extractTypes(api, ret);
 
     const eachParam = (arg) => {
       const am = argMap[arg];
@@ -638,7 +638,7 @@ define((require) => {
         ans.push('\u200a/\u200a');
       }
       let mod = types[type];
-      if (mod !== undefined) {
+      if (typeof mod === 'string') {
         if (mod.startsWith('../')) {
           ans.push(execInlineTag(api, mod));
           continue;
@@ -648,7 +648,10 @@ define((require) => {
           mod = mod.replace(/\/[^/]*$/, '/' + destMod.subject.name);
         }
       }
-      ans.push(targetExternal({a: idToText(mod), $href: (href || typeHRef)(type)}));
+      const text = idToText(mod.toString());
+      ans.push(targetExternal({
+        a: (type.indexOf('p>') == -1) ? text : `Promise(${text})`,
+        $href: (href ?? typeHRef)(type)}));
     }
     return ans;
   };
@@ -670,23 +673,36 @@ define((require) => {
             ignoreP = false;
             if (Array.isArray(entry)) {
               let value;
-              switch (entry[0]) {
-              case 'O':
-                value = entry[1] === 'null' ? 'null' : 'object';
-                break;
+              const e0 = entry[0];
+              switch (e0[0]) {
               case 'P':
                 value = 'object';
                 const args = entry[1];
                 for (const id in args) {
                   if (subArgs === undefined) subArgs = {};
-                  const sc = subArgs[id] || (subArgs[id] = {});
+                  const sc = subArgs[id] ??= {};
                   Object.assign(sc, argProfile([[]], () => args[id]).types);
                 }
                 break;
               case 'F': value = 'function'; break;
               case 'U': value = 'undefined'; break;
+              case '-': {
+                const type = entry.at(-1) === null ? 'null' : typeof entry.at(-1);
+                types[`<${e0}>${type}`] = type;
+                return;
+              }
+              case 'O': {
+                if (e0.length == 1) {
+                  value = entry[1] === 'null' ? 'null' : 'object';
+                  break;
+                }
+              }
               default:
-                types[`<${entry[0]}>${entry[entry.length - 1]}`] = entry[entry.length - 1];
+                types[`<${e0}>${entry.at(-1)}`] = entry.at(-1);
+                return;
+              }
+              if (e0.at(-1) === 'p') {
+                types[`<${e0}>${value}`] = value;
                 return;
               }
               types[value] = value;
@@ -740,7 +756,7 @@ define((require) => {
 
   const valueToHtml = (arg) => {
     const text = valueToText(arg);
-    return hl(text, arg == null ? 'kc' : jsParser.HL_MAP[typeof arg] || 'ge nx');
+    return hl(text, arg == null ? 'kc' : jsParser.HL_MAP[typeof arg] ?? 'ge nx');
   };
 
   const hlArgList = (list) => {
@@ -756,7 +772,7 @@ define((require) => {
 
   const valueToText = (arg) => {
     if (Array.isArray(arg)) {
-      if (arg[0] !== 'P') {
+      if (arg[0][0] !== 'P') {
         return arg[1];
       } else {
         let ans = '{';
@@ -774,8 +790,6 @@ define((require) => {
     }
   };
 
-  const valueToLink = (arg) => valueToText(arg);
-
   const targetExternal = (a) => a.$href.indexOf('http') == 0 ? (a.$target = '_blank', a) : a;
 
   const findTopic = (api, args) => {
@@ -786,7 +800,7 @@ define((require) => {
     }
     const sapi = api.topics[name];
     if (sapi === undefined) throw new Error("Can't find topic " + path + ':' + name + ' in ' + api.id +
-                                            '\nFound:\n' + Object.keys(api.topics).join(', '));
+      '\nFound:\n' + Object.keys(api.topics).join(', '));
     sapi[node$] = api[node$];
     sapi.top = api.top;
     return sapi;
@@ -804,7 +818,7 @@ define((require) => {
         api = findTopic(api, args);
       }
       const call = api.calls[+idx];
-      if (call === undefined) throw new Error("Can't find example " + idx + ' in ' + (api.id || api.test));
+      if (call === undefined) throw new Error("Can't find example " + idx + ' in ' + (api.id ?? api.test));
       return Dom.h({
         class: 'jsdoc-example highlight',
         pre: codeToHtml(call.body)}).outerHTML;
@@ -813,7 +827,7 @@ define((require) => {
 
   const jsdocToHtml = (api, text, argMap, env=api) => {
     const div = document.createElement('div');
-    const [info, ...blockTags] = (text || '').split(/[\n\r]\s*@(?=\w+)/);
+    const [info, ...blockTags] = (text ?? '').split(/[\n\r]\s*@(?=\w+)/);
 
     mdRenderer.link = (href, title, text) => {
       switch (href) {
