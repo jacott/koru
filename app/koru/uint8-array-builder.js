@@ -24,7 +24,7 @@ define((require, exports, module) => {
 
         if (newLen + cap > u8.length) {
           const nb = b[buffer$] = resizeBuffer(u8, (newLen + cap) << 1);
-          b[dataView$] = void 0;
+          b[dataView$] = undefined;
         }
       }
       curLen = b[length$] = newLen;
@@ -71,12 +71,14 @@ define((require, exports, module) => {
       this.initialCapacity = initialCapacity;
       this[length$] = 0;
       this[lw$] = 0;
-      this[buffer$] = void 0;
+      this[buffer$] = undefined;
     }
 
     get length() {return this[length$]}
     set length(v) {
-      if (v < 0 || v !== Math.floor(v) || v > this[length$]) throw new Error('Invalid length');
+      if (v < 0 || v !== Math.floor(v) || v > this[length$]) {
+        throw new Error('Invalid length! ' + v + ' > ' + this[length$]);
+      }
 
       this[length$] = v;
       if (this[lw$] > v) this[lw$] = v;
@@ -91,7 +93,7 @@ define((require, exports, module) => {
     }
 
     decouple() {
-      this[buffer$] = this[dataView$] = void 0;
+      this[buffer$] = this[dataView$] = undefined;
       this[length$] = this[lw$] = 0;
     }
 
