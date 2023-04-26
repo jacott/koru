@@ -46,7 +46,7 @@ define((require, exports, module) => {
     }
 
     afterEach(() => {
-      Intercept.interceptObj = Intercept.locals = void 0;
+      Intercept.interceptObj = Intercept.locals = undefined;
       Intercept.finishIntercept();
     });
 

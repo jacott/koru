@@ -27,7 +27,7 @@ define((require) => {
     get name() {return 'AssertionError'}
 
     recordError() {
-      if (Core.test !== void 0) {
+      if (Core.test !== undefined) {
         Core.test.success = false;
         (Core.test.errors ??= []).push(this);
       }
@@ -38,7 +38,7 @@ define((require) => {
     recordError() {}
   }
 
-  let elidePoint = void 0;
+  let elidePoint = undefined;
 
   const fail = (message='failed', elidePoint=0) => {
     throw new Core.AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
@@ -49,7 +49,7 @@ define((require) => {
     let {__msg} = Core;
     const ep = elidePoint;
     Core.__msg = null;
-    elidePoint = void 0;
+    elidePoint = undefined;
 
     if (truth) return truth;
 
@@ -85,11 +85,11 @@ define((require) => {
   };
 
   const refute = (truth, msg) => {
-    Core.assert(! truth, msg || 'Did not expect ' + util.inspect(truth));
+    Core.assert(! truth, msg ?? 'Did not expect ' + util.inspect(truth));
   };
 
   function getElideFromStack() {
-    elidePoint = elidePoint || new NoRecordAssertionError('', 2);
+    elidePoint ??= new NoRecordAssertionError('', 2);
     return this;
   }
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});
@@ -100,11 +100,11 @@ define((require) => {
 
   const compileOptions = (options) => {
     if (! options.assertMessage) {
-      options.assertMessage = 'Expected ' + (options.message || 'success');
+      options.assertMessage = 'Expected ' + (options.message ?? 'success');
     }
 
     if (! options.refuteMessage) {
-      options.refuteMessage = 'Did not Expect ' + (options.message || 'success');
+      options.refuteMessage = 'Did not Expect ' + (options.message ?? 'success');
     }
 
     options.assertMessage = format.compile(options.assertMessage);
@@ -235,14 +235,14 @@ define((require) => {
       return true;
     }
 
-    const setHint = (aobj=actual, eobj=expected, prefix) => {
+    const setHint = (aobj=actual, eobj=expected, prefix='') => {
       if (! hint) return false;
       const prev = hint[hintField];
 
-      hint[hintField] = (prefix || '') + '\n    ' +
+      hint[hintField] = prefix + '\n    ' +
         (typeof aobj === 'string' && typeof eobj === 'string'
-         ? formatStringDiff(aobj, eobj)
-         : format('{i0}\n != {i1}', aobj, eobj)) + (prev ? '\n' + prev : '');
+          ? formatStringDiff(aobj, eobj)
+          : format('{i0}\n != {i1}', aobj, eobj)) + (prev ? '\n' + prev : '');
       return false;
     };
 
@@ -252,14 +252,14 @@ define((require) => {
 
     const badKey = (key) => {
       if (hint) {
-        hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField] || ''}`;
+        hint[hintField] = `at key = ${util.qlabel(key)}${hint[hintField] ?? ''}`;
         setHint();
       }
       return false;
     };
 
     if (typeof actual !== 'object' || typeof expected !== 'object') {
-      if ((actual === void 0 || expected === void 0) && actual == expected) {
+      if ((actual === undefined || expected === undefined) && actual == expected) {
         return true;
       }
       if (hint) {
@@ -306,7 +306,7 @@ define((require) => {
       const [ta, tb] = util.trimMatchingSeq(akeys.sort(), ekeys.sort());
       return hint
         ? setHint(actual, expected, ' keys differ:\n    ' +
-                  formatStringDiff(ta.join(', '), tb.join(', ')))
+          formatStringDiff(ta.join(', '), tb.join(', ')))
         : false;
     }
 
@@ -327,16 +327,16 @@ define((require) => {
 
   const Core = {
     _init() {
-      this.abortMode = void 0;
+      this.abortMode = undefined;
       this.testCount = this.skipCount = this.assertCount = 0;
     },
-    abortMode: void 0,
-    abort: void 0,
+    abortMode: undefined,
+    abort: undefined,
     get __elidePoint() {return elidePoint},
     set __elidePoint(v) {elidePoint = v},
 
     AssertionError,
-    test: void 0,
+    test: undefined,
 
     assert, refute,
 

@@ -19,7 +19,7 @@ isServer && define((require, exports, module) => {
       proc.on('close', future.resolve);
 
       const code = await future.promise;
-      assert(code == 1, 'code contains de' + 'bug lines');
+      assert(code == 1, 'code contains d\x65bug lines');
     });
   });
 });

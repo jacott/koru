@@ -27,7 +27,7 @@ The current \`elidePoint\` in effect (if any) is an \`AssertionError\` used to r
 trace of the actual error. Access can be useful to save and restore in custom assertion methods.
 `});
       api.property('AssertionError', {info: 'the {#::AssertionError} class'});
-      assert.same(Core.__elidePoint, void 0);
+      assert.same(Core.__elidePoint, undefined);
       assert.elideFromStack.isTrue(Core.__elidePoint instanceof Core.AssertionError);
       Core.__elidePoint = new AssertionError();
 
@@ -252,15 +252,15 @@ because of its widespread use.
       assert.isFalse(deepEqual([2, 2], [1, matcher]));
 
       assert.isTrue(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                              {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 
       assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                               {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
       assert.isFalse(deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}},
-                               {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+        {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
 
       assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                               {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
       assert.isFalse(deepEqual({a: 1}, {a: '1'}));
     });
@@ -272,10 +272,10 @@ because of its widespread use.
       assert.isFalse(TH.Core.deepEqual(a, b, hint, 'x'));
 
       const exp = ' keys differ:\n' +
-            "    ''\n" +
-            " != 'b'\n" +
-            '    {e: 1, a: 2, c: 3}\n' +
-            ' != {e: 1, a: 2, c: 3, b: 4}';
+        "    ''\n" +
+        " != 'b'\n" +
+        '    {e: 1, a: 2, c: 3}\n' +
+        ' != {e: 1, a: 2, c: 3, b: 4}';
       assert.equals(hint.x, exp);
     });
 
@@ -289,9 +289,9 @@ because of its widespread use.
         assert.isFalse(deepEqual(a, b, hint, 'x'));
 
         const exp = '\n' +
-              '    "1234567890123456789012345\\n"\n' +
-              ' != "1234567890123456789012"\n' +
-              '---------------------------^ here';
+          '    "1234567890123456789012345\\n"\n' +
+          ' != "1234567890123456789012"\n' +
+          '---------------------------^ here';
 
         assert.equals(hint.x, exp);
       });
@@ -302,10 +302,10 @@ because of its widespread use.
         assert.isFalse(deepEqual(a, b, hint, 'x'));
 
         const exp = '\n' +
-              "    '1234567890123456789012345\\n'\n" +
-              " != '1234567890123456789012345\\n' +\n" +
-              "    'abcd\\n'\n" +
-              ' Is longer';
+          "    '1234567890123456789012345\\n'\n" +
+          " != '1234567890123456789012345\\n' +\n" +
+          "    'abcd\\n'\n" +
+          ' Is longer';
 
         assert.equals(hint.x, exp);
       });
@@ -316,10 +316,10 @@ because of its widespread use.
         assert.isFalse(deepEqual(b, a, hint, 'x'));
 
         const exp = '\n' +
-              "    '1234567890123456789012345\\n' +\n" +
-              "    'abcd\\n'\n" +
-              " != '1234567890123456789012345\\n'\n" +
-              ' Is shorter';
+          "    '1234567890123456789012345\\n' +\n" +
+          "    'abcd\\n'\n" +
+          " != '1234567890123456789012345\\n'\n" +
+          ' Is shorter';
 
         assert.equals(hint.x, exp);
       });
@@ -331,18 +331,18 @@ because of its widespread use.
         b[1] = '7xxabc';
 
         assert.isFalse(deepEqual('1789'.split('').join('xxxxxx\n') + '\n',
-                                 b.join('xxxxxx\n'), hint, 'x'));
+          b.join('xxxxxx\n'), hint, 'x'));
 
         const exp = '\n' +
-              "    '1xxxxxx\\n' +\n" +
-              '    "7xxxxxx\\n" +\n' +
-              '    "8xxxxxx\\n" +\n' +
-              '    "9\\n"\n' +
-              " != '1xxxxxx\\n' +\n" +
-              '    "7xxabcxxxxxx\\n"\n' +
-              '--------^ here +\n' +
-              '    "9xxxxxx\\n" +\n' +
-              '    "8"';
+          "    '1xxxxxx\\n' +\n" +
+          '    "7xxxxxx\\n" +\n' +
+          '    "8xxxxxx\\n" +\n' +
+          '    "9\\n"\n' +
+          " != '1xxxxxx\\n' +\n" +
+          '    "7xxabcxxxxxx\\n"\n' +
+          '--------^ here +\n' +
+          '    "9xxxxxx\\n" +\n' +
+          '    "8"';
 
         assert.equals(hint.x, exp);
       });
