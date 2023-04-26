@@ -14,6 +14,47 @@ isServer && define((require, exports, module) => {
   const PgProtocol = require('./pg-protocol');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    test('checkBuf, sendNext', async () => {
+      const socket = {write: stub(), on: stub(), pause: stub(), resume: stub()};
+      const conn = new PgProtocol();
+      const p = conn.connect(socket);
+
+      const ready = Buffer.from('5a0000000549', 'hex');
+
+      let checkBuf;
+      assert.calledWith(socket.on, 'data', m((f) => checkBuf = f));
+
+      checkBuf(ready);
+
+      await p;
+
+      const listener = {
+        addRowDesc: stub((v) => v[0] != 0),
+      };
+
+      await conn.lock(listener);
+
+      const msg1 = Buffer.from('54000000061122', 'hex');
+
+      checkBuf(msg1.slice(0, -1));
+
+      refute.called(listener.addRowDesc);
+
+      checkBuf(msg1.slice(-1));
+
+      assert.calledWith(listener.addRowDesc, msg1.slice(-2));
+      assert.calledThrice(socket.resume);
+      assert.calledThrice(socket.pause);
+
+      const msg2 = Buffer.from('540000000500', 'hex');
+
+      checkBuf(msg2);
+
+      assert.calledWith(listener.addRowDesc, msg2.slice(-1));
+
+      assert.calledThrice(socket.resume);
+    });
+
     group('with Conn', () => {
       let conn;
 
@@ -126,7 +167,7 @@ isServer && define((require, exports, module) => {
 
       test('onNotice', async () => {
         const cb1 = stub();
-        assert.same(conn.onNotice(cb1), void 0);
+        assert.same(conn.onNotice(cb1), undefined);
         const cb2 = stub();
         assert.same(conn.onNotice(cb2), cb1);
         const q = conn.exec(`set client_min_messages = 'debug5'`);
@@ -211,7 +252,7 @@ isServer && define((require, exports, module) => {
 
         const myError = new Error('myError');
 
-        const error = await query.fetch((row) => {throw myError;});
+        const error = await query.fetch((row) => {throw myError});
         assert.isFalse(query.isExecuting);
         assert.equals(error, myError);
       });
@@ -231,7 +272,7 @@ isServer && define((require, exports, module) => {
         const close2 = q2.close(myError);
         assert.same(close2, myError);
 
-        assert.same(await f1, void 0);
+        assert.same(await f1, undefined);
         while (q1.isExecuting) {await q1.fetch(c1)}
 
         assert.same(await f2, myError);

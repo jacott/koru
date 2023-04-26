@@ -79,8 +79,8 @@ define((require, exports, module) => {
     const clientKey = hmac(saltedPassword, 'Client Key');
 
     const auth = 'n=*,r=' + pv.nonce + ',' +
-          'r=' + res.r + ',s=' + res.s + ',i=' + res.i +
-          ',c=biws,r=' + res.r;
+      'r=' + res.r + ',s=' + res.s + ',i=' + res.i +
+      ',c=biws,r=' + res.r;
 
     pv.serverSignature = hmac(hmac(saltedPassword, 'Server Key'), auth).toString('base64');
     ub.length = 0;
@@ -166,8 +166,8 @@ define((require, exports, module) => {
   // ReadyForQuery
   addCommand('Z', (pgConn, [ts]) => {
     const state = pgConn[private$].state = ts === BE_IDLE
-          ? State.READY
-          : ts === BE_IN_TRANSACTION ? State.READY_IN_TRANSACTION : State.READY_IN_ROLLBACK;
+      ? State.READY
+      : ts === BE_IN_TRANSACTION ? State.READY_IN_TRANSACTION : State.READY_IN_ROLLBACK;
     return pgConn[listener$].ready(state);
   });
 
@@ -217,8 +217,8 @@ define((require, exports, module) => {
   addCommand('f', (pgConn, data) => pgConn[listener$].copyFail(data));
 
   const makeCloseError = (message) => (message instanceof PgMessage)
-        ? message
-        : new PgMessage({message: message ?? 'connection closed'});
+    ? message
+    : new PgMessage({message: message ?? 'connection closed'});
 
   const writeQuery = (conn, str) => {
     const utf8 = Buffer.from(str);
@@ -236,7 +236,7 @@ define((require, exports, module) => {
     constructor(options) {
       this.options = options;
       this.runtimeParams = {};
-      this[private$] = {state: State.NEW_CONN, sendNext: void 0};
+      this[private$] = {state: State.NEW_CONN, sendNext: undefined};
       this[listener$] = null;
       (this[mutex$] = new SimpleMutex()).lock();
     }
@@ -245,13 +245,13 @@ define((require, exports, module) => {
 
     async lock(listener) {
       const error = await this[mutex$].lock();
-      if (error !== void 0) return error;
+      if (error !== undefined) return error;
       this[private$].state = State.EXECUTING;
       this[listener$] = listener;
     }
 
     unlock(listener) {
-      this[listener$] = void 0;
+      this[listener$] = undefined;
       this[mutex$].unlock();
     }
 
@@ -314,7 +314,7 @@ define((require, exports, module) => {
         socket.write(TERMINATE);
         if (f.isResolved) {
           const listener = this[listener$];
-          if (listener !== void 0) {
+          if (listener !== undefined) {
             listener.error(error);
           }
         } else {
@@ -333,14 +333,14 @@ define((require, exports, module) => {
 
       const sendNext = pv.sendNext = () => {
         while (len - pos > 4) {
-          const expLen = ub.buffer.readInt32BE(pos + 1);
+          const expLen = ub.buffer.readInt32BE(pos + 1) + 1;
           if (len - pos < expLen) break;
-          const data = ub.subarray(pos + 1+4, expLen + pos + 1);
+          const data = ub.subarray(pos + 1+4, expLen + pos);
           const cmdType = ub.buffer[pos];
           const cmd = BECMD[cmdType];
-          pos += expLen + 1;
+          pos += expLen;
           let more = true;
-          if (cmd !== void 0) {
+          if (cmd !== undefined) {
             more = cmd(this, data);
           } else {
             this[listener$].error(PgMessage.error(`Unknown response message: '${String.fromCharCode(cmdType)}'\n`));
@@ -388,7 +388,7 @@ define((require, exports, module) => {
             socket.cork();
             header.writeInt32BE(chunk.length + 4, 1);
             socket.write(header);
-            socket.write(chunk, void 0, callback);
+            socket.write(chunk, undefined, callback);
             socket.uncork();
           },
 
@@ -400,7 +400,7 @@ define((require, exports, module) => {
         });
 
         const notAllowed = (data) => {
-          if (error === void 0) {
+          if (error === undefined) {
             error = PgMessage.error('Not a COPY FROM STDIN query');
             stream.destroy(error);
           }
@@ -410,7 +410,7 @@ define((require, exports, module) => {
         conn.lock({
           ready: () => {
             conn.unlock();
-            if (error === void 0) {
+            if (error === undefined) {
               resolve();
             } else {
               reject(error);
@@ -418,7 +418,7 @@ define((require, exports, module) => {
             return true;
           },
           error: (err) => {
-            if (error === void 0) {
+            if (error === undefined) {
               error = err;
             }
             return true;
@@ -465,7 +465,7 @@ define((require, exports, module) => {
       let error;
 
       const notAllowed = (data) => {
-        if (error === void 0) {
+        if (error === undefined) {
           error = PgMessage.error('Not a COPY TO STDOUT query');
           stream.destroy(error);
         }
@@ -475,11 +475,11 @@ define((require, exports, module) => {
       conn.lock({
         ready: () => {
           conn.unlock();
-          error === void 0 && stream.push(null);
+          error === undefined && stream.push(null);
           return true;
         },
         error: (err) => {
-          if (error === void 0) {
+          if (error === undefined) {
             error = err;
             stream.destroy(error);
           }
@@ -529,24 +529,24 @@ define((require, exports, module) => {
           },
           error: (err) => {
             error ??= err;
-            nextRow = void 0;
+            nextRow = undefined;
             return true;
           },
           addRowDesc: (data) => {
-            if (error !== void 0) return true;
+            if (error !== undefined) return true;
             return rowDescCallback?.(data) !== false;
           },
           addRow: (data) => {
-            if (error !== void 0) return true;
+            if (error !== undefined) return true;
             try {
-              return nextRow !== void 0 && nextRow(data) !== false;
+              return nextRow !== undefined && nextRow(data) !== false;
             } catch (err) {
               error ??= err;
               return true;
             }
           },
           commandComplete: (data) => {
-            if (error !== void 0) return true;
+            if (error !== undefined) return true;
             ccCallback?.(data.utf8Slice(0, data.length - 1));
             done?.(error);
             return true;
@@ -569,7 +569,7 @@ define((require, exports, module) => {
       };
 
       const fetch = (callback=util.voidFunc) => {
-        if (error !== void 0 || execState < 1) return error;
+        if (error !== undefined || execState < 1) return error;
         if (execState == 1) return initFetch(callback);
         return new Promise(async (resolve) => {
           done = (error) => {
