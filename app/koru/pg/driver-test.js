@@ -205,6 +205,24 @@ isServer && define((require, exports, module) => {
       });
     });
 
+    test('connectionCount', async () => {
+      /**
+       * The number of connections to database server
+       */
+      api.protoProperty();
+      //[
+      const db = pg.defaultDb;
+      db.end(); // ensure empty
+      assert.same(db.connectionCount, 0);
+      try {
+        const conn = await db._getConn();
+        assert.same(db.connectionCount, 1);
+      } finally {
+        db._releaseConn();
+      }
+      //]
+    });
+
     test('connection', async () => {
       /**
        * Create a new database Client connected to the `url`
@@ -266,7 +284,7 @@ isServer && define((require, exports, module) => {
       const db = pg.defaultDb;
       await db.query('CREATE TABLE "Foo" (_id text PRIMARY KEY, "foo" bytea)');
       await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)',
-                     ['123', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255])]);
+        ['123', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255])]);
 
       const results = await db.query('select * from "Foo"');
       assert.equals(Buffer.from(results[0].foo).toString('hex'), '000102030405060708feff');
@@ -328,8 +346,8 @@ isServer && define((require, exports, module) => {
       const where = await foo.where({widget: {$elemMatch: {id: '1', value: {$in: [50, 10]}}}}, values, oids);
 
       assert.equals(where, `jsonb_typeof("widget") = 'array' AND ` +
-                    `EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) ` +
-                    `where "id"=$1 AND "value" = ANY($2))`);
+        `EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) ` +
+        `where "id"=$1 AND "value" = ANY($2))`);
       assert.equals(values, ['1', [50, 10]]);
       assert.equals(oids, [0, 0]);
 
@@ -458,7 +476,7 @@ isServer && define((require, exports, module) => {
           let i = -1;
           for (const name of 'one two three Four five'.split(' ')) {
             await foo.insert({_id: name + ++i, name,
-                              createdAt: new Date(util.dateNow() - i * 1e6)});
+              createdAt: new Date(util.dateNow() - i * 1e6)});
           }
         });
         assert.called(foo._ensureTable);
@@ -502,10 +520,10 @@ isServer && define((require, exports, module) => {
       test('$sql', async () => {
         assert.equals(await foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(await foo.count({$sql: ['name like {$likeE} OR name = {$four}',
-                                              {likeE: '%e', four: 'Four'}]}), 4);
+          {likeE: '%e', four: 'Four'}]}), 4);
         assert.equals(await foo.count({$sql: ['name like $1 OR name = $2', ['%e', 'Four']]}), 4);
         assert.equals(foo.show({$sql: ['{$one} + {$two} + {$one}', {one: 11, two: 22, three: 33}]}),
-                      ' WHERE $1 + $2 + $1, ([11, 22]); oids: [0, 0]');
+          ' WHERE $1 + $2 + $1, ([11, 22]); oids: [0, 0]');
       });
 
       test('fields', async () => {

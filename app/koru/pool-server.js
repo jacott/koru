@@ -53,9 +53,11 @@ define((require) => {
         min: 0,
         idleTimeoutMillis: 30*1000,
       }, config);
-      v.idleHead = v.idelTail = v.waitHead = v.waitTail = void 0;
+      v.idleHead = v.idelTail = v.waitHead = v.waitTail = undefined;
       v.count = 0;
     }
+
+    get connectionCount() {return this[private$].count}
 
     acquire() {
       const v = this[private$];
@@ -142,6 +144,7 @@ define((require) => {
       while (idle = fetchHead(v, idleKeys)) {
         v.destroy(idle.conn);
       }
+      v.count = 0;
       v.draining = false;
     }
   }

@@ -195,6 +195,10 @@ define((require, exports, module) => {
       this[mutex$] = new SimpleMutex();
     }
 
+    get connectionCount() {
+      return this[pool$]?.connectionCount ?? 0;
+    }
+
     [inspect$]() {
       return `Pg.Driver("${this.name}")`;
     }
@@ -544,7 +548,7 @@ define((require, exports, module) => {
       cols = cols.map((col) => '"' + col + (keys[col] === -1 ? '" DESC' : '"'));
       const unique = options.unique ? 'UNIQUE ' : '';
       return oidQuery(this._client, 'CREATE ' + unique + 'INDEX IF NOT EXISTS "' +
-                      name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
+        name + '" ON "' + this._name + '" (' + cols.join(',') + ')');
     }
 
     updateById(_id, params) {
@@ -670,12 +674,12 @@ define((require, exports, module) => {
             }
           } else {
             if (key[0] === '$') switch (key) {
-              case '$sql':
+            case '$sql':
               foundInSql(value, result);
               continue;
-              case '$or':
-              case '$and':
-              case '$nor':
+            case '$or':
+            case '$and':
+            case '$nor':
               const parts = [];
               util.forEach(value, (w) => {
                 const q = [];
@@ -732,8 +736,8 @@ define((require, exports, module) => {
                   const q = [];
                   foundIn(subvalue, q);
                   result.push('jsonb_typeof(' + qkey +
-                              ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset(' + qkey +
-                              ') as __x(' + columns.join(',') + ') where ' + q.join(' AND ') + ')');
+                    ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset(' + qkey +
+                    ') as __x(' + columns.join(',') + ') where ' + q.join(' AND ') + ')');
                   continue;
                 }
                 const q = [];
@@ -742,11 +746,11 @@ define((require, exports, module) => {
                 q.push(qkey + '=$' + count);
                 if (Array.isArray(value)) {
                   q.push('EXISTS(SELECT * FROM jsonb_array_elements($' +
-                         count + ') where value=' + qkey + ')');
+                    count + ') where value=' + qkey + ')');
                 }
 
                 q.push('(jsonb_typeof(' + qkey + ') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements(' +
-                       qkey + ') where value=$' + count + '))');
+                  qkey + ') where value=$' + count + '))');
 
                 result.push('(' + q.join(' OR ') + ')');
               } else {
@@ -867,7 +871,7 @@ define((require, exports, module) => {
 
     async findOne(where, fields) {
       return (await queryWhere(this, 'SELECT ' + selectFields(this, fields) + ' FROM "' + this._name + '"',
-                               where, ' LIMIT 1'))[0];
+        where, ' LIMIT 1'))[0];
     }
 
     find(where, options) {
@@ -902,7 +906,7 @@ define((require, exports, module) => {
 
     async exists(where) {
       return (await queryWhere(this, `SELECT EXISTS (SELECT 1 FROM "${this._name}"`,
-                               where, ')'))[0].exists;
+        where, ')'))[0].exists;
     }
     async notExists(where) {return ! await this.exists(where)}
 
@@ -1117,8 +1121,8 @@ define((require, exports, module) => {
 
   const pgFieldType = (colSchema) => {
     const type = (typeof colSchema === 'string') ? colSchema : colSchema === undefined
-          ? 'text'
-          : colSchema.type;
+      ? 'text'
+      : colSchema.type;
 
     switch (type) {
     case 'number':
@@ -1146,8 +1150,8 @@ define((require, exports, module) => {
     let defaultVal = '';
 
     const richType = (typeof colSchema === 'string')
-          ? colSchema
-          : colSchema === undefined ? 'text' : colSchema.type;
+      ? colSchema
+      : colSchema === undefined ? 'text' : colSchema.type;
 
     const type = pgFieldType(richType);
 
@@ -1173,8 +1177,8 @@ define((require, exports, module) => {
       defaultVal = ` DEFAULT ${literal}`;
     }
     const collate = (type === 'text' && richType !== 'text' || richType === 'has_many')
-          ? ' collate "C"'
-          : '';
+      ? ' collate "C"'
+      : '';
     return `"${col}" ${type}${collate}${defaultVal}`;
   };
 

@@ -53,8 +53,24 @@ define((require, exports, module) => {
         assert.same(await future.promise, conn2);
       } finally {
         Date.now.restore();
-        util.thread.date = void 0;
+        util.thread.date = undefined;
       }
+    });
+
+    test('connectionCount', async () => {
+      const pool = new PoolServer({
+        create,
+        destroy,
+        max: 2,
+      });
+
+      assert.same(pool.connectionCount, 0);
+      await pool.acquire();
+      assert.same(pool.connectionCount, 1);
+      await pool.acquire();
+      assert.same(pool.connectionCount, 2);
+      pool.drain();
+      assert.same(pool.connectionCount, 0);
     });
 
     test('destroy', async () => {
