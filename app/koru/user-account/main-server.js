@@ -76,7 +76,7 @@ define((require, exports, module) => {
     }
     if (typeof emailConfig.sendResetPasswordEmailText !== 'function') {
       koru.throwConfigError('userAccount.sendResetPasswordEmailText',
-                            'must be of type function(userId, resetToken)');
+        'must be of type function(userId, resetToken)');
     }
   };
 
@@ -191,8 +191,8 @@ define((require, exports, module) => {
 
     async verifyToken(emailOrId, token) {
       const doc = emailOrId.indexOf('@') === -1
-            ? await UserLogin.findById(emailOrId)
-            : await UserLogin.findBy('email', emailOrId);
+        ? await UserLogin.findById(emailOrId)
+        : await UserLogin.findBy('email', emailOrId);
       if (doc !== undefined && doc.unexpiredTokens()[token] !== undefined) {
         return doc;
       }
@@ -285,10 +285,10 @@ define((require, exports, module) => {
   };
 
   const assertScryptPassword = async (doc, password) => {
-    if (doc === undefined || doc.password == null ||
-        doc.password.type !== 'scrypt') {
-      throw new koru.Error(403, 'failure');
-    }
+    if (doc === undefined ||
+      doc.password == null || doc.password.type !== 'scrypt') {
+        throw new koru.Error(403, 'failure');
+      }
 
     if ((await makeScrypt(password, Buffer.from(doc.password.salt, 'hex'))).key !== doc.password.key) {
       throw new koru.Error(403, 'incorrect_password');
@@ -387,8 +387,8 @@ define((require, exports, module) => {
     const result = await UserAccount.resetPassword(token, passwordHash);
     const lu = result[0];
     this.send('VT', lu._id + '|' + result[1]);
-    this.setUserId(lu.userId);
     this.loginToken = result[1];
+    await this.setUserId(lu.userId);
   });
 
   session.defineRpc('logoutOtherClients', async function (data) {
@@ -401,7 +401,7 @@ define((require, exports, module) => {
         const curr = conns[sessId];
 
         if (curr.userId === this.userId) {
-          curr.setUserId(undefined);
+          await curr.setUserId(undefined).catch(koru.unhandledException);
         }
       }
     }
@@ -417,8 +417,8 @@ define((require, exports, module) => {
       const lu = _id && await UserLogin.findById(_id);
 
       if (lu && lu.unexpiredTokens()[token]) {
-        conn.setUserId(lu.userId); // will send a VS + VC. See server-connection
         conn.loginToken = token;
+        await conn.setUserId(lu.userId); // will send a VS + VC. See server-connection
       } else {
         conn.send('VF');
       }
