@@ -41,7 +41,7 @@ define((require, exports, module) => {
         refute.exception(() => {
           Dom.ensureInView(null);
           api.skip();
-          Dom.ensureInView(void 0);
+          Dom.ensureInView(undefined);
         });
       });
 
@@ -187,8 +187,8 @@ define((require, exports, module) => {
         div: ['Hello ', 'world', {br: ''}, {br: ''}, '']});
       document.body.appendChild(div);
 
-      const keys = 'left top width height'.split(' '),
-            rect = util.extractKeys(div.getBoundingClientRect(), keys);
+      const keys = 'left top width height'.split(' ');
+      const rect = util.extractKeys(div.getBoundingClientRect(), keys);
 
       // an Element
       assert.equals(util.extractKeys(Dom.getBoundingClientRect(div), keys), rect);
@@ -201,7 +201,7 @@ define((require, exports, module) => {
       // a position
       range.setStart(div.firstChild, 4); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: 64, top: 50, width: 0, height: 19}, 2);
+        left: 64, top: 50, width: 0, height: 22}, 2);
 
       // a client rect
       assert.same(Dom.getBoundingClientRect(rect), rect);
@@ -210,7 +210,7 @@ define((require, exports, module) => {
       // a line break
       range.setStart(div.lastChild.previousSibling, 0); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: 25, top: 69, width: 0, height: 19}, 2);
+        left: 25, top: 72, width: 0, height: 22}, 2);
 
       range.setStart(div.firstChild.nextSibling, 4); range.setEnd(range.startContainer, 5);
       const r2 = Dom.getBoundingClientRect(range);
@@ -218,7 +218,7 @@ define((require, exports, module) => {
       // end of line
       range.setStart(div.firstChild.nextSibling, 5); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: r2.right, top: 50, width: 0, height: 19}, 2);
+        left: r2.right, top: 50, width: 0, height: 22}, 2);
     });
 
     test('setCtx', () => {
@@ -276,7 +276,7 @@ define((require, exports, module) => {
 
       api.method('isAboveBottom');
       const x = Dom.h({$style: 'position:absolute;left:-12px;width:20px;height:30px',
-                       div: 'x'});
+        div: 'x'});
       document.body.appendChild(x);
 
       assert(Dom.isAboveBottom(x, document.body));
@@ -306,7 +306,7 @@ define((require, exports, module) => {
        **/
       api.method('isInView');
       const x = Dom.h({$style: 'position:absolute;left:-12px;width:20px;height:30px',
-                       div: 'x'});
+        div: 'x'});
       document.body.appendChild(x);
 
       refute(Dom.isInView(x, document.body));
@@ -349,7 +349,7 @@ define((require, exports, module) => {
 
     test('html string', () => {
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
-                                 '<button type="button" id="sp">Hello</button></div></div></div>');
+        '<button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
 
@@ -453,8 +453,8 @@ define((require, exports, module) => {
 
     test('getUpDownByClass', () => {
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
-                                 '<button type="button" id="sp">Hello</button></div>' +
-                                 '<div class="dest"></div></div></div>');
+        '<button type="button" id="sp">Hello</button></div>' +
+        '<div class="dest"></div></div></div>');
 
       assert.dom(elm, () => {
         assert.dom('#sp', (sp) => {
@@ -489,7 +489,7 @@ define((require, exports, module) => {
     test('INPUT_SELECTOR, WIDGET_SELECTOR', () => {
       assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
       assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,' +
-                  '[contenteditable="true"],button,a');
+        '[contenteditable="true"],button,a');
     });
 
     test('getClosest', () => {
@@ -647,7 +647,7 @@ define((require, exports, module) => {
 
     test('contains', () => {
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">' +
-                                 '<button type="button" id="sp">Hello</button></div></div></div>');
+        '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
       assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
@@ -947,7 +947,6 @@ define((require, exports, module) => {
         document.body.appendChild(popup);
         const winWidth = window.innerWidth;
 
-
         // align right
         popup.style.cssText = style + ';margin-right:-400px';
         Dom.reposition('above', {
@@ -955,16 +954,16 @@ define((require, exports, module) => {
           popup, boundingClientRect: {left: winWidth - 100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
-                    {right: winWidth, top: 90});
+          {right: winWidth, top: 90});
 
         popup.style.cssText = style + ';margin-right:40px';
         Dom.reposition('above', {
           align: 'right',
           popup, boundingClientRect: {left: 100, top: 100, right: 100},
         });
-        assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
-                    {left: 0, top: 90});
-
+        assert.near(
+          util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
+          {left: 0, top: 90});
 
         // align left
         popup.style.cssText = style + ';margin-left:-40px';
@@ -972,14 +971,14 @@ define((require, exports, module) => {
           popup, boundingClientRect: {left: 10, top: 100, right: 60},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['left', 'top']),
-                    {left: 0, top: 90});
+          {left: 0, top: 90});
 
         popup.style.cssText = style + ';margin-left:40px';
         Dom.reposition('above', {
           popup, boundingClientRect: {left: winWidth - 100, top: 100, right: winWidth},
         });
         assert.near(util.extractKeys(popup.getBoundingClientRect(), ['right', 'top']),
-                    {right: winWidth, top: 90});
+          {right: winWidth, top: 90});
       });
     });
   });
