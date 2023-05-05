@@ -182,7 +182,7 @@ define((require, exports, module) => {
       assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 3]));
       b.writeBigInt64BE(1n);
       assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 3,
-                                                  0, 0, 0, 0, 0, 0, 0, 1]));
+        0, 0, 0, 0, 0, 0, 0, 1]));
     });
 
     test('writeFloatBE', () => {
@@ -203,7 +203,7 @@ define((require, exports, module) => {
       assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0xf1, 0xf7, 0xce, 0xd9, 0x16, 0x87, 0x2b, 3]));
       b.writeDoubleBE(54.234e-15);
       assert.equals(b.subarray(), new Uint8Array([1, 0, 0, 0xbf, 0xf1, 0xf7, 0xce, 0xd9, 0x16, 0x87, 0x2b, 3,
-                                                  0x3d, 0x2e, 0x87, 0xf1, 0x6f, 0xa9, 0xf5, 0xa8]));
+        0x3d, 0x2e, 0x87, 0xf1, 0x6f, 0xa9, 0xf5, 0xa8]));
     });
 
     test('appendUtf8Str', () => {
@@ -216,8 +216,8 @@ define((require, exports, module) => {
       b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
 
       assert.equals(decoder.decode(b.subarray()),
-                    '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 hello 🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 world ' +
-                    '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
+        '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 hello 🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 world ' +
+          '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
     });
 
     test('append', () => {
@@ -240,6 +240,36 @@ define((require, exports, module) => {
 
       assert.equals(b.subarray(), new Uint8Array([16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]));
       assert.same(b.currentCapacity, 30);
+      //]
+    });
+
+    test('setArray', () => {
+      /**
+       * Set a Uint8Array into the builder at offset
+       */
+      api.protoMethod();
+      //[
+      const b = new Uint8ArrayBuilder();
+
+      b.append([]);
+
+      b.set(0, 16);
+
+      b.setArray(new Uint8Array([1, 2, 3, 4]), 6);
+
+      assert.equals(b.subarray(), new Uint8Array([16, 0, 0, 0, 0, 0, 1, 2, 3, 4]));
+
+      b.setArray(new Uint8Array([5, 6, 7, 8, 9]), 3);
+
+      assert.equals(b.subarray(), new Uint8Array([16, 0, 0, 5, 6, 7, 8, 9, 3, 4]));
+
+      b.setArray(b.subarray(4));
+      assert.equals(b.subarray(), new Uint8Array([6, 7, 8, 9, 3, 4, 8, 9, 3, 4]));
+
+      b.setArray(b.subarray(0, 4), 2);
+      assert.equals(b.subarray(), new Uint8Array([6, 7, 6, 7, 8, 9, 8, 9, 3, 4]));
+
+      assert.same(b.currentCapacity, 20);
       //]
     });
 

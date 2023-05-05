@@ -138,6 +138,12 @@ define((require, exports, module) => {
       return this;
     }
 
+    setArray(data, offset = 0) {
+      growTo(this, data.length + offset - this[length$], this[length$]);
+      this[buffer$].set(data, offset);
+      return this;
+    }
+
     appendUtf8Str(str) {
       if (str === '') return;
       const length = this[length$];
