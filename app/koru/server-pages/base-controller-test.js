@@ -174,8 +174,7 @@ isServer && define((require, exports, module) => {
       opts.pathParts = [];
       opts.request.headers['if-none-match'] = '  W/"' + BaseController.defaultETag + '"\n\n';
 
-      class MyController extends BaseController {
-      }
+      class MyController extends BaseController {}
       await MyController.build(opts);
 
       assert.same(opts.response.statusCode, 304);
@@ -189,11 +188,10 @@ isServer && define((require, exports, module) => {
       opts.pathParts = [];
       opts.request.headers['if-none-match'] = '  W/"x' + BaseController.defaultETag + '"\n\n';
 
-      class MyController extends BaseController {
-      }
+      class MyController extends BaseController {}
       await MyController.build(opts);
 
-      assert.same(opts.response.statusCode, void 0);
+      assert.same(opts.response.statusCode, undefined);
     });
 
     test('No Content', async () => {
@@ -327,16 +325,15 @@ isServer && define((require, exports, module) => {
         tpl.Update = {$render: (ctl) => Dom.h({class: 'update', div: [ctl.params.id]})};
         tpl.Destroy = {$render: (ctl) => Dom.h({class: 'destroy', div: [ctl.params.id]})};
         v.run = async (method, url, action, body) => {
-          const Foo = class extends BaseController {
-          };
+          const Foo = class extends BaseController {};
 
           v.opts.pathParts = url.split('/').slice(2);
           opts.request.method = method;
 
           method === 'GET' && api.property(action === 'index'
-                                           ? 'view'
-                                           : 'view.' + util.capitalize(action),
-                                           {value: Template});
+            ? 'view'
+            : 'view.' + util.capitalize(action),
+            {value: Template});
 
           await Foo.build(opts);
 
@@ -696,7 +693,7 @@ isServer && define((require, exports, module) => {
         'Content-Type': 'text/html; charset=utf-8',
         ETag: TH.match.string,
       });
-      assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
+      assert.calledWith(opts.response.write, Buffer.from('<!DOCTYPE html>\n'));
       assert.calledWith(opts.response.end, Buffer.from('<main><div>foo€</div></main>'));
     });
 
@@ -706,8 +703,7 @@ isServer && define((require, exports, module) => {
         return Dom.h({div: 'index'});
       }};
 
-      class Root extends BaseController {
-      }
+      class Root extends BaseController {}
 
       await Root.build(opts);
 

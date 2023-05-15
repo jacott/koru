@@ -46,8 +46,8 @@ define((require) => {
 
     pipeBody: (req, {limit=1000*1000}) => {
       const input = /gzip|deflate/i.test(req.headers['content-encoding'] ?? '')
-            ? req.pipe(zlib.createUnzip())
-            : req;
+        ? req.pipe(zlib.createUnzip())
+        : req;
 
       let size = 0;
 
@@ -120,6 +120,9 @@ define((require) => {
           contentType = 'application/json';
           data = JSON.stringify(data);
         }
+      }
+      if (typeof prefix === 'string') {
+        prefix = Buffer.from(prefix);
       }
       if (typeof data === 'string') {
         data = Buffer.from(data);

@@ -180,11 +180,11 @@ isServer && define((require, exports, module) => {
         timeout: 20000,
       }, m.func);
 
-      assert.calledWith(req.end, '{"a":123}');
+      assert.calledWith(req.end, Buffer.from('{"a":123}'));
     });
 
     test('return 404, else throw', async () => {
-      const response = {statusCode: 404, headers: {}, on: void 0};
+      const response = {statusCode: 404, headers: {}, on: undefined};
       const testResponse = (type) => {
         httpStub.request.reset();
         let promise = requestWrap({method: 'POST', url: 'http://locahost::3000'}, type);
