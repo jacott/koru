@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Database CRUD API.
-   **/
+   */
   const DocChange       = require('koru/model/doc-change');
   const api             = require('koru/test/api');
   const Model           = require('./main');
@@ -19,9 +19,13 @@ define((require, exports, module) => {
     before(async () => {
       await TH.startTransaction();
       TestModel = Model.define('TestModel').defineFields({
-        name: 'text', age: 'number', gender: 'text', hobby: 'text',
+        name: 'text',
+        age: 'number',
+        gender: 'text',
+        hobby: 'text',
         ages: 'integer[]',
-        foo: 'jsonb', x: 'integer[]',
+        foo: 'jsonb',
+        x: 'integer[]',
         html: 'object',
         cogs: 'text[]',
       });
@@ -53,8 +57,7 @@ define((require, exports, module) => {
 
       assert.equals(await TestModel.query.sort('name').limit(2).fetchField('name'), ['bar', 'foo']);
 
-      assert.equals((await TestModel.where('age', 5).limit(2).fetchField('name')).sort(),
-                    ['foo', 'foo2']);
+      assert.equals((await TestModel.where('age', 5).limit(2).fetchField('name')).sort(), ['foo', 'foo2']);
 
       assert.equals(await TestModel.query.limit(1).fetchField('name'), [m.string]);
     });
@@ -99,8 +102,7 @@ define((require, exports, module) => {
     test('$regexp', async () => {
       api.protoMethod('where');
       assert.equals(await TestModel.where('name', {$regex: 'fo+$'}).map((d) => d.name), ['foo']);
-      assert.equals(await TestModel.where('name', {$regex: 'FO', $options: 'i'})
-                    .map((d) => d.name), ['foo']);
+      assert.equals(await TestModel.where('name', {$regex: 'FO', $options: 'i'}).map((d) => d.name), ['foo']);
       assert.equals(await TestModel.where('name', {$regex: /R$/i}).map((d) => d.name), ['bar']);
     });
 
@@ -111,8 +113,7 @@ define((require, exports, module) => {
 
       assert.isTrue(await TestModel.query.withIndex(idx, {name: 'n1'}).exists());
 
-      assert.equals(await util.asyncArrayFrom(TestModel.query.withIndex(idx, {name: 'n1'})),
-                    [m.field('name', 'n1')]);
+      assert.equals(await util.asyncArrayFrom(TestModel.query.withIndex(idx, {name: 'n1'})), [m.field('name', 'n1')]);
     });
 
     group('query unsorted withIndex', () => {
@@ -142,22 +143,19 @@ define((require, exports, module) => {
       });
 
       test('last', async () => {
-        const result = TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+        const result = TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(await result, ['2']);
       });
 
       test('only major', async () => {
-        const result = await TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm'}).fetchIds();
+        const result = await TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm'}).fetchIds();
 
         assert.equals(result.sort(), ['2', '3']);
       });
 
       test('limit', async () => {
-        const q = TestModel.query.whereNot('_id', '4')
-              .withIndex(v.idx, {gender: 'm'}).limit(2);
+        const q = TestModel.query.whereNot('_id', '4').withIndex(v.idx, {gender: 'm'}).limit(2);
 
         assert.equals((await q.fetchIds()).length, 2);
 
@@ -167,14 +165,11 @@ define((require, exports, module) => {
 
     group('query sorted withIndex and filterTest', () => {
       before(async () => {
-        v.idx = TestModel.addIndex(
-          'gender', 'age', -1, 'name', 'hobby', 1, '_id',
-          (q) => {
-            q.where((doc) => {
-              return doc.hobby != null && doc.hobby[0] === 'h';
-            });
-          },
-        );
+        v.idx = TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1, '_id', (q) => {
+          q.where((doc) => {
+            return doc.hobby != null && doc.hobby[0] === 'h';
+          });
+        });
 
         await TestModel.query.remove();
 
@@ -202,26 +197,22 @@ define((require, exports, module) => {
       });
 
       test('last', async () => {
-        const result = TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+        const result = TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(await result, ['2']);
       });
 
       test('limit', async () => {
-        const q = TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm'}).limit(2);
+        const q = TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm'}).limit(2);
 
         assert.equals(await q.fetchIds(), ['2', '5']);
         assert.equals((await util.asyncArrayFrom(q)).map((d) => d._id), ['2', '5']);
       });
 
       test('only major', async () => {
-        const query = TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm'});
+        const query = TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm'});
 
-        const query2 = TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm'}, {direction: -1});
+        const query2 = TestModel.query.whereNot('_id', '1').withIndex(v.idx, {gender: 'm'}, {direction: -1});
 
         assert.equals(await query.fetchIds(), ['2', '5', '3']);
         assert.equals((await util.asyncArrayFrom(query)).map((d) => d._id), ['2', '5', '3']);
@@ -231,64 +222,50 @@ define((require, exports, module) => {
       });
 
       test('partial', async () => {
-        const i6 = await TestModel.create({
-          _id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
-        await TestModel.create({
-          _id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
-        await TestModel.create({
-          _id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
-        const i72 = await TestModel.create({
-          _id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
-        await TestModel.create({
-          _id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
+        const i6 = await TestModel.create({_id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
+        await TestModel.create({_id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
+        await TestModel.create({_id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        const i72 = await TestModel.create({_id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        await TestModel.create({_id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
 
         if (isClient) {
           const btree = v.idx.entries.m[1];
 
-          assert.equals(
-            TestModel.where({age: 1, gender: 'm'}).fetch().sort(btree.compare).map((d) => d._id),
-            ['8', '71', '72', '70', '6', '2', '1']);
+          assert.equals(TestModel.where({age: 1, gender: 'm'}).fetch().sort(btree.compare).map((d) => d._id), [
+            '8',
+            '71',
+            '72',
+            '70',
+            '6',
+            '2',
+            '1',
+          ]);
         }
 
-        const fetch = async (options) => await TestModel.query.withIndex(
-          v.idx, {gender: 'm', age: 1}, options,
-        ).fetchIds();
+        const fetch = async (options) =>
+          await TestModel.query.withIndex(v.idx, {gender: 'm', age: 1}, options).fetchIds();
 
-        assert.equals(
-          await fetch({from: {name: 'n7'}, to: {name: 'n3'}}),
-          ['71', '72', '70', '6']);
+        assert.equals(await fetch({from: {name: 'n7'}, to: {name: 'n3'}}), ['71', '72', '70', '6']);
 
-        assert.equals(
-          await fetch({from: i72, to: i6}),
-          ['72', '70', '6']);
+        assert.equals(await fetch({from: i72, to: i6}), ['72', '70', '6']);
 
-        assert.equals(
-          await fetch({direction: 1}),
-          ['8', '71', '72', '70', '6', '2', '1']);
+        assert.equals(await fetch({direction: 1}), ['8', '71', '72', '70', '6', '2', '1']);
 
-        assert.equals(
-          await fetch({direction: -1}),
-          ['1', '2', '6', '70', '72', '71', '8']);
+        assert.equals(await fetch({direction: -1}), ['1', '2', '6', '70', '72', '71', '8']);
 
-        assert.equals(
-          await fetch({direction: -1, from: i6, to: i72}),
-          ['6', '70', '72']);
+        assert.equals(await fetch({direction: -1, from: i6, to: i72}), ['6', '70', '72']);
 
-        assert.equals(
-          await fetch({direction: -1, from: i6, to: i72, excludeFrom: true}),
-          ['70', '72']);
+        assert.equals(await fetch({direction: -1, from: i6, to: i72, excludeFrom: true}), ['70', '72']);
 
-        assert.equals(
-          await fetch({direction: -1, from: i6, to: i72, excludeFrom: true, excludeTo: true}),
-          ['70']);
+        assert.equals(await fetch({direction: -1, from: i6, to: i72, excludeFrom: true, excludeTo: true}), ['70']);
       });
     });
 
     test('subField', async () => {
-      await v.foo.$updatePartial(
-        'html', ['div.0.b', 'hello', 'input.$partial', ['id', 'world']],
-        'name', ['$append', '.suffix'],
-      );
+      await v.foo.$updatePartial('html', ['div.0.b', 'hello', 'input.$partial', ['id', 'world']], 'name', [
+        '$append',
+        '.suffix',
+      ]);
 
       await v.foo.$reload(true);
 
@@ -308,8 +285,7 @@ define((require, exports, module) => {
     });
 
     test('fields', () => {
-      assert.equals(new Query(TestModel).fields('a', 'b').fields('c')._fields,
-                    {a: true, b: true, c: true});
+      assert.equals(new Query(TestModel).fields('a', 'b').fields('c')._fields, {a: true, b: true, c: true});
     });
 
     test('sort', async () => {
@@ -321,14 +297,11 @@ define((require, exports, module) => {
 
       await TestModel.create({name: 'bar', age: 2});
 
-      assert.equals(util.mapField(await TestModel.query.sort('name', 'age').fetch(), 'age'),
-                    [2, 10, 5]);
+      assert.equals(util.mapField(await TestModel.query.sort('name', 'age').fetch(), 'age'), [2, 10, 5]);
 
-      assert.equals(util.mapField(await TestModel.query.sort('name', -1, 'age').fetch(), 'age'),
-                    [5, 2, 10]);
+      assert.equals(util.mapField(await TestModel.query.sort('name', -1, 'age').fetch(), 'age'), [5, 2, 10]);
 
-      assert.equals(util.mapField(await TestModel.query.sort('name', -1, 'age', -1).fetch(), 'age'),
-                    [5, 10, 2]);
+      assert.equals(util.mapField(await TestModel.query.sort('name', -1, 'age', -1).fetch(), 'age'), [5, 10, 2]);
     });
 
     test('compare', () => {
@@ -342,8 +315,7 @@ define((require, exports, module) => {
       assert.equals(compare({name: 'Foo'}, {name: 'bar'}), 2);
       assert.equals(compare({name: 'foo'}, {name: 'Foo'}), -2);
       assert.equals(compare({name: 'foo', age: 1}, {name: 'foo', age: 22}), -1);
-      assert.equals(compare({name: 'foo', age: 1, _id: 'def'},
-                            {name: 'foo', age: 1, _id: 'abc'}), 1);
+      assert.equals(compare({name: 'foo', age: 1, _id: 'def'}, {name: 'foo', age: 1, _id: 'abc'}), 1);
     });
 
     test('compareKeys', () => {
@@ -359,7 +331,7 @@ define((require, exports, module) => {
        * See {#koru/observable#add}
        *
        * @param callback called with one argument {#../doc-change} detailing the change.
-       **/
+       */
       api.protoMethod('onChange');
 
       const onChange = TestModel.onChange;
@@ -382,7 +354,8 @@ define((require, exports, module) => {
 
       assert.calledWith(oc, DocChange.add(fred));
       assert.isTrue(ocdone);
-      oc.reset(); ocdone = false;
+      oc.reset();
+      ocdone = false;
 
       const emma = await TestModel.create({name: 'Emma'});
       refute.called(oc);
@@ -418,7 +391,9 @@ define((require, exports, module) => {
 
     test('forEach', async () => {
       const results = [];
-      await new Query(TestModel).forEach((doc) => {results.push(doc)});
+      await new Query(TestModel).forEach((doc) => {
+        results.push(doc);
+      });
       assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
     });
 
@@ -467,9 +442,8 @@ define((require, exports, module) => {
       }
 
       assert.equals((await TestModel.query.fetchIds()).sort(), exp_ids.slice(0).sort());
-      assert.equals((await TestModel.query.whereNot('age', 1).fetchIds()).sort(),
-                    exp_ids.slice(1, 4).sort());
-      assert.equals((await TestModel.query.sort('age', -1).fetchIds()), exp_ids.slice(0).reverse());
+      assert.equals((await TestModel.query.whereNot('age', 1).fetchIds()).sort(), exp_ids.slice(1, 4).sort());
+      assert.equals(await TestModel.query.sort('age', -1).fetchIds(), exp_ids.slice(0).reverse());
     });
 
     test('remove', async () => {
@@ -662,40 +636,27 @@ define((require, exports, module) => {
         after(() => handle.stop());
         const st = new Query(TestModel).onId(v.foo._id);
 
-        await st.update('$partial', {foo: [
-          'bar.baz', 'fnord',
-          'bar.alice', 'rabbit',
-          'bar.delme', 'please',
-        ]});
+        await st.update('$partial', {foo: ['bar.baz', 'fnord', 'bar.alice', 'rabbit', 'bar.delme', 'please']});
 
         await v.foo.$reload(true);
         assert.calledWith(v.ob, DocChange.change(v.foo, {$partial: {foo: ['$replace', null]}}));
         assert.same(v.foo.attributes.foo.bar.baz, 'fnord');
         v.ob.reset();
 
-        await st.update({$partial: {foo: [
-          'bar.$partial', [
-            'alice.$partial', ['$append', ' and cat'],
-            'delme', null,
-          ]]}});
+        await st.update({
+          $partial: {foo: ['bar.$partial', ['alice.$partial', ['$append', ' and cat'], 'delme', null]]},
+        });
         await v.foo.$reload(true);
         assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'rabbit and cat'});
         assert.equals(v.ob.lastCall.args[0].undo, {
-          $partial: {foo: [
-            'bar.$partial', [
-              'delme', 'please',
-              'alice.$partial', ['$patch', [-8, 8, null]],
-            ],
-          ]}});
+          $partial: {foo: ['bar.$partial', ['delme', 'please', 'alice.$partial', ['$patch', [-8, 8, null]]]]},
+        });
       });
 
       test('update arrays', async () => {
         const st = new Query(TestModel).onId(v.foo._id);
 
-        await st.update({name: 'new Name', $partial: {
-          foo: ['bar.baz', 123],
-          x: ['$add', [11, 22]],
-        }});
+        await st.update({name: 'new Name', $partial: {foo: ['bar.baz', 123], x: ['$add', [11, 22]]}});
 
         const attrs = (await v.foo.$reload(true)).attributes;
 
@@ -855,17 +816,15 @@ define((require, exports, module) => {
       });
 
       test('whereSome', async () => {
-        let ids = (await new Query(TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm')
-                   .fetchIds()).sort();
+        let ids = (await new Query(TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm').fetchIds()).sort();
         assert.equals(ids, ['bar456', 'foo123']);
 
-        ids = await new Query(TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'})
-          .where('gender', 'm').fetchIds();
+        ids = await new Query(TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm')
+          .fetchIds();
 
         assert.equals(ids, ['bar456']);
 
-        assert.equals(
-          (await TestModel.query.whereSome({age: [5, 10]}).fetchIds()).sort(), ['bar456', 'foo123']);
+        assert.equals((await TestModel.query.whereSome({age: [5, 10]}).fetchIds()).sort(), ['bar456', 'foo123']);
       });
 
       test('where on forEach', async () => {
@@ -875,12 +834,15 @@ define((require, exports, module) => {
 
         await st.forEach(v.stub = stub());
         assert.calledOnce(v.stub);
-        assert.calledWith(v.stub, m((doc) => {
-          if (doc._id === v.foo._id) {
-            assert.equals(doc.attributes, v.foo.attributes);
-            return true;
-          }
-        }));
+        assert.calledWith(
+          v.stub,
+          m((doc) => {
+            if (doc._id === v.foo._id) {
+              assert.equals(doc.attributes, v.foo.attributes);
+              return true;
+            }
+          }),
+        );
 
         assert.equals(await st.where({name: 'bar'}).fetch(), []);
       });
@@ -892,7 +854,7 @@ define((require, exports, module) => {
          * @param callback is called a {#koru/model/doc-change} instance.
          *
          * @return contains a stop method to stop observering
-         **/
+         */
         api.method('onAnyChange');
         after(Query.onAnyChange(v.onAnyChange = stub()));
 

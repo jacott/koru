@@ -10,21 +10,25 @@ define((require) => {
 
   const {compare, deepEqual} = util;
 
-  const notifyAC$ = Symbol(), exprCache$ = Symbol(), matches$ = Symbol(), func$ = Symbol(),
-        compare$ = Symbol(), compareKeys$ = Symbol(),
-        onChange$ = Symbol();
+  const notifyAC$ = Symbol(),
+    exprCache$ = Symbol(),
+    matches$ = Symbol(),
+    func$ = Symbol(),
+    compare$ = Symbol(),
+    compareKeys$ = Symbol(),
+    onChange$ = Symbol();
 
-  const foundIn = (doc, attrs, fields, affirm=true) => {
+  const foundIn = (doc, attrs, fields, affirm = true) => {
     const funcs = fields[func$];
     for (const func of funcs) {
-      if (! func(doc) === affirm) {
-        return ! affirm;
+      if (!func(doc) === affirm) {
+        return !affirm;
       }
     }
     const matches = fields[matches$];
     for (const key in matches) {
       if (foundItem(attrs[key], fields[key]) !== affirm) {
-        return ! affirm;
+        return !affirm;
       }
     }
     return affirm;
@@ -50,7 +54,7 @@ define((require) => {
         return value.some((item) => deepEqual(item, expected));
       }
     } else if (Array.isArray(value)) {
-      return ! value.every((item) => ! deepEqual(item, expected));
+      return !value.every((item) => !deepEqual(item, expected));
     }
 
     return deepEqual(expected, value);
@@ -59,11 +63,11 @@ define((require) => {
   const EXPRS = {
     $ne(param, obj, key) {
       const expected = obj[key];
-      return (doc) => ! foundItem(doc[param], expected);
+      return (doc) => !foundItem(doc[param], expected);
     },
     $nin(param, obj) {
       const expected = new Set(obj.$nin);
-      return (doc) => ! expected.has(doc[param]);
+      return (doc) => !expected.has(doc[param]);
     },
     $in(param, obj) {
       return insertectFunc(param, obj.$in);
@@ -115,9 +119,7 @@ define((require) => {
     const expected = new Set(list);
     return (doc) => {
       const value = doc[param];
-      return Array.isArray(value)
-        ? value.some((value) => expected.has(value))
-        : expected.has(value);
+      return Array.isArray(value) ? value.some((value) => expected.has(value)) : expected.has(value);
     };
   };
 
@@ -190,7 +192,9 @@ define((require) => {
         this.model = model;
       }
 
-      [inspect$]() {return `Query(${this.model.modelName})`}
+      [inspect$]() {
+        return `Query(${this.model.modelName})`;
+      }
 
       onModel(model) {
         this.model = model;
@@ -230,8 +234,7 @@ define((require) => {
           copyConditions('_wheres', params, this);
           copyConditions('_whereNots', params, this);
           const {_whereSomes} = params;
-          _whereSomes === void 0 ||
-            (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
+          _whereSomes === void 0 || (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
         } else {
           condition(this, '_wheres', params, value);
         }
@@ -243,8 +246,9 @@ define((require) => {
         if (conditions === void 0) conditions = this._whereSomes = [];
         conditions.push(args.map((o) => {
           const term = {[func$]: []};
-          for (const field in o)
+          for (const field in o) {
             assignCondition(this, term, field, o[field]);
+          }
           return term;
         }));
         return this;
@@ -354,18 +358,18 @@ define((require) => {
         return this.fetchField('_id');
       }
 
-      matches(doc, attrs=doc) {
+      matches(doc, attrs = doc) {
         if (this._whereNots !== void 0 && foundIn(doc, attrs, this._whereNots, false)) {
           return false;
         }
 
-        if (this._wheres !== void 0 && ! foundIn(doc, attrs, this._wheres)) {
+        if (this._wheres !== void 0 && !foundIn(doc, attrs, this._wheres)) {
           return false;
         }
 
-        if (this._whereSomes !== void 0 &&
-            ! this._whereSomes.every(
-              (ors) => ors.some((o) => foundIn(doc, attrs, o)))) return false;
+        if (this._whereSomes !== void 0 && !this._whereSomes.every((ors) => ors.some((o) => foundIn(doc, attrs, o)))) {
+          return false;
+        }
         return true;
       }
 
@@ -373,11 +377,11 @@ define((require) => {
         if (this[onChange$] === void 0) {
           const stop = this.model.onChange(({type, doc, undo, flag, was}) => {
             let nt = type;
-            if (type !== 'del' && ! this.matches(doc)) {
+            if (type !== 'del' && !this.matches(doc)) {
               nt = 'del';
               undo = 'add';
             }
-            if (was !== null && ! this.matches(was)) {
+            if (was !== null && !this.matches(was)) {
               if (nt === 'del') return;
               nt = 'add';
               undo = 'del';
