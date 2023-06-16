@@ -165,7 +165,7 @@ define((require, exports, module) => {
 
     group('query sorted withIndex and filterTest', () => {
       before(async () => {
-        v.idx = TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1, '_id', (q) => {
+        v.idx = TestModel.addUniqueIndex('gender', 'age', -1, 'name', 'hobby', 1, '_id', (q) => {
           q.where((doc) => {
             return doc.hobby != null && doc.hobby[0] === 'h';
           });
@@ -183,6 +183,25 @@ define((require, exports, module) => {
       after(() => {
         v.idx.stop();
         v.idx = null;
+      });
+
+      test('compare, compareKeys', async () => {
+        const query = TestModel.query.withIndex(v.idx);
+        assert.equals(query.compareKeys, ['gender', 'age', 'name', 'hobby', '_id']);
+
+        const d1 = TestModel.build({_id: '1', name: 'n1', age: 1, gender: 'm', hobby: 'h0'}, true);
+        const d2 = TestModel.build({_id: '2', name: 'n1', age: 1, gender: 'm', hobby: 'h0'}, true);
+        const d3 = TestModel.build({_id: '2', name: 'n1', age: 2, gender: 'm', hobby: 'h0'}, true);
+
+        assert.equals(query.compare(d1, d1), 0);
+        assert.equals(query.compare(d2, d1), 1);
+        assert.equals(query.compare(d1, d2), -1);
+        assert.equals(Math.sign(query.compare(d1, d3)), -1);
+        assert.equals(Math.sign(query.compare(d3, d1)), 1);
+
+        const docs = await TestModel.query.fetch();
+
+        assert.equals(docs.sort(query.compare).map((v) => v._id).join(','), '4,2,1,5,3');
       });
 
       test('matches', () => {

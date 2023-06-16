@@ -17,7 +17,7 @@ define((require) => {
     model._indexUpdate.indexes = new Map();
     model._indexUpdate.reloadAll = function () {
       for (const idx of this.indexes.values()) idx.reload();
-    }
+    };
 
     model.addIndex = (...fields) => {
       const condition = extractCondition(fields);
@@ -31,9 +31,7 @@ define((require) => {
     };
 
     const extractCondition = (fields) => {
-      const condition = typeof fields[fields.length - 1] === 'function'
-            ? fields[fields.length - 1]
-            : undefined;
+      const condition = typeof fields[fields.length - 1] === 'function' ? fields[fields.length - 1] : undefined;
       if (condition !== undefined) --fields.length;
       return condition;
     };
@@ -46,7 +44,7 @@ define((require) => {
         _filterTest(query);
       }
       const filterTest = query;
-      let i = 0, comp = null;
+      let comp = null;
       const compKeys = [], compMethod = [];
       let dbId = '', idx = null;
       const indexes = {};
@@ -59,25 +57,32 @@ define((require) => {
         dbId = model.dbId;
         idx = indexes[dbId];
 
-        if (idx === undefined) idx = indexes[dbId] =
-          leadLen === -1 ? newBTree() : createDictionary();
+        if (idx === undefined) {
+          idx =
+            indexes[dbId] =
+              leadLen === -1 ? newBTree() : createDictionary();
+        }
 
         return idx;
       };
 
       const fieldslen = fields.length;
-      for (;i < fieldslen; ++i) {
+      let i = 0;
+      for (; i < fieldslen; ++i) {
         let dir = fields[i];
         if (dir === 1 || dir === -1) {
           for (let j = i; j < fieldslen; ++j) {
             const f = fields[j];
             switch (f) {
-            case 1: case -1: dir = f; break;
-            default: {
-              const {type} = model.$fields[f];
-              compMethod.push(type === 'text' ? dir * 2 : dir);
-              compKeys.push(f);
-            }
+              case 1:
+              case -1:
+                dir = f;
+                break;
+              default: {
+                const {type} = model.$fields[f];
+                compMethod.push(type === 'text' ? dir * 2 : dir);
+                compKeys.push(f);
+              }
             }
           }
           const cLen = compKeys.length;
@@ -102,18 +107,19 @@ define((require) => {
           break;
         }
       }
+
       const len = i;
       const btCompare = comp;
       const newBTree = () => new BTree(btCompare, true);
       const compKeysLen = compKeys.length;
-      const BTValue = (doc, voidHigh=false) => {
+      const BTValue = (doc, voidHigh = false) => {
         const ans = {};
         for (let i = 0; i < compKeysLen; ++i) {
           const key = compKeys[i];
           const value = doc[key];
           if (value !== undefined) {
             ans[key] = value;
-          } else if (voidHigh) ans[key] = voidHigh$
+          } else if (voidHigh) ans[key] = voidHigh$;
         }
         for (const _ in ans) return ans;
       };
@@ -138,7 +144,7 @@ define((require) => {
               return false;
             }
           } else if (entry !== doc._id) return false;
-        } else if (! deleteEntry(entry, doc, count + 1)) {
+        } else if (!deleteEntry(entry, doc, count + 1)) {
           return false;
         }
         delete tidx[value];
@@ -151,10 +157,10 @@ define((require) => {
           return;
         }
         if (filterTest !== undefined) {
-          if (type !== 'del' && ! filterTest.matches(doc)) {
+          if (type !== 'del' && !filterTest.matches(doc)) {
             if (type === 'add') return;
             type = 'del';
-          } else if (type === 'chg' && ! filterTest.matches(was)) {
+          } else if (type === 'chg' && !filterTest.matches(was)) {
             type = 'add';
           }
         }
@@ -181,7 +187,7 @@ define((require) => {
               return;
             } else {
               let i = 0;
-              for (;i < len; ++i) {
+              for (; i < len; ++i) {
                 const field = fields[i];
                 if (doc[field] !== was[field]) {
                   deleteEntry(idx, was, 0);
@@ -207,9 +213,7 @@ define((require) => {
             }
             const value = doc[fields[leadLen]];
             if (btCompare !== null) {
-              const tree = tidx[value] === undefined
-                    ? (tidx[value] = newBTree())
-                    : tidx[value];
+              const tree = tidx[value] === undefined ? (tidx[value] = newBTree()) : tidx[value];
               tree.add(BTValue(doc));
             } else {
               tidx[value] = doc._id;
@@ -220,6 +224,32 @@ define((require) => {
 
       const handle = model._indexUpdate.onChange(onChange);
 
+      let fullComp = comp;
+      if (comp !== null) {
+        comp.compareKeys = compKeys;
+      }
+
+      if (leadLen > -1) {
+        const compareKeys = [];
+        for (let i = 0; i <= leadLen; ++i) {
+          compareKeys.push(fields[i]);
+        }
+
+        const partialComp = comp;
+        const leadComp = util.compareByFieldsNoId(...compareKeys);
+
+        for (const key of compKeys) {
+          compareKeys.push(key);
+        }
+
+        fullComp = (a, b) => {
+          let ans = leadComp(a, b);
+          return ans == 0 ? partialComp(a, b) : ans;
+        };
+
+        fullComp.compareKeys = compareKeys;
+      }
+
       const uIndex = {
         filterTest,
         lookup(keys, options) {
@@ -227,16 +257,22 @@ define((require) => {
 
           for (let i = 0; ret && i < len; ++i) {
             const field = fields[i];
-            if (! hasOwn(keys, field)) return ret;
+            if (!hasOwn(keys, field)) return ret;
             ret = ret[nullToUndef(keys[field])];
           }
 
           if (ret !== undefined && btCompare !== null) {
-            const {
-              from=keys, to, direction=1,
-              excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
+            const {from = keys, to, direction = 1, excludeFrom = false, excludeTo = false} = options === undefined
+              ? {}
+              : options;
 
-            return ret.values({from: BTValue(from, ! excludeFrom && direction == -1), to, direction, excludeFrom, excludeTo});
+            return ret.values({
+              from: BTValue(from, !excludeFrom && direction == -1),
+              to,
+              direction,
+              excludeFrom,
+              excludeTo,
+            });
           }
 
           return ret;
@@ -249,6 +285,8 @@ define((require) => {
             onChange(DocChange.add(docs[id]));
           }
         },
+
+        compare: fullComp,
 
         stop: handle.stop,
       };

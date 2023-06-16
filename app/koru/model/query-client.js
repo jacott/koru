@@ -19,12 +19,13 @@ define((require, exports, module) => {
   };
 
   const __init__ = (session) => (Query, condition, notifyAC$) => {
-    module.onUnload(session.state.pending.onChange((pending) => {
-      pending == 0 && Query.revertSimChanges();
-    }).stop);
+    module.onUnload(
+      session.state.pending.onChange((pending) => {
+        pending == 0 && Query.revertSimChanges();
+      }).stop,
+    );
 
-    const simDocsFor = (model) => Model._getSetProp(
-      model.dbId, model.modelName, 'simDocs', createDictionary);
+    const simDocsFor = (model) => Model._getSetProp(model.dbId, model.modelName, 'simDocs', createDictionary);
 
     util.merge(Query, {
       simDocsFor,
@@ -42,8 +43,8 @@ define((require, exports, module) => {
             if (docs === undefined) continue;
             dbs[modelName].simDocs = createDictionary();
             const delDc = DocChange.delete(null, 'simComplete'),
-                  addDc = DocChange.add(null, 'simComplete'),
-                  changeDc = DocChange.change(null, null, 'simComplete');
+              addDc = DocChange.add(null, 'simComplete'),
+              changeDc = DocChange.change(null, null, 'simComplete');
             for (const id in docs) {
               const doc = modelDocs[id];
               let [revert, apply] = docs[id];
@@ -70,13 +71,14 @@ define((require, exports, module) => {
                 if (revert._id !== undefined) {
                   const attrs = doc.attributes;
                   for (const key in attrs) {
-                    if (! hasOwn(revert, key)) {
+                    if (!hasOwn(revert, key)) {
                       revert[key] = null;
                     }
                   }
                 }
                 const undo = Changes.applyAll(doc.attributes, revert);
-                let hasKeys; for (hasKeys in undo) break;
+                let hasKeys;
+                for (hasKeys in undo) break;
                 changeDc._set(doc, undo);
                 if (hasKeys === undefined) {
                   Query[notifyAC$](changeDc);
@@ -154,7 +156,15 @@ define((require, exports, module) => {
         return this._docs || (this._docs = this.model.docs);
       },
 
-      withIndex(idx, params, options={}) {
+      indexCompareFunction() {
+        const {_index} = this;
+        if (_index?.idx.compare === undefined) {
+          throw new Error('No comparable index on this query');
+        }
+        return _index.idx.compare;
+      },
+
+      withIndex(idx, params, options = {}) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params);
         const {filterTest} = idx;
@@ -174,20 +184,24 @@ define((require, exports, module) => {
 
       isFromServer: '',
 
-      fromServer(type='serverUpdate') {
+      fromServer(type = 'serverUpdate') {
         this.isFromServer = type;
         return this;
       },
 
       fetch() {
         const results = [];
-        this.forEach((doc) => {results.push(doc)});
+        this.forEach((doc) => {
+          results.push(doc);
+        });
         return results;
       },
 
       fetchIds() {
         const results = [];
-        this.forEach((doc) => {results.push(doc._id)});
+        this.forEach((doc) => {
+          results.push(doc._id);
+        });
         return results;
       },
 
@@ -221,7 +235,9 @@ define((require, exports, module) => {
 
       map(func) {
         const results = [];
-        this.forEach((doc) => {results.push(func(doc))});
+        this.forEach((doc) => {
+          results.push(func(doc));
+        });
         return results;
       },
 
@@ -284,26 +300,23 @@ define((require, exports, module) => {
         });
       },
 
-      update(changesOrField={}, value) {
-        const origChanges = (typeof changesOrField === 'string')
-              ? {[changesOrField]: value}
-              : changesOrField;
+      update(changesOrField = {}, value) {
+        const origChanges = (typeof changesOrField === 'string') ? {[changesOrField]: value} : changesOrField;
 
         if (origChanges._id !== undefined) {
           delete origChanges._id;
         }
 
         const {model, docs, singleId} = this;
-        this.isFromServer === '' && Model._support._updateTimestamps(
-          origChanges, model.updateTimestamps, util.newDate());
+        this.isFromServer === '' &&
+          Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
         return TransQueue.nonNested(() => {
           let count = 0;
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const isPending = session.state.pendingCount() != 0;
-            if (isPending && this.isFromServer !== '' &&
-                fromServer(model, this.singleId, origChanges)) {
+            if (isPending && this.isFromServer !== '' && fromServer(model, this.singleId, origChanges)) {
               return 0;
             }
 
@@ -312,8 +325,10 @@ define((require, exports, module) => {
               ++count;
               const attrs = doc.attributes;
 
-              if (this._incs !== undefined) for (const field in this._incs) {
-                origChanges[field] = attrs[field] + this._incs[field];
+              if (this._incs !== undefined) {
+                for (const field in this._incs) {
+                  origChanges[field] = attrs[field] + this._incs[field];
+                }
               }
 
               const undo = Changes.applyAll(attrs, origChanges);
@@ -333,7 +348,7 @@ define((require, exports, module) => {
       },
     });
 
-    Query.prototype[Symbol.iterator] = function *() {
+    Query.prototype[Symbol.iterator] = function* () {
       if (this.singleId !== undefined) {
         const doc = this.findOne(this.singleId);
         doc !== undefined && (yield doc);
@@ -348,9 +363,9 @@ define((require, exports, module) => {
           yield* g_findMatching(this);
         }
       }
-    }
+    };
 
-    function *g_findMatching(q) {
+    function* g_findMatching(q) {
       let {_limit} = q || 0;
       if (q.model === undefined) return;
 
@@ -378,7 +393,7 @@ define((require, exports, module) => {
       }
     }
 
-    function *g_findByIndex(query, idx, options, v) {
+    function* g_findByIndex(query, idx, options, v) {
       if (typeof idx === 'string') {
         const doc = query.findOne(idx);
         return doc !== undefined && ((yield doc) === true || --v._limit == 0);
@@ -411,8 +426,7 @@ define((require, exports, module) => {
     const notify = (docChange) => {
       docChange.doc.$clearCache();
       docChange.model._indexUpdate.notify(docChange); // first: update indexes
-      docChange.flag === undefined &&
-        Model._support.callAfterLocalChange(docChange); // next:  changes originated here
+      docChange.flag === undefined && Model._support.callAfterLocalChange(docChange); // next:  changes originated here
 
       Query[notifyAC$](docChange); // notify anyChange
       docChange.model.notify(docChange); // last:  Notify everything else

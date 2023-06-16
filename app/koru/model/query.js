@@ -286,6 +286,12 @@ define((require) => {
 
       get compare() {
         if (this[compare$] === void 0) {
+          if (this._index !== void 0 && this.indexCompareFunction !== void 0) {
+            const c = this[compare$] = this.indexCompareFunction();
+            this[compareKeys$] = c.compareKeys;
+            return c;
+          }
+
           const {_sort} = this;
           if (_sort == null) return void 0;
           const slen = _sort.length, {$fields} = this.model;

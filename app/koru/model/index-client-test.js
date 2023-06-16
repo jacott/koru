@@ -21,36 +21,29 @@ define((require, exports, module) => {
     });
 
     test('lookup direction -1 bug on client', () => {
-      const TestModel = Model.define('TestModel').defineFields({
-        order: 'number',
-        name: 'text',
-      });
+      const TestModel = Model.define('TestModel').defineFields({order: 'number', name: 'text'});
       const idx = TestModel.addIndex('order', 1, 'name', '_id');
 
       const doc1 = TestModel.create({_id: '1', name: 'n1', order: 2});
       const doc3 = TestModel.create({_id: '3', name: 'n2', order: 1});
       const doc2 = TestModel.create({_id: '2', name: 'n2', order: 1});
 
-      assert.equals(Array.from(idx.lookup({order: 1, name: 'n2'}, {direction: -1})),
-                    [{_id: '3', name: 'n2'}, {_id: '2', name: 'n2'}]);
+      assert.equals(Array.from(idx.lookup({order: 1, name: 'n2'}, {direction: -1})), [{_id: '3', name: 'n2'}, {
+        _id: '2',
+        name: 'n2',
+      }]);
 
-      assert.equals(Array.from(idx.lookup({order: 2}, {from: {name: 'n1'}, direction: -1})),
-                    [{_id: '1', name: 'n1'}]);
+      assert.equals(Array.from(idx.lookup({order: 2}, {from: {name: 'n1'}, direction: -1})), [{_id: '1', name: 'n1'}]);
 
       const btree = idx.entries[1];
     });
 
     test('filtering', () => {
-      const TestModel = Model.define('TestModel').defineFields({
-        id1: 'text',
-        id2: 'text',
-        archived: 'boolean',
-      });
+      const TestModel = Model.define('TestModel').defineFields({id1: 'text', id2: 'text', archived: 'boolean'});
       dbBroker.setMainDbId('foo');
-      const index = TestModel.addUniqueIndex(
-        'id1', 1, 'id2', '_id',
-        (q) => {q.where('archived', null)},
-      );
+      const index = TestModel.addUniqueIndex('id1', 1, 'id2', '_id', (q) => {
+        q.where('archived', null);
+      });
 
       const doc1 = TestModel.create({_id: 'doc1', id1: 'a', id2: 'b'});
       const doc2 = TestModel.create({_id: 'doc2', id1: 'a', id2: 'b'});
@@ -71,10 +64,7 @@ define((require, exports, module) => {
     group('id1, id2', () => {
       let TestModel;
       beforeEach(() => {
-        TestModel = Model.define('TestModel').defineFields({
-          id1: 'text',
-          id2: 'text',
-        });
+        TestModel = Model.define('TestModel').defineFields({id1: 'text', id2: 'text'});
         dbBroker.setMainDbId('foo');
 
         v.obSpy = spy(TestModel._indexUpdate, 'onChange');
@@ -108,64 +98,82 @@ define((require, exports, module) => {
         test('en-US compare', () => {
           v.sortedIndex = TestModel.addIndex('id1', 1, 'updatedAt', 'name', -1, 'code', 'updatedAt');
           const updatedAt = new Date();
-          const n1 = TestModel.create({
-            _id: 'n1', id1: 'x', updatedAt, name: 'Helen'});
-          const n2 = TestModel.create({
-            _id: 'n2', id1: 'x', updatedAt, name: 'david', code: 'ax'});
-          const n3 = TestModel.create({
-            _id: 'n3', id1: 'x', updatedAt, name: 'david', code: 'Tx'});
+          const n1 = TestModel.create({_id: 'n1', id1: 'x', updatedAt, name: 'Helen'});
+          const n2 = TestModel.create({_id: 'n2', id1: 'x', updatedAt, name: 'david', code: 'ax'});
+          const n3 = TestModel.create({_id: 'n3', id1: 'x', updatedAt, name: 'david', code: 'Tx'});
           const n4 = TestModel.create({
-            _id: 'n4', id1: 'x', updatedAt: new Date(+updatedAt + 399), name: 'Alan', code: 'Tx'});
+            _id: 'n4',
+            id1: 'x',
+            updatedAt: new Date(+updatedAt + 399),
+            name: 'Alan',
+            code: 'Tx',
+          });
 
           const tree = v.sortedIndex.entries.x;
           assert(tree instanceof BTree);
 
-          assert.equals(Array.from(tree).map((d) => d.name + d.code), [
-            'davidax', 'davidTx', 'Helen', 'AlanTx']);
+          const data = Array.from(tree);
+
+          assert.equals(data.map((d) => d.name + d.code), ['davidax', 'davidTx', 'Helen', 'AlanTx']);
+        });
+
+        test('partially sorted', () => {
+          v.sortedIndex = TestModel.addIndex('points', 1, 'updatedAt');
+
+          assert.equals(v.sortedIndex.compare.compareKeys, ['points', 'updatedAt', '_id']);
+          assert.equals(v.sortedIndex.compare({points: 1}, {points: 1}), 0);
+          assert.equals(v.sortedIndex.compare({points: 1}, {points: 2}), -2);
+          assert.equals(v.sortedIndex.compare({points: 1, updatedAt: 124}, {points: 1, updatedAt: 123}), 1);
         });
 
         test('fully sorted', () => {
           v.sortedIndex = TestModel.addIndex(-1, 'points', 'updatedAt');
 
+          assert.equals(v.sortedIndex.compare.compareKeys, ['points', 'updatedAt', '_id']);
+          assert.equals(v.sortedIndex.compare({points: 1}, {points: 2}), 1);
+          assert.equals(v.sortedIndex.compare({points: 1, updatedAt: 124}, {points: 1, updatedAt: 123}), -1);
+
           const tree = v.sortedIndex.entries;
           assert(tree instanceof BTree);
-          const a4 = TestModel.create({
-            _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
-          assert.equals(
-            Array.from(tree.values({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
-            [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-             {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-             {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
+          const a4 = TestModel.create({_id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
+          assert.equals(Array.from(tree.values({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})), [
+            {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'},
+          ]);
+
+          const data = TestModel.query.fetch();
+
+          assert.equals(data.sort(v.sortedIndex.compare).map((d) => d._id), ['doc2', 'doc3', 'doc1', 'a4']);
 
           a4.$update({$partial: {points: ['$replace', 7]}});
 
-          assert.equals(
-            Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [
-              {points: 7, updatedAt: a4.updatedAt, _id: 'a4'},
-              {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-              {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-            ]);
+          assert.equals(Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [
+            {points: 7, updatedAt: a4.updatedAt, _id: 'a4'},
+            {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+          ]);
 
           a4.$remove();
 
-          assert.equals(
-            Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})),
-            [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-             {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}]);
+          assert.equals(Array.from(tree.values({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [{
+            points: 5,
+            updatedAt: v.doc3.updatedAt,
+            _id: 'doc3',
+          }, {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}]);
         });
 
         test('add', () => {
           const iter = v.sortedIndex.lookup({id2: '4'});
           assert.isFunction(iter.next);
 
-          const a4 = TestModel.create({
-            _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
+          const a4 = TestModel.create({_id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
 
-          assert.equals(
-            Array.from(v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 5)})),
-            [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-             {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-             {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
+          assert.equals(Array.from(v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 5)})), [
+            {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'},
+          ]);
 
           // ensure no duplicate adds
           TestModel._indexUpdate.notify(DocChange.add(a4));
@@ -173,23 +181,23 @@ define((require, exports, module) => {
           assert.equals(v.sortedIndex.entries[4].size, 3);
 
           const iter2 = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
-          assert.equals(Array.from(iter2), [
-            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'},
-          ]);
+          assert.equals(Array.from(iter2), [{points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
 
-          const reverseCursor = v.sortedIndex.lookup(
-            {id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)},
-            {direction: -1},
-          );
+          const reverseCursor = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)}, {
+            direction: -1,
+          });
           assert(reverseCursor.next);
-          assert.equals(Array.from(reverseCursor), [
-            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-            {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-          ]);
+          assert.equals(Array.from(reverseCursor), [{points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}, {
+            points: 5,
+            updatedAt: v.doc3.updatedAt,
+            _id: 'doc3',
+          }]);
 
-          assert.equals(
-            Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map((d) => d._id),
-            ['a4', 'doc1', 'doc3']);
+          assert.equals(Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map((d) => d._id), [
+            'a4',
+            'doc1',
+            'doc3',
+          ]);
 
           assert(v.sortedIndex.entries[4] instanceof BTree);
         });
@@ -215,17 +223,19 @@ define((require, exports, module) => {
           v.doc3.$update('points', 3);
           assert.equals(tree.size, 2);
 
-          assert.equals(Array.from(tree), [
-            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-            {points: 3, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-          ]);
+          assert.equals(Array.from(tree), [{points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}, {
+            points: 3,
+            updatedAt: v.doc3.updatedAt,
+            _id: 'doc3',
+          }]);
 
           v.doc1.$update('id1', '8');
 
-          assert.equals(Array.from(tree), [
-            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
-            {points: 3, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
-          ]);
+          assert.equals(Array.from(tree), [{points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}, {
+            points: 3,
+            updatedAt: v.doc3.updatedAt,
+            _id: 'doc3',
+          }]);
         });
 
         test('change different tree', () => {
@@ -290,8 +300,7 @@ define((require, exports, module) => {
         v.doc1.id2 = null;
         v.doc1.$$save();
 
-        assert.equals(v.idx.lookup({id1: '3'}), {
-          2: {2: 'doc2'}, 4: {1: 'doc3'}, undefined: {3: 'doc1'}});
+        assert.equals(v.idx.lookup({id1: '3'}), {2: {2: 'doc2'}, 4: {1: 'doc3'}, undefined: {3: 'doc1'}});
       });
 
       test('null in data', () => {
@@ -309,9 +318,14 @@ define((require, exports, module) => {
       test('removing wrong object', () => {
         assert.calledOnce(v.obSpy);
 
-        const doc = {_id: 'diff', id2: '4', id1: '3', $withChanges(undo) {
-          return undo === 'add' ? this : null;
-        }};
+        const doc = {
+          _id: 'diff',
+          id2: '4',
+          id1: '3',
+          $withChanges(undo) {
+            return undo === 'add' ? this : null;
+          },
+        };
 
         v.obSpy.yield(DocChange.delete(doc));
 
@@ -334,16 +348,12 @@ define((require, exports, module) => {
 
         TestModel.create({_id: 'tm1', id1: '2', id2: '5'});
 
-        assert.equals(id1Idx.lookup({}), {
-          1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
+        assert.equals(id1Idx.lookup({}), {1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
       });
 
       test('addIndex with condition', () => {
         Model._destroyModel('TestModel', 'drop');
-        TestModel = Model.define('TestModel').defineFields({
-          id1: 'text',
-          id2: 'text',
-        });
+        TestModel = Model.define('TestModel').defineFields({id1: 'text', id2: 'text'});
 
         v.test = (doc) => {
           return doc.id2 === '4';

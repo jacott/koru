@@ -36,7 +36,7 @@ define((require) => {
       },
 
       async _insertAttrs(model, attrs) {
-        if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
+        if (!attrs._id && !model.$fields._id.auto) attrs._id = Random.id();
         await model.docs.insert(attrs);
       },
     });
@@ -54,22 +54,23 @@ define((require) => {
         return this;
       },
 
-      from({direction=1, values, order, excludeFirst=false}) {
+      from({direction = 1, values, order, excludeFirst = false}) {
         let qs = [];
         let fdir = 1, cmp = direction * fdir == 1 ? '>' : '<';
         order.forEach((field) => {
           switch (field) {
-          case 1: case -1:
-            fdir = field;
-            cmp = direction * fdir == 1 ? '>' : '<';
-            break;
-          default:
-            const value = values[field];
-            if (value === undefined) {
-              qs.push(`("${field}" is not null or ("${field}" is null and`);
-            } else {
-              qs.push(`("${field}" ${cmp} {$${field}} or ("${field}" = {$${field}} and`);
-            }
+            case 1:
+            case -1:
+              fdir = field;
+              cmp = direction * fdir == 1 ? '>' : '<';
+              break;
+            default:
+              const value = values[field];
+              if (value === undefined) {
+                qs.push(`("${field}" is not null or ("${field}" is null and`);
+              } else {
+                qs.push(`("${field}" ${cmp} {$${field}} or ("${field}" = {$${field}} and`);
+              }
           }
         });
         if (excludeFirst) {
@@ -89,15 +90,13 @@ define((require) => {
         if (idx.filterTest !== undefined) this.where(idx.filterTest);
         this._index = idx;
         if (options !== undefined) {
-          const {direction=1, from, to, excludeFrom=false, excludeTo=false} = options;
+          const {direction = 1, from, to, excludeFrom = false, excludeTo = false} = options;
           if (direction === -1) this.reverseSort();
           if (from) {
-            this.from({direction, values: from, order: idx.from,
-                       excludeFirst: excludeFrom});
+            this.from({direction, values: from, order: idx.from, excludeFirst: excludeFrom});
           }
           if (to) {
-            this.from({direction: direction * -1, values: to, order: idx.from,
-                       excludeFirst: excludeTo});
+            this.from({direction: direction * -1, values: to, order: idx.from, excludeFirst: excludeTo});
           }
         }
 
@@ -116,11 +115,13 @@ define((require) => {
 
       async fetch() {
         const results = [];
-        await this.forEach((doc) => {results.push(doc)});
+        await this.forEach((doc) => {
+          results.push(doc);
+        });
         return results;
       },
 
-      async waitForOne(timeout=2000) {
+      async waitForOne(timeout = 2000) {
         const query = this;
         const future = new Future();
         const handle = this.model.onChange(async () => {
@@ -187,7 +188,10 @@ define((require) => {
 
       async map(func) {
         const results = [];
-        const pushAsync = (p) => p.then((v) => {results.push(v)});
+        const pushAsync = (p) =>
+          p.then((v) => {
+            results.push(v);
+          });
         await this.forEach((doc) => {
           const p = func(doc);
           if (isPromise(p)) return pushAsync(p);
@@ -227,14 +231,16 @@ define((require) => {
         }
       },
 
-      exists() {return this.model.docs.exists(this)},
+      exists() {
+        return this.model.docs.exists(this);
+      },
 
-      notExists() {return this.model.docs.notExists(this)},
+      notExists() {
+        return this.model.docs.notExists(this);
+      },
 
-      async update(changesOrField={}, value) {
-        const origChanges = (typeof changesOrField === 'string')
-              ? {[changesOrField]: value}
-              : changesOrField;
+      async update(changesOrField = {}, value) {
+        const origChanges = (typeof changesOrField === 'string') ? {[changesOrField]: value} : changesOrField;
         const {model, singleId} = this;
         Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
@@ -252,8 +258,10 @@ define((require) => {
             ++count;
             const attrs = doc.attributes;
 
-            if (this._incs !== undefined) for (let field in this._incs) {
-              origChanges[field] = attrs[field] + this._incs[field];
+            if (this._incs !== undefined) {
+              for (let field in this._incs) {
+                origChanges[field] = attrs[field] + this._incs[field];
+              }
             }
 
             const params = Changes.topLevelChanges(attrs, origChanges);
@@ -261,7 +269,7 @@ define((require) => {
             await docs.update({_id: doc._id}, params);
             const undo = Changes.applyAll(attrs, origChanges);
 
-            if (! util.isObjEmpty(undo)) {
+            if (!util.isObjEmpty(undo)) {
               onAbort.push(doc);
               model._$docCacheSet(doc);
               const dc = DocChange.change(doc, undo);
@@ -281,7 +289,7 @@ define((require) => {
       async fetchOne() {
         let rec;
         const hasFields = this._fields !== undefined;
-        if (this._sort && ! this.singleId) {
+        if (this._sort && !this.singleId) {
           const options = {limit: 1};
           if (this._sort) options.sort = this._sort;
           if (hasFields) options.fields = this._fields;
@@ -299,7 +307,7 @@ define((require) => {
       },
     });
 
-    Query.prototype[Symbol.asyncIterator] = async function *() {
+    Query.prototype[Symbol.asyncIterator] = async function* () {
       if (this.singleId) {
         const doc = await this.fetchOne();
         doc && (yield doc);
@@ -320,6 +328,6 @@ define((require) => {
           await cursor.close();
         }
       }
-    }
+    };
   };
 });
