@@ -9,7 +9,7 @@ define((require, exports, module) => {
 
   let v = {};
 
-  const _encode = (object, globalDict=v.gDict) => {
+  const _encode = (object, globalDict = v.gDict) => {
     const buffer = new Uint8ArrayBuilder();
     const dict = message._newLocalDict();
     dict.buffer.push(8);
@@ -25,8 +25,7 @@ define((require, exports, module) => {
   };
 
   const _decode = (object, globalDict) => {
-    return message._decode(new Uint8Array(object), 0, [
-      globalDict || v.gDict, message._newLocalDict()])[0];
+    return message._decode(new Uint8Array(object), 0, [globalDict || v.gDict, message._newLocalDict()])[0];
   };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
@@ -129,10 +128,13 @@ define((require, exports, module) => {
     test('surrogate characters', () => {
       v.gDict.limit = 0;
 
-      assert.equals(_encode('h💣é\xff\u20AC'), v.ans = [
-        140, 104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172]);
+      let text = 'h💣é\xff\u20AC';
 
-      assert.same(_decode(v.ans), 'h💣é\xff\u20AC');
+      assert.same(text, 'h💣éÿ€');
+
+      assert.equals(_encode(text), v.ans = [140, 104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172]);
+
+      assert.same(_decode(v.ans), text);
     });
 
     test('big string', () => {
@@ -198,23 +200,20 @@ define((require, exports, module) => {
       }
 
       const ans = _encode(u8);
-      assert.equals(ans, [
-        16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+      assert.equals(ans, [16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
       const u8ans = new Uint8Array(ans);
       const result = message._decode(u8ans, 0, [v.gDict])[0];
       assert(result.constructor === Uint8Array);
       const ary = Array.from(result);
-      assert.equals(ary, [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+      assert.equals(ary, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
       u8ans[10] = 88;
       assert.same(result[5], 5); // ensure Uint8Array is copied
     });
 
     test('populated array', () => {
-      assert.equals(_encode([1, 2, 'hello']), v.ans = [
-        8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0]);
+      assert.equals(_encode([1, 2, 'hello']), v.ans = [8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0]);
 
       assert.equals(_decode(v.ans), [1, 2, 'hello']);
     });
@@ -225,6 +224,14 @@ define((require, exports, module) => {
       array[131] = 1;
       array[5432] = null;
       assert.equals(_encode(array), v.ans = [6, 18, 130, 129, 120, 65, 19, 0, 0, 20, 180, 2, 0]);
+
+      assert.equals(_decode(v.ans), array);
+
+      array[0] = 0;
+      array[1] = -1;
+      array[2] = -2;
+
+      assert.equals(_encode(array), v.ans = [6, 64, 10, 255, 10, 254, 18, 127, 129, 120, 65, 19, 0, 0, 20, 180, 2, 0]);
 
       assert.equals(_decode(v.ans), array);
     });
@@ -241,6 +248,7 @@ define((require, exports, module) => {
 
       const msg = _encode({foo: 'bar', baz: 'foo'}, gDict);
 
+      //fmt-ignore
       assert.equals(msg, v.ans = [
         8,                             // Dictionary
         98, 97, 114, 0xff,             // local entry: bar
@@ -259,6 +267,7 @@ define((require, exports, module) => {
 
     test('bad message', () => {
       assert.exception(
+        //fmt-ignore
         () => _decode(new Uint8Array([
           8,                             // Dictionary
           98, 97, 114, 0xff,             // local entry: bar
@@ -270,8 +279,11 @@ define((require, exports, module) => {
           1, 1, 17, 0xff, 0xfe,          // baz: foo
           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
         ])),
-        {message: 'Unsupported format: 61 at 11 in:\n' +
-         '   8,98,97,114,255,98,97,122,255,0,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1'});
+        {
+          message: 'Unsupported format: 61 at 11 in:\n' +
+            '   8,98,97,114,255,98,97,122,255,0,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1',
+        },
+      );
     });
 
     test('large object', () => {
@@ -293,9 +305,9 @@ define((require, exports, module) => {
         assert.equals(message.addToDict(dict, 'x' + i), 0x101 + i);
       }
 
-      assert.same(dict.index, 128+0x100);
+      assert.same(dict.index, 128 + 0x100);
       assert.equals(message.addToDict(dict, 'x0'), 0x101);
-      assert.same(dict.index, 128+0x100);
+      assert.same(dict.index, 128 + 0x100);
 
       dict.index = 0xfff0;
       assert.same(message.addToDict(dict, 'ubig'), -1);
@@ -307,21 +319,21 @@ define((require, exports, module) => {
       dict.buffer.push(8);
 
       message.addToDict(dict, 'foo');
-      message.addToDict(dict, "bár\u0000");
+      message.addToDict(dict, 'bár\u0000');
 
-      assert.equals(Array.from(message.encodeDict(dict).subarray()), v.ans = [
-        8,
-        102, 111, 111, 0xff,
-        98, 195, 161, 114, 0, 0xff,
-        0]);
+      assert.equals(
+        Array.from(message.encodeDict(dict).subarray()),
+        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0],
+      );
 
       dict = message._newLocalDict();
 
-      assert.same(message.decodeDict(new Uint8Array(v.ans), 0, dict), 12);
+      assert.same(message.decodeDict(new Uint8Array(v.ans), 1, dict), 12);
 
-      assert.equals(dict.k2c["bár\u0000"], 257);
+      assert.equals(dict.k2c['foo'], 256);
+      assert.equals(dict.k2c['bár\u0000'], 257);
 
-      assert.same(message.getDictItem([{}, dict], 257), "bár\u0000");
+      assert.same(message.getDictItem([{}, dict], 257), 'bár\u0000');
     });
 
     test('global encodeDict decodeDict', () => {
@@ -329,29 +341,26 @@ define((require, exports, module) => {
       dict.buffer.push(8);
 
       message.addToDict(dict, 'foo');
-      message.addToDict(dict, "bár\u0000");
+      message.addToDict(dict, 'bár\u0000');
 
       message.finalizeGlobalDict(dict);
 
       assert.same(dict.k2c['foo'], 0xfffd);
-      assert.same(dict.k2c["bár\u0000"], 0xfffe);
+      assert.same(dict.k2c['bár\u0000'], 0xfffe);
 
-      const u8 = new Uint8ArrayBuilder();
-
-      assert.equals(Array.from(message.encodeDict(dict).subarray()), v.ans = [
-        8,
-        102, 111, 111, 0xff,
-        98, 195, 161, 114, 0, 0xff,
-        0]);
+      assert.equals(
+        Array.from(message.encodeDict(dict).subarray()),
+        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0],
+      );
 
       dict = message.newGlobalDict();
 
       assert.same(message.decodeDict(new Uint8Array(v.ans).subarray(1), 0, dict), 11);
       message.finalizeGlobalDict(dict);
 
-      assert.equals(dict.k2c["bár\u0000"], 0xfffe);
+      assert.equals(dict.k2c['bár\u0000'], 0xfffe);
 
-      assert.same(message.getDictItem([dict, {}], 0xfffe), "bár\u0000");
+      assert.same(message.getDictItem([dict, {}], 0xfffe), 'bár\u0000');
       assert.same(message.getDictItem([dict, {}], 0xfffd), 'foo');
     });
 
@@ -362,12 +371,19 @@ define((require, exports, module) => {
 
       const bin = new Uint8Array([4, 7, 6, 4]);
       const longStr = new Array(200).join('x');
-      const data = [1, bin, {
-        foo: {bar: 'abc', baz: [-3.234e30, 63, 3e200]},
-        longStr, baz: true, a12: 1.23}, '', false, new Date(), null, NaN, undefined];
+      const data = [
+        1,
+        bin,
+        {foo: {bar: 'abc', baz: [-3.234e30, 63, 3e200]}, longStr, baz: true, a12: 1.23},
+        '',
+        false,
+        new Date(),
+        null,
+        NaN,
+        undefined,
+      ];
 
-      const result = message.decodeMessage(
-        message.encodeMessage('T', data, gDict).subarray(1), gDict);
+      const result = message.decodeMessage(message.encodeMessage('T', data, gDict).subarray(1), gDict);
 
       assert.equals(result, data);
 
@@ -379,8 +395,7 @@ define((require, exports, module) => {
       message.addToDict(gDict, 'order');
       message.finalizeGlobalDict(gDict);
 
-      const obj = [
-        '6', 'save', 'Ticket', 'jJ9MiaHtcdgJzbFvn', {bin_id: 'GStTJFXHDZmSkXM4z', order: 256}];
+      const obj = ['6', 'save', 'Ticket', 'jJ9MiaHtcdgJzbFvn', {bin_id: 'GStTJFXHDZmSkXM4z', order: 256}];
       const u8 = message.encodeMessage('X', obj, gDict).subarray(1);
       const len = u8.length;
 
@@ -388,40 +403,37 @@ define((require, exports, module) => {
       assert.same(
         msg,
         '73617665ff5469636b6574ff6a4a394d696148746364674a7a6246766eff62696e5f69' +
-          '64ff475374544a465848445a6d536b584d347aff008136110100110101110102070103110104fffe0b010000');
+          '64ff475374544a465848445a6d536b584d347aff008136110100110101110102070103110104fffe0b010000',
+      );
 
       assert.equals(message.decodeMessage(u8, gDict), obj);
     });
 
     test('openEncoder', () => {
       const {push, encode} = message.openEncoder('M', v.gDict);
-      for (const arg of [1, 2, {foo: 'bar', [Symbol()]: 'notme'}])
+      for (const arg of [1, 2, {foo: 'bar', [Symbol()]: 'notme'}]) {
         push(arg);
+      }
       const u8 = encode();
 
       assert(u8 instanceof Uint8Array);
 
-      assert.equals(Array.from(u8), [
-        77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
+      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
 
       push('append');
 
-      assert.equals(message.decodeMessage(encode().subarray(1), v.gDict),
-                    [1, 2, {foo: 'bar'}, 'append']);
+      assert.equals(message.decodeMessage(encode().subarray(1), v.gDict), [1, 2, {foo: 'bar'}, 'append']);
     });
 
     test('encode/decodeMessage', () => {
-      const u8 = message.encodeMessage('M', [
-        1, 2, {foo: 'bar', [Symbol()]: 'notme'}]);
+      const u8 = message.encodeMessage('M', [1, 2, {foo: 'bar', [Symbol()]: 'notme'}]);
       const data = [];
 
       assert(u8 instanceof Uint8Array);
 
-      data.forEach.call(u8, (b) => {data.push(b)});
-      assert.equals(data, [
-        77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
+      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
 
       assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     });
@@ -432,7 +444,9 @@ define((require, exports, module) => {
 
       assert(u8 instanceof Uint8Array);
 
-      data.forEach.call(u8, (b) => {data.push(b)});
+      data.forEach.call(u8, (b) => {
+        data.push(b);
+      });
       assert.equals(data, [80, 0]);
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), []);

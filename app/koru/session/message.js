@@ -22,11 +22,10 @@ define((require) => {
     encodeString = (v) => encoder.encode(v);
   }
 
-  const utf8to16 = (buffer, i=0, end) => {
+  const utf8to16 = (buffer, i = 0, end) => {
     if (end === undefined) {
       const len = buffer.length;
-      for (end = i; end < len && buffer[end] !== 0xff; ++end)
-        ;
+      for (end = i; end < len && buffer[end] !== 0xff; ++end);
       return [decodeString(buffer, i, end), Math.min(len, end + 1)];
     }
     return [decodeString(buffer, i, end), end];
@@ -71,73 +70,83 @@ define((require) => {
     const byte = buffer[index++];
 
     switch (byte) {
-    case tUndef: return [void 0, index];
-    case tNull: return [null, index];
-    case tTrue: return [true, index];
-    case tFalse: return [false, index];
-    case tEmptyString: return ['', index];
-    case tInt8:
-      return [dv.getInt8(index), index + 1];
-    case tInt16:
-      return [dv.getInt16(index), index + 2];
-    case tInt32:
-      return [dv.getInt32(index), index + 4];
-    case tDec4:
-      return [dv.getInt32(index) / 10000, index + 4];
-    case tFloat64:
-      return [dv.getFloat64(index), index + 8];
-    case tDate:
-      return [new Date(dv.getFloat64(index)), index + 8];
-    case tString:
-      return utf8to16(buffer, index);
-    case tDictString:
-      return [getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]), index + 2];
-    case tEmptyArray: return [[], index];
-    case tEmptyObject: return [{}, index];
-    case tEmptyNullObject: return [Object.create(null), index];
-    case tArray: {
-      const len = buffer.length;
-      const out = [];
-      let count = 0;
-      const sparseResult = [0, 1];
-      let result = null;
-      for (;index < len && buffer[index] !== tTerm; index = result[1]) {
-        switch (buffer[index]) {
-        case tSparseSmall:
-          result = sparseResult;
-          result[1] = index + 2;
-          count += buffer[index + 1];
-          break;
-        case tSparseLarge:
-          result = sparseResult;
-          result[1] = index + 5;
-          count += dv.getUint32(index + 1);
-          break;
-        default:
-          result = decode(buffer, index, dict);
-          out[count++] = result[0];
+      case tUndef:
+        return [void 0, index];
+      case tNull:
+        return [null, index];
+      case tTrue:
+        return [true, index];
+      case tFalse:
+        return [false, index];
+      case tEmptyString:
+        return ['', index];
+      case tInt8:
+        return [dv.getInt8(index), index + 1];
+      case tInt16:
+        return [dv.getInt16(index), index + 2];
+      case tInt32:
+        return [dv.getInt32(index), index + 4];
+      case tDec4:
+        return [dv.getInt32(index) / 10000, index + 4];
+      case tFloat64:
+        return [dv.getFloat64(index), index + 8];
+      case tDate:
+        return [new Date(dv.getFloat64(index)), index + 8];
+      case tString:
+        return utf8to16(buffer, index);
+      case tDictString:
+        return [getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]), index + 2];
+      case tEmptyArray:
+        return [[], index];
+      case tEmptyObject:
+        return [{}, index];
+      case tEmptyNullObject:
+        return [Object.create(null), index];
+      case tArray: {
+        const len = buffer.length;
+        const out = [];
+        let count = 0;
+        const sparseResult = [0, 1];
+        let result = null;
+        for (; index < len && buffer[index] !== tTerm; index = result[1]) {
+          switch (buffer[index]) {
+            case tSparseSmall:
+              result = sparseResult;
+              result[1] = index + 2;
+              count += buffer[index + 1];
+              break;
+            case tSparseLarge:
+              result = sparseResult;
+              result[1] = index + 5;
+              count += dv.getUint32(index + 1);
+              break;
+            default:
+              result = decode(buffer, index, dict);
+              out[count++] = result[0];
+          }
         }
+        return [out, ++index];
       }
-      return [out, ++index];
-    }
-    case tNullObject: case tObject: {
-      const len = buffer.length;
-      const out = byte === tObject ? {} : Object.create(null);
-      let result = null;
-      for (;index < len && buffer[index] !== tTerm; index = result[1]) {
-        const key = getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]);
-        result = decode(buffer, index + 2, dict);
-        out[key] = result[0];
+      case tNullObject:
+      case tObject: {
+        const len = buffer.length;
+        const out = byte === tObject ? {} : Object.create(null);
+        let result = null;
+        for (; index < len && buffer[index] !== tTerm; index = result[1]) {
+          const key = getDictItem(dict, (buffer[index] << 8) + buffer[index + 1]);
+          result = decode(buffer, index + 2, dict);
+          out[key] = result[0];
+        }
+        return [out, ++index];
       }
-      return [out, ++index];
+      case tDict:
+        return decode(buffer, decodeDict(buffer, index, dict), dict);
+      case tBinary: {
+        const len = dv.getUint32(index);
+        index += 4;
+        return [buffer.slice(index, index + len), index + len];
+      }
     }
-    case tDict:
-      return decode(buffer, decodeDict(buffer, index, dict), dict);
-    case tBinary: {
-      const len = dv.getUint32(index);
-      index += 4;
-      return [buffer.slice(index, index + len), index + len];
-    }}
 
     if (byte & 0x80) {
       return utf8to16(buffer, index, index + (byte - 0x80));
@@ -153,69 +162,68 @@ define((require) => {
 
   const encode = (buffer, object, dict) => {
     switch (typeof object) {
-    case 'string':
-      if (object === '') {
-        return buffer.appendByte(tEmptyString);
-      }
-
-      if (object.length !== 1) {
-        const dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{'
-              ? addToDict(dict, object)
-              : getStringCode(dict, object);
-        if (dkey != -1) {
-          buffer.appendByte(tDictString).appendByte(dkey >> 8).appendByte(dkey & 0xff);
-          return;
-        }
-      }
-      const index = buffer.length;
-      buffer.appendByte(tSmString);
-      utf16to8(buffer, object);
-      const len = buffer.length - index - 1;
-      if (len < 128) {
-        return buffer.set(index, buffer.get(index) | (buffer.length - index - 1));
-      }
-
-      buffer.set(index, tString);
-      buffer.appendByte(0xff);
-      return;
-    case 'number':
-      if (object === Math.floor(object) && object >= 0 && object < tSmNumber) {
-        return buffer.appendByte(object | tSmNumber);
-      }
-
-      if (object == Math.floor(object)) {
-        if (object > -129 && object < 128) {
-          buffer.appendByte(tInt8).writeInt8(object);
-          return;
+      case 'string':
+        if (object === '') {
+          return buffer.appendByte(tEmptyString);
         }
 
-        if (object > -32769 && object < 32768) {
-          buffer.appendByte(tInt16).writeInt16BE(object);
-          return;
+        if (object.length !== 1) {
+          const dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{'
+            ? addToDict(dict, object)
+            : getStringCode(dict, object);
+          if (dkey != -1) {
+            buffer.appendByte(tDictString).appendByte(dkey >> 8).appendByte(dkey & 0xff);
+            return;
+          }
+        }
+        const index = buffer.length;
+        buffer.appendByte(tSmString);
+        utf16to8(buffer, object);
+        const len = buffer.length - index - 1;
+        if (len < 128) {
+          return buffer.set(index, buffer.get(index) | (buffer.length - index - 1));
         }
 
-        if (object > -2147483649 && object < 2147483648) {
-          buffer.appendByte(tInt32).writeInt32BE(object);
-          return;
-        }
-      }
-
-
-      // // up to 4 decimals
-      const dec4 = object * 10000;
-      if (dec4 === Math.floor(dec4) && dec4 > -2147483649 && dec4 < 2147483648) {
-        buffer.appendByte(tDec4).writeInt32BE(dec4);
+        buffer.set(index, tString);
+        buffer.appendByte(0xff);
         return;
-      }
+      case 'number':
+        if (object === Math.floor(object) && object >= 0 && object < tSmNumber) {
+          return buffer.appendByte(object | tSmNumber);
+        }
 
-      buffer.appendByte(tFloat64).writeDoubleBE(object);
-      return;
-    case 'boolean':
-      return buffer.appendByte(object === true ? tTrue : tFalse);
-    case 'undefined':
-      return buffer.appendByte(tUndef);
-    case 'function':
-      throw new Error('serializing functions not supportd');
+        if (object == Math.floor(object)) {
+          if (object > -129 && object < 128) {
+            buffer.appendByte(tInt8).writeInt8(object);
+            return;
+          }
+
+          if (object > -32769 && object < 32768) {
+            buffer.appendByte(tInt16).writeInt16BE(object);
+            return;
+          }
+
+          if (object > -2147483649 && object < 2147483648) {
+            buffer.appendByte(tInt32).writeInt32BE(object);
+            return;
+          }
+        }
+
+        // // up to 4 decimals
+        const dec4 = object * 10000;
+        if (dec4 === Math.floor(dec4) && dec4 > -2147483649 && dec4 < 2147483648) {
+          buffer.appendByte(tDec4).writeInt32BE(dec4);
+          return;
+        }
+
+        buffer.appendByte(tFloat64).writeDoubleBE(object);
+        return;
+      case 'boolean':
+        return buffer.appendByte(object === true ? tTrue : tFalse);
+      case 'undefined':
+        return buffer.appendByte(tUndef);
+      case 'function':
+        throw new Error('serializing functions not supportd');
     }
 
     if (object === null) return buffer.appendByte(tNull);
@@ -269,9 +277,12 @@ define((require) => {
     }
   };
 
-  const newLocalDict = (initialCapacity=1024) => ({
-    index: 0, k2c: Object.create(null), c2k: [],
-    buffer: initialCapacity == -1 ? void 0 : new Uint8ArrayBuilder(initialCapacity)});
+  const newLocalDict = (initialCapacity = 1024) => ({
+    index: 0,
+    k2c: Object.create(null),
+    c2k: [],
+    buffer: initialCapacity == -1 ? void 0 : new Uint8ArrayBuilder(initialCapacity),
+  });
 
   const getStringCode = (dict, word) => {
     if (dict.constructor === Array) {
@@ -376,7 +387,7 @@ define((require) => {
         },
       };
     },
-    encodeMessage: (type, args, globalDict=emptyDict) => {
+    encodeMessage: (type, args, globalDict = emptyDict) => {
       const buffer = new Uint8ArrayBuilder(1024);
 
       const dicts = [globalDict, newLocalDict()];
@@ -384,8 +395,9 @@ define((require) => {
       dictBuilder.appendByte(type.charCodeAt(0));
 
       const len = args.length;
-      for (let i = 0; i < len; ++i)
+      for (let i = 0; i < len; ++i) {
         encode(buffer, args[i], dicts);
+      }
 
       dictBuilder.appendByte(tTerm);
 
@@ -393,14 +405,14 @@ define((require) => {
       return dictBuilder.subarray();
     },
 
-    decodeMessage: (u8, globalDict=emptyDict) => {
+    decodeMessage: (u8, globalDict = emptyDict) => {
       const dict = newLocalDict(-1);
       let index = decodeDict(u8, 0, dict);
 
       const len = u8.length;
       const out = [];
       let result = null;
-      for (;index < len; index = result[1]) {
+      for (; index < len; index = result[1]) {
         result = decode(u8, index, [globalDict, dict]);
         out.push(result[0]);
       }
