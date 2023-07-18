@@ -2,6 +2,7 @@ define((require) => {
   'use strict';
   const util            = require('koru/util-base');
 
+  //fmt-ignore
   const K = [0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
              0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
              0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3,
@@ -28,44 +29,51 @@ define((require) => {
   const dv = new DataView(ab);
   const u32 = new Uint32Array(ab);
 
-  const core_sha256 = (
-    m, l, H,
-  ) => {
-    let a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0, i = 0, j = 0, t1 = 0, t2 = 0;
+  const core_sha256 = (m, l, H) => {
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7], i = H[8], j = H[9];
+    let t1 = 0, t2 = 0;
 
-    m[l >> 5] |= 0x80 << (24 - l % 32);
-    m[((l + 64 >> 9) << 4) + 15] = l;
+    m[l >> 5] = (m[l >> 5] | (0x80 << (24 - l % 32))) >>> 0;
+    m[((l + 64 >> 9) << 4) + 15] = l >>> 0;
 
     for (let i = 0; i < m.length; i += 16) {
-      a = H[0]; b = H[1]; c = H[2]; d = H[3]; e = H[4]; f = H[5]; g = H[6]; h = H[7];
-
       for (let j = 0; j < 64; j++) {
         if (j < 16) {
           w[j] = m[j + i];
         } else {
-          const gamma0x = w[j - 15], gamma1x = w[j - 2],
-                gamma0 = ((gamma0x << 25) | (gamma0x >>> 7)) ^
-                ((gamma0x << 14) | (gamma0x >>> 18)) ^ (gamma0x >>> 3),
-                gamma1 = ((gamma1x << 15) | (gamma1x >>> 17)) ^
-                ((gamma1x << 13) | (gamma1x >>> 19)) ^ (gamma1x >>> 10);
+          const gamma0x = w[j - 15], gamma1x = w[j - 2];
+          const gamma0 = ((gamma0x << 25) | (gamma0x >>> 7)) ^ ((gamma0x << 14) | (gamma0x >>> 18)) ^ (gamma0x >>> 3);
+          const gamma1 = ((gamma1x << 15) | (gamma1x >>> 17)) ^ ((gamma1x << 13) | (gamma1x >>> 19)) ^ (gamma1x >>> 10);
 
-          w[j] = gamma0 + (w[j - 7] >>> 0) + gamma1 + (w[j - 16] >>> 0);
+          w[j] = (gamma0 + w[j - 7] + gamma1 + w[j - 16]) >>> 0;
         }
 
-        const ch = e & f ^ ~e & g, maj = a & b ^ a & c ^ b & c,
-              sigma0 = ((a << 30) | (a >>> 2)) ^
-              ((a << 19) | (a >>> 13)) ^ ((a << 10) | (a >>> 22)),
-              sigma1 = ((e << 26) | (e >>> 6)) ^
-              ((e << 21) | (e >>> 11)) ^ ((e << 7) | (e >>> 25));
+        const ch = e & f ^ ~e & g;
+        const maj = a & b ^ a & c ^ b & c;
+        const sigma0 = ((a << 30) | (a >>> 2)) ^ ((a << 19) | (a >>> 13)) ^ ((a << 10) | (a >>> 22));
+        const sigma1 = ((e << 26) | (e >>> 6)) ^ ((e << 21) | (e >>> 11)) ^ ((e << 7) | (e >>> 25));
 
-        t1 = (h >>> 0) + sigma1 + ch + (K[j]) + (w[j] >>> 0);
-        t2 = sigma0 + maj;
+        t1 = ((h >>> 0) + sigma1 + ch + (K[j]) + (w[j])) >>> 0;
+        t2 = (sigma0 + maj) >>> 0;
 
-        h = g; g = f; f = e; e = (d + t1) >>> 0;
-        d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        h = g;
+        g = f;
+        f = e;
+        e = (d + t1) >>> 0;
+        d = c;
+        c = b;
+        b = a;
+        a = (t1 + t2) >>> 0;
       }
 
-      H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+      H[0] = a = (H[0] + a) >>> 0;
+      H[1] = b = (H[1] + b) >>> 0;
+      H[2] = c = (H[2] + c) >>> 0;
+      H[3] = d = (H[3] + d) >>> 0;
+      H[4] = e = (H[4] + e) >>> 0;
+      H[5] = f = (H[5] + f) >>> 0;
+      H[6] = g = (H[6] + g) >>> 0;
+      H[7] = h = (H[7] + h) >>> 0;
     }
 
     return H;
@@ -76,23 +84,24 @@ define((require) => {
   const encoder = new globalThis.TextEncoder();
 
   const toBinb = (ab) => {
-    const bin = new Array(ab.length >> 5);
-    const len8 = ab.length * 8;
+    const len8 = ab.length << 3;
+    const bin = new Array((((len8 + 64) >>> 9) << 4) + 16);
+    bin.fill(0);
 
     for (let i = 0; i < len8; i += 8) {
-      bin[i >> 5] |= ab[i / 8] << (24 - i % 32);
+      bin[i >> 5] = (bin[i >> 5] | ab[i / 8] << (24 - i & 31)) >>> 0;
     }
 
     return bin;
   };
 
   const add = (
-    text, hash=[0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
-                0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19],
+    text,
+    hash = [0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19],
   ) => {
     const ab = (text instanceof TypedArray)
-          ? ((text instanceof Uint8Array) ? text : new Uint8Array(text.buffer))
-          : encoder.encode(text);
+      ? ((text instanceof Uint8Array) ? text : new Uint8Array(text.buffer))
+      : encoder.encode(text);
     return core_sha256(toBinb(ab), ab.length * 8, hash);
   };
 
