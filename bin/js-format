@@ -1,0 +1,188 @@
+#!/usr/bin/env -S node #-*-js-ts-*-
+const path = require('path');
+const fs = require('fs');
+const {topDir, system, loadEnv, withKoru} = require('koru/lib/script-utils');
+
+global.isServer = true;
+global.isClient = false;
+global.isTest = false;
+
+let emacs = false;
+let dir;
+let dryRun = false;
+
+const argv = process.argv.filter((a) => {
+  if (dir === null) {
+    dir = a;
+    return false;
+  }
+
+  switch (a) {
+  case '--dry-run':
+    dryRun = true;
+    return false;
+  case '-e':
+  case '--emacs':
+    emacs = true;
+    return false;
+  case '--dir':
+    dir = null;
+    return false;
+  case '--help':
+    console.log(`Usage: js-format [-e] [--dir <dir>] [--dry-run]
+
+Format javascript/typescript files
+
+Options:
+  -e, --emacs       run in emacs process mode (for use with js-format.el)
+  --dir             format all javascripts file under <dir>
+  --dry-run         do not update files
+  --help            display usage information
+`);
+    process.exit(0);
+  }
+  return true;
+});
+
+const file = argv[2];
+
+const formatOpts = {initialIndent: 0};
+
+let cd = process.cwd();
+
+process.chdir(__dirname + '/..');
+
+withKoru({env: 'demo'}, () => {
+  return new Promise((resolve, reject) => {
+    requirejs(['koru/server', 'koru/parse/code-formatter', 'koru/fs-tools'], (koru, {reformat}, fst) => {
+      process.chdir(cd);
+      if (emacs) {
+        async function *splitStream(source) {
+          let name = '';
+          let data = '';
+          let lenStr = '';
+          let len = 0;
+
+          let state = 0;
+
+          for await (let chunk of source) {
+            while (chunk.length != 0) {
+              switch (state) {
+              case 0: {
+                  let idx = chunk.findIndex((elm) => elm == 0x0a);
+                  if (idx == -1) {
+                    name += chunk.toString();
+                    chunk = chunk.subarray(0, 0);
+                    break;
+                  } else {
+                    name += chunk.subarray(0, idx);
+                    chunk = chunk.subarray(idx + 1);
+                    state = 1;
+                    // fall through
+                  }
+                }
+              case 1: {
+                  let idx = chunk.findIndex((elm) => elm == 0x0a);
+                  if (idx == -1) {
+                    lenStr += chunk.toString();
+                    chunk = chunk.subarray(0, 0);
+                    break;
+                  } else {
+                    lenStr += chunk.subarray(0, idx);
+                    chunk = chunk.subarray(idx + 1);
+                    len = parseInt(lenStr, 16);
+                    if (len == 0 || isNaN(len)) {
+                      throw new Error('invalid length 0');
+                    }
+
+                    lenStr = '';
+                    state = 2;
+                    // fall through
+                  }
+                }
+              case 2: {
+                  if (chunk.length < len) {
+                    len -= chunk.length;
+                    data += chunk.toString();
+                    chunk = chunk.subarray(0, 0);
+                  } else {
+                    data += chunk.subarray(0, len).toString();
+                    chunk = chunk.subarray(len);
+                    yield [name, data];
+                    name = data = '';
+                    len = 0;
+                    state = 0;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        const emacsWriteMsg = async (type, msg) => {
+          let output = Buffer.from(msg);
+          process.stdout.write(`${type}:${output.length.toString(16).padStart(8, '0')}`);
+          return new Promise((resolve, reject) => {
+            process.stdout.write(output, undefined, (err) => {
+              if (err == null) {
+                resolve();
+              } else {
+                reject(err);
+              }
+            });
+          });
+        };
+
+        const emacsProcess = async () => {
+          for await (const [name, source] of process.stdin.compose(splitStream)) {
+            try {
+              let output = reformat(source, formatOpts);
+              if (output.source == null) {
+                await emacsWriteMsg(2, '');
+              } else {
+                await emacsWriteMsg(0, output.source);
+              }
+            } catch (err) {
+              await emacsWriteMsg(1, err.toString());
+            }
+          }
+        };
+        emacsProcess().then(resolve, reject);
+      } else if (dir != null || file != null) {
+        const convertFile = async (file) => {
+          const stat = await fst.lstat(file);
+          if (stat == null) {
+            console.error('No such file or directory: ' + file);
+            process.exit(1);
+          }
+          if (stat.isDirectory()) {
+            for (const n of await fst.readdir(file)) {
+              await convertFile(path.join(file, n));
+            }
+          } else if (stat.isFile() && file.endsWith('.js')) {
+            try {
+              const {source} = reformat((await fst.readFile(file)).toString(), formatOpts);
+              dryRun || await fst.writeFile(file, source);
+            } catch (err) {
+              console.error('while reformatting ' + file);
+              throw err;
+            }
+          }
+        };
+
+        convertFile(file ?? dir).then(resolve, reject);
+      } else {
+        const run = async () => {
+          const {stdin} = process;
+          let data = '';
+          for await (const chunk of stdin) {
+            data += chunk;
+          }
+          const {source} = reformat(data, formatOpts);
+          console.info(source);
+        };
+        run().then(resolve, reject);
+      }
+    });
+  });
+});

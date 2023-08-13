@@ -55,7 +55,7 @@ define((require, exports, module) => {
       this.lineStartPadding = initialIndent;
       this.currentIndex = this.indents.length;
       this.tabWidth = tabWidth;
-      this.dir = 0;
+      this.dir = this.lastIndentCol = 0;
     }
 
     write(text) {
@@ -72,11 +72,16 @@ define((require, exports, module) => {
 
     newLine(token, type) {
       const li = this.last();
-      const slen = this.line.length - token.length - li;
+      let slen = this.line.length - token.length - li;
+      if (this.dir == 1 && this.lastIndentCol == slen + li) {
+        this.indents.length = this.currentIndex;
+        this.setLast(1, this.last(2) + this.tabWidth);
+        slen = 0;
+      }
 
       if (this.lineIndentStart < this.currentIndex) {
         if (slen == 0) {
-          this.lineIndent = this.setLast(1, this.last(2) + 2);
+          this.lineIndent = this.setLast(1, this.last(2) + this.tabWidth);
         } else {
           this.lineIndent = li;
         }
@@ -88,11 +93,11 @@ define((require, exports, module) => {
             this.lineIndent = li;
           }
         } else if (this.dir > 0) {
-          this.lineIndent = this.last(2) + (this.dir > 0 ? 2 : 0);
+          this.lineIndent = this.last(2) + (this.dir > 0 ? this.tabWidth : 0);
         }
       } else if (this.dir != 0) {
         if (this.dir > 0) {
-          this.lineIndent = this.last(2) + 2;
+          this.lineIndent = this.last(2) + this.tabWidth;
         } else {
           this.lineIndent = li;
         }
@@ -103,17 +108,18 @@ define((require, exports, module) => {
       this.lineIndentStart = this.currentIndex;
       this.indents.length = this.currentIndex;
       this.lastDir = this.dir;
-      this.dir = 0;
+      this.dir = this.lastIndentCol = 0;
       this.lineStartPadding = this.lineIndent;
     }
 
     incIndent() {
       this.dir = 1;
-      let {indents, currentIndex} = this;
+      const {indents, currentIndex} = this;
+      const llen = this.lastIndentCol = this.line.length;
       if (currentIndex >= indents.length) {
-        indents.push(this.lineIndent, this.line.length);
+        indents.push(this.lineIndent, llen);
       } else if (currentIndex + 2 >= this.lineIndentStart) {
-        indents[currentIndex + 1] = this.line.length;
+        indents[currentIndex + 1] = llen;
       }
       this.currentIndex = currentIndex + 2;
     }
@@ -157,19 +163,19 @@ define((require, exports, module) => {
       this.lastToken = token;
       this.line += token;
 
-      const isCode = TEXT_TYPE[type] === void 0;
+      const isCode = type === undefined || TEXT_TYPE[type] === undefined;
       if (type !== 'noIndent') {
-        if (isCode && DEC_INDENT[token] !== void 0) {
+        if (isCode && DEC_INDENT[token] !== undefined) {
           this.decIndent();
           return;
         }
 
         if (this.needsPadding) {
-          this.line = ''.padEnd(type === 'unindent' ? this.lineIndent - 2 : this.lineIndent) + this.line;
+          this.line = ''.padEnd(type === 'unindent' ? this.lineIndent - this.tabWidth : this.lineIndent) + this.line;
           this.needsPadding = false;
         }
 
-        if (isCode && INC_INDENT[token] !== void 0) {
+        if (isCode && INC_INDENT[token] !== undefined) {
           this.incIndent();
           return;
         }
@@ -181,7 +187,7 @@ define((require, exports, module) => {
     }
 
     complete() {
-      this.append('');
+      if (this.line !== '') this.append('');
       this.newLine('');
       return this.output;
     }

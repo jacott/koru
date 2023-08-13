@@ -11,7 +11,20 @@ isServer && define((require, exports, module) => {
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let text;
     test('indent', () => {
+      text = `
+if ((a ||
+     b)) {
+  if (c) {
+    d();
+  }
+} else {
+  e();
+}
+`;
+      assert.equals(reformat(text), text);
+
       assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;\n'), 'if (\n  1 +\n  2 +\n  3) ++b;\n');
+
       assert.equals(reformat('a &&\nb\n&& c'), 'a &&\n  b &&\n  c');
 
       assert.equals(reformat('if (a) {\n} else if (x) {\n  {\n++c;\n}\n}\n'),
@@ -49,16 +62,6 @@ isServer && define((require, exports, module) => {
       assert.equals(reformat('{\na();\nb();\n}'), '{\n  a();\n  b();\n}');
       assert.equals(reformat('const a = b();\n\ndef(() => {\nc();\n});\n'),
                     'const a = b();\n\ndef(() => {\n  c();\n});\n');
-
-      text = `
-if (a ||
-    b) {
-  c();
-} else {
-  d();
-}
-x()`;
-      assert.equals(reformat(text), text);
     });
 
     test('directives', () => {
@@ -80,7 +83,7 @@ x()`;
     });
 
     test('comments', () => {
-      assert.equals(reformat( `a == b || // c\n true;`), `a == b || // c\ntrue`);
+      assert.equals(reformat(`a == b || // c\n true;`), `a == b || // c\ntrue`);
       assert.equals(reformat(`a == b // c\n || true;`), 'a == b // c\n|| true');
       assert.equals(reformat(`a == b// c\n || true;`), 'a == b// c\n|| true');
       assert.equals(reformat(`a == b   // c\n || true;`), `a == b   // c\n|| true`);
@@ -204,14 +207,14 @@ x()`;
                     'try {\n  a; b; c;\n  d;\n} catch (err) {\n  a;\n}');
       assert.equals(reformat('try {\na;b; c\nd\n} catch(err){\na;b\nc\n}   finally{\na;c\nd}'),
                     'try {\n' +
-                    '  a; b; c;\n' +
-                    '  d;\n' +
-                    '} catch (err) {\n' +
-                    '  a; b;\n' +
-                    '  c;\n' +
-                    '} finally {\n' +
-                    '  a; c;\n' +
-                    '  d}');
+                      '  a; b; c;\n' +
+                      '  d;\n' +
+                      '} catch (err) {\n' +
+                      '  a; b;\n' +
+                      '  c;\n' +
+                      '} finally {\n' +
+                      '  a; c;\n' +
+                      '  d}');
     });
 
     test('SwitchStatement', () => {
@@ -226,16 +229,16 @@ x()`;
                  ' return 4\n' +
                  '};\n' +
                  'a()',
-                ), 'switch (a) {\n' +
-          'case 1:\n' +
-          '  a;\n' +
-          '  b;\n' +
-          '  break;\n' +
-          'default:\n' +
-          '  x();\n' +
-          '  return 4;\n' +
-          '}\n' +
-          'a()',
+        ), 'switch (a) {\n' +
+        'case 1:\n' +
+        '  a;\n' +
+        '  b;\n' +
+        '  break;\n' +
+        'default:\n' +
+        '  x();\n' +
+        '  return 4;\n' +
+        '}\n' +
+        'a()',
       );
       assert.equals(reformat('switch(a) {case 1: case 2:}'), 'switch (a) {case 1: case 2:}');
     });
@@ -254,10 +257,10 @@ x()`;
     test('IfStatement', () => {
       assert.equals(reformat('{\nif(a) b.c() ;\n}'), '{\n  if (a) b.c();\n}');
       let text = 'if (o) {\n' +
-          '  if (i) {\n' +
-          '    i.toString();\n' +
-          '  }\n' +
-          '}\n';
+        '  if (i) {\n' +
+        '    i.toString();\n' +
+        '  }\n' +
+        '}\n';
 
       assert.equals(reformat(text), text);
 
@@ -409,10 +412,10 @@ a();
 
     test('expressions', () => {
       const text = 'if (\n' +
-            '  u === (5 * (3+7) *\n' +
-            '         4 * 3)) {\n' +
-            '  (t === undefined ? x : t)[key] = undo;\n' +
-            '}';
+      '  u === (5 * (3+7) *\n' +
+      '         4 * 3)) {\n' +
+      '  (t === undefined ? x : t)[key] = undo;\n' +
+      '}';
 
       assert.equals(reformat(text), text);
     });

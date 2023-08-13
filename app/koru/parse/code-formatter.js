@@ -33,9 +33,9 @@ define((require, exports, module) => {
 
   const isSimpleNode = (isLeft, node, operator) => (
     node.type === 'NumericLiteral') || (
-      node.type === 'BinaryExpression' &&
-        node.operator === operator &&
-        (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
+    node.type === 'BinaryExpression' &&
+    node.operator === operator &&
+    (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
 
   const writeAsync = (self, node) => {
     if (node.async) {
