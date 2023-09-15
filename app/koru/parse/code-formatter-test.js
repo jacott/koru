@@ -12,6 +12,33 @@ isServer && define((require, exports, module) => {
     let text;
     test('indent', () => {
       text = `
+m({
+  a,
+}.s);
+`;
+      assert.equals(reformat(text), text);
+
+      text =
+        '        () => {\n' +
+        '          test(\n' +
+        '            [11, [[2, 3,\n' +
+        '                   4, [[\n' +
+        '                     5, 6,\n' +
+        '                     7, 8,\n' +
+        '                   ]], [[\n' +
+        '                     0,\n' +
+        '                   ]], [\n' +
+        '                     123,\n' +
+        '                   ], [\n' +
+        '                     456,\n' +
+        '                   ]]],\n' +
+        '            ],\n' +
+        '          );\n' +
+        '        }';
+
+      assert.equals(reformat(text), text);
+
+      text = `
 if ((a ||
      b)) {
   if (c) {
@@ -23,9 +50,9 @@ if ((a ||
 `;
       assert.equals(reformat(text), text);
 
-      assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;\n'), 'if (\n  1 +\n  2 +\n  3) ++b;\n');
-
       assert.equals(reformat('a &&\nb\n&& c'), 'a &&\n  b &&\n  c');
+
+      assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;\n'), 'if (\n  1 +\n    2 +\n    3) ++b;\n');
 
       assert.equals(reformat('if (a) {\n} else if (x) {\n  {\n++c;\n}\n}\n'),
                     'if (a) {\n} else if (x) {\n  {\n    ++c;\n  }\n}\n');
@@ -39,36 +66,16 @@ if ((a ||
       assert.equals(reformat('if (1234 + ( 34 * \n 1)) {\nt()\n}'),
                     'if (1234 + (34 *\n            1)) {\n  t();\n}');
 
-      text =
-        '        () => {\n' +
-        '          test(\n' +
-        '            [1, [[2, 3,\n' +
-        '                  4, [[\n' +
-        '                    5, 6,\n' +
-        '                    7, 8,\n' +
-        '                  ]], [[\n' +
-        '                    0,\n' +
-        '                  ]], [\n' +
-        '                    123,\n' +
-        '                  ], [\n' +
-        '                    456,\n' +
-        '             ]]],\n' +
-        '            ],\n' +
-        '          );\n' +
-        '        }';
-
-      assert.equals(reformat(text), text);
-
       assert.equals(reformat('{\na();\nb();\n}'), '{\n  a();\n  b();\n}');
       assert.equals(reformat('const a = b();\n\ndef(() => {\nc();\n});\n'),
                     'const a = b();\n\ndef(() => {\n  c();\n});\n');
     });
 
     test('directives', () => {
-      assert.equals(reformat('#!/usr/bin/env node\n"use strict"\ndefine("123")'),
-                    "#!/usr/bin/env node\n'use strict';\ndefine('123')");
       assert.equals(reformat('() => {//;comment\n"use strict"\n\n\n\nab()\n}\n'),
                     "() => {//;comment\n  'use strict';\n\n  ab();\n};\n");
+      assert.equals(reformat('#!/usr/bin/env node\n"use strict"\ndefine("123")'),
+                    "#!/usr/bin/env node\n'use strict';\ndefine('123')");
       assert.equals(reformat('() => {\n\n"use strict"\n\n\n\nab()\n}\n'),
                     "() => {\n  'use strict';\n\n  ab();\n};\n");
     });
@@ -83,18 +90,19 @@ if ((a ||
     });
 
     test('comments', () => {
-      assert.equals(reformat(`a == b || // c\n true;`), `a == b || // c\ntrue`);
-      assert.equals(reformat(`a == b // c\n || true;`), 'a == b // c\n|| true');
-      assert.equals(reformat(`a == b// c\n || true;`), 'a == b// c\n|| true');
-      assert.equals(reformat(`a == b   // c\n || true;`), `a == b   // c\n|| true`);
+      assert.equals(reformat('((((/*(*/1,2,3/*)*/))))'), '(/*(*/1, 2, 3/*)*/)');
       assert.equals(reformat(`(/*(*/1,/*<*/2/*>*/,3/*)*/)`), `(/*(*/1,/*<*/2/*>*/,3/*)*/)`);
+
+      assert.equals(reformat(`a == b || // c\n true;`), `a == b || // c\n  true`);
       assert.equals(reformat('a = {\n  b,\n\n\n\n\n // c1\n  c\n}'), 'a = {\n  b,\n\n  // c1\n  c,\n}');
+      assert.equals(reformat(`a == b // c\n || true;`), 'a == b // c\n  || true');
+      assert.equals(reformat(`a == b// c\n || true;`), 'a == b// c\n  || true');
+      assert.equals(reformat(`a == b   // c\n || true;`), `a == b   // c\n  || true`);
       assert.equals(reformat('a = {\n  b,\n\n // c1\n}'), 'a = {\n  b,\n\n  // c1\n}');
       assert.equals(reformat('{\na(); // c1\n}'), '{\n  a(); // c1\n}');
       assert.equals(reformat('{\na();   // c1\nb();// c2\n}'), '{\n  a();   // c1\n  b();// c2\n}');
       assert.equals(reformat('if (a) return\n// x\na.b()'), 'if (a) return;\n// x\na.b()');
       assert.equals(reformat('a = 1\n// x\nb()'), 'a = 1;\n// x\nb()');
-      assert.equals(reformat('((((/*(*/1,2,3/*)*/))))'), '(/*(*/1, 2, 3/*)*/)');
     });
 
     test('keywords', () => {
@@ -230,25 +238,25 @@ if ((a ||
                  '};\n' +
                  'a()',
         ), 'switch (a) {\n' +
-        'case 1:\n' +
-        '  a;\n' +
-        '  b;\n' +
-        '  break;\n' +
-        'default:\n' +
-        '  x();\n' +
-        '  return 4;\n' +
-        '}\n' +
-        'a()',
+          'case 1:\n' +
+          '  a;\n' +
+          '  b;\n' +
+          '  break;\n' +
+          'default:\n' +
+          '  x();\n' +
+          '  return 4;\n' +
+          '}\n' +
+          'a()',
       );
       assert.equals(reformat('switch(a) {case 1: case 2:}'), 'switch (a) {case 1: case 2:}');
     });
 
     test('WhileStatement', () => {
-      assert.equals(reformat('do\n\n {\na()\n}\nwhile   (   a < b  )  ;'), 'do {\n  a();\n} while (a < b)\n');
-      assert.equals(reformat('do\n\n \na();\n\nwhile   (   a < b  )  ;'), 'do a(); while (a < b)\n');
+      assert.equals(reformat('do\n\n {\na()\n}\nwhile   (   a < b  )  ;'), 'do {\n  a();\n} while (a < b)');
+      assert.equals(reformat('do\n\n \na();\n\nwhile   (   a < b  )  ;'), 'do a(); while (a < b)');
       assert.equals(reformat('while (b) {\na();\n}\n'), 'while (b) {\n  a();\n}\n');
       assert.equals(reformat('  while(  abc  )\n  yin();'), '  while (abc) {\n    yin();\n  }');
-      assert.equals(reformat('while(\n  abc ||\ndef  )    {}'), 'while (\n  abc ||\n  def) {}');
+      assert.equals(reformat('while(\n  abc ||\ndef  )    {}'), 'while (\n  abc ||\n    def) {}');
       assert.equals(reformat('while(  abc  )    {}'), 'while (abc) {}');
       assert.equals(reformat('while(  abc  )  yin()'), 'while (abc) yin()');
       assert.equals(reformat('while(  abc  )  yin();\n'), 'while (abc) yin();\n');
@@ -412,10 +420,10 @@ a();
 
     test('expressions', () => {
       const text = 'if (\n' +
-      '  u === (5 * (3+7) *\n' +
-      '         4 * 3)) {\n' +
-      '  (t === undefined ? x : t)[key] = undo;\n' +
-      '}';
+        '  u === (5 * (3+7) *\n' +
+        '         4 * 3)) {\n' +
+        '  (t === undefined ? x : t)[key] = undo;\n' +
+        '}';
 
       assert.equals(reformat(text), text);
     });

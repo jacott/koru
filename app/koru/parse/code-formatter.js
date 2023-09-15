@@ -5,8 +5,6 @@ define((require, exports, module) => {
   const JsPrinter       = require('koru/parse/js-printer');
   const {qstr}          = require('koru/util');
 
-  const extraIndent$ = Symbol();
-
   const SameLineWsOrCommaRE = /(?:,|[^\S\n])+/yg;
   const SpaceRE = / +/yg;
   const WsRE = /\s+/yg;
@@ -34,8 +32,8 @@ define((require, exports, module) => {
   const isSimpleNode = (isLeft, node, operator) => (
     node.type === 'NumericLiteral') || (
     node.type === 'BinaryExpression' &&
-    node.operator === operator &&
-    (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
+      node.operator === operator &&
+      (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
 
   const writeAsync = (self, node) => {
     if (node.async) {
@@ -303,34 +301,29 @@ define((require, exports, module) => {
     printLeftRight(node, operator, spacing=true) {
       this.advance(node.left.start);
       const {indent} = this;
-      const isInc = indent.lastDir > 0;
-      let indentRight = indent.lineStartPadding;
+      let indentRight = indent.lineIndent;
       this.print(node.left);
       this.skipOver();
-      spacing && this.write(' ');
+      if (indent.mode == 0) {
+        indent.extraIndent = indent.tabWidth;
+      } else {
+        spacing && this.write(' ');
+      }
       const newlineBeforeOperator = this.isAtNewline();
       this.writeAdvance(operator);
       this.skipOver();
-      if (newlineBeforeOperator || this.isAtNewline()) {
+      if (indent.mode == 0) {
+        indent.extraIndent = indent.tabWidth;
+      } else if (newlineBeforeOperator || this.isAtNewline()) {
         this.write('\n');
-        if (indentRight != indent.lineIndent) {
-          indentRight = undefined;
-        } else if (++this[extraIndent$] == 1) {
-          if (isInc) {
-            indent.lineIndent = indentRight;
-          } else {
-            indent.lineIndent = indentRight + indent.tabWidth;
-          }
+        if (indentRight == indent.lineIndent) {
+          indent.extraIndent = indent.tabWidth;
         }
         if (! newlineBeforeOperator) this.advance(this.inputPoint + 1);
       } else {
-        indentRight = undefined;
         spacing && this.write(' ');
       }
       this.advancePrintNode(node.right);
-      if (indentRight !== undefined) {
-        if (--this[extraIndent$] == 0) indent.lineIndent = indentRight;
-      }
     }
 
     printKeyword(node, keyword) {
@@ -640,10 +633,14 @@ define((require, exports, module) => {
     }
 
     SwitchCase(node) {
+      if (this.indent.mode == 0) {
+        this.indent.extraIndent = - this.indent.tabWidth;
+      }
+
       if (node.test == null) {
-        this.write('default', 'unindent');
+        this.write('default');
       } else {
-        this.write('case ', 'unindent');
+        this.write('case ');
         this.advance(node.test.start);
         this.print(node.test);
       }
@@ -873,7 +870,6 @@ define((require, exports, module) => {
       }
       const indent = new CodeIndentation({initialIndent, tabWidth});
       printer.indent = indent;
-      printer[extraIndent$] = 0;
 
       printer.print(ast);
       printer.catchup(ast.end);
