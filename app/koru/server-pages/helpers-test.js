@@ -42,10 +42,10 @@ isServer && define((require, exports, module) => {
 
       await controller.waitPromises();
 
-      assert.match(node.data, '<h1 id=\"heading\">Heading</h1>\n');
+      assert.match(node.data, '<h1 id="heading">Heading</h1>\n');
 
       assert.calledWith(Compilers.read, 'md', TH.match(/test-pages\/test\.md/),
-                        TH.match(/test-pages\/\.build\/test\.md\.html/));
+        TH.match(/test-pages\/\.build\/test\.md\.html/));
     });
 
     test('less helper', async () => {
@@ -56,10 +56,10 @@ isServer && define((require, exports, module) => {
       await controller.waitPromises();
 
       assert.match(node.data,
-                   /background-color:\s*#112233;[\s\S]*sourceMappingURL/);
+        /background-color:\s*#112233;[\s\S]*sourceMappingURL/);
 
       assert.calledWith(Compilers.read, 'less', TH.match(/layouts\/default\.less/),
-                        TH.match(/layouts\/\.build\/default\.less\.css/));
+        TH.match(/layouts\/\.build\/default\.less\.css/));
     });
 
     test('css helper', async () => {

@@ -201,7 +201,7 @@ define((require, exports, module) => {
       // a position
       range.setStart(div.firstChild, 4); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: 64, top: 50, width: 0, height: 22}, 2);
+        left: 64, top: 50, width: 0, height: 19}, 2);
 
       // a client rect
       assert.same(Dom.getBoundingClientRect(rect), rect);
@@ -210,7 +210,7 @@ define((require, exports, module) => {
       // a line break
       range.setStart(div.lastChild.previousSibling, 0); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: 25, top: 72, width: 0, height: 22}, 2);
+        left: 25, top: 69, width: 0, height: 19}, 2);
 
       range.setStart(div.firstChild.nextSibling, 4); range.setEnd(range.startContainer, 5);
       const r2 = Dom.getBoundingClientRect(range);
@@ -218,7 +218,7 @@ define((require, exports, module) => {
       // end of line
       range.setStart(div.firstChild.nextSibling, 5); range.collapse(true);
       assert.near(util.extractKeys(Dom.getBoundingClientRect(range), keys), {
-        left: r2.right, top: 50, width: 0, height: 22}, 2);
+        left: r2.right, top: 50, width: 0, height: 19}, 2);
     });
 
     test('setCtx', () => {

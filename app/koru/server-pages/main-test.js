@@ -73,7 +73,7 @@ isServer && define((require, exports, module) => {
 
   const path = requirejs.nodeRequire('path');
 
-  const {stub, spy, util, intercept} = TH;
+  const {stub, spy, util, intercept, match: m} = TH;
 
   const ServerPages = require('./main');
 
@@ -186,8 +186,8 @@ isServer && define((require, exports, module) => {
         await sp._handleRequest(v.req, v.res, '/test-page-md.html');
 
         assert.calledWith(v.res.write, Buffer.from('<!DOCTYPE html>\n'));
-        assert.calledWith(v.res.end, Buffer.from('<html><body id="defLayout"> ' +
-          '<h2 id="test-foo">test Markdown</h2> </body></html>'));
+        assert.calledWith(v.res.end, m((a) => (assert.equals(a.toString(), '<html><body id="defLayout"> ' +
+          '<h2 id=\"test-foo\">test Markdown</h2> </body></html>'), true)));
       });
 
       test('$parser', async () => {
