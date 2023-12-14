@@ -492,7 +492,7 @@ define((require, exports, module) => {
         },
 
         copyData: (data) => {
-          if (stream.push(data)) return true;
+          if (stream.push(Buffer.from(data))) return true;
           paused = true;
           return false;
         },
