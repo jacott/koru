@@ -187,7 +187,7 @@ isServer && define((require, exports, module) => {
 
         assert.calledWith(v.res.write, Buffer.from('<!DOCTYPE html>\n'));
         assert.calledWith(v.res.end, m((a) => (assert.equals(a.toString(), '<html><body id="defLayout"> ' +
-          '<h2 id=\"test-foo\">test Markdown</h2> </body></html>'), true)));
+          '<h2 id="test-foo">test Markdown</h2> </body></html>'), true)));
       });
 
       test('$parser', async () => {
