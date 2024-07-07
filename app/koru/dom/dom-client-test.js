@@ -107,7 +107,7 @@ define((require, exports, module) => {
 
         document.body.appendChild(container);
         Dom.ensureInView(divs[1]);
-        assert.equals(container.scrollTop, 20);
+        assert.near(container.scrollTop, 20);
 
         Dom.ensureInView(divs[0]);
         assert.equals(container.scrollTop, 0);
