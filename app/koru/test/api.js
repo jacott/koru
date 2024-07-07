@@ -718,7 +718,7 @@ define((require, exports, module) => {
       let ans = this.innerSubjects[subjectName];
       if (ans === undefined) {
         this.innerSubjects[subjectName] = ans =
-          new ThisAPI(this, subject, subjectName);
+            new ThisAPI(this, subject, subjectName);
         ThisAPI._moduleMap.set(
           {id: `${this.id}${propertyName ? '.' : '::'}${subjectName}`}, ans);
         ThisAPI._mapSubject(subject, ans);
@@ -852,7 +852,7 @@ define((require, exports, module) => {
       return orig;
     }
 
-    protoProperty(name, options, subject=this.subject.prototype) {
+    protoProperty(name, options, subject=this.subject.prototype ?? this.subject) {
       property(this, 'protoProperties', subject, name, options);
     }
 
