@@ -92,9 +92,9 @@ isServer && define((require, exports, module) => {
       webServer = WebServerFactory('localhost', '9876', '/foo');
 
       assert.equals(webServer.parseUrlParams('stuff?foo=bar&name=bob'),
-                    {foo: 'bar', name: 'bob'});
+        {foo: 'bar', name: 'bob'});
       assert.equals(webServer.parseUrlParams({url: 'stuff?foo=bar'}),
-                    {foo: 'bar'});
+        {foo: 'bar'});
     });
 
     test('handlers override specials', async () => {
@@ -178,7 +178,7 @@ isServer && define((require, exports, module) => {
 
       await future.promise;
 
-      assert.calledWith(send, req, '/a/b.test', {root: '/toptest/', index: false});
+      assert.calledWith(send, req, '/a/b.test', {root: '/toptest/', index: false, dotfiles: 'allow'});
       assert.calledWith(sender.on, 'error', m.func);
       assert.calledWith(sender.on, 'directory', m.func);
       assert.calledWith(sender.pipe, res);

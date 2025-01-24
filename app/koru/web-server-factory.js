@@ -27,8 +27,8 @@ define((require, exports, module) => {
         notFound(res);
       } else {
         const code = typeof err === 'number'
-              ? err
-              : +(err.statusCode || err.error || err.status);
+          ? err
+          : +(err.statusCode || err.error || err.status);
         if (code == 0 || code != code) {
           res.statusCode = 500;
           res.end('Internal server error!');
@@ -96,18 +96,18 @@ define((require, exports, module) => {
 
           if (m === null || await compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]) === undefined) {
             if (handlers.DEFAULT === undefined ||
-                await handlers.DEFAULT(req, res, path, error) === false) {
-              const tfm = transform?.(req, path);
-              const opts = {root: reqRoot, index: false};
-              if (tfm !== undefined) {
-                tfm(send, req, path, opts, res);
-              } else {
-                send(req, path, opts)
-                  .on('error', error)
-                  .on('directory', error)
-                  .pipe(res);
+              await handlers.DEFAULT(req, res, path, error) === false) {
+                const tfm = transform?.(req, path);
+                const opts = {root: reqRoot, index: false, dotfiles: 'allow'};
+                if (tfm !== undefined) {
+                  tfm(send, req, path, opts, res);
+                } else {
+                  send(req, path, opts)
+                    .on('error', error)
+                    .on('directory', error)
+                    .pipe(res);
+                }
               }
-            }
           }
         } catch (ex) {
           error(ex);

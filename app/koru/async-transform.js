@@ -31,8 +31,8 @@ define((require, exports, module) => {
 
   return (req, pathname) => {
     if (req.method === 'GET' &&
-        isCandidateFilename(pathname)) {
-      return transformer;
-    }
+      isCandidateFilename(pathname)) {
+        return transformer;
+      }
   };
 });

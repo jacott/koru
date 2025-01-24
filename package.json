@@ -32,22 +32,22 @@
   "main": "./lib/koru",
   "bin": "./bin/koru",
   "dependencies": {
-    "@babel/generator": "^7.23.6",
-    "@babel/parser": "^7.23.6",
-    "autoprefixer": "^10.4.16",
-    "commander": "^11.1.0",
-    "css-selector-parser": "^1.4.1",
-    "less": "^4.2.0",
-    "marked": "^4.3.0",
-    "nodemailer": "^6.9.14",
-    "nodemailer-stub-transport": "^1.1.0",
-    "postcss": "^8.4.39",
-    "send": "^0.18.0",
-    "source-map": "^0.7.4",
-    "ws": "^8.18.0"
+    "@babel/generator": "^7",
+    "@babel/parser": "^7",
+    "autoprefixer": "^10",
+    "commander": "^11",
+    "css-selector-parser": "^1",
+    "less": "^4",
+    "marked": "^4",
+    "nodemailer": "^6",
+    "nodemailer-stub-transport": "^1",
+    "postcss": "^8",
+    "send": "^1.1.0",
+    "source-map": "^0.7",
+    "ws": "^8"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   },
   "version": "0.40.0"
 }
