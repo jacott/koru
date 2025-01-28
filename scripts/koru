@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node
-// -*- js2 -*-
+// -*- js -*-
 const path = require('path');
 const fs = require('fs');
-let program = require('commander');
+let { program } = require('commander');
 
 global.isServer = true;
 global.isClient = false;
