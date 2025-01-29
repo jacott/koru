@@ -36,7 +36,7 @@
     "@babel/parser": "^7",
     "autoprefixer": "^10",
     "commander": "^13",
-    "css-selector-parser": "^1",
+    "css-selector-parser": "^3",
     "less": "^4",
     "marked": "^4",
     "nodemailer": "^6",

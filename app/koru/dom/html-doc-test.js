@@ -314,6 +314,15 @@ define((require, exports, module) => {
       assert.equals(elm.innerHTML, exp);
     });
 
+    test('css tagName', () => {
+      const elm = document.createElement('div');
+      const exp = elm.innerHTML = `<b>1</b><i>2</i>`;
+
+      assert.dom(elm, () => {
+        assert.dom('i', '2');
+      });
+    });
+
     test('outerHTML attribute quotes', () => {
       const html = document.createElement('p');
       const text = `<p style="font-family: &quot;foo Face&quot;;">hello</p>`;

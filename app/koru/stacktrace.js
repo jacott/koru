@@ -14,11 +14,11 @@ define(['require', 'koru/util-base'], (require, util) => {
 
   const normalizedStack = (ex, elidePoint, isTestAssert) => {
     const stackString = ex.userStack ?? (
-      stackHasMessage ? (ex.stack ?? '').slice(ex.message.length) : ex.stack);
+      stackHasMessage ? (ex.stack ?? '').slice(ex.message?.length ?? 0) : ex.stack);
     if (typeof stackString !== 'string') return null;
 
     let parts = null, m = null,
-        url = '', func = '', line = '', column = '';
+    url = '', func = '', line = '', column = '';
 
     if (originRe === null) {
       if (isServer) {
@@ -61,13 +61,13 @@ define(['require', 'koru/util-base'], (require, util) => {
             continue;
           }
         } else if (isTestAssert &&
-                   /(?:^|\/)(?:koru\/test\/|koru\/lib|node_modules\/|\.build\/)/.test(url) &&
-                   ! /-test\.js$/.test(url)) {
-          if (/koru\/test\/(?:client|test-case).js$/.test(url)) {
-            break;
+          /(?:^|\/)(?:koru\/test\/|koru\/lib|node_modules\/|\.build\/)/.test(url) &&
+          ! /-test\.js$/.test(url)) {
+            if (/koru\/test\/(?:client|test-case).js$/.test(url)) {
+              break;
+            }
+            continue;
           }
-          continue;
-        }
       }
 
       func = func.replace(/['"\[\]\(\)\{\}\s]+/g, ' ');

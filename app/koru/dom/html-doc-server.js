@@ -5,10 +5,9 @@ define((require, exports, module) => {
   const HTMLParser      = require('koru/parse/html-parser');
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
+  const {createParser}  = requirejs.nodeRequire('css-selector-parser');
 
   const {inspect$} = require('koru/symbols');
-
-  const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
 
   const {hasOwn} = util;
   const {SVGNS} = Dom;
@@ -21,12 +20,7 @@ define((require, exports, module) => {
   pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
   needBuild$ = Symbol(), attributes$ = Symbol(), doc$ = Symbol();
 
-  const cssParser = new CssSelectorParser();
-
-  cssParser.registerSelectorPseudos('has');
-  cssParser.registerNestingOperators('>', '+', '~');
-  cssParser.registerAttrEqualityMods('^', '$', '*', '~');
-  cssParser.enableSubstitutes();
+  const cssParse = createParser({syntax: 'css3'});
 
   Object.defineProperty(global, 'document', {configurable: true, get() {
     const key = util.thread ?? global;
@@ -293,13 +287,12 @@ define((require, exports, module) => {
     get nodeValue() {return null}
 
     querySelectorAll(css) {
-      css = cssParser.parse(css).rule;
-
+      const tagName = cssParse(css).rules[0].items.find((i) => i.type == 'TagName').name;
       const results = [];
       util.forEach(this.childNodes, (node) => {
         if (node.nodeType !== ELEMENT_NODE) return;
 
-        if (Dom.canonicalTagName(node) === css.tagName) {
+        if (Dom.canonicalTagName(node) === tagName) {
           results.push(node);
         }
       });
