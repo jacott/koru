@@ -4,16 +4,18 @@ define((require) => {
   const Dom             = require('koru/dom');
   const HTMLDocument    = require('koru/dom/html-doc');
   const fst             = require('koru/fs-tools');
+  const path            = require('node:path');
 
-  const marked = requirejs.nodeRequire('marked');
-  const path = requirejs.nodeRequire('path');
+  const {Marked} = requirejs.nodeRequire('marked');
+  const {gfmHeadingId} = requirejs.nodeRequire('marked-gfm-heading-id');
 
-  const mdRenderer = new marked.Renderer();
-  const mdOptions = {renderer: mdRenderer};
+  const marked = new Marked();
+  marked.use({gfm: true});
+  marked.use(gfmHeadingId());
 
   const compile = async (type, path, outPath) => {
     const src = (await fst.readFile(path)).toString();
-    await fst.writeFile(outPath, marked.parse(src, mdOptions));
+    await fst.writeFile(outPath, marked.parse(src));
   };
 
   Compilers.set('md', compile);

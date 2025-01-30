@@ -7,6 +7,7 @@ isServer && define((require, exports, module) => {
   const BaseController  = require('koru/server-pages/base-controller');
   const ServerPages     = require('koru/server-pages/main');
   const TH              = require('koru/test-helper');
+  const path            = require('node:path');
 
   const {private$} = require('koru/symbols');
 
@@ -20,6 +21,7 @@ isServer && define((require, exports, module) => {
       MyController = class extends BaseController {};
       const webServer = {registerHandler() {}};
       sp = await ServerPages.build(webServer, 'koru/server-pages/test-pages');
+      await fst.rm_rf(path.join(sp._pageDirPath, '.build'));
       sp.addViewController('foo', {}, MyController);
       controller = new MyController();
     });

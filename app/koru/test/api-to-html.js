@@ -7,7 +7,10 @@ define((require) => {
   const jsParser        = require('koru/parse/js-parser');
   const coreJsTypes     = require('koru/test/core-js-types');
   const util            = require('koru/util');
-  const marked          = requirejs.nodeRequire('marked');
+
+  const {Marked} = requirejs.nodeRequire('marked');
+  const {gfmHeadingId} = requirejs.nodeRequire('marked-gfm-heading-id');
+  const {markedHighlight} = requirejs.nodeRequire('marked-highlight');
 
   const return$ = Symbol(), alias$ = Symbol(), name$ = Symbol(),
   node$ = Symbol(), parent$ = Symbol(), id$ = Symbol();
@@ -263,9 +266,12 @@ define((require) => {
 
   const env = (obj) => obj.env ?? 'server';
 
-  const mdRenderer = new marked.Renderer();
-  const mdOptions = {
-    renderer: mdRenderer,
+  const marked = new Marked();
+  marked.use({gfm: true, renderer: {
+    link: (token) => marked.link(token),
+  }});
+  marked.use(gfmHeadingId());
+  marked.use(markedHighlight({
     highlight: (code, lang) => {
       switch (lang) {
       case 'js': case 'javascript':
@@ -274,7 +280,7 @@ define((require) => {
         return HTMLUtil.highlight(code).outerHTML;
       }
     },
-  };
+  }));
 
   const BLOCK_TAGS = {
     deprecated: (api, row, argMap, div) => {
@@ -301,7 +307,7 @@ define((require) => {
     },
     param: (api, row, argMap) => {
       const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
-      if (! m) {
+      if (m === null) {
         koru.error(`Invalid param for api: ${api.id} line @${row}`);
       }
       const name = m[3], dotIdx = name.indexOf('.');
@@ -829,10 +835,11 @@ define((require) => {
     const div = document.createElement('div');
     const [info, ...blockTags] = (text ?? '').split(/[\n\r]\s*@(?=\w+)/);
 
-    mdRenderer.link = (href, title, text) => {
+    marked.link = (opts) => {
+      let {href} = opts;
       switch (href) {
       case '#jsdoc-tag':
-        return execInlineTag(api, text).outerHTML;
+        return execInlineTag(api, opts.text).outerHTML;
       default:
         if (href.startsWith('#mdn:/')) {
           href = href.slice(6);
@@ -844,16 +851,14 @@ define((require) => {
             href = MDNDOC_URL + href;
           }
         }
-        const a = {a: text, $href: href};
-        if (title) a.$title = title;
+        const a = {a: opts.text, $href: href};
+        if (opts.title) a.$title = opts.title;
         return Dom.h(targetExternal(a)).outerHTML;
       }
     };
 
     const md = marked.parse(
       info.replace(/\{#([^}{]*)\}/g, '[$1](#jsdoc-tag)'),
-
-      mdOptions,
     );
 
     const raw = div.innerHTML = md.replace(/\{\{.*?\}\}/g, (m) => {

@@ -10,8 +10,8 @@ isServer && define((require, exports, module) => {
   const {stub, spy, match: m} = TH;
 
   const sourceHtml = Dom.h({div: [{'$data-api': 'header'},
-                                  {'$data-api': 'links'},
-                                  {'$data-api': 'pages'}]}).outerHTML;
+    {'$data-api': 'links'},
+    {'$data-api': 'pages'}]}).outerHTML;
 
   const {parent$} = apiToHtml[isTest];
 
@@ -28,9 +28,9 @@ m1 intro
 @param options.a opta doc,
 `,
               calls: [[[['P', {b: 123}],
-                       ]],
-                      [[['P', {a: ['M', 'koru/test/api'], b: ['U', 'undefined']}],
-                       ]]],
+              ]],
+                [[['P', {a: ['M', 'koru/test/api'], b: ['U', 'undefined']}],
+                ]]],
             },
           },
         },
@@ -101,7 +101,7 @@ m1 intro
             {class: 'searchable', td: '_id'},
             {td: {a: ['string'], href: TH.match(/mozilla.*String/), target: '_blank'}},
             {class: 'jsdoc-info', 'data-env': 'server',
-             td: {class: 'jsdoc-value', code: '"id-value"'}},
+              td: {class: 'jsdoc-value', code: '"id-value"'}},
           ]},
           {tr: [
             {class: 'searchable', td: 'singleton'},
@@ -131,7 +131,7 @@ m1 intro
         const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0].textContent;
 
         assert.equals(result, 'const MyMod = require(' +
-                      '"my/mod");'); // stop amd-loader thinking it's a require
+          '"my/mod");'); // stop amd-loader thinking it's a require
       });
 
       test('property subject', () => {
@@ -146,7 +146,7 @@ m1 intro
         const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0];
 
         assert.equals(result.textContent, 'const MyMod = require(' +
-                      '"my/mod").m1;');
+          '"my/mod").m1;');
 
         assert.equals(Dom.htmlToJson(result).div.length, 12);
       });
@@ -333,16 +333,16 @@ m1 intro
             },
             ' more text ',
             {class: 'jsdoc-example highlight',
-             pre: {
-               class: 'highlight', div: [
-                 {class: 'nx', span: 'Book'}, '.',
-                 {class: 'na', span: 'Union'}, ' ',
-                 {class: 'o', span: '='}, ' ',
-                 {class: 'k', span: 'class'}, ' ',
-                 {class: 'k', span: 'extends'}, ' ',
-                 {class: 'nx', span: 'Publication'}, '.',
-                 {class: 'na', span: 'Union'}, ' {}',
-               ]}},
+              pre: {
+                class: 'highlight', div: [
+                  {class: 'nx', span: 'Book'}, '.',
+                  {class: 'na', span: 'Union'}, ' ',
+                  {class: 'o', span: '='}, ' ',
+                  {class: 'k', span: 'class'}, ' ',
+                  {class: 'k', span: 'extends'}, ' ',
+                  {class: 'nx', span: 'Publication'}, '.',
+                  {class: 'na', span: 'Union'}, ' {}',
+                ]}},
             ' end text',
             {p: ''},
             '\n\nAn external example ',
@@ -397,24 +397,24 @@ m1 intro
               ' ',
               {a: ['Module.method'], class: 'jsdoc-link', href: '#my/module.method'},
               '\n', {a: ['mod#protoMethod'], class: 'jsdoc-link',
-                     href: '#my/mod#protoMethod'}, ' ',
+                href: '#my/mod#protoMethod'}, ' ',
               {a: ['thisModMethod'], class: 'jsdoc-link',
-               href: '#this/start/module.thisModMethod'},
+                href: '#this/start/module.thisModMethod'},
               '\n',
               {a: ['thisModeProtoMethod'], class: 'jsdoc-link',
-               href: '#this/start/module#thisModeProtoMethod'},
+                href: '#this/start/module#thisModeProtoMethod'},
               '\n',
               {a: ['Thing'], class: 'jsdoc-link',
-               href: '#this/thing'},
+                href: '#this/thing'},
               '\n',
               {a: ['Thing.append("this")'], class: 'jsdoc-link',
-               href: '#this/thing'},
+                href: '#this/thing'},
               '\n',
               {a: ['replace'], class: 'jsdoc-link',
-               href: '#this/thing'},
+                href: '#this/thing'},
               '\n',
               {a: ['Child'], class: 'jsdoc-link',
-               href: '#this/start/module/child'}]},
+                href: '#this/start/module/child'}]},
             '\n',
           ]});
       });
@@ -443,7 +443,7 @@ m1 intro
                       [[['P', {
                         sig: 'function Hobbit({name}) {}',
                         intro: 'It is a dangerous thing Frodo'}]],
-                       ['O', 'Book']],
+                        ['O', 'Book']],
                     ],
                   },
                 ],
@@ -602,11 +602,11 @@ m1 intro
         );
 
         assert.equals(Dom.htmlToJson(div), {
-          div: [{pre: {class: 'language-js', code: [{
+          div: {pre: {class: 'language-js', code: [{
             class: 'highlight',
             div: [{
               class: 'nx', span: 'alert',
-            }, '(', {class: 's', span: '\"hello\"'}, ');']}, '\n']}}, '\n']});
+            }, '(', {class: 's', span: '\"hello\"'}, ');']}, '\n']}}});
       });
 
       test('highlight html', () => {
@@ -624,12 +624,12 @@ m1 intro
         );
 
         assert.equals(Dom.htmlToJson(div), {
-          div: [{pre: {class: 'language-html', code: [{
+          div: {pre: {class: 'language-html', code: [{
             class: 'highlight',
             div: ['<', {class: 'nf', span: 'span'}, ' ',
-                  {class: 'nv', span: 'id'}, '=', {class: 's', span: '"s1"'},
-                  '>hello</', {class: 'nf', span: 'span'}, '>'],
-          }, '\n']}}, '\n']});
+              {class: 'nv', span: 'id'}, '=', {class: 's', span: '"s1"'},
+              '>hello</', {class: 'nf', span: 'span'}, '>'],
+          }, '\n']}}});
       });
     });
   });
