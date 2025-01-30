@@ -31,9 +31,9 @@ define((require, exports, module) => {
 
   const isSimpleNode = (isLeft, node, operator) => (
     node.type === 'NumericLiteral') || (
-    node.type === 'BinaryExpression' &&
-      node.operator === operator &&
-      (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
+      node.type === 'BinaryExpression' &&
+        node.operator === operator &&
+        (isLeft ? isSimpleNode(false, node.right, operator) : isSimpleNode(true, node.left, operator)));
 
   const writeAsync = (self, node) => {
     if (node.async) {
@@ -259,15 +259,15 @@ define((require, exports, module) => {
 
     printBlockOrStatement(body, sameLine) {
       if (body.type === 'BlockStatement' ||
-          (body.loc.start.line === sameLine && body.loc.end.line)) {
-        this.writeGap();
-        this.print(body);
-        body.type === 'BlockStatement' && this.noSemiColon();
-      } else {
-        this.write(' ');
-        this.convertToBlock(body);
-        this.noSemiColon();
-      }
+        (body.loc.start.line === sameLine && body.loc.end.line)) {
+          this.writeGap();
+          this.print(body);
+          body.type === 'BlockStatement' && this.noSemiColon();
+        } else {
+          this.write(' ');
+          this.convertToBlock(body);
+          this.noSemiColon();
+        }
     }
 
     printForLoop(type, node) {
@@ -434,11 +434,11 @@ define((require, exports, module) => {
       }
       this.writeAdvance(node.operator);
       if (/\w/.test(node.operator.at(-1)) ||
-          (node.operator === '!'
-           ? (node.argument.type !== 'UnaryExpression' || node.argument.operator !== '!')
-           : ! UnaryAllowedClose[node.argument.type])) {
-        this.write(' ');
-      }
+        (node.operator === '!'
+          ? (node.argument.type !== 'UnaryExpression' || node.argument.operator !== '!')
+          : ! UnaryAllowedClose[node.argument.type])) {
+            this.write(' ');
+          }
       this.advance(node.argument.start);
       this.advancePrintNode(node.argument);
     }
@@ -449,9 +449,13 @@ define((require, exports, module) => {
 
     BinaryExpression(node) {
       this.printLeftRight(node, node.operator, node.operator.length != 1 ||
-                          node.left.loc.start.line != node.right.loc.end.line ||
-                          ! isSimpleNode(true, node.left, node.operator) ||
-                          ! isSimpleNode(false, node.right, node.operator));
+        node.left.loc.start.line != node.right.loc.end.line ||
+        ! isSimpleNode(true, node.left, node.operator) ||
+        ! isSimpleNode(false, node.right, node.operator));
+    }
+
+    RegExpLiteral(node) {
+      this.writeAdvance(node.extra.raw);
     }
 
     AssignmentExpression(node) {
@@ -484,15 +488,15 @@ define((require, exports, module) => {
         if (node.computed) {
           this.print(node.value);
         } else if (node.key.type === 'Identifier' &&
-                   node.key.name === node.value.name) {
-          this.advance(node.value.start);
-          this.print(node.value);
-        } else {
-          this.printObjectKey(node.key);
-          this.write(': ');
-          this.advance(node.value.start);
-          this.print(node.value);
-        }
+          node.key.name === node.value.name) {
+            this.advance(node.value.start);
+            this.print(node.value);
+          } else {
+            this.printObjectKey(node.key);
+            this.write(': ');
+            this.advance(node.value.start);
+            this.print(node.value);
+          }
         break;
       case 'AssignmentPattern':
         if (! node.shorthand && node.key.name !== node.value.left.name) {
@@ -689,15 +693,15 @@ define((require, exports, module) => {
       this.write('while ');
       this.printTest(node.test);
       if (node.body.type === 'BlockStatement' ||
-          node.body.loc.start.line === node.test.loc.end.line) {
-        this.advancePrintNode(node.body);
-        if (node.body.type === 'BlockStatement') {
+        node.body.loc.start.line === node.test.loc.end.line) {
+          this.advancePrintNode(node.body);
+          if (node.body.type === 'BlockStatement') {
+            this.noSemiColon();
+          }
+        } else {
+          this.convertToBlock(node.body);
           this.noSemiColon();
         }
-      } else {
-        this.convertToBlock(node.body);
-        this.noSemiColon();
-      }
     }
 
     DoWhileStatement(node) {
@@ -850,12 +854,12 @@ define((require, exports, module) => {
           if (token === ';' && pt.endsWith(';')) return;
         }
         if (indent.line === '' && type !== 'suppress' &&
-            (token === '\n' ||
-             ((token = token.trimLeft()) === ''))) {
-          printer.lastToken = pt;
-          if (token === '\n') indent.write(token);
-          return;
-        }
+          (token === '\n' ||
+            ((token = token.trimLeft()) === ''))) {
+              printer.lastToken = pt;
+              if (token === '\n') indent.write(token);
+              return;
+            }
 
         if (type === 'comment') {
           indent.appendComment(token.replace(/^\n[^\S\n]*\n[^/]*\n([^\S\n]*\/)/, '\n\n$1'));

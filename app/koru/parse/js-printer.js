@@ -44,12 +44,12 @@ define((require, exports, module) => {
       const node = printer.ast.comments[idx];
       printer.commentStart = Math.max(
         printer.commentEnd, lastLeftMatchingIndex(WS_CHAR, printer.input,
-                                                  node.start, this.inputPoint));
+          node.start, this.inputPoint));
       const farEnd = lastRightMatchingIndex(WS_CHAR, printer.input,
-                                            node.end);
+        node.end);
 
       printer.commentEnd = lastLeftMatchingIndex(WS_NO_NL_CHAR, printer.input,
-                                                 farEnd - 1, node.end);
+        farEnd - 1, node.end);
 
       if (! WS_NO_NL_CHAR[printer.input[printer.commentEnd]]) {
         ++printer.commentEnd;
@@ -155,8 +155,8 @@ define((require, exports, module) => {
       const {comments} = this.ast;
       const node = comments[this.commentIndex];
       const maxPoint = this.commentIndex + 1 < comments.length
-            ? comments[this.commentIndex + 1].start
-            : this.input.length;
+        ? comments[this.commentIndex + 1].start
+        : this.input.length;
 
       const text = this.input.slice(Math.max(this.inputPoint, this.commentStart), this.commentEnd);
       if (text !== '') {

@@ -20,21 +20,21 @@ m({
 
       text =
         '        () => {\n' +
-        '          test(\n' +
-        '            [11, [[2, 3,\n' +
-        '                   4, [[\n' +
-        '                     5, 6,\n' +
-        '                     7, 8,\n' +
-        '                   ]], [[\n' +
-        '                     0,\n' +
-        '                   ]], [\n' +
-        '                     123,\n' +
-        '                   ], [\n' +
-        '                     456,\n' +
-        '                   ]]],\n' +
-        '            ],\n' +
-        '          );\n' +
-        '        }';
+          '          test(\n' +
+          '            [11, [[2, 3,\n' +
+          '                   4, [[\n' +
+          '                     5, 6,\n' +
+          '                     7, 8,\n' +
+          '                   ]], [[\n' +
+          '                     0,\n' +
+          '                   ]], [\n' +
+          '                     123,\n' +
+          '                   ], [\n' +
+          '                     456,\n' +
+          '                   ]]],\n' +
+          '            ],\n' +
+          '          );\n' +
+          '        }';
 
       assert.equals(reformat(text), text);
 
@@ -55,29 +55,34 @@ if ((a ||
       assert.equals(reformat('if (\n1 +\n2 +\n3\) ++b;\n'), 'if (\n  1 +\n    2 +\n    3) ++b;\n');
 
       assert.equals(reformat('if (a) {\n} else if (x) {\n  {\n++c;\n}\n}\n'),
-                    'if (a) {\n} else if (x) {\n  {\n    ++c;\n  }\n}\n');
+        'if (a) {\n} else if (x) {\n  {\n    ++c;\n  }\n}\n');
 
       assert.equals(reformat('if (a) {\nb();\n} else if (x &&\ny) {\nc();\n}\n'),
-                    'if (a) {\n  b();\n} else if (x &&\n           y) {\n  c();\n}\n');
+        'if (a) {\n  b();\n} else if (x &&\n           y) {\n  c();\n}\n');
 
       assert.equals(reformat('if (\n(2*\n 3)) {\nt()\n}'),
-                    'if (\n  (2 *\n   3)) {\n  t();\n}');
+        'if (\n  (2 *\n   3)) {\n  t();\n}');
 
       assert.equals(reformat('if (1234 + ( 34 * \n 1)) {\nt()\n}'),
-                    'if (1234 + (34 *\n            1)) {\n  t();\n}');
+        'if (1234 + (34 *\n            1)) {\n  t();\n}');
 
       assert.equals(reformat('{\na();\nb();\n}'), '{\n  a();\n  b();\n}');
       assert.equals(reformat('const a = b();\n\ndef(() => {\nc();\n});\n'),
-                    'const a = b();\n\ndef(() => {\n  c();\n});\n');
+        'const a = b();\n\ndef(() => {\n  c();\n});\n');
+    });
+
+    test('regexs', () => {
+      let text = 'const m = /^\\w+\\s*({[^}]+})?(?:\\s*-)?\\s*([\\s\\S]*)$/.exec(row);';
+      assert.equals(reformat(text), text);
     });
 
     test('directives', () => {
       assert.equals(reformat('() => {//;comment\n"use strict"\n\n\n\nab()\n}\n'),
-                    "() => {//;comment\n  'use strict';\n\n  ab();\n};\n");
+        "() => {//;comment\n  'use strict';\n\n  ab();\n};\n");
       assert.equals(reformat('#!/usr/bin/env node\n"use strict"\ndefine("123")'),
-                    "#!/usr/bin/env node\n'use strict';\ndefine('123')");
+        "#!/usr/bin/env node\n'use strict';\ndefine('123')");
       assert.equals(reformat('() => {\n\n"use strict"\n\n\n\nab()\n}\n'),
-                    "() => {\n  'use strict';\n\n  ab();\n};\n");
+        "() => {\n  'use strict';\n\n  ab();\n};\n");
     });
 
     test('labels', () => {
@@ -107,7 +112,7 @@ if ((a ||
 
     test('keywords', () => {
       assert.equals(reformat('const a =   new   Error , b = new String  ()'),
-                    'const a = new Error(), b = new String()');
+        'const a = new Error(), b = new String()');
       assert.equals(reformat('throw  new   Error ()'), 'throw new Error()');
       assert.equals(reformat('function *a() {yield   * b()}'), 'function *a() {yield* b()}');
       assert.equals(reformat('return    a'), 'return a');
@@ -124,7 +129,7 @@ if ((a ||
       assert.equals(reformat('const    a=123;'), 'const a = 123;');
       assert.equals(reformat('const a\n\n =\n\n123;'), 'const a = 123;');
       assert.equals(reformat('let {  a  =   b(1,2),c:d,e:{f = 5}, g: [h,i],j} = {e:{f:0}, g:[1,2]}'),
-                    'let {a=b(1, 2), c: d, e: {f=5}, g: [h, i], j} = {e: {f: 0}, g: [1, 2]}');
+        'let {a=b(1, 2), c: d, e: {f=5}, g: [h, i], j} = {e: {f: 0}, g: [1, 2]}');
       assert.equals(reformat('let [a,b] = [1,2];'), 'let [a, b] = [1, 2];');
     });
 
@@ -187,7 +192,7 @@ if ((a ||
 
     test('for of', () => {
       assert.equals(reformat('for\nawait\n(const   a   of  await   b  ) c\n'),
-                    `for await (const a of await b) c;\n`);
+        `for await (const a of await b) c;\n`);
       assert.equals(reformat('for\n(const   a   of   b  ) c\n'), `for (const a of b) c;\n`);
       assert.equals(reformat('for (b of c) {\n  d\n};\n'), `for (b of c) {\n  d;\n}\n`);
     });
@@ -205,38 +210,38 @@ if ((a ||
       assert.equals(reformat('for(a;;) break\n'), 'for (a;;) break;\n');
       assert.equals(reformat('for(;;) break\n'), 'for (;;) break;\n');
       assert.equals(reformat('for(let i = 0;i < 4;++i) {\n i++\n};\n'),
-                    'for (let i = 0; i < 4; ++i) {\n  i++;\n}\n');
+        'for (let i = 0; i < 4; ++i) {\n  i++;\n}\n');
     });
 
     test('TryStatement', () => {
       assert.equals(reformat('try {a()}\n\n    finally {\na\n}'),
-                    'try {a()} finally {\n  a;\n}');
+        'try {a()} finally {\n  a;\n}');
       assert.equals(reformat('try {\na;b; c\nd\n}\n\n   catch(err){\na\n}'),
-                    'try {\n  a; b; c;\n  d;\n} catch (err) {\n  a;\n}');
+        'try {\n  a; b; c;\n  d;\n} catch (err) {\n  a;\n}');
       assert.equals(reformat('try {\na;b; c\nd\n} catch(err){\na;b\nc\n}   finally{\na;c\nd}'),
-                    'try {\n' +
-                      '  a; b; c;\n' +
-                      '  d;\n' +
-                      '} catch (err) {\n' +
-                      '  a; b;\n' +
-                      '  c;\n' +
-                      '} finally {\n' +
-                      '  a; c;\n' +
-                      '  d}');
+        'try {\n' +
+          '  a; b; c;\n' +
+          '  d;\n' +
+          '} catch (err) {\n' +
+          '  a; b;\n' +
+          '  c;\n' +
+          '} finally {\n' +
+          '  a; c;\n' +
+          '  d}');
     });
 
     test('SwitchStatement', () => {
       assert.equals(
         reformat('switch (a) {\n' +
-                 'case 1:\n' +
-                 ' a\n' +
-                 ' b\n' +
-                 ' break;\n' +
-                 'default:\n' +
-                 ' x()\n' +
-                 ' return 4\n' +
-                 '};\n' +
-                 'a()',
+          'case 1:\n' +
+          ' a\n' +
+          ' b\n' +
+          ' break;\n' +
+          'default:\n' +
+          ' x()\n' +
+          ' return 4\n' +
+          '};\n' +
+          'a()',
         ), 'switch (a) {\n' +
           'case 1:\n' +
           '  a;\n' +
@@ -281,13 +286,13 @@ if ((a ||
         valid = false;
 `;
       assert.equals(reformat(text), '\n' +
-                    'if (input.lockedIn === !! input.lockedIn) {\n' +
-                    '  locked |= 1;\n' +
-                    "} else if (input.lockedIn === 'downstream') {\n" +
-                    '  locked |= 4;\n' +
-                    '} else {\n' +
-                    '  valid = false;\n' +
-                    '}\n');
+        'if (input.lockedIn === !! input.lockedIn) {\n' +
+        '  locked |= 1;\n' +
+        "} else if (input.lockedIn === 'downstream') {\n" +
+        '  locked |= 4;\n' +
+        '} else {\n' +
+        '  valid = false;\n' +
+        '}\n');
       assert.equals(reformat('if (a) {\nreturn;\n}'), 'if (a) {\n  return;\n}');
       assert.equals(reformat('if(\n  abc || def  )    {}'), 'if (\n  abc || def) {}');
       assert.equals(reformat('if(  abc  )    {}'), 'if (abc) {}');
@@ -307,7 +312,7 @@ if ((a ||
       assert.equals(reformat('class A {constructor   ( v ) {}}'), 'class A {constructor(v) {}}');
       assert.equals(reformat('class A {[   foo  ] ( v ) {}}'), 'class A {[foo](v) {}}');
       assert.equals(reformat('class A {\n  static  async   a (a,b  ) {}}'),
-                    'class A {\n  static async a(a, b) {}}');
+        'class A {\n  static async a(a, b) {}}');
       assert.equals(reformat('class A {\nstatic  * a (a,b  ) {}}'), 'class A {\n  static *a(a, b) {}}');
       assert.equals(reformat('class A {\nstatic  a (a,b  ) {}}'), 'class A {\n  static a(a, b) {}}');
       assert.equals(reformat('x = {a  ( a, b,c) {}}'), 'x = {a(a, b, c) {}}');
@@ -324,10 +329,10 @@ if ((a ||
       assert.equals(reformat(`let a = { '999999999999999': 1, '9999999999999999': 2  };`), "let a = {999999999999999: 1, '9999999999999999': 2};");
       assert.equals(reformat(`let a = { 'abc': 1, '345': 2, '2ad': 3, '#$%': 4  };`), `let a = {abc: 1, 345: 2, '2ad': 3, '#$%': 4};`);
       assert.equals(reformat('a({\n  a: c,d2,  \n\n \n \n  d, e:\n f  \n  });'),
-                    'a({\n  a: c, d2,\n\n  d, e: f,\n})');
+        'a({\n  a: c, d2,\n\n  d, e: f,\n})');
       assert.equals(reformat('const {  a,b: c,\n\n\n } = d;'), 'const {a, b: c,\n} = d;');
       assert.equals(reformat('define(() => {\n return {\n reformat: {},\n}\n})'),
-                    'define(() => {\n  return {\n    reformat: {},\n  };\n})');
+        'define(() => {\n  return {\n    reformat: {},\n  };\n})');
       assert.equals(reformat('({ a = 123,b  }) => 456'), '({a=123, b}) => 456');
       assert.equals(reformat('a(  { b:   c,   d,e:e,  });'), 'a({b: c, d, e})');
       assert.equals(reformat('a({ [b]: 123 })'), 'a({[b]: 123})');
@@ -377,7 +382,7 @@ if ((a ||
 
     test('nested blocks', () => {
       assert.equals(reformat('{\n{\nlet a = 1\n}\n{\nlet b = 1\n}\n\n}'),
-                    '{\n  {\n    let a = 1;\n  }\n  {\n    let b = 1;\n  }\n}');
+        '{\n  {\n    let a = 1;\n  }\n  {\n    let b = 1;\n  }\n}');
     });
 
     test('TemplateElement', () => {
