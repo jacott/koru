@@ -567,7 +567,7 @@ define((require, exports, module) => {
         const where = this.where(whereParams, values, oids, len);
         if (where !== undefined) sql += ` WHERE ${where}`;
 
-        return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper().setParamMapper(
+        return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper(
           len + values.length, ([params, values], callback) => {
             for (const name in params) callback(params[name], this._colMap[name]?.oid);
             let index = len - 1;
