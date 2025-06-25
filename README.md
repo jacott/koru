@@ -3,7 +3,7 @@
 Koru is a client and server web app framework inspired by Rails and Meteor. The focus is on
 Single-page Applications (SPA) but also facilitates server side traditional web applications.
 
-See [Getting started](doc/getting-started.html) and [Koru API documentation](https://jacott.github.io/koru/api.html).
+See [Getting started](doc/getting-started.md) and [Koru API documentation](https://jacott.github.io/koru/api.html).
 
 ## License
 
