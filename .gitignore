@@ -8,7 +8,8 @@ TAG*
 /app/cmd-client.js
 /app/test/server-ready.js
 /app/koru/polyfill/pep.js
-/doc/api-client.json
-/doc/api-server.json
+/doc/api*.json
 /doc/api.html
+/doc/getting-started.html
 /package-node.test
+/README.html
