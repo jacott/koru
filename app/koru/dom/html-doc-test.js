@@ -332,7 +332,7 @@ define((require, exports, module) => {
 
     test('innerHTML', () => {
       const elm = document.createElement('div');
-      const exp = elm.innerHTML = `<div id="top&quot;<123>" class="un deux trois">
+      let exp = elm.innerHTML = `<div id="top&quot;<123>" class="un deux trois">
 hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo>
 <style>
 body>div {
@@ -346,7 +346,11 @@ if (i < 5) error("bad i");
 
       assert.same(elm.firstChild.id, 'top"<123>');
       assert.same(elm.firstChild.firstChild.textContent, '\nhello <world>');
-      assert.equals(elm.innerHTML, exp.replace(/&#62/, '&gt'));
+      exp = exp.replace(/&#62/, '&gt');
+      if (isClient) {
+        exp = exp.replace(/<123>/, '&lt;123&gt;');
+      }
+      assert.equals(elm.innerHTML, exp);
     });
 
     test('innerHTML invalid paragraphs', () => {
