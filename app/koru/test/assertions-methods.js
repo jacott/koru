@@ -325,7 +325,10 @@ define((require) => {
           const e = expParts[i], a = actParts[i];
           if (i % 2) {
             const [, f=''] = e.split('.');
-            this.delta = delta = 1 / Math.pow(10, f.length);
+            delta = 1 / Math.pow(10, f.length);
+            if (this.delta !== undefined && this.delta > delta) {
+              delta = this.delta;
+            }
 
             if (! withinDelta(+a, +e, delta)) {
               this.delta = delta;
@@ -405,7 +408,7 @@ define((require) => {
     }
 
     throw new Error('Matcher (' + format('{i0}', matcher) + ') was not a ' +
-                    'string, a number, a function, a boolean or an object');
+      'string, a number, a function, a boolean or an object');
   };
 
   ga.add('contains', {
@@ -446,7 +449,7 @@ define((require) => {
     self.name = 'Got ' + ex.name;
     self.message = util.inspect(ex.message);
     if (name && ex.name !== name) return false;
-    if (expError !== void 0 && ex.message !== expError) return false;
+    if (expError !== undefined && ex.message !== expError) return false;
     return true;
   };
 
@@ -568,7 +571,7 @@ define((require) => {
         return ! this.expected;
       }
       const alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
-            withinDelta(this.actual[3], this.expected[3], delta);
+        withinDelta(this.actual[3], this.expected[3], delta);
       return deepEqual(this.actual.slice(0, 3), this.expected.slice(0, 3)) &&
         alphaGood;
     },
@@ -843,13 +846,13 @@ define((require) => {
 
   ga.add('specificAttributes', {
     assert(actual, expected) {
-      if (actual !== void 0) {
+      if (actual !== undefined) {
         if (Array.isArray(expected)) {
           this.actual = actual = actual.map((row, i) => util.extractKeys(
             row && row.attributes ? row.attributes : row, expected[i]));
         } else {
-          if (actual.attributes !== void 0) actual = actual.attributes;
-          if (expected !== void 0) actual = util.extractKeys(actual, expected);
+          if (actual.attributes !== undefined) actual = actual.attributes;
+          if (expected !== undefined) actual = util.extractKeys(actual, expected);
         }
       }
 
