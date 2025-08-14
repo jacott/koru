@@ -9,29 +9,30 @@ define((require, exports, module) => {
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       v = {};
     });
 
-    test("getHashOrigin", ()=>{
+    test('getHashOrigin', () => {
       stub(koru, 'getLocation').returns({protocol: 'p', host: 'h', pathname: 'n'});
 
       assert.same(koru.getHashOrigin(), 'p//hn');
     });
 
-    test("runFiber", ()=>{
+    test('runFiber', () => {
       koru.runFiber(() => {v.success = true});
       assert(v.success);
 
       stub(koru, 'error');
-      koru.runFiber(()=>{throw new Error("Foo")});
+      koru.runFiber(() => {throw new Error('Foo')});
       assert.calledWith(koru.error, TH.match(/Foo/));
     });
 
-    group("afTimeout", ()=>{
-      beforeEach(()=>{
-        assert.same(TH.Core._origAfTimeout, koru._afTimeout);
+    group('afTimeout', () => {
+      let afTimeout;
+      beforeEach(() => {
+        afTimeout = TH.Core._origAfTimeout;
         stub(window, 'setTimeout').returns(7766);
         stub(window, 'clearTimeout');
 
@@ -39,8 +40,8 @@ define((require, exports, module) => {
         stub(window, 'cancelAnimationFrame');
       });
 
-      test("zero timeout", ()=>{
-        koru._afTimeout(v.stub = stub());
+      test('zero timeout', () => {
+        afTimeout(v.stub = stub());
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame, TH.match.func);
@@ -49,15 +50,15 @@ define((require, exports, module) => {
         assert.called(v.stub);
       });
 
-      test("-ve timeout", ()=>{
-        koru._afTimeout(v.stub = stub(), -3);
+      test('-ve timeout', () => {
+        afTimeout(v.stub = stub(), -3);
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame);
       });
 
-      test("running", ()=>{
-        const stop = koru._afTimeout(v.stub = stub(), 1234);
+      test('running', () => {
+        const stop = afTimeout(v.stub = stub(), 1234);
 
         assert.calledWith(setTimeout, TH.match.func, 1234);
 
@@ -77,8 +78,8 @@ define((require, exports, module) => {
         refute.called(window.cancelAnimationFrame);
       });
 
-      test("canceling before timeout", ()=>{
-        const stop = koru._afTimeout(v.stub = stub(), 1234);
+      test('canceling before timeout', () => {
+        const stop = afTimeout(v.stub = stub(), 1234);
 
         stop();
 
@@ -91,8 +92,8 @@ define((require, exports, module) => {
         refute.called(window.cancelAnimationFrame);
       });
 
-      test("canceling after timeout", ()=>{
-        const stop = koru._afTimeout(v.stub = stub(), 1234);
+      test('canceling after timeout', () => {
+        const stop = afTimeout(v.stub = stub(), 1234);
 
         setTimeout.yield();
 
@@ -107,16 +108,16 @@ define((require, exports, module) => {
         assert.calledOnce(window.cancelAnimationFrame);
       });
 
-      test("cancel gt 24 days", ()=>{
+      test('cancel gt 24 days', () => {
         const cb = stub();
         let handle = 100;
-        const incCounter = ()=> ++handle;
+        const incCounter = () => ++handle;
         window.setTimeout.invokes(incCounter);
-        let now = Date.now(); intercept(Date, 'now', ()=>now);
+        let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45*util.DAY);
+        const stop = afTimeout(cb, 45 * util.DAY);
 
-        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
+        assert.calledWith(window.setTimeout, m.func, 20 * util.DAY);
         window.setTimeout.yieldAndReset();
 
         stop();
@@ -124,26 +125,26 @@ define((require, exports, module) => {
         assert.calledWith(window.clearTimeout, 102);
       });
 
-      test("gt 24 days", ()=>{
+      test('gt 24 days', () => {
         const cb = stub();
         let handle = 100;
-        const incCounter = ()=> ++handle;
+        const incCounter = () => ++handle;
         window.setTimeout.invokes(incCounter);
-        let now = Date.now(); intercept(Date, 'now', ()=>now);
+        let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45*util.DAY);
+        const stop = afTimeout(cb, 45 * util.DAY);
 
-        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
-        now+=20*util.DAY;
+        assert.calledWith(window.setTimeout, m.func, 20 * util.DAY);
+        now += 20 * util.DAY;
         window.setTimeout.yieldAndReset();
 
-        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
-        now+=21*util.DAY;
+        assert.calledWith(window.setTimeout, m.func, 20 * util.DAY);
+        now += 21 * util.DAY;
         refute.called(window.requestAnimationFrame);
         window.setTimeout.yieldAndReset();
 
-        assert.calledWith(window.setTimeout, m.func, 4*util.DAY);
-        now+=4*util.DAY;
+        assert.calledWith(window.setTimeout, m.func, 4 * util.DAY);
+        now += 4 * util.DAY;
         refute.called(window.requestAnimationFrame);
         window.setTimeout.yieldAndReset();
 
@@ -152,7 +153,6 @@ define((require, exports, module) => {
         window.requestAnimationFrame.yieldAndReset();
         assert.called(cb);
       });
-
     });
   });
 });

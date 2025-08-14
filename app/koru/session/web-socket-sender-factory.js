@@ -8,7 +8,7 @@ define((require) => {
   const util            = require('../util');
 
   const retryCount$ = Symbol(), waitSends$ = Symbol();
-  const heatbeatSentAt$ = Symbol(), heatbeatTime$ = Symbol();
+  const heatbeatSentAt$ = Symbol();
 
   const adjustedNow = () => Date.now() + util.timeAdjust;
 
@@ -52,7 +52,7 @@ define((require) => {
       const sentAt = this[heatbeatSentAt$];
       const uncertainty = now - sentAt;
 
-      this[heatbeatTime$] = now + this.heartbeatInterval;
+      this[private$].queueHeatBeat();
 
       if (serverTime > util.DAY) {
         util.adjustTime(
@@ -196,12 +196,15 @@ define((require) => {
 
     const stopReconnTimeout = () => {
       if (reconnTimeout !== null) {
-        reconnTimeout();
+        clearTimeout(reconnTimeout);
         reconnTimeout = null;
       }
     };
 
     function start() {
+      const wsTimeout = koru._wsTimeout;
+      const wsClearTimeout = koru._wsClearTimeout;
+
       let heartbeatTO = null;
 
       if (session.ws != null) return;
@@ -210,65 +213,55 @@ define((require) => {
       const ws = session.ws = session.newWs();
       ws.binaryType = 'arraybuffer';
 
-      session[heatbeatTime$] = 0;
-
-      const queueHeatBeat = () => {
-        heartbeatTO = null;
-        if (session[heatbeatTime$] === null) {
-          if (ws != null) {
+      const heatbeatFail = () => {
+        if (ws != null) {
+          try {
+            ws.onclose({code: 'Heartbeat fail'});
+          } finally {
             ws.onclose = util.voidFunc;
-            try {
-              ws.close();
-            } finally {
-              onclose({code: 'Heartbeat fail'});
-            }
+            ws.close();
           }
-
-          return;
-        }
-        const now = adjustedNow();
-        if (now < session[heatbeatTime$]) {
-          heartbeatTO = koru._afTimeout(queueHeatBeat, session[heatbeatTime$] - now);
-        } else {
-          session[heatbeatTime$] = null;
-          heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
-          session[heatbeatSentAt$] = adjustedNow();
-
-          ws.send('H');
         }
       };
 
-      if (session[private$] === undefined) {
-        session[private$] = {};
-      }
+      session[private$] ??= {};
+
+      const stopHeartbeat = () => {
+        if (heartbeatTO !== null) {
+          wsClearTimeout(heartbeatTO);
+        }
+        heartbeatTO = null;
+      };
+
+      const sendHeatbeat = () => {
+        stopHeartbeat();
+
+        heartbeatTO = wsTimeout(heatbeatFail, session.heartbeatInterval);
+        this[heatbeatSentAt$] = adjustedNow();
+        ws.send('H');
+      };
 
       session[private$].queueHeatBeat = () => {
-        heartbeatTO?.();
-        queueHeatBeat();
-      };
+        stopHeartbeat();
+        heartbeatTO = wsTimeout(sendHeatbeat, session.heartbeatInterval)};
+      session[private$].queueHeatBeat();
 
       let onMessage = null;
 
       ws._session = session;
 
       session.defaultOnmessage = (event) => {
-        session[heatbeatTime$] = adjustedNow() + session.heartbeatInterval;
-        if (heartbeatTO == null) {
-          heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
-        }
-        if (onMessage === null) {
-          onMessage = session._onMessage.bind(session);
-        }
+        onMessage ??= session._onMessage.bind(session);
         session.execWrapper(onMessage, session, event.data);
       };
 
       ws.onmessage = session.overrideOnmessage ?? session.defaultOnmessage;
 
-      const onclose = (event) => {
+      ws.onerror = util.voidFunc;
+      ws.onclose = (event) => {
         stopReconnTimeout();
-        ws.onmessage = null;
-        heartbeatTO?.();
-        session[heatbeatTime$] = heartbeatTO = session.ws = null;
+        ws.onmessage = session.ws = null;
+        stopHeartbeat();
         if (event === undefined) return;
         if (event.code !== undefined && event.code !== 1006 && session[retryCount$] != 0) {
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
@@ -280,13 +273,10 @@ define((require) => {
           return;
         }
 
-        reconnTimeout = koru._afTimeout(start, session[retryCount$] * 500);
+        reconnTimeout = wsTimeout(start, session[retryCount$] * 500);
 
         sessState.retry(event.code, event.reason);
       };
-
-      ws.onerror = util.voidFunc;
-      ws.onclose = onclose;
     }
 
     if (base._broadcastFuncs === undefined) {

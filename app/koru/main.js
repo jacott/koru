@@ -119,6 +119,15 @@ define((require, exports, module) => {
 
   require('koru/env!./main')(koru);
 
+  /**
+   * _wsTimeout is used by session/web-socket-sender-factory; do not override in tests
+   **/
+  koru._wsTimeout = koru.setTimeout;
+  /**
+   * _wsClearTimeout is used by session/web-socket-sender-factory; do not override in tests
+   **/
+  koru._wsClearTimeout = koru.clearTimeout;
+
   if (module.ctx.onError === undefined) {
     module.ctx.onError = (err, mod) => {
       if (err.onload) {

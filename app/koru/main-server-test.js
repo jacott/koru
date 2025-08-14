@@ -10,7 +10,7 @@ define((require, exports, module) => {
   const koru = require('./main');
 
   const cleanup = () => {
-    dbBroker.db = util.thread.connection = util.thread.userId = void 0;
+    dbBroker.db = util.thread.connection = util.thread.userId = undefined;
   };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
@@ -19,10 +19,15 @@ define((require, exports, module) => {
     });
 
     group('afTimeout', () => {
+      let afTimeout;
+      beforeEach(() => {
+        afTimeout = TH.Core._origAfTimeout;
+      });
+
       test('lt 24 DAYS', () => {
         const cb = stub();
         stub(koru, 'setTimeout').returns(123);
-        const stop = koru._afTimeout(cb, 1000);
+        const stop = afTimeout(cb, 1000);
 
         assert.calledWith(koru.setTimeout, cb, 1000);
 
@@ -40,7 +45,7 @@ define((require, exports, module) => {
         stub(global, 'clearTimeout');
         let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45 * util.DAY);
+        const stop = afTimeout(cb, 45 * util.DAY);
 
         assert.calledWith(global.setTimeout, m.func, 20 * util.DAY);
         global.setTimeout.yieldAndReset();
@@ -59,7 +64,7 @@ define((require, exports, module) => {
         stub(global, 'clearTimeout');
         let now = Date.now(); intercept(Date, 'now', () => now);
 
-        const stop = koru._afTimeout(cb, 45 * util.DAY);
+        const stop = afTimeout(cb, 45 * util.DAY);
 
         assert.calledWith(global.setTimeout, m.func, 20 * util.DAY);
         now += 20 * util.DAY;
@@ -97,7 +102,7 @@ define((require, exports, module) => {
         return innerThread = util.thread;
       };
       const ans = koru.runFiber(prog);
-      assert.same(innerThread, void 0);
+      assert.same(innerThread, undefined);
 
       future.resolve();
       await 1;
@@ -140,7 +145,7 @@ define((require, exports, module) => {
       await 1;
 
       assert.equals(innerThread, {
-        userId: 'u123', connection: conn, db: mydb, dbId: void 0,
+        userId: 'u123', connection: conn, db: mydb, dbId: undefined,
         args: {conn, data}});
 
       refute.same(innerThread, util.thread);

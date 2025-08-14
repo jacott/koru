@@ -23,6 +23,9 @@ define((require, exports, module) => {
       stub(base, 'provide');
       v.sess = sut(base, v.state = stateFactory());
       v.sess.newWs = () => v.ws = {};
+      let toh = 0;
+      stub(koru, '_wsTimeout').invokes((c) => ++toh);
+      stub(koru, '_wsClearTimeout');
     });
 
     afterEach(() => {
@@ -95,6 +98,43 @@ define((require, exports, module) => {
       assert.same(v.ws.onerror, util.voidFunc);
     });
 
+    test('hearbeat queuing', () => {
+      v.sess.start();
+      v.ws.send = stub();
+      v.ws.close = stub();
+      const onclose = stub(v.ws, 'onclose');
+      let kFunc;
+      assert.calledWith(v.sess.provide, 'K', TH.match((f) => kFunc = f));
+
+      assert.calledOnce(koru._wsTimeout);
+      refute.called(v.ws.send);
+      refute.called(koru._wsClearTimeout);
+      koru._wsTimeout.yieldAndReset();
+
+      assert.calledOnceWith(koru._wsClearTimeout, 1);
+      koru._wsClearTimeout.reset();
+      assert.calledOnceWith(v.ws.send, 'H');
+      v.ws.send.reset();
+
+      koru._wsTimeout.reset();
+
+      kFunc.call(v.sess, '' + Date.now());
+      assert.calledOnceWith(koru._wsClearTimeout, 2);
+      refute.called(v.ws.send);
+      koru._wsTimeout.yieldAndReset();
+
+      assert.calledOnceWith(v.ws.send, 'H');
+      v.ws.send.reset();
+
+      refute.called(v.ws.close);
+      refute.called(v.ws.onclose);
+      assert.calledOnce(koru._wsTimeout);
+      koru._wsTimeout.yieldAndReset();
+
+      assert.calledOnce(v.ws.close);
+      assert.calledOnceWith(onclose, {code: 'Heartbeat fail'});
+    });
+
     test('heartbeat adjust time', () => {
       after((_) => {util.adjustTime(- util.timeAdjust)});
 
@@ -109,8 +149,11 @@ define((require, exports, module) => {
 
       v.ws.send = stub();
 
+      assert.calledOnce(koru._wsTimeout);
+
       now += 120000;
-      v.sess[private$].queueHeatBeat();
+      koru._wsTimeout.yield();
+      koru._wsTimeout.reset();
       now += 234;
       kFunc.call(v.sess, '' + (now - 400));
 
@@ -119,7 +162,9 @@ define((require, exports, module) => {
       util.adjustTime(16, 40);
 
       now += 120000;
-      v.sess[private$].queueHeatBeat();
+      koru._wsTimeout.yield();
+      koru._wsTimeout.reset();
+
       now += 105;
       kFunc.call(v.sess, '' + (now + 800));
 
@@ -127,20 +172,11 @@ define((require, exports, module) => {
       assert.near(util.timeUncertainty, 53);
 
       now += 120000;
-      v.sess[private$].queueHeatBeat();
+      koru._wsTimeout.yieldAndReset();
       now += 120;
       kFunc.call(v.sess, '' + (now));
       assert.equals(util.timeAdjust, 60);
       assert.near(util.timeUncertainty, 66);
-
-      const stopTimeout = stub();
-      stub(koru, '_afTimeout').returns(stopTimeout);
-
-      v.sess[private$].queueHeatBeat();
-      assert.called(koru._afTimeout);
-      refute.called(stopTimeout);
-      v.sess.pause();
-      assert.called(stopTimeout);
     });
 
     test('state', () => {

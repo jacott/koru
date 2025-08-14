@@ -79,10 +79,5 @@ define((require, exports, module) => {
         };
       },
     });
-
-    /**
-     * _afTimeout is used by client session; do not override in tests
-     **/
-    koru._afTimeout = koru.afTimeout;
   };
 });

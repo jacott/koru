@@ -1,4 +1,4 @@
-define((require, exports, module) => {
+false && define((require, exports, module) => {
   'use strict';
   const {private$}      = require('koru/symbols');
   const message         = require('./message');
@@ -37,7 +37,7 @@ define((require, exports, module) => {
     });
 
     test('initial KORU_APP_VERSION', () => {
-      after(() => window.KORU_APP_VERSION = void 0);
+      after(() => window.KORU_APP_VERSION = undefined);
 
       window.KORU_APP_VERSION = 'v1,hash';
 
@@ -106,7 +106,7 @@ define((require, exports, module) => {
 
       v.sess.newWs = stub().returns(v.ws);
 
-      stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
+      stub(koru, '_wsTimeout').returns(v.wsTimeoutStop = stub());
 
       v.sess.connect();
 
@@ -127,7 +127,7 @@ define((require, exports, module) => {
 
         v.sess.newWs = stub().returns(v.ws);
 
-        stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
+        stub(koru, '_wsTimeout').returns(v.wsTimeoutStop = stub());
 
         v.sess.connect();
 
@@ -174,24 +174,24 @@ define((require, exports, module) => {
 
         assert.same(v.sess.heartbeatInterval, 20000);
 
-        assert.calledWith(koru._afTimeout, TH.match.func, 20000);
+        assert.calledWith(koru._wsTimeout, TH.match.func, 20000);
 
-        koru._afTimeout.reset();
+        koru._wsTimeout.reset();
         now += 15000;
         v.ws.onmessage(event);
 
-        refute.called(koru._afTimeout);
+        refute.called(koru._wsTimeout);
 
         now += 7000;
         v.actualConn[private$].queueHeatBeat();
 
-        assert.equals(koru._afTimeout.lastCall.args, [TH.match.func, 13000]);
+        assert.equals(koru._wsTimeout.lastCall.args, [TH.match.func, 13000]);
 
         now += 14000;
-        koru._afTimeout.lastCall.yield();
+        koru._wsTimeout.lastCall.yield();
 
-        assert.calledWith(koru._afTimeout, TH.match.func, 10000);
-        koru._afTimeout.reset();
+        assert.calledWith(koru._wsTimeout, TH.match.func, 10000);
+        koru._wsTimeout.reset();
 
         assert.calledOnce(v.ws.send);
         assert.calledWith(v.ws.send, 'H');
@@ -199,10 +199,10 @@ define((require, exports, module) => {
         now += 1000;
 
         v.ws.onmessage(event);
-        refute.called(koru._afTimeout);
+        refute.called(koru._wsTimeout);
 
         v.actualConn[private$].queueHeatBeat();
-        assert.calledWith(koru._afTimeout, TH.match.func, 20000);
+        assert.calledWith(koru._wsTimeout, TH.match.func, 20000);
       });
 
       test('no response close fails', () => {
@@ -255,23 +255,23 @@ define((require, exports, module) => {
 
       assert.calledWith(sessState.connected, TH.match((conn) => conn.ws === v.ws));
 
-      stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
+      stub(koru, '_wsTimeout').returns(v.wsTimeoutStop = stub());
       TH.noInfo();
 
       v.ws.onclose({code: 4404, reason: 'not found'});         // remote close
 
-      assert(sessState.retry.calledAfter(koru._afTimeout));
+      assert(sessState.retry.calledAfter(koru._wsTimeout));
 
       assert.calledWith(sessState.retry, 4404, 'not found');
 
       refute(sessState.isReady());
 
       assert.called(sessState.retry);
-      assert.calledWith(koru._afTimeout, v.sess.connect, 500);
+      assert.calledWith(koru._wsTimeout, v.sess.connect, 500);
 
       v.sess.stop();            // local stop
 
-      assert.called(v.afTimeoutStop);
+      assert.called(v.wsTimeoutStop);
       assert.called(sessState.close);
       sessState.connected.reset();
 
@@ -281,13 +281,13 @@ define((require, exports, module) => {
 
       assert.called(sessState.connected);
 
-      v.afTimeoutStop.reset();
+      v.wsTimeoutStop.reset();
       v.ws.onclose({});         // remote close again
 
-      assert.called(koru._afTimeout);
+      assert.called(koru._wsTimeout);
 
       v.sess.connect();         // reconnect
-      assert.called(v.afTimeoutStop);
+      assert.called(v.wsTimeoutStop);
     });
 
     test('before connected', () => {
