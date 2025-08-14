@@ -33,7 +33,7 @@ define((require, exports, module) => {
     const oldValue = util.setProperty(object, prop, newValue);
 
     const restore = () => {
-      if (oldValue !== void 0) {
+      if (oldValue !== undefined) {
         Object.defineProperty(object, prop, oldValue);
       } else {
         delete object[prop];

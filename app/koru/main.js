@@ -13,8 +13,8 @@ define((require, exports, module) => {
       callback = reload;
     }
     const subm = typeof moduleOrId === 'string'
-          ? module.ctx.modules[moduleOrId]
-          : moduleOrId;
+      ? module.ctx.modules[moduleOrId]
+      : moduleOrId;
     if (subm == null) {
       throw new Error('module not found! ' + moduleOrId);
     }
@@ -22,7 +22,7 @@ define((require, exports, module) => {
   };
 
   const fetchDependants = (mod, result={}) => {
-    if (mod !== void 0 && result[mod.id] === void 0) {
+    if (mod !== undefined && result[mod.id] === undefined) {
       result[mod.id] = true;
       const {modules} = mod.ctx;
       for (let id in mod._requiredBy) fetchDependants(modules[id], result);
@@ -32,7 +32,7 @@ define((require, exports, module) => {
 
   const logDebug = (...args) => {
     koru.logger('D', ...args);
-    return args.length == 0 ? void 0 : args[args.length - 1];
+    return args.length == 0 ? undefined : args[args.length - 1];
   };
 
   logDebug.inspect = (...args) => {
@@ -48,7 +48,7 @@ define((require, exports, module) => {
 
     unload: (id) => {
       const mod = module.ctx.modules[id];
-      if (mod !== void 0 && mod.state === Module.READY) {
+      if (mod !== undefined && mod.state === Module.READY) {
         mod.unload();
       }
     },
@@ -87,7 +87,7 @@ define((require, exports, module) => {
 
     globalCallback: (err, result) => {
       if (err) {
-        koru.globalErrorCatch === void 0 ? koru.error(err) : koru.globalErrorCatch(err);
+        koru.globalErrorCatch === undefined ? koru.error(err) : koru.globalErrorCatch(err);
       }
     },
 
@@ -119,7 +119,7 @@ define((require, exports, module) => {
 
   require('koru/env!./main')(koru);
 
-  if (module.ctx.onError === void 0) {
+  if (module.ctx.onError === undefined) {
     module.ctx.onError = (err, mod) => {
       if (err.onload) {
         const {ctx} = mod;

@@ -40,8 +40,8 @@ define((require, exports, module) => {
         let af = null;
         let cancel;
         const endTime = duration > TWENTY_DAYS
-              ? Date.now() + duration
-              : 0;
+          ? Date.now() + duration
+          : 0;
         const inner = () => {
           if (endTime !== 0) {
             const now = Date.now();

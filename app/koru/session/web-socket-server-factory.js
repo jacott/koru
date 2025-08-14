@@ -25,7 +25,7 @@ define((require, exports, module) => {
     let dictHashStr = null;
     const {version, versionHash} = koru;
 
-    if (session.ServerConnection === void 0) session.ServerConnection = ServerConnection;
+    if (session.ServerConnection === undefined) session.ServerConnection = ServerConnection;
 
     globalDictAdders[module.id] = (adder) => {
       for (const name in session._rpcs) {
@@ -48,8 +48,8 @@ define((require, exports, module) => {
         let gdict = globalDictEncoded(), dictHash = dictHashStr;
         const parts = url === null ? null : url.split('?', 2);
         const [clientProtocol, clientVersion, clientHash] = url === null
-              ? []
-              : parts[0].split('/').slice(2);
+          ? []
+          : parts[0].split('/').slice(2);
         if (url !== null) {
           if (+clientProtocol !== koru.PROTOCOL_VERSION) {
             forceReload(ws, session);
@@ -61,7 +61,7 @@ define((require, exports, module) => {
               newVersion = session.version;
             } else {
               const cmp = session.compareVersion?.(clientVersion, clientHash) ??
-                    util.compareVersion(clientVersion, session.version);
+                util.compareVersion(clientVersion, session.version);
               if (cmp < 0) {
                 if (cmp == -2) {
                   forceReload(ws, session);
@@ -78,7 +78,7 @@ define((require, exports, module) => {
             const search = util.searchStrToMap(parts[1]);
             if (search.dict === dictHashStr) {
               gdict = null;
-              dictHash = void 0;
+              dictHash = undefined;
             }
           }
         }
@@ -100,7 +100,7 @@ define((require, exports, module) => {
         conn.remotePort = ugr.connection.remotePort;
 
         const onMessage = conn.onMessage.bind(conn);
-        ws.on('message', wrapOnMessage === void 0 ? onMessage : wrapOnMessage(onMessage));
+        ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
 
         conn.sendBinary('X', [
           newVersion, session.versionHash,
@@ -167,9 +167,9 @@ define((require, exports, module) => {
       return _globalDict;
     };
 
-    const globalDictEncoded = () => session.globalDict === void 0
-          ? void 0
-          : _globalDictEncoded;
+    const globalDictEncoded = () => session.globalDict === undefined
+      ? undefined
+      : _globalDictEncoded;
 
     session.countNotify = new Observable();
 
@@ -190,7 +190,7 @@ define((require, exports, module) => {
         });
         this.sendBinary('M', [msgId, 'r', result]);
       } catch (ex) {
-        if (ex.error === void 0) {
+        if (ex.error === undefined) {
           koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
         } else {

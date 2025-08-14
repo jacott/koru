@@ -42,10 +42,10 @@ define((require, exports, module) => {
         } else {
           const {connection, userId} = util.thread ?? EMPTY;
           console.log(type + '> ' + (connection === undefined
-                                     ? ''
-                                     : userId + ' on ' + connection.engine + ' ' +
-                                     connection.remoteAddress + ':' + connection.sessId + ':\n') +
-                      args.join(' '));
+            ? ''
+            : userId + ' on ' + connection.engine + ' ' +
+              connection.remoteAddress + ':' + connection.sessId + ':\n') +
+            args.join(' '));
         }
       },
 

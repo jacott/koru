@@ -76,7 +76,7 @@ define((require) => {
         try {
           const msg = data[i];
           const func = this._commands[msg[0]];
-          if (func === void 0) {
+          if (func === undefined) {
             throw new Error('Invalid command ' + msg[0]);
           }
           func.call(this, msg[1]);
@@ -120,8 +120,9 @@ define((require) => {
     });
   };
 
-  return function webSocketSenderFactory(
-    _session, sessState, execWrapper=koru.fiberConnWrapper, base=_session) {
+  const webSocketSenderFactory = (
+    _session, sessState, execWrapper=koru.fiberConnWrapper, base=_session,
+  ) => {
     const session = _session;
     const waitSends = session[waitSends$] = [];
     session[retryCount$] = 0;
@@ -133,7 +134,7 @@ define((require) => {
       session.hash = hash;
     }
 
-    function closeWs(ws) {
+    const closeWs = (ws) => {
       stopReconnTimeout();
       if (ws == null) return;
       try {
@@ -141,7 +142,7 @@ define((require) => {
       } catch (ex) {}
       ws.onclose({wasClean: true});
       ws.onmessage = ws.onclose = util.voidFunc;
-    }
+    };
 
     util.merge(session, {
       execWrapper,
@@ -193,12 +194,12 @@ define((require) => {
       get _waitSends() {return waitSends},
     });
 
-    function stopReconnTimeout() {
+    const stopReconnTimeout = () => {
       if (reconnTimeout !== null) {
         reconnTimeout();
         reconnTimeout = null;
       }
-    }
+    };
 
     function start() {
       let heartbeatTO = null;
@@ -237,7 +238,7 @@ define((require) => {
         }
       };
 
-      if (session[private$] === void 0) {
+      if (session[private$] === undefined) {
         session[private$] = {};
       }
 
@@ -267,11 +268,11 @@ define((require) => {
         stopReconnTimeout();
         ws.onmessage = null;
         heartbeatTO?.();
-        session[heatbeatTime$] = heartbeatTO = session.ws = session._queueHeatBeat = null;
-        if (event === void 0) return;
-        if (event.code !== void 0 && event.code !== 1006 && session[retryCount$] != 0) {
+        session[heatbeatTime$] = heartbeatTO = session.ws = null;
+        if (event === undefined) return;
+        if (event.code !== undefined && event.code !== 1006 && session[retryCount$] != 0) {
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
-                    event.code, new Date());
+            event.code, new Date());
         }
         session[retryCount$] = Math.min(4, session[retryCount$] + 1);
 
@@ -288,10 +289,12 @@ define((require) => {
       ws.onclose = onclose;
     }
 
-    if (base._broadcastFuncs === void 0) {
+    if (base._broadcastFuncs === undefined) {
       completeBaseSetup(base);
     }
 
     return session;
-  }
+  };
+
+  return webSocketSenderFactory;
 });
