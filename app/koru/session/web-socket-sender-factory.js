@@ -237,7 +237,7 @@ define((require) => {
         stopHeartbeat();
 
         heartbeatTO = wsTimeout(heatbeatFail, session.heartbeatInterval);
-        this[heatbeatSentAt$] = adjustedNow();
+        session[heatbeatSentAt$] = adjustedNow();
         ws.send('H');
       };
 
