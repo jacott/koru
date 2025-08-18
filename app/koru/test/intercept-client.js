@@ -26,6 +26,9 @@ define((require, exports, module) => {
     }
 
     if (isTest) {
+      Core.onStart(() => {
+        ClientIntercept.interceptObj = undefined;
+      });
       Core.onEnd(() => {
         if (intercepting) {
           intercepting = false;
