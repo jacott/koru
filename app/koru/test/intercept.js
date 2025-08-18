@@ -100,14 +100,14 @@ define((require, exports, module) => {
         let url;
 
         if (typeof value.constructor === 'function' &&
-            value.constructor !== Object) {
-          const coreName = CoreJsTypes.objectName(value.constructor);
-          if (coreName === undefined) {
-            setSource(object, info, value.constructor);
-          } else {
-            url = CoreJsTypes.mdnUrl(coreName);
+          value.constructor !== Object) {
+            const coreName = CoreJsTypes.objectName(value.constructor);
+            if (coreName === undefined) {
+              setSource(object, info, value.constructor);
+            } else {
+              url = CoreJsTypes.mdnUrl(coreName);
+            }
           }
-        }
 
         const coreName = CoreJsTypes.objectName(value);
         if (coreName !== undefined) {
@@ -170,40 +170,40 @@ define((require, exports, module) => {
     if (obj == null) return ans;
     for (const name of Object.getOwnPropertyNames(obj)) {
       if (interceptPrefix === name.slice(0, interceptPrefix.length) &&
-          ! ans.has(name) && name !== 'constructor' && name.slice(0, 2) !== '__' && isNaN(+name)) {
-        const desc = Object.getOwnPropertyDescriptor(obj, name);
-        let type = desc.get !== undefined ? 'G' : typeof desc.value === 'function' ? 'F' : 'P';
-        let sample = '';
-        let v = null;
+        ! ans.has(name) && name !== 'constructor' && name.slice(0, 2) !== '__' && isNaN(+name)) {
+          const desc = Object.getOwnPropertyDescriptor(obj, name);
+          let type = desc.get !== undefined ? 'G' : typeof desc.value === 'function' ? 'F' : 'P';
+          let sample = '';
+          let v = null;
 
-        try {
-          v = orig[name];
-          if (typeof v !== 'object' && v !== undefined) sample = v.toString();
-        } catch (err) {
-          sample = err.toString();
-        }
-
-        if (typeof v === 'function') {
-          let sig = '';
           try {
-            sample = JsParser.extractCallSignature(v, name);
-          } catch (err) {}
-          if (sample.startsWith('constructor')) {
-            if (type === 'G') {
-              type += 'C';
-            } else {
-              type = 'C';
-            }
-          } else if (sample[0] === '(') {
-            sample = name + sample;
+            v = orig[name];
+            if (typeof v !== 'object' && v !== undefined) sample = v.toString();
+          } catch (err) {
+            sample = err.toString();
           }
-          if (type === 'G') {
-            type += 'F';
-          }
-        }
 
-        ans.set(name, [name, type, sample.slice(0, 400)]);
-      }
+          if (typeof v === 'function') {
+            let sig = '';
+            try {
+              sample = JsParser.extractCallSignature(v, name);
+            } catch (err) {}
+            if (sample.startsWith('constructor')) {
+              if (type === 'G') {
+                type += 'C';
+              } else {
+                type = 'C';
+              }
+            } else if (sample[0] === '(') {
+              sample = name + sample;
+            }
+            if (type === 'G') {
+              type += 'F';
+            }
+          }
+
+          ans.set(name, [name, type, sample.slice(0, 400)]);
+        }
     }
     recurse(orig, Object.getPrototypeOf(obj), ans);
     return ans;
