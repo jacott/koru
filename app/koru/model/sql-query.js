@@ -14,16 +14,17 @@ define((require, exports, module) => {
 
   class SqlQuery {
     #pgsql = undefined;
-    constructor(model, queryStr) {
+    constructor(model, queryStr, fields='*') {
       this.queryStr = queryStr;
       this.model = model;
+      this.fields = fields;
     }
 
     async #initPs() {
       const parts = this.queryStr.split(/\{\$(\w+)\}/);
       const posMap = {}, nameMap = [];
       const last = parts.length - 1;
-      let text = `SELECT * FROM "${this.model.modelName}" WHERE `;
+      let text = `SELECT ${this.fields} FROM "${this.model.modelName}" WHERE `;
       for (let i = 0; i < last; i += 2) {
         const name = parts[i + 1];
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
@@ -38,9 +39,13 @@ define((require, exports, module) => {
       return ps;
     };
 
+    async #fetchOneRec(params) {
+      return (this.#pgsql ??= await this.#initPs()).fetchOne(conn(this.model) ?? await auto(this.model), params);
+    };
+
     async fetchOne(params) {
       const {model} = this;
-      const rec = await (this.#pgsql ??= await this.#initPs()).fetchOne(conn(model) ?? await auto(model), params);
+      const rec = await this.#fetchOneRec(params);
       return rec === undefined ? rec : model[makeDoc$](rec);
     }
 
@@ -93,13 +98,18 @@ define((require, exports, module) => {
     }
 
     async value(params, defValue) {
-      const rec = (await this.fetchOne(params));
+      const rec = await this.#fetchOneRec(params);
       for (const name in rec) return rec[name];
       return defValue;
     }
+
+    async exists(params) {
+      const rec = await this.#fetchOneRec(params);
+      return rec === undefined ? false : true;
+    }
   }
 
-  BaseModel.sqlWhere = function (queryStr) {return new SqlQuery(this, queryStr)}
+  BaseModel.sqlWhere = function (queryStr, fields) {return new SqlQuery(this, queryStr, fields)}
 
   return SqlQuery;
 });

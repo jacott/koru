@@ -86,12 +86,18 @@ isServer && define((require, exports, module) => {
 
        * @param model models used to resolve symbolic parameter types
 
+       * @param fields the select field expression to use defaults to `"*"`
+
        */
       const SqlQuery = api.class();
       //[
       const bigBooks = new SqlQuery(Book, `"pageCount" > {$pageCount} ORDER BY "pageCount"`);
 
       assert.same(await bigBooks.fetchOne({pageCount: 300}), await Book.findBy('title', 'Pride and Prejudice'));
+
+      const count = new SqlQuery(Book, `author ~ {$author}`, `count(1)`);
+
+      assert.same(await count.value({author: '.*ima.*'}), 2);
       //]
     });
 
@@ -100,7 +106,7 @@ isServer && define((require, exports, module) => {
        * Fetch one or zero rows from the query and close the portal.
        */
       api.protoMethod();
-      Book.docs._colMap = void 0;
+      Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
@@ -114,13 +120,13 @@ isServer && define((require, exports, module) => {
        * Fetch zero or more rows from the query and close the portal.
        */
       api.protoMethod();
-      Book.docs._colMap = void 0;
+      Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
       assert.equals((await byAuthor.fetch({author: 'Dima Zales'})).map((d) => d.summary),
-                    ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
+        ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
       //]
     });
 
@@ -129,7 +135,7 @@ isServer && define((require, exports, module) => {
        * return an asyncIterator over the rows returned from the query.
        */
       api.protoMethod();
-      Book.docs._colMap = void 0;
+      Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`author = {$author} ORDER BY "pageCount"`);
@@ -144,12 +150,43 @@ isServer && define((require, exports, module) => {
       //]
     });
 
+    test('value', async () => {
+      /**
+       * Fetch the value of the first column retrieved or else defValue if none.
+       */
+      api.protoMethod();
+      Book.docs._colMap = undefined;
+      Book.docs._ready = false;
+      //[
+      const countAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
+
+      assert.equals(await countAuthor.value({author: 'Dima Zales'}, 'none'), 'Dima Zales');
+
+      assert.equals(await countAuthor.value({author: 'Andy Weir'}, 'none'), 'none');
+      //]
+    });
+
+    test('exists', async () => {
+      /**
+       * Fetch the value of the first column retrieved or else defValue if none.
+       */
+      api.protoMethod();
+      Book.docs._colMap = undefined;
+      Book.docs._ready = false;
+      //[
+      const authorTest = Book.sqlWhere(`"author" = {$author}`, '1');
+
+      assert.equals(await authorTest.exists({author: 'Dima Zales'}), true);
+      assert.equals(await authorTest.exists({author: 'Andy Weir'}), false);
+      //]
+    });
+
     test('forEach', async () => {
       /**
        * call callback for each row returned from the query.
        */
       api.protoMethod();
-      Book.docs._colMap = void 0;
+      Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
