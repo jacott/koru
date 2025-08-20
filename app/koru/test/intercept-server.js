@@ -139,6 +139,10 @@ define((require, exports, module) => {
         parseCode,
       };
 
+      Core.onStart(() => {
+        ServerIntercept.interceptObj = undefined;
+      });
+
       Core.onEnd(ServerIntercept.runComplete);
 
       Core.onAbort(() => {
