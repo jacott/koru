@@ -184,6 +184,8 @@ isServer && define((require, exports, module) => {
     test('forEach', async () => {
       /**
        * call callback for each row returned from the query.
+       *
+       * @param callback a function called for each row found. May not be async.
        */
       api.protoMethod();
       Book.docs._colMap = undefined;

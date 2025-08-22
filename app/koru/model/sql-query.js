@@ -73,8 +73,8 @@ define((require, exports, module) => {
       const {model} = this;
       const c = conn(model) ?? await auto(model);
       const ps = (this.#pgsql ??= await this.#initPs());
+
       const port = ps.portal(c, '', params);
-      const rows = [];
       let promise, resolve;
       const setPromise = () => promise = new Promise((r) => {resolve = r});
 
