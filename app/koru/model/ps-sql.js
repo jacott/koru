@@ -1,16 +1,15 @@
 define((require, exports, module) => {
   'use strict';
-
   const PgPrepSql       = require('koru/pg/pg-prep-sql');
 
   class PsSql {
-    #pgsql = void 0;
+    #pgsql = undefined;
     constructor(queryStr, model) {
       this.queryStr = queryStr;
       this.table = model.docs ?? model;
     }
 
-    #initPs() {
+    async #initPs() {
       const parts = this.queryStr.split(/\{\$(\w+)\}/);
       const posMap = {}, nameMap = [];
       const last = parts.length - 1;
@@ -19,6 +18,8 @@ define((require, exports, module) => {
         const name = parts[i + 1];
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
       }
+      this.table._ready !== true && await this.table._ensureTable();
+
       const ps = new PgPrepSql(text + parts[last]);
 
       ps.setMapped(nameMap, this.table._colMap);
