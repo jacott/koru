@@ -26,16 +26,27 @@ define((require, exports, module) => {
       return ps;
     };
 
-    fetchOne(params) {return this.table.withConn((conn) => (this.#pgsql ??= this.#initPs()).fetchOne(conn, params))}
+    fetchOne(params) {
+      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).fetchOne(conn, params));
+    }
 
-    fetch(params) {return this.table.withConn((conn) => (this.#pgsql ??= this.#initPs()).fetch(conn, params))}
+    fetch(params) {
+      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).fetch(conn, params));
+    }
 
-    execute(params) {return this.table.withConn((conn) => (this.#pgsql ??= this.#initPs()).execute(conn, params))}
+    execute(params) {
+      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).execute(conn, params));
+    }
 
     async value(params, defValue) {
       const rec = (await this.fetchOne(params));
       for (const name in rec) return rec[name];
       return defValue;
+    }
+
+    async exists(params, defValue) {
+      const rec = (await this.fetchOne(params));
+      return rec === undefined ? false : true;
     }
   }
 

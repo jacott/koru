@@ -128,7 +128,8 @@ isServer && define((require, exports, module) => {
 
     test('value', async () => {
       /**
-       * Convience wrapper around {##fetchOne} which returns one value from the row if found else the default value
+       * Convenience wrapper around {##fetchOne} which returns one value from the row if found else
+       * the default value
        */
       api.protoMethod();
       //[
@@ -142,6 +143,21 @@ isServer && define((require, exports, module) => {
       assert.equals(await bigBooks.value({pageCount: 3000}, 'No book is that big'), 'No book is that big');
       assert.equals(await bigBooks.value({pageCount: 300}, 'No book is that big'), 'The Eye of the World');
 
+      //]
+    });
+
+    test('exists', async () => {
+      /**
+       * Convenience wrapper around {##fetchOne} which returns true if a record is returned
+       * otherwise false.
+       */
+      api.protoMethod();
+      //[
+      const authorRec = new PsSql(`SELECT 1 FROM "Book" WHERE "author" = {$author}`, Book);
+
+      assert.equals(await authorRec.exists({author: 'Dima Zales'}), true);
+
+      assert.equals(await authorRec.exists({author: 'Andy Weir'}), false);
       //]
     });
   });
