@@ -214,12 +214,14 @@ define((require) => {
       ws.binaryType = 'arraybuffer';
 
       const heatbeatFail = () => {
-        if (ws != null) {
+        if (session.ws != null) {
           try {
             ws.onclose({code: 'Heartbeat fail'});
           } finally {
-            ws.onclose = util.voidFunc;
-            ws.close();
+            if (ws != null) {
+              ws.onclose = util.voidFunc;
+              ws.close();
+            }
           }
         }
       };
@@ -236,6 +238,10 @@ define((require) => {
       const sendHeatbeat = () => {
         stopHeartbeat();
 
+        if (session.ws == null) {
+          return;
+        }
+
         heartbeatTO = wsTimeout(heatbeatFail, session.heartbeatInterval);
         session[heatbeatSentAt$] = adjustedNow();
         ws.send('H');
@@ -245,6 +251,7 @@ define((require) => {
         stopHeartbeat();
         heartbeatTO = wsTimeout(sendHeatbeat, session.heartbeatInterval)};
       session[private$].queueHeatBeat();
+      session.onStop(stopHeartbeat);
 
       let onMessage = null;
 

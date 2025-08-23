@@ -12,7 +12,7 @@ define((require, exports, module) => {
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
-  const {stub, spy, intercept} = TH;
+  const {stub, spy, intercept, match: m} = TH;
 
   const sut = require('./web-socket-sender-factory');
 
@@ -294,9 +294,13 @@ define((require, exports, module) => {
       });
 
       test('stop', () => {
+        refute.called(koru._wsClearTimeout);
         v.sess.stop();
-
+        assert.calledOnceWith(koru._wsTimeout, m.func, 20000);
+        assert.calledOnceWith(koru._wsClearTimeout, 1);
         assert.calledOnce(v.ws.close);
+
+        koru._wsTimeout.yield(); // no exception
       });
 
       test('sendBinary', () => {
