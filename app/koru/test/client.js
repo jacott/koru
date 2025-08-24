@@ -81,6 +81,9 @@ define((require, exports, module) => {
 
   Test.testHandle('A');
 
+  const {_pathPrefix} = session;
+  session._pathPrefix = (params) => 'test' + _pathPrefix.call(session, params);
+
   session.start();
 
   return Test;
