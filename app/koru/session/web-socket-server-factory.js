@@ -4,6 +4,7 @@ define((require, exports, module) => {
   const TransQueue      = require('koru/model/trans-queue');
   const Observable      = require('koru/observable');
   const Random          = require('koru/random');
+  const GlobalDict      = require('koru/session/global-dict');
   const HttpRequest     = require('koru/session/http-request');
   const ServerConnection = require('koru/session/server-connection');
   const message         = require('./message');
@@ -18,34 +19,22 @@ define((require, exports, module) => {
 
   function webSocketServerFactory(session, execWrapper) {
     let sessCounter = 0;
-    const globalDictAdders = {};
-    let _globalDict, _globalDictEncoded;
-    let _preloadDict = message.newGlobalDict();
-    let dictHash = [1, 2, 3, 5, 7, 11, 13, 17]; // dont' change this without bumping koru.PROTOCOL_VERSION
-    let dictHashStr = null;
+    let gd = GlobalDict.main;
     const {version, versionHash} = koru;
 
     if (session.ServerConnection === undefined) session.ServerConnection = ServerConnection;
 
-    globalDictAdders[module.id] = (adder) => {
+    gd.registerAdder(module, (adder) => {
       for (const name in session._rpcs) {
         adder(name);
       }
-    };
-
-    const addToDict = (word) => {
-      if (_preloadDict === null) return;
-      if (message.getStringCode(_preloadDict, word) == -1) {
-        accSha256.add(word, dictHash);
-        message.addToDict(_preloadDict, word);
-      }
-    };
+    });
 
     const onConnection = (ws, ugr) => {
       const remoteAddress = HttpRequest.remoteAddress(ugr);
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
-        let gdict = globalDictEncoded(), dictHash = dictHashStr;
+        let gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
         const parts = url === null ? null : url.split('?', 2);
         const [clientProtocol, clientVersion, clientHash] = url === null
           ? []
@@ -76,7 +65,7 @@ define((require, exports, module) => {
             }
           } else {
             const search = util.searchStrToMap(parts[1]);
-            if (search.dict === dictHashStr) {
+            if (search.dict === gd.dictHashStr) {
               gdict = null;
               dictHash = undefined;
             }
@@ -126,21 +115,14 @@ define((require, exports, module) => {
       rpc: (name, ...args) => session._rpcs[name].apply(util.thread.connection, args),
 
       onConnection,
-      stop() {session.wss.close()},
-
-      registerGlobalDictionaryAdder(module, adder) {
-        globalDictAdders[module.id] = adder;
+      stop() {
+        session.wss.close();
       },
 
-      deregisterGlobalDictionaryAdder(module) {
-        delete globalDictAdders[module.id];
-      },
-
-      addToDict,
+      addToDict: (word) => gd.addToDict(word),
 
       get globalDict() {
-        if (_globalDict) return _globalDict;
-        return buildGlobalDict();
+        return gd.globalDict;
       },
 
       openBatch() {
@@ -148,26 +130,10 @@ define((require, exports, module) => {
       },
 
       // for testing
-      get _sessCounter() {return sessCounter},
-      get _globalDictAdders() {return globalDictAdders},
+      get _sessCounter() {
+        return sessCounter;
+      },
     });
-
-    const buildGlobalDict = () => {
-      for (const name in globalDictAdders) {
-        globalDictAdders[name](addToDict);
-      }
-      _globalDict = _preloadDict;
-      dictHashStr = accSha256.toHex(dictHash);
-      _preloadDict = dictHash = null;
-
-      message.finalizeGlobalDict(_globalDict);
-      _globalDictEncoded = message.encodeDict(_globalDict);
-      return _globalDict;
-    };
-
-    const globalDictEncoded = () => session.globalDict === undefined
-      ? undefined
-      : _globalDictEncoded;
 
     session.countNotify = new Observable();
 

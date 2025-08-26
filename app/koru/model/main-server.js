@@ -4,6 +4,7 @@ define((require, exports, module) => {
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
   const Observable      = require('koru/observable');
+  const GlobalDict      = require('koru/session/global-dict').main;
   const dbBroker        = require('./db-broker');
   const TransQueue      = require('./trans-queue');
   const Val             = require('./validation');
@@ -21,7 +22,7 @@ define((require, exports, module) => {
 
   let _support, BaseModel;
 
-  session.registerGlobalDictionaryAdder(module, (adder) => {
+  GlobalDict.registerAdder(module, (adder) => {
     for (const mname in ModelMap) {
       adder(mname);
       const model = ModelMap[mname];

@@ -1,16 +1,18 @@
+//fmt-ignore-file
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const TransQueue      = require('koru/model/trans-queue');
   const Random          = require('koru/random');
   const SessionBase     = require('koru/session/base').constructor;
+  const GlobalDict      = require('koru/session/global-dict');
   const message         = require('koru/session/message');
   const ServerConnection = require('koru/session/server-connection');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
   const TH              = require('./test-helper');
 
-  const {stub, spy, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m, stubProperty} = TH;
 
   const sut = require('./web-socket-server-factory');
 
@@ -187,6 +189,12 @@ define((require, exports, module) => {
 
     group('onConnection', () => {
       beforeEach(() => {
+        const gd = new GlobalDict();
+        stubProperty(GlobalDict, 'main', {
+          get() {
+            return gd;
+          },
+        });
         v.sess = sut(v.mockSess);
         v.assertSent = (args) => {
           assert.elide(() => {

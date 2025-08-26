@@ -1,6 +1,7 @@
 isServer && define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
+  const GlobalDict      = require('koru/session/global-dict');
   const message         = require('koru/session/message');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -61,6 +62,12 @@ isServer && define((require, exports, module) => {
         return v.ws;
       });
       config.noWss = false;
+      const gd = new GlobalDict();
+      stubProperty(GlobalDict, 'main', {
+        get() {
+          return gd;
+        },
+      });
       v.sess = serverSession(v.mockSess);
 
       assert.same(opts.server, server);
@@ -70,8 +77,9 @@ isServer && define((require, exports, module) => {
 
       v.sess.addToDict('foo');
 
-      v.sess.registerGlobalDictionaryAdder({id: 'test'}, (adder) => {
-        adder('g1'); adder('g2');
+      GlobalDict.main.registerAdder({id: 'test'}, (adder) => {
+        adder('g1');
+        adder('g2');
       });
 
       assert.same(v.sess.versionHash, koru.versionHash);

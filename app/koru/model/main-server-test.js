@@ -8,6 +8,7 @@ define((require, exports, module) => {
   const Query           = require('koru/model/query');
   const Driver          = require('koru/pg/driver');
   const session         = require('koru/session');
+  const GlobalDict      = require('koru/session/global-dict');
   const util            = require('koru/util');
   const TH              = require('./test-helper');
   const TransQueue      = require('./trans-queue');
@@ -95,7 +96,7 @@ define((require, exports, module) => {
     });
 
     test('globalDictAdders', () => {
-      const adder = session._globalDictAdders[koru.absId(require, './main-server')];
+      const adder = GlobalDict.main.getAdder(koru.absId(require, './main-server'));
       assert.isFunction(adder);
 
       const TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number'});

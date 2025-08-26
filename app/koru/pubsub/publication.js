@@ -67,9 +67,11 @@ define((require, exports, module) => {
         delete _pubs[this[pubName$]];
       }
 
-      Session.addToDict(v);
       this[pubName$] = v;
-      if (v !== undefined) _pubs[v] = this;
+      if (v !== undefined) {
+        Session.addToDict(v);
+        _pubs[v] = this;
+      }
     }
 
     static set module(module) {
