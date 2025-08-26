@@ -40,8 +40,11 @@ define((require, exports, module) => {
     const dbBrokerDesc = Object.getOwnPropertyDescriptor(dbBroker, 'db');
 
     Object.defineProperty(ModelMap, 'db', {
-      enumerable: false, configurable: true,
-      get: dbBrokerDesc.get, set: dbBrokerDesc.set});
+      enumerable: false,
+      configurable: true,
+      get: dbBrokerDesc.get,
+      set: dbBrokerDesc.set,
+    });
   }
 
   const asyncFindById = async (model, id) => {
@@ -63,7 +66,9 @@ define((require, exports, module) => {
     return doc;
   }
 
-  const assertAuthorize = (doc) => {Val.allowAccessIf(doc.authorize !== undefined, doc)};
+  const assertAuthorize = (doc) => {
+    Val.allowAccessIf(doc.authorize !== undefined, doc);
+  };
 
   const ModelEnv = {
     destroyModel(model, drop) {
@@ -86,7 +91,7 @@ define((require, exports, module) => {
         let doc = await model.findById(id ?? changes._id);
 
         const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
-              changes;
+          changes;
         if (id != null) {
           Val.allowIfFound(doc, '_id');
           doc.changes = topLevel;
@@ -191,7 +196,8 @@ define((require, exports, module) => {
       ModelEnv.save = async (doc, callback) => {
         const model = doc.constructor;
         const _id = doc._id;
-        let {changes} = doc; doc.changes = {};
+        let {changes} = doc;
+        doc.changes = {};
         const now = util.newDate();
 
         if (doc.attributes._id == null) {

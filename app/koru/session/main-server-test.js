@@ -111,7 +111,7 @@ isServer && define((require, exports, module) => {
       const conn = {};
       const newSession = () => conn;
       const sess = serverSession({provide: stub()});
-      assert.same(sess.connectionIntercept(newSession, void 0, void 0, '1.2.3.4'), conn);
+      assert.same(sess.connectionIntercept(newSession, undefined, undefined, '1.2.3.4'), conn);
     });
 
     test('client errors', () => {
@@ -139,8 +139,7 @@ isServer && define((require, exports, module) => {
       stubProperty(koru, 'clientErrorConvert', {value: clientErrorConvert});
       await func.call({send: v.send = stub()}, 'my message');
 
-      assert.calledWith(
-        koru.logger, 'E', 'Client: converted');
+      assert.calledWith(koru.logger, 'E', 'Client: converted');
     });
 
     test('onerror', () => {

@@ -102,9 +102,7 @@ define((require, exports, module) => {
         const onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
 
-        conn.sendBinary('X', [
-          newVersion, session.versionHash,
-          gdict, dictHash]);
+        conn.sendBinary('X', [newVersion, session.versionHash, gdict, dictHash]);
         session.countNotify.notify(conn, true);
         return conn;
       };

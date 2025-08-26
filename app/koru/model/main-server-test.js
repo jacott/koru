@@ -121,8 +121,7 @@ define((require, exports, module) => {
       refute.called(transaction);
       refute.called(v.foo);
 
-      assert.same(await session._rpcs['TestModel.foo'].call(v.conn = {userId: 'uid'}, 1, 2),
-                  'result');
+      assert.same(await session._rpcs['TestModel.foo'].call(v.conn = {userId: 'uid'}, 1, 2), 'result');
 
       assert.calledOnce(v.foo);
       assert.calledWithExactly(v.foo, 1, 2);
@@ -181,7 +180,7 @@ define((require, exports, module) => {
 
       assert.same(v.doc.$reload(), v.doc);
       assert.same(v.doc.name, 'baz');
-      assert.same((await v.doc.$reload(true)), v.doc);
+      assert.same(await v.doc.$reload(true), v.doc);
       assert.same(v.doc.name, 'fuz');
 
       waitFut = new Future();
@@ -239,19 +238,19 @@ define((require, exports, module) => {
     });
 
     test('defaults for saveRpc new', async () => {
-      const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub(),
-      }).defineFields({name: 'text', language: {type: 'text', default: 'en'}});
+      const TestModel = Model.define('TestModel', {authorize: v.auth = stub()}).defineFields({
+        name: 'text',
+        language: {type: 'text', default: 'en'},
+      });
 
-      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {
-        _id: 'fooid', name: 'Mel'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {_id: 'fooid', name: 'Mel'});
 
       const mel = await TestModel.findById('fooid');
 
       assert.same(mel.language, 'en');
 
-      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {
-        _id: 'barid', name: 'Jen', language: 'no'});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', null,
+        {_id: 'barid', name: 'Jen', language: 'no'});
 
       const jen = await TestModel.findById('barid');
 
@@ -259,12 +258,15 @@ define((require, exports, module) => {
     });
 
     test('no authorize function', async () => {
-      const TestModel = Model.define('TestModel', {})
-            .defineFields({name: 'text', language: {type: 'text', default: 'en'}});
+      const TestModel = Model.define('TestModel', {}).defineFields({
+        name: 'text',
+        language: {type: 'text', default: 'en'},
+      });
 
       await assert.exception(
         () => session._rpcs.save.call({userId: 'u123'}, 'TestModel', null, {_id: 'fooid', name: 'Mel'}),
-        {error: 403, reason: 'Access denied - Model.TestModel("fooid", "Mel")'});
+        {error: 403, reason: 'Access denied - Model.TestModel("fooid", "Mel")'},
+      );
     });
 
     test('saveRpc new', async () => {
@@ -275,8 +277,9 @@ define((require, exports, module) => {
       spy(TestModel.db, 'transaction');
       TestModel.onChange(v.onChangeSpy = stub());
 
-      await assert.accessDenied(async () => session._rpcs.save.call(
-        {userId: null}, 'TestModel', null, {_id: 'fooid', name: 'bar'}));
+      await assert.accessDenied(async () =>
+        session._rpcs.save.call({userId: null}, 'TestModel', null, {_id: 'fooid', name: 'bar'}),
+      );
 
       refute(await TestModel.exists('fooid'));
 
@@ -318,22 +321,20 @@ define((require, exports, module) => {
     test('saveRpc existing', async () => {
       const validate = stub();
       const authorize = stub();
-      const TestModel = Model.define('TestModel', {
-        authorize,
-        validate,
-      }).defineFields({name: 'text'});
+      const TestModel = Model.define('TestModel', {authorize, validate}).defineFields({name: 'text'});
 
       const doc = await TestModel.create({name: 'foo'});
 
       const onChangeSpy = stub();
       TestModel.onChange(onChangeSpy);
 
-      await assert.accessDenied(
-        () => session._rpcs.save.call({userId: null}, 'TestModel', doc._id, {name: 'bar'}));
+      await assert.accessDenied(() =>
+        session._rpcs.save.call({userId: null}, 'TestModel', doc._id, {name: 'bar'}));
 
-      await assert.exception(() =>
-        session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'x' + doc._id, {name: 'bar'}),
-        {error: 404, reason: {_id: [['not_found']]}});
+      await assert.exception(
+        () => session._rpcs.save.call({userId: 'u123'}, 'TestModel', 'x' + doc._id, {name: 'bar'}),
+        {error: 404, reason: {_id: [['not_found']]}},
+      );
 
       assert.same(doc.$reload().name, 'foo');
 
@@ -361,10 +362,10 @@ define((require, exports, module) => {
 
     test('saveRpc partial no modification', async () => {
       const validate = stub();
-      const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub(),
-        validate,
-      }).defineFields({name: 'text', html: 'object'});
+      const TestModel = Model.define('TestModel', {authorize: v.auth = stub(), validate}).defineFields({
+        name: 'text',
+        html: 'object',
+      });
 
       v.doc = await TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
 
@@ -375,20 +376,13 @@ define((require, exports, module) => {
       assert.calledOnce(validate);
       validate.reset();
 
-      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {$partial: {
-        html: [
-          'div.2', 'baz',
-        ],
-      }});
+      await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id,
+        {$partial: {html: ['div.2', 'baz']}});
       assert.calledOnce(validate);
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
 
-      assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {$partial: {
-        html: [
-          'div.2', null,
-        ],
-      }}));
+      assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {$partial: {html: ['div.2', null]}}));
       await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, 'u123');
@@ -397,9 +391,10 @@ define((require, exports, module) => {
     });
 
     test('saveRpc partial validate modifies', async () => {
-      const TestModel = Model.define('TestModel', {
-        authorize: v.auth = stub(),
-      }).defineFields({name: 'text', html: 'object'});
+      const TestModel = Model.define('TestModel', {authorize: v.auth = stub()}).defineFields({
+        name: 'text',
+        html: 'object',
+      });
 
       TestModel.prototype.validate = async function () {
         await 1;
@@ -416,17 +411,16 @@ define((require, exports, module) => {
 
       await session._rpcs.save.call({userId: 'u123'}, 'TestModel', v.doc._id, {
         name: 'fiz',
-        $partial: {
-          html: [
-            'div.2', 3,
-          ],
-        }});
+        $partial: {html: ['div.2', 3]},
+      });
 
       assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'three']});
       assert.equals((await v.doc.$reload(true)).html, {div: ['foo', 'bar', 'three']});
 
-      assert.calledOnceWith(v.onChangeSpy, DocChange.change(v.doc, {
-        name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}}));
+      assert.calledOnceWith(
+        v.onChangeSpy,
+        DocChange.change(v.doc, {name: 'foo', $partial: {html: ['div.$partial', ['$patch', [2, 1, null]]]}}),
+      );
       await TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, 'u123');
@@ -436,9 +430,7 @@ define((require, exports, module) => {
 
     test('removeRpc', async () => {
       const authorize = stub();
-      const TestModel = Model.define('TestModel', {
-        authorize,
-      }).defineFields({name: 'text'});
+      const TestModel = Model.define('TestModel', {authorize}).defineFields({name: 'text'});
 
       spy(TestModel.db, 'transaction');
 
@@ -447,12 +439,12 @@ define((require, exports, module) => {
       const onChangeSpy = stub();
       TestModel.onChange(onChangeSpy);
 
-      await assert.accessDenied(
-        () => session._rpcs.remove.call({userId: null}, 'TestModel', doc._id));
+      await assert.accessDenied(() => session._rpcs.remove.call({userId: null}, 'TestModel', doc._id));
 
-      await assert.exception(
-        () => session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'x' + doc._id),
-        {error: 404, reason: {_id: [['not_found']]}});
+      await assert.exception(() => session._rpcs.remove.call({userId: 'u123'}, 'TestModel', 'x' + doc._id), {
+        error: 404,
+        reason: {_id: [['not_found']]},
+      });
 
       spy(TransQueue, 'onSuccess');
 

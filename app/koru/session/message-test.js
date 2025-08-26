@@ -95,7 +95,7 @@ define((require, exports, module) => {
 
       const result = _decode(v.ans);
       assert.equals(result, {});
-      assert.same(result.constructor, void 0);
+      assert.same(result.constructor, undefined);
     });
 
     test('nonempty null object', () => {
@@ -105,7 +105,7 @@ define((require, exports, module) => {
 
       const result = _decode(v.ans);
       assert.equals(result, {x: 1});
-      assert.same(result.constructor, void 0);
+      assert.same(result.constructor, undefined);
     });
 
     test('small string as dict', () => {
@@ -305,9 +305,9 @@ define((require, exports, module) => {
         assert.equals(message.addToDict(dict, 'x' + i), 0x101 + i);
       }
 
-      assert.same(dict.index, 128 + 0x100);
+      assert.same(dict.index, 128+0x100);
       assert.equals(message.addToDict(dict, 'x0'), 0x101);
-      assert.same(dict.index, 128 + 0x100);
+      assert.same(dict.index, 128+0x100);
 
       dict.index = 0xfff0;
       assert.same(message.addToDict(dict, 'ubig'), -1);

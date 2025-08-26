@@ -7,8 +7,7 @@ define((require, exports, module) => {
 
   const {inspect$} = require('koru/symbols');
 
-  const pubName$ = Symbol(),
-        stopped$ = Symbol(), module$ = Symbol();
+  const pubName$ = Symbol(), stopped$ = Symbol(), module$ = Symbol();
 
   const _pubs = Object.create(null);
 
@@ -27,9 +26,9 @@ define((require, exports, module) => {
       this.id = id;
       this.lastSubscribed = +lastSubscribed || 0;
       if (this.lastSubscribed != 0 &&
-          util.dateNow() - this.constructor.lastSubscribedMaximumAge > this.lastSubscribed) {
-        throw new koru.Error(400, {lastSubscribed: 'too_old'});
-      }
+        util.dateNow() - this.constructor.lastSubscribedMaximumAge > this.lastSubscribed) {
+          throw new koru.Error(400, {lastSubscribed: 'too_old'});
+        }
       this[stopped$] = false;
     }
 
