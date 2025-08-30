@@ -10,6 +10,7 @@ global.isTest = false;
 let emacs = false;
 let dir;
 let dryRun = false;
+let eindent = false;
 
 const argv = process.argv.filter((a) => {
   if (dir === null) {
@@ -28,6 +29,9 @@ const argv = process.argv.filter((a) => {
   case '--dir':
     dir = null;
     return false;
+  case '--eindent':
+    eindent = true;
+    return false;
   case '--help':
     console.log(`Usage: js-format [-e] [--dir <dir>] [--dry-run]
 
@@ -37,12 +41,20 @@ Options:
   -e, --emacs       run in emacs process mode (for use with js-format.el)
   --dir             format all javascripts file under <dir>
   --dry-run         do not update files
+  --eindent         apply emacs indent to file
   --help            display usage information
 `);
     process.exit(0);
   }
   return true;
 });
+
+if (eindent) {
+  if (dir || emacs) {
+    console.error(`--eindent may not be used with --dir or --emacs`);
+    process.exit(1);
+  }
+}
 
 const file = argv[2];
 
@@ -69,51 +81,51 @@ withKoru({env: 'demo'}, () => {
             while (chunk.length != 0) {
               switch (state) {
               case 0: {
-                  let idx = chunk.findIndex((elm) => elm == 0x0a);
-                  if (idx == -1) {
-                    name += chunk.toString();
-                    chunk = chunk.subarray(0, 0);
-                    break;
-                  } else {
-                    name += chunk.subarray(0, idx);
-                    chunk = chunk.subarray(idx + 1);
-                    state = 1;
-                    // fall through
-                  }
+                let idx = chunk.findIndex((elm) => elm == 0x0a);
+                if (idx == -1) {
+                  name += chunk.toString();
+                  chunk = chunk.subarray(0, 0);
+                  break;
+                } else {
+                  name += chunk.subarray(0, idx);
+                  chunk = chunk.subarray(idx + 1);
+                  state = 1;
+                  // fall through
                 }
+              }
               case 1: {
-                  let idx = chunk.findIndex((elm) => elm == 0x0a);
-                  if (idx == -1) {
-                    lenStr += chunk.toString();
-                    chunk = chunk.subarray(0, 0);
-                    break;
-                  } else {
-                    lenStr += chunk.subarray(0, idx);
-                    chunk = chunk.subarray(idx + 1);
-                    len = parseInt(lenStr, 16);
-                    if (len == 0 || isNaN(len)) {
-                      throw new Error('invalid length 0');
-                    }
+                let idx = chunk.findIndex((elm) => elm == 0x0a);
+                if (idx == -1) {
+                  lenStr += chunk.toString();
+                  chunk = chunk.subarray(0, 0);
+                  break;
+                } else {
+                  lenStr += chunk.subarray(0, idx);
+                  chunk = chunk.subarray(idx + 1);
+                  len = parseInt(lenStr, 16);
+                  if (len == 0 || isNaN(len)) {
+                    throw new Error('invalid length 0');
+                  }
 
-                    lenStr = '';
-                    state = 2;
-                    // fall through
-                  }
+                  lenStr = '';
+                  state = 2;
+                  // fall through
                 }
+              }
               case 2: {
-                  if (chunk.length < len) {
-                    len -= chunk.length;
-                    data += chunk.toString();
-                    chunk = chunk.subarray(0, 0);
-                  } else {
-                    data += chunk.subarray(0, len).toString();
-                    chunk = chunk.subarray(len);
-                    yield [name, data];
-                    name = data = '';
-                    len = 0;
-                    state = 0;
-                  }
+                if (chunk.length < len) {
+                  len -= chunk.length;
+                  data += chunk.toString();
+                  chunk = chunk.subarray(0, 0);
+                } else {
+                  data += chunk.subarray(0, len).toString();
+                  chunk = chunk.subarray(len);
+                  yield [name, data];
+                  name = data = '';
+                  len = 0;
+                  state = 0;
                 }
+              }
               }
             }
           }
@@ -163,6 +175,15 @@ withKoru({env: 'demo'}, () => {
             try {
               const {source} = reformat((await fst.readFile(file)).toString(), formatOpts);
               dryRun || await fst.writeFile(file, source);
+              if (eindent) {
+                const {execFile} = require('child_process');
+                const util = require('util');
+                const execFilePromise = util.promisify(execFile);
+
+                const {stdout, stderr} = await execFilePromise('emacs', [
+                  '-Q', '--batch', file,
+                  '--eval=(progn (js-ts-mode) (setq js-indent-level 2) (indent-region (point-min) (point-max)) (save-buffer))']);
+              }
             } catch (err) {
               console.error('while reformatting ' + file);
               throw err;
