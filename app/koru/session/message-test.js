@@ -451,5 +451,20 @@ define((require, exports, module) => {
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), []);
     });
+
+    test('transportation', () => {
+      const ge = message.newGlobalDict();
+      message.addToDict(ge, '$remove');
+      message.addToDict(ge, '$match');
+      message.addToDict(ge, 'Game');
+      message.addToDict(ge, 'Play');
+      message.finalizeGlobalDict(ge);
+
+      let data = message.encodeDict(ge);
+
+      data = message.encodeMessage('Q', ['1', 1, 'Game', 'GStTJFXHDZmSkXM4z'], ge);
+      assert.same(message.toHex(data).join(''),
+        '51475374544a465848445a6d536b584d347aff0081314111fffd110100');
+    });
   });
 });
