@@ -33,7 +33,7 @@ define((require, exports, module) => {
     for (const name in session._rpcs) adder(name);
   });
 
-  koru.onunload(module, () => {session.deregisterGlobalDictionaryAdder(module)});
+  koru.onunload(module, () => {session.deregisterGlobalDictionaryAdder?.(module)});
 
   Changes.KEYWORDS.forEach((word) => {session.addToDict(word)});
 
@@ -130,12 +130,12 @@ define((require, exports, module) => {
         for (let i = 0; i < args.length; ++i) {
           const arg = args[i];
           switch (arg) {
-          case 1: dir = 1; break;
-          case -1: dir = -1; break;
-          default:
-            sort.push(arg);
-            dir == -1 && sort.push(-1);
-            continue;
+            case 1: dir = 1; break;
+            case -1: dir = -1; break;
+            default:
+              sort.push(arg);
+              dir == -1 && sort.push(-1);
+              continue;
           }
           if (from == -1) from = i;
         }
