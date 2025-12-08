@@ -32,8 +32,8 @@ define((require) => {
     Error: {
       msgFor(doc, field, other_error) {
         const errors = field !== undefined
-              ? (doc[error$] ?? doc)[field]
-              : (Array.isArray(doc) ? doc : [[doc.toString()]]);
+          ? (doc[error$] ?? doc)[field]
+          : (Array.isArray(doc) ? doc : [[doc.toString()]]);
         if (errors !== undefined) {
           return errors.map(format.translate).join(', ');
         } else if (other_error !== undefined) {
@@ -46,8 +46,8 @@ define((require) => {
       toString(doc) {
         const errors = doc[error$] ?? doc;
         return Object.keys(errors)
-          .map((field) => `${field}: ${this.msgFor(errors[field])}`)
-          .join('; ');
+        .map((field) => `${field}: ${this.msgFor(errors[field])}`)
+        .join('; ');
       },
     },
 
@@ -157,8 +157,8 @@ define((require) => {
                 error = new koru.Error(400, reason);
               }
             },
-          }
-        : options)) {
+      }
+          : options)) {
         throw error;
       }
     },
@@ -266,16 +266,16 @@ define((require) => {
     allowIfSimple(...args) {
       for (let i = 0; i < args.length; ++i) {
         switch (typeof args[i]) {
-        case 'object':
-          if (args[i] == null) break;
-          const proto = Object.getPrototypeOf(args[i]);
-          if (proto === Array.prototype) {
-            Val.allowIfSimple.apply(Val, args[i]);
-            break;
-          } else if (proto === Date.prototype) break
-          accessDenied('argument is an object ');
-        case 'function':
-          accessDenied('argument is a function');
+          case 'object':
+            if (args[i] == null) break;
+            const proto = Object.getPrototypeOf(args[i]);
+            if (proto === Array.prototype) {
+              Val.allowIfSimple.apply(Val, args[i]);
+              break;
+            } else if (proto === Date.prototype) break
+            accessDenied('argument is an object ');
+          case 'function':
+            accessDenied('argument is a function');
         }
       }
       return true;
@@ -383,7 +383,7 @@ define((require) => {
 
     addError: (doc, field, ...args) => {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
-            fieldErrors = errors[field] ??= [];
+      fieldErrors = errors[field] ??= [];
 
       fieldErrors.push(args);
     },
@@ -427,11 +427,11 @@ define((require) => {
   const accessDenied = (details, nolog) => {
     const reason = 'Access denied';
     const error = new koru.Error(403, details === undefined ? reason : reason + ' - ' +
-                                 (details?.[inspect$]?.() ?? (details?.toString?.())));
+      (details?.[inspect$]?.() ?? (details?.toString?.())));
 
     if (! nolog && ! util.thread.suppressAccessDenied) {
       koru.info(`Access denied: user ${koru.userId()}: ${details}`,
-                koru.util.extractError(error));
+        koru.util.extractError(error));
     }
     throw error;
   };
@@ -441,28 +441,28 @@ define((require) => {
 
     for (let i = 0, item; item = input[i]; ++i) {
       switch (typeof item) {
-      case 'string':
-        output[item] = true;
-        break;
-      case 'object':
-        if (Array.isArray(item)) {
-          for (let j = 0; j < item.length; ++j) {
-            const obj = item[j];
-            for (const key in obj) {
-              output[key] = [convertPermitSpec(obj[key])];
+        case 'string':
+          output[item] = true;
+          break;
+        case 'object':
+          if (Array.isArray(item)) {
+            for (let j = 0; j < item.length; ++j) {
+              const obj = item[j];
+              for (const key in obj) {
+                output[key] = [convertPermitSpec(obj[key])];
+              }
+            }
+          } else {
+            for (const key in item) {
+              const list = item[key];
+              if (Array.isArray(list)) {
+                output[key] = convertPermitSpec(list);
+              } else {
+                output[key] = list;
+              }
             }
           }
-        } else {
-          for (const key in item) {
-            const list = item[key];
-            if (Array.isArray(list)) {
-              output[key] = convertPermitSpec(list);
-            } else {
-              output[key] = list;
-            }
-          }
-        }
-        break;
+          break;
       }
     }
 
