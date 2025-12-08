@@ -297,7 +297,7 @@ define((require) => {
 
       const result = [];
       for (const field in errs) {
-        const msgs = errs[field].map((m) => util.inspect(m));
+        const msgs = errs[field].map((m) => util.inspect(m, 10));
 
         result.push(field + ': ' + msgs.join('; '));
       }
