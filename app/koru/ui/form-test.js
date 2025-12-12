@@ -329,7 +329,7 @@ isClient && define((require, exports, module) => {
         test('defaults', () => {
           v.save.onCall(0).returns(false).onCall(1).returns(true);
           Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
-                                undo: v.onChange = stub()});
+            undo: v.onChange = stub()});
           document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           refute.called(v.onChange);
@@ -340,8 +340,8 @@ isClient && define((require, exports, module) => {
         test('string update', () => {
           v.doc.myUpdate = stub().returns({fooField: [['is_invalid']]});
           Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
-                                update: 'myUpdate',
-                                undo: v.onChange = stub()});
+            update: 'myUpdate',
+            undo: v.onChange = stub()});
           document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(v.doc.myUpdate, 'fooField', 'bad', v.onChange);
@@ -351,8 +351,8 @@ isClient && define((require, exports, module) => {
         test('function update', () => {
           const myUpdate = stub().returns({fooField: [['is_invalid']]});
           Form.addChangeFields({template: Dom.tpl.TestData, fields: ['fooField'],
-                                update: myUpdate,
-                                undo: v.onChange = stub()});
+            update: myUpdate,
+            undo: v.onChange = stub()});
           document.body.appendChild(Dom.tpl.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(myUpdate, v.doc, 'fooField', 'bad', v.onChange);
@@ -532,9 +532,9 @@ isClient && define((require, exports, module) => {
       const form = Dom.h({
         style: 'margin-left:20px;width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
-              {input: [], name: 'bar',
-               style: 'margin-left:200;width:50px;height:20px',
-               class: 'errorTop'}],
+          {input: [], name: 'bar',
+            style: 'margin-left:200;width:50px;height:20px',
+            class: 'errorTop'}],
       });
       document.body.appendChild(form);
 
@@ -577,9 +577,9 @@ isClient && define((require, exports, module) => {
       const form = Dom.h({
         $style: 'width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
-              {input: '', $name: 'bar',
-               $style: 'margin-left:200px;width:50px;height:20px',
-               class: 'errorTop errorRight'}],
+          {input: '', $name: 'bar',
+            $style: 'margin-left:200px;width:50px;height:20px',
+            class: 'errorTop errorRight'}],
       });
       document.body.appendChild(form);
 

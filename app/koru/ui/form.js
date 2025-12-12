@@ -62,9 +62,9 @@ define((require) => {
         }
 
         switch (event.target.tagName) {
-        case 'INPUT':
-        case 'TEXTAREA':
-          return;
+          case 'INPUT':
+          case 'TEXTAREA':
+            return;
         }
         if (event.target.getAttribute('contenteditable') === 'true') return;
         return modalize.func.call(this, event);
@@ -85,19 +85,19 @@ define((require) => {
     }
 
     switch (options.type ?? 'text') {
-    case 'onOff':
-      return OnOff.$autoRender(data);
-    default:
-      const editor = EDITORS[options.type];
-      if (editor) {
-        if (extend) data.extend = extend;
-        data.content = doc[name];
-        data.options = Object.assign({'data-errorField': name}, options);
-        return editor.$autoRender(data);
-      }
+      case 'onOff':
+        return OnOff.$autoRender(data);
+      default:
+        const editor = EDITORS[options.type];
+        if (editor) {
+          if (extend) data.extend = extend;
+          data.content = doc[name];
+          data.options = Object.assign({'data-errorField': name}, options);
+          return editor.$autoRender(data);
+        }
 
-      data.type = options.type ?? 'text';
-      return Tpl.TextInput.$autoRender(data);
+        data.type = options.type ?? 'text';
+        return Tpl.TextInput.$autoRender(data);
     }
   };
 
@@ -121,11 +121,11 @@ define((require) => {
 
     let value;
     switch (this.type) {
-    case 'checkbox':
-      value = this.checked;
-      break;
-    default:
-      value = this.value;
+      case 'checkbox':
+        value = this.checked;
+        break;
+      default:
+        value = this.value;
     }
 
     saveChange(doc, field, value, options);
@@ -136,17 +136,17 @@ define((require) => {
     Tpl.clearErrors(form);
     let errors;
     switch (typeof options.update) {
-    case 'string':
-      errors = doc[options.update](field, value, options.undo);
-      break;
-    case 'function':
-      errors = options.update(doc, field, value, options.undo);
+      case 'string':
+        errors = doc[options.update](field, value, options.undo);
+        break;
+      case 'function':
+        errors = options.update(doc, field, value, options.undo);
 
-      break;
-    default:
-      doc[field] = value;
-      Tpl.saveChanges(doc, form, options.undo);
-      return;
+        break;
+      default:
+        doc[field] = value;
+        Tpl.saveChanges(doc, form, options.undo);
+        return;
     }
     errors === undefined || Tpl.renderErrors({[error$]: errors}, form);
   };
@@ -199,24 +199,24 @@ define((require) => {
       }
 
       const result = options.save
-            ? options.save(doc, form, elm)
-            : doc.$save();
+        ? options.save(doc, form, elm)
+        : doc.$save();
 
       const successPage = options.success;
 
       if (result) {
         switch (typeof successPage) {
-        case 'object':
-          Route.replacePath(successPage);
-          break;
-        case 'function':
-          successPage(doc);
-          break;
-        case 'string':
-          if (successPage === 'back') {
-            Route.history.back();
-          }
-          break;
+          case 'object':
+            Route.replacePath(successPage);
+            break;
+          case 'function':
+            successPage(doc);
+            break;
+          case 'string':
+            if (successPage === 'back') {
+              Route.history.back();
+            }
+            break;
         }
       } else {
         Tpl.renderErrors(doc, form);
@@ -267,8 +267,7 @@ define((require) => {
     fillDoc(doc, form) {
       const modelFields = doc.constructor.$fields;
       let fields = form.querySelectorAll('[name]:not([type=radio]):not(button)');
-      for (let i = 0; i < fields.length; ++i) {
-        const fieldElm = fields[i];
+      for (const fieldElm of fields) {
         const name = fieldElm.getAttribute('name');
         if ((modelFields === undefined || modelFields[name] !== undefined)) {
           doc[name] = fieldElm.value || undefined;
@@ -276,8 +275,7 @@ define((require) => {
       }
 
       fields = form.getElementsByClassName('radioGroup');
-      for (let i = 0; i < fields.length; ++i) {
-        const fieldElm = fields[i];
+      for (const fieldElm of fields) {
         const name = field.getAttribute('data-errorField');
 
         if ((modelFields === undefined || modelFields[name] !== undefined)) {
@@ -371,8 +369,7 @@ define((require) => {
     addChangeFields(options) {
       const action = options.action ?? 'change';
       const events = {};
-      for (let i = 0; i < options.fields.length; ++i) {
-        const field = options.fields[i];
+      for (const field of options.fields) {
         if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
           events['click [name=' + field + ']'] = changeColorEvent(field, options);
         } else {
@@ -431,11 +428,11 @@ define((require) => {
   });
 
   const selectMenuList = (list, includeBlank) => includeBlank
-        ? [
-          ['', Dom.h({i: typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
-          ...list,
-        ]
-        : list;
+    ? [
+      ['', Dom.h({i: typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
+      ...list,
+    ]
+    : list;
 
   Tpl.SelectMenu.$extend({
     $created(ctx, elm) {
@@ -443,25 +440,25 @@ define((require) => {
       const list = data.options.selectList;
 
       switch (typeof list) {
-      case 'function':
-        data.selectList = (includeBlank) => selectMenuList(list(), includeBlank);
-        break;
-      case 'string':
-        switch (list) {
-        case 'inclusionIn':
-          data.selectList = (includeBlank) => selectMenuList(
-            data.doc.constructor.$fields[data.name].inclusion.in
-              .map((v) => [v, v]),
-            includeBlank,
-          );
+        case 'function':
+          data.selectList = (includeBlank) => selectMenuList(list(), includeBlank);
+          break;
+        case 'string':
+          switch (list) {
+            case 'inclusionIn':
+              data.selectList = (includeBlank) => selectMenuList(
+                data.doc.constructor.$fields[data.name].inclusion.in
+                  .map((v) => [v, v]),
+                includeBlank,
+              );
+              break;
+            default:
+              throw new Error(`Invalid value for selectList: ${list}`);
+          }
           break;
         default:
-          throw new Error(`Invalid value for selectList: ${list}`);
-        }
-        break;
-      default:
-        data.selectList = (includeBlank) => selectMenuList(list, includeBlank);
-        break;
+          data.selectList = (includeBlank) => selectMenuList(list, includeBlank);
+          break;
       }
     },
   });
