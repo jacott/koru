@@ -41,7 +41,7 @@
     "marked": "^15",
     "marked-gfm-heading-id": "^4",
     "marked-highlight": "^2",
-    "nodemailer": "^6",
+    "nodemailer": "^7.0.11",
     "nodemailer-stub-transport": "^1",
     "postcss": "^8",
     "send": "^1.1.0",
