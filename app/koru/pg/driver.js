@@ -1215,6 +1215,9 @@ WHERE attrelid = to_regclass('${await table._client.schemaName()}."${table._name
 AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     const columns = await oidQuery(table._client, colQuery);
     if (columns.length == 0) {
+      if (! isTest) {
+        koru.unhandledException(new Error(`column query failed: ${colQuery}`));
+      }
       table._colMap = undefined;
     } else {
       table._colMap = {};
