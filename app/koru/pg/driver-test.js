@@ -722,29 +722,29 @@ isServer && define((require, exports, module) => {
 
         assert.isFalse(client.inTransaction);
         const tx = await client.startTransaction(); {
-          assert.same(tx.transaction, 'COMMIT');
+        assert.same(tx.transaction, 'COMMIT');
 
+        assert.isTrue(client.inTransaction);
+        tx.transaction = 'ROLLBACK';
+        assert.isTrue(client.inTransaction);
+        tx.transaction = 'COMMIT';
+
+        await foo.updateById('123', {name: 'a1'});
+
+        assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
+
+        assert.same(await client.startTransaction(), tx);
+        {
           assert.isTrue(client.inTransaction);
-          tx.transaction = 'ROLLBACK';
-          assert.isTrue(client.inTransaction);
-          tx.transaction = 'COMMIT';
+          assert.equals(tx.savepoint, 1);
 
-          await foo.updateById('123', {name: 'a1'});
-
-          assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
-
-          assert.same(await client.startTransaction(), tx);
-          {
-            assert.isTrue(client.inTransaction);
-            assert.equals(tx.savepoint, 1);
-
-            await foo.updateById('123', {name: 'a2'});
-            assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
-          }
-          assert.same(await client.endTransaction('abort'), 0);
-          assert.isTrue(client.inTransaction);
-          assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
+          await foo.updateById('123', {name: 'a2'});
+          assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
         }
+        assert.same(await client.endTransaction('abort'), 0);
+        assert.isTrue(client.inTransaction);
+        assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
+      }
 
         assert.same(await client.endTransaction('abort'), -1);
         assert.isFalse(client.inTransaction);
@@ -758,14 +758,14 @@ isServer && define((require, exports, module) => {
 
       test('commit startTransaction, endTransaction', async () => {
         await foo._client.startTransaction(); {
-          await foo.updateById('123', {name: 'a1'});
+        await foo.updateById('123', {name: 'a1'});
 
-          await foo._client.startTransaction(); {
-            await foo.updateById('123', {name: 'a2'});
-            assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
-          } await foo._client.endTransaction();
-          assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
-        } await foo._client.endTransaction();
+        await foo._client.startTransaction(); {
+        await foo.updateById('123', {name: 'a2'});
+        assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+      } await foo._client.endTransaction();
+        assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+      } await foo._client.endTransaction();
         assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
       });
 

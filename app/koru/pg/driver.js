@@ -163,7 +163,7 @@ define((require, exports, module) => {
       let count = 0;
       const ctext = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] ?? (
         params.push(arg1[key]), oids.push(args2[key] ?? 0),
-        (posMap[key] = `$${++count}`)));
+                                (posMap[key] = `$${++count}`)));
       return [ctext, params];
     }
 
@@ -252,7 +252,7 @@ define((require, exports, module) => {
       args = normalizeQuery(args);
       args[0] = 'EXPLAIN ANALYZE ' + args[0];
       return (await this.withConn((conn) => query(conn, ...args)))
-        .map((d) => d['QUERY PLAN']).join('\n');
+             .map((d) => d['QUERY PLAN']).join('\n');
     }
 
     timeLimitQuery(...args) {
@@ -459,7 +459,7 @@ define((require, exports, module) => {
 
     withConn(callback) {
       return this._ready ? this._client.withConn(callback) : this._ensureTable()
-        .then(() => this._client.withConn(callback));
+                                                             .then(() => this._client.withConn(callback));
     }
 
     readColumns() {return readColumns(this)}
@@ -536,7 +536,7 @@ define((require, exports, module) => {
             n));
           const sql = `INSERT INTO "${this._name}" (${cols}) values (${indexes}) ${suffix}`;
           return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setMapped(names, this._colMap)))
-            .execute(conn, params);
+                 .execute(conn, params);
         },
       );
     }
@@ -556,9 +556,9 @@ define((require, exports, module) => {
         sql += ` WHERE _id=$${len + 1}`,
         (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper(
           len + 1, ([params, _id], callback) => {
-            for (const name in params) callback(params[name], this._colMap[name]?.oid);
-            callback(_id, 25);
-          }))).execute(conn, [params, _id])));
+          for (const name in params) callback(params[name], this._colMap[name]?.oid);
+          callback(_id, 25);
+        }))).execute(conn, [params, _id])));
     }
 
     update(whereParams, params) {
@@ -569,10 +569,10 @@ define((require, exports, module) => {
 
         return (this._ps_cache.get(sql) ?? addPs(this, new PgPrepSql(sql).setParamMapper(
           len + values.length, ([params, values], callback) => {
-            for (const name in params) callback(params[name], this._colMap[name]?.oid);
-            let index = len - 1;
-            for (const v of values) callback(v, oids[++index]);
-          }))).execute(conn, [params, values]);
+          for (const name in params) callback(params[name], this._colMap[name]?.oid);
+          let index = len - 1;
+          for (const v of values) callback(v, oids[++index]);
+        }))).execute(conn, [params, values]);
       });
     }
 
@@ -599,18 +599,18 @@ define((require, exports, module) => {
       const inArray = (colSpec, qkey, result, value, isIn) => {
         let where;
         switch (value ? value.length : 0) {
-        case 0:
-          result.push(isIn ? 'FALSE' : 'TRUE');
-          return;
-        case 1:
-          whereValues.push(value[0]);
-          whereOids.push(colSpec.oid);
-          where = qkey + ' IN ($' + ++count + ')';
-          break;
-        default:
-          whereValues.push(value);
-          whereOids.push(PgType.toArrayOid(colSpec.oid) ?? 0);
-          where = qkey + ' = ANY($' + ++count + ')';
+          case 0:
+            result.push(isIn ? 'FALSE' : 'TRUE');
+            return;
+          case 1:
+            whereValues.push(value[0]);
+            whereOids.push(colSpec.oid);
+            where = qkey + ' IN ($' + ++count + ')';
+            break;
+          default:
+            whereValues.push(value);
+            whereOids.push(PgType.toArrayOid(colSpec.oid) ?? 0);
+            where = qkey + ' = ANY($' + ++count + ')';
         }
         result.push(isIn ? where : 'NOT (' + where + ')');
       };
@@ -674,20 +674,20 @@ define((require, exports, module) => {
             }
           } else {
             if (key[0] === '$') switch (key) {
-            case '$sql':
-              foundInSql(value, result);
-              continue;
-            case '$or':
-            case '$and':
-            case '$nor':
-              const parts = [];
-              util.forEach(value, (w) => {
-                const q = [];
-                foundIn(w, q);
-                q.length != 0 && parts.push('(' + q.join(' AND ') + ')');
-              });
-              result.push('(' + parts.join(key === '$and' ? ' AND ' : ' OR ') + (key === '$nor' ? ') IS NOT TRUE' : ')'));
-              continue;
+              case '$sql':
+                foundInSql(value, result);
+                continue;
+              case '$or':
+              case '$and':
+              case '$nor':
+                const parts = [];
+                util.forEach(value, (w) => {
+                  const q = [];
+                  foundIn(w, q);
+                  q.length != 0 && parts.push('(' + q.join(' AND ') + ')');
+                });
+                result.push('(' + parts.join(key === '$and' ? ' AND ' : ' OR ') + (key === '$nor' ? ') IS NOT TRUE' : ')'));
+                continue;
             }
             qkey = `"${key}"`;
             if (value == null) {
@@ -709,16 +709,16 @@ define((require, exports, module) => {
                 } else {
                   let vk; for (vk in value) {break}
                   switch (vk) {
-                  case '$in':
-                    result.push(qkey + ' && $' + ++count);
-                    whereValues.push(value[vk]);
-                    whereOids.push(colSpec.oid);
-                    continue;
-                  case '$nin':
-                    result.push('NOT(' + qkey + ' && $' + ++count + ')');
-                    whereValues.push(value[vk]);
-                    whereOids.push(colSpec.oid);
-                    continue;
+                    case '$in':
+                      result.push(qkey + ' && $' + ++count);
+                      whereValues.push(value[vk]);
+                      whereOids.push(colSpec.oid);
+                      continue;
+                    case '$nin':
+                      result.push('NOT(' + qkey + ' && $' + ++count + ')');
+                      whereValues.push(value[vk]);
+                      whereOids.push(colSpec.oid);
+                      continue;
                   }
                 }
               }
@@ -774,20 +774,20 @@ define((require, exports, module) => {
                       continue;
                     } else {
                       switch (vk) {
-                      case '$regex':
-                      case '$options':
-                        if (regex) break;
-                        regex = value.$regex;
-                        let options = value.$options;
-                        if (regex.constructor === RegExp) {
-                          [regex, options] = regexToText(regex);
-                        }
-                        result.push(qkey + (
-                          options !== undefined && options.indexOf('i') !== -1 ? '~*$' : '~$') + ++count);
-                        whereValues.push(regex);
-                        whereOids.push(25);
-                        continue;
-                      case '$ne': case '!=': {
+                        case '$regex':
+                        case '$options':
+                          if (regex) break;
+                          regex = value.$regex;
+                          let options = value.$options;
+                          if (regex.constructor === RegExp) {
+                            [regex, options] = regexToText(regex);
+                          }
+                          result.push(qkey + (
+                            options !== undefined && options.indexOf('i') !== -1 ? '~*$' : '~$') + ++count);
+                          whereValues.push(regex);
+                          whereOids.push(25);
+                          continue;
+                        case '$ne': case '!=': {
                         const sv = value[vk];
                         if (sv == null) {
                           result.push(qkey + ' IS NOT NULL');
@@ -797,14 +797,14 @@ define((require, exports, module) => {
                           whereOids.push(colSpec.oid);
                         }
                       } continue;
-                      case '$in':
-                      case '$nin':
-                        inArray(colSpec, qkey, result, value[vk], vk === '$in');
-                        continue;
-                      default:
-                        result.push(qkey + '=$' + ++count);
-                        whereValues.push(value);
-                        whereOids.push(colSpec.oid);
+                        case '$in':
+                        case '$nin':
+                          inArray(colSpec, qkey, result, value[vk], vk === '$in');
+                          continue;
+                        default:
+                          result.push(qkey + '=$' + ++count);
+                          whereValues.push(value);
+                          whereOids.push(colSpec.oid);
                       }
                     }
                     break;
@@ -1086,34 +1086,34 @@ define((require, exports, module) => {
   const toBaseType = (value=null) => {
     if (value === null) return 'text';
     switch (typeof (value)) {
-    case 'object':
-      if (Array.isArray(value)) {
-        const type = value.length ? toBaseType(value[0]) : 'text';
-        return type + '[]';
-      }
-      if (match.date.test(value)) {
-        return 'timestamp with time zone';
-      }
-      for (let key in value) {
-        let type;
-        if (key[0] === '$') {
-          type = toBaseType(value[key]);
+      case 'object':
+        if (Array.isArray(value)) {
+          const type = value.length ? toBaseType(value[0]) : 'text';
+          return type + '[]';
         }
-        if (type?.slice(-2) === '[]') {
-          return type.slice(0, -2);
+        if (match.date.test(value)) {
+          return 'timestamp with time zone';
         }
-        return type;
-        break;
-      }
-      return 'jsonb';
-    case 'number':
-      if (value === Math.floor(value)) {
-        return 'integer';
-      } else {
-        return 'double precision';
-      }
-    case 'string':
-      return 'text';
+        for (let key in value) {
+          let type;
+          if (key[0] === '$') {
+            type = toBaseType(value[key]);
+          }
+          if (type?.slice(-2) === '[]') {
+            return type.slice(0, -2);
+          }
+          return type;
+          break;
+        }
+        return 'jsonb';
+      case 'number':
+        if (value === Math.floor(value)) {
+          return 'integer';
+        } else {
+          return 'double precision';
+        }
+      case 'string':
+        return 'text';
     }
   };
 
@@ -1125,24 +1125,24 @@ define((require, exports, module) => {
       : colSchema.type;
 
     switch (type) {
-    case 'number':
-      return 'double precision';
-    case 'string':
-    case 'belongs_to':
-    case 'id':
-    case 'user_id_on_create':
-      return 'text';
-    case 'has_many':
-      return 'text[]';
-    case 'auto_timestamp':
-      return 'timestamp';
-    case 'color':
-      return 'text';
-    case 'object':
-    case 'baseObject':
-      return 'jsonb';
-    default:
-      return type;
+      case 'number':
+        return 'double precision';
+      case 'string':
+      case 'belongs_to':
+      case 'id':
+      case 'user_id_on_create':
+        return 'text';
+      case 'has_many':
+        return 'text[]';
+      case 'auto_timestamp':
+        return 'timestamp';
+      case 'color':
+        return 'text';
+      case 'object':
+      case 'baseObject':
+        return 'jsonb';
+      default:
+        return type;
     }
   };
 
@@ -1162,16 +1162,16 @@ define((require, exports, module) => {
         literal = escapeLiteral(JSON.stringify(literal)) + '::jsonb';
       } else {
         switch (typeof literal) {
-        case 'number':
-        case 'boolean':
-          break;
-        case 'object':
-          if (Array.isArray(literal)) {
-            literal = escapeLiteral(PgType.aryToSqlStr(literal)) + '::' + type;
+          case 'number':
+          case 'boolean':
             break;
-          }
-        default:
-          literal = escapeLiteral(literal) + '::' + type;
+          case 'object':
+            if (Array.isArray(literal)) {
+              literal = escapeLiteral(PgType.aryToSqlStr(literal)) + '::' + type;
+              break;
+            }
+          default:
+            literal = escapeLiteral(literal) + '::' + type;
         }
       }
       defaultVal = ` DEFAULT ${literal}`;
