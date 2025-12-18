@@ -1,5 +1,6 @@
 define((require, exports, module) => {
   'use strict';
+  const Enum            = require('koru/enum');
   const util            = require('koru/util');
 
   const {hasOwn} = util;
@@ -21,7 +22,11 @@ define((require, exports, module) => {
         }
       }
 
-      if ('matches' in options && ! options['matches'].test(value)) {
+      if (options.enum !== undefined && ! Enum.match(options.enum).test(value)) {
+        return this.addError(doc, field, 'not_in_list');
+      }
+
+      if (options.matches !== undefined && ! options.matches.test(value)) {
         return this.addError(doc, field, 'invalid_format');
       }
     },

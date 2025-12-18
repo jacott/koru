@@ -1,5 +1,6 @@
 define((require, exports, module) => {
   'use strict';
+  const Enum            = require('koru/enum');
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
 
@@ -34,6 +35,18 @@ define((require, exports, module) => {
       sut(doc, 'state', {matches: /^ope$/});
       assert(doc[error$]);
       assert.equals(doc[error$]['state'], [['invalid_format']]);
+    });
+
+    test('enum', () => {
+      const myEnum = Enum(['zero', 'one']);
+      const doc = {state: myEnum.zero};
+      sut(doc, 'state', {enum: myEnum});
+      refute(doc[error$]);
+
+      doc.state = 2;
+      sut(doc, 'state', {enum: myEnum});
+      assert(doc[error$]);
+      assert.equals(doc[error$]['state'], [['not_in_list']]);
     });
 
     test('in list', () => {
