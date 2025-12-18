@@ -299,6 +299,17 @@ isServer && define((require, exports, module) => {
       assert.equals(await foo.insert({_id: 123, name: 'a name'}, 'RETURNING name'), [{name: 'a name'}]);
     });
 
+    test('throwMissingTable', async () => {
+      after(() => {pg.throwMissingTable = false});
+      pg.throwMissingTable = true;
+      const foo = pg.defaultDb.table('Foo', {
+        _id: 'integer',
+        name: 'text',
+      });
+
+      await assert.exception(() => foo.readColumns(), {message: m((msg) => /column query failed:/.test(msg))});
+    });
+
     test('override _id spec', async () => {
       const foo = pg.defaultDb.table('Foo', {
         _id: 'integer',
