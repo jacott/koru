@@ -1,9 +1,9 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
+  const Route           = require('./route');
   const Dom             = require('../dom');
   const koru            = require('../main');
   const BaseTH          = require('../test-helper');
-  const Route           = require('./route');
 
   const {stub, spy, util, Core, match: m} = BaseTH;
 
@@ -14,9 +14,9 @@ define((require, exports, module)=>{
     back() {},
   };
 
-  koru.onunload(module, ()=>{Route.history = BaseTH._orig_history});
+  koru.onunload(module, () => {Route.history = BaseTH._orig_history});
 
-  const keyseq = (event, node, key, args)=>{
+  const keyseq = (event, node, key, args) => {
     if (args === undefined && typeof key === 'object') {
       args = key;
       key = node;
@@ -27,22 +27,22 @@ define((require, exports, module)=>{
     }
     args = args || {};
     switch (typeof key) {
-    case 'string':
-      for(let i = 0; i < key.length; ++i) {
-        args.which = key.charCodeAt(i);
+      case 'string':
+        for (let i = 0; i < key.length; ++i) {
+          args.which = key.charCodeAt(i);
+          TH.trigger(node, event, args);
+        }
+        break;
+      case 'number':
+        args.which = key;
         TH.trigger(node, event, args);
-      }
-      break;
-    case 'number':
-      args.which = key;
-      TH.trigger(node, event, args);
-      break;
-    default:
-      throw new Error("invalid key");
+        break;
+      default:
+        throw new Error('invalid key');
     }
   };
 
-  const dispatchEvent = (elm, event)=>{elm.dispatchEvent(event)};
+  const dispatchEvent = (elm, event) => {elm.dispatchEvent(event)};
 
   const ga = Core.assertions;
 
@@ -50,7 +50,7 @@ define((require, exports, module)=>{
     assert(
       range,
       startContainer, startOffset=0,
-      endContainer=startContainer, endOffset=startOffset
+      endContainer=startContainer, endOffset=startOffset,
     ) {
       if (typeof endContainer === 'number') {
         endOffset = endContainer;
@@ -59,9 +59,9 @@ define((require, exports, module)=>{
 
       if (util.isSafari) {
         const orig = Dom.getRange();
-        if (range == null)
+        if (range == null) {
           range = orig;
-        else {
+        } else {
           Dom.setRange(range);
           range = Dom.getRange();
         }
@@ -98,16 +98,16 @@ define((require, exports, module)=>{
       return Core.deepEqual(this.actual, expected, this, 'diff');
     },
 
-    assertMessage: "range to be equal{$diff}",
-    refuteMessage: "range to be equal\n  {i$actual}",
+    assertMessage: 'range to be equal{$diff}',
+    refuteMessage: 'range to be equal\n  {i$actual}',
   });
 
-  const domEvent = (eventName, func)=>{
+  const domEvent = (eventName, func) => {
     return trigger;
     function trigger(node, arg1, arg2) {
       let value = arg1;
-      if (typeof node === 'string') assert.elide(()=>{
-        const func1 = function () {node = this};
+      if (typeof node === 'string') assert.elide(() => {
+        const func1 = function () {node = this}
         if (arg2 === undefined) {
           assert.dom(node, func1);
         } else {
@@ -134,70 +134,71 @@ define((require, exports, module)=>{
     },
 
     stubAfTimeout() {
-      if (koru.afTimeout.restore)
+      if (koru.afTimeout.restore) {
         koru.afTimeout.restore();
+      }
 
       stub(koru, 'afTimeout').returns(util.voidFunc);
     },
 
-    yieldAfTimeout: ()=>{koru.afTimeout.yieldAndReset()},
+    yieldAfTimeout: () => {koru.afTimeout.yieldAndReset()},
 
     createMockEvent(currentTarget, options={}) {
       return Object.assign({}, {
         preventDefault: stub(),
         stopImmediatePropagation: stub(),
-        currentTarget: currentTarget,
+        currentTarget,
       }, options);
     },
 
     setColor(node, value) {
       TH.click(node);
-      assert.elide(()=>{assert.dom(document.body, () => {
+      assert.elide(() => {assert.dom(document.body, () => {
         assert.dom('#ColorPicker', () => {
           TH.input('input[name=hex]', value);
           TH.click('[name=apply]');
         });
-      });});
+      })});
       return this;
     },
 
     findDomEvent(template, type) {
-      return template._events.filter(event => event[0] === type);
+      return template._events.filter((event) => event[0] === type);
     },
 
     input: domEvent('input', (node, value) => {
-      if ('value' in node)
+      if ('value' in node) {
         node.value = value;
-      else
+      } else {
         node.textContent = value;
+      }
     }),
 
     keypress(elm, keycode, modifiers='') {
-      const has = re => !! modifiers.match(re);
+      const has = (re) => !! modifiers.match(re);
 
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
 
-      const pressEvent = document.createEvent("KeyboardEvent");
+      const pressEvent = document.createEvent('KeyboardEvent');
       //https://developer.mozilla.org/en/DOM/event.initKeyEvent
 
       if ('initKeyboardEvent' in pressEvent) {
-        if (Dom.vendorPrefix === 'ms')
-          pressEvent.initKeyboardEvent("keypress", true, true, window,
-                                       keycode, null, modifiers, false, "");
-        else {
+        if (Dom.vendorPrefix === 'ms') {
+          pressEvent.initKeyboardEvent('keypress', true, true, window,
+            keycode, null, modifiers, false, '');
+        } else {
           pressEvent.initKeyboardEvent(
-            "keypress", true, true, window,
-            keycode, null,  has(/ctrl/), has(/alt/), has(/shift/), has(/meta/));
+            'keypress', true, true, window,
+            keycode, null, has(/ctrl/), has(/alt/), has(/shift/), has(/meta/));
         }
 
         // Chromium Hack
         Object.defineProperty(pressEvent, 'which', {get() {return keycode}});
-
       } else {
         // firefox
-        pressEvent.initKeyEvent("keypress", true, true, window,
-                                has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
-                                keycode, keycode);
+        pressEvent.initKeyEvent('keypress', true, true, window,
+          has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
+          keycode, keycode);
       }
       dispatchEvent(elm, pressEvent);
       return this;
@@ -205,17 +206,18 @@ define((require, exports, module)=>{
 
     dispatchEvent,
 
-    change: domEvent('change', (node, value)=>{
-      if ('value' in node)
+    change: domEvent('change', (node, value) => {
+      if ('value' in node) {
         node.value = value;
-      else
+      } else {
         node.textContent = value;
+      }
     }),
 
     trigger(node, event, args) {
-      assert.elide(()=>{
+      assert.elide(() => {
         if (typeof node === 'string') {
-          assert.dom(node, node =>{Dom.triggerEvent(node, event, args)});
+          assert.dom(node, (node) => {Dom.triggerEvent(node, event, args)});
         } else {
           assert.msg('node not found')(node);
           return Dom.triggerEvent(node, event, args);
@@ -235,29 +237,30 @@ define((require, exports, module)=>{
     },
 
     click(node, arg1) {
-      assert.elide(()=>{
+      assert.elide(() => {
         if (typeof node === 'string') {
-          assert.dom(node, arg1, elm =>{TH.click(elm)});
+          assert.dom(node, arg1, (elm) => {TH.click(elm)});
         } else {
-          if (node.click)
+          if (node.click) {
             node.click(); // supported by form controls cross-browser; most native way
-          else
+          } else {
             TH.trigger(node, 'click');
+          }
         }
       });
       return this;
     },
 
     pointerDownUp(node, args={pointerId: 1}) {
-      assert.elide(()=>{
+      assert.elide(() => {
         if (typeof node === 'string') {
           if (typeof args === 'string') {
-            assert.dom(node, args, elm=>{node = elm});
+            assert.dom(node, args, (elm) => {node = elm});
             TH.trigger(node, 'pointerdown');
             TH.trigger(node, 'pointerup');
             return;
           }
-          assert.dom(node, elm=>{node = elm});
+          assert.dom(node, (elm) => {node = elm});
         }
         TH.trigger(node, 'pointerdown', args);
         TH.trigger(node, 'pointerup', args);
@@ -271,9 +274,11 @@ define((require, exports, module)=>{
         if (startOffset === undefined) {
           startOffset = 0;
           endOffset = startContainer.nodeType === document.TEXT_NODE
-            ? startContainer.nodeValue.length : startContainer.childNodes.length;
-        } else
+            ? startContainer.nodeValue.length
+            : startContainer.childNodes.length;
+        } else {
           endOffset = startOffset;
+        }
       }
       const range = document.createRange();
       range.setStart(startContainer, startOffset);
@@ -285,45 +290,47 @@ define((require, exports, module)=>{
     selectMenu(node, value, func) {
       TH.click(node);
       const menu = Dom('body>.glassPane>#SelectMenu');
-      if (! menu)
+      if (! menu) {
         assert.fail("Can't find #SelectMenu", 1);
-      switch(typeof value) {
-      case 'string':
-      case 'number':
-        const id = value;
-        value = m(arg => arg._id === id, {toString() {return `id of '${id}'`}});
-        break;
       }
-      assert.elide(()=>{assert.dom(menu, ()=>{
-        assert.dom('li', {data: value}, li => {
+      switch (typeof value) {
+        case 'string':
+        case 'number':
+          const id = value;
+          value = m((arg) => arg._id === id, {toString() {return `id of '${id}'`}});
+          break;
+      }
+      assert.elide(() => {assert.dom(menu, () => {
+        assert.dom('li', {data: value}, (li) => {
           switch (typeof func) {
-          case 'function':
-            if (func.call(li, li)) TH.click(li);
-            break;
-          case 'object':
-            if (func.menu) {
-              assert.dom(li.parentNode, menu => {
-                if (func.menu.call(menu, menu, li))
-                  TH.click(li);;
-              });
+            case 'function':
+              if (func.call(li, li)) TH.click(li);
               break;
-            }
-          default:
-            TH.click(li);
+            case 'object':
+              if (func.menu) {
+                assert.dom(li.parentNode, (menu) => {
+                  if (func.menu.call(menu, menu, li)) {
+                    TH.click(li);
+                  }
+                });
+                break;
+              }
+            default:
+              TH.click(li);
           }
         });
-      });});
+      })});
       return this;
     },
 
-    matchData: (attrs)=> ({data: m(o => {
+    matchData: (attrs) => ({data: m((o) => {
       for (const name in attrs) {
         if (! Core.deepEqual(o[name], attrs[name])) return false;
       }
       return true;
     }, () => util.inspect(attrs))}),
 
-    getSimpleBoundingRect: object =>{
+    getSimpleBoundingRect: (object) => {
       const rect = Dom.getBoundingClientRect(object);
       return rect && {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
     },

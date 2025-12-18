@@ -29,7 +29,7 @@ define((require, exports, module) => {
        */
       api.method();
       //[
-      const changes = {a: void 0, b: 123, c: '', d: null};
+      const changes = {a: undefined, b: 123, c: '', d: null};
       assert.same(util.voidToNull(changes), changes);
       assert.equals(changes, {a: null, b: 123, c: '', d: null});
       //]
@@ -595,10 +595,10 @@ define((require, exports, module) => {
       api.method('mergeExclude');
       //[
       let item = 5,
-          sub = {a: 1, b: 2},
-          sup = {b: 3, get c() {return item}, d: 4, e: 5};
+      sub = {a: 1, b: 2},
+      sup = {b: 3, get c() {return item}, d: 4, e: 5};
 
-      util.mergeExclude(sub, sup, {d: void 0, e: false});
+      util.mergeExclude(sub, sup, {d: undefined, e: false});
 
       item = 6;
 
@@ -633,7 +633,7 @@ define((require, exports, module) => {
       assert.same(obj, ans);
 
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
-                    {a: 1, c: 3, d: 4});
+        {a: 1, c: 3, d: 4});
       //]
     });
 
@@ -746,9 +746,9 @@ define((require, exports, module) => {
        */
       api.method();
       //[
-      const options = {a: 123, b: 456, e: void 0};
+      const options = {a: 123, b: 456, e: undefined};
 
-      assert.equals(util.assignOption(void 0, options, 'a'), {a: 123});
+      assert.equals(util.assignOption(undefined, options, 'a'), {a: 123});
 
       const obj = {a: 1, c: 777};
       const ao = util.assignOption.bind(null, obj, options);
@@ -759,7 +759,7 @@ define((require, exports, module) => {
       assert.equals(obj, {a: 123, c: 777, d: 444});
       obj.e = 222;
       ao('e');
-      assert.equals(obj, {a: 123, c: 777, d: 444, e: void 0});
+      assert.equals(obj, {a: 123, c: 777, d: 444, e: undefined});
       //]
     });
 
@@ -794,15 +794,15 @@ define((require, exports, module) => {
       assert.isFalse(util.deepEqual([2, 2], [1, matcher]));
 
       assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                                   {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 
       assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                                    {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
       assert.isFalse(util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}},
-                                    {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+        {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
 
       assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                                    {a: 1, b: {c: 1, d: [1, {e: [false], f: null}]}}));
+        {a: 1, b: {c: 1, d: [1, {e: [false], f: null}]}}));
 
       assert.isTrue(util.deepEqual({a: 1, b: undefined}, {a: 1}));
 
@@ -876,7 +876,7 @@ define((require, exports, module) => {
       assert.same(util.encodeURIComponent(null), '');
 
       assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"),
-                  '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
+        '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
     });
 
     test('decodeURIComponent', () => {
@@ -974,19 +974,19 @@ define((require, exports, module) => {
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
       assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]),
-                    {a: true, b: true});
+        {a: true, b: true});
       assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]),
-                    {a: {foo: 'a'}, b: {foo: 'b'}});
+        {a: {foo: 'a'}, b: {foo: 'b'}});
       assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]),
-                    {a: {foo: 'a'}, b: {foo: 'b'}});
+        {a: {foo: 'a'}, b: {foo: 'b'}});
       assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1},
-                                              {foo: 'b', baz: 2}]), {a: 1, b: 2});
+        {foo: 'b', baz: 2}]), {a: 1, b: 2});
       assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]),
-                    {foo: 'bar', a: 1});
+        {foo: 'bar', a: 1});
       assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]),
-                    {1: 'a', bar: 'foo'});
+        {1: 'a', bar: 'foo'});
       assert.equals(util.toMap('foo', (c, i) => c.foo + i, [{foo: 'a'}, {foo: 'b'}]),
-                    {a: 'a0', b: 'b1'});
+        {a: 'a0', b: 'b1'});
       //]
     });
 
@@ -1139,7 +1139,7 @@ define((require, exports, module) => {
       const ans = util.deepCopy([1, 2, , , v.ab = ['a', 'b']]);
       refute.same(ans[5], v.ab);
       assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`),
-                    ['1:0', '2:1', , , `['a', 'b']:4`]);
+        ['1:0', '2:1', , , `['a', 'b']:4`]);
 
       const func = () => {};
       assert.same(util.deepCopy(func), func);
@@ -1495,7 +1495,7 @@ define((require, exports, module) => {
       assert.same(util.timeUncertainty, 0);
       assert.same(util.dateNow(), 12348);
 
-      stubProperty(util, 'thread', {value: void 0});
+      stubProperty(util, 'thread', {value: undefined});
       assert.same(util.dateNow(), 12348);
     });
 
@@ -1595,7 +1595,7 @@ define((require, exports, module) => {
       assert.isNull(util.parseEmailAddresses('foo@ba_r.com'));
 
       assert.equals(util.parseEmailAddresses('foo@bar.baz.com fnord'),
-                    {addresses: ['foo@bar.baz.com'], remainder: 'fnord'});
+        {addresses: ['foo@bar.baz.com'], remainder: 'fnord'});
 
       assert.equals(
         util.parseEmailAddresses('a b c <abc@def.com> foo-_+%bar@vimaly-test.com, '),
@@ -1661,8 +1661,8 @@ define((require, exports, module) => {
     });
 
     test('voidFunc', () => {
-      assert.same(util.voidFunc(), void 0);
-      assert.same(util.voidFunc(123), void 0);
+      assert.same(util.voidFunc(), undefined);
+      assert.same(util.voidFunc(123), undefined);
     });
 
     test('trueFunc', () => {
@@ -1676,8 +1676,8 @@ define((require, exports, module) => {
 
     test('asyncArrayFrom', async () => {
       /**
-       * Convert an async iterator into an Array
-       */
+     * Convert an async iterator into an Array
+     */
       api.method();
       //[
       async function *asyncIter() {

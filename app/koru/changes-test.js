@@ -242,7 +242,7 @@ define((require, exports, module) => {
         assert.equals(attrs, {
           foo: 2, bar: 4, baz: {
             bif: [1, 2, {bob: 'text appended', bip: 'new'}],
-          },
+        },
           simple: 456,
         });
         assert.equals(undo, {
@@ -351,8 +351,8 @@ define((require, exports, module) => {
           const undo = Changes.applyAll(orig, changes);
 
           assert.equals(orig, {a: 2, c: 3, nest: {foo: 'foo', bar: 'new'},
-                               d: 4, new: {deep: {list: 'deeplist'}}});
-          assert.equals(undo, {$partial: {nest: ['bar', 'bar'], 'new': ['$replace', null]}});
+            d: 4, new: {deep: {list: 'deeplist'}}});
+          assert.equals(undo, {$partial: {nest: ['bar', 'bar'], new: ['$replace', null]}});
         }
       });
 
@@ -1114,7 +1114,7 @@ define((require, exports, module) => {
        **/
       test('exmaple', () => {
         assert.equals(Changes.topLevelChanges({foo: {a: 1}}, {$partial: {foo: ['$replace', null]}}),
-                      {foo: null});
+          {foo: null});
 
         const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
         const changes = {
@@ -1266,7 +1266,7 @@ define((require, exports, module) => {
 
         assert.equals(Changes.fieldDiff('foo', attrs, undefined), {one: null, two: null, three: null});
         assert.equals(Changes.fieldDiff('foo', undefined, attrs),
-                      {one: 123, two: 'a string', three: true});
+          {one: 123, two: 'a string', three: true});
 
         assert.equals(Changes.fieldDiff('foo', attrs, {}), {one: null, two: null, three: null});
         assert.equals(Changes.fieldDiff('foo', attrs, attrs), {});
@@ -1282,7 +1282,7 @@ define((require, exports, module) => {
 
         assert.equals(Changes.fieldDiff('foo', attrs, {foo: 123}), 123);
         assert.equals(Changes.fieldDiff('foo', {foo: {}}, {foo: new Date(2017, 1, 1)}),
-                      new Date(2017, 1, 1));
+          new Date(2017, 1, 1));
 
         assert.equals(Changes.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}), {
           one: null, two: null, three: null,
@@ -1310,9 +1310,9 @@ define((require, exports, module) => {
         assert.equals(Changes.fieldDiff('foo', attrs, changes), [2, 2, [4, 5, 6]]);
 
         assert.equals(Changes.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}),
-                      [0, 4, []]);
+          [0, 4, []]);
         assert.equals(Changes.fieldDiff('foo', {$partial: {foo: ['$replace', null]}}, attrs),
-                      [0, 0, [1, 2, 3, 4]]);
+          [0, 0, [1, 2, 3, 4]]);
       });
     });
   });

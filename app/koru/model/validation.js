@@ -67,7 +67,7 @@ define((require) => {
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
-          util.forEach(obj, (item, index) => {
+          obj.forEach((item, index) => {
             check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.test(subSpec)) {

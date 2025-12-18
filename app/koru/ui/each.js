@@ -62,8 +62,8 @@ define((require, exports, module) => {
     }
 
     let result = typeof pv.helper === 'function'
-        ? pv.helper.call(data, each, options)
-        : pv.helper;
+      ? pv.helper.call(data, each, options)
+      : pv.helper;
 
     if (result != null) {
       if (Array.isArray(result)) {
