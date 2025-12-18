@@ -242,7 +242,17 @@ define((require, exports, module) => {
           assert.dom(node, arg1, (elm) => {TH.click(elm)});
         } else {
           if (node.click) {
-            node.click(); // supported by form controls cross-browser; most native way
+            let err;
+            const errCapture = (event) => {err = event.error};
+            window.addEventListener('error', errCapture);
+            try {
+              node.click(); // supported by form controls cross-browser; most native way
+            } finally {
+              window.removeEventListener('error', errCapture);
+            }
+            if (err !== undefined) {
+              throw err;
+            }
           } else {
             TH.trigger(node, 'click');
           }
