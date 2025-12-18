@@ -29,6 +29,13 @@ define((require, exports, module) => {
       ]);
     });
 
+    test('extend', () => {
+      const BaseEnum = Enum(['zero', 'one']);
+      const ExtEnum = Enum.extend(BaseEnum, ['n2:-2', 'n1']);
+      assert.same(ExtEnum.one, 1);
+      assert.same(ExtEnum.n2, -2);
+    });
+
     test('match', () => {
       const MyEnum = Enum(['one', 'two:20', 'three']);
       const matcher = Enum.match(MyEnum);

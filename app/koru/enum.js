@@ -3,10 +3,9 @@ define((require, exports, module) => {
   const koru            = require('koru');
   const match           = require('koru/match');
 
-  const match$ = Symbol();
+  const match$ = Symbol(), tag$ = Symbol();
 
-  const Enum = (list) => {
-    const en = Object.create(null);
+  const addToEnum = (en, list) => {
     let i = 0;
     for (const l of list) {
       const [n, ni] = l.split(':');
@@ -21,15 +20,45 @@ define((require, exports, module) => {
         throw new Error(`entry already taken for ${n}:${i} for ${list.join(', ')}`);
       }
 
+      if (en.MIN === undefined || en.MIN > i) {
+        en.MIN = i;
+      }
+
+      if (en.MAX === undefined || en.MAX < i) {
+        en.MAX = i;
+      }
+
       en[n] = i;
       en[i] = n;
       ++i;
     }
-    en.MIN = 0;
-    en.MAX = i - 1;
+  };
+
+  const completeEnum = (en) => {
+    en[tag$] = 1;
     en[koru.__INTERCEPT$__] = Object.prototype[koru.__INTERCEPT$__];
     en[match$] = match((value) => match.integer.test(value) && en[value] !== undefined);
     Object.freeze(en);
+  };
+
+  const Enum = (list) => {
+    const en = Object.create(null);
+    addToEnum(en, list);
+    completeEnum(en);
+    return en;
+  };
+
+  Enum.extend = (base, list) => {
+    if (base[tag$] !== 1) {
+      throw new Error('base is not an enum');
+    }
+
+    const en = Object.create(null);
+    for (const prop in base) {
+      en[prop] = base[prop];
+    }
+    addToEnum(en, list);
+    completeEnum(en);
     return en;
   };
 
