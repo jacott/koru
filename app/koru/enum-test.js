@@ -8,7 +8,7 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('calling', () => {
-      const MyEnum = Enum('one two three'.split(' '));
+      const MyEnum = Enum(['one', 'two', 'three']);
       assert.same(MyEnum[0], 'one');
       assert.same(MyEnum[1], 'two');
       assert.same(MyEnum[2], 'three');
@@ -24,6 +24,18 @@ define((require, exports, module) => {
         {_id: 1, name: 'Two'},
         {_id: 2, name: 'Three'},
       ]);
+    });
+
+    test('match', () => {
+      const MyEnum = Enum(['one', 'two', 'three']);
+      const matcher = Enum.match(MyEnum);
+
+      assert.isFalse(matcher.test(3));
+      assert.isFalse(matcher.test(-1));
+      assert.isFalse(matcher.test('0'));
+      assert.isTrue(matcher.test(0));
+      assert.isTrue(matcher.test(1));
+      assert.isTrue(matcher.test(2));
     });
   });
 });
