@@ -1214,6 +1214,11 @@ define((require, exports, module) => {
       assert.same(util.humanize('Hyphens-and_underscores'), 'hyphens and underscores');
     });
 
+    test('capHumanize', () => {
+      assert.same(util.capHumanize('camelCaseCamel_id'), 'Camel case camel');
+      assert.same(util.capHumanize('Hyphens-and_underscores'), 'Hyphens and underscores');
+    });
+
     test('pluralize', () => {
       assert.same(util.pluralize('day', 1), 'day');
       assert.same(util.pluralize('day', 2), 'days');

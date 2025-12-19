@@ -229,10 +229,22 @@ define((require) => {
 
   Uint8Array.prototype[inspect$] = function () {
     return 'Uint8Array(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') + ')';
+  }
+
+  const humanize = (name) => {
+    if (name == null || name === '') {
+      return '';
+    }
+
+    return name.replace(
+      /[-._%+A-Z]\w[d]?/g, (w) => w === '_id'
+        ? ' '
+        : ' ' + util.uncapitalize(w.replace(/^[-._%+]/, '')),
+    ).trim();
   };
 
   util.merge(util, {
-    DAY: 1000 * 60 * 60 * 24,
+    DAY: 1000*60*60*24,
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
 
@@ -884,8 +896,14 @@ define((require) => {
     },
 
     humanize(name) {
-      name = this.uncapitalize(name);
-      return name.replace(/_id$/, '').replace(/[_-]/g, ' ').replace(/([A-Z])/g, (_, m1) => ' ' + m1.toLowerCase());
+      if (name == null || name === '') {
+        return '';
+      }
+      return util.uncapitalize(humanize(name));
+    },
+
+    capHumanize(name) {
+      return util.capitalize(humanize(name));
     },
 
     initials(name, count, abvr) {
@@ -945,7 +963,13 @@ define((require) => {
         return '';
       }
 
-      return value.charAt(0).toUpperCase() + value.substring(1);
+      const o = value.charAt(0);
+      const c = o.toUpperCase();
+      if (c == o) {
+        return value;
+      }
+
+      return c + value.slice(1);
     },
 
     uncapitalize(value) {
@@ -953,11 +977,17 @@ define((require) => {
         return '';
       }
 
-      return value.charAt(0).toLowerCase() + value.substring(1);
+      const o = value.charAt(0);
+      const c = o.toLowerCase();
+      if (c == o) {
+        return value;
+      }
+
+      return c + value.slice(1);
     },
 
     titleize(value) {
-      return this.capitalize(
+      return util.capitalize(
         value.replace(/[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/, ''))).trim(),
       );
     },
