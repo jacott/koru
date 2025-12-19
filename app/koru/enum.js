@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const match           = require('koru/match');
+  const util            = require('koru/util');
 
   const match$ = Symbol(), tag$ = Symbol();
 
@@ -72,9 +73,7 @@ define((require, exports, module) => {
     return list;
   };
 
-  const ident = (n) => n;
-
-  Enum.asMenuList = (enumType, mapper=ident) => {
+  Enum.asMenuList = (enumType, mapper=util.capHumanize) => {
     const list = [];
     for (let i = enumType.MIN; i <= enumType.MAX; ++i) {
       if (enumType[i] !== undefined) {
@@ -83,6 +82,9 @@ define((require, exports, module) => {
     }
     return list;
   };
+
+  Enum.asSortedMenuList = (enumType, mapper=util.titleize) => Enum.asMenuList(enumType, mapper)
+                                                              .sort(util.compareByName);
 
   Enum.match = (enumType) => enumType[match$];
 

@@ -8,24 +8,31 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('calling', () => {
-      const MyEnum = Enum(['one', 'two', 'three:6', 'four']);
+      const MyEnum = Enum(['one', 'two', 'three:6', 'fortyFour']);
       assert.same(MyEnum[0], 'one');
       assert.same(MyEnum[1], 'two');
       assert.same(MyEnum[6], 'three');
-      assert.same(MyEnum[7], 'four');
+      assert.same(MyEnum[7], 'fortyFour');
       assert.same(MyEnum.one, 0);
       assert.same(MyEnum.two, 1);
       assert.same(MyEnum.three, 6);
-      assert.same(MyEnum.four, 7);
+      assert.same(MyEnum.fortyFour, 7);
       assert.same(MyEnum.MIN, 0);
       assert.same(MyEnum.MAX, 7);
 
-      assert.equals(Enum.asList(MyEnum), 'one two three four'.split(' '));
+      assert.equals(Enum.asList(MyEnum), 'one two three fortyFour'.split(' '));
       assert.equals(Enum.asMenuList(MyEnum, (n) => util.capitalize(n)), [
         {_id: 0, name: 'One'},
         {_id: 1, name: 'Two'},
         {_id: 6, name: 'Three'},
-        {_id: 7, name: 'Four'},
+        {_id: 7, name: 'FortyFour'},
+      ]);
+
+      assert.equals(Enum.asSortedMenuList(MyEnum), [
+        {_id: 7, name: 'Forty Four'},
+        {_id: 0, name: 'One'},
+        {_id: 6, name: 'Three'},
+        {_id: 1, name: 'Two'},
       ]);
     });
 
