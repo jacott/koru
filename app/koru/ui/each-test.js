@@ -119,8 +119,8 @@ isClient && define((require, exports, module) => {
             } else {
               each.autoList({
                 query: v.TestModel.
-                  where({id1: each._major = this.major, id2: '2'})
-                  .sort('name'),
+                       where({id1: each._major = this.major, id2: '2'})
+                       .sort('name'),
               });
             }
           },
@@ -188,12 +188,12 @@ isClient && define((require, exports, module) => {
           assert.equals($.data(elm), {_id: 'b', name: 'alice'});
         });
 
-        each.staticList([2, 1], {map: (i) => [i, 'n' + i]});
+        each.staticList([2, 1], {map: (n, i) => [i, 'n' + n]});
 
         const x4Elm = each.append([4, 'x4']);
 
-        assert.dom('li:first-child', 'n2');
-        assert.dom('li:nth-last-child(2)', 'n1');
+        assert.dom('li:first-child', {text: 'n2', data: {_id: 0, name: 'n2'}});
+        assert.dom('li:nth-last-child(2)', {text: 'n1', data: {_id: 1, name: 'n1'}});
         assert.dom('li:last-child', 'x4', (elm) => {
           assert.same(x4Elm, elm);
         });
@@ -214,7 +214,7 @@ isClient && define((require, exports, module) => {
         container.firstChild, {}, {
           forEach(body) {body({_id: 1, name: 'Alice'})},
           compare: util.compareByName,
-        }, {template: v.Each.Row});
+      }, {template: v.Each.Row});
 
       assert.dom(container, (pn) => {
         assert.dom('li', 'Alice', (li) => {
@@ -233,7 +233,7 @@ isClient && define((require, exports, module) => {
         container.firstChild, {}, {
           forEach(body) {body({_id: 1, name: 'Alice'})},
           compare: util.compareByName,
-        }, {template: {toString: () => 'Each_fooList'}});
+      }, {template: {toString: () => 'Each_fooList'}});
 
       assert.dom(container, (pn) => {
         assert.dom('li', 'Alice', (li) => {

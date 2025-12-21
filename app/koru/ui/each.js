@@ -135,8 +135,8 @@ define((require, exports, module) => {
       this.clear();
 
       const {map} = options;
-      list.forEach((src) => {
-        this.append(map == null ? src : map(src));
+      list.forEach((src, i) => {
+        this.append(map == null ? src : map(src, i));
       });
     }
   }
