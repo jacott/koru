@@ -685,6 +685,18 @@ define((require, exports, module) => {
            **/
         });
 
+        test('wrong type', () => {
+          const attrs = {name: [1, 2, 3]};
+          const undo = [];
+          assert.exception(() => {
+            Changes.applyPartial({name: {a: 2}}, 'name', ['$patch', 'me'], undo);
+          }, {error: 400, reason: {name: 'wrong_type'}});
+
+          assert.exception(() => {
+            Changes.applyPartial(attrs, 'name', ['$patch', [0, 1, {a: 1}]], undo);
+          }, {error: 400, reason: {name: 'wrong_type'}});
+        });
+
         test('mix with $append', () => {
           const name = 'foo.one.two';
           const attrs = {name};

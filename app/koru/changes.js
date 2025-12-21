@@ -103,11 +103,18 @@ define((require, exports, module) => {
         si += ds;
       }
       const ei = si + dl;
+      if (typeof ov !== 'string' && ! Array.isArray(ov)) {
+        throw new koru.Error(400, {[key]: 'wrong_type'});
+      }
       const urep = ov.slice(si, ei);
       if (typeof ov === 'string') {
         ov = `${ov.slice(0, si)}${clen == 0 ? '' : content}${ov.slice(ei)}`;
       } else {
-        ov.splice(si, ei - si, ...(content == null ? [] : content));
+        const args = content ?? [];
+        if (typeof args[Symbol.iterator] !== 'function') {
+          throw new koru.Error(400, {[key]: 'wrong_type'});
+        }
+        ov.splice(si, ei - si, ...args);
       }
       si += clen;
 
