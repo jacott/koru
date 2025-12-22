@@ -163,7 +163,6 @@ define((require, exports, module) => {
     throw InterceptThrow;
   }
 
-  koru.__INTERCEPT$__ = Symbol();
   Object.prototype[koru.__INTERCEPT$__] = intercept;
 
   const recurse = (orig, obj, ans = new Map()) => {

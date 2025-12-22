@@ -112,6 +112,9 @@ define((require, exports, module) => {
 
     fetchDependants,
   };
+  if (isTest) {
+    koru.__INTERCEPT$__ = Symbol();
+  }
 
   // avoid search for de-bug statements
   globalThis['_\x6Boru_'] = koru;

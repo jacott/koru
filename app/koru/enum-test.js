@@ -43,6 +43,12 @@ define((require, exports, module) => {
       assert.same(ExtEnum.n2, -2);
     });
 
+    test('inspect', () => {
+      const MyEnum = Enum(['one', 'two:20', 'three']);
+      const ans = util.inspect(MyEnum);
+      assert.same(ans, "Enum(['one', 'two:20', 'three'])");
+    });
+
     test('match', () => {
       const MyEnum = Enum(['one', 'two:20', 'three']);
       const matcher = Enum.match(MyEnum);

@@ -4,6 +4,8 @@ define((require, exports, module) => {
   const match           = require('koru/match');
   const util            = require('koru/util');
 
+  const {inspect$} = require('koru/symbols');
+
   const match$ = Symbol(), tag$ = Symbol();
 
   const addToEnum = (en, list) => {
@@ -35,10 +37,28 @@ define((require, exports, module) => {
     }
   };
 
+  function inspect() {
+    let prev = -1;
+    return `Enum(${util.inspect(Enum.asList(this, (n, i) => {
+      if (++prev == i) {
+        return n;
+      } else {
+        prev = i;
+        return `${n}:${i}`;
+      }
+    }))})`;
+  }
+
   const completeEnum = (en) => {
     en[tag$] = 1;
-    en[koru.__INTERCEPT$__] = Object.prototype[koru.__INTERCEPT$__];
+    if (isTest) {
+      en[koru.__INTERCEPT$__] = function (...args) {
+        return Object.prototype[koru.__INTERCEPT$__].apply(this, args);
+      }
+    }
+
     en[match$] = match((value) => match.integer.test(value) && en[value] !== undefined);
+    en[inspect$] = inspect;
     Object.freeze(en);
   };
 
@@ -63,25 +83,18 @@ define((require, exports, module) => {
     return en;
   };
 
-  Enum.asList = (enumType) => {
+  Enum.asList = (enumType, mapper=util.identityFunc) => {
     const list = [];
     for (let i = enumType.MIN; i <= enumType.MAX; ++i) {
       if (enumType[i] !== undefined) {
-        list.push(enumType[i]);
+        list.push(mapper(enumType[i], i));
       }
     }
     return list;
   };
 
-  Enum.asMenuList = (enumType, mapper=util.capHumanize) => {
-    const list = [];
-    for (let i = enumType.MIN; i <= enumType.MAX; ++i) {
-      if (enumType[i] !== undefined) {
-        list.push({_id: i, name: mapper(enumType[i])});
-      }
-    }
-    return list;
-  };
+  Enum.asMenuList = (enumType, mapper=util.capHumanize) => Enum.asList(
+    enumType, (n, i) => ({_id: i, name: mapper(n)}));
 
   Enum.asSortedMenuList = (enumType, mapper=util.titleize) => Enum.asMenuList(enumType, mapper)
                                                               .sort(util.compareByName);
