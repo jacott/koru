@@ -3,6 +3,8 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
 
+  const {stub, spy, after} = TH;
+
   const sut = require('./required-validator').required.bind(validation);
 
   const {error$} = require('koru/symbols');
@@ -75,6 +77,22 @@ define((require, exports, module) => {
 
       assert(doc[error$]);
       assert.equals(doc[error$]['empty'], [['is_required']]);
+    });
+
+    test('custom function', () => {
+      const func = stub();
+      func.onCall(0).returns(false).onCall(1).returns(true);
+
+      sut(doc, 'exists', func);
+      assert(doc[error$]);
+      assert.equals(doc[error$]['exists'], [['is_required']]);
+
+      assert.calledWith(func, 'a', 'exists');
+      assert.same(func.firstCall.thisValue, doc);
+
+      doc[error$] = undefined;
+      sut(doc, 'exists', func);
+      assert.same(doc[error$], undefined);
     });
   });
 });
