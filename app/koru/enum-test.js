@@ -19,6 +19,7 @@ define((require, exports, module) => {
       assert.same(MyEnum.fortyFour, 7);
       assert.same(MyEnum.MIN, 0);
       assert.same(MyEnum.MAX, 7);
+      assert.same(MyEnum.length, 8);
 
       assert.equals(Enum.asList(MyEnum), 'one two three fortyFour'.split(' '));
       assert.equals(Enum.asMenuList(MyEnum, (n) => util.capitalize(n)), [

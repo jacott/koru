@@ -12,6 +12,10 @@ define((require, exports, module) => {
     let i = 0;
     for (const l of list) {
       const [n, ni] = l.split(':');
+      if (n === 'length' || n === 'MAX' || n === 'MIN') {
+        throw new Error(`Reserved word "${n}" used in ${list.join(', ')}`);
+      }
+
       if (ni !== undefined) {
         i = +ni;
         if (isNaN(i)) {
@@ -35,6 +39,7 @@ define((require, exports, module) => {
       en[i] = n;
       ++i;
     }
+    en.length = i;
   };
 
   function inspect() {
@@ -59,7 +64,6 @@ define((require, exports, module) => {
 
     en[match$] = match((value) => match.integer.test(value) && en[value] !== undefined);
     en[inspect$] = inspect;
-    Object.freeze(en);
   };
 
   const Enum = (list) => {
