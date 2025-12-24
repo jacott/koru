@@ -293,7 +293,7 @@ define((require) => {
       }
     },
 
-    renderErrors(doc, form) {
+    renderErrors(doc, form, prefix) {
       const errors = doc[error$] ?? (doc instanceof koru.Error ? doc.reason : undefined);
       const otherMsgs = [];
       let focus;
@@ -302,8 +302,8 @@ define((require) => {
       if (errors !== undefined) {
         for (const field in errors) {
           const msg = Val.Error.msgFor(errors, field);
-          if (msg) {
-            const fieldElm = Tpl.renderError(form, field, msg);
+          if (msg != null) {
+            const fieldElm = Tpl.renderError(form, field, msg, prefix);
             if (fieldElm) {
               focus ??= fieldElm;
             } else {
@@ -322,7 +322,11 @@ define((require) => {
       return false;
     },
 
-    renderError(form, field, msg) {
+    renderError(form, field, msg, prefix) {
+      if (prefix !== undefined && field.startsWith(prefix)) {
+        field = field.slice(prefix.length);
+      }
+
       let fieldElm;
       if (arguments.length === 2) {
         fieldElm = form;

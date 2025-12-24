@@ -526,6 +526,17 @@ isClient && define((require, exports, module) => {
         assert.dom('[name=foo].error+.errorMsg>div', 'is not valid');
         assert.dom('[name=bar].error+.errorMsg>div', "can't be blank");
       });
+
+      Form.clearErrors(form);
+
+      const prefixedError = new koru.Error(400, {abcdbar: ['is_invalid'], abcdfoo: ['is_required']});
+
+      Form.renderErrors(prefixedError, form, 'abcd');
+
+      assert.dom(form, (elm) => {
+        assert.dom('[name=foo].error+.errorMsg>div', "can't be blank");
+        assert.dom('[name=bar].error+.errorMsg>div', 'is not valid');
+      });
     });
 
     test('errorTop renderError', () => {
