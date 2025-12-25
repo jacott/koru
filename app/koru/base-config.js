@@ -1,38 +1,40 @@
 const fs = require('fs');
 const path = require('path');
 
-const polyfill = (modName, destname)=>{
+const polyfill = (modName, destname) => {
   const srcPath = require.resolve(modName);
   const destPath = path.resolve(__dirname, 'polyfill', destname ?? path.basename(srcPath));
 
   if (! stat(destPath)) {
-    try {fs.unlinkSync(destPath);} catch(ex) {}
+    try {fs.unlinkSync(destPath)} catch (ex) {}
     fs.symlinkSync(srcPath, destPath);
   }
 };
 
-const stat = file =>{
+const stat = (file) => {
   try {
     return fs.statSync(file);
-  }
-  catch(ex) {
-    if (ex.code !== 'ENOENT')
+  } catch (ex) {
+    if (ex.code !== 'ENOENT') {
       throw ex;
+    }
   }
 };
 
 exports.polyfill = polyfill;
 
-exports.common = cfg =>{
+exports.common = (cfg) => {
   cfg.set('requirejs.packages', [
-    "koru", "koru/session",
+    'koru', 'koru/session',
   ]);
+
+  cfg.set('requirejs.config.koru/main.env', process.env.KORU_ENV);
 };
 
-exports.server = cfg =>{
+exports.server = (cfg) => {
   cfg.merge('requirejs', {
     paths: {
-      koru: __dirname
+      koru: __dirname,
     },
     //Pass the top-level main.js/index.js require
     //function to requirejs so that node modules
@@ -42,6 +44,4 @@ exports.server = cfg =>{
   cfg.set('clientjs', 'client');
 };
 
-exports.client = cfg =>{
-
-};
+exports.client = (cfg) => {};
