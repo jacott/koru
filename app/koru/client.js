@@ -7,8 +7,10 @@ define((require, exports, module) => {
 
   let lastLog = 0, logCount = 0;
 
+  const isRatelimit = ! isTest && koru.config.env !== 'demo';
+
   koru.clientLogger = koru.logger = (type, ...args) => {
-    if (type !== 'D' && ++logCount > 5) {
+    if (isRatelimit && type !== 'D' && koru.config.env && ++logCount > 5) {
       if (lastLog + 60000 > Date.now()) return;
       logCount = 0;
     }
