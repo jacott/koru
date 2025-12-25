@@ -420,15 +420,29 @@ define((require) => {
      */
     deepEqual,
 
-    shallowEqual(array1, array2) {
-      if (! Array.isArray(array1) || ! Array.isArray(array2) || array1.length !== array2.length) {
+    shallowEqual(a, b) {
+      if (is(a, b)) {
+        return true;
+      }
+
+      if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
         return false;
       }
-      for (let i = 0; i < array1.length; ++i) {
-        if (array1[i] !== array2[i]) {
+
+      if (Array.isArray(a) || Array.isArray(b)) {
+        if (! Array.isArray(a) || ! Array.isArray(b) || a.length !== b.length) {
           return false;
         }
+        return a.every((e, i) => is(e, b[i]));
       }
+
+      for (const n in a) {
+        if (a[n] !== b[n]) return false;
+      }
+      for (const n in b) {
+        if (a[n] !== b[n]) return false;
+      }
+
       return true;
     },
 

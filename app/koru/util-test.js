@@ -772,6 +772,15 @@ define((require, exports, module) => {
       assert.isFalse(util.shallowEqual('a', [1, 2]));
     });
 
+    test('shallowEqual other', () => {
+      assert.isTrue(util.shallowEqual(1, 1));
+      assert.isTrue(util.shallowEqual('same', 'same'));
+      assert.isTrue(util.shallowEqual({b: 2, a: 1}, {a: 1, b: 2}));
+
+      assert.isFalse(util.shallowEqual({a: 1}, {a: 1, b: 2}));
+      assert.isFalse(util.shallowEqual({b: 2, a: 1}, {b: 2}));
+    });
+
     test('deepEqual', () => {
       assert.isTrue(util.deepEqual(null, null));
       assert.isTrue(util.deepEqual(null, undefined));
