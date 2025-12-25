@@ -783,13 +783,6 @@ define((require) => {
       return -1;
     },
 
-    createDictionary: () => {
-      const dict = Object.create(null);
-      dict['.;\x00'] = undefined;
-      delete dict['.;\x00'];
-      return dict;
-    },
-
     /**
      * Do a shallow copy of a type
      */

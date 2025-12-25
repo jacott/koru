@@ -57,9 +57,7 @@ define((require, exports, module) => {
   const completeEnum = (en) => {
     en[tag$] = 1;
     if (isTest) {
-      en[koru.__INTERCEPT$__] = function (...args) {
-        return Object.prototype[koru.__INTERCEPT$__].apply(this, args);
-      }
+      util.makeInterceptable(en);
     }
 
     en[match$] = match((value) => match.integer.test(value) && en[value] !== undefined);

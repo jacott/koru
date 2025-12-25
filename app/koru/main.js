@@ -112,7 +112,24 @@ define((require, exports, module) => {
 
     fetchDependants,
   };
+
+  util.createDictionary = () => {
+    const dict = Object.create(null);
+    if (isTest) {
+      util.makeInterceptable(dict);
+    }
+
+    dict['.;\x00'] = undefined;
+    delete dict['.;\x00'];
+    return dict;
+  };
+
   if (isTest) {
+    util.makeInterceptable = (obj) => {
+      obj[koru.__INTERCEPT$__] = function (...args) {
+        return Object.prototype[koru.__INTERCEPT$__].apply(this, args);
+      }
+    };
     koru.__INTERCEPT$__ = Symbol();
   }
 
