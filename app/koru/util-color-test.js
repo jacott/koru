@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const HtmlDoc         = require('koru/dom/html-doc');
   const TH              = require('koru/test-helper');
@@ -7,14 +7,14 @@ define((require, exports, module)=>{
 
   const uColor = require('./util-color');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("hex2Style", ()=>{
-      assert.equals(uColor.hex2Style(''), "");
-      assert.equals(uColor.hex2Style('#x'), "rgba(0,0,0,0)");
-      assert.equals(uColor.hex2Style('#FF001180'), "rgba(255,0,17,0.5)");
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('hex2Style', () => {
+      assert.equals(uColor.hex2Style(''), '');
+      assert.equals(uColor.hex2Style('#x'), 'rgba(0,0,0,0)');
+      assert.equals(uColor.hex2Style('#FF001180'), 'rgba(255,0,17,0.5)');
     });
 
-    test("toRGB", ()=>{
+    test('toRGB', () => {
       assert.equals(uColor.toRGB('rgba(100, 3, 45, .75)'), {r: 100, g: 3, b: 45, a: 0.75});
       assert.equals(uColor.toRGB('rgb(100,3, 45)'), {r: 100, g: 3, b: 45, a: 1});
       assert.equals(uColor.toRGB('#FF001180'), {r: 255, g: 0, b: 17, a: 0.5});
@@ -32,16 +32,16 @@ define((require, exports, module)=>{
       assert.equals(uColor.hex2rgb('123456', 'validate'), {r: 18, g: 52, b: 86, a: 1});
     });
 
-    test("toHex", ()=>{
+    test('toHex', () => {
       assert.equals(uColor.toHex('rgba(100, 3, 45)'), '#64032d');
     });
 
-    test("toRgbStyle", ()=>{
+    test('toRgbStyle', () => {
       assert.equals(uColor.toRgbStyle('rgba(100, 3, 45, .75)'), 'rgba(100, 3, 45, 0.75)');
       assert.equals(uColor.toRgbStyle('rgba(100, 3, 45)'), 'rgb(100, 3, 45)');
     });
 
-    test("hex2rgb", ()=>{
+    test('hex2rgb', () => {
       assert.equals(uColor.hex2rgb('#11aadd'), {r: 17, g: 170, b: 221, a: 1});
       assert.equals(uColor.hex2rgb('11aadd'), {r: 17, g: 170, b: 221, a: 1});
       assert.equals(uColor.hex2rgb('#aa11dd10'), {r: 170, g: 17, b: 221, a: 0.0625});
@@ -49,7 +49,7 @@ define((require, exports, module)=>{
       assert.equals(uColor.hex2rgb('foo'), {r: 0, g: 0, b: 0, a: 1});
     });
 
-    test("alphaHexToFrac", ()=>{
+    test('alphaHexToFrac', () => {
       assert.same(uColor.alphaHexToFrac('80'), 0.5);
 
       assert.same(uColor.alphaHexToFrac('87'), 0.5276);
@@ -60,7 +60,7 @@ define((require, exports, module)=>{
       assert.same(uColor.alphaHexToFrac('ff'), 1);
     });
 
-    test("alphaFracToHex", ()=>{
+    test('alphaFracToHex', () => {
       assert.same(uColor.alphaFracToHex(0.5), '80');
       assert.same(uColor.alphaFracToHex(0.5276), '87');
       assert.same(uColor.alphaFracToHex(0.2963), '4c');
@@ -71,13 +71,13 @@ define((require, exports, module)=>{
       assert.same(uColor.alphaFracToHex(1), 'ff');
     });
 
-    test("rgb2hex", ()=>{
+    test('rgb2hex', () => {
       assert.equals(uColor.rgb2hex({r: 17, g: 170, b: 221}), '#11aadd');
       assert.equals(uColor.rgb2hex({r: 17, g: 170, b: 221, a: .3}, ''), '11aadd4d');
       assert.equals(uColor.rgb2hex({r: 255, g: 0, b: 128, a: .01}, ''), 'ff008003');
     });
 
-    test("rgb2hsl", ()=>{
+    test('rgb2hsl', () => {
       const hsl = uColor.rgb2hsl('#11aadd');
       assert.near(hsl.h, 0.542, 0.001);
       assert.near(hsl.s, 0.857, 0.001);
@@ -86,59 +86,59 @@ define((require, exports, module)=>{
       assert.equals(uColor.rgb2hsl({r: 17, g: 170, b: 221}), hsl);
     });
 
-    test("hsl2rgb", ()=>{
+    test('hsl2rgb', () => {
       assert.equals(uColor.hsl2rgb({h: 0.5, s: 0.8, l: 0.5}), {r: 25, g: 229, b: 230});
       assert.equals(uColor.hsl2rgb({h: 1, s: 1, l: 0.25}), {r: 128, g: 0, b: 0});
     });
 
-    test("setBackgroundAndBorderColorStyle", ()=>{
+    test('setBackgroundAndBorderColorStyle', () => {
       const style = {setProperty: stub()};
 
       uColor.setBackgroundAndBorderColorStyle(style, '#717a1d');
 
-      assert.calledWith(style.setProperty, 'background-color', "#717a1d");
-      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
-      assert.calledWith(style.setProperty, 'border-color', "rgba(252,252,252,0.3)");
+      assert.calledWith(style.setProperty, 'background-color', '#717a1d');
+      assert.calledWith(style.setProperty, 'color', '#fcfcfc');
+      assert.calledWith(style.setProperty, 'border-color', 'rgba(252,252,252,0.3)');
 
       style.setProperty.reset();
       uColor.setBackgroundAndBorderColorStyle(style, '#717a1d80');
-      assert.calledWith(style.setProperty, 'background-color', "rgba(113,122,29,0.5)");
-      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
-      assert.calledWith(style.setProperty, 'border-color', "rgba(252,252,252,0.3)");
+      assert.calledWith(style.setProperty, 'background-color', 'rgba(113,122,29,0.5)');
+      assert.calledWith(style.setProperty, 'color', '#fcfcfc');
+      assert.calledWith(style.setProperty, 'border-color', 'rgba(252,252,252,0.3)');
     });
 
-    test("setBackgroundColorStyle", ()=>{
+    test('setBackgroundColorStyle', () => {
       const style = {setProperty: stub()};
 
       uColor.setBackgroundColorStyle(style, '#717a1d');
       assert.calledTwice(style.setProperty);
-      assert.calledWith(style.setProperty, 'background-color', "#717a1d");
-      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
+      assert.calledWith(style.setProperty, 'background-color', '#717a1d');
+      assert.calledWith(style.setProperty, 'color', '#fcfcfc');
 
       style.setProperty.reset();
 
       uColor.setBackgroundColorStyle(style, '');
       assert.calledTwice(style.setProperty);
-      assert.calledWith(style.setProperty, 'background-color', "");
-      assert.calledWith(style.setProperty, 'color', "#4d4d4d");
+      assert.calledWith(style.setProperty, 'background-color', '');
+      assert.calledWith(style.setProperty, 'color', '#4d4d4d');
     });
 
-    test("backgroundColorStyle", ()=>{
+    test('backgroundColorStyle', () => {
       assert.same(uColor.backgroundColorStyle('#11aadda0'),
-                  "background-color:rgba(17,170,221,0.626);color:#040404;");
+        'background-color:rgba(17,170,221,0.626);color:#040404;');
 
-      assert.same(uColor.backgroundColorStyle('#11aadd'), "background-color:#11aadd;color:#040404;");
+      assert.same(uColor.backgroundColorStyle('#11aadd'), 'background-color:#11aadd;color:#040404;');
 
-      assert.same(uColor.backgroundColorStyle('#717a1d'), "background-color:#717a1d;color:#fcfcfc;");
+      assert.same(uColor.backgroundColorStyle('#717a1d'), 'background-color:#717a1d;color:#fcfcfc;');
     });
 
-    test("colorOnLight", ()=>{
+    test('colorOnLight', () => {
       assert.same(uColor.colorOnLight('#717a1d'), '#717a1d');
 
       assert.same(uColor.colorOnLight('#f17afd'), '#d660e2');
     });
 
-    test("colorClass", ()=>{
+    test('colorClass', () => {
       assert.same(uColor.colorClass('#717a1d'), 'dark');
       assert.same(uColor.colorClass('#111a1d'), 'verydark');
       assert.same(uColor.colorClass('#3030ff'), 'verydark');
@@ -148,7 +148,7 @@ define((require, exports, module)=>{
       assert.same(uColor.colorClass('#11fafd'), 'verylight');
     });
 
-    test("contrastColor", ()=>{
+    test('contrastColor', () => {
       assert.same(uColor.contrastColor('#717a1d'), '#feffa0');
       assert.same(uColor.contrastColor('#111a1d'), '#cbd6db');
 
@@ -156,11 +156,11 @@ define((require, exports, module)=>{
       assert.same(uColor.contrastColor('#11fafd'), '#003f46');
     });
 
-    test("fade", ()=>{
+    test('fade', () => {
       assert.same(uColor.fade('#717a9d', 50), 'rgba(113,122,157,0.5)');
     });
 
-    test("addColorClass", ()=>{
+    test('addColorClass', () => {
       const elm = document.createElement('div');
 
       uColor.addColorClass(elm, '#717a9d');
