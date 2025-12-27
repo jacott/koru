@@ -114,7 +114,7 @@ define((require, exports, module) => {
   };
 
   const hex2lab = (color) => {
-    const rgb = hex2rgb(color);
+    const rgb = typeof color === 'string' || color == null ? hex2rgb(color) : color;
     const r = rgb2xyz(rgb.r);
     const g = rgb2xyz(rgb.g);
     const b = rgb2xyz(rgb.b);
@@ -194,7 +194,16 @@ define((require, exports, module) => {
       return style;
     },
 
-    setBackgroundAndBorderColorStyle(style, color='#ffffff') {
+    setColorAndContrastStyleVars(style, color, colorName='color', contrastName='contrastColor') {
+      color = color || {r: 255, g: 255, b: 255, a: 1};
+      style.setProperty('--' + colorName, toRgbStyle(color));
+      style.setProperty('--' + contrastName, toRgbStyle(
+        contrastColors[color] ??= contrastColor(color, '#4d4d4d')));
+      return style;
+    },
+
+    setBackgroundAndBorderColorStyle(style, color) {
+      color = color || '#ffffff';
       UtilColor.setBackgroundColorStyle(style, color);
       const cc = contrastColors[color];
       style.setProperty('border-color', borderColors[color] ??= fade(cc, 30));
