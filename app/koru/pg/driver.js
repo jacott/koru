@@ -462,9 +462,9 @@ define((require, exports, module) => {
                                                              .then(() => this._client.withConn(callback));
     }
 
-    readColumns() {return readColumns(this)}
+    readColumns(auto) {return readColumns(this, auto)}
 
-    async _ensureTable() {
+    async _ensureTable(auto=autoSchema) {
       if (this._ready === true) return;
 
       if (typeof this._ready === 'object') {
@@ -481,7 +481,7 @@ define((require, exports, module) => {
 
       this._ready = null;
 
-      if (autoSchema) {
+      if (auto) {
         await this.autoCreate();
       } else {
         await readColumns(this);
@@ -498,7 +498,7 @@ define((require, exports, module) => {
     }
 
     async autoCreate() {
-      await readColumns(this);
+      await readColumns(this, true);
       const {schema} = this;
       if (this._colMap === undefined) {
         const fields = ['_id text collate "C" PRIMARY KEY'];
@@ -1207,7 +1207,7 @@ define((require, exports, module) => {
     await readColumns(table);
   };
 
-  const readColumns = async (table) => {
+  const readColumns = async (table, auto=autoSchema) => {
     const colQuery = `SELECT attname as name, atttypid::int4 as oid, attndims as arrayDim, attnum as order,
 (select collname from pg_collation as c where c.oid = attcollation AND c.collname <> 'default') as collation_name
 FROM pg_attribute
@@ -1215,10 +1215,10 @@ WHERE attrelid = to_regclass('${await table._client.schemaName()}."${table._name
 AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     const columns = await oidQuery(table._client, colQuery);
     if (columns.length == 0) {
-      if (Driver.throwMissingTable) {
-        throw new Error(`column query failed: ${colQuery}`);
+      if (auto) {
+        return;
       }
-      table._colMap = undefined;
+      throw new Error(`column query failed: ${colQuery}`);
     } else {
       table._colMap = {};
       for (const col of columns) {
@@ -1231,7 +1231,6 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
   const DEFAULT_FORMAT_OPTIONS = {excludeNulls: true};
 
   const Driver = {
-    throwMissingTable: ! isTest,
     isPG: true,
 
     get defaultDb() {

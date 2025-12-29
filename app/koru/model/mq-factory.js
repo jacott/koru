@@ -10,7 +10,7 @@ define((require, exports, module) => {
   const {hasOwn} = util;
 
   const timer$ = Symbol(), ready$ = Symbol(), retryInterval$ = Symbol(),
-        action$ = Symbol(), dbs$ = Symbol(), queue$ = Symbol();
+  action$ = Symbol(), dbs$ = Symbol(), queue$ = Symbol();
 
   const DEFAULT_INTERVAL = 60*1000;
 
@@ -48,7 +48,7 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
   const action = async (mq) => {
     dbBroker.db = mq.mqdb.table._client;
     const {name, [timer$]: timer,
-           mqdb: {[action$]: actions, [retryInterval$]: retryIntervals}} = mq;
+      mqdb: {[action$]: actions, [retryInterval$]: retryIntervals}} = mq;
     timer.dueAt = 0;
     mq.error = undefined;
     try {
@@ -62,8 +62,8 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
       return await queueNext(mq);
     } catch (err) {
       const retryInterval = typeof err.retryAfter === 'number'
-            ? err.retryAfter
-            : retryIntervals[name] ?? DEFAULT_INTERVAL;
+        ? err.retryAfter
+        : retryIntervals[name] ?? DEFAULT_INTERVAL;
       if (err.stack) koru.unhandledException(err);
       if (retryInterval !== -1) {
         timer.handle = undefined;
@@ -105,7 +105,7 @@ select "dueAt" from "${table._name}" where name = $1
   const initTable = async (mqdb) => {
     mqdb[ready$] = true;
     const {table} = mqdb;
-    await table._ensureTable();
+    await table._ensureTable(true);
     if (table._colMap === undefined) {
       await dbBroker.db.query(TABLE_SCHEMA.replace(/_message_queue/g, table._name));
       await table.readColumns();
