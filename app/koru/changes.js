@@ -7,9 +7,9 @@ define((require, exports, module) => {
 
   const {original$} = require('koru/symbols');
 
-  const {isObjEmpty, diffString,
-    deepEqual, deepCopy, elemMatch,
-    addItem, removeItem} = require('koru/util');
+  const {isObjEmpty, diffString, deepEqual, deepCopy, elemMatch, addItem, removeItem} = require(
+    'koru/util',
+  );
 
   const {hasOwn} = util;
 
@@ -51,7 +51,7 @@ define((require, exports, module) => {
     return to;
   };
 
-  const diffArray = (oldSeq, newSeq, equal=same) => {
+  const diffArray = (oldSeq, newSeq, equal = same) => {
     const lo = oldSeq.length - 1, ln = newSeq.length - 1;
     const minLast = Math.min(lo, ln);
     let s = 0, e = 0;
@@ -89,13 +89,14 @@ define((require, exports, module) => {
       si = ov.length;
       undoPatch !== undefined && undoPatch.push(0, si, null);
     }
-    for (;i < patch.length; i += 3) {
+    for (; i < patch.length; i += 3) {
       let ds = patch[i];
       const dl = patch[i + 1], content = patch[i + 2];
       const clen = content == null ? 0 : content.length;
       if (ds < 0) {
-        if (patch.length - 3 !== i) throw new koru.Error(
-          400, {[key]: 'negative delta may only be in the last patch block'});
+        if (patch.length - 3 !== i) {
+          throw new koru.Error(400, {[key]: 'negative delta may only be in the last patch block'});
+        }
         const nsi = ov.length + ds;
         ds = nsi - si;
         si = nsi;
@@ -103,7 +104,7 @@ define((require, exports, module) => {
         si += ds;
       }
       const ei = si + dl;
-      if (typeof ov !== 'string' && ! Array.isArray(ov)) {
+      if (typeof ov !== 'string' && !Array.isArray(ov)) {
         throw new koru.Error(400, {[key]: 'wrong_type'});
       }
       const urep = ov.slice(si, ei);
@@ -118,10 +119,7 @@ define((require, exports, module) => {
       }
       si += clen;
 
-      undoPatch !== undefined && undoPatch.push(
-        ds,
-        clen, urep.length == 0 ? null : urep,
-      );
+      undoPatch !== undefined && undoPatch.push(ds, clen, urep.length == 0 ? null : urep);
     }
     return ov;
   };
@@ -168,12 +166,12 @@ define((require, exports, module) => {
     for (i = 0; i < partLen - 1; ++i) {
       let part = parts[i];
       if (Array.isArray(curr)) {
-        part = + parts[i];
+        part = +parts[i];
         if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
       }
 
       if (curr[part] == null) {
-        if (! changesUpdated) {
+        if (!changesUpdated) {
           changesUpdated = true;
           delete changes[key];
           key = parts.slice(0, i + 1).join('.');
@@ -189,14 +187,14 @@ define((require, exports, module) => {
     if (partial) {
       const undo = [];
       applyPartial(curr, part, nv, undo);
-      if (! changesUpdated) {
+      if (!changesUpdated) {
         changes[key] = undo;
       }
       return;
     }
 
     let ov = curr[part];
-    if (! changesUpdated) {
+    if (!changesUpdated) {
       if (nv === ov || deepEqual(nv, ov)) {
         delete changes[key];
       } else {
@@ -227,8 +225,8 @@ define((require, exports, module) => {
           if (md5sum(attrs[key]).startsWith(expected.md5)) return;
         } else if (typeof expected.sha256 === 'string') {
           if (sha256(attrs[key]).startsWith(expected.sha256)) return;
-        } else if (deepEqual(attrs[key], expected)) return
-      } else if (deepEqual(attrs[key], expected)) return
+        } else if (deepEqual(attrs[key], expected)) return;
+      } else if (deepEqual(attrs[key], expected)) return;
 
       throw new koru.Error(409, {[key]: 'not_match'});
     },
@@ -271,7 +269,7 @@ define((require, exports, module) => {
         throw new koru.Error(400, {[key]: 'wrong_type'});
       }
       if (undo !== undefined) {
-        undo.push('$patch', [- nv.length, nv.length, null]);
+        undo.push('$patch', [-nv.length, nv.length, null]);
       }
     },
     $patch(attrs, key, patch, undo) {
@@ -345,7 +343,9 @@ define((require, exports, module) => {
         const changes = {[field]: nv};
         applyOne(
           ov == null ? (attrs[key] = typeof field === 'string' ? {} : []) : ov,
-          field, changes);
+          field,
+          changes,
+        );
 
         if (undo !== undefined) {
           if (ov == null) {
@@ -379,98 +379,110 @@ define((require, exports, module) => {
     if (ft === 'string' && tt === 'string') {
       return diffSeq(from, to);
     }
-    if ((from != null && to != null &&
-      (ft !== 'object' || tt !== 'object' ||
-        to.constructor !== from.constructor)) ||
-      from == null && to == null) {
+    if (
+      (from != null && to != null &&
+        (ft !== 'object' || tt !== 'object' || to.constructor !== from.constructor)) ||
+      from == null && to == null
+    ) {
       return to;
     }
 
     switch ((from == null ? to : from).constructor) {
-      case Object: {
-        if (from === to) return {};
-        if (from == null) {
-          from = {};
-        } else if (to == null) to = {}
-        const diff = {};
-        for (const key in from) {
-          if (! hasOwn(to, key)) diff[key] = null;
-        }
-        for (const key in to) {
-          const value = to[key];
-          if (! deepEqual(from[key], value)) {
-            diff[key] = value;
+      case Object:
+        {
+          if (from === to) return {};
+          if (from == null) {
+            from = {};
+          } else if (to == null) to = {};
+          const diff = {};
+          for (const key in from) {
+            if (!hasOwn(to, key)) diff[key] = null;
           }
+          for (const key in to) {
+            const value = to[key];
+            if (!deepEqual(from[key], value)) {
+              diff[key] = value;
+            }
+          }
+          return isObjEmpty(diff) ? undefined : diff;
         }
-        return isObjEmpty(diff) ? undefined : diff;
-      } break;
-      case Array: {
-        if (from === to) return [];
-        if (from == null) {
-          from = [];
-        } else if (to == null) to = []
-        return diffSeq(from, to, deepEqual);
-      } break;
+        break;
+      case Array:
+        {
+          if (from === to) return [];
+          if (from == null) {
+            from = [];
+          } else if (to == null) to = [];
+          return diffSeq(from, to, deepEqual);
+        }
+        break;
     }
     return to;
   };
 
-  const nestedDiff = (from, to, depth=0) => _nestedDiff([], '', from, to, depth)[1];
+  const nestedDiff = (from, to, depth = 0) => _nestedDiff([], '', from, to, depth)[1];
 
   const _nestedDiff = (ans, field, from, to, depth) => {
     const ft = typeof from, tt = typeof to;
     if (ft === 'string' && tt === 'string') {
-      ans.push(field + '.$partial', ['$patch', diffSeq(from, to)]); return ans;
+      ans.push(field + '.$partial', ['$patch', diffSeq(from, to)]);
+      return ans;
     }
-    if ((from != null && to != null &&
-      (ft !== 'object' || tt !== 'object' ||
-        to.constructor !== from.constructor)) ||
-      from == null && to == null) {
-      ans.push(field, to); return ans;
+    if (
+      (from != null && to != null &&
+        (ft !== 'object' || tt !== 'object' || to.constructor !== from.constructor)) ||
+      from == null && to == null
+    ) {
+      ans.push(field, to);
+      return ans;
     }
 
     switch ((from == null ? to : from).constructor) {
-      case Object: {
-        if (from === to) return ans;
-        if (from == null) {
-          ans.push(field, to);
-          return ans;
-        }
-        if (to == null) {
-          ans.push(field, null);
-          return ans;
-        }
-        const partial = [];
-        for (const key in from) {
-          if (! hasOwn(to, key)) partial.push(key, null);
-        }
-        for (const key in to) {
-          const old = from[key], value = to[key];
-          if (! deepEqual(old, value)) {
-            if (depth == 0) {
-              partial.push(key, value);
-            } else {
-              _nestedDiff(partial, key, old, value, depth - 1);
+      case Object:
+        {
+          if (from === to) return ans;
+          if (from == null) {
+            ans.push(field, to);
+            return ans;
+          }
+          if (to == null) {
+            ans.push(field, null);
+            return ans;
+          }
+          const partial = [];
+          for (const key in from) {
+            if (!hasOwn(to, key)) partial.push(key, null);
+          }
+          for (const key in to) {
+            const old = from[key], value = to[key];
+            if (!deepEqual(old, value)) {
+              if (depth == 0) {
+                partial.push(key, value);
+              } else {
+                _nestedDiff(partial, key, old, value, depth - 1);
+              }
             }
           }
-        }
-        if (partial.length !== 0) ans.push(field + '.$partial', partial);
-        return ans;
-      } break;
-      case Array: {
-        if (from === to) return ans;
-        if (from == null) {
-          ans.push(field, to);
+          if (partial.length !== 0) ans.push(field + '.$partial', partial);
           return ans;
         }
-        if (to == null) {
-          ans.push(field, null);
+        break;
+      case Array:
+        {
+          if (from === to) return ans;
+          if (from == null) {
+            ans.push(field, to);
+            return ans;
+          }
+          if (to == null) {
+            ans.push(field, null);
+            return ans;
+          }
+          const ds = diffSeq(from, to, deepEqual);
+          ds === undefined || ans.push(field + '.$partial', ['$patch', ds]);
           return ans;
         }
-        const ds = diffSeq(from, to, deepEqual);
-        ds === undefined || ans.push(field + '.$partial', ['$patch', ds]);
-        return ans;
-      } break;
+        break;
     }
     ans.push(field, to);
     return ans;
@@ -479,8 +491,8 @@ define((require, exports, module) => {
   const has = (changes, field) => {
     return changes == null
       ? false
-      : hasOwn(changes, field) || (
-        changes.$partial !== undefined && hasOwn(changes.$partial, field));
+      : hasOwn(changes, field) ||
+        (changes.$partial !== undefined && hasOwn(changes.$partial, field));
   };
 
   const fromTo = (fields, from, to) => {
@@ -538,7 +550,7 @@ define((require, exports, module) => {
 
   const toString = (o) => '' + o;
 
-  const arrayToMap = (list, hash=toString) => {
+  const arrayToMap = (list, hash = toString) => {
     if (list == null) return {};
     const map = {}, {length} = list;
     for (let i = 0; i < length; ++i) {
@@ -551,8 +563,10 @@ define((require, exports, module) => {
   const applyAsDiff = (attrs, key, value, undo) => {
     const oldValue = attrs[key];
     if (value != null && oldValue != null) {
-      if ((value.constructor === Object && oldValue.constructor === Object) ||
-        (Array.isArray(value) && Array.isArray(oldValue))) {
+      if (
+        (value.constructor === Object && oldValue.constructor === Object) ||
+        (Array.isArray(value) && Array.isArray(oldValue))
+      ) {
         const dif = nestedDiff(oldValue, value, 20);
         if (dif === undefined) return;
         const u = [];
@@ -569,8 +583,13 @@ define((require, exports, module) => {
 
   return {
     KEYWORDS: [
-      '$partial', '$patch', '$replace',
-      '$append', '$prepend', '$add', '$remove',
+      '$partial',
+      '$patch',
+      '$replace',
+      '$append',
+      '$prepend',
+      '$add',
+      '$remove',
       '$match',
     ],
 
@@ -585,18 +604,15 @@ define((require, exports, module) => {
       const partial = changes.$partial;
       for (const key in partial) {
         const cmd = partial[key];
-        if ((cmd == null || cmd.constructor !== Array) &&
-          key.indexOf('.') === -1) {
+        if ((cmd == null || cmd.constructor !== Array) && key.indexOf('.') === -1) {
           delete partial[key];
           changes[key] = cmd;
         } else {
           const undo = [];
           applyPartial(attrs, key, cmd, undo);
           if (undo.length != 0) {
-            (topUndo.$partial === undefined
-              ? (
-                topUndo.$partial = {})
-              : topUndo.$partial)[key] = undo;
+            (topUndo.$partial === undefined ? (topUndo.$partial = {}) : topUndo.$partial)[key] =
+              undo;
           }
         }
       }
@@ -659,7 +675,7 @@ define((require, exports, module) => {
     updateCommands(commands, modified, original) {
       const partial = commands.$partial;
       for (const key in modified) {
-        if (! deepEqual(modified[key], original[key])) {
+        if (!deepEqual(modified[key], original[key])) {
           commands[key] = modified[key];
 
           if (partial !== undefined && partial[key] !== undefined) {
@@ -679,8 +695,12 @@ define((require, exports, module) => {
       }
     },
 
-    original(undo) {return undo[original$]},
-    setOriginal(undo, orig) {undo[original$] = orig},
+    original(undo) {
+      return undo[original$];
+    },
+    setOriginal(undo, orig) {
+      undo[original$] = orig;
+    },
 
     arrayChanges(after, before, hash) {
       const am = arrayToMap(after, hash), bm = arrayToMap(before, hash);
