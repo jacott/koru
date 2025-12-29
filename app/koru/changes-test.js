@@ -1322,5 +1322,30 @@ define((require, exports, module) => {
         ]);
       });
     });
+
+    test('sortedSeqChanges', () => {
+      assert.equals(Changes.sortedSeqChanges([1, 2, 3], [1, 2, 3]), {
+        onlyInA: [],
+        onlyInB: [],
+        common: [1, 2, 3],
+      });
+
+      assert.equals(Changes.sortedSeqChanges([1, 2, 3], []), {
+        onlyInA: [1, 2, 3],
+        onlyInB: [],
+        common: [],
+      });
+
+      assert.equals(Changes.sortedSeqChanges([], [1, 2, 3]), {
+        onlyInA: [],
+        onlyInB: [1, 2, 3],
+        common: [],
+      });
+
+      assert.equals(
+        Changes.sortedSeqChanges([10, 20, 30, 40, 50, 58, 60], [22, 31, 50, 57, 58, 67]),
+        {onlyInA: [10, 20, 30, 40, 60], onlyInB: [22, 31, 57, 67], common: [50, 58]},
+      );
+    });
   });
 });

@@ -721,5 +721,39 @@ define((require, exports, module) => {
     fieldDiff,
     fromTo,
     diffSeq,
+    sortedSeqChanges(a, b) {
+      let i = 0;
+      let j = 0;
+
+      const onlyInA = [];
+      const onlyInB = [];
+      const common = [];
+
+      while (i < a.length && j < b.length) {
+        if (a[i] === b[j]) {
+          common.push(a[i]);
+          i++;
+          j++;
+        } else if (a[i] < b[j]) {
+          onlyInA.push(a[i]);
+          i++;
+        } else {
+          onlyInB.push(b[j]);
+          j++;
+        }
+      }
+
+      // Push remaining elements if one array is longer than the other
+      while (i < a.length) {
+        onlyInA.push(a[i]);
+        i++;
+      }
+      while (j < b.length) {
+        onlyInB.push(b[j]);
+        j++;
+      }
+
+      return {onlyInA, onlyInB, common};
+    },
   };
 });
