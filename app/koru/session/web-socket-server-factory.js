@@ -32,7 +32,7 @@ define((require, exports, module) => {
 
     const onConnection = (ws, ugr) => {
       const remoteAddress = HttpRequest.remoteAddress(ugr);
-      const newSession = (wrapOnMessage, url=ugr.url) => {
+      const newSession = (wrapOnMessage, url = ugr.url) => {
         let newVersion = '';
         let gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
         const parts = url === null ? null : url.split('?', 2);
@@ -74,16 +74,22 @@ define((require, exports, module) => {
 
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
-        const conn = session.conns[sessId] = new session.ServerConnection(session, ws, ugr, sessId, () => {
-          ws.close();
-          const conn = session.conns[sessId];
-          if (conn) {
-            --session.totalSessions;
-            delete session.conns[sessId];
-            session.countNotify.notify(conn, false);
-            koru.info(`Close conn tot:${session.totalSessions}`);
-          }
-        });
+        const conn = session.conns[sessId] = new session.ServerConnection(
+          session,
+          ws,
+          ugr,
+          sessId,
+          () => {
+            ws.close();
+            const conn = session.conns[sessId];
+            if (conn) {
+              --session.totalSessions;
+              delete session.conns[sessId];
+              session.countNotify.notify(conn, false);
+              koru.info(`Close conn tot:${session.totalSessions}`);
+            }
+          },
+        );
         conn.engine = util.browserVersion(ugr.headers['user-agent'] ?? '');
         conn.remoteAddress = remoteAddress;
         conn.remotePort = ugr.connection.remotePort;
@@ -141,7 +147,7 @@ define((require, exports, module) => {
       const msgId = data[0];
       const func = session._rpcs[util.thread.action = data[1]];
       try {
-        if (! func) {
+        if (!func) {
           throw new koru.Error(404, 'unknown method: ' + data[1]);
         }
 
@@ -186,7 +192,9 @@ define((require, exports, module) => {
 
     if (isTest) {
       session[isTest] = {
-        resetSessCounter: () => {sessCounter = 0},
+        resetSessCounter: () => {
+          sessCounter = 0;
+        },
       };
     }
 
