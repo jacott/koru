@@ -160,7 +160,7 @@ define((require, exports, module) => {
         });
         this.sendBinary('M', [msgId, 'r', result]);
       } catch (ex) {
-        if (ex.error === undefined) {
+        if (ex.error === undefined || ex.reason === undefined) {
           koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
         } else {
