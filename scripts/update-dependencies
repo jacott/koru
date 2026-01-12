@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+cd "${0%/*}"/..
+
+test -e package.json
+
+rm -rf package-lock.json node_modules/ package-node.test
+npm i
