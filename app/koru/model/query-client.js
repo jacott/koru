@@ -18,6 +18,12 @@ define((require, exports, module) => {
     if (limit !== null && results.length > limit) results.length = limit;
   };
 
+  const assertValidAttributes = (attrs) => {
+    if (attrs.constructor !== Object) {
+      throw new Error('Invalid Document');
+    }
+  };
+
   const __init__ = (session) => (Query, condition, notifyAC$) => {
     module.onUnload(
       session.state.pending.onChange((pending) => {
@@ -30,6 +36,8 @@ define((require, exports, module) => {
 
     util.merge(Query, {
       simDocsFor,
+
+      assertValidAttributes,
 
       revertSimChanges() {
         return TransQueue.nonNested(() => {
@@ -93,6 +101,7 @@ define((require, exports, module) => {
       },
 
       insert(doc) {
+        assertValidAttributes(doc.attributes);
         return TransQueue.nonNested(() => {
           const model = doc.constructor;
           if (session.state.pendingCount() != 0) {
@@ -105,11 +114,13 @@ define((require, exports, module) => {
       },
 
       _insertAttrs(model, attrs) {
+        assertValidAttributes(attrs);
         if (attrs._id === undefined) attrs._id = Random.id();
         model.docs[attrs._id] = new model(attrs);
       },
 
       insertFromServer(model, attrs) {
+        assertValidAttributes(attrs);
         return TransQueue.nonNested(() => {
           const id = attrs._id;
           const doc = model.docs[id];
