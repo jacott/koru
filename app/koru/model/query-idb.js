@@ -307,7 +307,7 @@ define((require) => {
     TransQueue.onSuccess(() => {
       db.isClosed || waitOnBusyQueue(db).then(() => {
         flushPending(db);
-      });
+      }).catch((err) => koru.unhandledException(err));
     });
     return db[pendingUpdates$] = {};
   };
