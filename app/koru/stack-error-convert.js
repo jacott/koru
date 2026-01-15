@@ -9,12 +9,13 @@ define((require) => {
 
   const {SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
-  const STACK_LINE_SEP = '\n    at ';
+  const STACK_LINE_SEP_RE = /\n  *at /;
+  const STACK_LINE_RE = /(.*)\((.*\.js\b).*:(\d+):(\d+)\)$/;
 
   const loadMap = (source) => new SourceMapConsumer(source);
 
   const StackErrorConvert = {
-    start: ({sourceMapDir, prefix='.', lineAdjust=0}) => {
+    start: ({sourceMapDir, prefix = '.', lineAdjust = 0}) => {
       let consumer = null;
       let lastFileName = '';
       const mutex = new SimpleMutex();
@@ -29,14 +30,18 @@ define((require) => {
       koru.clientErrorConvert = async (data) => {
         await mutex.lock();
         try {
-          if (data.indexOf(STACK_LINE_SEP) === -1 || ! /^    at .*\(.*\.js\b.*:\d+:\d+\)$/m.test(data)) {
+          if (typeof data !== 'string') {
+            throw new TypeError('data is not a string');
+          }
+
+          const line_sep = STACK_LINE_SEP_RE.exec(data)?.[0];
+          if (line_sep === undefined) {
             return data;
           }
 
-          const re = /(.*)\((.*\.js\b).*:(\d+):(\d+)\)$/;
-          const lines = data.split(STACK_LINE_SEP);
+          const lines = data.split(line_sep);
           for (let i = 1; i < lines.length; ++i) {
-            const m = re.exec(lines[i]);
+            const m = STACK_LINE_RE.exec(lines[i]);
             if (m !== null && m[2].indexOf('..') === -1) {
               const fn = m[2];
               if (fn !== lastFileName) {
@@ -48,7 +53,10 @@ define((require) => {
                   : await loadMap((await fsp.readFile(pn)).toString());
               }
               if (consumer !== null) {
-                const orig = consumer.originalPositionFor({line: + m[3] + lineAdjust, column: + m[4]});
+                const orig = consumer.originalPositionFor({
+                  line: +m[3] + lineAdjust,
+                  column: +m[4],
+                });
                 if (orig.source !== null) {
                   lines[i] = `${m[1]}${orig.name} ` +
                     `(${path.join(prefix, orig.source)}:${orig.line}:${orig.column})`;
@@ -57,7 +65,7 @@ define((require) => {
             }
           }
 
-          return lines.join(STACK_LINE_SEP);
+          return lines.join(line_sep);
         } finally {
           destroyConsumer();
           mutex.unlock();

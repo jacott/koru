@@ -20,46 +20,28 @@ isServer && define((require, exports, module) => {
     });
 
     test('koru.clientErrorConvert', async () => {
-      const map = new SourceMapGenerator({
-        file: 'index.js',
-        skipValidation: true,
-      });
+      const map = new SourceMapGenerator({file: 'index.js', skipValidation: true});
 
       map.addMapping({
-        generated: {
-          line: 1,
-          column: 170040,
-        },
+        generated: {line: 1, column: 170040},
         source: '/file1.js',
-        original: {
-          line: 13,
-          column: 23,
-        },
+        original: {line: 13, column: 23},
         name: 'christopher',
       });
 
       map.addMapping({
-        generated: {
-          line: 13,
-          column: 20,
-        },
+        generated: {line: 13, column: 20},
         source: '/nested/file2.js',
-        original: {
-          line: 4,
-          column: 1,
-        },
+        original: {line: 4, column: 1},
         name: 'robin',
       });
 
       stub(fst, 'stat').invokes((c) => Promise.resolve(/index/.test(c.args[0]) ? {} : undefined));
-      stub(fsp, 'readFile').withArgs('test/maps/index.js.map')
-        .returns(Promise.resolve(Buffer.from(map.toString())));
+      stub(fsp, 'readFile').withArgs('test/maps/index.js.map').returns(
+        Promise.resolve(Buffer.from(map.toString())),
+      );
 
-      StackErrorConvert.start({
-        sourceMapDir: 'test/maps',
-        prefix: 'myPrefix',
-        lineAdjust: -1,
-      });
+      StackErrorConvert.start({sourceMapDir: 'test/maps', prefix: 'myPrefix', lineAdjust: -1});
 
       const consumer = await new SourceMapConsumer(map.toString());
       consumer.destroy();
@@ -101,7 +83,7 @@ Cannot read property 'class' of undefined
       stub(mutex, 'unlock');
       stub(mutex, 'lock').returns(future.promise);
 
-      let err = new Error('bad_value');
+      let err = new TypeError('data is not a string');
 
       const indexOf = stub().throws(err);
 
@@ -114,7 +96,7 @@ Cannot read property 'class' of undefined
       try {
         await p;
       } catch (_err) {
-        if (_err === err) err = void 0;
+        if (_err.message === 'data is not a string') err = void 0;
       }
 
       assert.calledOnce(mutex.unlock);
@@ -125,13 +107,14 @@ Cannot read property 'class' of undefined
       StackErrorConvert.stop();
       StackErrorConvert.start({sourceMapDir: 'test/maps'});
 
-      assert.equals(await koru.clientErrorConvert(
+      assert.equals(
+        await koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
+Cannot read property 'class' of undefined
+    at - j.ne (index.js:1:170100)`),
         `while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
-    at - j.ne (index.js:1:170100)`,
-      ), `while rendering: TicketDialogHistory.Action
-Cannot read property 'class' of undefined
-    at - j.ne christopher (file1.js:13:23)`);
+    at - j.ne christopher (file1.js:13:23)`,
+      );
     });
   });
 });
