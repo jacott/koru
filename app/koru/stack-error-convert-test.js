@@ -56,7 +56,7 @@ isServer && define((require, exports, module) => {
         await koru.clientErrorConvert(`while rendering: TicketDialogHistory.Action
 Cannot read property 'class' of undefined
     at - j.ne (index.js:2:170049)
-    at - j.dup (index.js:14:23)
+    at - j.dup index.js:14:23
     at nasty (index.js/../index.js:4:334)
     at missing (nofound.js:4:334)
     at j.toChildren (index.js?4d99f24827ef433ac3da163797519ed5:14:23)`),
@@ -70,9 +70,7 @@ Cannot read property 'class' of undefined
       );
 
       assert.calledOnce(lock);
-      assert.calledTwice(destroy);
-      assert(lock.calledBefore(destroy));
-      assert(unlock.firstCall.globalCount > destroy.lastCall.globalCount);
+      refute.called(destroy);
 
       const mutex = lock.firstCall.thisValue;
 
@@ -105,6 +103,7 @@ Cannot read property 'class' of undefined
       assert.same(err, void 0);
 
       StackErrorConvert.stop();
+      assert.calledOnce(destroy);
       StackErrorConvert.start({sourceMapDir: 'test/maps'});
 
       assert.equals(

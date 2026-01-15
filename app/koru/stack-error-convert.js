@@ -9,23 +9,22 @@ define((require) => {
 
   const {SourceMapConsumer} = requirejs.nodeRequire('source-map');
 
-  const STACK_LINE_SEP_RE = /\n  *at /;
-  const STACK_LINE_RE = /(.*)\((.*\.js\b).*:(\d+):(\d+)\)$/;
-
   const loadMap = (source) => new SourceMapConsumer(source);
+
+  let consumer = null;
+  let lastFileName = '';
+  const destroyConsumer = () => {
+    if (consumer !== null) {
+      consumer.destroy();
+      consumer = null;
+      lastFileName = '';
+    }
+  };
 
   const StackErrorConvert = {
     start: ({sourceMapDir, prefix = '.', lineAdjust = 0}) => {
-      let consumer = null;
-      let lastFileName = '';
+      destroyConsumer();
       const mutex = new SimpleMutex();
-
-      const destroyConsumer = () => {
-        if (consumer !== null) {
-          consumer.destroy();
-          consumer = null;
-        }
-      };
 
       koru.clientErrorConvert = async (data) => {
         await mutex.lock();
@@ -33,6 +32,9 @@ define((require) => {
           if (typeof data !== 'string') {
             throw new TypeError('data is not a string');
           }
+
+          const STACK_LINE_SEP_RE = /\n  *at /;
+          const STACK_LINE_RE = /(.*)(index*\.js\b)[^:]*:(\d+):(\d+)\)?$/;
 
           const line_sep = STACK_LINE_SEP_RE.exec(data)?.[0];
           if (line_sep === undefined) {
@@ -58,7 +60,12 @@ define((require) => {
                   column: +m[4],
                 });
                 if (orig.source !== null) {
-                  lines[i] = `${m[1]}${orig.name} ` +
+                  let preamble = m[1];
+                  if (preamble.endsWith('(')) {
+                    preamble = preamble.slice(0, -1);
+                  }
+
+                  lines[i] = `${preamble}${orig.name} ` +
                     `(${path.join(prefix, orig.source)}:${orig.line}:${orig.column})`;
                 }
               }
@@ -67,12 +74,12 @@ define((require) => {
 
           return lines.join(line_sep);
         } finally {
-          destroyConsumer();
           mutex.unlock();
         }
       };
     },
     stop: () => {
+      destroyConsumer();
       koru.clientErrorConvert = undefined;
     },
   };
