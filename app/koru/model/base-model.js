@@ -18,7 +18,11 @@ define((require, exports, module) => {
   const {hasOwn, deepCopy, createDictionary, moduleName} = util;
   const {private$, inspect$, error$, original$} = require('koru/symbols');
 
-  const cache$ = Symbol(), idLock$ = Symbol(), inspectField$ = Symbol(), observers$ = Symbol(), changes$ = Symbol();
+  const cache$ = Symbol(),
+    idLock$ = Symbol(),
+    inspectField$ = Symbol(),
+    observers$ = Symbol(),
+    changes$ = Symbol();
 
   const savePartial = (doc, args, force) => {
     const $partial = {};
@@ -32,8 +36,12 @@ define((require, exports, module) => {
 
   const versionProperty = {
     configurable: true,
-    get() {return this.attributes._version},
-    set(value) {this.attributes._version = value},
+    get() {
+      return this.attributes._version;
+    },
+    set(value) {
+      this.attributes._version = value;
+    },
   };
 
   const registerObserver = (model, name, callback) => {
@@ -43,10 +51,11 @@ define((require, exports, module) => {
 
   const callBeforeObserver = (type, doc) => doc.constructor[observers$][type]?.notify(doc, type);
 
-  const callAfterLocalChange = (docChange) => docChange.model[observers$].afterLocalChange?.notify(docChange);
+  const callAfterLocalChange = (docChange) =>
+    docChange.model[observers$].afterLocalChange?.notify(docChange);
 
   const callAsyncWhenFinally = async (iter, doc, err) => {
-    for (let i = iter.next(); ! i.done; i = iter.next()) {
+    for (let i = iter.next(); !i.done; i = iter.next()) {
       try {
         await i.value.callback(doc, err);
       } catch (err1) {
@@ -62,7 +71,7 @@ define((require, exports, module) => {
     const subj = doc.constructor[observers$].whenFinally;
     if (subj !== undefined) {
       const iter = subj[Symbol.iterator]();
-      for (let i = iter.next(); ! i.done; i = iter.next()) {
+      for (let i = iter.next(); !i.done; i = iter.next()) {
         let p;
         try {
           p = i.value.callback(doc, err);
@@ -92,7 +101,7 @@ define((require, exports, module) => {
   };
 
   class BaseModel {
-    constructor(attributes, changes={}) {
+    constructor(attributes, changes = {}) {
       const dbIdField = this.constructor.$dbIdField;
       if (dbIdField !== undefined) {
         this[dbIdField] = dbBroker.dbId;
@@ -112,21 +121,23 @@ define((require, exports, module) => {
       }
     }
 
-    static _saveDoc(doc, mode, saveFunc=ModelEnv.save) {
+    static _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
       const callback = mode?.callback;
 
       let ans;
 
       switch (mode) {
-      case 'assert':
-        ans = doc.$assertValid();
-        break;
-      case 'force':
-        ans = doc.$isValid();
-        break;
-      default:
-        return ifPromise(doc.$isValid(),
-                         (isValid) => isValid && ifPromise(saveFunc(doc, callback), util.trueFunc));
+        case 'assert':
+          ans = doc.$assertValid();
+          break;
+        case 'force':
+          ans = doc.$isValid();
+          break;
+        default:
+          return ifPromise(
+            doc.$isValid(),
+            (isValid) => isValid && ifPromise(saveFunc(doc, callback), util.trueFunc),
+          );
       }
 
       return ifPromise(ans, () => ifPromise(saveFunc(doc, callback), util.trueFunc));
@@ -144,29 +155,31 @@ define((require, exports, module) => {
       return isPromise(p) ? p.then(() => attrs._id) : attrs._id;
     }
 
-    static build(attributes, allow_id=false) {
+    static build(attributes, allow_id = false) {
       const doc = new this({});
       attributes = attributes == null ? {} : deepCopy(attributes);
 
-      if (attributes._id != null && ! allow_id) {
+      if (attributes._id != null && !allow_id) {
         attributes._id = null;
       }
       attributes == null || Object.assign(doc.changes, deepCopy(attributes));
       return doc;
     }
 
-    static transaction(func) {return _support.transaction(this, func)}
+    static transaction(func) {
+      return _support.transaction(this, func);
+    }
 
     static toId(docOrId) {
-      return typeof docOrId === 'string'
-        ? docOrId
-        : docOrId == null ? null : docOrId._id;
+      return typeof docOrId === 'string' ? docOrId : docOrId == null ? null : docOrId._id;
     }
 
     static toDoc(docOrId) {
       return typeof docOrId === 'string'
         ? this.findById(docOrId)
-        : docOrId == null ? null : docOrId;
+        : docOrId == null
+        ? null
+        : docOrId;
     }
 
     static get query() {
@@ -201,7 +214,7 @@ define((require, exports, module) => {
     }
 
     static async lockId(id) {
-      if (! TransQueue.isInTransaction()) {
+      if (!TransQueue.isInTransaction()) {
         throw new Error('Attempt to lock while not in a transaction');
       }
       const {docs} = this;
@@ -210,7 +223,7 @@ define((require, exports, module) => {
       if (mutex.isLockedByMe) return;
       TransQueue.finally(() => {
         mutex.unlock();
-        if (! mutex.isLocked) {
+        if (!mutex.isLocked) {
           delete locks[id];
         }
       });
@@ -225,8 +238,8 @@ define((require, exports, module) => {
      * Model extension methods
      */
 
-    static define({module, inspectField='name', name=moduleName(module), fields}) {
-      if (! name) {
+    static define({module, inspectField = 'name', name = moduleName(module), fields}) {
+      if (!name) {
         throw new Error('Model requires a name');
       }
       if (ModelMap[name] !== undefined) {
@@ -260,7 +273,7 @@ define((require, exports, module) => {
     static defineFields(fields) {
       const proto = this.prototype;
       let $fields = this.$fields;
-      if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
+      if (!$fields) $fields = this.$fields = {_id: {type: 'id'}};
       for (const field in fields) {
         const _options = fields[field];
         const options = (typeof _options === 'string') ? {type: _options} : _options;
@@ -269,7 +282,7 @@ define((require, exports, module) => {
         setUpValidators(this, field, options);
 
         if (options.default !== undefined) this._defaults[field] = options.default;
-        if (! options.pseudo_field) {
+        if (!options.pseudo_field) {
           $fields[field] = options;
           if (options.accessor !== false) defineField(proto, field, options.accessor);
         }
@@ -324,13 +337,19 @@ define((require, exports, module) => {
 
     /**
      * Instance methods
-     **/
+     */
 
-    get _id() {return this.attributes._id ?? this.changes._id}
+    get _id() {
+      return this.attributes._id ?? this.changes._id;
+    }
 
-    get classMethods() {return this.constructor}
+    get classMethods() {
+      return this.constructor;
+    }
 
-    get _errors() {return this[error$]}
+    get _errors() {
+      return this[error$];
+    }
 
     [inspect$]() {
       const type = this.constructor;
@@ -356,15 +375,14 @@ define((require, exports, module) => {
     }
 
     $isValid() {
-      const model = this.constructor,
-            fVTors = model._fieldValidators;
+      const model = this.constructor, fVTors = model._fieldValidators;
 
       if (this[error$] !== undefined) this[error$] = undefined;
 
       const origChanges = this.changes;
       const topLevel = ('$partial' in origChanges)
-            ? Changes.topLevelChanges(this.attributes, origChanges)
-            : null;
+        ? Changes.topLevelChanges(this.attributes, origChanges)
+        : null;
       if (topLevel !== null) {
         this.changes = deepCopy(topLevel);
         Changes.setOriginal(this.changes, origChanges);
@@ -379,10 +397,11 @@ define((require, exports, module) => {
             const value = this[field];
             for (const vTor in validators) {
               const args = validators[vTor];
-              if (! args[2].changesOnly || (
-                (original$ in this)
+              if (
+                !args[2].changesOnly || ((original$ in this)
                   ? this[original$] === undefined || this[original$][field] !== value
-                  : this.$hasChanged(field))) {
+                  : this.$hasChanged(field))
+              ) {
                 const p = args[0].call(Val, this, field, args[1], args[2]);
                 isPromise(p) && promises.push(p);
               }
@@ -414,7 +433,7 @@ define((require, exports, module) => {
     }
 
     $isNewRecord() {
-      return ! this.attributes._id;
+      return !this.attributes._id;
     }
 
     $change(field) {
@@ -424,7 +443,7 @@ define((require, exports, module) => {
       return this.changes[field] = deepCopy(this[field]);
     }
 
-    $hasChanged(field, changes=this.changes) {
+    $hasChanged(field, changes = this.changes) {
       if (typeof changes === 'string') return hasOwn(this.attributes, field);
       return Changes.has(changes, field);
     }
@@ -435,14 +454,16 @@ define((require, exports, module) => {
         : undefined;
     }
 
-    $withChanges(changes=this.changes) {
+    $withChanges(changes = this.changes) {
       if (changes === 'del') return null;
       if (changes === 'add') return this;
       const cached = changes[changes$];
       if (cached !== undefined) return cached;
 
       return changes[changes$] = new this.constructor(
-        this.attributes, Changes.topLevelChanges(this.attributes, changes));
+        this.attributes,
+        Changes.topLevelChanges(this.attributes, changes),
+      );
     }
 
     $invertChanges(beforeChange) {
@@ -479,7 +500,9 @@ define((require, exports, module) => {
       return this;
     }
 
-    get $cache() {return this[cache$] ?? (this[cache$] = {})}
+    get $cache() {
+      return this[cache$] ?? (this[cache$] = {});
+    }
 
     $clearCache() {
       if (this[cache$] !== undefined) {
@@ -646,14 +669,15 @@ define((require, exports, module) => {
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  ('beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally ').split(' ').forEach((type) => {
-    BaseModel[type] = function (callback) {
-      return registerObserver(this, type, callback);
-    }
-  });
+  ('beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally ').split(' ')
+    .forEach((type) => {
+      BaseModel[type] = function (callback) {
+        return registerObserver(this, type, callback);
+      };
+    });
 
   const mapFieldType = (model, field, bt, name) => {
-    if (! bt) throw Error(name + ' is not defined for field: ' + field);
+    if (!bt) throw Error(name + ' is not defined for field: ' + field);
     model.fieldTypeMap[field] = bt;
   };
 
@@ -666,13 +690,20 @@ define((require, exports, module) => {
     });
   };
 
-  const belongsTo = (model, name, field) => function () {
-    const value = this[field];
-    return value && model.findById(value);
-  }
+  const belongsTo = (model, name, field) =>
+    function () {
+      const value = this[field];
+      return value && model.findById(value);
+    };
 
-  const getValue = (field) => function getValue() {return getField(this, field)}
-  const setValue = (field) => function setValue(value) {setField(this, field, value)}
+  const getValue = (field) =>
+    function getValue() {
+      return getField(this, field);
+    };
+  const setValue = (field) =>
+    function setValue(value) {
+      setField(this, field, value);
+    };
 
   const setUpValidators = (model, field, options) => {
     const validators = getValidators(model, field);
@@ -704,12 +735,14 @@ define((require, exports, module) => {
       if (options.accessor === undefined) {
         options.accessor = {
           get: getValue(field),
-          set(value) {setField(this, field, value ?? undefined)},
+          set(value) {
+            setField(this, field, value ?? undefined);
+          },
         };
       }
       const name = field.replace(/_id$/, '');
       let bt = options.model, btName;
-      if (! bt) {
+      if (!bt) {
         btName = options.modelName ?? util.capitalize(name);
         bt = ModelMap[btName];
         options.model = bt;
@@ -729,7 +762,7 @@ define((require, exports, module) => {
 
     has_many(model, field, options) {
       let bt = options.model, name;
-      if (! bt) {
+      if (!bt) {
         name = options.modelName ?? util.capitalize(util.sansId(field));
         bt = ModelMap[name];
         options.model = bt;
@@ -748,9 +781,7 @@ define((require, exports, module) => {
     },
   };
 
-  BaseModel[private$] = {
-    _support,
-  };
+  BaseModel[private$] = {_support};
 
   return BaseModel;
 });

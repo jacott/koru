@@ -25,7 +25,8 @@ define((require, exports, module) => {
       }).stop,
     );
 
-    const simDocsFor = (model) => Model._getSetProp(model.dbId, model.modelName, 'simDocs', createDictionary);
+    const simDocsFor = (model) =>
+      Model._getSetProp(model.dbId, model.modelName, 'simDocs', createDictionary);
 
     util.merge(Query, {
       simDocsFor,
@@ -301,7 +302,9 @@ define((require, exports, module) => {
       },
 
       update(changesOrField = {}, value) {
-        const origChanges = (typeof changesOrField === 'string') ? {[changesOrField]: value} : changesOrField;
+        const origChanges = (typeof changesOrField === 'string')
+          ? {[changesOrField]: value}
+          : changesOrField;
 
         if (origChanges._id !== undefined) {
           delete origChanges._id;
@@ -316,7 +319,9 @@ define((require, exports, module) => {
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const isPending = session.state.pendingCount() != 0;
-            if (isPending && this.isFromServer !== '' && fromServer(model, this.singleId, origChanges)) {
+            if (
+              isPending && this.isFromServer !== '' && fromServer(model, this.singleId, origChanges)
+            ) {
               return 0;
             }
 

@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const Changes         = require('koru/changes');
@@ -11,8 +11,7 @@ define((require)=>{
   const {stopGap$}      = require('koru/symbols');
   const util            = require('koru/util');
 
-  const iDB$ = Symbol(), idle$ = Symbol(), pendingUpdates$ = Symbol(),
-        busyQueue$ = Symbol();
+  const iDB$ = Symbol(), idle$ = Symbol(), pendingUpdates$ = Symbol(), busyQueue$ = Symbol();
 
   const {simDocsFor} = Query;
 
@@ -21,8 +20,8 @@ define((require)=>{
   class Index {
     constructor(queryIDB, modelName, name) {
       this._queryIDB = queryIDB;
-      this._withIndex = () => queryIDB[iDB$]
-        .transaction(modelName).objectStore(modelName).index(name);
+      this._withIndex = () =>
+        queryIDB[iDB$].transaction(modelName).objectStore(modelName).index(name);
     }
 
     getAll(query, count) {
@@ -38,17 +37,15 @@ define((require)=>{
     }
 
     cursor(query, direction, action) {
-      this._withIndex().openCursor(query, direction)
-        .onsuccess = ({target: {result}}) => {
-          action(result);
-        };
+      this._withIndex().openCursor(query, direction).onsuccess = ({target: {result}}) => {
+        action(result);
+      };
     }
 
     keyCursor(query, direction, action) {
-      this._withIndex().openKeyCursor(query, direction)
-        .onsuccess = ({target: {result}}) => {
-          action(result);
-        };
+      this._withIndex().openKeyCursor(query, direction).onsuccess = ({target: {result}}) => {
+        action(result);
+      };
     }
   }
 
@@ -58,26 +55,26 @@ define((require)=>{
     };
   }
 
-  const waitOnBusyQueue = (db)=>{
+  const waitOnBusyQueue = (db) => {
     const op = db[busyQueue$];
     if (op == null) return Promise.resolve();
-    return op.then(()=>{
-      if (op === db[busyQueue$])
+    return op.then(() => {
+      if (op === db[busyQueue$]) {
         db[busyQueue$] = null;
-      else return waitOnBusyQueue(db);
+      } else return waitOnBusyQueue(db);
     });
   };
 
-  const dbClosedError = ()=> new Error('DB closed');
+  const dbClosedError = () => new Error('DB closed');
 
-  const dbReady = (db)=>{
+  const dbReady = (db) => {
     if (db[pendingUpdates$] === null) {
       const obs = db[idle$];
       if (obs !== null) {
         db[idle$] = null;
         obs.notify(db);
       }
-    };
+    }
   };
 
   class QueryIDB {
@@ -89,32 +86,38 @@ define((require)=>{
       this.catchAll = catchAll;
       let resolve, reject;
       this[busyQueue$] = new Promise((_resolve, _reject) => {
-        resolve = _resolve; reject = _reject;
+        resolve = _resolve;
+        reject = _reject;
       });
       const req = window.indexedDB.open(name, version);
 
-      if (upgrade !== undefined) req.onupgradeneeded = (event) => {
-        this[iDB$] = event.target.result;
-        upgrade({
-          db: this, oldVersion: event.oldVersion,
-          event, transaction: event.target.transaction,
-        });
-      };
-      req.onerror = req.onblocked = event => {
+      if (upgrade !== undefined) {
+        req.onupgradeneeded = (event) => {
+          this[iDB$] = event.target.result;
+          upgrade({
+            db: this,
+            oldVersion: event.oldVersion,
+            event,
+            transaction: event.target.transaction,
+          });
+        };
+      }
+      req.onerror = req.onblocked = (event) => {
         this[busyQueue$] = undefined;
         error(this, event);
       };
-      req.onsuccess = event => {
+      req.onsuccess = (event) => {
         const idb = this[iDB$] = event.target.result;
-        if (! this.isClosed) this[busyQueue$] = null;
+        if (!this.isClosed) this[busyQueue$] = null;
         dbReady(this);
         resolve();
       };
     }
 
     static canIUse() {
-      if (window.IDBKeyRange === undefined)
+      if (window.IDBKeyRange === undefined) {
         return false;
+      }
 
       return window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes !== undefined;
     }
@@ -132,7 +135,7 @@ define((require)=>{
       return this[iDB$].objectStoreNames;
     }
 
-    transaction(tables, mode, {oncomplete, onabort}={}) {
+    transaction(tables, mode, {oncomplete, onabort} = {}) {
       const tx = this[iDB$].transaction(tables, mode);
       if (oncomplete !== undefined) tx.oncomplete = oncomplete;
       if (onabort !== undefined) tx.onabort = onabort;
@@ -150,8 +153,9 @@ define((require)=>{
         let sim = rec.$sim;
         if (sim !== undefined) {
           rec.$sim = undefined;
-          if (! Array.isArray(sim)) // port old style records
+          if (!Array.isArray(sim)) { // port old style records
             sim = [sim === 'new' ? 'del' : sim, undefined];
+          }
           simDocsFor(model)[id] = sim;
           const undo = sim[0];
           if (typeof undo === 'object' && undo._id === id) {
@@ -163,39 +167,44 @@ define((require)=>{
           }
         }
         let undo = null;
-        notMe = model.docs[id] = curr !== undefined ? (
-          undo = Changes.applyAll(curr.attributes, rec),
-          curr
-        ) : new model(rec);
-        if (undo === null || ! util.isObjEmpty(undo))
-          Query.notify(new DocChange(
-            undo === null ? 'add' : 'chg',
-            notMe, undo,
-            sim === undefined ? 'idbLoad' : undefined));
+        notMe = model.docs[id] = curr !== undefined
+          ? (undo = Changes.applyAll(curr.attributes, rec), curr)
+          : new model(rec);
+        if (undo === null || !util.isObjEmpty(undo)) {
+          Query.notify(
+            new DocChange(
+              undo === null ? 'add' : 'chg',
+              notMe,
+              undo,
+              sim === undefined ? 'idbLoad' : undefined,
+            ),
+          );
+        }
       } finally {
         notMe = orig;
       }
     }
 
     loadDocs(n, recs) {
-      recs.forEach(rec => {this.loadDoc(n, rec)});
+      recs.forEach((rec) => {
+        this.loadDoc(n, rec);
+      });
     }
 
     get(modelName, _id) {
-      return wrapOSRequest(this, modelName, os => os.get(_id));
+      return wrapOSRequest(this, modelName, (os) => os.get(_id));
     }
 
     getAll(modelName, query) {
-      return wrapOSRequest(this, modelName, os => os.getAll(query));
+      return wrapOSRequest(this, modelName, (os) => os.getAll(query));
     }
 
     count(modelName, query) {
-      return wrapOSRequest(this, modelName, os => os.count(query));
+      return wrapOSRequest(this, modelName, (os) => os.count(query));
     }
 
     cursor(modelName, query, direction, action) {
-      this[iDB$].transaction(modelName).objectStore(modelName)
-        .openCursor(query, direction)
+      this[iDB$].transaction(modelName).objectStore(modelName).openCursor(query, direction)
         .onsuccess = ({target: {result}}) => {
           action(result);
         };
@@ -217,26 +226,31 @@ define((require)=>{
       });
     }
 
-    get isClosed() {return this[busyQueue$] === undefined}
+    get isClosed() {
+      return this[busyQueue$] === undefined;
+    }
 
     close() {
       this[busyQueue$] = undefined;
       this[iDB$] && this[iDB$].close();
     }
 
-    get isReady() {return this[busyQueue$] === null}
-    get isIdle() {return this[busyQueue$] === null && this[idle$] === null}
-
+    get isReady() {
+      return this[busyQueue$] === null;
+    }
+    get isIdle() {
+      return this[busyQueue$] === null && this[idle$] === null;
+    }
 
     whenReady(noArgs) {
-      if (noArgs !== undefined) throw new Error("Unexpected argument");
+      if (noArgs !== undefined) throw new Error('Unexpected argument');
       if (this.isClosed) return Promise.reject(dbClosedError());
 
       return waitOnBusyQueue(this);
     }
 
     whenIdle() {
-      return this.whenReady().then(()=>{
+      return this.whenReady().then(() => {
         const obs = this[idle$];
         if (obs === null) return;
         return new Promise((resolve) => {
@@ -257,7 +271,9 @@ define((require)=>{
       return new Index(this, modelName, name);
     }
 
-    promisify(body) {return runBody(this, body)}
+    promisify(body) {
+      return runBody(this, body);
+    }
 
     queueChange(dc) {
       const {doc} = dc;
@@ -280,7 +296,7 @@ define((require)=>{
     }
   };
 
-  const getPendingUpdates = db =>{
+  const getPendingUpdates = (db) => {
     const pu = db[pendingUpdates$];
     if (pu !== null) return pu;
     if (db[idle$] === null) db[idle$] = new Observable();
@@ -288,11 +304,15 @@ define((require)=>{
       db[pendingUpdates$] = null;
       dbReady(db);
     });
-    TransQueue.onSuccess(() => {db.isClosed || waitOnBusyQueue(db).then(()=>{flushPending(db)})});
+    TransQueue.onSuccess(() => {
+      db.isClosed || waitOnBusyQueue(db).then(() => {
+        flushPending(db);
+      });
+    });
     return db[pendingUpdates$] = {};
   };
 
-  const flushPending = db =>{
+  const flushPending = (db) => {
     const pu = db[pendingUpdates$];
     if (pu === null) return;
     db[pendingUpdates$] = null;
@@ -300,30 +320,31 @@ define((require)=>{
     const models = Object.keys(pu);
     const tran = db[iDB$].transaction(models, 'readwrite');
 
-    tran.onerror = tran.onabort = (ev=new Error("IDB flush aborted"))=>{
+    tran.onerror = tran.onabort = (ev = new Error('IDB flush aborted')) => {
       dbReady(db);
       error(db, ev);
     };
-    tran.oncomplete = ()=>{
+    tran.oncomplete = () => {
       dbReady(db);
     };
 
-    dbBroker.withDB(db.dbId, ()=>{
-      for(const modelName of models) {
+    dbBroker.withDB(db.dbId, () => {
+      for (const modelName of models) {
         const docs = pu[modelName];
         const simDocs = Model._getProp(db.dbId, modelName, 'simDocs');
         const os = tran.objectStore(modelName);
         for (const _id in docs) {
           const doc = docs[_id];
           const sdoc = simDocs === undefined ? undefined : simDocs[_id];
-          if (sdoc === undefined)
+          if (sdoc === undefined) {
             doc !== null ? os.put(doc) : os.delete(_id);
-          else {
+          } else {
             if (doc === null) {
-              if (sdoc[0] === 'del')
+              if (sdoc[0] === 'del') {
                 os.delete(_id);
-              else
+              } else {
                 os.put({_id: _id, $sim: sdoc});
+              }
             } else {
               os.put(Object.assign({$sim: sdoc}, doc));
             }
@@ -333,26 +354,26 @@ define((require)=>{
     });
   };
 
-  const wrapOSRequest = (db, modelName, body)=> wrapRequest(
-    db, () => body(db[iDB$].transaction(modelName).objectStore(modelName)));
+  const wrapOSRequest = (db, modelName, body) =>
+    wrapRequest(db, () => body(db[iDB$].transaction(modelName).objectStore(modelName)));
 
-  const wrapRequest = (db, body)=> runBody(db, body);
+  const wrapRequest = (db, body) => runBody(db, body);
 
-  const runBody = (db, body)=> new Promise((resolve, reject) => {
-    try {
-      const req = body();
-      req.onerror = event => {
-        error(db, event, reject);
-      };
-      req.onsuccess = event => {
-        resolve(event.target.result);
-      };
-    } catch(ex) {
-      error(db, ex, reject);
-      return;
-    }
-  });
-
+  const runBody = (db, body) =>
+    new Promise((resolve, reject) => {
+      try {
+        const req = body();
+        req.onerror = (event) => {
+          error(db, event, reject);
+        };
+        req.onsuccess = (event) => {
+          resolve(event.target.result);
+        };
+      } catch (ex) {
+        error(db, ex, reject);
+        return;
+      }
+    });
 
   return QueryIDB;
 });
