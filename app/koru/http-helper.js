@@ -8,13 +8,13 @@ define((require) => {
   const {inspect$} = require('koru/symbols');
 
   class RequestStub extends Readable {
-    constructor(extend, input='') {
+    constructor(extend, input = '') {
       super({});
       util.merge(this, extend);
       this._setBody(input);
     }
 
-    _setBody(input='') {
+    _setBody(input = '') {
       this._input = Buffer.isBuffer(input) || typeof input === 'string'
         ? input
         : JSON.stringify(input);
@@ -42,7 +42,7 @@ define((require) => {
 
     makeResponse(v) {
       v.output = [];
-      return {
+      const response = {
         writeHead: koru._TEST_.test.stub(),
         write: (data) => {
           refute(v.ended);
@@ -52,7 +52,17 @@ define((require) => {
           v.output.push(data);
           v.ended = true;
         },
+        get headersSent() {
+          return response.writeHead.called;
+        },
+        get writableEnded() {
+          return v.ended;
+        },
+        get _output() {
+          return v.output;
+        },
       };
+      return response;
     },
   };
 });
