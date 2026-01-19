@@ -225,6 +225,7 @@ define((require) => {
         if (session.ws != null) {
           try {
             ws.onclose({code: 'Heartbeat fail'});
+          } catch (err) {
           } finally {
             if (ws != null) {
               ws.onclose = util.voidFunc;
@@ -252,7 +253,11 @@ define((require) => {
 
         heartbeatTO = wsTimeout(heatbeatFail, session.heartbeatInterval);
         session[heatbeatSentAt$] = adjustedNow();
-        ws.send('H');
+        try {
+          ws.send('H');
+        } catch (err) {
+          heatbeatFail();
+        }
       };
 
       session[private$].queueHeatBeat = () => {
