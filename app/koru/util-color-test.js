@@ -140,12 +140,20 @@ define((require, exports, module) => {
     });
 
     test('backgroundColorStyle', () => {
-      assert.same(uColor.backgroundColorStyle('#11aadda0'),
-        'background-color:rgba(17,170,221,0.626);color:#040404;');
+      assert.same(
+        uColor.backgroundColorStyle('#11aadda0'),
+        'background-color:rgba(17,170,221,0.626);color:#040404;',
+      );
 
-      assert.same(uColor.backgroundColorStyle('#11aadd'), 'background-color:#11aadd;color:#040404;');
+      assert.same(
+        uColor.backgroundColorStyle('#11aadd'),
+        'background-color:#11aadd;color:#040404;',
+      );
 
-      assert.same(uColor.backgroundColorStyle('#717a1d'), 'background-color:#717a1d;color:#fcfcfc;');
+      assert.same(
+        uColor.backgroundColorStyle('#717a1d'),
+        'background-color:#717a1d;color:#fcfcfc;',
+      );
     });
 
     test('colorOnLight', () => {

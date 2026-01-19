@@ -39,9 +39,8 @@ define((require) => {
         // encode here because we may have a different global dictionary
         const item = waitSends[i];
         ws.send(
-          typeof item === 'string'
-            ? item
-            : message.encodeMessage(item[0], item[1], globalDict));
+          typeof item === 'string' ? item : message.encodeMessage(item[0], item[1], globalDict),
+        );
       }
       waitSends.length = 0;
     });
@@ -56,7 +55,9 @@ define((require) => {
 
       if (serverTime > util.DAY) {
         util.adjustTime(
-          serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now) * 0.5) : 0,
+          serverTime < sentAt || serverTime > now
+            ? serverTime - Math.floor((sentAt + now) * 0.5)
+            : 0,
           util.timeUncertainty === 0
             ? uncertainty
             : Math.min(uncertainty, (util.timeUncertainty * 4 + uncertainty) * 0.2),
@@ -64,7 +65,9 @@ define((require) => {
       }
     });
 
-    base.provide('L', (data) => {require([data], () => {})});
+    base.provide('L', (data) => {
+      require([data], () => {});
+    });
     base.provide('U', function unload(data) {
       const [hash, modId] = data.split(':', 2);
       this.hash = hash;
@@ -121,14 +124,17 @@ define((require) => {
   };
 
   const webSocketSenderFactory = (
-    _session, sessState, execWrapper=koru.fiberConnWrapper, base=_session,
+    _session,
+    sessState,
+    execWrapper = koru.fiberConnWrapper,
+    base = _session,
   ) => {
     const session = _session;
     const waitSends = session[waitSends$] = [];
     session[retryCount$] = 0;
     let reconnTimeout = null;
 
-    if (! session.version && typeof KORU_APP_VERSION === 'string') {
+    if (!session.version && typeof KORU_APP_VERSION === 'string') {
       const [version, hash] = KORU_APP_VERSION.split(',', 2);
       session.version = version;
       session.hash = hash;
@@ -191,7 +197,9 @@ define((require) => {
       addToDict() {}, // no op on client
 
       // for testing
-      get _waitSends() {return waitSends},
+      get _waitSends() {
+        return waitSends;
+      },
     });
 
     const stopReconnTimeout = () => {
@@ -249,7 +257,8 @@ define((require) => {
 
       session[private$].queueHeatBeat = () => {
         stopHeartbeat();
-        heartbeatTO = wsTimeout(sendHeatbeat, session.heartbeatInterval)};
+        heartbeatTO = wsTimeout(sendHeatbeat, session.heartbeatInterval);
+      };
       session[private$].queueHeatBeat();
       session.onStop(stopHeartbeat);
 
@@ -271,8 +280,12 @@ define((require) => {
         stopHeartbeat();
         if (event === undefined) return;
         if (event.code !== undefined && event.code !== 1006 && session[retryCount$] != 0) {
-          koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
-            event.code, new Date());
+          koru.info(
+            event.wasClean ? 'Connection closed' : 'Abnormal close',
+            'code',
+            event.code,
+            new Date(),
+          );
         }
         session[retryCount$] = Math.min(4, session[retryCount$] + 1);
 

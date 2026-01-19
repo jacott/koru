@@ -7,8 +7,13 @@ define((require, exports, module) => {
   const borderColors = {};
 
   let tmpStyleResult = '';
-  const tmpStyle = {setProperty: (name, value) => {tmpStyleResult += `${name}:${value};`}};
-  const RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
+  const tmpStyle = {
+    setProperty: (name, value) => {
+      tmpStyleResult += `${name}:${value};`;
+    },
+  };
+  const RGBA_RE =
+    /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
   const HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
   const SMALL_HEX_RE = /^#?([\da-f])([\da-f])([\da-f])([\da-f])?$/i;
 
@@ -26,12 +31,11 @@ define((require, exports, module) => {
   };
 
   const hex2Style = (color) => {
-    if (! color) return '';
+    if (!color) return '';
     if (color.length === 7) return color;
 
-    const match = (color.length > 5
-      ? HEX_RE.exec(color)
-      : SMALL_HEX_RE.exec(color)) ?? ['', '00', '00', '00', '00'];
+    const match = (color.length > 5 ? HEX_RE.exec(color) : SMALL_HEX_RE.exec(color)) ??
+      ['', '00', '00', '00', '00'];
     let result = 'rgba(';
 
     for (let i = 1; i < 4; ++i) {
@@ -77,8 +81,11 @@ define((require, exports, module) => {
     }
 
     return {
-      r: parseInt(match[1], 16), g: parseInt(match[2], 16), b: parseInt(match[3], 16),
-      a: match[4] ? alphaHexToFrac(match[4]) : 1};
+      r: parseInt(match[1], 16),
+      g: parseInt(match[2], 16),
+      b: parseInt(match[3], 16),
+      a: match[4] ? alphaHexToFrac(match[4]) : 1,
+    };
   };
 
   const rgb2hex = (rgb) => {
@@ -120,20 +127,20 @@ define((require, exports, module) => {
     const b = rgb2xyz(rgb.b);
 
     const x = xyz2lab((.4124564 * r + .3575761 * g + .1804375 * b) / .95047);
-    const y = xyz2lab((.2126729 * r + .7151522 * g + .0721750 * b));
+    const y = xyz2lab(.2126729 * r + .7151522 * g + .0721750 * b);
     const z = xyz2lab((.0193339 * r + .1191920 * g + .9503041 * b) / 1.08883);
     return {l: 116 * y - 16, a: 500 * (x - y), b: 200 * (y - z)};
   };
 
   const rgb2xyz = (r) => (r /= 255) <= .04045 ? r / 12.92 : Math.pow((r + .055) / 1.055, 2.4);
 
-  const xyz2lab = (x) => x > .008856 ? Math.pow(x, 1/3) : 7.787037 * x + 4/29;
+  const xyz2lab = (x) => x > .008856 ? Math.pow(x, 1 / 3) : 7.787037 * x + 4 / 29;
 
   const lab2hex = (color) => {
     const c1 = (color.l + 16) / 116,
-    x = lab2xyz(c1 + color.a / 500) * .95047,
-    y = lab2xyz(c1),
-    z = lab2xyz(c1 - color.b / 200) * 1.08883;
+      x = lab2xyz(c1 + color.a / 500) * .95047,
+      y = lab2xyz(c1),
+      z = lab2xyz(c1 - color.b / 200) * 1.08883;
 
     return '#' +
       xyz2hex(3.2404542 * x - 1.5371385 * y - .4985314 * z) +
@@ -141,17 +148,21 @@ define((require, exports, module) => {
       xyz2hex(.0556434 * x - .2040259 * y + 1.0572252 * z);
   };
 
-  const byte2hex = (byte) => byte == null
-    ? ''
-    : byte < 0x10 ? '0' + byte.toString(16) : byte.toString(16);
+  const byte2hex = (byte) =>
+    byte == null ? '' : byte < 0x10 ? '0' + byte.toString(16) : byte.toString(16);
 
   const xyz2hex = (r) => {
-    const hex = Math.min(255, Math.max(0, Math.round(
-      255 * (r <= .00304 ? 12.92 * r : 1.055 * Math.pow(r, 1/2.4) - .055)))).toString(16);
+    const hex = Math.min(
+      255,
+      Math.max(
+        0,
+        Math.round(255 * (r <= .00304 ? 12.92 * r : 1.055 * Math.pow(r, 1 / 2.4) - .055)),
+      ),
+    ).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
 
-  const lab2xyz = (x) => x > .206893034 ? x * x * x : (x - 4/29) / 7.787037;
+  const lab2xyz = (x) => x > .206893034 ? x * x * x : (x - 4 / 29) / 7.787037;
 
   const UtilColor = {
     hex2rgb,
@@ -163,8 +174,11 @@ define((require, exports, module) => {
         const match = input.match(RGBA_RE);
         if (match) {
           return {
-            r: parseInt(match[1]), g: parseInt(match[2]),
-            b: parseInt(match[3]), a: match[4] ? parseFloat(match[4]) : 1};
+            r: parseInt(match[1]),
+            g: parseInt(match[2]),
+            b: parseInt(match[3]),
+            a: match[4] ? parseFloat(match[4]) : 1,
+          };
         } else {
           return hex2rgb(input, 'validate');
         }
@@ -177,7 +191,7 @@ define((require, exports, module) => {
       return rgb ? '#' + rgb2hex(rgb) : '';
     },
 
-    rgb2hex(rgb, prefix='#') {
+    rgb2hex(rgb, prefix = '#') {
       return prefix + rgb2hex(rgb);
     },
 
@@ -194,11 +208,18 @@ define((require, exports, module) => {
       return style;
     },
 
-    setColorAndContrastStyleVars(style, color, colorName='color', contrastName='contrastColor') {
+    setColorAndContrastStyleVars(
+      style,
+      color,
+      colorName = 'color',
+      contrastName = 'contrastColor',
+    ) {
       color = color || {r: 255, g: 255, b: 255, a: 1};
       style.setProperty('--' + colorName, toRgbStyle(color));
-      style.setProperty('--' + contrastName, toRgbStyle(
-        contrastColors[color] ??= contrastColor(color, '#4d4d4d')));
+      style.setProperty(
+        '--' + contrastName,
+        toRgbStyle(contrastColors[color] ??= contrastColor(color, '#4d4d4d')),
+      );
       return style;
     },
 
@@ -225,9 +246,15 @@ define((require, exports, module) => {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
         switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
+          case r:
+            h = (g - b) / d + (g < b ? 6 : 0);
+            break;
+          case g:
+            h = (b - r) / d + 2;
+            break;
+          case b:
+            h = (r - g) / d + 4;
+            break;
         }
         h /= 6;
       }
@@ -245,17 +272,17 @@ define((require, exports, module) => {
         const hue2rgb = (p, q, t) => {
           if (t < 0) t += 1;
           if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          if (t < 1 / 6) return p + (q - p) * 6 * t;
+          if (t < 1 / 2) return q;
+          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
           return p;
         };
 
         const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
+        r = hue2rgb(p, q, h + 1 / 3);
         g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
+        b = hue2rgb(p, q, h - 1 / 3);
       }
 
       return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
