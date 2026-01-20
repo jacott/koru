@@ -135,13 +135,11 @@ define((require, exports, module) => {
     ctx.caretMoved.notify(override);
   };
 
-  const mentionKey = (ctx, code) => {
-    let mentions = ctx.data.extend;
-    mentions = mentions && mentions.mentions;
-    if (!mentions) return;
-    const id = String.fromCharCode(code);
-    if (mentions[id]) {
-      return id;
+  const inputChange = (ctx, muts) => {
+    if (ctx.mode !== standardMode || muts.length === 0 || muts.length > 3) return;
+    const lm = muts.at(-1);
+    if (lm.type === 'characterData') {
+      ctx.mention.check();
     }
   };
 
@@ -589,6 +587,23 @@ define((require, exports, module) => {
     },
   });
 
+  const getMentionChar = (range, offset) => {
+    if (range.startContainer.nodeType === TEXT_NODE) {
+      const text = range.startContainer.nodeValue;
+      return text[range.startOffset + offset];
+    } else {
+      return ' ';
+    }
+  };
+
+  function spanLastCharOfRange(range) {
+    range.setStart(range.endContainer, range.endOffset - 1);
+    const span = document.createElement('span');
+    span.classList.add('ln');
+    range.surroundContents(span);
+    return span;
+  }
+
   const standardMode = {
     actions,
     type: 'standard',
@@ -632,11 +647,6 @@ define((require, exports, module) => {
       if (event.ctrlKey || event.metaKey || event.altKey) {
         keyMap.exec(event, 'ignoreFocus');
         return;
-      }
-
-      if ($.ctx.mentionState != null && $.ctx.mentionState < 3 && ++$.ctx.mentionState > 2) {
-        // we had a non printable key pressed; abort mention
-        RichTextMention.revertMention(this);
       }
     },
   };
@@ -711,6 +721,78 @@ define((require, exports, module) => {
     return ctx && ctx.openDialog;
   };
 
+  class MentionState {
+    elm = null;
+    type = '';
+    offset = 0;
+    live = false;
+
+    constructor(ctx) {
+      this.ctx = ctx;
+    }
+
+    isPending() {
+      return this.elm !== null && !this.live;
+    }
+
+    checkRange(range) {
+      if (!this.isPending()) {
+        if (this.ctx.selectItem != null && $.data(this.ctx.selectItem).span.parentNode === null) {
+          Dom.remove(this.ctx.selectItem);
+        }
+      } else if (this.isRangeChanged(range)) {
+        this.stop();
+      }
+    }
+
+    isRangeChanged(range) {
+      return !range.collapse || this.elm !== range.startContainer ||
+        this.offset !== range.startOffset;
+    }
+
+    mentionKey(key) {
+      return this.ctx.data.extend?.mentions?.[key] !== undefined;
+    }
+
+    stop() {
+      this.elm = null;
+      this.live = false;
+    }
+
+    check() {
+      const range = Dom.getRange();
+      if (!range.collapsed) return;
+      if (this.isPending()) {
+        this.goLive(range);
+      } else {
+        const text = getMentionChar(range, -1);
+        if (this.mentionKey(text) && (range.startOffset < 3 || getMentionChar(range, -2) === ' ')) {
+          this.type = text;
+          this.elm = range.startContainer;
+          this.offset = range.startOffset;
+        }
+      }
+    }
+
+    goLive(range) {
+      if (range.startContainer !== this.elm || range.startOffset !== this.offset + 1) {
+        this.stop();
+      } else {
+        this.live = true;
+        const span = spanLastCharOfRange(range);
+        const {ctx} = this;
+        ctx.selectItem = RichTextMention.selectItem({
+          type: this.type,
+          mentions: ctx.data.extend.mentions,
+          inputCtx: ctx,
+          inputElm: ctx.inputElm,
+          span,
+        });
+        return;
+      }
+    }
+  }
+
   Tpl.$extend({
     $created: (ctx, elm) => {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
@@ -720,13 +802,18 @@ define((require, exports, module) => {
       ctx.inputElm.addEventListener('focusout', focusInput);
       ctx.mode = standardMode;
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
+      const mention = ctx.mention = new MentionState(ctx);
 
       const undo = ctx.undo = new DomUndo(ctx.inputElm);
+      undo.monitor((muts) => {
+        inputChange(ctx, muts);
+      });
       ctx.selectionchange = () => {
         const range = Dom.getRange();
         if (range != null && ctx.inputElm.contains(range.startContainer)) {
           setMode(ctx, range);
           undo.saveCaret(range);
+          mention.checkRange(range);
         }
       };
     },
@@ -803,6 +890,8 @@ define((require, exports, module) => {
     },
 
     modes,
+
+    nodeRange,
   });
 
   Tpl.$events({
@@ -876,52 +965,6 @@ define((require, exports, module) => {
       }
 
       $.ctx.mode.keydown.call(this, event);
-    },
-
-    keypress(event) {
-      if (event.which === 0) return; // for firefox
-      const ctx = $.ctx;
-
-      if (ctx.mentionState != null && ctx.mentionState < 3) {
-        Dom.stopEvent();
-        const ch = String.fromCharCode(event.which);
-        const range = Dom.getRange();
-        const span = Dom.h({class: 'ln', span: ch});
-        range.insertNode(span);
-        ctx.mentionState = 3;
-        ctx.selectItem = RichTextMention.selectItem({
-          type: ctx.mentionType,
-          mentions: ctx.data.extend.mentions,
-          inputCtx: ctx,
-          inputElm: ctx.inputElm,
-          span,
-        });
-        return;
-      }
-      const mentionType = mentionKey(ctx, event.which);
-      if (mentionType && event.shiftKey) {
-        ctx.mentionType = mentionType;
-        const range = Dom.getRange();
-        if (range.startOffset !== 0) {
-          let text;
-          if (range.startContainer.nodeType === TEXT_NODE) {
-            text = range.startContainer.nodeValue;
-            text = text[range.startOffset - 1];
-          } else {
-            text = range.startContainer.childNodes[range.startOffset - 1].textContent;
-          }
-          if (text.match(/\S/)) return;
-        }
-        ctx.mentionState = 1;
-        return;
-      }
-    },
-
-    keyup() {
-      const {ctx} = $;
-      if (ctx.selectItem && $.data(ctx.selectItem).span.parentNode === null) {
-        Dom.remove(ctx.selectItem);
-      }
     },
   });
 

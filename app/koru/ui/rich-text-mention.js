@@ -81,9 +81,9 @@ define((require, exports, module) => {
     }
 
     const rtCtx = Dom.ctx(editorELm);
-    if (rtCtx) {
+    if (rtCtx !== undefined) {
       rtCtx.selectItem = null;
-      rtCtx.mentionState = null;
+      rtCtx.mention.stop();
     }
   };
 

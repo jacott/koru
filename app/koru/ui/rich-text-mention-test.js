@@ -13,9 +13,15 @@ isClient && define((require, exports, module) => {
 
   let v = {};
 
-  const pressAt = (elm) => {
-    TH.keypress(elm, '@', 'shift');
-    insert('@');
+  const pressChar = (ctx, char) => {
+    insert(char);
+    ctx.undo.recordNow();
+    TH.trigger(ctx.inputElm, 'selectionchange');
+  };
+
+  const moveRange = (ctx, elm, offset) => {
+    Dom.setRange(RichTextEditor.nodeRange(elm, offset));
+    TH.trigger(ctx.inputElm, 'selectionchange');
   };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
@@ -46,6 +52,7 @@ isClient && define((require, exports, module) => {
       document.getElementById('TestRichTextEditor').style.position = 'relative';
 
       v.input = document.body.getElementsByClassName('input')[0];
+      v.inputCtx = Dom.ctx(v.input);
 
       TH.setRange(v.input.firstChild, v.input.firstChild.textContent.length);
       v.input.focus();
@@ -75,7 +82,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('accept', () => {
-        const inputCtx = Dom.ctx(v.input);
+        const {inputCtx} = v;
         assert.isTrue(inputCtx.undo.paused);
         assert(Modal.topModal.handleTab);
 
@@ -102,7 +109,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('cancel', () => {
-        const inputCtx = Dom.ctx(v.input);
+        const {inputCtx} = v;
         assert.dom('.rtMention:not(.inline) input', (input) => {
           TH.input(input, 'g');
         });
@@ -115,18 +122,15 @@ isClient && define((require, exports, module) => {
     });
 
     test('typing @g', () => {
-      const {input} = v, inputCtx = Dom.ctx(input);
+      const {input, inputCtx} = v;
       assert.dom(input, () => {
-        pressAt(input);
-        refute.called(Dom.stopEvent);
+        pressChar(inputCtx, '@');
       });
       refute.dom('#TestRichTextEditor>.rtMention');
       assert.isFalse(inputCtx.undo.paused);
 
       assert.dom(input, () => {
-        TH.trigger(input, 'keydown', {which: 16}); // shift should not matter
-        TH.keypress(input, 'g');
-        assert.called(Dom.stopEvent);
+        pressChar(inputCtx, 'g');
         assert.same(input.textContent.replace(/\xa0/, ' '), 'hello @g');
         assert.dom('.ln', 'g');
       });
@@ -140,26 +144,40 @@ isClient && define((require, exports, module) => {
       });
     });
 
+    test('midtext @g', () => {
+      moveRange(v.inputCtx, v.input.firstChild, 2);
+      pressChar(v.inputCtx, ' ');
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'g');
+      assert.dom('span.ln');
+
+      Dom.remove(v.inputCtx.selectItem);
+
+      refute.dom('span.ln');
+    });
+
     test('@ followed by -> ->', () => {
-      const {input} = v, inputCtx = Dom.ctx(input);
-      pressAt(input);
+      const {input, inputCtx} = v;
+      pressChar(inputCtx, '@');
       assert.same(input.innerHTML, 'hello @');
       assert.isFalse(inputCtx.undo.paused);
-      TH.trigger(input, 'keydown', {which: 39});
-      TH.trigger(input, 'keydown', {which: 39});
 
-      assert.same(inputCtx.mentionState, null);
+      moveRange(inputCtx, input.firstChild, 6);
+      moveRange(inputCtx, input.firstChild, 7);
+      assert.same(inputCtx.mention.elm, null);
+
+      pressChar(inputCtx, 'g');
 
       refute.dom('.ln');
 
-      assert.same(input.innerHTML, 'hello @');
+      assert.same(input.innerHTML, 'hello @g');
       assert.isFalse(inputCtx.undo.paused);
     });
 
     test('@ after div', () => {
-      insert('\n');
-      pressAt(v.input);
-      TH.keypress(v.input, 'g');
+      pressChar(v.inputCtx, '\n');
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'g');
 
       assert.dom('span.ln');
     });
@@ -175,20 +193,18 @@ isClient && define((require, exports, module) => {
         }
       };
 
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'x');
-      });
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'x');
 
-      assert.dom('.rtMention.inline', function () {
+      assert.dom('.rtMention.inline', (elm) => {
         assert.dom('div:first-child', 'no foo');
       });
 
-      assert.dom('input', {value: 'now foo'}, function () {
-        TH.input(this, 'z');
+      assert.dom('input', {value: 'now foo'}, (elm) => {
+        TH.input(elm, 'z');
       });
 
-      assert.dom('.rtMention.inline', function () {
+      assert.dom('.rtMention.inline', (elm) => {
         assert.dom('div:first-child', 'yes foo');
       });
     });
@@ -196,8 +212,8 @@ isClient && define((require, exports, module) => {
     test('needMore', () => {
       v.fooFunc = (frag, text) => true;
 
-      pressAt(v.input);
-      TH.keypress(v.input, 'g');
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'g');
 
       assert.dom('.rtMention div.empty.needMore');
     });
@@ -219,8 +235,8 @@ isClient && define((require, exports, module) => {
         v.fooHtmlFunc = (elm, ctx) =>
           Dom.h({a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
 
-        pressAt(v.input);
-        TH.keypress(v.input, 'g');
+        pressChar(v.inputCtx, '@');
+        pressChar(v.inputCtx, 'g');
       });
 
       test('empty', () => {
@@ -427,138 +443,97 @@ isClient && define((require, exports, module) => {
 
     test('input box uses modal', () => {
       spy(Dom, 'reposition');
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
+      assert.dom(v.input, (elm) => {
+        pressChar(v.inputCtx, '@');
+        pressChar(v.inputCtx, 'h');
       });
 
       const ln = document.getElementsByClassName('ln')[0];
       const unbb = ln.getBoundingClientRect();
 
-      assert.dom('.glassPane>.rtMention', function () {
+      assert.dom('.glassPane>.rtMention', (elm) => {
         assert.calledWith(Dom.reposition, 'on', {
-          popup: this,
+          popup: elm,
           origin: TH.match.field('tagName', 'SPAN'),
         });
-        const minp = this.querySelector('input');
-        assert.dom('.empty', function () {
-          assert.calledWith(Dom.reposition, 'below', {popup: this, origin: minp});
+        const minp = elm.querySelector('input');
+        assert.dom('.empty', (popup) => {
+          assert.calledWith(Dom.reposition, 'below', {popup, origin: minp});
         });
       });
     });
 
     group('keydown', () => {
       beforeEach(() => {
-        assert.dom(v.input, function () {
-          pressAt(this);
-          TH.keypress(this, 'h');
-        });
+        pressChar(v.inputCtx, '@');
+        pressChar(v.inputCtx, 'h');
       });
 
       test('deleting @', () => {
-        assert.dom('.rtMention>input', function () {
-          TH.input(this, '');
-          TH.trigger(this, 'keydown', {which: 8});
+        assert.dom('.rtMention>input', (input) => {
+          TH.input(input, '');
+          TH.trigger(input, 'keydown', {which: 8});
         });
 
-        assert.dom(v.input, function () {
+        assert.dom(v.input, (input) => {
           refute.dom('.ln');
 
-          assert.same(this.innerHTML, 'hello&nbsp;');
+          assert.same(input.innerHTML, 'hello&nbsp;');
           insert('w');
-          assert.same(this.innerHTML, 'hello w');
+          assert.same(input.innerHTML, 'hello w');
         });
         refute.dom('.rtMention');
       });
 
       test('arrow left', () => {
-        assert.dom('.rtMention>input', function () {
-          TH.input(this, '');
-          TH.trigger(this, 'keydown', {which: 37});
+        assert.dom('.rtMention>input', (input) => {
+          TH.input(input, '');
+          TH.trigger(input, 'keydown', {which: 37});
         });
 
         refute.dom('.rtMention');
 
-        assert.dom(v.input, function () {
+        assert.dom(v.input, (input) => {
           refute.dom('.ln');
 
-          assert.same(document.activeElement, this);
+          assert.same(document.activeElement, input);
 
           insert('w');
-          assert.same(this.innerHTML, 'hello w@');
+          assert.same(input.innerHTML, 'hello w@');
         });
       });
 
       test('escape pressed', () => {
         TH.trigger('.rtMention>input', 'keydown', {which: 27});
 
-        assert.dom(v.input, function () {
-          assert.same(this.innerHTML, 'hello @h');
+        assert.dom(v.input, (input) => {
+          assert.same(input.innerHTML, 'hello @h');
 
           refute.dom('.ln');
 
           insert('w');
-          assert.same(this.innerHTML, 'hello @hw');
+          assert.same(input.innerHTML, 'hello @hw');
         });
       });
     });
 
-    test('@ not last keypress', () => {
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.trigger(this, 'keydown', {which: 40});
-        TH.trigger(this, 'keydown', {which: 72});
-        TH.keypress(this, 'h');
-      });
-
-      refute.dom('.rtMention');
-    });
-
     test('@ not after space', () => {
-      insert('.');
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
-      });
-
-      refute.dom('.rtMention');
-    });
-
-    test('arrow right', () => {
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
-      });
-
-      assert.dom('.rtMention>input', function () {
-        TH.input(this, 'henry');
-        this.selectionStart = this.selectionEnd = 4;
-        TH.trigger(this, 'keydown', {which: 39});
-      });
-
-      assert.dom('.rtMention>input', function () {
-        this.selectionStart = this.selectionEnd = 5;
-        TH.trigger(this, 'keydown', {which: 39});
-      });
-
-      assert.dom(v.input, function () {
-        refute.dom('.ln');
-
-        insert('w');
-        assert.same(this.innerHTML, 'hello @henryw');
-      });
+      pressChar(v.inputCtx, '.');
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'h');
 
       refute.dom('.rtMention');
     });
 
     test('.ln removed removes rtMention', () => {
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
-        assert.dom('.ln', function () {
-          Dom.remove(this);
+      assert.dom(v.input, (input) => {
+        pressChar(v.inputCtx, '@');
+        const offset = v.inputCtx.mention.offset;
+        pressChar(v.inputCtx, 'h');
+        assert.dom('.ln', (ln) => {
+          Dom.remove(ln);
         });
-        TH.trigger(this, 'keyup');
+        moveRange(v.inputCtx, input.firstChild, offset);
       });
 
       refute.dom('.rtMention');
@@ -569,13 +544,11 @@ isClient && define((require, exports, module) => {
         RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello')}),
       );
 
-      assert.dom('.richTextEditor', function () {
-        assert.dom(v.input, function () {
-          pressAt(this);
-          TH.keypress(this, 'h');
-        });
+      assert.dom('.richTextEditor', (rte) => {
+        pressChar(v.inputCtx, '@');
+        pressChar(v.inputCtx, 'h');
 
-        RichTextEditor.clear(this);
+        RichTextEditor.clear(rte);
         assert.dom('>.input', '');
       });
 
@@ -583,21 +556,19 @@ isClient && define((require, exports, module) => {
     });
 
     test('removing editor removes rtMention', () => {
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
-      });
+      pressChar(v.inputCtx, '@');
+      pressChar(v.inputCtx, 'h');
 
-      assert.dom('.richTextEditor', function () {
-        Dom.remove(this);
+      assert.dom('.richTextEditor', (rte) => {
+        Dom.remove(rte);
       });
 
       refute.dom('.rtMention');
     });
 
     test("a events don't propagate", () => {
-      assert.dom(v.input, function () {
-        this.appendChild(v.href = Dom.h({a: 'link'}));
+      assert.dom(v.input, (input) => {
+        input.appendChild(v.href = Dom.h({a: 'link'}));
         const event = TH.buildEvent('click');
         stub(event, 'preventDefault');
         TH.trigger(v.href, event);
@@ -606,8 +577,8 @@ isClient && define((require, exports, module) => {
     });
 
     test("button events don't propagate", () => {
-      assert.dom(v.input, function () {
-        this.appendChild(v.button = Dom.h({button: 'bang'}));
+      assert.dom(v.input, (input) => {
+        input.appendChild(v.button = Dom.h({button: 'bang'}));
         const event = TH.buildEvent('click');
         stub(event, 'preventDefault');
         TH.trigger(v.button, event);
@@ -616,14 +587,14 @@ isClient && define((require, exports, module) => {
     });
 
     test('removing rtMention', () => {
-      assert.dom(v.input, function () {
-        pressAt(this);
-        TH.keypress(this, 'h');
+      assert.dom(v.input, (input) => {
+        pressChar(v.inputCtx, '@');
+        pressChar(v.inputCtx, 'h');
         assert.isTrue(Dom.ctx(v.input).openDialog);
       });
 
-      assert.dom('.glassPane', function () {
-        Dom.remove(this);
+      assert.dom('.glassPane', (gp) => {
+        Dom.remove(gp);
       });
 
       assert.isFalse(Dom.ctx(v.input).openDialog);
@@ -631,7 +602,7 @@ isClient && define((require, exports, module) => {
 
       const ctx = Dom.ctx(v.input);
       assert.same(ctx.selectItem, null);
-      assert.same(ctx.mentionState, null);
+      assert.same(ctx.mention.elm, null);
     });
   });
 });
