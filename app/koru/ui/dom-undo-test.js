@@ -64,6 +64,18 @@ isClient && define((require, exports, module) => {
       assert.equals(htj(input).div, {title: 'foo', br: []});
     });
 
+    test('onInputChange', () => {
+      const undo = new DomUndo(input);
+      const change = stub();
+      after(undo.monitor(change));
+      input.textContent += '@';
+      undo.recordNow();
+      assert.calledOnceWith(
+        change,
+        m((muts) => muts.length === 1 && muts[0].addedNodes[0].textContent === '@'),
+      );
+    });
+
     test('pause, unpause, onChange', () => {
       const undo = new DomUndo(input);
       const change = stub();

@@ -7,6 +7,7 @@ define((require) => {
   const {hasOwn} = util;
 
   const mo$ = Symbol(),
+    monitor$ = Symbol(),
     paused$ = Symbol(),
     onchange$ = Symbol(),
     redos$ = Symbol(),
@@ -282,7 +283,12 @@ define((require) => {
       return this[onchange$].onChange(subject);
     }
 
+    monitor(subject) {
+      return (this[monitor$] ??= new Observable()).onChange(subject);
+    }
+
     recordNow(muts = this[mo$].takeRecords()) {
+      this[monitor$]?.notify(muts);
       if (this[paused$] || this[pending$] !== undefined) {
         if (muts.length != 0) {
           if (this[pending$] === undefined) {
