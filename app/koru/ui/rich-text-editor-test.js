@@ -42,10 +42,14 @@ isClient && define((require, exports, module) => {
 
     test('attrs helper', () => {
       const elm = sut.$autoRender({
-        content: '', options: {
-          class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
+        content: '',
+        options: {
+          class: 'foo bar',
+          id: 'FOO',
+          type: 'RichTextEditor',
           placeholder: 'place holder text',
-          $other: 'x', 'data-foo': 'daf',
+          $other: 'x',
+          'data-foo': 'daf',
         },
       });
       assert.dom(elm, function () {
@@ -61,9 +65,7 @@ isClient && define((require, exports, module) => {
     test('undo/redo', () => {
       const disconnect = spy(DomUndo.prototype, 'disconnect');
 
-      document.body.appendChild(tpl.$autoRender({
-        content: Dom.h('hello'),
-      }));
+      document.body.appendChild(tpl.$autoRender({content: Dom.h('hello')}));
 
       assert.calledOnceWith(disconnect, false);
 
@@ -77,7 +79,9 @@ isClient && define((require, exports, module) => {
       assert.same(input.getAttribute('placeholder'), 'placeholder');
 
       const hello = input.firstChild;
-      const ins = (elm) => {input.insertBefore(elm, hello)};
+      const ins = (elm) => {
+        input.insertBefore(elm, hello);
+      };
 
       TH.setRange(hello, 0);
       focusin(input);
@@ -121,8 +125,9 @@ isClient && define((require, exports, module) => {
 
     test('focus', () => {
       stub(document, 'execCommand');
-      document.body.appendChild(sut.$autoRender({
-        content: '', options: {focusout: v.focusout = stub()}}));
+      document.body.appendChild(
+        sut.$autoRender({content: '', options: {focusout: v.focusout = stub()}}),
+      );
 
       assert.dom('.richTextEditor:not([focusout])>.input', function () {
         this.focus();
@@ -246,7 +251,8 @@ isClient && define((require, exports, module) => {
       group('exit', () => {
         const preContent = {
           'data-lang': 'Rust',
-          pre: [{span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}]};
+          pre: [{span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}],
+        };
 
         test('empty', () => {
           const pre = Dom.h({pre: [{br: ''}, '']});
@@ -270,13 +276,18 @@ isClient && define((require, exports, module) => {
           undo.recordNow();
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          assert.equals(htj(inputElm).div, [
-            {span: 'one'}, {br: ''}, {span: 'tw'},
-            {'data-lang': 'Rust', pre: [{span: 'o'}, {b: '2'}, {br: ''}, {span: 'three'}]},
-          ]);
+          assert.equals(htj(inputElm).div, [{span: 'one'}, {br: ''}, {span: 'tw'}, {
+            'data-lang': 'Rust',
+            pre: [{span: 'o'}, {b: '2'}, {br: ''}, {span: 'three'}],
+          }]);
 
-          assert.rangeEquals(undefined, inputElm.childNodes[0].firstChild, 0,
-            inputElm.childNodes[2], 1);
+          assert.rangeEquals(
+            undefined,
+            inputElm.childNodes[0].firstChild,
+            0,
+            inputElm.childNodes[2],
+            1,
+          );
         });
 
         test('selection middle', () => {
@@ -291,12 +302,20 @@ isClient && define((require, exports, module) => {
 
           assert.equals(htj(inputElm).div, [
             {'data-lang': 'Rust', pre: [{span: 'one'}, {br: ''}, {span: 'tw'}]},
-            {span: 'o'}, {b: '2'}, {br: ''}, {span: 'thr'},
+            {span: 'o'},
+            {b: '2'},
+            {br: ''},
+            {span: 'thr'},
             {'data-lang': 'Rust', pre: {span: 'ee'}},
           ]);
 
-          assert.rangeEquals(undefined, inputElm.childNodes[1].firstChild, 0,
-            inputElm.childNodes[4], 1);
+          assert.rangeEquals(
+            undefined,
+            inputElm.childNodes[1].firstChild,
+            0,
+            inputElm.childNodes[4],
+            1,
+          );
         });
 
         test('first line', () => {
@@ -310,11 +329,10 @@ isClient && define((require, exports, module) => {
 
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          assert.equals(htj(inputElm).div, [
-            {span: 'one'}, {br: ''},
-            {'data-lang': 'Rust', pre: [
-              {span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}],
-            }]);
+          assert.equals(htj(inputElm).div, [{span: 'one'}, {br: ''}, {
+            'data-lang': 'Rust',
+            pre: [{span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}],
+          }]);
 
           undo.undo();
           assert.equals(htj(inputElm).div, preContent);
@@ -335,11 +353,10 @@ isClient && define((require, exports, module) => {
 
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          const ans = [
-            {'data-lang': 'Rust', pre: [{span: 'one'}, {br: ''}]},
-            {br: ''},
-            {'data-lang': 'Rust', pre: [{span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}]},
-          ];
+          const ans = [{'data-lang': 'Rust', pre: [{span: 'one'}, {br: ''}]}, {br: ''}, {
+            'data-lang': 'Rust',
+            pre: [{span: 'two'}, {b: '2'}, {br: ''}, {span: 'three'}],
+          }];
           assert.equals(htj(inputElm).div, ans);
 
           assert.rangeEquals(undefined, inputElm, 1, inputElm, 1);
@@ -374,8 +391,11 @@ isClient && define((require, exports, module) => {
 
           assert.equals(htj(inputElm).div, [
             {'data-lang': 'Rust', pre: [{span: 'one'}, {br: ''}]},
-            {span: 'two'}, {b: '2'}, {br: ''},
-            {'data-lang': 'Rust', pre: {span: 'three'}}]);
+            {span: 'two'},
+            {b: '2'},
+            {br: ''},
+            {'data-lang': 'Rust', pre: {span: 'three'}},
+          ]);
 
           TH.keydown(pre, 'Z', {ctrlKey: true});
           assert.equals(htj(inputElm).div, preContent);
@@ -395,10 +415,10 @@ isClient && define((require, exports, module) => {
 
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          assert.equals(htj(inputElm).div, [
-            {'data-lang': 'Rust', pre: [
-              {span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}]},
-            {span: 'three'}]);
+          assert.equals(htj(inputElm).div, [{
+            'data-lang': 'Rust',
+            pre: [{span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}],
+          }, {span: 'three'}]);
 
           TH.keydown(pre, 'Z', {ctrlKey: true});
           assert.equals(htj(inputElm).div, preContent);
@@ -417,10 +437,10 @@ isClient && define((require, exports, module) => {
 
           TH.keydown(pre, 'À', {ctrlKey: true});
 
-          assert.equals(htj(inputElm).div, [
-            {'data-lang': 'Rust', pre: [
-              {span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}]},
-            {span: ['three', {br: ''}]}]);
+          assert.equals(htj(inputElm).div, [{
+            'data-lang': 'Rust',
+            pre: [{span: 'one'}, {br: ''}, {span: 'two'}, {b: '2'}, {br: ''}],
+          }, {span: ['three', {br: ''}]}]);
         });
       });
 
@@ -489,18 +509,16 @@ isClient && define((require, exports, module) => {
           range.collapse();
           Dom.setRange(range);
           sut.insert(' foo');
-          assert.equals(htj(pre).pre, [
-            'hello', {br: ''}, 'world foo',
-          ]);
+          assert.equals(htj(pre).pre, ['hello', {br: ''}, 'world foo']);
           TH.keydown(this, 13);
           TH.keyup(this, 13);
           assert.same(sut.$ctx(this).mode.type, 'code');
           DomNav.insertNode(Dom.h('bar'));
           assert.dom(RichText.fromToHtml(this.parentNode.value), function () {
             assert.dom('pre[data-lang="text"]', (pre) => {
-              assert.equals(htj(pre).pre, [
-                'hello', {br: ''}, 'world foo', {br: ''}, 'bar', {br: ''},
-              ]);
+              assert.equals(htj(pre).pre, ['hello', {br: ''}, 'world foo', {br: ''}, 'bar', {
+                br: '',
+              }]);
             });
           });
           this.insertBefore(Dom.h({div: 'outside'}), this.firstChild);
@@ -560,10 +578,7 @@ isClient && define((require, exports, module) => {
 
         TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
-        assert.equals(htj(input).div, [
-          '1', {br: ''},
-          {'data-lang': 'text', pre: {br: ''}},
-          '2']);
+        assert.equals(htj(input).div, ['1', {br: ''}, {'data-lang': 'text', pre: {br: ''}}, '2']);
 
         const range = Dom.getRange();
         const pre = Dom('pre');
@@ -578,9 +593,14 @@ isClient && define((require, exports, module) => {
     });
 
     test('fontSize', () => {
-      document.body.appendChild(tpl.$autoRender({
-        content: Dom.h([{font: 'bold', $size: '1'},
-          {span: 'big', $style: 'font-size: xx-large'}])}));
+      document.body.appendChild(
+        tpl.$autoRender({
+          content: Dom.h([{font: 'bold', $size: '1'}, {
+            span: 'big',
+            $style: 'font-size: xx-large',
+          }]),
+        }),
+      );
 
       assert.dom('.input font', function () {
         this.focus();
@@ -612,8 +632,7 @@ isClient && define((require, exports, module) => {
     });
 
     test('fontColor no range', () => {
-      document.body.appendChild(tpl.$autoRender({
-        content: Dom.h({})}));
+      document.body.appendChild(tpl.$autoRender({content: Dom.h({})}));
 
       assert.dom('.input', (input) => {
         document.activeElement.blur();
@@ -626,9 +645,14 @@ isClient && define((require, exports, module) => {
     });
 
     test('fontColor', () => {
-      document.body.appendChild(tpl.$autoRender({
-        content: Dom.h({font: {
-          span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
+      document.body.appendChild(
+        tpl.$autoRender({
+          content: Dom.h({
+            font: {span: 'bold', $style: 'background-color:#ffff00'},
+            $color: '#0000ff',
+          }),
+        }),
+      );
 
       const inputElm = Dom('.input');
       focusin(inputElm);
@@ -720,14 +744,13 @@ isClient && define((require, exports, module) => {
       focusin(inputElm);
       TH.keydown(inputElm, 'À', {ctrlKey: true});
 
-      assert.equals(htj(inputElm).div, [
-        {div: '1'}, {div: {style: 'font-family: monospace;', span: '2'}},
-      ]);
+      assert.equals(htj(inputElm).div, [{div: '1'}, {
+        div: {style: 'font-family: monospace;', span: '2'},
+      }]);
 
       sut.insert('foo');
 
-      assert.equals(htj(inputElm).div[1], {
-        div: {style: 'font-family: monospace;', span: 'foo'}});
+      assert.equals(htj(inputElm).div[1], {div: {style: 'font-family: monospace;', span: 'foo'}});
 
       TH.keydown(inputElm, 'À', {ctrlKey: true});
       assert.equals(ctx.override, {font: 'sans-serif'});
@@ -736,7 +759,8 @@ isClient && define((require, exports, module) => {
       assert.same(ctx.override, undefined);
 
       assert.equals(htj(inputElm).div[1], {
-        div: [{style: 'font-family: monospace;', span: 'foo'}, ' bar']});
+        div: [{style: 'font-family: monospace;', span: 'foo'}, ' bar'],
+      });
 
       TH.setRange(inputElm.querySelector('span').firstChild, 1);
 
@@ -744,27 +768,29 @@ isClient && define((require, exports, module) => {
       sut.insert('baz');
       TH.trigger(inputElm, 'selectionchange');
 
-      assert.equals(htj(inputElm).div, [
-        {div: '1'}, {div: [
-          {style: 'font-family: monospace;', span: 'f'},
-          'baz',
-          {style: 'font-family: monospace;', span: 'oo'},
-          ' bar',
-        ]}]);
+      assert.equals(htj(inputElm).div, [{div: '1'}, {
+        div: [{style: 'font-family: monospace;', span: 'f'}, 'baz', {
+          style: 'font-family: monospace;',
+          span: 'oo',
+        }, ' bar'],
+      }]);
 
       TH.setRange(Dom('span').firstChild, 1, Dom('span~span').firstChild, 1);
       TH.keydown(inputElm, 'À', {ctrlKey: true});
 
-      assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
-        {style: 'font-family: monospace;', span: ['f', 'baz', 'o', 'o']}, ' bar']}]);
+      assert.equals(htj(inputElm).div, [{div: '1'}, {
+        div: [{style: 'font-family: monospace;', span: ['f', 'baz', 'o', 'o']}, ' bar'],
+      }]);
 
       const range = Dom.getRange();
       TH.keydown(inputElm, 'À', {ctrlKey: true});
 
-      assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
-        {style: 'font-family: monospace;', span: 'f'},
-        'baz', 'o', {style: 'font-family: monospace;', span: 'o'},
-        ' bar']}]);
+      assert.equals(htj(inputElm).div, [{div: '1'}, {
+        div: [{style: 'font-family: monospace;', span: 'f'}, 'baz', 'o', {
+          style: 'font-family: monospace;',
+          span: 'o',
+        }, ' bar'],
+      }]);
     });
 
     test('title', () => {
@@ -859,12 +885,7 @@ isClient && define((require, exports, module) => {
         const getData = stub();
         getData.withArgs('text/html').returns('<b>bold</b> world');
         getData.withArgs('text/plain').returns('bold world');
-        v.event = {
-          clipboardData: {
-            types: ['text/plain', 'text/html'],
-            getData,
-          },
-        };
+        v.event = {clipboardData: {types: ['text/plain', 'text/html'], getData}};
 
         document.body.appendChild(tpl.$autoRender({content: ''}));
         v.input = Dom('.input');
@@ -880,7 +901,7 @@ isClient && define((require, exports, module) => {
           } finally {
             Dom.current._ctx = origCtx;
           }
-        }
+        };
         stub(Dom, 'stopEvent');
 
         v.insertHTML = v.ec.withArgs('insertHTML');
@@ -895,13 +916,9 @@ isClient && define((require, exports, module) => {
 
       test('safari public.rtf', () => {
         const getData = stub();
-        getData.withArgs('text/plain').returns(
-          'should not need this');
+        getData.withArgs('text/plain').returns('should not need this');
         getData.withArgs('public.rtf').returns('whatever');
-        v.event.clipboardData = {
-          types: ['text/plain', 'public.rtf'],
-          getData,
-        };
+        v.event.clipboardData = {types: ['text/plain', 'public.rtf'], getData};
 
         v.paste(v.event);
 
@@ -912,14 +929,17 @@ isClient && define((require, exports, module) => {
       test('plain text', () => {
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: stub().withArgs('text/plain').returns(
-            'containshttps://nolink https:/a/link'),
+          getData: stub().withArgs('text/plain').returns('containshttps://nolink https:/a/link'),
         };
 
         v.paste(v.event);
 
-        assert.calledWith(v.insertText, 'insertText', false,
-          'containshttps://nolink https:/a/link');
+        assert.calledWith(
+          v.insertText,
+          'insertText',
+          false,
+          'containshttps://nolink https:/a/link',
+        );
       });
 
       test('text hyperlinks', () => {
@@ -928,11 +948,14 @@ isClient && define((require, exports, module) => {
             return Dom.h({a: 'my link', $href: 'http://foo'});
           }
         };
-        after(() => {sut.handleHyperLink = null});
+        after(() => {
+          sut.handleHyperLink = null;
+        });
         v.event.clipboardData = {
           types: ['text/plain'],
           getData: stub().withArgs('text/plain').returns(
-            'contains\n ahttps://false/link and a https://real/link as\nwell'),
+            'contains\n ahttps://false/link and a https://real/link as\nwell',
+          ),
         };
 
         v.paste(v.event);
@@ -967,8 +990,12 @@ isClient && define((require, exports, module) => {
         assert.called(Dom.stopEvent);
 
         refute.called(v.insertText);
-        assert.calledWith(v.insertHTML, 'insertHTML', false,
-          '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
+        assert.calledWith(
+          v.insertHTML,
+          'insertHTML',
+          false,
+          '<div><span style="font-weight: bold;">bold</span> world</div>',
+        );
       });
 
       test('pre', () => {
@@ -982,9 +1009,15 @@ isClient && define((require, exports, module) => {
             assert.equals(htj(pre).pre, ['paste ', 'bold world', 'before']);
             sut.$ctx(input).mode.paste('<b>bold</b>\nplain<br>newline');
             assert.equals(htj(pre).pre.filter(noBlanks), [
-              'paste ', 'bold world',
-              'bold', {br: ''}, 'plain', {br: ''}, 'newline',
-              'before']);
+              'paste ',
+              'bold world',
+              'bold',
+              {br: ''},
+              'plain',
+              {br: ''},
+              'newline',
+              'before',
+            ]);
           });
         });
       });
@@ -1019,8 +1052,9 @@ isClient && define((require, exports, module) => {
 
     group('links', () => {
       beforeEach(() => {
-        document.body.appendChild(tpl.$autoRender({
-          content: Dom.h([{b: 'Hello'}, ' ', {a: 'world', $href: '/#/two'}])}));
+        document.body.appendChild(
+          tpl.$autoRender({content: Dom.h([{b: 'Hello'}, ' ', {a: 'world', $href: '/#/two'}])}),
+        );
 
         Dom.flushNextFrame();
       });
@@ -1153,7 +1187,9 @@ isClient && define((require, exports, module) => {
 
       test('no room below', () => {
         const selm = document.createElement('style');
-        after(() => {selm.remove()});
+        after(() => {
+          selm.remove();
+        });
         document.head.appendChild(selm);
         const {sheet} = selm;
         sheet.insertRule(`body>.glassPane {

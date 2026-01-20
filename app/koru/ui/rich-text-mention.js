@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
@@ -12,14 +12,15 @@ define((require, exports, module)=>{
 
   let execCommand, RichTextEditor;
 
-  const acceptItem = (event, item)=>{
+  const acceptItem = (event, item) => {
     Dom.stopEvent();
 
     const {data} = $.ctx;
 
     const link = data.mentions[data.type].html(item, $.ctx);
-    if (! link)
+    if (!link) {
       return;
+    }
 
     const frag = document.createDocumentFragment();
     frag.appendChild(link);
@@ -39,7 +40,7 @@ define((require, exports, module)=>{
     Dom.remove(event.currentTarget);
   };
 
-  const cancelList = (elm, collapseStart)=>{
+  const cancelList = (elm, collapseStart) => {
     Dom.stopEvent();
     if (collapseStart !== undefined) {
       revertMention($.data(elm).inputElm, null, collapseStart);
@@ -47,8 +48,8 @@ define((require, exports, module)=>{
     Dom.remove(elm);
   };
 
-  const revertMention = (editorELm, frag, collapseStart)=>{
-    if (! editorELm) return;
+  const revertMention = (editorELm, frag, collapseStart) => {
+    if (!editorELm) return;
 
     const ln = editorELm.getElementsByClassName('ln')[0];
     if (ln) {
@@ -62,7 +63,7 @@ define((require, exports, module)=>{
         range.setStart(dest, destOffset);
         range.collapse(collapseStart);
         setRange(range);
-        if (! frag) {
+        if (!frag) {
           ln.textContent && RichTextEditor.insert(ln.textContent);
           const range = getRange();
           if (range) { // maybe missing on destroy
@@ -86,13 +87,13 @@ define((require, exports, module)=>{
     }
   };
 
-  const collapseRange = (start)=>{
+  const collapseRange = (start) => {
     const range = Dom.getRange();
     range.collapse(start);
     Dom.setRange(range);
   };
 
-  const selectItem = (data)=>{
+  const selectItem = (data) => {
     data.value = data.span.textContent;
     const al = Tpl.$autoRender(data);
 
@@ -101,14 +102,14 @@ define((require, exports, module)=>{
 
     const input = al.firstChild.firstChild;
     input.value = data.value;
-    data.span.style.opacity = "0";
+    data.span.style.opacity = '0';
 
     input.selectionStart = input.selectionEnd = 1;
     input.focus();
     return al;
   };
 
-  const transformList = (data, al)=>{
+  const transformList = (data, al) => {
     // noAppend needed to stop firefox loosing focus
     const rtMention = al.firstElementChild;
     Dom.reposition('on', {popup: rtMention, origin: data.span});
@@ -135,7 +136,7 @@ define((require, exports, module)=>{
           setRange(data.range);
           data.inputElm.focus();
         }
-      } catch(ex) {
+      } catch (ex) {
         koru.unhandledException(ex);
       }
       inputCtx.undo.unpause();
@@ -148,7 +149,7 @@ define((require, exports, module)=>{
     init(rte) {
       RichTextEditor = rte;
       execCommand = rte.execCommand;
-    }
+    },
   });
 
   Tpl.$helpers({
@@ -166,7 +167,7 @@ define((require, exports, module)=>{
       Dom.addClass(frag.firstChild, 'selected');
 
       Dom.setClass('needMore', needMore, parentNode);
-      Dom.setClass('empty', ! frag.firstChild, parentNode);
+      Dom.setClass('empty', !frag.firstChild, parentNode);
 
       return frag;
     },
@@ -192,8 +193,9 @@ define((require, exports, module)=>{
 
       $.ctx.updateAllTags();
 
-      if (data.value !== this.value)
+      if (data.value !== this.value) {
         this.value = data.value;
+      }
       if (data.span) {
         data.span.textContent = data.value.replace(/ /g, '\xa0');
         transformList(data, event.currentTarget);
@@ -201,52 +203,55 @@ define((require, exports, module)=>{
     },
 
     'keydown .rtMention>input'(event) {
-      switch(event.which) {
-      case 9: // tab
-        if (event.shiftKey) {
-          cancelList(event.currentTarget, true);
+      switch (event.which) {
+        case 9: // tab
+          if (event.shiftKey) {
+            cancelList(event.currentTarget, true);
+            break;
+          }
+        case 13: // enter
+          const item = event.currentTarget.getElementsByClassName('selected')[0];
+          if (item) {
+            acceptItem(event, item);
+          } else {
+            cancelList(event.currentTarget);
+          }
           break;
-        }
-      case 13: // enter
-        const item = event.currentTarget.getElementsByClassName('selected')[0];
-        if (item)
-          acceptItem(event, item);
-        else
-          cancelList(event.currentTarget);
-        break;
-      case 38: // up
-      case 40: // down
-        Dom.stopEvent();
-        const elm = event.currentTarget.getElementsByClassName('selected')[0];
-        if (elm == null) return;
-        let nextElm = elm;
-        do {
-          nextElm = event.which === 38 ? nextElm.previousElementSibling : nextElm.nextElementSibling;
-        } while(nextElm != null && nextElm.classList.contains('disabled'))
-        if (nextElm != null) {
-          Dom.removeClass(elm, 'selected');
-          Dom.addClass(nextElm, 'selected');
-        }
-        break;
-      case 39: // right
-        if (this.selectionStart === this.value.length) {
-          cancelList(event.currentTarget);
-          collapseRange(false);
-        }
-        break;
-      case 37: // left
-        if (this.selectionStart === 0) {
-          cancelList(event.currentTarget, true);
-          RichTextEditor.moveLeft($.ctx.data.inputElm);
-        }
-        break;
-      case 8: // Backspace
-        if (! this.value) {
-          cancelList(event.currentTarget);
-          execCommand('delete');
+        case 38: // up
+        case 40: // down
           Dom.stopEvent();
-        }
-        break;
+          const elm = event.currentTarget.getElementsByClassName('selected')[0];
+          if (elm == null) return;
+          let nextElm = elm;
+          do {
+            nextElm = event.which === 38
+              ? nextElm.previousElementSibling
+              : nextElm.nextElementSibling;
+          } while (nextElm != null && nextElm.classList.contains('disabled'));
+          if (nextElm != null) {
+            Dom.removeClass(elm, 'selected');
+            Dom.addClass(nextElm, 'selected');
+          }
+          break;
+        case 39: // right
+          if (this.selectionStart === this.value.length) {
+            cancelList(event.currentTarget);
+            collapseRange(false);
+          }
+          break;
+        case 37: // left
+          if (this.selectionStart === 0) {
+            cancelList(event.currentTarget, true);
+            RichTextEditor.moveLeft($.ctx.data.inputElm);
+          }
+          break;
+        case 8: // Backspace
+          if (!this.value) {
+            cancelList(event.currentTarget);
+            execCommand('delete');
+            Dom.stopEvent();
+          }
+          break;
       }
     },
   });

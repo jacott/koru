@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Dom             = require('koru/dom');
   const Observable      = require('koru/observable');
@@ -6,25 +6,35 @@ define((require)=>{
 
   const {hasOwn} = util;
 
-  const mo$ = Symbol(), paused$ = Symbol(), onchange$ = Symbol(),
-        redos$ = Symbol(), undos$ = Symbol(), pendingTail$ = Symbol(),
-        pending$ = Symbol(), range$ = Symbol(), target$ = Symbol();
+  const mo$ = Symbol(),
+    paused$ = Symbol(),
+    onchange$ = Symbol(),
+    redos$ = Symbol(),
+    undos$ = Symbol(),
+    pendingTail$ = Symbol(),
+    pending$ = Symbol(),
+    range$ = Symbol(),
+    target$ = Symbol();
 
   const OB_ALL = {
-    subtree: true, childList: true,
-    attributes: true, attributeOldValue: true,
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeOldValue: true,
     characterData: true,
     characterDataOldValue: true,
   };
 
-  const setAttr = ({attributeNamespace, attributeName, oldValue}, value)=>{
-    const ans = attributeNamespace  || '';
+  const setAttr = ({attributeNamespace, attributeName, oldValue}, value) => {
+    const ans = attributeNamespace || '';
     const attrs = value[ans] || (value[ans] = {});
     attrs[attributeName] = oldValue;
     return value;
   };
 
-  const notify = (undo)=>{undo[onchange$].notify(undo)};
+  const notify = (undo) => {
+    undo[onchange$].notify(undo);
+  };
 
   // // test helpers
   // let gid = 0;
@@ -36,89 +46,99 @@ define((require)=>{
   // };
 
   const SUM_ACTIONS = {
-    characterData: (list, mut)=>{
+    characterData: (list, mut) => {
       const {target} = mut;
       const action = list.getAction(target);
       if (action === undefined) {
         list.addAction(target, {node: target, text: mut.oldValue});
-      } else if (action.text === undefined)
+      } else if (action.text === undefined) {
         action.text = mut.oldValue;
+      }
     },
 
-    childList: (list, mut)=>{
+    childList: (list, mut) => {
       const {addedNodes, removedNodes, target} = mut;
       for (const node of addedNodes) {
         const action = list.getAction(node);
-        if (node.parentNode !== null)
+        if (node.parentNode !== null) {
           ++list.cc;
-        else
+        } else {
           list.limbo.add(node);
+        }
         list.pending.push({node, remove: true});
       }
       for (const node of removedNodes) {
         if (node.parentNode === null) {
-          if (list.limbo.has(node))
+          if (list.limbo.has(node)) {
             list.limbo.delete(node);
-          else
+          } else {
             ++list.cc;
+          }
         }
         const action = list.getAction(node);
         list.pending.push({node, parent: target, before: mut.nextSibling});
       }
     },
 
-    attributes: (list, mut)=>{
+    attributes: (list, mut) => {
       const {target} = mut;
       const action = list.getAction(target);
       if (action === undefined) {
         list.addAction(target, {node: target, attrs: setAttr(mut, {})});
-      } else if (action.attrs === undefined)
+      } else if (action.attrs === undefined) {
         action.attrs = setAttr(mut, {});
-      else
+      } else {
         setAttr(mut, action.attrs);
+      }
     },
   };
 
-  const applyAttrs = (node, attrs) =>{
+  const applyAttrs = (node, attrs) => {
     for (const ns in attrs) {
       const nsmap = attrs[ns];
       for (const name in nsmap) {
         const v = nsmap[name];
-        if (v == null)
+        if (v == null) {
           node.removeAttributeNS(ns, name);
-        else
+        } else {
           node.setAttributeNS(ns, name, v);
+        }
       }
     }
   };
 
-  const debugMut = (m)=> util.inspect(
-    m.type === 'childList'
-      ? {target: m.target, addedNodes: Array.from(m.addedNodes),
-         removedNodes: Array.from(m.removedNodes)}
-    : {target: m.target, oldValue: m.oldValue}
-  );
+  const debugMut = (m) =>
+    util.inspect(
+      m.type === 'childList'
+        ? {
+          target: m.target,
+          addedNodes: Array.from(m.addedNodes),
+          removedNodes: Array.from(m.removedNodes),
+        }
+        : {target: m.target, oldValue: m.oldValue},
+    );
 
-
-  const summarise = (undo, list, muts)=>{
-    if (muts.length == 0 && muts[pending$] === undefined)
+  const summarise = (undo, list, muts) => {
+    if (muts.length == 0 && muts[pending$] === undefined) {
       return;
+    }
 
     const range = undo[range$];
     saveCaret(undo);
     const ans = list.record(muts);
     if (ans === undefined) return false;
-    if (range !== undefined && ans[range$] === undefined)
+    if (range !== undefined && ans[range$] === undefined) {
       ans[range$] = range;
+    }
     return true;
   };
 
-  const applyActions = (undo, undos, redos)=>{
+  const applyActions = (undo, undos, redos) => {
     undo.recordNow();
     const actions = undos.pop();
     if (actions === undefined) return false;
 
-    for(let i = actions.length-1; i >= 0; --i) {
+    for (let i = actions.length - 1; i >= 0; --i) {
       const action = actions[i];
       const {node, text, attrs, remove} = action;
       if (text !== undefined) {
@@ -150,26 +170,24 @@ define((require)=>{
     return true;
   };
 
-  const saveCaret = (undo, range=Dom.getRange())=>{
+  const saveCaret = (undo, range = Dom.getRange()) => {
     if (range !== null && undo[target$].contains(range.startContainer)) {
-
       const sel = [range.startContainer, range.startOffset];
       range.collapsed || sel.push(range.endContainer, range.endOffset);
       undo[range$] = sel;
     }
   };
 
-  const newPending = ()=>{
+  const newPending = () => {
     const ans = [];
     ans[target$] = new Map();
     return ans;
   };
 
-  const copyActionFields = (to, from)=>{
+  const copyActionFields = (to, from) => {
     if (from.text !== undefined) to.text = from.text;
     if (from.attrs !== undefined) to.attrs = from.attrs;
   };
-
 
   class UndoList {
     constructor(isUndo) {
@@ -191,9 +209,11 @@ define((require)=>{
       return action;
     }
 
-    getAction(node, slot=this.pending) {return slot[target$].get(node)}
+    getAction(node, slot = this.pending) {
+      return slot[target$].get(node);
+    }
 
-    addAction(node, action, slot=this.pending) {
+    addAction(node, action, slot = this.pending) {
       if (node.parentNode !== null) ++this.cc;
       const {parent} = action;
       slot[target$].set(node, action);
@@ -202,11 +222,11 @@ define((require)=>{
 
     get last() {
       const {actions} = this;
-      return actions.length == 0 ? null : actions[actions.length-1];
+      return actions.length == 0 ? null : actions[actions.length - 1];
     }
 
     record(muts) {
-      for (;muts !== undefined; muts = muts[pending$]) {
+      for (; muts !== undefined; muts = muts[pending$]) {
         for (const mut of muts) {
           SUM_ACTIONS[mut.type](this, mut);
         }
@@ -248,23 +268,28 @@ define((require)=>{
       this[undos$] = new UndoList(true);
       this[redos$] = new UndoList(false);
       this[range$] = this[pending$] = this[pendingTail$] = undefined;
-      this[mo$] = new window.MutationObserver(muts => this.recordNow(muts));
+      this[mo$] = new window.MutationObserver((muts) => this.recordNow(muts));
       const ctx = Dom.ctx(target);
-      ctx === null || ctx.onDestroy(()=>{this.disconnect()});
+      ctx === null || ctx.onDestroy(() => {
+        this.disconnect();
+      });
       this.reconnect();
       this[onchange$] = new Observable();
       this[paused$] = false;
     }
 
-    onChange(subject) {return this[onchange$].onChange(subject)}
+    onChange(subject) {
+      return this[onchange$].onChange(subject);
+    }
 
-    recordNow(muts=this[mo$].takeRecords()) {
+    recordNow(muts = this[mo$].takeRecords()) {
       if (this[paused$] || this[pending$] !== undefined) {
         if (muts.length != 0) {
-          if (this[pending$] === undefined)
+          if (this[pending$] === undefined) {
             this[pending$] = this[pendingTail$] = muts;
-          else
+          } else {
             this[pendingTail$] = this[pendingTail$][pending$] = muts;
+          }
         }
         if (this[paused$]) return;
         muts = this[pending$];
@@ -279,10 +304,11 @@ define((require)=>{
       }
     }
 
-    disconnect(clear=true) {
+    disconnect(clear = true) {
       this[mo$].disconnect();
       if (clear) {
-        this[undos$].clear(); this[redos$].clear();
+        this[undos$].clear();
+        this[redos$].clear();
       }
       notify(this);
     }
@@ -292,13 +318,23 @@ define((require)=>{
       this.saveCaret();
     }
 
-    undo() {return applyActions(this, this[undos$], this[redos$])}
-    redo() {return applyActions(this, this[redos$], this[undos$])}
+    undo() {
+      return applyActions(this, this[undos$], this[redos$]);
+    }
+    redo() {
+      return applyActions(this, this[redos$], this[undos$]);
+    }
 
-    get undos() {return this[undos$].actions}
-    get redos() {return this[redos$].actions}
+    get undos() {
+      return this[undos$].actions;
+    }
+    get redos() {
+      return this[redos$].actions;
+    }
 
-    get paused() {return this[paused$]}
+    get paused() {
+      return this[paused$];
+    }
 
     pause() {
       this[paused$] = true;
@@ -309,11 +345,12 @@ define((require)=>{
       this.recordNow();
     }
 
-    saveCaret(range=Dom.getRange()) {
-      if (this[pending$] !== undefined)
+    saveCaret(range = Dom.getRange()) {
+      if (this[pending$] !== undefined) {
         return;
+      }
 
-      const muts =this[mo$].takeRecords();
+      const muts = this[mo$].takeRecords();
       if (muts.length != 0) {
         this[pending$] = this[pendingTail$] = muts;
         return;
@@ -328,9 +365,7 @@ define((require)=>{
     }
   }
 
-  if (isTest) DomUndo[isTest] = {
-    range$
-  };
+  if (isTest) DomUndo[isTest] = {range$};
 
   return DomUndo;
 });

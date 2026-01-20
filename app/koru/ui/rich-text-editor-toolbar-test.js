@@ -23,14 +23,14 @@ isClient && define((require, exports, module) => {
 
   TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
     beforeEach(() => {
-      v.editor = sut.$autoRender({content: Dom.h([
-        {b: 'Hello'}, ' ', {i: 'world'}, ' ', {a: 'the link', $href: '/link.html'},
-      ]), options: {id: 'Foo'}, extend: {
-        mentions: {'@': {
-          title: 'Mention someone',
-          buttonClass: 'myButton',
-          list() {},
-        }}}});
+      v.editor = sut.$autoRender({
+        content: Dom.h([{b: 'Hello'}, ' ', {i: 'world'}, ' ', {
+          a: 'the link',
+          $href: '/link.html',
+        }]),
+        options: {id: 'Foo'},
+        extend: {mentions: {'@': {title: 'Mention someone', buttonClass: 'myButton', list() {}}}},
+      });
 
       v.origText = v.editor.value;
       document.body.appendChild(v.editor);
@@ -43,10 +43,7 @@ isClient && define((require, exports, module) => {
 
     test('maxlength', () => {
       Dom.remove(v.editor);
-      const editor = sut.$autoRender({
-        content: Dom.h('hello world!'),
-        extend: {maxlength: 20},
-      });
+      const editor = sut.$autoRender({content: Dom.h('hello world!'), extend: {maxlength: 20}});
 
       assert.dom(editor, () => {
         const ctx = Dom.myCtx(editor);
@@ -68,7 +65,7 @@ isClient && define((require, exports, module) => {
             const node = input.querySelector('pre>div').firstChild;
             TH.setRange(node, 2);
             focusin(input);
-          }
+          };
         });
       });
 
@@ -108,8 +105,10 @@ isClient && define((require, exports, module) => {
       test('syntax highlight', () => {
         v.selectCode();
 
-        const syntaxHighlight = stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
-          .mode.actions, 'syntaxHighlight');
+        const syntaxHighlight = stub(
+          RichTextEditor.$ctx(Dom('.richTextEditor')).mode.actions,
+          'syntaxHighlight',
+        );
         assert.dom('[name=syntaxHighlight]', '', function () {
           TH.pointerDownUp(this);
         });
@@ -125,8 +124,12 @@ isClient && define((require, exports, module) => {
 
       assert.dom(rte, () => {
         assert.dom('>.rtToolbar:first-child>span', (span) => {
-          assert.dom('button[name=undo]', '', (e) => {v.undo = e});
-          assert.dom('button[name=redo]', '', (e) => {v.redo = e});
+          assert.dom('button[name=undo]', '', (e) => {
+            v.undo = e;
+          });
+          assert.dom('button[name=redo]', '', (e) => {
+            v.redo = e;
+          });
         });
       });
 
@@ -144,10 +147,12 @@ isClient && define((require, exports, module) => {
       focusin(inputElm);
       assert.same(v.undo.getAttribute('disabled'), null);
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
-      assert.calledWith(cmStub, undefined); cmStub.reset();
+      assert.calledWith(cmStub, undefined);
+      cmStub.reset();
 
       TH.pointerDownUp(v.undo);
-      assert.calledWith(cmStub, undefined); cmStub.reset();
+      assert.calledWith(cmStub, undefined);
+      cmStub.reset();
       TH.trigger(document, 'selectionchange');
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), null);
@@ -173,10 +178,16 @@ isClient && define((require, exports, module) => {
       const inputElm = Dom('#Foo.richTextEditor>.rtToolbar+.input');
       assert.dom('#Foo.richTextEditor', () => {
         assert.dom('>.rtToolbar:first-child>div', () => {
-          assert.dom('button[name=bold]', '', (e) => {v.bold = e});
-          assert.dom('button[name=italic]', '', (e) => {v.italic = e});
+          assert.dom('button[name=bold]', '', (e) => {
+            v.bold = e;
+          });
+          assert.dom('button[name=italic]', '', (e) => {
+            v.italic = e;
+          });
           assert.dom('button[name=underline]', '');
-          assert.dom('button[name=link]', '', (e) => {v.link = e});
+          assert.dom('button[name=link]', '', (e) => {
+            v.link = e;
+          });
           assert.dom('button[name=code]', '');
           assert.dom('button[name=strikeThrough]', '');
 
@@ -282,7 +293,7 @@ isClient && define((require, exports, module) => {
       TH.pointerDownUp('[name=bold]');
 
       assert.dom('.richTextEditor>.input', function () {
-        assert.same(this.innerHTML, 'Hello <i>world</i> <a href=\"/link.html\">the link</a>');
+        assert.same(this.innerHTML, 'Hello <i>world</i> <a href="/link.html">the link</a>');
       });
     });
 
@@ -298,13 +309,13 @@ isClient && define((require, exports, module) => {
       TH.pointerDownUp('[name=code]');
 
       assert.dom('.richTextEditor>.input b', function () {
-        assert.same(this.innerHTML, 'H<span style=\"font-family: monospace;\">el</span>lo');
+        assert.same(this.innerHTML, 'H<span style="font-family: monospace;">el</span>lo');
       });
 
-      if (! util.isFirefox) {
+      if (!util.isFirefox) {
         assert.dom('[name=code].on'); // broken in firefox :/
-
-      } TH.pointerDownUp('[name=code]');
+      }
+      TH.pointerDownUp('[name=code]');
       assert.dom('[name=code]:not(.on)');
     });
 

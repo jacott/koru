@@ -11,8 +11,7 @@ define((require, exports, module) => {
   const RichTextMention = require('./rich-text-mention');
   const SelectMenu      = require('./select-menu');
 
-  const Tpl = Dom.newTemplate(module, require(
-    'koru/html!./rich-text-editor-toolbar'));
+  const Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor-toolbar'));
   const $ = Dom.current;
 
   const {ELEMENT_NODE} = document;
@@ -26,7 +25,9 @@ define((require, exports, module) => {
     const cc = ctx.characterCounter = new CharacterCounter(extend);
     cc.attach(elm.children[1]);
     elm.insertBefore(cc.element, cc.editor.nextSibling);
-    ctx.onDestroy(() => {cc.attach()});
+    ctx.onDestroy(() => {
+      cc.attach();
+    });
   };
 
   Tpl.$extend({
@@ -82,10 +83,16 @@ define((require, exports, module) => {
       Dom.setClass('on', document.queryCommandState($.element.getAttribute('name')));
     },
 
-    undoState: () => {Dom.setBoolean('disabled', $.ctx.parentCtx.undo.undos.length == 0)},
-    redoState: () => {Dom.setBoolean('disabled', $.ctx.parentCtx.undo.redos.length == 0)},
+    undoState: () => {
+      Dom.setBoolean('disabled', $.ctx.parentCtx.undo.undos.length == 0);
+    },
+    redoState: () => {
+      Dom.setBoolean('disabled', $.ctx.parentCtx.undo.redos.length == 0);
+    },
 
-    link() {Dom.setClass('on', getTag('A', this))},
+    link() {
+      Dom.setClass('on', getTag('A', this));
+    },
 
     code() {
       const mode = $.ctx.parentCtx.mode;
@@ -108,10 +115,14 @@ define((require, exports, module) => {
       const elm = $.element;
       if (elm.getAttribute('title') !== null) return;
 
-      elm.setAttribute('title', RichTextEditor.title(
-        title,
-        elm.getAttribute('name'),
-        elm.parentNode.classList.contains('code') ? 'code' : 'standard'));
+      elm.setAttribute(
+        'title',
+        RichTextEditor.title(
+          title,
+          elm.getAttribute('name'),
+          elm.parentNode.classList.contains('code') ? 'code' : 'standard',
+        ),
+      );
     },
 
     mentions: () => {
@@ -121,10 +132,16 @@ define((require, exports, module) => {
       if (mentions == null) return;
       const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach((id) => {
-        frag.appendChild(Dom.h({
-          button: [], class: mentions[id].buttonClass, $name: 'mention',
-          tabindex: -1,
-          'data-type': id, title: mentions[id].title}));
+        frag.appendChild(
+          Dom.h({
+            button: [],
+            class: mentions[id].buttonClass,
+            $name: 'mention',
+            tabindex: -1,
+            'data-type': id,
+            title: mentions[id].title,
+          }),
+        );
       });
       return frag;
     },
@@ -135,37 +152,38 @@ define((require, exports, module) => {
       const language = mode.language || 'text';
 
       return ((RichTextEditor.languageMap && RichTextEditor.languageMap[language]) ||
-        util.capitalize(language))
-        .replace(/,.*$/, '');
+        util.capitalize(language)).replace(/,.*$/, '');
     },
   });
 
-  const TEXT_ALIGN_LIST = [
-    ['justifyLeft', 'Left align'],
-    ['justifyCenter', 'Center'],
-    ['justifyRight', 'Right align'],
-    ['justifyFull', 'Justify'],
-  ];
+  const TEXT_ALIGN_LIST = [['justifyLeft', 'Left align'], ['justifyCenter', 'Center'], [
+    'justifyRight',
+    'Right align',
+  ], ['justifyFull', 'Justify']];
 
   for (const row of TEXT_ALIGN_LIST) {
-    row[1] = Dom.h({span: [], name: row[0],
-      title: RichTextEditor.title(row[1], row[0], 'standard')});
+    row[1] = Dom.h({
+      span: [],
+      name: row[0],
+      title: RichTextEditor.title(row[1], row[0], 'standard'),
+    });
   }
 
-  const FORMAT_TEXT_LIST = [
-    ['heading0', 'Normal'],
-  ];
+  const FORMAT_TEXT_LIST = [['heading0', 'Normal']];
 
   for (let i = 1; i < 7; ++i) FORMAT_TEXT_LIST.push(['heading' + i, 'Heading ' + i]);
 
   for (const row of FORMAT_TEXT_LIST) {
-    row[1] = Dom.h({span: [row[1]],
-      title: RichTextEditor.title(row[1], row[0], 'standard')});
+    row[1] = Dom.h({span: [row[1]], title: RichTextEditor.title(row[1], row[0], 'standard')});
   }
 
   Tpl.$events({
-    'pointerdown'() {Dom.stopEvent()},
-    'click button'(event) {Dom.stopEvent()},
+    'pointerdown'() {
+      Dom.stopEvent();
+    },
+    'click button'(event) {
+      Dom.stopEvent();
+    },
     'pointerdown button'(mde) {
       Dom.stopEvent();
 
@@ -179,29 +197,27 @@ define((require, exports, module) => {
         pCtx.inputElm.focus();
       }
       Dom.onPointerUp((event) => {
-        if (! Dom.contains(button, event.target)) return;
+        if (!Dom.contains(button, event.target)) return;
 
         Dom.stopEvent(event);
 
         const name = button.getAttribute('name');
         switch (name) {
-        case 'more':
-          Dom.toggleClass(toolbar, 'more');
-          return;
-        case 'textAlign':
-          chooseFromMenu(event, {
-            classes: 'rtTextAlign',
-            list: TEXT_ALIGN_LIST,
-          }, (ctx, id) => {runAction(pCtx, id, event)});
-          return;
-        case 'formatText':
-          chooseFromMenu(event, {
-            classes: 'rtFormatText',
-            list: FORMAT_TEXT_LIST,
-          }, (ctx, id) => {runAction(pCtx, id, event)});
-          return;
-        default:
-          runAction(pCtx, name, event);
+          case 'more':
+            Dom.toggleClass(toolbar, 'more');
+            return;
+          case 'textAlign':
+            chooseFromMenu(event, {classes: 'rtTextAlign', list: TEXT_ALIGN_LIST}, (ctx, id) => {
+              runAction(pCtx, id, event);
+            });
+            return;
+          case 'formatText':
+            chooseFromMenu(event, {classes: 'rtFormatText', list: FORMAT_TEXT_LIST}, (ctx, id) => {
+              runAction(pCtx, id, event);
+            });
+            return;
+          default:
+            runAction(pCtx, name, event);
         }
       });
     },

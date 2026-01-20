@@ -1,8 +1,8 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
   /**
    * Manage a undo/redo list of changes to a [Node](mdn:/API/Node)
-   **/
+   */
   const Dom             = require('koru/dom');
   const TH              = require('./test-helper');
 
@@ -14,25 +14,24 @@ isClient && define((require, exports, module)=>{
 
   const {range$} = DomUndo[isTest];
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let input;
-    beforeEach(()=>{
+    beforeEach(() => {
       input = Dom.h({div: [], contenteditable: true});
       Dom.setCtx(input);
       document.body.appendChild(input);
-
     });
-    afterEach(()=>{
+    afterEach(() => {
       TH.domTearDown();
       input = undefined;
     });
 
-    test("no change", ()=>{
+    test('no change', () => {
       const undo = new DomUndo(input);
       const changed = stub();
       after(undo.onChange(changed));
 
-      const tn = document.createTextNode("hello");
+      const tn = document.createTextNode('hello');
       input.appendChild(tn);
       tn.remove();
       undo.recordNow();
@@ -45,8 +44,8 @@ isClient && define((require, exports, module)=>{
       refute.called(changed);
     });
 
-    test("add then attribute change", ()=>{
-      const n = document.createElement("br");
+    test('add then attribute change', () => {
+      const n = document.createElement('br');
 
       const undo = new DomUndo(input);
 
@@ -65,7 +64,7 @@ isClient && define((require, exports, module)=>{
       assert.equals(htj(input).div, {title: 'foo', br: []});
     });
 
-    test("pause, unpause, onChange", ()=>{
+    test('pause, unpause, onChange', () => {
       const undo = new DomUndo(input);
       const change = stub();
       after(undo.onChange(change));
@@ -74,7 +73,7 @@ isClient && define((require, exports, module)=>{
 
       refute.called(change);
 
-      input.appendChild(Dom.h("1"));
+      input.appendChild(Dom.h('1'));
 
       undo.recordNow();
 
@@ -85,13 +84,13 @@ isClient && define((require, exports, module)=>{
       undo.pause();
       assert.isTrue(undo.paused);
 
-      input.appendChild(Dom.h({i: "2"}));
+      input.appendChild(Dom.h({i: '2'}));
       undo.recordNow();
-      input.appendChild(Dom.h({b: "3"}));
+      input.appendChild(Dom.h({b: '3'}));
       undo.recordNow();
       refute.called(change);
 
-      input.appendChild(Dom.h({i: "4"}));
+      input.appendChild(Dom.h({i: '4'}));
 
       undo.unpause();
       assert.isFalse(undo.paused);
@@ -104,38 +103,30 @@ isClient && define((require, exports, module)=>{
       change.reset();
 
       undo.redo();
-      assert.equals(htj(input).div, ['1', {i: "2"}, {b: "3"}, {i: "4"}] );
+      assert.equals(htj(input).div, ['1', {i: '2'}, {b: '3'}, {i: '4'}]);
       assert.calledOnceWith(change, undo);
       change.reset();
     });
 
-    test("atomic add, change, remove", ()=>{
+    test('atomic add, change, remove', () => {
       const undo = new DomUndo(input);
-      const tn = document.createTextNode("1");
+      const tn = document.createTextNode('1');
       input.appendChild(tn);
 
       undo.recordNow();
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), remove: true},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), remove: true}]]);
 
       tn.textContent = '2';
       undo.recordNow();
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), remove: true},
-      ],[
-        {node: m.is(tn), text: '1'},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), remove: true}], [{node: m.is(tn), text: '1'}]]);
 
       tn.remove();
       undo.recordNow();
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), remove: true},
-      ],[
-        {node: m.is(tn), text: '1'},
-      ],[
-        {node: m.is(tn), parent: m.is(input), before: null},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), remove: true}], [{node: m.is(tn), text: '1'}], [{
+        node: m.is(tn),
+        parent: m.is(input),
+        before: null,
+      }]]);
 
       // add-change-remove
       input.appendChild(tn);
@@ -148,16 +139,16 @@ isClient && define((require, exports, module)=>{
       assert.equals(htj(input).div, ['2']);
     });
 
-    test("attribute change", ()=>{
-      const n = document.createElement("b");
-      n.textContent = "bold";
+    test('attribute change', () => {
+      const n = document.createElement('b');
+      n.textContent = 'bold';
       input.appendChild(n);
 
       const undo = new DomUndo(input);
 
-      n.setAttribute("data-foo", "abc");
+      n.setAttribute('data-foo', 'abc');
       n.style.setProperty('margin-left', '10px');
-      n.setAttributeNS("my-ns", "x1", 'abc');
+      n.setAttributeNS('my-ns', 'x1', 'abc');
 
       undo.recordNow();
 
@@ -166,23 +157,10 @@ isClient && define((require, exports, module)=>{
 
       undo.recordNow();
 
-      assert.equals(undo.undos, [
-        [{node: m.is(n), attrs: {
-          '': {
-            'data-foo': null,
-            style: null,
-          },
-          'my-ns': {
-            x1: null
-          }}}],
-        [{node: m.is(n), attrs: {
-          '': {
-            'data-foo': 'abc',
-            'style': 'margin-left: 10px;',
-          }
-        }
-        }]
-      ]);
+      assert.equals(undo.undos, [[{
+        node: m.is(n),
+        attrs: {'': {'data-foo': null, style: null}, 'my-ns': {x1: null}},
+      }], [{node: m.is(n), attrs: {'': {'data-foo': 'abc', 'style': 'margin-left: 10px;'}}}]]);
 
       undo.undo();
 
@@ -195,11 +173,9 @@ isClient && define((require, exports, module)=>{
 
       undo.undo();
 
-       assert.equals(htj(n), {
-        b: 'bold',
-       });
+      assert.equals(htj(n), {b: 'bold'});
 
-      assert.same(n.getAttributeNS("my-ns", 'x1'), null);
+      assert.same(n.getAttributeNS('my-ns', 'x1'), null);
 
       undo.redo();
 
@@ -212,15 +188,11 @@ isClient && define((require, exports, module)=>{
 
       undo.redo();
 
-      assert.equals(htj(n), {
-        b: ['bold'],
-        style: 'margin-left: 15px;',
-        x1: 'abc',
-      });
+      assert.equals(htj(n), {b: ['bold'], style: 'margin-left: 15px;', x1: 'abc'});
 
-      assert.same(n.getAttributeNS("my-ns", 'x1'), 'abc');
+      assert.same(n.getAttributeNS('my-ns', 'x1'), 'abc');
 
-      n.setAttribute("data-foo", 'xyz');
+      n.setAttribute('data-foo', 'xyz');
 
       n.remove();
 
@@ -235,56 +207,49 @@ isClient && define((require, exports, module)=>{
       assert.same(n.getAttribute('data-foo'), 'xyz');
     });
 
-    test("combines small text changes", ()=>{
-      const tn = document.createTextNode("hello");
+    test('combines small text changes', () => {
+      const tn = document.createTextNode('hello');
       input.appendChild(tn);
 
       input.focus();
       TH.setRange(tn, 5);
       const undo = new DomUndo(input);
 
-      tn.textContent = "hello world";
+      tn.textContent = 'hello world';
       undo.recordNow();
-      tn.textContent = "hello earth world";
+      tn.textContent = 'hello earth world';
       undo.recordNow();
       TH.setRange(tn, 3);
       undo.saveCaret();
 
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), text: 'hello'},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), text: 'hello'}]]);
       assert.equals(undo.undos[0][range$], [m.is(tn), 5]);
 
-
-      tn.textContent = "this is hello earth world big change";
+      tn.textContent = 'this is hello earth world big change';
       undo.recordNow();
       TH.setRange(tn, 4);
       undo.saveCaret();
 
       assert.same(undo.undos.length, 2);
-      assert.equals(undo.undos[1], [
-        {node: m.is(tn), text: 'hello earth world'},
-      ]);
+      assert.equals(undo.undos[1], [{node: m.is(tn), text: 'hello earth world'}]);
       assert.equals(undo.undos[1][range$], [m.is(tn), 3]);
     });
 
-    test("text change", ()=>{
-      const tn = document.createTextNode("hello");
+    test('text change', () => {
+      const tn = document.createTextNode('hello');
       input.appendChild(tn);
 
       input.focus();
       TH.setRange(tn, 5);
       const undo = new DomUndo(input);
 
-      tn.textContent = "hello wor";
-      tn.textContent = "hello world";
+      tn.textContent = 'hello wor';
+      tn.textContent = 'hello world';
       TH.setRange(tn, 11);
 
       undo.recordNow();
 
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), text: 'hello'},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), text: 'hello'}]]);
       assert.equals(undo.undos[0][range$], [m.is(tn), 5]);
       assert.equals(undo.redos, []);
 
@@ -294,35 +259,34 @@ isClient && define((require, exports, module)=>{
 
       assert.equals(Dom.getRange().startOffset, 5);
 
-      assert.equals(undo.redos, [[
-        {node: m.is(tn), text: 'hello world'},
-      ]]);
+      assert.equals(undo.redos, [[{node: m.is(tn), text: 'hello world'}]]);
       assert.equals(undo.redos[0][range$], [m.is(tn), 11]);
       assert.equals(undo.undos, []);
 
       undo.redo();
 
       assert.same(tn.textContent, 'hello world');
-      assert.equals(undo.undos, [[
-        {node: m.is(tn), text: 'hello'},
-      ]]);
+      assert.equals(undo.undos, [[{node: m.is(tn), text: 'hello'}]]);
       assert.equals(undo.undos[0][range$], [m.is(tn), 5]);
       assert.equals(undo.redos, []);
     });
 
-    test("add remove order", ()=>{
-      const one = Dom.h('one'), br1 = Dom.h({class: 'br1', br: ''}),
-            two = Dom.h('two'), b = Dom.h({b: '2'}), br2 = Dom.h({class: 'br2', br: ''}),
-            three = Dom.h('three');
+    test('add remove order', () => {
+      const one = Dom.h('one'),
+        br1 = Dom.h({class: 'br1', br: ''}),
+        two = Dom.h('two'),
+        b = Dom.h({b: '2'}),
+        br2 = Dom.h({class: 'br2', br: ''}),
+        three = Dom.h('three');
 
-      const pre = Dom.h({class: 'pre1', pre: [
-        [one, br1, two, b, br2, three]
-      ]});
+      const pre = Dom.h({class: 'pre1', pre: [[one, br1, two, b, br2, three]]});
       input.append(pre);
 
       const undo = new DomUndo(input);
 
-      two.remove(); b.remove(); br2.remove();
+      two.remove();
+      b.remove();
+      br2.remove();
 
       input.appendChild(Dom.h([two, b]));
 
@@ -332,30 +296,25 @@ isClient && define((require, exports, module)=>{
 
       undo.recordNow();
 
-      assert.equals(htj(input).div, [
-        {class: 'pre1', pre: ['one', {class: 'br1', br: ''}]},
-        'two', {b: '2'},
-        {class: 'pre2', pre: 'three'}
-      ]);
+      assert.equals(htj(input).div, [{class: 'pre1', pre: ['one', {class: 'br1', br: ''}]}, 'two', {
+        b: '2',
+      }, {class: 'pre2', pre: 'three'}]);
 
       undo.undo();
 
       assert.equals(htj(input).div, {
-        class: 'pre1', pre: [
-          'one', {class: 'br1', br: ''},
-          'two', {b: '2'}, {class: 'br2', br: ''},
-          'three']});
+        class: 'pre1',
+        pre: ['one', {class: 'br1', br: ''}, 'two', {b: '2'}, {class: 'br2', br: ''}, 'three'],
+      });
 
       undo.redo();
 
-      assert.equals(htj(input).div, [
-        {class: 'pre1', pre: ['one', {class: 'br1', br: ''}]},
-        'two', {b: '2'},
-        {class: 'pre2', pre: 'three'}
-      ]);
+      assert.equals(htj(input).div, [{class: 'pre1', pre: ['one', {class: 'br1', br: ''}]}, 'two', {
+        b: '2',
+      }, {class: 'pre2', pre: 'three'}]);
     });
 
-    test("combination", ()=>{
+    test('combination', () => {
       const ol = Dom.h({ol: [{li: 'hello'}]});
       const li = ol.firstChild;
       const liText = li.firstChild;
@@ -395,11 +354,11 @@ isClient && define((require, exports, module)=>{
       assert.equals(htj(input).div, ['t2', {br: ''}]);
     });
 
-    test("node insert", ()=>{
+    test('node insert', () => {
       const undo = new DomUndo(input);
 
-      const n = document.createElement("b");
-      n.textContent = "bold";
+      const n = document.createElement('b');
+      n.textContent = 'bold';
       input.appendChild(n);
 
       undo.recordNow();
@@ -416,16 +375,15 @@ isClient && define((require, exports, module)=>{
 
       assert.isTrue(undo.redo());
 
-      assert.dom(input, ()=>{
+      assert.dom(input, () => {
         assert.dom('b', 'bold');
       });
       assert.equals(undo.undos, [[{node: m.is(n), remove: true}]]);
       assert.equals(undo.redos, []);
 
-
-      const n2 = document.createElement("i");
+      const n2 = document.createElement('i');
       input.appendChild(n2);
-      n2.textContent = "italic";
+      n2.textContent = 'italic';
 
       input.insertBefore(n2, n);
 
@@ -463,18 +421,18 @@ isClient && define((require, exports, module)=>{
       assert.equals(htj(input).div, [{b: 'bold'}, 'text']);
     });
 
-    test("saveCaret", ()=>{
+    test('saveCaret', () => {
       /**
        * Save the caret so that an undo will restore its position. The caret is only saved if there
        * are no pending content modifications and is therefore safe to call anytime.
-       **/
-      const tn = document.createTextNode("hello");
+       */
+      const tn = document.createTextNode('hello');
       input.appendChild(tn);
       TH.setRange(tn, 2);
 
       const undo = new DomUndo(input);
 
-      tn.textContent = "hello 2";
+      tn.textContent = 'hello 2';
       undo.saveCaret();
       const br = Dom.h({br: 2});
       input.appendChild(br);
@@ -482,10 +440,7 @@ isClient && define((require, exports, module)=>{
       undo.saveCaret();
 
       undo.recordNow();
-      const ans0 = [
-        {node: m.is(tn), text: 'hello'},
-        {node: m.is(br), remove: true},
-      ];
+      const ans0 = [{node: m.is(tn), text: 'hello'}, {node: m.is(br), remove: true}];
       assert.equals(undo.undos, [ans0]);
       assert.equals(undo.undos[0][range$], [m.is(tn), 2]);
       TH.setRange(tn, 1);
@@ -498,9 +453,7 @@ isClient && define((require, exports, module)=>{
       undo.recordNow();
       assert.equals(undo.undos[0], ans0);
 
-      assert.equals(undo.undos[1], [
-        {node: m.is(tn), text: 'hello 2'},
-      ]);
+      assert.equals(undo.undos[1], [{node: m.is(tn), text: 'hello 2'}]);
       assert.equals(undo.undos[1][range$], [m.is(tn), 5]);
     });
   });

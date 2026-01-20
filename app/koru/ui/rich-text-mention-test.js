@@ -23,18 +23,25 @@ isClient && define((require, exports, module) => {
       spy(Dom, 'stopEvent');
 
       v.fooFunc = stub();
-      document.body.appendChild(RichTextEditorToolbar.$autoRender({
-        content: document.createTextNode('hello\xa0'), options: {
-          id: 'TestRichTextEditor'}, extend: {
+      document.body.appendChild(
+        RichTextEditorToolbar.$autoRender({
+          content: document.createTextNode('hello\xa0'),
+          options: {id: 'TestRichTextEditor'},
+          extend: {
             mentions: {
               '@': {
                 buttonClass: 'atMention',
-                list(frag, text, ctx) {return v.fooFunc(frag, text, ctx)},
-                html(elm, ctx) {return v.fooHtmlFunc(elm, ctx)},
+                list(frag, text, ctx) {
+                  return v.fooFunc(frag, text, ctx);
+                },
+                html(elm, ctx) {
+                  return v.fooHtmlFunc(elm, ctx);
+                },
               },
             },
           },
-      }));
+        }),
+      );
 
       document.getElementById('TestRichTextEditor').style.position = 'relative';
 
@@ -63,8 +70,8 @@ isClient && define((require, exports, module) => {
 
         TH.pointerDownUp('[name=mention]');
 
-        v.fooHtmlFunc = (elm) => Dom.h({
-          a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
+        v.fooHtmlFunc = (elm) =>
+          Dom.h({a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
       });
 
       test('accept', () => {
@@ -87,8 +94,10 @@ isClient && define((require, exports, module) => {
             assert.match(link.nextSibling.textContent, /_x_/);
           });
           assert.dom('a[href="/#g1"][class="foo"]', 'Geoff Jacobsen');
-          assert.same(input.innerHTML.replace(/<a[^>]*>/, '<a>').replace(/&nbsp;/g, ' '),
-            'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
+          assert.same(
+            input.innerHTML.replace(/<a[^>]*>/, '<a>').replace(/&nbsp;/g, ' '),
+            'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>',
+          );
         });
       });
 
@@ -207,8 +216,8 @@ isClient && define((require, exports, module) => {
           }
         };
 
-        v.fooHtmlFunc = (elm, ctx) => Dom.h({
-          a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
+        v.fooHtmlFunc = (elm, ctx) =>
+          Dom.h({a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
 
         pressAt(v.input);
         TH.keypress(v.input, 'g');
@@ -226,14 +235,21 @@ isClient && define((require, exports, module) => {
 
           TH.input(input, 'jjg');
           assert(updspy.calledBefore(mdlspy));
-          assert.calledWith(mdlspy, 'on', m(
-            (obj) => obj.popup === input.parentNode && obj.origin === v.input.querySelector('.ln')));
+          assert.calledWith(
+            mdlspy,
+            'on',
+            m((obj) =>
+              obj.popup === input.parentNode && obj.origin === v.input.querySelector('.ln')
+            ),
+          );
         });
         assert.dom('.rtMention.inline>div:not(.empty)');
       });
 
       test('override', () => {
-        v.fooHtmlFunc = (elm, ctx) => {v.fooHtmlFuncCtx = ctx};
+        v.fooHtmlFunc = (elm, ctx) => {
+          v.fooHtmlFuncCtx = ctx;
+        };
 
         const fooFuncOrig = v.fooFunc;
 
@@ -318,8 +334,10 @@ isClient && define((require, exports, module) => {
 
         assert.dom('.input', function () {
           assert.dom('a[href="/#g1"][class="foo"]');
-          assert.same(this.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
-            'hello <a>Geoff Jacobsen</a> ');
+          assert.same(
+            this.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
+            'hello <a>Geoff Jacobsen</a> ',
+          );
         });
       });
 
@@ -547,8 +565,9 @@ isClient && define((require, exports, module) => {
     });
 
     test('clear', () => {
-      document.body.appendChild(RichTextEditorToolbar.$autoRender({
-        content: document.createTextNode('hello')}));
+      document.body.appendChild(
+        RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello')}),
+      );
 
       assert.dom('.richTextEditor', function () {
         assert.dom(v.input, function () {
