@@ -571,6 +571,27 @@ define((require) => {
       document.addEventListener('pointerup', opu, true);
     },
 
+    stopClick: () => {
+      const stopProp = (event) => {
+        event?.stopImmediatePropagation();
+        event?.preventDefault();
+      };
+
+      const capture = (event) => {
+        stopProp(event);
+        window.removeEventListener('pointerdown', capture, Dom.captureEventOption);
+        window.removeEventListener('pointerup', stopProp, Dom.captureEventOption);
+        window.removeEventListener('click', stopProp, Dom.captureEventOption);
+        window.clearTimeout(sto);
+      };
+
+      const sto = window.setTimeout(capture, 180);
+
+      window.addEventListener('pointerup', stopProp, Dom.captureEventOption);
+      window.addEventListener('click', stopProp, Dom.captureEventOption);
+      window.addEventListener('pointerdown', capture, Dom.captureEventOption);
+    },
+
     /**
      * Remove an element and provide a function that inserts it into its original position
      * @param element {Element} The element to be temporarily removed

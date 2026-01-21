@@ -754,6 +754,33 @@ define((require, exports, module) => {
       assert.same(startMarker[endMarker$].parentNode, parent);
     });
 
+    test('stopClick', () => {
+      const ael = stub(window, 'addEventListener');
+      const rel = stub(window, 'removeEventListener');
+      const ceo = Dom.captureEventOption;
+      Dom.stopClick();
+      let stopProp, capture;
+      assert.calledWithExactly(ael, 'pointerdown', m((f) => capture = f), ceo);
+      assert.calledWithExactly(ael, 'click', m((f) => stopProp = f), ceo);
+      assert.calledWithExactly(ael, 'pointerup', m((f) => stopProp === f), ceo);
+      const event = {preventDefault: stub(), stopImmediatePropagation: stub()};
+      stopProp();
+      stopProp(event);
+      assert.called(event.stopImmediatePropagation);
+      assert.called(event.preventDefault);
+
+      event.preventDefault.reset();
+      event.stopImmediatePropagation.reset();
+
+      refute.called(rel);
+      capture(event);
+      assert.called(event.stopImmediatePropagation);
+      assert.called(event.preventDefault);
+      assert.calledWithExactly(rel, 'pointerup', stopProp, ceo);
+      assert.calledWithExactly(rel, 'click', stopProp, ceo);
+      assert.calledWithExactly(rel, 'pointerdown', capture, ceo);
+    });
+
     test('onPointerUp', () => {
       Dom.newTemplate({name: 'Foo', nodes: [{name: 'div', children: [{name: 'span'}]}]});
       Dom.tpl.Foo.$events({
