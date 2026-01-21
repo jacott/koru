@@ -820,8 +820,13 @@ define((require, exports, module) => {
 
     $destroyed: (ctx) => {
       document.removeEventListener('selectionchange', ctx.selectionchange);
+      if (ctx.inputElm == null) {
+        return;
+      }
+
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
+      ctx.inputElm = null;
       Dom.remove(ctx.selectItem);
     },
 

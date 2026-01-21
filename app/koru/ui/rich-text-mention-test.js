@@ -65,7 +65,9 @@ isClient && define((require, exports, module) => {
     });
 
     group('toolbar', () => {
+      let rafStub;
       beforeEach(() => {
+        rafStub = stub(window, 'requestAnimationFrame').returns(123).yields();
         v.input.appendChild(Dom.h(['one', {div: ['two ', 'three']}]));
 
         v.range = TH.setRange(v.input.lastChild.lastChild, 2);

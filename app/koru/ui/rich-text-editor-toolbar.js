@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const Ctx             = require('koru/dom/ctx');
   const RichText        = require('koru/dom/rich-text');
   const CharacterCounter = require('koru/ui/character-counter');
   const DomNav          = require('koru/ui/dom-nav');
@@ -177,47 +178,65 @@ define((require, exports, module) => {
     row[1] = Dom.h({span: [row[1]], title: RichTextEditor.title(row[1], row[0], 'standard')});
   }
 
+  let allowUp = false;
+
   Tpl.$events({
     'pointerdown'() {
+      allowUp = true;
       Dom.stopEvent();
     },
     'click button'(event) {
       Dom.stopEvent();
     },
-    'pointerdown button'(mde) {
+    'pointerup button'(mde) {
       Dom.stopEvent();
+
+      if (!allowUp) {
+        return;
+      }
+
+      allowUp = false;
 
       const toolbar = mde.currentTarget;
 
       const button = this;
 
-      const pCtx = $.ctx.parentCtx;
+      const {ctx} = $;
+
+      const pCtx = ctx.parentCtx;
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm) {
         pCtx.inputElm.focus();
       }
-      Dom.onPointerUp((event) => {
-        if (!Dom.contains(button, event.target)) return;
 
-        Dom.stopEvent(event);
+      window.requestAnimationFrame(() => {
+        if (ctx.inputElm === null) {
+          return;
+        }
 
-        const name = button.getAttribute('name');
-        switch (name) {
-          case 'more':
-            Dom.toggleClass(toolbar, 'more');
-            return;
-          case 'textAlign':
-            chooseFromMenu(event, {classes: 'rtTextAlign', list: TEXT_ALIGN_LIST}, (ctx, id) => {
-              runAction(pCtx, id, event);
-            });
-            return;
-          case 'formatText':
-            chooseFromMenu(event, {classes: 'rtFormatText', list: FORMAT_TEXT_LIST}, (ctx, id) => {
-              runAction(pCtx, id, event);
-            });
-            return;
-          default:
-            runAction(pCtx, name, event);
+        const prevCtx = Ctx._currentCtx;
+        Ctx._currentCtx = ctx;
+        try {
+          const name = button.getAttribute('name');
+          switch (name) {
+            case 'more':
+              Dom.toggleClass(toolbar, 'more');
+              return;
+            case 'textAlign':
+              chooseFromMenu(mde, {classes: 'rtTextAlign', list: TEXT_ALIGN_LIST}, (ctx, id) => {
+                runAction(pCtx, id, mde);
+              });
+              return;
+            case 'formatText':
+              chooseFromMenu(mde, {classes: 'rtFormatText', list: FORMAT_TEXT_LIST}, (ctx, id) => {
+                runAction(pCtx, id, mde);
+              });
+              return;
+            default:
+              runAction(pCtx, name, mde);
+          }
+        } finally {
+          Ctx._currentCtx = prevCtx;
         }
       });
     },

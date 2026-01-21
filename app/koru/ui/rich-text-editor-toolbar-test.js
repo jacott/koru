@@ -22,6 +22,7 @@ isClient && define((require, exports, module) => {
   };
 
   TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    let rafStub;
     beforeEach(() => {
       v.editor = sut.$autoRender({
         content: Dom.h([{b: 'Hello'}, ' ', {i: 'world'}, ' ', {
@@ -34,12 +35,15 @@ isClient && define((require, exports, module) => {
 
       v.origText = v.editor.value;
       document.body.appendChild(v.editor);
+      stubRaf().yields();
     });
 
     afterEach(() => {
       TH.domTearDown();
       v = {};
     });
+
+    const stubRaf = () => rafStub = stub(window, 'requestAnimationFrame').returns(123);
 
     test('maxlength', () => {
       Dom.remove(v.editor);
@@ -150,12 +154,20 @@ isClient && define((require, exports, module) => {
       assert.calledWith(cmStub, undefined);
       cmStub.reset();
 
+      refute.called(rafStub);
+      rafStub.restore();
+      stubRaf();
       TH.pointerDownUp(v.undo);
+      refute.called(cmStub);
+      rafStub.yield();
+      assert.called(rafStub);
       assert.calledWith(cmStub, undefined);
       cmStub.reset();
       TH.trigger(document, 'selectionchange');
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), null);
+
+      rafStub.yields();
 
       TH.pointerDownUp(v.redo);
       TH.trigger(document, 'selectionchange');
