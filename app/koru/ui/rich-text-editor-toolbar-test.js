@@ -22,8 +22,8 @@ isClient && define((require, exports, module) => {
   };
 
   TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
-    let rafStub;
     beforeEach(() => {
+      stub(Dom, 'stopClick');
       v.editor = sut.$autoRender({
         content: Dom.h([{b: 'Hello'}, ' ', {i: 'world'}, ' ', {
           a: 'the link',
@@ -35,15 +35,12 @@ isClient && define((require, exports, module) => {
 
       v.origText = v.editor.value;
       document.body.appendChild(v.editor);
-      stubRaf().yields();
     });
 
     afterEach(() => {
       TH.domTearDown();
       v = {};
     });
-
-    const stubRaf = () => rafStub = stub(window, 'requestAnimationFrame').returns(123);
 
     test('maxlength', () => {
       Dom.remove(v.editor);
@@ -154,20 +151,14 @@ isClient && define((require, exports, module) => {
       assert.calledWith(cmStub, undefined);
       cmStub.reset();
 
-      refute.called(rafStub);
-      rafStub.restore();
-      stubRaf();
+      refute.called(Dom.stopClick);
       TH.pointerDownUp(v.undo);
-      refute.called(cmStub);
-      rafStub.yield();
-      assert.called(rafStub);
+      assert.called(Dom.stopClick);
       assert.calledWith(cmStub, undefined);
       cmStub.reset();
       TH.trigger(document, 'selectionchange');
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), null);
-
-      rafStub.yields();
 
       TH.pointerDownUp(v.redo);
       TH.trigger(document, 'selectionchange');

@@ -858,7 +858,7 @@ define((require, exports, module) => {
     chooseFromMenu,
 
     runAction: (ctx, id, event) => {
-      const cc = commonActions[id] || ctx.mode.actions[id];
+      const cc = commonActions[id] ?? ctx.mode.actions[id];
       return cc(event);
     },
 

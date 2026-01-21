@@ -178,67 +178,44 @@ define((require, exports, module) => {
     row[1] = Dom.h({span: [row[1]], title: RichTextEditor.title(row[1], row[0], 'standard')});
   }
 
-  let allowUp = false;
-
   Tpl.$events({
     'pointerdown'() {
-      allowUp = true;
       Dom.stopEvent();
     },
     'click button'(event) {
       Dom.stopEvent();
     },
-    'pointerup button'(mde) {
+    'pointerdown button'(mde) {
       Dom.stopEvent();
-
-      if (!allowUp) {
-        return;
-      }
-
-      allowUp = false;
+      Dom.stopClick();
 
       const toolbar = mde.currentTarget;
-
       const button = this;
-
       const {ctx} = $;
-
       const pCtx = ctx.parentCtx;
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm) {
         pCtx.inputElm.focus();
       }
 
-      window.requestAnimationFrame(() => {
-        if (ctx.inputElm === null) {
+      const name = button.getAttribute('name');
+      switch (name) {
+        case 'more':
+          Dom.toggleClass(toolbar, 'more');
           return;
-        }
-
-        const prevCtx = Ctx._currentCtx;
-        Ctx._currentCtx = ctx;
-        try {
-          const name = button.getAttribute('name');
-          switch (name) {
-            case 'more':
-              Dom.toggleClass(toolbar, 'more');
-              return;
-            case 'textAlign':
-              chooseFromMenu(mde, {classes: 'rtTextAlign', list: TEXT_ALIGN_LIST}, (ctx, id) => {
-                runAction(pCtx, id, mde);
-              });
-              return;
-            case 'formatText':
-              chooseFromMenu(mde, {classes: 'rtFormatText', list: FORMAT_TEXT_LIST}, (ctx, id) => {
-                runAction(pCtx, id, mde);
-              });
-              return;
-            default:
-              runAction(pCtx, name, mde);
-          }
-        } finally {
-          Ctx._currentCtx = prevCtx;
-        }
-      });
+        case 'textAlign':
+          chooseFromMenu(mde, {classes: 'rtTextAlign', list: TEXT_ALIGN_LIST}, (ctx, id) => {
+            runAction(pCtx, id, mde);
+          });
+          return;
+        case 'formatText':
+          chooseFromMenu(mde, {classes: 'rtFormatText', list: FORMAT_TEXT_LIST}, (ctx, id) => {
+            runAction(pCtx, id, mde);
+          });
+          return;
+        default:
+          runAction(pCtx, name, mde);
+      }
     },
   });
 
