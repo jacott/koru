@@ -16,7 +16,7 @@ define((require) => {
     const style = document.documentElement.style;
     const styles = ['Moz', 'ms', 'webkit', 'o', ''];
     let i = 0;
-    for (;i < styles.length; ++i) {
+    for (; i < styles.length; ++i) {
       if (styles[i] + 'Transform' in style) break;
     }
     return styles[i];
@@ -25,7 +25,7 @@ define((require) => {
   const vendorFuncPrefix = vendorStylePrefix.toLowerCase();
 
   const matches = document.documentElement[vendorFuncPrefix + 'MatchesSelector'] ||
-        document.documentElement.matchesSelector;
+    document.documentElement.matchesSelector;
 
   require('./next-frame')(Dom);
 
@@ -34,14 +34,24 @@ define((require) => {
   Dom.FOCUS_SELECTOR = '[tabindex="0"],' + Dom.INPUT_SELECTOR;
 
   let supportsPassiveEvents = false;
-  window.addEventListener('test', null, Object.defineProperty({}, 'passive', {
-    get() { supportsPassiveEvents = true},
-  }));
+  window.addEventListener(
+    'test',
+    null,
+    Object.defineProperty({}, 'passive', {
+      get() {
+        supportsPassiveEvents = true;
+      },
+    }),
+  );
 
   const captureEventOption = supportsPassiveEvents ? {capture: true, passive: false} : true;
 
-  const addElm = (ctx, elm) => {elm == null || elm.classList.remove('addElm')};
-  const remElm = (ctx, elm) => {Dom.remove(elm)};
+  const addElm = (ctx, elm) => {
+    elm == null || elm.classList.remove('addElm');
+  };
+  const remElm = (ctx, elm) => {
+    Dom.remove(elm);
+  };
 
   const convertToData = (elm) => {
     const ctx = elm == null ? null : Dom.ctx(elm);
@@ -59,10 +69,8 @@ define((require) => {
   if (document.caretPositionFromPoint === void 0) {
     HTMLDocument.prototype.caretPositionFromPoint = function (x, y) {
       const range = this.caretRangeFromPoint(x, y);
-      return range === null
-        ? null
-        : {offsetNode: range.startContainer, offset: range.startOffset};
-    }
+      return range === null ? null : {offsetNode: range.startContainer, offset: range.startOffset};
+    };
   }
 
   const getRangeClientRect = (range) => {
@@ -118,7 +126,9 @@ define((require) => {
 
     captureEventOption,
 
-    get element() {return Ctx._currentElement},
+    get element() {
+      return Ctx._currentElement;
+    },
 
     _matchesFunc: matches,
 
@@ -137,11 +147,11 @@ define((require) => {
 
     isInView: (elm, regionOrNode) => {
       const region = regionOrNode.getBoundingClientRect === void 0
-            ? regionOrNode
-            : regionOrNode.getBoundingClientRect();
+        ? regionOrNode
+        : regionOrNode.getBoundingClientRect();
       const bb = elm.getBoundingClientRect();
-      const cx = (bb.left + bb.width / 2);
-      const cy = (bb.top + bb.height / 2);
+      const cx = bb.left + bb.width / 2;
+      const cy = bb.top + bb.height / 2;
 
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
@@ -163,19 +173,21 @@ define((require) => {
         const pBottom = pDim.top + sp.clientHeight;
         const pRight = pDim.left + sp.clientWidth;
         const vdiff = bottom > pBottom
-              ? Math.min(bottom - pBottom, top - pDim.top)
-              : top < pDim.top
-              ? top - pDim.top
-              : 0;
+          ? Math.min(bottom - pBottom, top - pDim.top)
+          : top < pDim.top
+          ? top - pDim.top
+          : 0;
         const hdiff = right > pRight
-              ? Math.min(right - pRight, left - pDim.left)
-              : left < pDim.left
-              ? left - pDim.left
-              : 0;
+          ? Math.min(right - pRight, left - pDim.left)
+          : left < pDim.left
+          ? left - pDim.left
+          : 0;
 
         if (vdiff != 0 || hdiff != 0) {
-          left += hdiff; right += hdiff;
-          top += vdiff; bottom += vdiff;
+          left += hdiff;
+          right += hdiff;
+          top += vdiff;
+          bottom += vdiff;
           adjustments.push([sp, sp.scrollLeft + hdiff, sp.scrollTop + vdiff]);
         }
       }
@@ -189,7 +201,7 @@ define((require) => {
     getScrollParent: (elm) => {
       if (elm == null) return null;
       elm = elm.parentNode;
-      for (;elm !== null; elm = elm.parentNode) {
+      for (; elm !== null; elm = elm.parentNode) {
         if (elm.scrollHeight > elm.clientHeight || elm.scrollWidth > elm.clientWidth) {
           return elm;
         }
@@ -197,32 +209,30 @@ define((require) => {
       return null;
     },
 
-    setClassBySuffix: (name, suffix, elm=Dom.element) => {
+    setClassBySuffix: (name, suffix, elm = Dom.element) => {
       if (elm === null) return;
       const classes = elm.className.replace(new RegExp('\\s*\\S*' + suffix + '\\b', 'g'), '')
-            .replace(/(^ | $)/g, '');
+        .replace(/(^ | $)/g, '');
 
-      elm.className = name
-        ? (classes.length ? classes + ' ' : '') + name + suffix
-      : classes;
+      elm.className = name ? (classes.length ? classes + ' ' : '') + name + suffix : classes;
     },
 
-    setClassByPrefix: (name, prefix, elm=Dom.element) => {
+    setClassByPrefix: (name, prefix, elm = Dom.element) => {
       if (elm === null) return;
 
-      const classes = elm.className.replace(new RegExp('\\s*' + prefix + '\\S*', 'g'), '')
-            .replace(/(^ | $)/g, '');
+      const classes = elm.className.replace(new RegExp('\\s*' + prefix + '\\S*', 'g'), '').replace(
+        /(^ | $)/g,
+        '',
+      );
 
-      elm.className = name
-        ? (classes.length ? classes + ' ' : '') + prefix + name
-      : classes;
+      elm.className = name ? (classes.length ? classes + ' ' : '') + prefix + name : classes;
     },
 
     setClass: (name, isAdd, elm) => {
       (isAdd ? Dom.addClass : Dom.removeClass)(elm || Dom.element, name);
     },
 
-    setBoolean: (name, isAdd, elm=Dom.element) => {
+    setBoolean: (name, isAdd, elm = Dom.element) => {
       if (elm === null) return;
       if (isAdd) {
         elm.setAttribute(name, name);
@@ -276,7 +286,7 @@ define((require) => {
       return result;
     },
 
-    closestChildOf: (elm=null, parent) => {
+    closestChildOf: (elm = null, parent) => {
       while (elm !== null) {
         const p = elm.parentNode;
         if (p === parent) return elm;
@@ -285,7 +295,7 @@ define((require) => {
       return null;
     },
 
-    getClosest: (elm=null, selector) => {
+    getClosest: (elm = null, selector) => {
       if (elm !== null && elm.nodeType !== document.ELEMENT_NODE) {
         elm = elm.parentNode;
       }
@@ -306,8 +316,7 @@ define((require) => {
 
     nextSibling: (elm, selector) => {
       if (elm != null) {
-        for (let next = elm.nextElementSibling; next !== null;
-             next = next.nextElementSibling) {
+        for (let next = elm.nextElementSibling; next !== null; next = next.nextElementSibling) {
           if (matches.call(next, selector)) return next;
         }
       }
@@ -357,7 +366,9 @@ define((require) => {
 
     hasPointerEvents: true,
 
-    get event() {return Template._currentEvent},
+    get event() {
+      return Template._currentEvent;
+    },
 
     _helpers: {
       inputValue: (value) => {
@@ -365,7 +376,7 @@ define((require) => {
         Dom.updateInput(Dom.current.element, value == null ? '' : '' + value);
       },
 
-      decimal: (value, {format=2}={}) => {
+      decimal: (value, {format = 2} = {}) => {
         return value == null ? '' : util.toDp(value, format, true);
       },
 
@@ -373,7 +384,9 @@ define((require) => {
     },
 
     originalValue: (elm) => elm[original$],
-    setOriginalValue: (elm, value) => {elm[original$] = value},
+    setOriginalValue: (elm, value) => {
+      elm[original$] = value;
+    },
     restoreOriginalValue: (elm) => {
       if (hasOwn(elm, original$)) {
         elm.value = elm[original$];
@@ -383,7 +396,7 @@ define((require) => {
     stopEvent: Template.stopEvent,
     stopPropigation: Template.stopPropigation,
 
-    setCtx: (elm, ctx=new Ctx(null, Dom.ctx(elm))) => {
+    setCtx: (elm, ctx = new Ctx(null, Dom.ctx(elm))) => {
       elm[ctx$] = ctx;
       ctx.firstElement = elm;
       return ctx;
@@ -393,8 +406,10 @@ define((require) => {
       const ctx = ctxOrElm[ctx$] ? ctxOrElm[ctx$] : ctxOrElm;
       const elmCtx = elm[ctx$];
       const observers = ctx[destoryObservers$];
-      elmCtx[destoryWith$] = (
-        (observers === void 0) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(elm);
+      elmCtx[destoryWith$] =
+        ((observers === void 0) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(
+          elm,
+        );
     },
 
     destroyData: (elm) => {
@@ -439,7 +454,7 @@ define((require) => {
 
     removeInserts: (start) => {
       const parent = start.parentNode;
-      if (! parent) return;
+      if (!parent) return;
       const end = start[endMarker$];
       for (let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
         elm.remove();
@@ -498,7 +513,7 @@ define((require) => {
       }
 
       const parentCtx = (oldElm[ctx$] != null && oldElm[ctx$].parentCtx) ||
-            Dom.ctx(oldElm.parentNode);
+        Dom.ctx(oldElm.parentNode);
       if (parentCtx !== null) {
         const ctx = newElm[ctx$];
         if (ctx != null) ctx.parentCtx = parentCtx;
@@ -510,9 +525,9 @@ define((require) => {
       return Dom;
     },
 
-    insertStartEndMarkers: (parent, before=null) => {
+    insertStartEndMarkers: (parent, before = null) => {
       const startComment = document.createComment('start'),
-            endComment = document.createComment('end');
+        endComment = document.createComment('end');
       startComment[endMarker$] = endComment;
 
       parent.insertBefore(endComment, before);
@@ -560,7 +575,7 @@ define((require) => {
      * Remove an element and provide a function that inserts it into its original position
      * @param element {Element} The element to be temporarily removed
      * @return {Function} A function that inserts the element into its original position
-     **/
+     */
     removeToInsertLater: (element) => {
       const parentNode = element.parentNode;
       const nextSibling = element.nextSibling;
@@ -572,7 +587,7 @@ define((require) => {
       }
     },
 
-    reposition: (pos='below', options) => {
+    reposition: (pos = 'below', options) => {
       const height = window.innerHeight, width = window.innerWidth;
       const ps = options.popup.style;
       const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
@@ -585,40 +600,40 @@ define((require) => {
         ps.setProperty('left', bbox.left + 'px');
       }
       switch (pos) {
-      case 'above':
-        ps.removeProperty('top');
-        ps.setProperty('bottom', (height - bbox.top) + 'px');
-        break;
-      case 'below':
-        ps.removeProperty('bottom');
-        ps.setProperty('top', (bbox.top + bbox.height) + 'px');
-        break;
-      case 'on':
-        ps.removeProperty('bottom');
-        ps.setProperty('top', bbox.top + 'px');
+        case 'above':
+          ps.removeProperty('top');
+          ps.setProperty('bottom', (height - bbox.top) + 'px');
+          break;
+        case 'below':
+          ps.removeProperty('bottom');
+          ps.setProperty('top', (bbox.top + bbox.height) + 'px');
+          break;
+        case 'on':
+          ps.removeProperty('bottom');
+          ps.setProperty('top', bbox.top + 'px');
       }
       const ppos = options.popup.getBoundingClientRect();
       switch (pos) {
-      case 'above':
-        if (ppos.top < 0) {
-          ps.removeProperty('bottom');
-          if (ppos.height + bbox.top + bbox.height > height) {
-            ps.setProperty('top', '0');
-          } else {
-            ps.setProperty('top', (bbox.top + bbox.height) + 'px');
+        case 'above':
+          if (ppos.top < 0) {
+            ps.removeProperty('bottom');
+            if (ppos.height + bbox.top + bbox.height > height) {
+              ps.setProperty('top', '0');
+            } else {
+              ps.setProperty('top', (bbox.top + bbox.height) + 'px');
+            }
           }
-        }
-        break;
-      case 'below':
-        if (ppos.bottom > height) {
-          if (ppos.height >= bbox.top) {
-            ps.setProperty('top', '0');
-          } else {
-            ps.setProperty('bottom', (height - bbox.top) + 'px');
-            ps.removeProperty('top');
+          break;
+        case 'below':
+          if (ppos.bottom > height) {
+            if (ppos.height >= bbox.top) {
+              ps.setProperty('top', '0');
+            } else {
+              ps.setProperty('bottom', (height - bbox.top) + 'px');
+              ps.removeProperty('top');
+            }
           }
-        }
-        break;
+          break;
       }
       if (ppos.left < 0) {
         if (options.align === 'right') {

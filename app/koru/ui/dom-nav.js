@@ -60,7 +60,7 @@ define((require) => {
       } else {
         node = node.parentNode;
         if (node === top) return;
-        if (! INLINE_TAGS[node.tagName]) {
+        if (!INLINE_TAGS[node.tagName]) {
           offset = 0;
         }
       }
@@ -81,7 +81,7 @@ define((require) => {
     } else {
       node = node.childNodes[offset];
     }
-    if (! node) {
+    if (!node) {
       return;
     }
 
@@ -101,7 +101,7 @@ define((require) => {
         return true;
       } else {
         node = node.parentNode;
-        if (! INLINE_TAGS[node.tagName]) {
+        if (!INLINE_TAGS[node.tagName]) {
           offset = 0;
         }
       }
@@ -136,10 +136,10 @@ define((require) => {
     const s = normPos(range.startContainer, range.startOffset);
     s[0] === range.startContainer || range.setStart(s[0], s[1]);
 
-    if (! collapsed) {
+    if (!collapsed) {
       const e = normPos(range.endContainer, range.endOffset);
       e[0] === range.endContainer || range.setStart(e[0], e[1]);
-    } else if (! range.collapsed) {
+    } else if (!range.collapsed) {
       range.collapse(true);
     }
     return range;
@@ -150,19 +150,20 @@ define((require) => {
     if (within !== ca && within.contains(ca)) return range;
     const withinLen = within.childNodes.length;
     const sc = range.startContainer;
-    if ((within === sc && range.startOffset == withinLen) ||
-      (within !== sc && ! within.contains(sc))) {
-        range.setStart(within, 0);
-      }
+    if (
+      (within === sc && range.startOffset == withinLen) || (within !== sc && !within.contains(sc))
+    ) {
+      range.setStart(within, 0);
+    }
     const ec = range.endContainer;
-    if ((within !== ec && ! within.contains(ec))) {
+    if ((within !== ec && !within.contains(ec))) {
       range.setEnd(within, nodeEndOffset(within));
     }
     return range;
   };
 
-  const isBlockNode = (node) => node.nodeType === ELEMENT_NODE && node.tagName !== 'BR' &&
-    ! INLINE_TAGS[node.tagName];
+  const isBlockNode = (node) =>
+    node.nodeType === ELEMENT_NODE && node.tagName !== 'BR' && !INLINE_TAGS[node.tagName];
 
   const previousNode = (node, top) => {
     let nn = node.previousSibling;
@@ -206,9 +207,7 @@ define((require) => {
 
     const {childNodes} = node;
     if (startOffset == childNodes.length) {
-      return node === top
-        ? null
-        : startOffset == 0 ? node : nextNode(node);
+      return node === top ? null : startOffset == 0 ? node : nextNode(node);
     } else {
       return childNodes[startOffset];
     }
@@ -228,7 +227,7 @@ define((require) => {
   };
 
   const containingNode = (range) => {
-    if (! range.collapsed) {
+    if (!range.collapsed) {
       const node = range.commonAncestorContainer;
       return node.nodeType === TEXT_NODE ? node.parentNode : node;
     }
@@ -237,13 +236,11 @@ define((require) => {
       return start.parentNode;
     } else {
       const {childNodes} = start;
-      return offset < childNodes.length
-        ? childNodes[offset]
-        : start;
+      return offset < childNodes.length ? childNodes[offset] : start;
     }
   };
 
-  const insertNode = (node, pos, offset=0) => {
+  const insertNode = (node, pos, offset = 0) => {
     const range = Dom.getRange();
     range.deleteContents();
     range.insertNode(node);
@@ -259,7 +256,7 @@ define((require) => {
     Dom.setRange(range);
   };
 
-  const clearEmptyText = (node=null) => {
+  const clearEmptyText = (node = null) => {
     while (node !== null && node.nodeType === TEXT_NODE && node.nodeValue === '') {
       const nn = node.nextSibling;
       node.remove();
@@ -272,7 +269,7 @@ define((require) => {
       if (node.nodeType === TEXT_NODE) {
         if (node.nodeValue !== '') break;
       } else {
-        if (! isInlineNode(node)) break;
+        if (!isInlineNode(node)) break;
         clearEmptyInline(node);
         if (node.firstChild !== null) {
           break;
@@ -288,7 +285,7 @@ define((require) => {
       if (node.nodeType === TEXT_NODE) {
         if (node.nodeValue !== '') break;
       } else {
-        if (! isInlineNode(node)) break;
+        if (!isInlineNode(node)) break;
         clearEmptyInline(node);
         if (node.firstChild !== null) {
           break;
@@ -300,15 +297,14 @@ define((require) => {
     }
   };
 
-  const clearEmptyInline = (node=null) => {
+  const clearEmptyInline = (node = null) => {
     if (node === null) return;
     clearEmptyInlineForward(node.firstChild);
     clearEmptyInlineReverse(node.lastChild);
   };
 
-  const nodeEndOffset = (node) => node.nodeType === TEXT_NODE
-    ? node.nodeValue.length
-    : node.childNodes.length;
+  const nodeEndOffset = (node) =>
+    node.nodeType === TEXT_NODE ? node.nodeValue.length : node.childNodes.length;
 
   const setEndOfNode = (range, node) => {
     range.setStart(node, nodeEndOffset(node));
@@ -320,13 +316,9 @@ define((require) => {
     let prev = node.previousSibling;
     if (prev === null) {
       prev = node.parentNode;
-      return prev === null || ! isInlineNode(prev)
-        ? node
-        : prev;
+      return prev === null || !isInlineNode(prev) ? node : prev;
     } else {
-      return isInlineNode(prev)
-        ? lastInnerMostNode(prev)
-        : node;
+      return isInlineNode(prev) ? lastInnerMostNode(prev) : node;
     }
   };
 
@@ -335,17 +327,13 @@ define((require) => {
     let nn = node.nextSibling;
     if (nn === null) {
       nn = node.parentNode;
-      return nn === null || ! isInlineNode(nn)
-        ? node
-        : nn;
+      return nn === null || !isInlineNode(nn) ? node : nn;
     } else {
-      return isInlineNode(nn)
-        ? firstInnerMostNode(nn)
-        : node;
+      return isInlineNode(nn) ? firstInnerMostNode(nn) : node;
     }
   };
 
-  const startOfLine = (range=Dom.getRange()) => {
+  const startOfLine = (range = Dom.getRange()) => {
     let node = rangeStartNode(range);
     if (node === null) return null;
 
@@ -367,7 +355,7 @@ define((require) => {
     let nn = nextInline(node);
 
     while (nn !== null && nn !== node) {
-      if (! isInlineNode(nn)) {
+      if (!isInlineNode(nn)) {
         if (nn.tagName === 'BR') node = nn;
         break;
       }
@@ -377,7 +365,7 @@ define((require) => {
     return node;
   };
 
-  const endOfLine = (range=Dom.getRange()) => {
+  const endOfLine = (range = Dom.getRange()) => {
     const node = endOfLineNode(rangeStartNode(range));
     if (node === null) return null;
 
@@ -401,13 +389,13 @@ define((require) => {
     return false;
   };
 
-  const startOfNextLine = (range=Dom.getRange()) => {
+  const startOfNextLine = (range = Dom.getRange()) => {
     let node = endOfLineNode(rangeStartNode(range));
     if (node === null) return null;
 
     let nn = nextNode(node);
     if (nn !== null) {
-      if (! childOfBlock(node, commonAncestor(node, nn))) {
+      if (!childOfBlock(node, commonAncestor(node, nn))) {
         node = nn;
         if (node.tagName === 'BR') {
           nn = nextNode(node);
@@ -436,21 +424,20 @@ define((require) => {
 
     containingNode,
 
-    getTag: (tagOrFunc, top=document.body) => {
+    getTag: (tagOrFunc, top = document.body) => {
       const range = Dom.getRange();
       if (range === null) return null;
       let start = containingNode(range);
       const foundFunc = typeof tagOrFunc === 'function' ? tagOrFunc : null,
-      tag = foundFunc === null ? tagOrFunc.toUpperCase() : '';
+        tag = foundFunc === null ? tagOrFunc.toUpperCase() : '';
 
-      if (! top.contains(start)) return null;
+      if (!top.contains(start)) return null;
 
-      for (;start != null && start !== top;
-           start = start.parentNode) {
-             if (foundFunc === null ? start.tagName === tag : foundFunc(start)) {
-               return start;
-             }
-           }
+      for (; start != null && start !== top; start = start.parentNode) {
+        if (foundFunc === null ? start.tagName === tag : foundFunc(start)) {
+          return start;
+        }
+      }
       return null;
     },
 
@@ -483,7 +470,7 @@ define((require) => {
       return frag;
     },
 
-    selectLine: (range=Dom.getRange()) => {
+    selectLine: (range = Dom.getRange()) => {
       const sr = startOfLine(range), er = startOfNextLine(range);
       sr.setEnd(er.startContainer, er.startOffset);
       return sr;
@@ -493,16 +480,14 @@ define((require) => {
       const range = Dom.getRange();
       const obj = {node: range.startContainer, offset: range.startOffset};
 
-      if (! Dom.contains(top, obj.node)) return;
+      if (!Dom.contains(top, obj.node)) return;
 
       if (amount >= 0) {
         while (amount-- && forwardOneChar(top, obj)) {
-          ;
         }
         range.setEnd(obj.node, obj.offset);
       } else {
         while (amount++ && backOneChar(top, obj)) {
-          ;
         }
         range.setStart(obj.node, obj.offset);
       }
@@ -545,12 +530,11 @@ define((require) => {
       let c = range.startContainer;
       let son = range.startOffset == 0;
       while (c !== n) {
-        if (! isInlineNode(c)) return false;
+        if (!isInlineNode(c)) return false;
         const p = c.parentNode;
-        if (son && c.previousSibling !== null &&
-          (p !== n || c.previousSibling.tagName !== 'BR')) {
-            son = false;
-          }
+        if (son && c.previousSibling !== null && (p !== n || c.previousSibling.tagName !== 'BR')) {
+          son = false;
+        }
         c = p;
       }
       c = range.endContainer;
@@ -559,10 +543,10 @@ define((require) => {
         : c.nextSibling === null;
 
       while (c !== n) {
-        if (! isInlineNode(c)) return false;
+        if (!isInlineNode(c)) return false;
         const p = c.parentNode;
         if (p === n) {
-          return ! (son && eon);
+          return !(son && eon);
         }
         if (eon && c.previousSibling !== null) {
           eon = false;
