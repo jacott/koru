@@ -136,10 +136,11 @@ define((require, exports, module) => {
   };
 
   const inputChange = (ctx, muts) => {
-    if (ctx.mode !== standardMode || muts.length === 0 || muts.length > 3) return;
-    const lm = muts.at(-1);
-    if (lm.type === 'characterData') {
-      ctx.mention.check();
+    try {
+      const range = Dom.getRange();
+      ctx.mention.check(range, muts);
+    } catch (err) {
+      koru.globalCallback(err);
     }
   };
 
@@ -587,23 +588,6 @@ define((require, exports, module) => {
     },
   });
 
-  const getMentionChar = (range, offset) => {
-    if (range.startContainer.nodeType === TEXT_NODE) {
-      const text = range.startContainer.nodeValue;
-      return text[range.startOffset + offset];
-    } else {
-      return ' ';
-    }
-  };
-
-  function spanLastCharOfRange(range) {
-    range.setStart(range.endContainer, range.endOffset - 1);
-    const span = document.createElement('span');
-    span.classList.add('ln');
-    range.surroundContents(span);
-    return span;
-  }
-
   const standardMode = {
     actions,
     type: 'standard',
@@ -721,27 +705,58 @@ define((require, exports, module) => {
     return ctx && ctx.openDialog;
   };
 
+  const isValidMentionPos = (range) => {
+    if (range.startOffset === 1) {
+      range = range.cloneRange();
+      const top = DomNav.containingBlock(range.startContainer.parentNode);
+      const result = {node: range.startContainer, offset: 0};
+      const ans = DomNav.backOneChar(top, result);
+      return !ans || (result.node.nodeType === TEXT_NODE && result.node.data.at(-1) === ' ');
+    } else {
+      return range.startContainer.nodeValue[range.startOffset - 2] === ' ';
+    }
+  };
+
+  const getMentionChar = (range) =>
+    range.startContainer.nodeType === TEXT_NODE && range.startOffset !== 0
+      ? range.startContainer.nodeValue[range.startOffset - 1]
+      : '';
+
+  const spanRange = (range) => {
+    const span = document.createElement('span');
+    span.classList.add('ln');
+    range.surroundContents(span);
+    return span;
+  };
+
+  const addedChar = (muts) => {
+    const len = Math.min(muts.length, 3);
+    for (let i = 0; i < len; ++i) {
+      const m = muts[i];
+      if (
+        (m.type === 'characterData' && m.oldValue.length < m.target.data.length) ||
+        (m.type === 'childList' && m.addedNodes.length !== 0)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   class MentionState {
     elm = null;
     type = '';
     offset = 0;
-    live = false;
+    isClosing = false;
 
     constructor(ctx) {
       this.ctx = ctx;
     }
 
-    isPending() {
-      return this.elm !== null && !this.live;
-    }
-
     checkRange(range) {
-      if (!this.isPending()) {
-        if (this.ctx.selectItem != null && $.data(this.ctx.selectItem).span.parentNode === null) {
-          Dom.remove(this.ctx.selectItem);
-        }
-      } else if (this.isRangeChanged(range)) {
-        this.stop();
+      if (this.ctx.selectItem != null && $.data(this.ctx.selectItem).span.parentNode === null) {
+        Dom.remove(this.ctx.selectItem);
       }
     }
 
@@ -755,41 +770,42 @@ define((require, exports, module) => {
     }
 
     stop() {
+      this.isClosing = this.elm !== null;
       this.elm = null;
-      this.live = false;
     }
 
-    check() {
-      const range = Dom.getRange();
-      if (!range.collapsed) return;
-      if (this.isPending()) {
-        this.goLive(range);
-      } else {
-        const text = getMentionChar(range, -1);
-        if (this.mentionKey(text) && (range.startOffset < 3 || getMentionChar(range, -2) === ' ')) {
-          this.type = text;
-          this.elm = range.startContainer;
-          this.offset = range.startOffset;
+    check(range, muts) {
+      if (this.isClosing) {
+        this.stop();
+        return;
+      }
+
+      if (!range.collapsed) {
+        return;
+      }
+
+      if (this.elm === null && addedChar(muts)) {
+        const text = getMentionChar(range);
+        if (this.mentionKey(text) && isValidMentionPos(range)) {
+          this.goLive(range, text);
         }
       }
     }
 
-    goLive(range) {
-      if (range.startContainer !== this.elm || range.startOffset !== this.offset + 1) {
-        this.stop();
-      } else {
-        this.live = true;
-        const span = spanLastCharOfRange(range);
-        const {ctx} = this;
-        ctx.selectItem = RichTextMention.selectItem({
-          type: this.type,
-          mentions: ctx.data.extend.mentions,
-          inputCtx: ctx,
-          inputElm: ctx.inputElm,
-          span,
-        });
-        return;
-      }
+    goLive(range, type) {
+      this.type = type;
+      this.elm = range.startContainer;
+      this.offset = range.startOffset;
+      const span = spanRange(range);
+      const {ctx} = this;
+      ctx.selectItem = RichTextMention.selectItem({
+        type,
+        mentions: ctx.data.extend.mentions,
+        inputCtx: ctx,
+        inputElm: ctx.inputElm,
+        span,
+      });
+      return;
     }
   }
 

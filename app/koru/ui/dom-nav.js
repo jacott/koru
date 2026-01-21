@@ -422,6 +422,7 @@ define((require) => {
     firstInnerMostNode,
     lastInnerMostNode,
 
+    containingBlock,
     containingNode,
 
     getTag: (tagOrFunc, top = document.body) => {

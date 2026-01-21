@@ -52,10 +52,10 @@ define((require, exports, module) => {
     if (!editorELm) return;
 
     const ln = editorELm.getElementsByClassName('ln')[0];
-    if (ln) {
+    if (ln != null) {
       const dest = ln.previousSibling;
       ln.remove();
-      if (dest) {
+      if (dest !== null) {
         const destOffset = dest.length;
 
         editorELm.focus();
@@ -63,7 +63,7 @@ define((require, exports, module) => {
         range.setStart(dest, destOffset);
         range.collapse(collapseStart);
         setRange(range);
-        if (!frag) {
+        if (frag == null) {
           ln.textContent && RichTextEditor.insert(ln.textContent);
           const range = getRange();
           if (range) { // maybe missing on destroy
@@ -81,7 +81,7 @@ define((require, exports, module) => {
     }
 
     const rtCtx = Dom.ctx(editorELm);
-    if (rtCtx !== undefined) {
+    if (rtCtx?.selectItem != null) {
       rtCtx.selectItem = null;
       rtCtx.mention.stop();
     }

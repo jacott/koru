@@ -122,34 +122,27 @@ isClient && define((require, exports, module) => {
       });
     });
 
-    test('typing @g', () => {
+    test('typing @', () => {
       const {input, inputCtx} = v;
       assert.dom(input, () => {
         pressChar(inputCtx, '@');
-      });
-      refute.dom('#TestRichTextEditor>.rtMention');
-      assert.isFalse(inputCtx.undo.paused);
-
-      assert.dom(input, () => {
-        pressChar(inputCtx, 'g');
-        assert.same(input.textContent.replace(/\xa0/, ' '), 'hello @g');
-        assert.dom('.ln', 'g');
+        assert.same(input.textContent.replace(/\xa0/, ' '), 'hello @');
+        assert.dom('.ln', '');
       });
       assert.isTrue(inputCtx.undo.paused);
 
       assert.dom('.rtMention', () => {
         assert(Modal.topModal.handleTab);
-        assert.dom('input', {value: 'g'}, (elm) => {
+        assert.dom('input', {value: ''}, (elm) => {
           assert.same(document.activeElement, elm);
         });
       });
     });
 
-    test('midtext @g', () => {
+    test('midtext @', () => {
       moveRange(v.inputCtx, v.input.firstChild, 2);
       pressChar(v.inputCtx, ' ');
       pressChar(v.inputCtx, '@');
-      pressChar(v.inputCtx, 'g');
       assert.dom('span.ln');
 
       Dom.remove(v.inputCtx.selectItem);
@@ -157,28 +150,9 @@ isClient && define((require, exports, module) => {
       refute.dom('span.ln');
     });
 
-    test('@ followed by -> ->', () => {
-      const {input, inputCtx} = v;
-      pressChar(inputCtx, '@');
-      assert.same(input.innerHTML, 'hello @');
-      assert.isFalse(inputCtx.undo.paused);
-
-      moveRange(inputCtx, input.firstChild, 6);
-      moveRange(inputCtx, input.firstChild, 7);
-      assert.same(inputCtx.mention.elm, null);
-
-      pressChar(inputCtx, 'g');
-
-      refute.dom('.ln');
-
-      assert.same(input.innerHTML, 'hello @g');
-      assert.isFalse(inputCtx.undo.paused);
-    });
-
     test('@ after div', () => {
       pressChar(v.inputCtx, '\n');
       pressChar(v.inputCtx, '@');
-      pressChar(v.inputCtx, 'g');
 
       assert.dom('span.ln');
     });
@@ -195,7 +169,6 @@ isClient && define((require, exports, module) => {
       };
 
       pressChar(v.inputCtx, '@');
-      pressChar(v.inputCtx, 'x');
 
       assert.dom('.rtMention.inline', (elm) => {
         assert.dom('div:first-child', 'no foo');
@@ -214,7 +187,6 @@ isClient && define((require, exports, module) => {
       v.fooFunc = (frag, text) => true;
 
       pressChar(v.inputCtx, '@');
-      pressChar(v.inputCtx, 'g');
 
       assert.dom('.rtMention div.empty.needMore');
     });
@@ -237,7 +209,9 @@ isClient && define((require, exports, module) => {
           Dom.h({a: elm.textContent, class: 'foo', $href: '/#' + elm.getAttribute('data-id')});
 
         pressChar(v.inputCtx, '@');
-        pressChar(v.inputCtx, 'g');
+        TH.input('input', 'g');
+
+        assert.dom('.rtMention');
       });
 
       test('empty', () => {
@@ -331,7 +305,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('click out aborts list', () => {
-        assert.dom('.rtMention input', function () {
+        assert.dom('.rtMention input', () => {
           TH.keydown(40);
         });
 
@@ -341,18 +315,18 @@ isClient && define((require, exports, module) => {
 
         refute.dom('.rtMention');
 
-        assert.dom('.input', function () {
-          assert.same(this.innerHTML, 'hello @g');
+        assert.dom('.input', (input) => {
+          assert.same(input.innerHTML, 'hello @g');
         });
       });
 
       test('tab', () => {
         TH.trigger('input', 'keydown', {which: 9});
 
-        assert.dom('.input', function () {
+        assert.dom('.input', (input) => {
           assert.dom('a[href="/#g1"][class="foo"]');
           assert.same(
-            this.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
+            input.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
             'hello <a>Geoff Jacobsen</a> ',
           );
         });
@@ -467,7 +441,7 @@ isClient && define((require, exports, module) => {
     group('keydown', () => {
       beforeEach(() => {
         pressChar(v.inputCtx, '@');
-        pressChar(v.inputCtx, 'h');
+        TH.input('input', 'h');
       });
 
       test('deleting @', () => {
