@@ -45,7 +45,7 @@ define((require, exports, module) => {
   };
 
   const registerObserver = (model, name, callback) => {
-    const subj = model[observers$][name] ?? (model[observers$][name] = new Observable());
+    const subj = model[observers$][name] ??= new Observable();
     return subj.onChange(callback).stop;
   };
 
@@ -501,7 +501,7 @@ define((require, exports, module) => {
     }
 
     get $cache() {
-      return this[cache$] ?? (this[cache$] = {});
+      return this[cache$] ??= {};
     }
 
     $clearCache() {
@@ -512,7 +512,7 @@ define((require, exports, module) => {
     }
 
     $cacheRef(key) {
-      return this.$cache[key] ?? (this.$cache[key] = {});
+      return this.$cache[key] ??= {};
     }
   }
 
