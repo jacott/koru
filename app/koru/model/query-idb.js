@@ -158,7 +158,7 @@ define((require) => {
           }
           simDocsFor(model)[id] = sim;
           const undo = sim[0];
-          if (typeof undo === 'object' && undo._id === id) {
+          if (typeof undo === 'object' && undo?._id === id) {
             if (curr !== undefined) {
               delete model.docs[id];
               Query.notify(DocChange.delete(notMe = curr));
@@ -213,7 +213,7 @@ define((require) => {
     put(modelName, rec) {
       TransQueue.transaction(() => {
         const pu = getPendingUpdates(this);
-        const pm = pu[modelName] || (pu[modelName] = {});
+        const pm = pu[modelName] ??= {};
         pm[rec._id] = rec;
       });
     }
@@ -221,7 +221,7 @@ define((require) => {
     delete(modelName, id) {
       TransQueue.transaction(() => {
         const pu = getPendingUpdates(this);
-        const pm = pu[modelName] || (pu[modelName] = {});
+        const pm = pu[modelName] ??= {};
         pm[id] = null;
       });
     }
@@ -232,7 +232,7 @@ define((require) => {
 
     close() {
       this[busyQueue$] = undefined;
-      this[iDB$] && this[iDB$].close();
+      this[iDB$]?.close();
     }
 
     get isReady() {
@@ -281,7 +281,7 @@ define((require) => {
       TransQueue.transaction(() => {
         const {_id, model: {modelName}, isDelete} = dc;
         const pu = getPendingUpdates(this);
-        const pm = pu[modelName] || (pu[modelName] = {});
+        const pm = pu[modelName] ??= {};
         pm[_id] = isDelete ? null : doc.attributes;
       });
     }
@@ -290,7 +290,7 @@ define((require) => {
   const error = (db, ev, reject) => {
     const ex = ev.currentTarget ? ev.currentTarget.error : ev;
     try {
-      reject !== void 0 && reject(ev);
+      reject?.(ev);
     } finally {
       db.catchAll == null || db.catchAll(ex);
     }
