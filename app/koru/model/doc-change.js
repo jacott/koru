@@ -11,11 +11,7 @@ define((require) => {
 
   const NOT_ALLOWED = 'illegal call';
 
-  const fullType = {
-    add: 'add',
-    chg: 'change',
-    del: 'delete',
-  };
+  const fullType = {add: 'add', chg: 'change', del: 'delete'};
 
   const setContents = (dc, id, type, doc, undo) => {
     if (dc[type$] !== type) {
@@ -42,9 +38,15 @@ define((require) => {
       this.flag = flag;
       if (doc != null) this[id$] = doc._id;
     }
-    static add(doc, flag) {return new DocChange('add', doc, undefined, flag)}
-    static delete(doc, flag) {return new DocChange('del', doc, undefined, flag)}
-    static change(doc, undo, flag) {return new DocChange('chg', doc, undo, flag)}
+    static add(doc, flag) {
+      return new DocChange('add', doc, undefined, flag);
+    }
+    static delete(doc, flag) {
+      return new DocChange('del', doc, undefined, flag);
+    }
+    static change(doc, undo, flag) {
+      return new DocChange('chg', doc, undo, flag);
+    }
 
     clone() {
       const copy = new DocChange(this[type$], this[doc$], this[undo$], this.flag);
@@ -66,17 +68,44 @@ define((require) => {
         `${this[type$] === 'chg' ? ', ' + inspect(this[undo$]) : ''}, ${inspect(this.flag)})`;
     }
 
-    get type() {return this[type$]} set type(v) {throw new Error(NOT_ALLOWED)}
-    get doc() {return this[doc$]} set doc(v) {throw new Error(NOT_ALLOWED)}
-    get undo() {return this[undo$]} set undo(v) {throw new Error(NOT_ALLOWED)}
+    get type() {
+      return this[type$];
+    }
+    set type(v) {
+      throw new Error(NOT_ALLOWED);
+    }
+    get doc() {
+      return this[doc$];
+    }
+    set doc(v) {
+      throw new Error(NOT_ALLOWED);
+    }
+    get undo() {
+      return this[undo$];
+    }
+    set undo(v) {
+      throw new Error(NOT_ALLOWED);
+    }
 
-    get isAdd() {return this[type$] === 'add'}
-    get isDelete() {return this[type$] === 'del'}
-    get isChange() {return this[type$] === 'chg'}
-    get _id() {return this[id$]}
+    get isAdd() {
+      return this[type$] === 'add';
+    }
+    get isDelete() {
+      return this[type$] === 'del';
+    }
+    get isChange() {
+      return this[type$] === 'chg';
+    }
+    get _id() {
+      return this[id$];
+    }
 
-    get model() {return this[doc$].constructor}
-    get was() {return this[doc$].$withChanges(this[undo$])}
+    get model() {
+      return this[doc$].constructor;
+    }
+    get was() {
+      return this[doc$].$withChanges(this[undo$]);
+    }
 
     hasField(field) {
       const undo = this[undo$];
@@ -116,7 +145,7 @@ define((require) => {
       }
 
       const u = undo.$partial[field];
-      if (! Array.isArray(u)) return;
+      if (!Array.isArray(u)) return;
 
       for (let i = 0; i < u.length; i += 2) {
         const k = u[i];
@@ -162,7 +191,7 @@ define((require) => {
       }
 
       const u = undo.$partial[field];
-      if (! Array.isArray(u)) return;
+      if (!Array.isArray(u)) return;
 
       const now = this[doc$][field] ?? {};
 
