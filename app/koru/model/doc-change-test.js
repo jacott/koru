@@ -265,6 +265,40 @@ define((require, exports, module) => {
         );
       });
 
+      test('subDocKeys missing now', () => {
+        const book = new Book({
+          _id: 'book1',
+          title: 'Animal Farm',
+          index: {d: {dog: [123, 234], donkey: [56, 456]}, p: {pig: [3, 34]}},
+        });
+
+        const undo = Changes.applyAll(book.attributes, {index: null});
+
+        change = DocChange.change(book, undo);
+        change._set(book, {
+          $partial: {
+            index: ['$replace', {d: {dog: [123, 234]}, h: {horse: [23, 344]}, p: {pig: [3, 34]}}],
+          },
+        });
+        assert.equals(Array.from(change.subDocKeys('index')).sort(), ['d', 'h', 'p']);
+      });
+
+      test('subDocKeys missing was', () => {
+        const book = new Book({
+          _id: 'book1',
+          title: 'Animal Farm',
+          index: {d: {dog: [123, 234], donkey: [56, 456]}, p: {pig: [3, 34]}},
+        });
+
+        const undo = Changes.applyAll(book.attributes, {
+          index: {d: {dog: [123, 234]}, h: {horse: [23, 344]}, p: {pig: [3, 34]}},
+        });
+
+        change = DocChange.change(book, undo);
+        change._set(book, {$partial: {index: ['$replace', null]}});
+        assert.equals(Array.from(change.subDocKeys('index')).sort(), ['d', 'h', 'p']);
+      });
+
       group('subDocs', () => {
         /**
          * Create a iterator over the `DocChange`s for each property that is different between two

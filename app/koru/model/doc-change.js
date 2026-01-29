@@ -150,8 +150,7 @@ define((require) => {
       for (let i = 0; i < u.length; i += 2) {
         const k = u[i];
         if (k === '$replace') {
-          const was = u[i + 1] ?? {}, now = this[doc$][field];
-
+          const was = u[i + 1] ?? {}, now = this[doc$][field] ?? {};
           for (const k in was) if (now[k] === undefined) yield k;
           for (const k in now) if (was[k] === undefined) yield k;
           return;
