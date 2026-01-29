@@ -13,7 +13,7 @@ define((require, exports, module) => {
 
   const EMPTY_U8 = newArray(0);
 
-  const growTo = (b, grow, fill, cap=0) => {
+  const growTo = (b, grow, fill, cap = 0) => {
     let curLen = b[length$];
     const newLen = grow + fill;
     if (newLen > curLen) {
@@ -34,7 +34,7 @@ define((require, exports, module) => {
       const u8 = b[buffer$];
       do {
         u8[lw++] = 0;
-      } while (lw < grow)
+      } while (lw < grow);
       b[lw$] = Math.max(lw, grow + fill);
     } else if (lw < grow + fill) {
       b[lw$] = grow + fill;
@@ -42,9 +42,18 @@ define((require, exports, module) => {
     return curLen;
   };
 
-  const updateLw = (b, n) => {if (b[lw$] < n) b[lw$] = n};
+  const updateLw = (b, n) => {
+    if (b[lw$] < n) b[lw$] = n;
+  };
 
-  let writeUtf8, writeInt8, writeInt16BE, writeUInt32BE, writeInt32BE, writeBigInt64BE, writeFloatBE, writeDoubleBE;
+  let writeUtf8,
+    writeInt8,
+    writeInt16BE,
+    writeUInt32BE,
+    writeInt32BE,
+    writeBigInt64BE,
+    writeFloatBE,
+    writeDoubleBE;
   if (isServer) {
     writeUtf8 = (b, str, i, maxLen) => b.write(str, i, maxLen);
     writeInt8 = (b, v, o) => b[buffer$].writeInt8(v, o);
@@ -67,14 +76,16 @@ define((require, exports, module) => {
   }
 
   class Uint8ArrayBuilder {
-    constructor(initialCapacity=4) {
+    constructor(initialCapacity = 4) {
       this.initialCapacity = initialCapacity;
       this[length$] = 0;
       this[lw$] = 0;
       this[buffer$] = undefined;
     }
 
-    get length() {return this[length$]}
+    get length() {
+      return this[length$];
+    }
     set length(v) {
       if (v < 0 || v !== Math.floor(v) || v > this[length$]) {
         throw new Error('Invalid length! ' + v + ' > ' + this[length$]);
@@ -102,14 +113,35 @@ define((require, exports, module) => {
       this[buffer$][index] = byte;
     }
 
-    writeInt8(v, offset=this.length) {growTo(this, offset, 1); writeInt8(this, v, offset)}
-    writeInt16BE(v, offset=this.length) {growTo(this, offset, 2); writeInt16BE(this, v, offset)}
-    writeUInt32BE(v, offset=this.length) {growTo(this, offset, 4); writeUInt32BE(this, v, offset)}
-    writeInt32BE(v, offset=this.length) {growTo(this, offset, 4); writeInt32BE(this, v, offset)}
-    writeBigInt64BE(v, offset=this.length) {growTo(this, offset, 8); writeBigInt64BE(this, v, offset)}
+    writeInt8(v, offset = this.length) {
+      growTo(this, offset, 1);
+      writeInt8(this, v, offset);
+    }
+    writeInt16BE(v, offset = this.length) {
+      growTo(this, offset, 2);
+      writeInt16BE(this, v, offset);
+    }
+    writeUInt32BE(v, offset = this.length) {
+      growTo(this, offset, 4);
+      writeUInt32BE(this, v, offset);
+    }
+    writeInt32BE(v, offset = this.length) {
+      growTo(this, offset, 4);
+      writeInt32BE(this, v, offset);
+    }
+    writeBigInt64BE(v, offset = this.length) {
+      growTo(this, offset, 8);
+      writeBigInt64BE(this, v, offset);
+    }
 
-    writeFloatBE(v, offset=this.length) {growTo(this, offset, 4); writeFloatBE(this, v, offset)}
-    writeDoubleBE(v, offset=this.length) {growTo(this, offset, 8); writeDoubleBE(this, v, offset)}
+    writeFloatBE(v, offset = this.length) {
+      growTo(this, offset, 4);
+      writeFloatBE(this, v, offset);
+    }
+    writeDoubleBE(v, offset = this.length) {
+      growTo(this, offset, 8);
+      writeDoubleBE(this, v, offset);
+    }
 
     appendByte(byte) {
       const length = this[length$];
@@ -123,7 +155,7 @@ define((require, exports, module) => {
       return this[buffer$][index];
     }
 
-    grow(n, cap=0) {
+    grow(n, cap = 0) {
       assert(n >= 0 && cap >= 0, 'cap or n < 0');
       const curLen = this[length$];
       growTo(this, this[length$] + n, 0, cap);
@@ -156,19 +188,24 @@ define((require, exports, module) => {
           this[length$] = this[lw$] = length + actual;
           return actual;
         }
-        b = resizeBuffer(b, b.length + (maxLen));
+        b = resizeBuffer(b, b.length + maxLen);
       }
     }
 
-    push(...bytes) {return this.append(bytes)}
+    push(...bytes) {
+      return this.append(bytes);
+    }
 
-    subarray(spos=0, epos=this.length) {return this[buffer$]?.subarray(spos, epos) ?? EMPTY_U8}
+    subarray(spos = 0, epos = this.length) {
+      return this[buffer$]?.subarray(spos, epos) ?? EMPTY_U8;
+    }
   }
 
   if (isServer) {
     Object.defineProperty(Uint8ArrayBuilder.prototype, 'buffer', {
       get() {
-        return this[buffer$]},
+        return this[buffer$];
+      },
       enumerable: false,
       configurable: true,
     });
