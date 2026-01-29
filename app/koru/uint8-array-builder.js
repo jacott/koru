@@ -178,17 +178,17 @@ define((require, exports, module) => {
 
     appendUtf8Str(str) {
       if (str === '') return;
-      const length = this[length$];
-      const newLen = growTo(this, this[length$] + str.length, 0 * str.length >> 1);
-      let b = this[buffer$];
-      while (true) {
-        const maxLen = b.length - length;
-        const actual = writeUtf8(b, str, length, maxLen);
-        if (actual < maxLen) {
-          this[length$] = this[lw$] = length + actual;
-          return actual;
-        }
-        b = resizeBuffer(b, b.length + maxLen);
+      if (isServer) {
+        const strLen = Buffer.byteLength(str);
+        const length = this[length$];
+        growTo(this, strLen, length);
+        let b = this[buffer$];
+        const maxLen = b.length - strLen;
+        return writeUtf8(b, str, length, maxLen);
+      } else {
+        const data = new globalThis.TextEncoder().encode(str);
+        this.append(data);
+        return data.length;
       }
     }
 

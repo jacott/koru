@@ -264,6 +264,15 @@ define((require, exports, module) => {
       );
     });
 
+    test('appendUtf8Str bug', () => {
+      const text1 = 'VS Money Movement.Preparación Lími\0te';
+      const text2 = 'Estrategia.Priorizacion Planificación';
+      const b = new Uint8ArrayBuilder(0);
+      assert.equals(b.appendUtf8Str(text1), 39);
+      assert.equals(b.appendUtf8Str(text2), 38);
+      assert.equals(decoder.decode(b.subarray()), text1 + text2);
+    });
+
     test('appendUtf8Str', () => {
       const b = new Uint8ArrayBuilder(0);
       assert.equals(b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝'), 44);
