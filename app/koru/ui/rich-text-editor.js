@@ -116,7 +116,7 @@ define((require, exports, module) => {
   };
 
   const notify = (ctx, force, override) => {
-    const range = Dom.getRange() || nodeRange(ctx.inputElm);
+    const range = Dom.getRange() ?? nodeRange(ctx.inputElm);
     const elm = range.startContainer.nodeType !== TEXT_NODE
       ? range.startContainer.childNodes[range.startContainer.offset] || range.startContainer
       : range.startContainer;
@@ -138,6 +138,10 @@ define((require, exports, module) => {
   const inputChange = (ctx, muts) => {
     try {
       const range = Dom.getRange();
+      if (range == null) {
+        return;
+      }
+
       ctx.mention.check(range, muts);
     } catch (err) {
       koru.globalCallback(err);
@@ -180,7 +184,7 @@ define((require, exports, module) => {
     fontName: (event) => {
       chooseFromMenu(event, {list: FONT_LIST}, (ctx, id) => {
         execCommand('fontName', RichText.fontIdToFace[id]);
-        if (Dom.getRange().collapsed) {
+        if (Dom.getRange()?.collapsed) {
           return {font: id};
         }
       });
@@ -232,13 +236,17 @@ define((require, exports, module) => {
     fontSize: (event) => {
       chooseFromMenu(event, {list: FONT_SIZE_LIST, classes: 'fontSize'}, (ctx, id) => {
         execCommand('fontSize', +id);
-        if (Dom.getRange().collapsed) {
+        if (Dom.getRange()?.collapsed) {
           return {fontSize: id};
         }
       });
     },
     code: (event) => {
       const range = Dom.getRange();
+      if (range == null) {
+        return;
+      }
+
       const editor = Dom.getClosest(range.startContainer, '.input');
       if (editor === null) return;
 
@@ -296,8 +304,8 @@ define((require, exports, module) => {
       const inputCtx = Tpl.$ctx();
 
       const aElm = getTag('A', inputCtx.inputElm);
-      const range = selectNode(aElm) || Dom.getRange();
-      if (!range) return;
+      const range = selectNode(aElm) ?? Dom.getRange();
+      if (range == null) return;
 
       const dialog = Link.$autoRender({
         range,
@@ -418,7 +426,7 @@ define((require, exports, module) => {
     }, options);
 
     options.boundingClientRect = ctx.inputElm.contains(event.target)
-      ? Dom.getBoundingClientRect(Dom.getRange())
+      ? Dom.getBoundingClientRect(Dom.getRange() ?? nodeRange(ctx.inputElm))
       : event.target.getBoundingClientRect();
 
     ctx.openDialog = true;
