@@ -21,7 +21,9 @@ define((require, exports, module) => {
   let runInstance = 0; // used with async callbacks
 
   let debug_page = false;
-  Trace.debug_page = (value) => {debug_page = value};
+  Trace.debug_page = (value) => {
+    debug_page = value;
+  };
 
   const exitEntry = (exit, oldSymbols, entry, pageRoute, page, then) => {
     const entryLen = entry.length;
@@ -31,8 +33,10 @@ define((require, exports, module) => {
 
     for (--exitLen; exitLen >= 0; --exitLen) {
       item = exit[exitLen];
-      if (item !== entry[exitLen - diff] ||
-          ((sym = item.routeVar) !== void 0 && oldSymbols[sym] !== pageRoute[sym])) {
+      if (
+        item !== entry[exitLen - diff] ||
+        ((sym = item.routeVar) !== undefined && oldSymbols[sym] !== pageRoute[sym])
+      ) {
         break;
       }
     }
@@ -42,7 +46,7 @@ define((require, exports, module) => {
       tpl.onBaseExit?.(page, pageRoute);
     }
 
-    for (;index <= exitLen; ++index) {
+    for (; index <= exitLen; ++index) {
       const tpl = exit[index];
       tpl.onBaseExit?.(page, pageRoute);
     }
@@ -53,9 +57,9 @@ define((require, exports, module) => {
     let runInstanceCopy = ++runInstance;
     const callback = () => {
       if (runInstanceCopy !== runInstance) {
-        return // route call overridden
-        ;
-      } if (index < 0) {
+        return; // route call overridden
+      }
+      if (index < 0) {
         runInstanceCopy = 0; // stop multi calling
         then();
         return true;
@@ -74,7 +78,7 @@ define((require, exports, module) => {
 
   const pathname = (template, pageRoute) => {
     let path = '';
-    if (template?.route !== void 0) {
+    if (template?.route !== undefined) {
       path = routePath(template.route, pageRoute);
       if (template.subPath) {
         path += '/' + template.subPath;
@@ -89,15 +93,15 @@ define((require, exports, module) => {
   };
 
   const routePath = (route, pageRoute) => {
-    if (! route) return '';
+    if (!route) return '';
 
     let {path} = route;
-    const routeVar = route.routeVar !== void 0 && pageRoute[route.routeVar];
+    const routeVar = route.routeVar !== undefined && pageRoute[route.routeVar];
     if (routeVar) {
       path += '/' + routeVar;
     }
 
-    if (route.parent === void 0) return path;
+    if (route.parent === undefined) return path;
     return routePath(route.parent, pageRoute) + '/' + path;
   };
 
@@ -121,10 +125,10 @@ define((require, exports, module) => {
 
   const onEntryFunc = (options) => {
     const autoOnEntry = (page, pageRoute) => {
-      page._renderedPage = page.$autoRender((typeof options.data === 'function'
-                                             ? options.data(page, pageRoute)
-                                             : options.data) || {});
-      if (options.insertPage !== void 0) {
+      page._renderedPage = page.$autoRender(
+        (typeof options.data === 'function' ? options.data(page, pageRoute) : options.data) ?? {},
+      );
+      if (options.insertPage !== undefined) {
         options.insertPage(page._renderedPage);
       } else {
         myAnchor(page.route).appendChild(page._renderedPage);
@@ -143,23 +147,25 @@ define((require, exports, module) => {
   }
   autoOnExit.isAuto = true;
 
-  function addCommon(route, module, template, options={}) {
-    if (module !== void 0) module.onUnload(() => {
-      if (currentPage === template) {
-        try {
-          currentPage.onExit?.(currentPage, currentPageRoute);
-        } catch (err) {
-          koru.unhandledException(err);
+  function addCommon(route, module, template, options = {}) {
+    if (module !== undefined) {
+      module.onUnload(() => {
+        if (currentPage === template) {
+          try {
+            currentPage.onExit?.(currentPage, currentPageRoute);
+          } catch (err) {
+            koru.unhandledException(err);
+          }
         }
-      }
-      route.removeTemplate(template, options);
-    });
-    const path = options.path === void 0 ? templatePath(template) : options.path;
-    if (route.routes.path !== void 0) {
+        route.removeTemplate(template, options);
+      });
+    }
+    const path = options.path === undefined ? templatePath(template) : options.path;
+    if (route.routes.path !== undefined) {
       throw new Error(`Path already exists! ${path} for template '${this.path}'`);
     }
     route.routes[path] = template;
-    if (template.route !== void 0) {
+    if (template.route !== undefined) {
       throw new Error(template.name + ' is already added');
     }
     template.route = route;
@@ -183,7 +189,7 @@ define((require, exports, module) => {
   const handleAbortPage = (self, err) => {
     if (err.constructor === AbortPage) {
       pageState = 'pushState';
-      err.location !== void 0 && self.replacePath(err.location, ...err.args);
+      err.location !== undefined && self.replacePath(err.location, ...err.args);
       return;
     }
     koru.unhandledException(err);
@@ -191,7 +197,7 @@ define((require, exports, module) => {
   };
 
   class Route {
-    constructor(path='', template, parent, options={}) {
+    constructor(path = '', template, parent, options = {}) {
       this.routeVar = options.routeVar;
       this.path = path;
       this.template = template;
@@ -201,11 +207,14 @@ define((require, exports, module) => {
       util.reverseMerge(this, options);
     }
 
-    static get pageState() {return pageState;}
-    static get pageCount() {return pageCount;}
+    static get pageState() {
+      return pageState;
+    }
+    static get pageCount() {
+      return pageCount;
+    }
 
-    static waitForPage(expectPage, duration) {
-      duration = duration || 2000;
+    static waitForPage(expectPage, duration = 2000) {
       return new Promise((resolve, reject) => {
         if (currentPage === expectPage) {
           resolve(currentPage, currentHref);
@@ -252,19 +261,21 @@ define((require, exports, module) => {
     }
 
     static gotoPage(page, pageRoute) {
-      if (page != null && page.onEntry === void 0) {
+      if (page != null && page.onEntry === undefined) {
         page = page?.route?.defaultPage ?? page?.defaultPage ?? page;
       }
 
-      pageRoute = util.reverseMerge(pageRoute || {}, currentPageRoute, excludes);
-      pageRoute.pathname = pathname(page, pageRoute || {});
+      pageRoute = util.reverseMerge(pageRoute ?? {}, currentPageRoute, excludes);
+      pageRoute.pathname = pathname(page, pageRoute ?? {});
 
       debug_page && koru.logger('D', 'gotoPage', util.inspect(pageRoute, 2));
 
       Route.loadingArgs = [page, pageRoute];
 
-      if (page?.routeOptions !== void 0 && ! page.routeOptions.publicPage &&
-          koru.userId() == null && page !== Route.SignInPage) {
+      if (
+        page?.routeOptions !== undefined && !page.routeOptions.publicPage &&
+        koru.userId() == null && page !== Route.SignInPage
+      ) {
         Route.replacePage(Route.SignInPage, {returnTo: Route.loadingArgs});
         return;
       }
@@ -329,8 +340,7 @@ define((require, exports, module) => {
     }
 
     static setTitle(title) {
-      currentTitle = document.title =
-        (Dom.setTitle !== void 0 && Dom.setTitle(title)) || title;
+      currentTitle = document.title = Dom.setTitle?.(title) ?? title;
     }
 
     static pushCurrent() {
@@ -339,9 +349,9 @@ define((require, exports, module) => {
 
     static pageRouteToHref(pageRoute) {
       let href = typeof pageRoute === 'string'
-          ? pageRoute
-          : pageRoute.pathname + (pageRoute.search || '') + (pageRoute.hash || '');
-      if (! /^\/#/.test(href)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
+        ? pageRoute
+        : pageRoute.pathname + (pageRoute.search ?? '') + (pageRoute.hash ?? '');
+      if (!/^\/#/.test(href)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
       return href;
     }
 
@@ -356,14 +366,24 @@ define((require, exports, module) => {
       Route.history.replaceState(pageCount, null, currentHref);
     }
 
-    static get targetPage() {return targetPage}
-    static get currentPage() {return currentPage}
-    static get currentPageRoute() {return currentPageRoute}
-    static get currentHref() {return currentHref}
-    static get currentTitle() {return currentTitle}
+    static get targetPage() {
+      return targetPage;
+    }
+    static get currentPage() {
+      return currentPage;
+    }
+    static get currentPageRoute() {
+      return currentPageRoute;
+    }
+    static get currentHref() {
+      return currentHref;
+    }
+    static get currentTitle() {
+      return currentTitle;
+    }
 
     static pageChanged(state) {
-      pageCount = state || 0;
+      pageCount = state ?? 0;
       const location = koru.getLocation();
       const newRef = location.href.slice(location.origin.length);
 
@@ -381,7 +401,7 @@ define((require, exports, module) => {
       }
     }
 
-    static overrideHistory(state=null, body) {
+    static overrideHistory(state = null, body) {
       const orig = pageState;
       pageState = state;
       try {
@@ -408,14 +428,14 @@ define((require, exports, module) => {
       }
 
       if (typeof path !== 'string') {
-        if (! path.pathname) {
+        if (!path.pathname) {
           return this.gotoPage(path, ...args);
         }
 
         if (path.pathname !== '/') {
           path = this.pageRouteToHref(path);
         } else {
-          path = path.hash || '/';
+          path = path.hash ?? '/';
         }
       } else {
         path = decodeURIComponent(path);
@@ -423,7 +443,7 @@ define((require, exports, module) => {
 
       const page = this.pathToPage(path, pageRoute);
 
-      if (page === void 0) {
+      if (page === undefined) {
         throw new koru.Error(404, 'Page not found: ' + path);
       }
 
@@ -432,10 +452,10 @@ define((require, exports, module) => {
 
     static pathToPage(path, pageRoute) {
       let append;
-      const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path) ||
-            /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path);
+      const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path) ??
+        /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(path);
       if (m !== null) {
-        path = m[1] || '/';
+        path = m[1] ?? '/';
       }
       const parts = path.split('/');
       const {root} = this;
@@ -446,11 +466,11 @@ define((require, exports, module) => {
         const part = parts[i];
         if (part === '') continue;
         newPage = page?.routes?.[part];
-        if (newPage === void 0) {
+        if (newPage === undefined) {
           newPage = page.defaultPage;
 
-          if (page.routeVar !== void 0 && pageRoute !== void 0) {
-            if (pageRoute[page.routeVar] === void 0) {
+          if (page.routeVar !== undefined && pageRoute !== undefined) {
+            if (pageRoute[page.routeVar] === undefined) {
               pageRoute[page.routeVar] = part;
               continue;
             }
@@ -462,7 +482,7 @@ define((require, exports, module) => {
         page = newPage;
       }
 
-      if (newPage !== void 0 && newPage === root.defaultPage) {
+      if (newPage !== undefined && newPage === root.defaultPage) {
         page = newPage;
       }
 
@@ -470,12 +490,12 @@ define((require, exports, module) => {
         return;
       }
 
-      if (pageRoute !== void 0 && m !== null) {
+      if (pageRoute !== undefined && m !== null) {
         pageRoute.pathname = path;
 
-        if (m[2] !== void 0) pageRoute.search = m[2];
-        if (m[3] !== void 0) pageRoute.hash = m[3];
-        if (append !== void 0) pageRoute.append = append;
+        if (m[2] !== undefined) pageRoute.search = m[2];
+        if (m[3] !== undefined) pageRoute.hash = m[3];
+        if (append !== undefined) pageRoute.append = append;
       }
 
       return page;
@@ -485,7 +505,7 @@ define((require, exports, module) => {
       const result = {};
 
       const search = pageRoute?.search;
-      if (! search) return result;
+      if (!search) return result;
 
       util.forEach(search.slice(1).split('&'), (pair) => {
         const [name, value] = pair.split('=');
@@ -496,35 +516,35 @@ define((require, exports, module) => {
     }
 
     addTemplate(module, template, options) {
-      if (module !== void 0 && ! (module instanceof Module)) {
+      if (module !== undefined && !(module instanceof Module)) {
         options = template;
         template = module;
-        module = void 0;
+        module = undefined;
       }
       options = addCommon(this, module, template, options);
 
-      if (! template.onEntry) {
+      if (!template.onEntry) {
         template.onEntry = onEntryFunc(options);
       }
 
-      if (! template.onExit) {
+      if (!template.onExit) {
         template.onExit = autoOnExit;
       }
     }
 
-    removeTemplate(template, options={}) {
+    removeTemplate(template, options = {}) {
       const path = options.path ?? templatePath(template);
-      this.routes[path] = void 0;
-      template.route = void 0;
-      if (template.onEntry?.isAuto) template.onEntry = void 0;
-      if (template.onExit?.isAuto) template.onExit = void 0;
+      this.routes[path] = undefined;
+      template.route = undefined;
+      if (template.onEntry?.isAuto) template.onEntry = undefined;
+      if (template.onExit?.isAuto) template.onExit = undefined;
     }
 
     addDialog(module, template, options) {
-      if (module !== void 0 && ! (module instanceof Module)) {
+      if (module !== undefined && !(module instanceof Module)) {
         options = template;
         template = module;
-        module = void 0;
+        module = undefined;
       }
       options = addCommon(this, module, template, options);
 
@@ -548,11 +568,11 @@ define((require, exports, module) => {
         }
       }
 
-      if (options === void 0) options = {};
+      if (options === undefined) options = {};
 
-      const path = options.path === void 0 ? templatePath(template) : options.path;
+      const path = options.path === undefined ? templatePath(template) : options.path;
 
-      if (template.route !== void 0) {
+      if (template.route !== undefined) {
         throw new Error(template.name + ' is already a route base');
       }
 
@@ -560,20 +580,20 @@ define((require, exports, module) => {
     }
 
     removeBase(template) {
-      template.route = void 0;
+      template.route = undefined;
     }
 
     onBaseExit(page, pageRoute) {
       const template = this.template;
-      if (template !== void 0) {
-        (template.onBaseExit || defaultOnBaseExit).call(template, page, pageRoute);
+      if (template !== undefined) {
+        (template.onBaseExit ?? defaultOnBaseExit).call(template, page, pageRoute);
       }
     }
 
     onBaseEntry(page, pageRoute, callback) {
       const template = this.template;
-      if (template !== void 0) {
-        (template.onBaseEntry || defaultOnBaseEntry).call(template, page, pageRoute, callback);
+      if (template !== undefined) {
+        (template.onBaseEntry ?? defaultOnBaseEntry).call(template, page, pageRoute, callback);
       }
     }
   }
@@ -594,10 +614,7 @@ define((require, exports, module) => {
   Route.title = document.title;
   Route.history = window.history;
 
-  Object.assign(Route, {
-    root: new Route(),
-    pathname,
-  });
+  Object.assign(Route, {root: new Route(), pathname});
 
   Route.childAnchor = document.body;
 
