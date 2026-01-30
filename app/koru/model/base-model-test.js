@@ -418,10 +418,10 @@ define((require, exports, module) => {
         assert.equals(Book.$fields._id, {type: 'id'});
 
         const doc = new Book({_id: 'attrId'});
-        assert.equals(doc.$uuid.toString(), 'attrId');
         assert.isTrue(doc.$uuid instanceof Id);
         assert.same(doc.$uuid, doc.$uuid);
-        assert.same(doc.$uuid.toHex(), '00000000000000000000fff36c6dd74a');
+        assert.equals(doc.$uuid.toString(), 'attrId');
+        assert.same(doc.$uuid.toHex(), '0000000000000000000003f978e364e8');
 
         assert.same(doc._id, 'attrId');
 

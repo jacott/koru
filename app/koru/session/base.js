@@ -63,25 +63,25 @@ define((require) => {
     }
 
     _onMessage(conn, data) {
-      let type = '', obj = null;
+      let obj = null;
+      let func;
       if (typeof data === 'string') {
-        type = data[0];
+        func = this._commands[data[0]];
         obj = data.slice(1);
       } else {
         data = new Uint8Array(data);
-        type = String.fromCharCode(data[0]);
+        func = this._commands[String.fromCharCode(data[0])];
+        if (typeof func === 'object' && func.raw === true) {
+          return func.handle.call(conn, data);
+        }
+
         obj = message.decodeMessage(data.subarray(1), this.globalDict);
         debug_msg &&
-          koru.logger(
-            'D',
-            `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`,
-          );
+          koru.logger('D', `DebugMsg < ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
       }
 
-      const func = this._commands[type];
-
       if (typeof func !== 'function') {
-        koru.info('Unexpected session(' + this._id + ') message: ' + type, conn.sessId);
+        koru.info('Unexpected session(' + this._id + ') message: ' + data[0], conn.sessId);
       } else {
         return func.call(conn, obj);
       }

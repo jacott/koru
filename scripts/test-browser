@@ -12,6 +12,7 @@ exec ${KORU_BROWSER:-google-chrome} \
       --disable-translate --disable-extensions \
       --disable-background-networking --safebrowsing-disable-auto-update \
       --disable-sync --metrics-recording-only --disable-default-apps \
+      --js-flags="--allow-natives-syntax" \
       --mute-audio --no-first-run \
       --window-size=1220,1024 \
       --incognito \

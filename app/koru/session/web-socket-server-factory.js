@@ -7,6 +7,7 @@ define((require, exports, module) => {
   const GlobalDict      = require('koru/session/global-dict');
   const HttpRequest     = require('koru/session/http-request');
   const ServerConnection = require('koru/session/server-connection');
+  const SessionVersion  = require('koru/session/session-version');
   const message         = require('./message');
   const koru            = require('../main');
   const util            = require('../util');
@@ -19,7 +20,7 @@ define((require, exports, module) => {
 
   function webSocketServerFactory(session, execWrapper) {
     let sessCounter = 0;
-    let gd = GlobalDict.main;
+    const gd = GlobalDict.main;
     const {version, versionHash} = koru;
 
     if (session.ServerConnection === undefined) session.ServerConnection = ServerConnection;
@@ -35,41 +36,23 @@ define((require, exports, module) => {
       const newSession = (wrapOnMessage, url = ugr.url) => {
         let newVersion = '';
         let gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
-        const parts = url === null ? null : url.split('?', 2);
-        const [clientProtocol, clientVersion, clientHash] = url === null
-          ? []
-          : parts[0].split('/').slice(2);
-        if (url !== null) {
-          if (+clientProtocol !== koru.PROTOCOL_VERSION) {
+        switch (SessionVersion.comparePathVersion(session, url)) {
+          case SessionVersion.VERSION_RELOAD:
             forceReload(ws, session);
             return;
-          }
-
-          if (clientHash !== '' && clientHash !== session.versionHash) {
-            if (session.version === 'dev') {
-              newVersion = session.version;
-            } else {
-              const cmp = session.compareVersion?.(clientVersion, clientHash) ??
-                util.compareVersion(clientVersion, session.version);
-              if (cmp < 0) {
-                if (cmp == -2) {
-                  forceReload(ws, session);
-                  return;
-                }
-                newVersion = session.version;
-              } else if (cmp > 0) {
-                // client on greater version; we will update (hopefully) so just close for now.
-                ws.close();
-                return;
-              }
-            }
-          } else {
-            const search = util.searchStrToMap(parts[1]);
-            if (search.dict === gd.dictHashStr) {
-              gdict = null;
-              dictHash = undefined;
-            }
-          }
+          case SessionVersion.VERSION_CLIENT_AHEAD:
+            // client on greater version; we will update (hopefully) so just close for now.
+            ws.close();
+            return;
+          case SessionVersion.VERSION_CLIENT_BEHIND:
+            newVersion = session.version;
+            break;
+          case SessionVersion.VERSION_GOOD_DICTIONARY:
+            gdict = null;
+            dictHash = undefined;
+            break;
+          case SessionVersion.VERSION_BAD_DICTIONARY:
+            break;
         }
 
         ++session.totalSessions;
@@ -92,7 +75,6 @@ define((require, exports, module) => {
         );
         conn.engine = util.browserVersion(ugr.headers['user-agent'] ?? '');
         conn.remoteAddress = remoteAddress;
-        conn.remotePort = ugr.connection.remotePort;
 
         const onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));

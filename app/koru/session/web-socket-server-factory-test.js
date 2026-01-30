@@ -258,7 +258,7 @@ define((require, exports, module) => {
         });
 
         test('remote info', () => {
-          v.ws[isTest].request.connection = {remoteAddress: '127.0.0.1', remotePort: '12345'};
+          v.ws[isTest].request.connection = {remoteAddress: '127.0.0.1'};
           v.ws[isTest].request.headers = {
             'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ' +
               '(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36',
@@ -271,7 +271,6 @@ define((require, exports, module) => {
           assert.equals(v.sess.totalSessions, 1);
           assert.equals(conn.engine, 'Chrome-59.0.3071.104');
           assert.equals(conn.remoteAddress, '11.22.33.44');
-          assert.equals(conn.remotePort, '12345');
         });
 
         test('override halts response', () => {

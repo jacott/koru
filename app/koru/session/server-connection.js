@@ -44,6 +44,8 @@ define((require, exports, module) => {
   };
 
   class ServerConnection {
+    engine;
+    remoteAddress;
     constructor(session, ws, request, sessId, close) {
       this._session = session;
       this.ws = ws;
@@ -124,9 +126,11 @@ define((require, exports, module) => {
     }
 
     onMessage(data, isBinary) {
-      if (!isBinary) data = data.toString();
-      if (data[0] === 'H') {
-        return void this.send(`K${Date.now()}`);
+      if (!isBinary) {
+        data = data.toString();
+        if (data[0] === 'H') {
+          return void this.send(`K${Date.now()}`);
+        }
       }
 
       if (this._last !== null) {
@@ -141,6 +145,7 @@ define((require, exports, module) => {
             await this._session._onMessage(this, current[0]);
           } catch (ex) {
             koru.unhandledException(ex);
+            koru.info('Unexpected error on message: ' + current[0].slice(0, 20).toString('hex'));
           } finally {
             IdleCheck.dec();
 
