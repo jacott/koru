@@ -157,7 +157,9 @@ define((require) => {
     }
 
     throw new Error(`Unsupported format: ${byte} at ${index} in:
-   ${buffer.subarray(Math.max(0, index - 20), index + 20)}`);
+   ${buffer.subarray(0, index < 21 ? 0 : Math.max(20, index - 20))}${index < 40 ? '' : '...'}${
+      buffer.subarray(Math.max(0, index - 20), index + 20)
+    }`);
   };
 
   const encode = (buffer, object, dict) => {

@@ -165,7 +165,7 @@ define((require, exports, module) => {
     append(data) {
       if (data.length == 0) return this;
       const length = this[length$];
-      growTo(this, data.length, length);
+      growTo(this, length, data.length);
       this[buffer$].set(data, length);
       return this;
     }
@@ -178,18 +178,13 @@ define((require, exports, module) => {
 
     appendUtf8Str(str) {
       if (str === '') return;
-      if (isServer) {
-        const strLen = Buffer.byteLength(str);
-        const length = this[length$];
-        growTo(this, strLen, length);
-        let b = this[buffer$];
-        const maxLen = b.length - strLen;
-        return writeUtf8(b, str, length, maxLen);
-      } else {
-        const data = new globalThis.TextEncoder().encode(str);
-        this.append(data);
-        return data.length;
-      }
+      const length = this[length$];
+      const maxLen = 3 * str.length; // utf8 sequence is never more than 3 * str.length
+      const newLen = growTo(this, length, maxLen);
+      let b = this[buffer$];
+      const actual = writeUtf8(b, str, length, maxLen);
+      this[length$] = this[lw$] = length + actual;
+      return actual;
     }
 
     push(...bytes) {

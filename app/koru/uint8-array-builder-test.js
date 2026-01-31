@@ -275,16 +275,16 @@ define((require, exports, module) => {
 
     test('appendUtf8Str', () => {
       const b = new Uint8ArrayBuilder(0);
-      assert.equals(b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝'), 44);
+      assert.equals(b.appendUtf8Str('€€€€€€€€€€€€€€€€€€€€€'), 63);
 
       assert.equals(b.appendUtf8Str(' hello '), 7);
-      assert.equals(b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝'), 44);
+      assert.equals(b.appendUtf8Str('€€€'), 9);
       b.appendUtf8Str(' world ');
       b.appendUtf8Str('🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝');
 
       assert.equals(
         decoder.decode(b.subarray()),
-        '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 hello 🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝 world ' + '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝',
+        '€€€€€€€€€€€€€€€€€€€€€ hello €€€ world ' + '🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝🥝',
       );
     });
 

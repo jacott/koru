@@ -25,7 +25,10 @@ define((require, exports, module) => {
   };
 
   const _decode = (object, globalDict) => {
-    return message._decode(new Uint8Array(object), 0, [globalDict || v.gDict, message._newLocalDict()])[0];
+    return message._decode(new Uint8Array(object), 0, [
+      globalDict || v.gDict,
+      message._newLocalDict(),
+    ])[0];
   };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
@@ -132,14 +135,17 @@ define((require, exports, module) => {
 
       assert.same(text, 'h💣éÿ€');
 
-      assert.equals(_encode(text), v.ans = [140, 104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172]);
+      assert.equals(
+        _encode(text),
+        v.ans = [140, 104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172],
+      );
 
       assert.same(_decode(v.ans), text);
     });
 
     test('big string', () => {
       v.gDict.limit = 0;
-      const string = new Array(500).join('x');
+      const string = new Array(200).join('€');
 
       assert.equals(_decode(_encode(string)).length, string.length);
     });
@@ -200,7 +206,33 @@ define((require, exports, module) => {
       }
 
       const ans = _encode(u8);
-      assert.equals(ans, [16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+      assert.equals(ans, [
+        16,
+        0,
+        0,
+        0,
+        20,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+      ]);
 
       const u8ans = new Uint8Array(ans);
       const result = message._decode(u8ans, 0, [v.gDict])[0];
@@ -213,7 +245,10 @@ define((require, exports, module) => {
     });
 
     test('populated array', () => {
-      assert.equals(_encode([1, 2, 'hello']), v.ans = [8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0]);
+      assert.equals(
+        _encode([1, 2, 'hello']),
+        v.ans = [8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0],
+      );
 
       assert.equals(_decode(v.ans), [1, 2, 'hello']);
     });
@@ -231,7 +266,10 @@ define((require, exports, module) => {
       array[1] = -1;
       array[2] = -2;
 
-      assert.equals(_encode(array), v.ans = [6, 64, 10, 255, 10, 254, 18, 127, 129, 120, 65, 19, 0, 0, 20, 180, 2, 0]);
+      assert.equals(
+        _encode(array),
+        v.ans = [6, 64, 10, 255, 10, 254, 18, 127, 129, 120, 65, 19, 0, 0, 20, 180, 2, 0],
+      );
 
       assert.equals(_decode(v.ans), array);
     });
@@ -291,7 +329,10 @@ define((require, exports, module) => {
       for (let i = 0; i < 129; ++i) {
         obj[i] = i;
       }
-      assert.equals(_decode(_encode(obj)), obj);
+      obj.string = new Array(200).join('€');
+      const encoded = _encode(obj);
+      assert.same(encoded.length, 1471);
+      assert.equals(_decode(encoded), obj);
     });
 
     test('addToDict', () => {
@@ -305,9 +346,9 @@ define((require, exports, module) => {
         assert.equals(message.addToDict(dict, 'x' + i), 0x101 + i);
       }
 
-      assert.same(dict.index, 128+0x100);
+      assert.same(dict.index, 128 + 0x100);
       assert.equals(message.addToDict(dict, 'x0'), 0x101);
-      assert.same(dict.index, 128+0x100);
+      assert.same(dict.index, 128 + 0x100);
 
       dict.index = 0xfff0;
       assert.same(message.addToDict(dict, 'ubig'), -1);
@@ -383,7 +424,10 @@ define((require, exports, module) => {
         undefined,
       ];
 
-      const result = message.decodeMessage(message.encodeMessage('T', data, gDict).subarray(1), gDict);
+      const result = message.decodeMessage(
+        message.encodeMessage('T', data, gDict).subarray(1),
+        gDict,
+      );
 
       assert.equals(result, data);
 
@@ -395,7 +439,10 @@ define((require, exports, module) => {
       message.addToDict(gDict, 'order');
       message.finalizeGlobalDict(gDict);
 
-      const obj = ['6', 'save', 'Ticket', 'jJ9MiaHtcdgJzbFvn', {bin_id: 'GStTJFXHDZmSkXM4z', order: 256}];
+      const obj = ['6', 'save', 'Ticket', 'jJ9MiaHtcdgJzbFvn', {
+        bin_id: 'GStTJFXHDZmSkXM4z',
+        order: 256,
+      }];
       const u8 = message.encodeMessage('X', obj, gDict).subarray(1);
       const len = u8.length;
 
@@ -418,13 +465,38 @@ define((require, exports, module) => {
 
       assert(u8 instanceof Uint8Array);
 
-      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
+      assert.equals(Array.from(u8), [
+        77,
+        102,
+        111,
+        111,
+        255,
+        98,
+        97,
+        114,
+        255,
+        0,
+        65,
+        66,
+        7,
+        1,
+        0,
+        17,
+        1,
+        1,
+        0,
+      ]);
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
 
       push('append');
 
-      assert.equals(message.decodeMessage(encode().subarray(1), v.gDict), [1, 2, {foo: 'bar'}, 'append']);
+      assert.equals(message.decodeMessage(encode().subarray(1), v.gDict), [
+        1,
+        2,
+        {foo: 'bar'},
+        'append',
+      ]);
     });
 
     test('encode/decodeMessage', () => {
@@ -433,7 +505,27 @@ define((require, exports, module) => {
 
       assert(u8 instanceof Uint8Array);
 
-      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 0, 65, 66, 7, 1, 0, 17, 1, 1, 0]);
+      assert.equals(Array.from(u8), [
+        77,
+        102,
+        111,
+        111,
+        255,
+        98,
+        97,
+        114,
+        255,
+        0,
+        65,
+        66,
+        7,
+        1,
+        0,
+        17,
+        1,
+        1,
+        0,
+      ]);
 
       assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     });
@@ -463,8 +555,10 @@ define((require, exports, module) => {
       let data = message.encodeDict(ge);
 
       data = message.encodeMessage('Q', ['1', 1, 'Game', 'GStTJFXHDZmSkXM4z'], ge);
-      assert.same(message.toHex(data).join(''),
-        '51475374544a465848445a6d536b584d347aff0081314111fffd110100');
+      assert.same(
+        message.toHex(data).join(''),
+        '51475374544a465848445a6d536b584d347aff0081314111fffd110100',
+      );
     });
   });
 });
