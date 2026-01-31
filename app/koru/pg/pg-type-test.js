@@ -83,6 +83,29 @@ isServer && define((require, exports, module) => {
         assert.equals(await client.exec(`SELECT $1::name as a`, [a], [1042], [1]), [{a}]);
       });
 
+      test('writing nulls in strings', async () => {
+        const a = 'my mes\0sage';
+        await assert.exception(() => client.exec(`SELECT $1::text as a`, [a], [1043], [0]), {
+          code: '22021',
+        });
+      });
+
+      test('multibyte utf8', async () => {
+        const euro = new Array(500).join('€');
+        const kiwifruit = new Array(400).join('🥝');
+        assert.same(euro.length, 499);
+        assert.same(Buffer.byteLength(euro), 1497);
+        assert.same(kiwifruit.length, 798);
+        assert.same(Buffer.byteLength(kiwifruit), 1596);
+        assert.equals(
+          await client.exec(`SELECT $2 as euro, $1 as kiwifruit`, [kiwifruit, euro], [1043, 1043], [
+            0,
+            0,
+          ]),
+          [{euro, kiwifruit}],
+        );
+      });
+
       group('arrays', () => {
         test('aryToSqlStr', () => {
           assert.equals(
