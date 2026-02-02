@@ -14,7 +14,7 @@ define((require) => {
   const {is} = Object;
 
   class AssertionError extends Error {
-    constructor(message, elidePoint=0) {
+    constructor(message, elidePoint = 0) {
       super(message);
       if (typeof elidePoint === 'number') {
         stacktrace.elideFrames(this, elidePoint);
@@ -24,7 +24,9 @@ define((require) => {
       this.recordError();
     }
 
-    get name() {return 'AssertionError'}
+    get name() {
+      return 'AssertionError';
+    }
 
     recordError() {
       if (Core.test !== undefined) {
@@ -40,11 +42,14 @@ define((require) => {
 
   let elidePoint = undefined;
 
-  const fail = (message='failed', elidePoint=0) => {
-    throw new Core.AssertionError(message, typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint);
+  const fail = (message = 'failed', elidePoint = 0) => {
+    throw new Core.AssertionError(
+      message,
+      typeof elidePoint === 'number' ? elidePoint + 1 : elidePoint,
+    );
   };
 
-  const assert = (truth, msg='Expected truthness') => {
+  const assert = (truth, msg = 'Expected truthness') => {
     ++Core.assertCount;
     let {__msg} = Core;
     const ep = elidePoint;
@@ -69,7 +74,7 @@ define((require) => {
   };
 
   assert.fail = fail;
-  assert.elide = (body, adjust=0) => {
+  assert.elide = (body, adjust = 0) => {
     try {
       const ans = body();
       if (isPromise(ans)) {
@@ -85,7 +90,7 @@ define((require) => {
   };
 
   const refute = (truth, msg) => {
-    Core.assert(! truth, msg ?? 'Did not expect ' + util.inspect(truth));
+    Core.assert(!truth, msg ?? 'Did not expect ' + util.inspect(truth));
   };
 
   function getElideFromStack() {
@@ -99,11 +104,11 @@ define((require) => {
   refute.msg = (msg) => (Core.__msg = msg, refute);
 
   const compileOptions = (options) => {
-    if (! options.assertMessage) {
+    if (!options.assertMessage) {
       options.assertMessage = 'Expected ' + (options.message ?? 'success');
     }
 
-    if (! options.refuteMessage) {
+    if (!options.refuteMessage) {
       options.refuteMessage = 'Did not Expect ' + (options.message ?? 'success');
     }
 
@@ -113,10 +118,9 @@ define((require) => {
   };
 
   const assertAsyncFunc = async (pass, options, args, sideAffects, p) => {
-    if (pass === ! await p) {
+    if (pass === !await p) {
       args.push(sideAffects);
-      Core.assert(false, format(
-        pass ? options.assertMessage : options.refuteMessage, ...args));
+      Core.assert(false, format(pass ? options.assertMessage : options.refuteMessage, ...args));
     } else {
       Core.assert(true);
     }
@@ -134,10 +138,9 @@ define((require) => {
         return assertAsyncFunc(pass, options, args, sideAffects, p);
       }
 
-      if (pass === ! p) {
+      if (pass === !p) {
         args.push(sideAffects);
-        Core.assert(false, format(
-          pass ? options.assertMessage : options.refuteMessage, ...args));
+        Core.assert(false, format(pass ? options.assertMessage : options.refuteMessage, ...args));
       } else {
         Core.assert(true);
       }
@@ -153,7 +156,7 @@ define((require) => {
   const splitMulti = (str) => {
     const ans = [];
     let i = str.indexOf('\n') + 1, j = 0;
-    for (;i != 0; j = i, i = str.indexOf('\n', i) + 1) {
+    for (; i != 0; j = i, i = str.indexOf('\n', i) + 1) {
       ans.push(str.slice(j, i));
     }
     if (j < str.length) ans.push(str.slice(j));
@@ -230,19 +233,20 @@ define((require) => {
     return (aq + MultiStringNE + bq) + (del > 0 ? '\n the Remainder is the same' : '');
   };
 
-  const deepEqual = (actual, expected, hint, hintField, maxLevel=util.MAXLEVEL) => {
+  const deepEqual = (actual, expected, hint, hintField, maxLevel = util.MAXLEVEL) => {
     if (is(actual, expected)) {
       return true;
     }
 
-    const setHint = (aobj=actual, eobj=expected, prefix='') => {
-      if (! hint) return false;
+    const setHint = (aobj = actual, eobj = expected, prefix = '') => {
+      if (!hint) return false;
       const prev = hint[hintField];
 
       hint[hintField] = prefix + '\n    ' +
         (typeof aobj === 'string' && typeof eobj === 'string'
           ? formatStringDiff(aobj, eobj)
-          : format('{i0}\n != {i1}', aobj, eobj)) + (prev ? '\n' + prev : '');
+          : format('{i0}\n != {i1}', aobj, eobj)) +
+        (prev ? '\n' + prev : '');
       return false;
     };
 
@@ -285,15 +289,21 @@ define((require) => {
     }
 
     if (Array.isArray(actual)) {
-      if (! Array.isArray(expected)) {
+      if (!Array.isArray(expected)) {
         return setHint();
       }
       const len = actual.length;
       if (expected.length !== len) {
-        return hint ? setHint(actual, expected, ' lengths differ: ' + actual.length + ' != ' + expected.length) : false;
+        return hint
+          ? setHint(
+            actual,
+            expected,
+            ' lengths differ: ' + actual.length + ' != ' + expected.length,
+          )
+          : false;
       }
       for (let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i], hint, hintField, maxLevel - 1)) return setHint();
+        if (!deepEqual(actual[i], expected[i], hint, hintField, maxLevel - 1)) return setHint();
       }
       return true;
     } else if (Array.isArray(expected)) {
@@ -305,20 +315,23 @@ define((require) => {
     if (ekeys.length !== akeys.length) {
       const [ta, tb] = util.trimMatchingSeq(akeys.sort(), ekeys.sort());
       return hint
-        ? setHint(actual, expected, ' keys differ:\n    ' +
-          formatStringDiff(ta.join(', '), tb.join(', ')))
+        ? setHint(
+          actual,
+          expected,
+          ' keys differ:\n    ' + formatStringDiff(ta.join(', '), tb.join(', ')),
+        )
         : false;
     }
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key], hint, hintField, maxLevel - 1)) {
+      if (!deepEqual(actual[key], expected[key], hint, hintField, maxLevel - 1)) {
         return badKey(key);
       }
     }
     for (let i = 0; i < akeys.length; ++i) {
       const key = akeys[i];
-      if (! hasOwn(expected, key)) {
+      if (!hasOwn(expected, key)) {
         return badKey(key);
       }
     }
@@ -332,13 +345,18 @@ define((require) => {
     },
     abortMode: undefined,
     abort: undefined,
-    get __elidePoint() {return elidePoint},
-    set __elidePoint(v) {elidePoint = v},
+    get __elidePoint() {
+      return elidePoint;
+    },
+    set __elidePoint(v) {
+      elidePoint = v;
+    },
 
     AssertionError,
     test: undefined,
 
-    assert, refute,
+    assert,
+    refute,
 
     assertions: {
       add(name, options) {

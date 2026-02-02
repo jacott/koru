@@ -5,22 +5,24 @@ define((require, exports, module) => {
 
   const {hasOwnProperty} = Object.prototype;
 
-  globalThis.assert = (truthy, msg='assertion failed') => {if (! truthy) throw new Error(msg.toString())};
+  globalThis.assert = (truthy, msg = 'assertion failed') => {
+    if (!truthy) throw new Error(msg.toString());
+  };
 
   const isPromise = (object) => typeof object?.then === 'function';
 
-  const ifPromise = (object, trueCallback, falseCallbase=trueCallback) => isPromise(object)
-        ? object.then(trueCallback)
-        : falseCallbase(object);
+  const ifPromise = (object, trueCallback, falseCallbase = trueCallback) =>
+    isPromise(object) ? object.then(trueCallback) : falseCallbase(object);
 
   globalThis.isPromise = isPromise;
   globalThis.ifPromise = ifPromise;
 
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
 
-  const qstr = (s) => /[\x00-\x09\x0b-\x1f\']/.test(s)
-        ? JSON.stringify(s)
-        : "'" + s.replace(/[\\\n]/g, (m) => m[0] === '\n' ? '\\n' : '\\\\') + "'";
+  const qstr = (s) =>
+    /[\x00-\x09\x0b-\x1f\']/.test(s)
+      ? JSON.stringify(s)
+      : "'" + s.replace(/[\\\n]/g, (m) => m[0] === '\n' ? '\\n' : '\\\\') + "'";
 
   const qlabel = (id) => {
     if (LABEL_RE.test(id)) return id;
@@ -37,15 +39,16 @@ define((require, exports, module) => {
       if (n < 0 || n >= this.length) return undefined;
       // Otherwise, this is just normal property access
       return this[n];
-    }
+    };
 
     for (let C of [Array, String, Uint8Array]) {
       if (C.prototype.at === undefined) {
-        Object.defineProperty(C.prototype, 'at',
-                              {value,
-                               writable: true,
-                               enumerable: false,
-                               configurable: true});
+        Object.defineProperty(C.prototype, 'at', {
+          value,
+          writable: true,
+          enumerable: false,
+          configurable: true,
+        });
       }
     }
   }
@@ -53,64 +56,66 @@ define((require, exports, module) => {
   const inspect1 = (o, i) => {
     try {
       switch (typeof o) {
-      case 'undefined':
-        return 'undefined';
-      case 'function': {
-        const name = o.name || '';
-        return `function ${name !== qlabel(name) ? '' : name}(){}`;
-      }case 'object': {
-        if (o === null) return 'null';
-        if (o[inspect$] !== undefined) return o[inspect$]();
-
-        const {constructor} = o;
-
-        if (constructor === Date) return 'Date("' + o.toISOString() + '")';
-        if (constructor === RegExp) return o.toString();
-        if ('outerHTML' in o) return 'Node`' + o.outerHTML + '`';
-        if (o.nodeType === 3) return 'TextNode("' + o.textContent + '")';
-        if (o.nodeType === 11) return 'DocumentFragment(`' + inspect1(o.firstChild, i - 1) + '`)';
-        if (Array.isArray(o)) {
-          if (i) {
-            return '[' + o.map((o2) => inspect1(o2, i - 1)).join(', ') + ']';
-          }
-          return '[...more]';
+        case 'undefined':
+          return 'undefined';
+        case 'function': {
+          const name = o.name || '';
+          return `function ${name !== qlabel(name) ? '' : name}(){}`;
         }
-        if (typeof o.test === 'function' && typeof o.or === 'function') {
-          return '' + o;
-        }
+        case 'object': {
+          if (o === null) return 'null';
+          if (o[inspect$] !== undefined) return o[inspect$]();
 
-        if (i != 0) {
-          const r = [];
-          if (o instanceof Error) {
-            r.push('Error(`' + o.toString() + '`)');
-          }
-          for (const p in o) {
-            if (r.length > Math.max(i, 50)) {
-              r.push('...more');
-              break;
+          const {constructor} = o;
+
+          if (constructor === Date) return 'Date("' + o.toISOString() + '")';
+          if (constructor === RegExp) return o.toString();
+          if ('outerHTML' in o) return 'Node`' + o.outerHTML + '`';
+          if (o.nodeType === 3) return 'TextNode("' + o.textContent + '")';
+          if (o.nodeType === 11) return 'DocumentFragment(`' + inspect1(o.firstChild, i - 1) + '`)';
+          if (Array.isArray(o)) {
+            if (i) {
+              return '[' + o.map((o2) => inspect1(o2, i - 1)).join(', ') + ']';
             }
-            const v = o[p];
-
-            if (typeof v === 'function' && v.name === p && qlabel(p) === p) {
-              r.push(p + '(){}');
-            } else {
-              r.push(qlabel(p) + ': ' + inspect1(v, i - 1));
-            }
+            return '[...more]';
           }
-          const isSimple = constructor === undefined || constructor === Object;
-          return (isSimple ? '{' : constructor.name + '({') + r.join(', ') +
-            (isSimple ? '}' : '})');
+          if (typeof o.test === 'function' && typeof o.or === 'function') {
+            return '' + o;
+          }
+
+          if (i != 0) {
+            const r = [];
+            if (o instanceof Error) {
+              r.push('Error(`' + o.toString() + '`)');
+            }
+            for (const p in o) {
+              if (r.length > Math.max(i, 50)) {
+                r.push('...more');
+                break;
+              }
+              const v = o[p];
+
+              if (typeof v === 'function' && v.name === p && qlabel(p) === p) {
+                r.push(p + '(){}');
+              } else {
+                r.push(qlabel(p) + ': ' + inspect1(v, i - 1));
+              }
+            }
+            const isSimple = constructor === undefined || constructor === Object;
+            return (isSimple ? '{' : constructor.name + '({') + r.join(', ') +
+              (isSimple ? '}' : '})');
+          }
+          for (let key in o) {
+            return (`{...more}`);
+          }
+          return '{}';
         }
-        for (let key in o) {
-          return (`{...more}`);
-        }
-        return '{}';
-      }case 'string':
-        return qstr(o);
-      case 'symbol':
-        return "Symbol('" + o.description + "')";
-      default:
-        return o.toString();
+        case 'string':
+          return qstr(o);
+        case 'symbol':
+          return "Symbol('" + o.description + "')";
+        default:
+          return o.toString();
       }
     } catch (ex) {
       return '(unknown)';
@@ -141,7 +146,8 @@ define((require, exports, module) => {
   const util = {
     hasOwn: (obj, prop) => hasOwnProperty.call(obj, prop),
     idLen,
-    u32Id, u8Id,
+    u32Id,
+    u8Id,
     CHARS,
     id: () => {
       let result = '';
@@ -210,7 +216,10 @@ define((require, exports, module) => {
 
     browserVersion(ua) {
       const isMobile = /\bMobi(le)?\b/.test(ua);
-      const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
+      const m =
+        ua.match(
+          /(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i,
+        ) || [];
       if (/trident/i.test(m[1])) {
         const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
         return 'IE ' + (tmp[1] || '');
@@ -246,10 +255,13 @@ define((require, exports, module) => {
 
     newEscRegex: (s) => new RegExp(regexEscape(s)),
 
-    inspect: (o, count=4, len=1000) => inspect1(o, count).toString().slice(0, len),
+    inspect: (o, count = 4, len = 1000) => inspect1(o, count).toString().slice(0, len),
 
-    moduleName: (module) => module && util.capitalize(util.camelize(
-      module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''))),
+    moduleName: (module) =>
+      module &&
+      util.capitalize(
+        util.camelize(module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')),
+      ),
 
     qstr,
     qlabel,

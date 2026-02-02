@@ -11,7 +11,7 @@ define((require) => {
   const rpcType$ = Symbol();
 
   let debug_msg = false;
-  Trace.debug_msg = (value) => debug_msg = !! value;
+  Trace.debug_msg = (value) => debug_msg = !!value;
 
   class SessionBase {
     constructor(id) {
@@ -22,15 +22,17 @@ define((require) => {
       this.DEFAULT_USER_ID = void 0;
     }
 
-    [inspect$]() {return 'SessionBase(' + this._id + ')'}
+    [inspect$]() {
+      return 'SessionBase(' + this._id + ')';
+    }
 
-    defineRpc(name, func=util.voidFunc) {
+    defineRpc(name, func = util.voidFunc) {
       this._rpcs[name] = func;
       func[rpcType$] = 'update';
       return this;
     }
 
-    defineRpcGet(name, func=util.voidFunc) {
+    defineRpcGet(name, func = util.voidFunc) {
       this._rpcs[name] = func;
       func[rpcType$] = 'get';
       return this;
@@ -38,7 +40,7 @@ define((require) => {
 
     isRpc(name) {
       const rpc = this._rpcs[name];
-      return rpc && !! rpc[rpcType$];
+      return rpc && !!rpc[rpcType$];
     }
 
     isRpcGet(name) {
@@ -69,8 +71,11 @@ define((require) => {
         data = new Uint8Array(data);
         type = String.fromCharCode(data[0]);
         obj = message.decodeMessage(data.subarray(1), this.globalDict);
-        debug_msg && koru.logger(
-          'D', `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
+        debug_msg &&
+          koru.logger(
+            'D',
+            `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`,
+          );
       }
 
       const func = this._commands[type];

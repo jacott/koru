@@ -49,7 +49,7 @@ define((require, exports, module) => {
       session.rpc(method, response, (err, result) => {
         if (responseFunc === void 0) {
           callback !== void 0 && callback(err, result);
-        } else if (! err && srp.verifyConfirmation({HAMK: result.HAMK})) {
+        } else if (!err && srp.verifyConfirmation({HAMK: result.HAMK})) {
           responseFunc(err, result);
         } else {
           callback !== void 0 && callback(err || 'failure');
@@ -59,13 +59,17 @@ define((require, exports, module) => {
   };
 
   const UserAccount = {
-    get mode() {return mode},
+    get mode() {
+      return mode;
+    },
     set mode(value) {
       const nm = MODES[value];
       if (nm === void 0) throw new Error('invalid UserAccount mode');
       mode = nm;
     },
-    get token() {return storage.getItem('koru.loginToken')},
+    get token() {
+      return storage.getItem('koru.loginToken');
+    },
     set token(value) {
       return value
         ? storage.setItem('koru.loginToken', value)
@@ -77,20 +81,20 @@ define((require, exports, module) => {
       }
       session.provide('V', function (data) {
         switch (data[0]) {
-        case 'T':
-          UserAccount.token = data.slice(1).toString();
-          break;
-        case 'S':
-          const [userId, hash] = data.slice(1).toString().split(':');
-          login.setUserId(this, userId);
-          this.sessAuth = hash;
-          break;
-        case 'F':
-          login.failed(this);
-          break;
-        case 'C':
-          login.ready(this);
-          break;
+          case 'T':
+            UserAccount.token = data.slice(1).toString();
+            break;
+          case 'S':
+            const [userId, hash] = data.slice(1).toString().split(':');
+            login.setUserId(this, userId);
+            this.sessAuth = hash;
+            break;
+          case 'F':
+            login.failed(this);
+            break;
+          case 'C':
+            login.ready(this);
+            break;
         }
       });
 
@@ -101,7 +105,7 @@ define((require, exports, module) => {
 
     loginWithPassword(email, password, callback) {
       const cbwrapper = (err, result) => {
-        if (! err) {
+        if (!err) {
           UserAccount.token = result.loginToken;
           login.setUserId(session, result.userId);
         }
@@ -110,11 +114,7 @@ define((require, exports, module) => {
       if (mode === 'plain') {
         session.rpc('UserAccount.loginWithPassword', email, password, cbwrapper);
       } else {
-        SRPCall(
-          'SRPLogin', email, password, callback,
-          () => {},
-          cbwrapper,
-        );
+        SRPCall('SRPLogin', email, password, callback, () => {}, cbwrapper);
       }
     },
 
@@ -122,18 +122,21 @@ define((require, exports, module) => {
       if (mode === 'plain') {
         session.rpc('UserAccount.changePassword', email, oldPassword, newPassword, callback);
       } else {
-        SRPCall(
-          'SRPChangePassword', email, oldPassword, callback,
-          (response) => {response.newPassword = SRP.generateVerifier(newPassword)},
-          () => {callback()},
-        );
+        SRPCall('SRPChangePassword', email, oldPassword, callback, (response) => {
+          response.newPassword = SRP.generateVerifier(newPassword);
+        }, () => {
+          callback();
+        });
       }
     },
 
     resetPassword(key, newPassword, callback) {
-      session.rpc('resetPassword', key, mode === 'plain'
-                  ? newPassword
-                  : SRP.generateVerifier(newPassword), callback);
+      session.rpc(
+        'resetPassword',
+        key,
+        mode === 'plain' ? newPassword : SRP.generateVerifier(newPassword),
+        callback,
+      );
     },
 
     logout() {
@@ -149,16 +152,24 @@ define((require, exports, module) => {
       if (mode === 'plain') {
         session.rpc('UserAccount.secureCall', method, email, password, payload, callback);
       } else {
-        SRPCall(method, email, password, callback, (response) => {response.payload = payload});
+        SRPCall(method, email, password, callback, (response) => {
+          response.payload = payload;
+        });
       }
     },
   };
 
-  if (isTest) UserAccount[isTest] = {
-    get storage() {return storage},
-    set storage(value) {storage = value},
-    onConnect,
-  };
+  if (isTest) {
+    UserAccount[isTest] = {
+      get storage() {
+        return storage;
+      },
+      set storage(value) {
+        storage = value;
+      },
+      onConnect,
+    };
+  }
 
   session.defineRpcGet('resetPassword');
   session.defineRpcGet('SRPBegin');

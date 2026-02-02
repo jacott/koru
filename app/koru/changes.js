@@ -7,9 +7,7 @@ define((require, exports, module) => {
 
   const {original$} = require('koru/symbols');
 
-  const {isObjEmpty, diffString, deepEqual, deepCopy, elemMatch, addItem, removeItem} = require(
-    'koru/util',
-  );
+  const {isObjEmpty, diffString, deepEqual, deepCopy, elemMatch, addItem, removeItem} = util;
 
   const {hasOwn} = util;
 

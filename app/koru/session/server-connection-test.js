@@ -2,7 +2,7 @@ isServer && define((require, exports, module) => {
   'use strict';
   /**
    * ServerConnection is the server side of a client-server webSocket connection.
-   **/
+   */
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const DocChange       = require('koru/model/doc-change');
@@ -27,9 +27,13 @@ isServer && define((require, exports, module) => {
   TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
     let conn;
     beforeEach(() => {
-      conn = v.conn = new ServerConnection(session, v.ws = {
-        send: stub(), close: stub(), on: stub(),
-      }, {}, 123, v.sessClose = stub());
+      conn = v.conn = new ServerConnection(
+        session,
+        v.ws = {send: stub(), close: stub(), on: stub()},
+        {},
+        123,
+        v.sessClose = stub(),
+      );
       stub(v.conn, 'sendBinary');
       intercept(session, 'execWrapper', (func, conn) => {
         const thread = util.thread;
@@ -47,11 +51,18 @@ isServer && define((require, exports, module) => {
     group('onMessage', () => {
       beforeEach(() => {
         v.tStub = stub();
-        session.provide('t', v.tFunc = function (...args) {
-          v.tStub.apply(this, args);
-        });
+        session.provide(
+          't',
+          v.tFunc = function (...args) {
+            v.tStub.apply(this, args);
+          },
+        );
         v.thread = {};
-        TH.stubProperty(util, 'thread', {get() {return v.thread}});
+        TH.stubProperty(util, 'thread', {
+          get() {
+            return v.thread;
+          },
+        });
       });
 
       afterEach(() => {
@@ -73,7 +84,7 @@ isServer && define((require, exports, module) => {
         stub(koru, 'error');
         let success = false, err;
         stub(session, '_onMessage', (conn) => {
-          if (! success) {
+          if (!success) {
             try {
               assert.calledOnce(IdleCheck.inc);
               refute.called(IdleCheck.dec);
@@ -121,15 +132,15 @@ isServer && define((require, exports, module) => {
           try {
             v.calls.push(data);
             switch (data) {
-            case 't123':
-              assert.equals(v.conn._last, ['t123', null]);
-              await v.conn.onMessage('t456');
-              assert.equals(v.conn._last, ['t456', null]);
-              assert.equals(v.calls, ['first', 't123']);
-              break;
-            case 't456':
-              assert.equals(v.conn._last, ['t456', null]);
-              break;
+              case 't123':
+                assert.equals(v.conn._last, ['t123', null]);
+                await v.conn.onMessage('t456');
+                assert.equals(v.conn._last, ['t456', null]);
+                assert.equals(v.calls, ['first', 't123']);
+                break;
+              case 't456':
+                assert.equals(v.conn._last, ['t456', null]);
+                break;
             }
           } catch (ex) {
             error = error || ex;
@@ -147,7 +158,7 @@ isServer && define((require, exports, module) => {
     test('sendEncoded', () => {
       /**
        * Send a pre encoded binary {#../message} to the client.
-       **/
+       */
       api.protoMethod();
       //[
       conn.sendEncoded('myMessage');
@@ -211,11 +222,14 @@ isServer && define((require, exports, module) => {
       conn.sendBinary('M', [1, 2, 3]);
       //]
 
-      assert.calledWith(v.ws.send, m((data) => {
-        assert.same(data[0], 'M'.charCodeAt(0));
-        assert.equals(message.decodeMessage(data.subarray(1)), [1, 2, 3]);
-        return true;
-      }, {binary: true, mask: true}));
+      assert.calledWith(
+        v.ws.send,
+        m((data) => {
+          assert.same(data[0], 'M'.charCodeAt(0));
+          assert.equals(message.decodeMessage(data.subarray(1)), [1, 2, 3]);
+          return true;
+        }, {binary: true, mask: true}),
+      );
 
       stub(koru, 'info');
       refute.exception(() => {
@@ -267,8 +281,8 @@ isServer && define((require, exports, module) => {
               throw 'abort';
             });
           } catch (ex) {
-            if (ex !== 'abort') throw ex;//]
-            finished = true;//[#
+            if (ex !== 'abort') throw ex; //]
+            finished = true; //[#
           }
         });
       });
@@ -317,7 +331,8 @@ isServer && define((require, exports, module) => {
       stubProperty(session, 'DEFAULT_USER_ID', {value: 'public'});
       const conn = new ServerConnection(session, v.ws, {}, 888, v.sessClose = stub());
       stub(crypto, 'randomBytes').yields(null, {
-        toString: stub().withArgs('base64').returns('crypto64Id==')});
+        toString: stub().withArgs('base64').returns('crypto64Id=='),
+      });
       const sendUid = v.ws.send.withArgs('VSu456:888|crypto64Id');
       const sendUidCompleted = v.ws.send.withArgs('VC');
       conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
@@ -357,7 +372,9 @@ isServer && define((require, exports, module) => {
       api.method();
       //[
       const doc = {
-        _id: 'book1', constructor: {modelName: 'Book'}, other: 123,
+        _id: 'book1',
+        constructor: {modelName: 'Book'},
+        other: 123,
         attributes: {name: 'The little yellow digger', wholesalePrice: 1095},
       };
 
@@ -391,18 +408,28 @@ isServer && define((require, exports, module) => {
       const book1 = await Book.create();
 
       //[
-      assert.equals(ServerConnection.buildUpdate(DocChange.add(book1)),
-                    ['A', ['Book', {_id: 'book1', name: 'Book 1'}]]);
+      assert.equals(ServerConnection.buildUpdate(DocChange.add(book1)), ['A', ['Book', {
+        _id: 'book1',
+        name: 'Book 1',
+      }]]);
       //]
-      book1.attributes.name = 'new name';//[#
-      assert.equals(ServerConnection.buildUpdate(DocChange.change(book1, {name: 'old name'})),
-                    ['C', ['Book', 'book1', {name: 'new name'}]]);
+      book1.attributes.name = 'new name'; //[#
+      assert.equals(ServerConnection.buildUpdate(DocChange.change(book1, {name: 'old name'})), [
+        'C',
+        ['Book', 'book1', {name: 'new name'}],
+      ]);
 
-      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1)),
-                    ['R', ['Book', 'book1', undefined]]);
+      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1)), ['R', [
+        'Book',
+        'book1',
+        undefined,
+      ]]);
 
-      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1, 'stopped')),
-                    ['R', ['Book', 'book1', 'stopped']]);
+      assert.equals(ServerConnection.buildUpdate(DocChange.delete(book1, 'stopped')), ['R', [
+        'Book',
+        'book1',
+        'stopped',
+      ]]);
       //]
     });
 

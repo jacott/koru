@@ -9,7 +9,15 @@ define((require) => {
 
   const {is} = Object;
 
-  const TYPEORDER = {undefined: 0, string: 1, boolean: 2, number: 3, symbol: 4, object: 5, function: 6};
+  const TYPEORDER = {
+    undefined: 0,
+    string: 1,
+    boolean: 2,
+    number: 3,
+    symbol: 4,
+    object: 5,
+    function: 6,
+  };
 
   const PRIMITIVE = {string: 1, number: 1, boolean: 1, undefined: 1, function: 2};
 
@@ -89,10 +97,11 @@ define((require) => {
     return cmp;
   };
 
-  const sansSuffix = (value, len) => value ? typeof value === 'string' ? +value.slice(0, -len) : +value : 0;
+  const sansSuffix = (value, len) =>
+    value ? typeof value === 'string' ? +value.slice(0, -len) : +value : 0;
 
   const colorToArray = (color) => {
-    if (! color) return color;
+    if (!color) return color;
     if (typeof color !== 'string') return color;
     const result = [];
     const m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
@@ -145,11 +154,11 @@ define((require) => {
     }
 
     if (Array.isArray(actual)) {
-      if (! Array.isArray(expected)) return false;
+      if (!Array.isArray(expected)) return false;
       const len = actual.length;
       if (expected.length !== len) return false;
       for (let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i], maxLevel - 1)) return false;
+        if (!deepEqual(actual[i], expected[i], maxLevel - 1)) return false;
       }
       return true;
     }
@@ -165,14 +174,12 @@ define((require) => {
       return actual.source === expected.source && actual.flags === expected.flags;
     }
 
-    const akeys = Object.keys(actual);
-
     for (const key in expected) {
       const vale = expected[key];
       const vala = actual[key];
       if (is(vala, vale)) continue;
       if (vala === undefined || vale === undefined) return false;
-      if (! deepEqual(vala, vale, maxLevel - 1)) {
+      if (!deepEqual(vala, vale, maxLevel - 1)) {
         return false;
       }
     }
@@ -211,7 +218,9 @@ define((require) => {
 
     // starting at the end of oldstr and newstr, while the characters in oldstr
     // and newstr are the same, increment e
-    while (s <= minLast - e && oldstr.charCodeAt(lastold - e) === newstr.charCodeAt(lastnew - e)) ++e;
+    while (s <= minLast - e && oldstr.charCodeAt(lastold - e) === newstr.charCodeAt(lastnew - e)) {
+      ++e;
+    }
     // e is now the number of matching characters at the end of oldstr and newstr
 
     return [s, oldstr.length - s - e, newstr.length - s - e];
@@ -228,8 +237,9 @@ define((require) => {
   };
 
   Uint8Array.prototype[inspect$] = function () {
-    return 'Uint8Array(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') + ')';
-  }
+    return 'Uint8Array(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') +
+      ')';
+  };
 
   const humanize = (name) => {
     if (name == null || name === '') {
@@ -237,14 +247,13 @@ define((require) => {
     }
 
     return name.replace(
-      /[-._%+A-Z]\w[d]?/g, (w) => w === '_id'
-        ? ' '
-        : ' ' + util.uncapitalize(w.replace(/^[-._%+]/, '')),
+      /[-._%+A-Z]\w[d]?/g,
+      (w) => w === '_id' ? ' ' : ' ' + util.uncapitalize(w.replace(/^[-._%+]/, '')),
     ).trim();
   };
 
   util.merge(util, {
-    DAY: 1000*60*60*24,
+    DAY: 1000 * 60 * 60 * 24,
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
 
@@ -301,7 +310,7 @@ define((require) => {
       if (properties == null) return obj;
       for (const prop in properties) {
         if (exclude && exclude[prop]) continue;
-        if (! (prop in obj)) {
+        if (!(prop in obj)) {
           const desc = Object.getOwnPropertyDescriptor(properties, prop);
           desc && Object.defineProperty(obj, prop, desc);
         }
@@ -340,7 +349,7 @@ define((require) => {
     extractNotKeys(obj, keys) {
       const result = {};
       for (const key in obj) {
-        if (! (key in keys)) {
+        if (!(key in keys)) {
           result[key] = obj[key];
         }
       }
@@ -362,14 +371,14 @@ define((require) => {
     assignOption: (obj = {}, options, name, def) => {
       if (options.hasOwnProperty(name)) {
         obj[name] = options[name];
-      } else if (! obj.hasOwnProperty(name)) {
+      } else if (!obj.hasOwnProperty(name)) {
         obj[name] = typeof def === 'function' ? def() : def;
       }
       return obj;
     },
 
     forEach(list, visitor) {
-      if (! list) return;
+      if (!list) return;
       const len = list.length;
       for (let i = 0; i < len; ++i) {
         visitor(list[i], i);
@@ -377,7 +386,7 @@ define((require) => {
     },
 
     reverseForEach(list, visitor) {
-      if (! list) return;
+      if (!list) return;
       for (let i = list.length - 1; i >= 0; --i) {
         visitor(list[i], i);
       }
@@ -430,7 +439,7 @@ define((require) => {
       }
 
       if (Array.isArray(a) || Array.isArray(b)) {
-        if (! Array.isArray(a) || ! Array.isArray(b) || a.length !== b.length) {
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
           return false;
         }
         return a.every((e, i) => is(e, b[i]));
@@ -459,14 +468,14 @@ define((require) => {
         const len = Math.max(pa.length, pb.length);
         for (let i = 0; i < len; ++i) {
           if (pa[i] !== pb[i]) {
-            const an = + pa[i] || 0, bn = + pb[i] || 0;
+            const an = +pa[i] || 0, bn = +pb[i] || 0;
             if (an !== bn) {
               return an > bn ? 1 : -1;
             }
           }
         }
 
-        const an = + ma[2] || 0, bn = + mb[2] || 0;
+        const an = +ma[2] || 0, bn = +mb[2] || 0;
         if (an !== bn) {
           return an > bn ? 1 : -1;
         }
@@ -481,7 +490,7 @@ define((require) => {
         return a === b;
       }
       for (const key in a) {
-        if (! deepEqual(a[key], b[key])) return false;
+        if (!deepEqual(a[key], b[key])) return false;
       }
       return true;
     },
@@ -522,7 +531,7 @@ define((require) => {
             break;
           }
         }
-        if (! match) return false;
+        if (!match) return false;
       }
 
       return true;
@@ -565,7 +574,7 @@ define((require) => {
     },
 
     firstParam(obj) {
-      if (obj) for (const key in obj) return obj[key];
+      if (obj) { for (const key in obj) return obj[key]; }
     },
 
     keyMatches(obj, regex) {
@@ -622,7 +631,7 @@ define((require) => {
     },
 
     indexOfRegex(list, value, fieldName) {
-      if (! list) return;
+      if (!list) return;
       fieldName = fieldName || '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
@@ -643,13 +652,15 @@ define((require) => {
     },
 
     mapToSearchStr(map) {
-      return util.map(Object.keys(map), (key) => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`)
-             .join('&');
+      return util.map(
+        Object.keys(map),
+        (key) => `${util.encodeURIComponent(key)}=${util.encodeURIComponent(map[key])}`,
+      ).join('&');
     },
 
     searchStrToMap(query) {
       const result = {};
-      if (! query) return result;
+      if (!query) return result;
       util.forEach(query.split('&'), (item) => {
         const parts = item.split('=', 2);
         result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);
@@ -662,15 +673,17 @@ define((require) => {
 
       const result = encodeURIComponent(value);
       // Fix the mismatch between OAuth's  RFC3986's and Javascript
-      return result.replace(/\!/g, '%21').replace(/\'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(
-        /\*/g,
-        '%2A',
-      );
+      return result.replace(/\!/g, '%21').replace(/\'/g, '%27').replace(/\(/g, '%28').replace(
+        /\)/g,
+        '%29',
+      ).replace(/\*/g, '%2A');
     },
 
     decodeURIComponent(value) {
-      if (! value) return null;
-      return decodeURIComponent(value.replace(/(\+|%(?![a-f0-9]{2}))/ig, (m) => m === '+' ? ' ' : '%25'));
+      if (!value) return null;
+      return decodeURIComponent(
+        value.replace(/(\+|%(?![a-f0-9]{2}))/ig, (m) => m === '+' ? ' ' : '%25'),
+      );
     },
 
     arrayToMap(list) {
@@ -691,7 +704,7 @@ define((require) => {
       if (valueName == null) {
         func = identity;
       } else {
-        switch (typeof (valueName)) {
+        switch (typeof valueName) {
           case 'string':
           case 'number':
             func = (curr) => curr[valueName];
@@ -703,7 +716,7 @@ define((require) => {
       }
       for (let lc = 2; lc < arguments.length; ++lc) {
         const list = arguments[lc];
-        if (! list) continue;
+        if (!list) continue;
 
         for (let i = 0; i < list.length; ++i) {
           if (keyName != null) {
@@ -741,10 +754,14 @@ define((require) => {
       if (upper == 0) return -1;
       if (start < lower) {
         start = lower;
-      } else if (start >= upper) start = upper - 1
+      } else if (start >= upper) start = upper - 1;
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
         if (upper - 1 <= lower) {
-          return ans > 0 && lower == 0 ? -1 : ans < 0 && upper == list.length ? list.length - 1 : lower;
+          return ans > 0 && lower == 0
+            ? -1
+            : ans < 0 && upper == list.length
+            ? list.length - 1
+            : lower;
         }
         if (ans > 0) {
           upper = start;
@@ -775,7 +792,7 @@ define((require) => {
     },
 
     findBy(list, value, fieldName) {
-      if (! list) return;
+      if (!list) return;
       fieldName = fieldName || '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
@@ -786,7 +803,7 @@ define((require) => {
     },
 
     indexOf(list, value, fieldName) {
-      if (! list) return;
+      if (!list) return;
       fieldName = fieldName || '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
@@ -846,9 +863,9 @@ define((require) => {
     },
 
     diff(list1, list2) {
-      if (! list2) return list1 ? list1.slice() : [];
+      if (!list2) return list1 ? list1.slice() : [];
       const result = [];
-      if (! list1) return result;
+      if (!list1) return result;
       const map2 = new Set(list2);
       for (let i = 0; i < list1.length; ++i) {
         const val = list1[i];
@@ -887,7 +904,7 @@ define((require) => {
         if (list) {
           for (let j = 0; j < list.length; ++j) {
             const val = list[j];
-            if (! objSet.has(val)) {
+            if (!objSet.has(val)) {
               objSet.add(val);
               ans.push(val);
             }
@@ -950,7 +967,7 @@ define((require) => {
       if (ml == -1) return [a, b];
 
       let i = 0;
-      for (;i <= ml; ++i) {
+      for (; i <= ml; ++i) {
         if (a[i] !== b[i]) break;
       }
       if (i > ml) {
@@ -959,7 +976,7 @@ define((require) => {
 
       const le = ml - i;
       let j = 0;
-      for (;j <= le; ++j) {
+      for (; j <= le; ++j) {
         if (a[al - j] !== b[bl - j]) break;
       }
       return [a.slice(i, al - j + 1), b.slice(i, bl - j + 1)];
@@ -995,7 +1012,8 @@ define((require) => {
 
     titleize(value) {
       return util.capitalize(
-        value.replace(/[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/, ''))).trim(),
+        value.replace(/[-._%+A-Z]\w/g, (w) => ' ' + util.capitalize(w.replace(/^[-._%+]/, '')))
+          .trim(),
       );
     },
 
@@ -1019,16 +1037,16 @@ define((require) => {
       const scalar = Math.pow(10, dp);
       let decs = '' + (Math.round(number * scalar) % scalar);
 
-      if (! zeroFill && ! decs) {
+      if (!zeroFill && !decs) {
         return '' + number;
       }
 
       while (decs.length < dp) {
         decs = '00000'.slice(decs.length - dp) + decs;
       }
-      if (! zeroFill) {
+      if (!zeroFill) {
         decs = decs.replace(/0+$/, '');
-        if (! decs) {
+        if (!decs) {
           return '' + Math.round(number);
         }
       }
@@ -1062,7 +1080,9 @@ define((require) => {
         if (atype !== btype) {
           return atype < btype ? -direction : direction;
         }
-        return ((atype !== 1 || isId) ? afield < bfield : compare(afield, bfield) < 0) ? -direction : direction;
+        return ((atype !== 1 || isId) ? afield < bfield : compare(afield, bfield) < 0)
+          ? -direction
+          : direction;
       };
       cmp.compareKeys = isSym || field === '_id' ? [field] : [field, '_id'];
       return cmp;
@@ -1089,7 +1109,7 @@ define((require) => {
       for (let i = 0; i < last; ++i) {
         const key = keys[i];
         hash = hash[key];
-        if (! hash) return undefined;
+        if (!hash) return undefined;
       }
 
       return hash[keys[last]];
@@ -1102,7 +1122,7 @@ define((require) => {
         const key = keys[i];
         prevs.push(hash);
         hash = hash[key];
-        if (! hash) return undefined;
+        if (!hash) return undefined;
       }
       prevs.push(hash);
 
@@ -1152,17 +1172,18 @@ define((require) => {
 
     dateInputFormat(date) {
       if (date && date.constructor === Date) {
-        return date.getFullYear() + '-' + twoDigits(date.getMonth() + 1) + '-' + twoDigits(date.getDate());
+        return date.getFullYear() + '-' + twoDigits(date.getMonth() + 1) + '-' +
+          twoDigits(date.getDate());
       }
       return '';
     },
 
     yyyymmddToDate(value) {
       const m = /^\s*(\d\d\d\d)([\s-/])(\d\d?)\2(\d\d?)\s*$/.exec(value);
-      if (! m) return;
-      const year = + m[1];
-      const month = + m[3] - 1;
-      const date = + m[4];
+      if (!m) return;
+      const year = +m[1];
+      const month = +m[3] - 1;
+      const date = +m[4];
       const res = new Date(year, month, date);
 
       if (res.getFullYear() === year && res.getMonth() === month && res.getDate() === date) {

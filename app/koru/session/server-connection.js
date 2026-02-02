@@ -56,7 +56,11 @@ define((require, exports, module) => {
         this._subs = null;
         this.ws = null;
         for (const key in subs) {
-          try {subs[key].stop()} catch (ex) {koru.unhandledException(ex)}
+          try {
+            subs[key].stop();
+          } catch (ex) {
+            koru.unhandledException(ex);
+          }
         }
         if (this[onClose$] !== null) {
           this[onClose$].notify(this);
@@ -69,10 +73,11 @@ define((require, exports, module) => {
       this.sessAuth = null;
       this[batch$] = null;
 
-      ws.on('error', (err) => koru.fiberConnWrapper(() => {
-        koru.info('web socket error', err);
-        this.close();
-      }, this));
+      ws.on('error', (err) =>
+        koru.fiberConnWrapper(() => {
+          koru.info('web socket error', err);
+          this.close();
+        }, this));
       ws.on('close', () => koru.fiberConnWrapper(() => this.close(), this));
     }
 
@@ -109,7 +114,7 @@ define((require, exports, module) => {
     }
 
     batchMessage(type, data) {
-      if (! TransQueue.isInTransaction()) {
+      if (!TransQueue.isInTransaction()) {
         throw new Error('batchMessage called when not in transaction');
       }
 
@@ -119,7 +124,7 @@ define((require, exports, module) => {
     }
 
     onMessage(data, isBinary) {
-      if (! isBinary) data = data.toString();
+      if (!isBinary) data = data.toString();
       if (data[0] === 'H') {
         return void this.send(`K${Date.now()}`);
       }
@@ -129,23 +134,24 @@ define((require, exports, module) => {
         return;
       }
 
-      const process = (current) => this._session.execWrapper(async () => {
-        IdleCheck.inc();
-        try {
-          await this._session._onMessage(this, current[0]);
-        } catch (ex) {
-          koru.unhandledException(ex);
-        } finally {
-          IdleCheck.dec();
+      const process = (current) =>
+        this._session.execWrapper(async () => {
+          IdleCheck.inc();
+          try {
+            await this._session._onMessage(this, current[0]);
+          } catch (ex) {
+            koru.unhandledException(ex);
+          } finally {
+            IdleCheck.dec();
 
-          const nextMsg = current[1];
-          if (nextMsg) {
-            process(nextMsg);
-          } else {
-            this._last = null;
+            const nextMsg = current[1];
+            if (nextMsg) {
+              process(nextMsg);
+            } else {
+              this._last = null;
+            }
           }
-        }
-      }, this);
+        }, this);
 
       return process(this._last = [data, null]);
     }
@@ -165,7 +171,7 @@ define((require, exports, module) => {
     async setUserId(userId) {
       userId ??= undefined;
       const oldId = this[userId$];
-      if (! userId) userId = this._session.DEFAULT_USER_ID;
+      if (!userId) userId = this._session.DEFAULT_USER_ID;
       this[userId$] = userId;
       util.thread.userId = userId;
       if (userId !== this._session.DEFAULT_USER_ID) {
@@ -178,8 +184,7 @@ define((require, exports, module) => {
             }
           });
         });
-        this.sessAuth = this.sessId + '|' + bytes.toString('base64')
-          .replace(/\=+$/, ''); // js2-mode doesn't like /=.../
+        this.sessAuth = this.sessId + '|' + bytes.toString('base64').replace(/\=+$/, ''); // js2-mode doesn't like /=.../
         this.send('VS', `${userId}:${this.sessAuth}`);
       } else {
         this.send('VS', '');
@@ -192,8 +197,12 @@ define((require, exports, module) => {
       this.send('VC');
     }
 
-    get userId() {return this[userId$]}
-    set userId(v) {throw new Error('use setUserId')}
+    get userId() {
+      return this[userId$];
+    }
+    set userId(v) {
+      throw new Error('use setUserId');
+    }
 
     static buildUpdate(dc) {
       const {doc, model: {modelName}} = dc;
@@ -210,8 +219,10 @@ define((require, exports, module) => {
   ServerConnection.filterAttrs = filterAttrs;
 
   ServerConnection.filterDoc = (doc, filter) => ({
-    _id: doc._id, constructor: doc.constructor,
-    attributes: filterAttrs(doc.attributes, filter)});
+    _id: doc._id,
+    constructor: doc.constructor,
+    attributes: filterAttrs(doc.attributes, filter),
+  });
 
   return ServerConnection;
 });

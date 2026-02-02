@@ -40,11 +40,11 @@ define((require, exports, module) => {
 
       test('secureCall', () => {
         assert.isTrue(session.isRpcGet('SRPBegin'));
-        UserAccount.secureCall('fooBar', 'email@vimaly.com',
-                               'secret', [1, 2], v.callback = stub());
+        UserAccount.secureCall('fooBar', 'email@vimaly.com', 'secret', [1, 2], v.callback = stub());
 
         assert.calledWithExactly(
-          session.rpc, 'SRPBegin',
+          session.rpc,
+          'SRPBegin',
           m((request) => {
             v.request = request;
             assert.same(request.email, 'email@vimaly.com');
@@ -60,16 +60,18 @@ define((require, exports, module) => {
         session.rpc.reset();
         v.sutCallback(null, challenge);
 
-        assert.calledWith(session.rpc, 'fooBar', m((response) => {
-          assert.equals(response.payload, [1, 2]);
+        assert.calledWith(
+          session.rpc,
+          'fooBar',
+          m((response) => {
+            assert.equals(response.payload, [1, 2]);
 
-          if (response.M === srp.M) {
-            session.rpc.yield(null, {
-              HAMK: srp.HAMK,
-            });
-            return true;
-          }
-        }));
+            if (response.M === srp.M) {
+              session.rpc.yield(null, {HAMK: srp.HAMK});
+              return true;
+            }
+          }),
+        );
       });
 
       group('changePassword', () => {
@@ -77,7 +79,8 @@ define((require, exports, module) => {
           UserAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = stub());
 
           assert.calledWithExactly(
-            session.rpc, 'SRPBegin',
+            session.rpc,
+            'SRPBegin',
             m((request) => {
               v.request = request;
               assert.same(request.email, 'foo@bar.co');
@@ -96,15 +99,17 @@ define((require, exports, module) => {
           session.rpc.reset();
           v.sutCallback(null, challenge);
 
-          assert.calledWith(session.rpc, 'SRPChangePassword', m((response) => {
-            assert(SRP.checkPassword('new pw', response.newPassword));
-            if (response.M === srp.M) {
-              session.rpc.yield(null, {
-                HAMK: srp.HAMK,
-              });
-              return true;
-            }
-          }));
+          assert.calledWith(
+            session.rpc,
+            'SRPChangePassword',
+            m((response) => {
+              assert(SRP.checkPassword('new pw', response.newPassword));
+              if (response.M === srp.M) {
+                session.rpc.yield(null, {HAMK: srp.HAMK});
+                return true;
+              }
+            }),
+          );
 
           assert.calledWithExactly(v.callback);
         });
@@ -117,12 +122,14 @@ define((require, exports, module) => {
           session.rpc.reset();
           v.sutCallback(null, challenge);
 
-          assert.calledWith(session.rpc, 'SRPChangePassword', m((response) => {
-            session.rpc.yield(null, {
-              HAMK: srp.HAMK,
-            });
-            return true;
-          }));
+          assert.calledWith(
+            session.rpc,
+            'SRPChangePassword',
+            m((response) => {
+              session.rpc.yield(null, {HAMK: srp.HAMK});
+              return true;
+            }),
+          );
 
           assert.calledWithExactly(v.callback, 'failure');
         });
@@ -133,7 +140,8 @@ define((require, exports, module) => {
           UserAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = stub());
 
           assert.calledWithExactly(
-            session.rpc, 'SRPBegin',
+            session.rpc,
+            'SRPBegin',
             m((request) => {
               v.request = request;
               assert.same(request.email, 'foo@bar.co');
@@ -155,16 +163,20 @@ define((require, exports, module) => {
           session.rpc.reset();
           v.sutCallback(null, challenge);
 
-          assert.calledWith(session.rpc, 'SRPLogin', m((response) => {
-            if (response.M === srp.M) {
-              session.rpc.yield(null, {
-                userId: 'uid123',
-                HAMK: srp.HAMK,
-                loginToken: 'tokenId|token123',
-              });
-              return true;
-            }
-          }));
+          assert.calledWith(
+            session.rpc,
+            'SRPLogin',
+            m((response) => {
+              if (response.M === srp.M) {
+                session.rpc.yield(null, {
+                  userId: 'uid123',
+                  HAMK: srp.HAMK,
+                  loginToken: 'tokenId|token123',
+                });
+                return true;
+              }
+            }),
+          );
 
           assert.calledWithExactly(v.callback, null);
           assert.same(util.thread.userId, 'uid123');
@@ -189,13 +201,14 @@ define((require, exports, module) => {
           session.rpc.reset();
           v.sutCallback(null, challenge);
 
-          assert.calledWith(session.rpc, 'SRPLogin', m((response) => {
-            session.rpc.yield(null, {
-              userId: 'uid123',
-              HAMK: srp.HAMK,
-            });
-            return true;
-          }));
+          assert.calledWith(
+            session.rpc,
+            'SRPLogin',
+            m((response) => {
+              session.rpc.yield(null, {userId: 'uid123', HAMK: srp.HAMK});
+              return true;
+            }),
+          );
 
           assert.calledWithExactly(v.callback, 'failure');
           assert.same(util.thread.userId, orig);
@@ -210,9 +223,13 @@ define((require, exports, module) => {
           session.rpc.reset();
           v.sutCallback(null, challenge);
 
-          assert.calledWith(session.rpc, 'SRPLogin', m((response) => {
-            return response.M === srp.M;
-          }));
+          assert.calledWith(
+            session.rpc,
+            'SRPLogin',
+            m((response) => {
+              return response.M === srp.M;
+            }),
+          );
           session.rpc.yield('failure');
 
           assert.calledWithExactly(v.callback, 'failure');
@@ -222,9 +239,13 @@ define((require, exports, module) => {
       test('resetPassword', () => {
         assert.isTrue(session.isRpcGet('resetPassword'));
         UserAccount.resetPassword('the key', 'new password', v.callback = stub());
-        assert.calledWith(session.rpc, 'resetPassword', 'the key',
-                          m((hash) => SRP.checkPassword('new password', hash)),
-                          v.callback);
+        assert.calledWith(
+          session.rpc,
+          'resetPassword',
+          'the key',
+          m((hash) => SRP.checkPassword('new password', hash)),
+          v.callback,
+        );
       });
     });
 
@@ -298,10 +319,7 @@ define((require, exports, module) => {
         UserAccount[isTest].storage = localStorage;
       });
       assert.same(UserAccount[isTest].storage, localStorage);
-      const myStorage = {
-        getItem: stub().returns('my token'),
-        removeItem: stub(),
-      };
+      const myStorage = {getItem: stub().returns('my token'), removeItem: stub()};
       UserAccount[isTest].storage = myStorage;
       assert.same(UserAccount[isTest].storage, myStorage);
       stub(session, 'send');

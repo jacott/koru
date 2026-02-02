@@ -124,20 +124,17 @@ define((require, exports, module) => {
       /**
        * Convert any type to a displayable string. The symbol `inspect$` can be used to override
        * the value returned.
-       *
-       **/
+       */
       api.method('inspect');
       //[
-      const obj = {'': 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, '\\a': 5};
+      const obj = {'': 0, 123: 1, 'a"b"`': 2, "a`'": 3, 'a"\'`': 4, '\\a': 5};
       assert.equals(
         util.inspect(obj),
-        `{123: 1, '': 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, '\\\\a': 5}`);
+        `{123: 1, '': 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, '\\\\a': 5}`,
+      );
 
       const array = [1, 2, 3];
-      assert.equals(
-        util.inspect(array),
-        '[1, 2, 3]',
-      );
+      assert.equals(util.inspect(array), '[1, 2, 3]');
 
       array[inspect$] = () => 'overridden';
 
@@ -148,7 +145,7 @@ define((require, exports, module) => {
     test('qlabel', () => {
       /**
        * Quote label. Add quotes only if needed to be used as a property name.
-       **/
+       */
       api.method();
       //[
       assert.equals(util.qlabel('1234'), '1234');
@@ -162,13 +159,13 @@ define((require, exports, module) => {
     test('qstr', () => {
       /**
        * Quote string
-       **/
+       */
       api.method();
       //[
       assert.equals(util.qstr('1234'), "'1234'");
       assert.equals(util.qstr("1'234"), `"1'234"`);
       assert.equals(util.qstr('12"3a'), `'12"3a'`);
-      assert.equals(util.qstr("\r"), '"\\r"');
+      assert.equals(util.qstr('\r'), '"\\r"');
       assert.equals(util.qstr('12\n3a'), `'12\\n3a'`);
       assert.equals(util.qstr('12\\n3a'), `'12\\\\n3a'`);
       //]
@@ -186,7 +183,7 @@ define((require, exports, module) => {
        * @returns `dest` modified: each enumerable property in `source` has been added to `dest`, or where
        * a property of that name already existed in `dest`, the property in `dest` has been
        * replaced with the property from `source`, in each case with `enumerable` set to `false`
-       **/
+       */
       api.method('mergeNoEnum');
       //[
       const book = {author: 'Austen'};
@@ -195,7 +192,9 @@ define((require, exports, module) => {
       util.mergeNoEnum(book, {
         published: 1813,
 
-        get pages() {return pages},
+        get pages() {
+          return pages;
+        },
       });
 
       pages = 432;
@@ -218,7 +217,7 @@ define((require, exports, module) => {
        * replaced with the property from `source`
        *
        * @alias extend deprecated
-       **/
+       */
       api.method();
       const orig = {a: 1, b: 2};
       const result = {};
