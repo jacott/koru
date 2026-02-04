@@ -5,7 +5,7 @@ define((require) => {
   const callbacks       = require('koru/test/callbacks');
   const util            = require('koru/util');
 
-  const {private$} = require('koru/symbols');
+  const {private$, equal$} = require('koru/symbols');
 
   const match = require('koru/match')[isTest];
 
@@ -309,6 +309,14 @@ define((require) => {
     } else if (Array.isArray(expected)) {
       return setHint(actual, expected);
     }
+
+    if (expected[equal$] != null) {
+      if (!expected[equal$](actual)) {
+        return hint ? setHint(actual, expected, ' not equal') : false;
+      }
+    }
+
+    const equals = actual[equal$] ?? expected[equal$];
 
     const akeys = Object.keys(actual);
     const ekeys = Object.keys(expected);

@@ -1,20 +1,20 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Well known koru symbols.
-   **/
+   */
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const sut  = require('./symbols');
+  const sut = require('./symbols');
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    test("names", ()=>{
-      api.property('stubName$', {
-        info: `Used to name stubbed functions in API documentation`});
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    test('names', () => {
+      api.property('stubName$', {info: `Used to name stubbed functions in API documentation`});
       api.property('withId$', {
-        info: `Used to associate and id with an object. See {#koru/util.withId}`});
+        info: `Used to associate and id with an object. See {#koru/util.withId}`,
+      });
       api.property('ctx$', {info: `The {#koru/dom/ctx} of a HTML element`});
       api.property('endMarker$', {info: `Associate a start with an end; used with HTML elements`});
       api.property('stopGap$', {info: `A interim value for an object; used with model`});
@@ -25,17 +25,19 @@ define((require, exports, module)=>{
 
       const {symbol} = TH.match;
       assert.equals(
-        util.inspect(sut), '{'+
-          "stubName$: Symbol('stubName$'), "+
-          "withId$: Symbol('withId$'), "+
-          "ctx$: Symbol('ctx$'), "+
-          "endMarker$: Symbol('endMarker$'), "+
-          "stopGap$: Symbol('stopGap$'), "+
-          "private$: Symbol('private$'), "+
-          "inspect$: Symbol('inspect$'), "+
-          "error$: Symbol('error$'), "+
-          "original$: Symbol('original$')"+
-          '}'
+        util.inspect(sut),
+        '{' +
+          "stubName$: Symbol('stubName$'), " +
+          "withId$: Symbol('withId$'), " +
+          "ctx$: Symbol('ctx$'), " +
+          "endMarker$: Symbol('endMarker$'), " +
+          "stopGap$: Symbol('stopGap$'), " +
+          "private$: Symbol('private$'), " +
+          "inspect$: Symbol('inspect$'), " +
+          "equal$: Symbol('equal$'), " +
+          "error$: Symbol('error$'), " +
+          "original$: Symbol('original$')" +
+          '}',
       );
     });
   });

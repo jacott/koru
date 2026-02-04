@@ -4,7 +4,7 @@ define((require) => {
   const Stacktrace      = require('./stacktrace');
   const util            = require('./util-base');
 
-  const {withId$, inspect$} = require('koru/symbols');
+  const {withId$, inspect$, equal$} = require('koru/symbols');
   const {hasOwn} = util;
 
   const {is} = Object;
@@ -172,6 +172,12 @@ define((require) => {
 
     if (proto === RegExp.prototype) {
       return actual.source === expected.source && actual.flags === expected.flags;
+    }
+
+    if (actual[equal$] !== undefined) {
+      return actual[equal$](expected);
+    } else if (expected[equal$] !== undefined) {
+      return false;
     }
 
     for (const key in expected) {
