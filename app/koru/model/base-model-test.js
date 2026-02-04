@@ -6,6 +6,7 @@ define((require, exports, module) => {
    */
   const koru            = require('koru');
   const Changes         = require('koru/changes');
+  const Id              = require('koru/id');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
   const DocChange       = require('koru/model/doc-change');
@@ -417,6 +418,10 @@ define((require, exports, module) => {
         assert.equals(Book.$fields._id, {type: 'id'});
 
         const doc = new Book({_id: 'attrId'});
+        assert.equals(doc.$uuid.toString(), 'attrId');
+        assert.isTrue(doc.$uuid instanceof Id);
+        assert.same(doc.$uuid, doc.$uuid);
+        assert.same(doc.$uuid.toHex(), '00000000000000000000fff36c6dd74a');
 
         assert.same(doc._id, 'attrId');
 
@@ -425,6 +430,7 @@ define((require, exports, module) => {
 
         doc.attributes._id = null;
         assert.same(doc._id, 'chgId');
+        assert.equals(doc.$uuid.toString(), 'attrId');
       });
 
       test('exists', async () => {

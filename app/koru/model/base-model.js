@@ -3,6 +3,7 @@ define((require, exports, module) => {
   const koru            = require('koru');
   const Changes         = require('koru/changes');
   const ModelEnv        = require('koru/env!./main');
+  const Id              = require('koru/id');
   const dbBroker        = require('koru/model/db-broker');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');
@@ -19,6 +20,7 @@ define((require, exports, module) => {
   const {private$, inspect$, error$, original$} = require('koru/symbols');
 
   const cache$ = Symbol(),
+    uuid$ = Symbol(),
     idLock$ = Symbol(),
     inspectField$ = Symbol(),
     observers$ = Symbol(),
@@ -341,6 +343,10 @@ define((require, exports, module) => {
 
     get _id() {
       return this.attributes._id ?? this.changes._id;
+    }
+
+    get $uuid() {
+      return this[uuid$] ??= Id.fromV1(this._id);
     }
 
     get classMethods() {
