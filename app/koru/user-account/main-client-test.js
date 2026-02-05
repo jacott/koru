@@ -375,13 +375,14 @@ define((require, exports, module) => {
         assert.calledWith(v.onChange, 'wait');
         assert.calledWith(session.send, 'VL', 'tokenId|token123');
 
-        session._onMessage(session, 'VSuid123:sid|crypto');
+        session._onMessage(session, 'VSuid123:sid|crypto:db123');
 
         assert.calledWith(v.onChange, 'change');
         assert.same(login.getState(session), 'change');
 
         assert.same(koru.userId(), 'uid123');
         assert.same(session.sessAuth, 'sid|crypto');
+        assert.same(koru.util.thread.dbId, 'db123');
 
         session._onMessage(session, 'VC');
 

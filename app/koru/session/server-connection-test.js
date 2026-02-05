@@ -333,7 +333,7 @@ isServer && define((require, exports, module) => {
       stub(crypto, 'randomBytes').yields(null, {
         toString: stub().withArgs('base64').returns('crypto64Id=='),
       });
-      const sendUid = v.ws.send.withArgs('VSu456:888|crypto64Id');
+      const sendUid = v.ws.send.withArgs('VSu456:888|crypto64Id:default');
       const sendUidCompleted = v.ws.send.withArgs('VC');
       conn._subs = {s1: {userIdChanged: v.s1 = stub()}, s2: {userIdChanged: v.s2 = stub()}};
 
@@ -346,7 +346,7 @@ isServer && define((require, exports, module) => {
       assert.called(v.s2);
 
       assert.calledWith(crypto.randomBytes, 36);
-      assert.calledWith(v.ws.send, 'VSu456:888|crypto64Id');
+      assert.calledWith(v.ws.send, 'VSu456:888|crypto64Id:default');
       assert.same(conn.sessAuth, '888|crypto64Id');
 
       assert(sendUid.calledBefore(v.s1));

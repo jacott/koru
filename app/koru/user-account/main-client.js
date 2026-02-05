@@ -85,9 +85,10 @@ define((require, exports, module) => {
             UserAccount.token = data.slice(1).toString();
             break;
           case 'S':
-            const [userId, hash] = data.slice(1).toString().split(':');
+            const [userId, hash, dbId] = data.slice(1).toString().split(':');
             login.setUserId(this, userId);
             this.sessAuth = hash;
+            koru.util.thread.dbId = dbId;
             break;
           case 'F':
             login.failed(this);

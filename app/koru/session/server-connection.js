@@ -185,7 +185,7 @@ define((require, exports, module) => {
           });
         });
         this.sessAuth = this.sessId + '|' + bytes.toString('base64').replace(/\=+$/, ''); // js2-mode doesn't like /=.../
-        this.send('VS', `${userId}:${this.sessAuth}`);
+        this.send('VS', `${userId}:${this.sessAuth}:${util.thread.dbId ?? 'default'}`);
       } else {
         this.send('VS', '');
         this.sessAuth = null;
