@@ -48,6 +48,15 @@ define((require, exports, module) => {
       let idv1max = Id.fromV1('zzzzzzzzzzzzzzzzz');
       assert.same(idv1max.toBigInt(), 324438067906031283646553055293374n);
       assert.same(idv1max.toString(), 'zzzzzzzzzzzzzzzzz');
+
+      id = Id.fromV1(null);
+      assert.same(id.toBigInt(), 0n);
+
+      id = Id.fromV1(undefined);
+      assert.same(id.toBigInt(), 0n);
+
+      id = Id.fromV1('');
+      assert.same(id.toBigInt(), 0n);
     });
 
     test('read, write', () => {

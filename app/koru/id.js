@@ -90,7 +90,11 @@ define((require, exports, module) => {
     }
 
     static fromV1(v1id) {
-      assert(v1id.length <= 17);
+      if (v1id == null || v1id.length == 0) {
+        return Id.nullId();
+      }
+
+      assert(v1id.length <= 17, {toString: () => v1id.length});
       return Id.fromUuidV7(new Uuidv7(...packV1Id(v1id)));
     }
 
