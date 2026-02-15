@@ -33,9 +33,9 @@ define((require, exports, module) => {
         clientCount = count;
         return elm;
       }
-      removeClientSprite = (elm, count) => {
+      removeClientSprite = (client, count) => {
         clientCount = count;
-        Dom.remove(elm);
+        Dom.remove(client.elm);
       };
 
       now = util.dateNow();
@@ -45,6 +45,15 @@ define((require, exports, module) => {
         getDimensions: () => cbb,
         addClientSprite,
         removeClientSprite,
+        clientMoved(mv, {width, height}) {
+          if (mv.elm !== null) {
+            mv.elm.style.setProperty(
+              'transform',
+              'translate3d(calc(-50% + ' + (mv.x * width) + 'px), calc(-50% + ' + (mv.y * height) +
+                'px), 0px)',
+            );
+          }
+        },
       });
       canvas_id = Id.fromV1('canvas1');
       getMsg = m((m) => msg = m);
@@ -93,7 +102,7 @@ define((require, exports, module) => {
       return u8;
     };
 
-    const elmToId = (e) => Dom.myCtx(e)?.data._id;
+    const elmToId = (d) => Dom.myCtx(d.elm)?.data._id;
 
     group('wrong canvas_id', () => {
       test('newClients, assignCanvasSlot', () => {

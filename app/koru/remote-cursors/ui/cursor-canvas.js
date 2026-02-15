@@ -10,21 +10,21 @@ define((require, exports, module) => {
 
   const {original$} = require('koru/symbols');
 
+  const smallFrac = 0.000000001;
+
   const Actions = [];
   Actions[CursorMessage.Move] = function (data) {
-    const {width, height} = this.getClientSpritesPos(Date.now());
+    const dim = this.getClientSpritesPos(Date.now());
     for (const mv of CursorMessage.decodeClientMoves(data)) {
       if (mv.i >= this.clientSlots.length) {
         continue;
       }
-      const clientElm = this.clientSlots[mv.i];
-      const ctx = myCtx(clientElm);
-      if (ctx === null) continue;
-      clientElm.style.setProperty(
-        'transform',
-        'translate3d(calc(-50% + ' + (mv.x * width) + 'px), calc(-50% + ' + (mv.y * height) +
-          'px), 0px)',
-      );
+      const client = this.clientSlots[mv.i];
+      client.deltaX = mv.x - client.x;
+      client.x = mv.x;
+      client.deltaY = mv.y - client.y;
+      client.y = mv.y;
+      this.clientMoved(client, dim);
     }
   };
 
@@ -77,7 +77,13 @@ define((require, exports, module) => {
 
     for (const id of CursorMessage.decodeClients(data)) {
       const elm = this.addClientSprite(id, this.clientSlots.length);
-      this.clientSlots.push(elm);
+      this.clientSlots.push({
+        elm,
+        x: smallFrac,
+        y: smallFrac,
+        deltaX: smallFrac,
+        deltaY: smallFrac,
+      });
       if (elm != null) {
         this.clientSprites.appendChild(elm);
       }
@@ -94,14 +100,14 @@ define((require, exports, module) => {
         continue;
       }
 
-      const elm = this.clientSlots[slot];
+      const client = this.clientSlots[slot];
       if (slot !== last) {
         this.clientSlots[slot] = this.clientSlots[last];
         if (last === this.mySlot) {
           this.mySlot = slot;
         }
       }
-      this.removeClientSprite(elm, last);
+      this.removeClientSprite(client, last);
       --last;
     }
     this.clientSlots.length = last + 1;
@@ -123,12 +129,13 @@ define((require, exports, module) => {
     mySlot = 255;
     [dimCache$] = {left: 0.1, top: 0.1, width: 0.1, height: 0.1, xfrac: 0.1, yfrac: 0.1};
 
-    constructor({me, sender, addClientSprite, removeClientSprite, getDimensions}) {
+    constructor({me, sender, addClientSprite, removeClientSprite, getDimensions, clientMoved}) {
       this.me = me;
       this.send = sender;
       this.addClientSprite = addClientSprite;
       this.removeClientSprite = removeClientSprite;
       this.getDimensions = getDimensions;
+      this.clientMoved = clientMoved;
     }
 
     monitor(clientSprites, canvas_id = Id.nullId()) {
