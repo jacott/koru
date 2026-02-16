@@ -45,9 +45,16 @@ define((require, exports, module) => {
       assert.same(id1.toString(), 'zzz12345671234561');
       assert.same(id2.toString(), 'zzz12345671234568');
 
-      let idv1max = Id.fromV1('zzzzzzzzzzzzzzzzz');
-      assert.same(idv1max.toBigInt(), 324438067906031283646553055293374n);
+      // some Old ids can be 18 chars long
+      let idv1max = Id.fromV1('zzzzzzzzzzzzzzzzzz');
+      assert.same(idv1max.toBigInt(), 20764036345986002153379395538775998n);
       assert.same(idv1max.toString(), 'zzzzzzzzzzzzzzzzz');
+      let uuidv7 = new Uuidv7(idv1max.getLow(), idv1max.getHigh());
+      assert.same(uuidv7.toString(), '--E~kkkkkkkkkkkkkkkkkV');
+      assert.same(
+        Uuidv7.fromTimeRand(Date.UTC(2000, 0, 0), 0n).toString(),
+        '-CmafK--R-1-----------',
+      );
 
       id = Id.fromV1(null);
       assert.same(id.toBigInt(), 0n);

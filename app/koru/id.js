@@ -5,7 +5,7 @@ define((require, exports, module) => {
 
   const {inspect$, equal$} = require('koru/symbols');
 
-  const OLD_MAX_TIME = 17587822903035n;
+  const OLD_MAX_TIME = 1125620665794299n;
 
   const b64 = new BigUint64Array(2);
   const u8 = new Uint8Array(b64.buffer);
@@ -94,7 +94,7 @@ define((require, exports, module) => {
         return Id.nullId();
       }
 
-      assert(v1id.length <= 17, {toString: () => v1id.length});
+      assert(v1id.length <= 18, {toString: () => v1id.length});
       return Id.fromUuidV7(new Uuidv7(...packV1Id(v1id)));
     }
 
