@@ -2,39 +2,6 @@ define((require) => {
   'use strict';
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
 
-  let decodeString, encodeString;
-  if (isServer) {
-    const {utf8Slice} = Buffer.prototype;
-
-    decodeString = (v, s, e) => utf8Slice.call(v, s, e);
-    encodeString = (v) => Buffer.from(v.toString());
-  } else {
-    const encoder = new globalThis.TextEncoder();
-    const decoder = new globalThis.TextDecoder();
-
-    decodeString = (v, s, e) => {
-      const u8 = v.subarray(s, e);
-      if (u8.length > 2 && u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
-        return '\ufeff' + decoder.decode(u8);
-      }
-      return decoder.decode(u8);
-    };
-    encodeString = (v) => encoder.encode(v);
-  }
-
-  const utf8to16 = (buffer, i = 0, end) => {
-    if (end === undefined) {
-      const len = buffer.length;
-      for (end = i; end < len && buffer[end] !== 0xff; ++end);
-      return [decodeString(buffer, i, end), Math.min(len, end + 1)];
-    }
-    return [decodeString(buffer, i, end), end];
-  };
-
-  const utf16to8 = (out, str) => {
-    out.appendUtf8Str(str);
-  };
-
   const tTerm = 0;
   const tUndef = 1;
   const tNull = 2;
@@ -60,8 +27,43 @@ define((require) => {
   const tNullObject = 22;
   const tEmptyNullObject = 23;
 
-  const tSmString = 0x80;
   const tSmNumber = 0x40;
+  const tSmString = 0x80;
+
+  const tDictTerm = 0xff;
+
+  let decodeString, encodeString;
+  if (isServer) {
+    const {utf8Slice} = Buffer.prototype;
+
+    decodeString = (v, s, e) => utf8Slice.call(v, s, e);
+    encodeString = (v) => Buffer.from(v.toString());
+  } else {
+    const encoder = new globalThis.TextEncoder();
+    const decoder = new globalThis.TextDecoder();
+
+    decodeString = (v, s, e) => {
+      const u8 = v.subarray(s, e);
+      if (u8.length > 2 && u8[0] === 0xef && u8[1] === 0xbb && u8[2] === 0xbf) {
+        return '\ufeff' + decoder.decode(u8);
+      }
+      return decoder.decode(u8);
+    };
+    encodeString = (v) => encoder.encode(v);
+  }
+
+  const utf8to16 = (buffer, i = 0, end) => {
+    if (end === undefined) {
+      const len = buffer.length;
+      for (end = i; end < len && buffer[end] !== tDictTerm; ++end);
+      return [decodeString(buffer, i, end), Math.min(len, end + 1)];
+    }
+    return [decodeString(buffer, i, end), end];
+  };
+
+  const utf16to8 = (out, str) => {
+    out.appendUtf8Str(str);
+  };
 
   const toStringFunc = Object.prototype.toString;
 
@@ -318,13 +320,13 @@ define((require) => {
     dict.c2k.push(name);
     if (dict.buffer !== void 0) {
       utf16to8(dict.buffer, name);
-      dict.buffer.appendByte(0xff);
+      dict.buffer.appendByte(tDictTerm);
     }
     return index;
   };
 
   const decodeDict = (buffer, index, dict) => {
-    while (index < buffer.length && buffer[index] !== tTerm) {
+    while (index < buffer.length && buffer[index] !== tDictTerm) {
       const pair = utf8to16(buffer, index);
       addToDict(dict, pair[0]);
       index = pair[1];
@@ -382,7 +384,7 @@ define((require) => {
         encode() {
           const b = dict.buffer;
           length = b.length;
-          b.appendByte(tTerm);
+          b.appendByte(tDictTerm);
           b.append(buffer.subarray());
 
           return b.subarray();
@@ -401,7 +403,7 @@ define((require) => {
         encode(buffer, args[i], dicts);
       }
 
-      dictBuilder.appendByte(tTerm);
+      dictBuilder.appendByte(tDictTerm);
 
       dictBuilder.append(buffer.subarray());
       return dictBuilder.subarray();
@@ -441,7 +443,7 @@ define((require) => {
 
     addToDict,
     encodeDict: ({buffer}) => {
-      buffer.appendByte(tTerm);
+      buffer.appendByte(tDictTerm);
       return buffer.subarray();
     },
     decodeDict,

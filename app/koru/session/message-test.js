@@ -16,7 +16,7 @@ define((require, exports, module) => {
     message._encode(buffer, object, [globalDict, dict]);
     if (dict.c2k.length != 0) {
       const b = dict.buffer;
-      b.push(0);
+      b.push(0xff);
       b.append(buffer.subarray());
       return Array.from(b.subarray());
     } else {
@@ -26,7 +26,7 @@ define((require, exports, module) => {
 
   const _decode = (object, globalDict) => {
     return message._decode(new Uint8Array(object), 0, [
-      globalDict || v.gDict,
+      globalDict ?? v.gDict,
       message._newLocalDict(),
     ])[0];
   };
@@ -104,7 +104,7 @@ define((require, exports, module) => {
     test('nonempty null object', () => {
       const obj = Object.create(null);
       obj.x = 1;
-      assert.equals(_encode(obj), v.ans = [8, 120, 255, 0, 22, 1, 0, 65, 0]);
+      assert.equals(_encode(obj), v.ans = [8, 120, 255, 255, 22, 1, 0, 65, 0]);
 
       const result = _decode(v.ans);
       assert.equals(result, {x: 1});
@@ -123,7 +123,7 @@ define((require, exports, module) => {
 
       const u8 = message.encodeMessage('M', [bomx], v.gDict);
 
-      assert.equals(u8, new Uint8Array([77, 239, 187, 191, 120, 255, 0, 17, 1, 0]));
+      assert.equals(u8, new Uint8Array([77, 239, 187, 191, 120, 255, 255, 17, 1, 0]));
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), ['\ufeffx']);
     });
@@ -163,7 +163,7 @@ define((require, exports, module) => {
       assert.equals(_encode('Friday', gDict), v.ans = [17, 255, 253]);
       assert.same(_decode(v.ans, gDict), 'Friday');
 
-      assert.equals(_encode('new', gDict), v.ans = [8, 110, 101, 119, 255, 0, 17, 1, 0]);
+      assert.equals(_encode('new', gDict), v.ans = [8, 110, 101, 119, 255, 255, 17, 1, 0]);
       assert.same(_decode(v.ans, gDict), 'new');
     });
 
@@ -247,7 +247,7 @@ define((require, exports, module) => {
     test('populated array', () => {
       assert.equals(
         _encode([1, 2, 'hello']),
-        v.ans = [8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0],
+        v.ans = [8, 104, 101, 108, 108, 111, 255, 255, 6, 65, 66, 17, 1, 0, 0],
       );
 
       assert.equals(_decode(v.ans), [1, 2, 'hello']);
@@ -291,7 +291,7 @@ define((require, exports, module) => {
         8,                             // Dictionary
         98, 97, 114, 0xff,             // local entry: bar
         98, 97, 122, 0xff,             // local entry: baz
-        0,                             // end-of-dict
+        0xff,                          // end-of-dict
         7,                             // object
         0xff, 0xfe, 17, 1, 0,          // foo: bar
         1, 1, 17, 0xff, 0xfe,          // baz: foo
@@ -310,7 +310,7 @@ define((require, exports, module) => {
           8,                             // Dictionary
           98, 97, 114, 0xff,             // local entry: bar
           98, 97, 122, 0xff,             // local entry: baz
-          0,                             // end-of-dict
+          0xff,                          // end-of-dict
           61, 2, 3, 4, // junk
           7,                             // object
           0xff, 0xfe, 17, 1, 0,          // foo: bar
@@ -319,7 +319,7 @@ define((require, exports, module) => {
         ])),
         {
           message: 'Unsupported format: 61 at 11 in:\n' +
-            '   8,98,97,114,255,98,97,122,255,0,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1',
+            '   8,98,97,114,255,98,97,122,255,255,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1',
         },
       );
     });
@@ -364,7 +364,7 @@ define((require, exports, module) => {
 
       assert.equals(
         Array.from(message.encodeDict(dict).subarray()),
-        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0],
+        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0xff],
       );
 
       dict = message._newLocalDict();
@@ -391,7 +391,7 @@ define((require, exports, module) => {
 
       assert.equals(
         Array.from(message.encodeDict(dict).subarray()),
-        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0],
+        v.ans = [8, 102, 111, 111, 0xff, 98, 195, 161, 114, 0, 0xff, 0xff],
       );
 
       dict = message.newGlobalDict();
@@ -450,7 +450,7 @@ define((require, exports, module) => {
       assert.same(
         msg,
         '73617665ff5469636b6574ff6a4a394d696148746364674a7a6246766eff62696e5f69' +
-          '64ff475374544a465848445a6d536b584d347aff008136110100110101110102070103110104fffe0b010000',
+          '64ff475374544a465848445a6d536b584d347affff8136110100110101110102070103110104fffe0b010000',
       );
 
       assert.equals(message.decodeMessage(u8, gDict), obj);
@@ -465,27 +465,8 @@ define((require, exports, module) => {
 
       assert(u8 instanceof Uint8Array);
 
-      assert.equals(Array.from(u8), [
-        77,
-        102,
-        111,
-        111,
-        255,
-        98,
-        97,
-        114,
-        255,
-        0,
-        65,
-        66,
-        7,
-        1,
-        0,
-        17,
-        1,
-        1,
-        0,
-      ]);
+      //fmt-ignore
+      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 255, 65, 66, 7, 1, 0, 17, 1, 1, 0,]);
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
 
@@ -505,27 +486,8 @@ define((require, exports, module) => {
 
       assert(u8 instanceof Uint8Array);
 
-      assert.equals(Array.from(u8), [
-        77,
-        102,
-        111,
-        111,
-        255,
-        98,
-        97,
-        114,
-        255,
-        0,
-        65,
-        66,
-        7,
-        1,
-        0,
-        17,
-        1,
-        1,
-        0,
-      ]);
+      //fmt-ignore
+      assert.equals(Array.from(u8), [77, 102, 111, 111, 255, 98, 97, 114, 255, 255, 65, 66, 7, 1, 0, 17, 1, 1, 0,]);
 
       assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     });
@@ -539,7 +501,7 @@ define((require, exports, module) => {
       data.forEach.call(u8, (b) => {
         data.push(b);
       });
-      assert.equals(data, [80, 0]);
+      assert.equals(data, [80, 255]);
 
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), []);
     });
@@ -557,7 +519,7 @@ define((require, exports, module) => {
       data = message.encodeMessage('Q', ['1', 1, 'Game', 'GStTJFXHDZmSkXM4z'], ge);
       assert.same(
         message.toHex(data).join(''),
-        '51475374544a465848445a6d536b584d347aff0081314111fffd110100',
+        '51475374544a465848445a6d536b584d347affff81314111fffd110100',
       );
     });
   });

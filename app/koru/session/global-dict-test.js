@@ -22,7 +22,7 @@ isServer && define((require, exports, module) => {
       //[
       const dict = new GlobalDict();
       //]
-      assert.equals(dict.globalDictEncoded(), Buffer.from([0]));
+      assert.equals(dict.globalDictEncoded(), Buffer.from([0xff]));
     });
 
     test('main', () => {
@@ -170,7 +170,7 @@ isServer && define((require, exports, module) => {
       gd.addToDict('bar');
 
       const encoded = gd.globalDictEncoded();
-      assert.equals(encoded, Buffer.from([0x66, 0x6f, 0x6f, 0xff, 0x62, 0x61, 0x72, 0xff, 0x00]));
+      assert.equals(encoded, Buffer.from([0x66, 0x6f, 0x6f, 0xff, 0x62, 0x61, 0x72, 0xff, 0xff]));
 
       assert.same(encoded, gd.globalDictEncoded());
       //]
