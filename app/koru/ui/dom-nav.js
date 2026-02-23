@@ -506,7 +506,7 @@ define((require) => {
       }
 
       const range = document.createRange();
-      range.setStart(br.nextSibling, 0);
+      range.setStart(br.nextSibling ?? nn, 0);
       normRange(range);
       Dom.setRange(range);
     },
