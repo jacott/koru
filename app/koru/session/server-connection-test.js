@@ -79,6 +79,7 @@ isServer && define((require, exports, module) => {
       });
 
       test('waitIdle', () => {
+        TH.noInfo();
         spy(IdleCheck, 'inc');
         spy(IdleCheck, 'dec');
         stub(koru, 'error');
