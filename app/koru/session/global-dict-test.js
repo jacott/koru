@@ -71,7 +71,9 @@ isServer && define((require, exports, module) => {
       //[
       const module = new Module(undefined, 'myModule');
       const gd = new GlobalDict();
-      const myAdder = (adder) => {adder('foo')};
+      const myAdder = (adder) => {
+        adder('foo');
+      };
       gd.registerAdder(module, myAdder);
       assert.same(gd.getAdder('myModule'), myAdder);
 
@@ -89,7 +91,9 @@ isServer && define((require, exports, module) => {
       //[
       const module = new Module(undefined, 'myModule');
       const gd = new GlobalDict();
-      const myAdder = (adder) => {adder('foo')};
+      const myAdder = (adder) => {
+        adder('foo');
+      };
       gd.registerAdder(module, myAdder);
 
       assert.same(gd.getAdder('myModule'), myAdder);
@@ -148,7 +152,10 @@ isServer && define((require, exports, module) => {
 
       assert.same(gd.globalDict.k2c.foo, 65533);
 
-      assert.same(gd.dictHashStr, '830f622d1916386cbd214dbd1c4e84743de8cc468ef0ae10615a782fc7106481');
+      assert.same(
+        gd.dictHashStr,
+        '830f622d1916386cbd214dbd1c4e84743de8cc468ef0ae10615a782fc7106481',
+      );
       //]
     });
 

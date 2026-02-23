@@ -12,16 +12,14 @@ define((require, exports, module) => {
     if (callback === 'reload') {
       callback = reload;
     }
-    const subm = typeof moduleOrId === 'string'
-      ? module.ctx.modules[moduleOrId]
-      : moduleOrId;
+    const subm = typeof moduleOrId === 'string' ? module.ctx.modules[moduleOrId] : moduleOrId;
     if (subm == null) {
       throw new Error('module not found! ' + moduleOrId);
     }
     subm.onUnload(callback);
   };
 
-  const fetchDependants = (mod, result={}) => {
+  const fetchDependants = (mod, result = {}) => {
     if (mod !== undefined && result[mod.id] === undefined) {
       result[mod.id] = true;
       const {modules} = mod.ctx;
@@ -57,7 +55,9 @@ define((require, exports, module) => {
 
     setTimeout: (func, duration) => {
       if (duration > 2147483640) throw new Error('duration too big');
-      return setTimeout(() => {koru.runFiber(func)}, duration);
+      return setTimeout(() => {
+        koru.runFiber(func);
+      }, duration);
     },
 
     throwConfigMissing: (name) => {
@@ -77,13 +77,21 @@ define((require, exports, module) => {
 
     ['de' + 'bug']: logDebug,
 
-    info: (...args) => {koru.logger('I', args.join(' '))},
+    info: (...args) => {
+      koru.logger('I', args.join(' '));
+    },
 
-    error: (...args) => {koru.logger('E', args.join(' '))},
+    error: (...args) => {
+      koru.logger('E', args.join(' '));
+    },
 
-    unhandledException: (ex) => {koru.error(util.extractError(ex))},
+    unhandledException: (ex) => {
+      koru.error(util.extractError(ex));
+    },
 
-    logger: (...args) => {console.log(...args)},
+    logger: (...args) => {
+      console.log(...args);
+    },
 
     globalCallback: (err, result) => {
       if (err) {
@@ -128,7 +136,7 @@ define((require, exports, module) => {
     util.makeInterceptable = (obj) => {
       obj[koru.__INTERCEPT$__] = function (...args) {
         return Object.prototype[koru.__INTERCEPT$__].apply(this, args);
-      }
+      };
     };
     koru.__INTERCEPT$__ = Symbol();
   }
@@ -141,19 +149,20 @@ define((require, exports, module) => {
 
   /**
    * _wsTimeout is used by session/web-socket-sender-factory; do not override in tests
-   **/
+   */
   koru._wsTimeout = koru.setTimeout;
   /**
    * _wsClearTimeout is used by session/web-socket-sender-factory; do not override in tests
-   **/
+   */
   koru._wsClearTimeout = koru.clearTimeout;
 
   if (module.ctx.onError === undefined) {
     module.ctx.onError = (err, mod) => {
       if (err.onload) {
         const {ctx} = mod;
-        const stack = Object.keys(koru.fetchDependants(mod)).map(
-          (id) => id === mod.id ? '' : '    at ' + id + '.js:1:1').join('\n');
+        const stack = Object.keys(koru.fetchDependants(mod)).map((id) =>
+          id === mod.id ? '' : '    at ' + id + '.js:1:1'
+        ).join('\n');
         koru.error(`ERROR: failed to load module: ${mod.id}
 with dependancies:
 ${stack}`);
@@ -162,10 +171,13 @@ ${stack}`);
 
         if (err.name !== 'SyntaxError' && errEvent && errEvent.filename) {
           const uer = errEvent && errEvent.error || err;
-          koru.error(util.extractError({
-            toString: () => err.toString(),
-            userStack: '    at ' + errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
-          }));
+          koru.error(
+            util.extractError({
+              toString: () => err.toString(),
+              userStack: '    at ' + errEvent.filename + ':' + errEvent.lineno + ':' +
+                errEvent.colno,
+            }),
+          );
         } else {
           const m = /^([\S]*)([\s\S]*?)    at.*vm(?:.js)?:/.exec(err.stack);
           koru.error(m !== null ? `\n\tat - ${m[1]}\n${m[2]}` : util.extractError(err));
