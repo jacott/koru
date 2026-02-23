@@ -333,29 +333,31 @@ define((require, exports, module) => {
   };
 
   const applyPartial = (attrs, key, actions, undo) => {
-    for (let i = 0; i < actions.length; i += 2) {
-      const field = actions[i], nv = actions[i + 1];
-      const cmd = COMMANDS[field];
-      if (cmd === undefined) {
-        const ov = attrs[key];
-        const changes = {[field]: nv};
-        applyOne(
-          ov == null ? (attrs[key] = typeof field === 'string' ? {} : []) : ov,
-          field,
-          changes,
-        );
+    if (actions != null) {
+      for (let i = 0; i < actions.length; i += 2) {
+        const field = actions[i], nv = actions[i + 1];
+        const cmd = COMMANDS[field];
+        if (cmd === undefined) {
+          const ov = attrs[key];
+          const changes = {[field]: nv};
+          applyOne(
+            ov == null ? (attrs[key] = typeof field === 'string' ? {} : []) : ov,
+            field,
+            changes,
+          );
 
-        if (undo !== undefined) {
-          if (ov == null) {
-            undo.push('$replace', null);
-          } else if (undo[0] !== '$replace') {
-            for (const field in changes) {
-              undo.push(field, changes[field]);
+          if (undo !== undefined) {
+            if (ov == null) {
+              undo.push('$replace', null);
+            } else if (undo[0] !== '$replace') {
+              for (const field in changes) {
+                undo.push(field, changes[field]);
+              }
             }
           }
+        } else {
+          cmd(attrs, key, nv, undo);
         }
-      } else {
-        cmd(attrs, key, nv, undo);
       }
     }
     if (undo !== undefined && undo.length > 2) {
