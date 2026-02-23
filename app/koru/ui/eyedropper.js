@@ -77,7 +77,6 @@ define((require, exports, module) => {
           });
         } catch (ex) {
           cancel();
-          koru.unhandledException(ex);
           callback(ex);
         }
       };
@@ -150,9 +149,7 @@ define((require, exports, module) => {
         const colors = intercept(elm);
         if (colors !== undefined) {
           if (colors.color !== undefined) {
-            color = colors.color === null
-              ? null
-              : uColor.toRGB(colors.color);
+            color = colors.color === null ? null : uColor.toRGB(colors.color);
           }
           if (colors.textColor !== undefined) textColor = uColor.toRGB(colors.textColor);
           if (colors.borderColor !== undefined) borderColor = uColor.toRGB(colors.borderColor);
