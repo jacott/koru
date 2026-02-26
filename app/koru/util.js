@@ -31,12 +31,12 @@ define((require) => {
   const {compare} = enUsCollator;
 
   const compareByName = (a, b) => {
-    const aname = (a && a.name) || '';
-    const bname = (b && b.name) || '';
+    const aname = a?.name ?? '';
+    const bname = b?.name ?? '';
     const ans = compare(aname, bname);
     if (ans == 0) {
       if (a == null) return 0;
-      const ai = a._id || '', bi = b._id || '';
+      const ai = a._id ?? '', bi = b._id ?? '';
       return ai === bi ? 0 : ai < bi ? -1 : 1;
     }
     return ans < 0 ? -1 : 1;
@@ -44,11 +44,11 @@ define((require) => {
   compareByName.compareKeys = ['name', '_id'];
 
   const compareByOrder = (a, b) => {
-    const ao = (a && a.order) || 0;
-    const bo = (b && b.order) || 0;
+    const ao = a?.order ?? 0;
+    const bo = b?.order ?? 0;
     if (ao === bo) {
       if (a == null) return 0;
-      const ai = a._id || '', bi = b._id || '';
+      const ai = a._id ?? '', bi = b._id ?? '';
       return ai === bi ? 0 : ai < bi ? -1 : 1;
     } else {
       return ao < bo ? -1 : 1;
@@ -552,7 +552,7 @@ define((require) => {
             st[0] = '    at -' + st[0].slice(6);
           }
         }
-        return (err.toStringPrefix || '') + err.toString() + '\n' + st.join('\n');
+        return (err.toStringPrefix ?? '') + err.toString() + '\n' + st.join('\n');
       } else {
         return util.inspect(err);
       }
@@ -638,7 +638,7 @@ define((require) => {
 
     indexOfRegex(list, value, fieldName) {
       if (!list) return;
-      fieldName = fieldName || '_id';
+      fieldName ??= '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
         if (value.test(row[fieldName])) {
@@ -735,8 +735,7 @@ define((require) => {
       return result;
     },
 
-    mapField(list, fieldName) {
-      fieldName = fieldName || '_id';
+    mapField(list, fieldName = '_id') {
       return list && util.map(list, (doc) => doc[fieldName]);
     },
 
@@ -797,9 +796,8 @@ define((require) => {
       return result;
     },
 
-    findBy(list, value, fieldName) {
+    findBy(list, value, fieldName = '_id') {
       if (!list) return;
-      fieldName = fieldName || '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
         if (row[fieldName] === value) {
@@ -808,9 +806,8 @@ define((require) => {
       }
     },
 
-    indexOf(list, value, fieldName) {
+    indexOf(list, value, fieldName = '_id') {
       if (!list) return;
-      fieldName = fieldName || '_id';
       for (let i = 0; i < list.length; ++i) {
         const row = list[i];
         if (row[fieldName] === value) {
@@ -937,19 +934,19 @@ define((require) => {
     },
 
     initials(name, count, abvr) {
-      count = count || 3;
+      count ??= 3;
 
-      name = (name || '').split(' ');
+      const parts = (name ?? '').split(' ');
       let result = '';
-      for (let i = 0; count > 1 && i < name.length - 1; ++i, --count) {
-        result += name[i].slice(0, 1);
+      for (let i = 0; count > 1 && i < parts.length - 1; ++i, --count) {
+        result += parts[i].slice(0, 1);
       }
-      if (count > 0 && name.length > 0) {
-        result += name[name.length - 1].slice(0, 1);
+      if (count > 0 && parts.length > 0) {
+        result += parts[parts.length - 1].slice(0, 1);
       }
 
       if (result.length < 2 && abvr) {
-        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count - 1);
+        result += parts[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count - 1);
       }
 
       return result.toUpperCase();
@@ -1028,7 +1025,7 @@ define((require) => {
     },
 
     niceFilename(name) {
-      return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g, '-');
+      return name?.toLowerCase().replace(/[^a-zA-Z0-9-]+/g, '-');
     },
 
     hashToCss(hash) {
@@ -1080,7 +1077,7 @@ define((require) => {
         const atype = typeorder(afield), btype = typeorder(bfield);
         if (afield === bfield) {
           if (a == null || isSym) return 0;
-          const ai = a._id || '', bi = b._id || '';
+          const ai = a._id ?? '', bi = b._id ?? '';
           return ai === bi ? 0 : ai < bi ? -1 : 1;
         }
         if (atype !== btype) {
@@ -1104,7 +1101,7 @@ define((require) => {
       const last = keys.length - 1;
       for (let i = 0; i < last; ++i) {
         const key = keys[i];
-        hash = hash[key] || (hash[key] = {});
+        hash = hash[key] ??= {};
       }
 
       return hash[keys[last]] = value;
@@ -1145,7 +1142,7 @@ define((require) => {
     withDateNow(date, func) {
       date = +date;
       const thread = util.thread;
-      const dates = thread.dates || (thread.dates = []);
+      const dates = thread.dates ??= [];
       dates.push(thread.date);
       thread.date = date;
       try {
@@ -1169,7 +1166,7 @@ define((require) => {
     },
 
     dateNow() {
-      return util.thread?.date || (Date.now() + timeAdjust);
+      return util.thread?.date ?? (Date.now() + timeAdjust);
     },
 
     newDate() {
@@ -1177,7 +1174,7 @@ define((require) => {
     },
 
     dateInputFormat(date) {
-      if (date && date.constructor === Date) {
+      if (date?.constructor === Date) {
         return date.getFullYear() + '-' + twoDigits(date.getMonth() + 1) + '-' +
           twoDigits(date.getDate());
       }
@@ -1237,7 +1234,7 @@ define((require) => {
     },
 
     withId(object, _id, key = withId$) {
-      const assoc = object[key] || (object[key] = Object.create(object));
+      const assoc = object[key] ??= Object.create(object);
       if (assoc._id !== _id) assoc._id = _id;
       return assoc;
     },

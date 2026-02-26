@@ -29,37 +29,13 @@ define((require, exports, module) => {
     return qstr(id);
   };
 
-  if (String.prototype.at === undefined) {
-    const value = function at(n) {
-      // Convert the argument to an integer
-      n = Math.trunc(n) || 0;
-      // Allow negative indexing from the end
-      if (n < 0) n += this.length;
-      // Out-of-bounds access returns undefined
-      if (n < 0 || n >= this.length) return undefined;
-      // Otherwise, this is just normal property access
-      return this[n];
-    };
-
-    for (let C of [Array, String, Uint8Array]) {
-      if (C.prototype.at === undefined) {
-        Object.defineProperty(C.prototype, 'at', {
-          value,
-          writable: true,
-          enumerable: false,
-          configurable: true,
-        });
-      }
-    }
-  }
-
   const inspect1 = (o, i) => {
     try {
       switch (typeof o) {
         case 'undefined':
           return 'undefined';
         case 'function': {
-          const name = o.name || '';
+          const name = o.name ?? '';
           return `function ${name !== qlabel(name) ? '' : name}(){}`;
         }
         case 'object': {
@@ -219,12 +195,12 @@ define((require, exports, module) => {
       const m =
         ua.match(
           /(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i,
-        ) || [];
+        ) ?? [];
       if (/trident/i.test(m[1])) {
-        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
-        return 'IE ' + (tmp[1] || '');
+        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) ?? [];
+        return 'IE ' + (tmp[1] ?? '');
       }
-      m[1] = m[1] ? m[1].replace(/\s.*/, '') : 'Unknown';
+      m[1] = m[1] != null ? m[1].replace(/\s.*/, '') : 'Unknown';
       const tmp = ua.match(/version\/([\.\d]+)/i);
       if (tmp != null) m[2] = tmp[1];
       return (isMobile ? 'Mobile ' : '') + m.slice(1).join('-');
@@ -258,10 +234,11 @@ define((require, exports, module) => {
     inspect: (o, count = 4, len = 1000) => inspect1(o, count).toString().slice(0, len),
 
     moduleName: (module) =>
-      module &&
-      util.capitalize(
-        util.camelize(module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')),
-      ),
+      module == null
+        ? module
+        : util.capitalize(
+          util.camelize(module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')),
+        ),
 
     qstr,
     qlabel,
