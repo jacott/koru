@@ -2,8 +2,12 @@ define((require) => {
   'use strict';
   const {inspect$}      = require('koru/symbols');
 
-  const red$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
-        size$ = Symbol(), memo$ = Symbol();
+  const red$ = Symbol(),
+    up$ = Symbol(),
+    right$ = Symbol(),
+    left$ = Symbol(),
+    size$ = Symbol(),
+    memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
   const ident = (n) => n;
@@ -53,9 +57,9 @@ define((require) => {
   };
 
   class BTree {
-    constructor(compare=simpleCompare, unique=false) {
+    constructor(compare = simpleCompare, unique = false) {
       this.compare = compare;
-      this.unique = !! unique;
+      this.unique = !!unique;
       this.clear();
     }
 
@@ -64,11 +68,17 @@ define((require) => {
       this[size$] = 0;
     }
 
-    get size() {return this[size$]}
+    get size() {
+      return this[size$];
+    }
 
     find(value) {
       const node = this.findNode(value);
       return node === undefined ? undefined : node.value;
+    }
+
+    findNodeFn(compare, value) {
+      return find(this.root, compare, value);
     }
 
     add(value) {
@@ -109,10 +119,12 @@ define((require) => {
 
         left = n[left$];
         const {[right$]: right, [red$]: red} = n;
-        n[red$] = child[red$]; child[red$] = red;
+        n[red$] = child[red$];
+        child[red$] = red;
         const childUp = child[up$];
 
-        n[left$] = null; n[right$] = child[right$];
+        n[left$] = null;
+        n[right$] = child[right$];
         n[up$] = childUp === n ? child : childUp;
 
         child[up$] = p;
@@ -123,7 +135,9 @@ define((require) => {
         if (n[right$] !== null) n[right$][up$] = n;
         if (childUp !== n) n[up$][left$] = n;
 
-        p = n[up$]; left = null; child = n[right$];
+        p = n[up$];
+        left = null;
+        child = n[right$];
       }
 
       if (child === null) child = left;
@@ -153,7 +167,7 @@ define((require) => {
           this.root = child;
         }
         child[up$] = p;
-        if (! n[red$]) {
+        if (!n[red$]) {
           child[red$] = false;
         }
       }
@@ -176,7 +190,9 @@ define((require) => {
       return n;
     }
 
-    findNode(value) {return find(this.root, this.compare, value)}
+    findNode(value) {
+      return find(this.root, this.compare, value);
+    }
 
     nodeFrom(value) {
       const {compare} = this;
@@ -230,7 +246,9 @@ define((require) => {
       return this[size$] = size;
     }
 
-    _display(formatter=(n) => n) {return display(formatter, this.root)}
+    _display(formatter = (n) => n) {
+      return display(formatter, this.root);
+    }
 
     [inspect$]() {
       return `BTree(${this.size})`;
@@ -244,21 +262,27 @@ define((require) => {
       let nodeCount = 0;
       for (const node of this.nodes()) {
         let text = '';
-        const displayError = (dv) => `${text} at ${dsp(node, dv, 3)}\n` +
-              `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
+        const displayError = (dv) =>
+          `${text} at ${dsp(node, dv, 3)}\n` +
+          `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
         ++nodeCount;
         text = 'links invalid';
         assertTrue(node[up$] || node === this.root, displayError);
-        assertTrue(node[up$] == null || node[up$][right$] === node || node[up$][left$] === node, displayError);
+        assertTrue(
+          node[up$] == null || node[up$][right$] === node || node[up$][left$] === node,
+          displayError,
+        );
         text = 'out of order';
-        assertTrue(! prev || compare(prev.value, node.value) <= 0, displayError);
+        assertTrue(!prev || compare(prev.value, node.value) <= 0, displayError);
         let count = 1;
         let bc = node[left$] || node[right$] ? -1 : 0;
         for (let p = node; p !== root; p = p[up$]) {
           ++count;
           if (p[red$]) {
-            assertTrue(! p[up$][red$],
-                       (dv) => `dup red at ${p.value} leaf: ${dsp(node, dv)}\n${this._display(dv)}`);
+            assertTrue(
+              !p[up$][red$],
+              (dv) => `dup red at ${p.value} leaf: ${dsp(node, dv)}\n${this._display(dv)}`,
+            );
           } else if (bc >= 0) {
             ++bc;
           }
@@ -268,19 +292,22 @@ define((require) => {
         } else {
           assertTrue(
             blackExp === bc,
-            (dv) => `back exp: ${blackExp}, act: ${bc}, at ${dsp(node, dv)}\n${this._display(dv)}`);
+            (dv) => `back exp: ${blackExp}, act: ${bc}, at ${dsp(node, dv)}\n${this._display(dv)}`,
+          );
         }
 
         max = Math.max(max, count);
 
         prev = node;
       }
-      assertTrue(this.size === nodeCount,
-                 (dv) => `tree size ${this.size} !== node count ${nodeCount}\n${this._display(dv)}`);
+      assertTrue(
+        this.size === nodeCount,
+        (dv) => `tree size ${this.size} !== node count ${nodeCount}\n${this._display(dv)}`,
+      );
       return max;
     }
 
-    *nodes({from, to, direction=1, excludeFrom=false, excludeTo=false}={}) {
+    *nodes({from, to, direction = 1, excludeFrom = false, excludeTo = false} = {}) {
       const {compare} = this;
       if (direction == 1) {
         let node, nn;
@@ -293,7 +320,7 @@ define((require) => {
             node = nextNode(node);
           }
         }
-        for (;node != null; node = nn) {
+        for (; node != null; node = nn) {
           nn = nextNode(node);
           if (to !== undefined) {
             const res = compare(to, node.value);
@@ -315,7 +342,7 @@ define((require) => {
             node = previousNode(node);
           }
         }
-        for (;node != null; node = nn) {
+        for (; node != null; node = nn) {
           nn = previousNode(node);
           if (to !== undefined) {
             const res = compare(to, node.value);
@@ -381,22 +408,22 @@ define((require) => {
       let sRed = s !== null && s[red$];
       const slRed = s !== null && s[left$] !== null && s[left$][red$];
       const srRed = s !== null && s[right$] !== null && s[right$][red$];
-      if (! p[red$] && ! sRed && ! slRed && ! srRed) {
+      if (!p[red$] && !sRed && !slRed && !srRed) {
         if (s !== null) s[red$] = true;
         n = p;
       } else {
         // dc4(n);
-        if (p[red$] && ! sRed && ! slRed && ! srRed) {
+        if (p[red$] && !sRed && !slRed && !srRed) {
           if (s !== null) s[red$] = true;
           p[red$] = false;
         } else {
           // dc5(n);
-          if (! sRed) {
-            if (n === p[left$] && slRed && ! srRed) {
+          if (!sRed) {
+            if (n === p[left$] && slRed && !srRed) {
               s[red$] = true;
               s[left$][red$] = false;
               rotateRight(s);
-            } else if (n === p[right$] && ! slRed && srRed) {
+            } else if (n === p[right$] && !slRed && srRed) {
               s[red$] = true;
               s[right$][red$] = false;
               rotateLeft(s);
@@ -461,7 +488,7 @@ define((require) => {
   const ic1 = (n) => {
     while (n[up$] !== null) {
       // ic2
-      if (! n[up$][red$]) return;
+      if (!n[up$][red$]) return;
       // ic3
 
       const p = n[up$];
@@ -502,7 +529,8 @@ define((require) => {
     const p = n[up$];
     const r = n[right$];
     const rl = r[left$];
-    n[right$] = rl; if (rl !== null) rl[up$] = n;
+    n[right$] = rl;
+    if (rl !== null) rl[up$] = n;
     if (p !== null) {
       if (p[left$] === n) {
         p[left$] = r;
@@ -511,14 +539,16 @@ define((require) => {
       }
     }
     r[up$] = p;
-    r[left$] = n; n[up$] = r;
+    r[left$] = n;
+    n[up$] = r;
   };
 
   const rotateRight = (n) => {
     const p = n[up$];
     const l = n[left$];
     const lr = l[right$];
-    n[left$] = lr; if (lr !== null) lr[up$] = n;
+    n[left$] = lr;
+    if (lr !== null) lr[up$] = n;
     if (p !== null) {
       if (p[left$] === n) {
         p[left$] = l;
@@ -527,7 +557,8 @@ define((require) => {
       }
     }
     l[up$] = p;
-    l[right$] = n; n[up$] = l;
+    l[right$] = n;
+    n[up$] = l;
   };
 
   const pad = (level, pad) => {
@@ -535,22 +566,19 @@ define((require) => {
     return pad;
   };
 
-  const display = (formatter, node, level=0, prefix='') => {
+  const display = (formatter, node, level = 0, prefix = '') => {
     if (node === null || level > 10) return '';
-    return `\n${
-    pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''}${
-    display(
-      formatter, node[left$], level + 1, 'l')}${
-    display(
-      formatter, node[right$], level + 1, 'r')}`;
+    return `\n${pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''}${
+      display(formatter, node[left$], level + 1, 'l')
+    }${display(formatter, node[right$], level + 1, 'r')}`;
   };
 
-  const dsp = (node, dv, l=2) => {
-    if (! node) return 'null';
+  const dsp = (node, dv, l = 2) => {
+    if (!node) return 'null';
     return --l == 0
       ? `${dv(node.value)}`
       : `{value: ${dv(node.value)}, up: ${dsp(node[up$], dv, l)}, ` +
-      `l: ${dsp(node[left$], dv, l)}, r: ${dsp(node[right$], dv, l)}}`;
+        `l: ${dsp(node[left$], dv, l)}, r: ${dsp(node[right$], dv, l)}}`;
   };
 
   const assertTrue = (truthy, displayError) => {
