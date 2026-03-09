@@ -185,14 +185,13 @@ define((require, exports, module) => {
               const len = chunk.readUInt32LE();
               if (clen >= len) {
                 if (clen == len) {
+                  u8.decouple();
                   this.handleMsg(chunk);
-                  u8.length = 0;
                   return;
                 } else {
+                  u8.decouple();
+                  u8.append(chunk.subarray(len));
                   this.handleMsg(chunk.subarray(0, len));
-                  const extra = chunk.subarray(len);
-                  u8.setArray(extra);
-                  u8.length = extra.length;
                 }
               } else {
                 break;

@@ -4,6 +4,7 @@ isServer && define((require, exports, module) => {
   const fst             = require('koru/fs-tools');
   const Future          = require('koru/future');
   const Observable      = require('koru/observable');
+  const sUtil           = require('koru/server-util');
   const SessionBase     = require('koru/session/base').constructor;
   const GlobalDict      = require('koru/session/global-dict');
   const message         = require('koru/session/message');
@@ -277,16 +278,56 @@ isServer && define((require, exports, module) => {
       initConnection();
       await f.promiseAndReset();
 
-      const buffer = message.encodeMessage('x', [1, 2]);
-      const bl = Buffer.from('01020304010103', 'hex');
-      bl.writeUInt32LE(buffer.length + 7);
-
       for (let i = 0; i < 3; ++i) {
+        const buffer = message.encodeMessage('x', [i, 2]);
+        const bl = Buffer.from('01020304010103', 'hex');
+        bl.writeUInt32LE(buffer.length + 7);
+
         socket.write(bl);
         socket.write(buffer);
       }
 
-      assert.equals(await f.promiseAndReset(), [[1, 2], [1, 2], [1, 2]]);
+      assert.equals(await f.promiseAndReset(), [[0, 2], [1, 2], [2, 2]]);
+    });
+
+    test('readable', () => {
+      const mesgs = [];
+      let nextMsg;
+      const mysocket = {on: stub(), read: () => nextMsg};
+      intercept(net, 'createConnection', (path) => {
+        return mysocket;
+      });
+      const mps = new MultiplexSocket('foo', sess);
+      mps.handleMsg = (msg) => {
+        mesgs.push(msg);
+      };
+      mps.connect(2000);
+      let readable;
+      assert.calledWith(mysocket.on, 'readable', m((f) => readable = f));
+
+      const buildMsg = (data) => {
+        const buffer = message.encodeMessage('x', data);
+        const bl = Buffer.from('01020304010103', 'hex');
+        bl.writeUInt32LE(buffer.length + 7);
+
+        return Buffer.concat([bl, buffer]);
+      };
+
+      const exps = [buildMsg([1, 2, 3]), buildMsg([4, 5, 6]), buildMsg([7, 8, 9])];
+      const all = Buffer.concat(exps);
+      nextMsg = all.slice(0, 3);
+      readable();
+      nextMsg = all.slice(3, 8);
+      readable();
+      assert.equals(mesgs, exps.slice(0, 0));
+
+      nextMsg = all.slice(8, 20);
+      readable();
+      assert.equals(mesgs, exps.slice(0, 1));
+
+      nextMsg = all.slice(20);
+      readable();
+      assert.equals(mesgs, exps);
     });
 
     test('text response', async () => {
