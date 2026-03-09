@@ -158,8 +158,8 @@ define((require) => {
       return [byte - 0x40, index];
     }
 
-    throw new Error(`Unsupported format: ${byte} at ${index} in:
-   ${buffer.subarray(0, index < 21 ? 0 : Math.max(20, index - 20))}${index < 40 ? '' : '...'}${
+    throw new Error(`Unsupported format: ${byte} at ${index} of ${buffer.length} in:
+   ${buffer.subarray(0, index < 21 ? 0 : Math.min(20, index - 20))}${index < 40 ? '' : '...'}${
       buffer.subarray(Math.max(0, index - 20), index + 20)
     }`);
   };
@@ -299,6 +299,10 @@ define((require) => {
   };
 
   const addToDict = (dict, name) => {
+    if (name.length === 0) {
+      return 65535;
+    }
+
     let limit = 0xfff0;
     if (dict.constructor === Array) {
       limit = dict[0].limit;
@@ -337,7 +341,7 @@ define((require) => {
   const getDictItem = (dict, code) => {
     const d = dict[0];
     if (code >= d.limit) {
-      return d.c2k[code - d.limit];
+      return code === 65535 ? '' : d.c2k[code - d.limit];
     }
     return dict[1].c2k[code - 0x100];
   };
@@ -404,7 +408,6 @@ define((require) => {
       }
 
       dictBuilder.appendByte(tDictTerm);
-
       dictBuilder.append(buffer.subarray());
       return dictBuilder.subarray();
     },

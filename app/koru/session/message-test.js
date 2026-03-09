@@ -318,10 +318,24 @@ define((require, exports, module) => {
           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
         ])),
         {
-          message: 'Unsupported format: 61 at 11 in:\n' +
+          message: 'Unsupported format: 61 at 11 of 39 in:\n' +
             '   8,98,97,114,255,98,97,122,255,255,61,2,3,4,7,255,254,17,1,0,1,1,17,255,254,1,1,1,1,1,1',
         },
       );
+    });
+
+    test('empty key', () => {
+      const gDict = message.newGlobalDict();
+      message.addToDict(gDict, 'x');
+      assert.same(message.finalizeGlobalDict(gDict), gDict);
+
+      assert.equals(_encode('', gDict), v.ans = [5]);
+      assert.equals(_encode('x', gDict), v.ans = [129, 120]);
+
+      const obj = {'': 123, '\xff': '', x: true};
+      const encoded = _encode(obj, gDict);
+      assert.same(encoded.length, 17);
+      assert.equals(_decode(encoded, gDict), obj);
     });
 
     test('large object', () => {
