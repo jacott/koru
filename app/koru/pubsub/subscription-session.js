@@ -15,13 +15,15 @@ define((require) => {
   const {private$} = require('koru/symbols');
 
   const loginObserver$ = Symbol(),
-        connected$ = Symbol(), messageResponse$ = Symbol(),
-        reconnect$ = Symbol(), msgId$ = Symbol();
+    connected$ = Symbol(),
+    messageResponse$ = Symbol(),
+    reconnect$ = Symbol(),
+    msgId$ = Symbol();
 
   const sessions = Object.create(null);
 
   const assertState = (truth) => {
-    if (! truth) throw new Error('Illegal action');
+    if (!truth) throw new Error('Illegal action');
   };
 
   const incPending = (ss, sub) => {
@@ -77,11 +79,18 @@ define((require) => {
       sub[reconnect$] = true;
     }
     ss.session.sendBinary('Q', [
-      sub._id, sub[msgId$], sub.constructor.pubName, sub.args, sub.lastSubscribed]);
+      sub._id,
+      sub[msgId$],
+      sub.constructor.pubName,
+      sub.args,
+      sub.lastSubscribed,
+    ]);
   };
 
   let debug_clientUpdate = false;
-  Trace.debug_clientUpdate = (value) => {debug_clientUpdate = value};
+  Trace.debug_clientUpdate = (value) => {
+    debug_clientUpdate = value;
+  };
 
   const modelUpdate = (type, func) => {
     return function (data) {
@@ -101,7 +110,7 @@ define((require) => {
         this.isUpdateFromServer = false;
         dbBroker.dbId = prevDbId;
       }
-    }
+    };
   };
 
   const added = modelUpdate('Add', (ss, model, attrs) => {
@@ -172,8 +181,7 @@ define((require) => {
       sub[reconnect$] = false;
       incPending(this, sub);
 
-      this.session.state.isReady() &&
-        sendInit(this, sub);
+      this.session.state.isReady() && sendInit(this, sub);
     }
 
     postMessage(sub, message) {
@@ -192,7 +200,7 @@ define((require) => {
       if (this.subs[sub._id] !== void 0) {
         if (this.session.state.isReady()) {
           this.session.sendBinary('Q', [sub._id]);
-        }// stop
+        } // stop
         delete this.subs[sub._id];
         if (sub[msgId$] !== void 0) {
           decPending(this, sub);
@@ -200,7 +208,9 @@ define((require) => {
       }
     }
 
-    makeId() {return (++this.nextId).toString(36)}
+    makeId() {
+      return (++this.nextId).toString(36);
+    }
 
     static get(session) {
       return sessions[session._id] || (sessions[session._id] = new SubscriptionSession(session));
@@ -224,13 +234,14 @@ define((require) => {
     }
 
     static unloadAll() {
-      for (const id in sessions)
+      for (const id in sessions) {
         this.unload(sessions[id]);
+      }
     }
 
     filterDoc(doc) {
       const ans = doc === void 0 || this.match.has(doc);
-      if (! ans) {
+      if (!ans) {
         const model = doc.constructor;
         const simDocs = Query.simDocsFor(model);
         const sim = simDocs[doc._id];
@@ -260,9 +271,7 @@ define((require) => {
       return sessions;
     }
   }
-  SubscriptionSession[private$] = {
-    messageResponse$, connected$,
-  };
+  SubscriptionSession[private$] = {messageResponse$, connected$};
 
   return SubscriptionSession;
 });

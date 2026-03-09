@@ -4,7 +4,7 @@ isClient && define((require, exports, module) => {
    * Manage Subscription connections
    *
    * See {#../subscription}
-   **/
+   */
   const koru            = require('koru');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
@@ -95,7 +95,9 @@ isClient && define((require, exports, module) => {
     });
 
     test('reconnecting stopped', () => {
-      const reconnecting = stub(Library.prototype, 'reconnecting', function () {this.stop()});
+      const reconnecting = stub(Library.prototype, 'reconnecting', function () {
+        this.stop();
+      });
       const sub1 = Library.subscribe([123, 456]);
 
       Session.sendBinary.reset();
@@ -128,7 +130,10 @@ isClient && define((require, exports, module) => {
       assert.same(state.pendingCount(), 1);
 
       mockServer.sendSubResponse([sub1._id, 3, -400, {added: 'is_invalid'}]);
-      assert.calledWith(callback2, m((err) => err.error == 400 && err.reason.added === 'is_invalid'));
+      assert.calledWith(
+        callback2,
+        m((err) => err.error == 400 && err.reason.added === 'is_invalid'),
+      );
 
       assert.same(state.pendingCount(), 0);
 
@@ -199,7 +204,9 @@ isClient && define((require, exports, module) => {
     });
 
     test('change userId', () => {
-      after(() => {util.thread.userId = void 0});
+      after(() => {
+        util.thread.userId = void 0;
+      });
       login.setUserId(Session, 'user123'); // no userId change
       const sub = new Library(1, Session);
       const sub2 = new Library(2, Session);
@@ -232,7 +239,9 @@ isClient && define((require, exports, module) => {
     test('filterModels', () => {
       const ss = SubscriptionSession.get(Session);
       let count = 0;
-      stub(ss, 'filterDoc', () => {TransQueue.isInTransaction() && ++count});
+      stub(ss, 'filterDoc', () => {
+        TransQueue.isInTransaction() && ++count;
+      });
       after(() => {
         delete ModelMap.Foo;
         delete ModelMap.Bar;
@@ -250,7 +259,9 @@ isClient && define((require, exports, module) => {
     group('query updates', () => {
       let Foo, fooSess, ss;
 
-      const sendMsg = (type, ...args) => {fooSess._commands[type].call(fooSess, args)};
+      const sendMsg = (type, ...args) => {
+        fooSess._commands[type].call(fooSess, args);
+      };
 
       beforeEach(() => {
         Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
