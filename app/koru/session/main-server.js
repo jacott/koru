@@ -31,10 +31,8 @@ define((require, exports, module) => {
 
     const config = module.config();
 
-    if (! config.noWss) {
-      session.wss = new WebSocket.Server({
-        server, perMessageDeflate: false}),
-
+    if (!config.noWss) {
+      session.wss = new WebSocket.Server({server, perMessageDeflate: false});
       session.wss.on('connection', session.onConnection);
     }
 

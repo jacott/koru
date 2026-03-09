@@ -150,7 +150,7 @@ define((require, exports, module) => {
             IdleCheck.dec();
 
             const nextMsg = current[1];
-            if (nextMsg) {
+            if (nextMsg !== null) {
               process(nextMsg);
             } else {
               this._last = null;

@@ -19,7 +19,6 @@ define((require, exports, module) => {
   const Events = {close: 0, error: 1};
 
   const send = (socket, sessId, type, msg) => {
-    const isText = typeof msg === 'string';
     const lenExtra = 7;
     const header = Buffer.allocUnsafe(lenExtra);
     header[6] = type;
