@@ -203,6 +203,9 @@ define((require) => {
     });
 
     const stopReconnTimeout = () => {
+      if (isClient) {
+        document.removeEventListener('visibilitychange', start);
+      }
       if (reconnTimeout !== null) {
         clearTimeout(reconnTimeout);
         reconnTimeout = null;
@@ -298,7 +301,11 @@ define((require) => {
           return;
         }
 
-        reconnTimeout = wsTimeout(start, session[retryCount$] * 500);
+        if (isClient && document.hidden) {
+          document.addEventListener('visibilitychange', start);
+        } else {
+          reconnTimeout = wsTimeout(start, session[retryCount$] * 500);
+        }
 
         sessState.retry(event.code, event.reason);
       };

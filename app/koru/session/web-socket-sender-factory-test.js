@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Build WebSocket clients (senders).
-   **/
+   */
   const koru            = require('koru');
   const message         = require('koru/session/message');
   const {private$}      = require('koru/symbols');
@@ -12,7 +12,7 @@ define((require, exports, module) => {
   const stateFactory    = require('./state').constructor;
   const TH              = require('./test-helper');
 
-  const {stub, spy, intercept, match: m} = TH;
+  const {stub, spy, intercept, match: m, stubProperty} = TH;
 
   const sut = require('./web-socket-sender-factory');
 
@@ -33,9 +33,7 @@ define((require, exports, module) => {
     });
 
     test('initialization', () => {
-      /**
-       *
-       **/
+      /** */
       const webSocketSenderFactory = api.custom();
       //[
       const mySession = webSocketSenderFactory(new SessionBase('foo'), stateFactory());
@@ -136,7 +134,9 @@ define((require, exports, module) => {
     });
 
     test('heartbeat adjust time', () => {
-      after((_) => {util.adjustTime(- util.timeAdjust)});
+      after((_) => {
+        util.adjustTime(-util.timeAdjust);
+      });
 
       let kFunc;
       assert.calledWith(v.sess.provide, 'K', TH.match((f) => kFunc = f));
@@ -174,7 +174,7 @@ define((require, exports, module) => {
       now += 120000;
       koru._wsTimeout.yieldAndReset();
       now += 120;
-      kFunc.call(v.sess, '' + (now));
+      kFunc.call(v.sess, '' + now);
       assert.equals(util.timeAdjust, 60);
       assert.near(util.timeUncertainty, 66);
     });
@@ -184,10 +184,14 @@ define((require, exports, module) => {
     });
 
     test('unload', () => {
-      assert.calledWith(v.sess.provide, 'U', TH.match((arg) => {
-        v.func = arg;
-        return typeof arg === 'function';
-      }));
+      assert.calledWith(
+        v.sess.provide,
+        'U',
+        TH.match((arg) => {
+          v.func = arg;
+          return typeof arg === 'function';
+        }),
+      );
 
       stub(koru, 'unload');
 
@@ -201,10 +205,14 @@ define((require, exports, module) => {
       v.sess._commands.f = v.f = stub();
       v.sess._commands.g = v.g = stub();
 
-      assert.calledWith(v.sess.provide, 'W', TH.match((arg) => {
-        v.func = arg;
-        return typeof arg === 'function';
-      }));
+      assert.calledWith(
+        v.sess.provide,
+        'W',
+        TH.match((arg) => {
+          v.func = arg;
+          return typeof arg === 'function';
+        }),
+      );
 
       const data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
       v.func.call(v.sess, data);
@@ -262,10 +270,14 @@ define((require, exports, module) => {
         v.sess.deregisterBroadcast('bar');
       });
 
-      assert.calledWith(v.sess.provide, 'B', TH.match((arg) => {
-        v.func = arg;
-        return typeof arg === 'function';
-      }));
+      assert.calledWith(
+        v.sess.provide,
+        'B',
+        TH.match((arg) => {
+          v.func = arg;
+          return typeof arg === 'function';
+        }),
+      );
 
       let data = ['foo', 1, 2, 3];
 
@@ -287,9 +299,13 @@ define((require, exports, module) => {
     });
 
     group('open connection', () => {
-      beforeEach(() => {
+      const start = () => {
         v.sess.start();
         v.sess.ws.close = stub();
+      };
+
+      beforeEach(() => {
+        start();
         v.sendBinary = stub(v.sess, 'sendBinary');
       });
 
@@ -309,13 +325,62 @@ define((require, exports, module) => {
         const send = v.sess.ws.send = stub();
         v.sess.sendBinary('M', [1, 2, 3, 4]);
 
-        assert.calledWith(send, TH.match((data) => {
-          if (data[0] === 'M'.charCodeAt(0)) {
-            assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [1, 2, 3, 4]);
-            return true;
-          }
-        }));
+        assert.calledWith(
+          send,
+          TH.match((data) => {
+            if (data[0] === 'M'.charCodeAt(0)) {
+              assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [
+                1,
+                2,
+                3,
+                4,
+              ]);
+              return true;
+            }
+          }),
+        );
       });
+
+      if (isClient) {
+        test('hidden browser', () => {
+          let hidden = false;
+          stubProperty(document, 'hidden', {
+            get: function () {
+              return hidden;
+            },
+            set: function (v) {
+              hidden = v;
+            },
+          });
+          koru._wsTimeout.reset();
+          stub(document, 'addEventListener');
+          v.sess.ws.onclose({});
+
+          assert.calledOnce(koru._wsTimeout, m.func);
+          refute.called(document.addEventListener);
+          assert.same(v.sess.ws, null);
+
+          start();
+
+          koru._wsTimeout.reset();
+          hidden = true;
+          v.sess.ws.onclose({});
+
+          refute.called(koru._wsTimeout);
+          let sessStart;
+          assert.calledOnceWith(
+            document.addEventListener,
+            'visibilitychange',
+            m((f) => sessStart = f),
+          );
+          stub(document, 'removeEventListener');
+
+          assert.same(v.sess.ws, null);
+          sessStart();
+          assert.calledWithExactly(document.removeEventListener, 'visibilitychange', sessStart);
+          assert.same(v.sess.ws._session, v.sess);
+        });
+      }
     });
   });
 });
