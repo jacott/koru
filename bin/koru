@@ -55,8 +55,7 @@ default:
     .description(`create things in you project`);
 
   program
-    .command('test')
-    .usage('[--isolated] [--config filename.js] [--port=number] [-s] [-c] [testModule] [testNamePrefix]')
+    .command('test [testModuel] [testNamePrefix]')
     .option('--isolated', 'Start up server and headless browser to run the tests')
     .option('--config <filename>', 'Customize the settings before running tests. Use --config=help for help')
     .option('--port <number>', 'Start up server on specified port '+
@@ -67,6 +66,7 @@ default:
 
 The following ENV variables override the defaults:
 
+KORUAPI generate documentation if KORUAPI=1
 KORU_PORT node server listen port. Defaults to 3001.
 KORU_BROWSER the browser to run. Defaults to google-browser.
 KORU_BROWSER_DEBUGGING_PORT remote-debugging-port for browser. Defaults to 9222.
