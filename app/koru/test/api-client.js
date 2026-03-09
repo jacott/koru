@@ -8,9 +8,9 @@ define((require) => {
       await 1;
       const json = {};
       for (const api of this._moduleMap.values()) {
-        json[api.moduleName] = await api.serialize((json[api.moduleName] || {}));
+        json[api.moduleName] = await api.serialize(json[api.moduleName] ?? {});
       }
       TH.session.sendBinary('G', [json]);
-    }
+    };
   };
 });
