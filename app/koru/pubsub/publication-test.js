@@ -4,7 +4,7 @@ isServer && define((require, exports, module) => {
    * A Publication is a abstract interface for handling subscriptions.
    *
    * See also {#../subscription}
-   **/
+   */
   const koru            = require('koru');
   const DocChange       = require('koru/model/doc-change');
   const ModelMap        = require('koru/model/map');
@@ -49,7 +49,8 @@ isServer && define((require, exports, module) => {
        **/
       const Publication = api.class();
 
-      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+      let now = util.dateNow();
+      intercept(util, 'dateNow', () => now);
       const module = new TH.MockModule('library-pub');
       //[
       const lastSubscribed = Date.now() - util.DAY;
@@ -81,10 +82,11 @@ isServer && define((require, exports, module) => {
        * unsuccessful.
        *
        * @param {...any-type} args from client
-       **/
+       */
       api.protoMethod();
 
-      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+      let now = util.dateNow();
+      intercept(util, 'dateNow', () => now);
       //[
       const lastSubscribed = now - util.DAY;
 
@@ -134,7 +136,8 @@ isServer && define((require, exports, module) => {
       Library.pubName = 'Library';
 
       conn.sendBinary.reset();
-      now = util.dateNow() - 12000; intercept(util, 'dateNow', () => now);
+      now = util.dateNow() - 12000;
+      intercept(util, 'dateNow', () => now);
       intercept(TransQueue, 'transaction', async (func) => {
         inTrans = true;
         try {
@@ -183,11 +186,13 @@ isServer && define((require, exports, module) => {
       /**
        * Stop a subscription. This method can be called directly on the server to stop a
        * subscription. It will also be called indirectly by a stop request from the client.
-       **/
+       */
       api.protoMethod();
       let sub;
       class Library extends Publication {
-        init() {sub = this}
+        init() {
+          sub = this;
+        }
       }
       Library.pubName = 'Library';
 
@@ -206,7 +211,9 @@ isServer && define((require, exports, module) => {
       api.protoMethod('stop');
       let sub;
       class Library extends Publication {
-        init() {sub = this}
+        init() {
+          sub = this;
+        }
       }
       Library.pubName = 'Library';
 
@@ -232,7 +239,9 @@ isServer && define((require, exports, module) => {
       //[
       let sub;
       class Library extends Publication {
-        init() {sub = this}
+        init() {
+          sub = this;
+        }
       }
       Library.pubName = 'Library';
       await conn.onSubscribe('sub1', 1, 'Library', {shelf: ['mathematics']});
@@ -248,11 +257,15 @@ isServer && define((require, exports, module) => {
        * state of a subscription. If an error is thrown the client callback will receive the error.
        *
        * See {#../subscription#postMessage}
-       **/
+       */
       api.protoMethod();
-      const Book = {where: () => ({forEach: (cb) => {
-        cb({_id: 'book2', attributes: {name: 'The Bone People', shelf: 'fiction'}});
-      }})};
+      const Book = {
+        where: () => ({
+          forEach: (cb) => {
+            cb({_id: 'book2', attributes: {name: 'The Bone People', shelf: 'fiction'}});
+          },
+        }),
+      };
       //[
       let sub;
       class Library extends Publication {
@@ -260,7 +273,7 @@ isServer && define((require, exports, module) => {
           this.args = args;
           sub = this;
         }
-        onMessage(message) {//]
+        onMessage(message) { //]
           super.onMessage(message); //[#
           const name = message.addShelf;
           if (name !== undefined) {
@@ -279,10 +292,11 @@ isServer && define((require, exports, module) => {
       conn.sendBinary.reset();
       await conn.onSubscribe('sub1', 2, null, {addShelf: 'fiction'});
 
-      assert.equals(conn.sendBinary.firstCall.args, [
-        'A', ['Book', 'book2', {name: 'The Bone People', shelf: 'fiction'}]]);
-      assert.equals(conn.sendBinary.lastCall.args, [
-        'Q', ['sub1', 2, 0, 'done :)']]);
+      assert.equals(conn.sendBinary.firstCall.args, ['A', ['Book', 'book2', {
+        name: 'The Bone People',
+        shelf: 'fiction',
+      }]]);
+      assert.equals(conn.sendBinary.lastCall.args, ['Q', ['sub1', 2, 0, 'done :)']]);
       //]
     });
 
@@ -353,22 +367,23 @@ isServer && define((require, exports, module) => {
        * Convert `time` to the lower `lastSubscribedInterval` boundry.
        *
        * @param time the time (in ms) to convert
-       **/
+       */
       api.method();
       stubProperty(Publication, 'lastSubscribedInterval', 123);
       //[
-      Publication.lastSubscribedInterval = 20*60*1000;
+      Publication.lastSubscribedInterval = 20 * 60 * 1000;
 
       assert.equals(
-        Publication.discreteLastSubscribed(+ new Date(2019, 0, 4, 9, 10, 11, 123)),
-        + new Date(2019, 0, 4, 9, 0));
+        Publication.discreteLastSubscribed(+new Date(2019, 0, 4, 9, 10, 11, 123)),
+        +new Date(2019, 0, 4, 9, 0),
+      );
       //]
     });
 
     test('lastSubscribed', () => {
       /**
        * The subscriptions last successful subscription time in ms
-       **/
+       */
       api.protoProperty();
       const thirtyDaysAgo = Date.now() - 30 * util.DAY;
       const sub = new Publication({lastSubscribed: thirtyDaysAgo});
@@ -382,13 +397,15 @@ isServer && define((require, exports, module) => {
        * milliseconds. Defaults to 5mins.
        *
        * See {#.discreteLastSubscribed}
-       **/
+       */
       api.property();
-      assert.same(Publication.lastSubscribedInterval, 5*60*1000);
-      after(() => {Publication.lastSubscribedInterval = 5*60*1000});
+      assert.same(Publication.lastSubscribedInterval, 5 * 60 * 1000);
+      after(() => {
+        Publication.lastSubscribedInterval = 5 * 60 * 1000;
+      });
 
-      Publication.lastSubscribedInterval = 10*60*1000;
-      assert.same(Publication.lastSubscribedInterval, 10*60*1000);
+      Publication.lastSubscribedInterval = 10 * 60 * 1000;
+      assert.same(Publication.lastSubscribedInterval, 10 * 60 * 1000);
     });
 
     test('lastSubscribedMaximumAge', async () => {
@@ -398,7 +415,7 @@ isServer && define((require, exports, module) => {
        *
        * Client subscriptions should not send a `lastSubscribed` value if it is not later than this
        * value, by at least 10000. It should also mark any current documents as simulated.
-       **/
+       */
       api.property();
 
       class Library extends Publication {}
@@ -408,7 +425,8 @@ isServer && define((require, exports, module) => {
 
       assert.same(Library.lastSubscribedMaximumAge, 30 * util.DAY);
 
-      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+      let now = util.dateNow();
+      intercept(util, 'dateNow', () => now);
 
       await conn.onSubscribe('sub1', 1, 'Library', undefined, now - 30 * util.DAY);
       assert.calledOnceWith(conn.sendBinary, 'Q', ['sub1', 1, 200, now]);
@@ -419,7 +437,8 @@ isServer && define((require, exports, module) => {
     });
 
     test('logUnexpectedError', async () => {
-      let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+      let now = util.dateNow();
+      intercept(util, 'dateNow', () => now);
 
       const err = new koru.Error(500, 'testing');
 
@@ -441,7 +460,7 @@ isServer && define((require, exports, module) => {
     test('userId', async () => {
       /**
        * userId is a short cut to `this.conn.userId`. See {#koru/session/server-connection}
-       **/
+       */
       api.protoProperty();
       const sub = new Publication({conn});
 
@@ -454,12 +473,14 @@ isServer && define((require, exports, module) => {
     test('userIdChanged', async () => {
       /**
        * The default behavior is to do nothing. Override this if an userId change needs to be handled.
-       **/
-      after(() => {util.thread.userId = undefined});
+       */
+      after(() => {
+        util.thread.userId = undefined;
+      });
       api.protoMethod();
       //[
       class Library extends Publication {
-        async userIdChanged(newUID, oldUID) {//]
+        async userIdChanged(newUID, oldUID) { //]
           await 1;
           super.userIdChanged(newUID, oldUID); //[#
           if (newUID === undefined) this.stop();
