@@ -29,7 +29,7 @@ isServer && define((require, exports, module) => {
       /**
        * Reference to the main GlobalDict used by koru
        */
-      api.method();
+      api.property();
       //[
       assert.isTrue(GlobalDict.main instanceof GlobalDict);
       //]
