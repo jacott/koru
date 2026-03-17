@@ -2,8 +2,7 @@ isServer && define((require, exports, module) => {
   'use strict';
   /**
    * Union is an interface used to combine server subscriptions to minimise work on the server.
-   *
-   **/
+   */
   const koru            = require('koru');
   const Future          = require('koru/future');
   const dbBroker        = require('koru/model/db-broker');
@@ -36,7 +35,7 @@ isServer && define((require, exports, module) => {
           }
           await 1;
         }
-        for (;i < events.length; ++i) {
+        for (; i < events.length; ++i) {
           if (events[i] === lookfor) return;
         }
       }
@@ -55,7 +54,7 @@ isServer && define((require, exports, module) => {
     test('constructor', () => {
       /**
        * Create a Union instance
-       **/
+       */
       const Union = api.class();
       //[
       const myHandle = {stop: stub()};
@@ -107,7 +106,9 @@ isServer && define((require, exports, module) => {
           this.author_id = author_id;
         }
         async loadInitial(encoder) {
-          await Book.where('author_id', this.author_id).forEach((doc) => {encoder.addDoc(doc)});
+          await Book.where('author_id', this.author_id).forEach((doc) => {
+            encoder.addDoc(doc);
+          });
         }
       }
       const union = new MyUnion('a123');
@@ -118,10 +119,10 @@ isServer && define((require, exports, module) => {
 
       const msgs = mc.decodeLastSend();
 
-      assert.equals(msgs, [
-        ['A', ['Book', {_id: 'book1', name: 'Book 1'}]],
-        ['A', ['Book', {_id: 'book2', name: 'Book 2'}]],
-      ]);
+      assert.equals(msgs, [['A', ['Book', {_id: 'book1', name: 'Book 1'}]], ['A', ['Book', {
+        _id: 'book2',
+        name: 'Book 2',
+      }]]]);
       //]
 
       {
@@ -145,15 +146,16 @@ isServer && define((require, exports, module) => {
        * added. Usually the client will automatically handle the removes but the adds will need to
        * be calculated based on the new and old unions. The token should contain the information
        * needed to calculate the subset.
-       *
-       **/
+       */
       api.protoMethod();
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
 
       const {Book} = db.models;
-      const forEach = async (callback) => {await callback(book2)};
+      const forEach = async (callback) => {
+        await callback(book2);
+      };
       const whereNot = stub().returns({forEach});
       Book.where = stub().returns({whereNot});
 
@@ -167,10 +169,10 @@ isServer && define((require, exports, module) => {
           this.genre_id = genre_id;
         }
         async loadByToken(encoder, oldUnion) {
-          await Book
-            .where('genre_ids', this.genre_id)
-            .whereNot('genre_ids', oldUnion.genre_id)
-            .forEach((doc) => {encoder.addDoc(doc)});
+          await Book.where('genre_ids', this.genre_id).whereNot('genre_ids', oldUnion.genre_id)
+            .forEach((doc) => {
+              encoder.addDoc(doc);
+            });
         }
       }
       const oldUnion = new MyUnion('comedy');
@@ -182,18 +184,18 @@ isServer && define((require, exports, module) => {
 
       const msgs = mc.decodeLastSend();
 
-      assert.equals(msgs, [
-        ['A', ['Book', book2.attributes]],
-      ]);
+      assert.equals(msgs, [['A', ['Book', book2.attributes]]]);
       //]
       assert.calledWith(Book.where, 'genre_ids', 'drama');
       assert.calledWith(whereNot, 'genre_ids', 'comedy');
     });
 
     test('addSub partitions based on discreteLastSubscribed', async () => {
-      let now = + new Date(2019, 1, 1); intercept(util, 'dateNow', () => now);
+      let now = +new Date(2019, 1, 1);
+      intercept(util, 'dateNow', () => now);
 
-      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) *
+        Publication.lastSubscribedInterval;
       const conn1 = conn;
       const conn2 = ConnTH.mockConnection('conn2');
       const conn3 = ConnTH.mockConnection('conn3');
@@ -216,7 +218,9 @@ isServer && define((require, exports, module) => {
 
         async loadInitial(encoder, minLastSubscribed) {
           events.push(`li`, minLastSubscribed - now);
-          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
+          await Book.query.forEach((doc) => {
+            encoder.addDoc(doc);
+          });
           events.push(`liDone`);
         }
       }
@@ -262,23 +266,27 @@ isServer && define((require, exports, module) => {
 
       assert.equals(events, [
         'wait1',
-        'li', 0,
+        'li',
+        0,
         'liDone',
         'wait2',
 
-        'li', -60000,
+        'li',
+        -60000,
         'donesub2',
 
         'liDone',
         'donesub1',
         'wait3',
-        'li', -1 - Publication.lastSubscribedInterval,
+        'li',
+        -1 - Publication.lastSubscribedInterval,
         'donesub3',
 
         'liDone',
         'donesub4',
         'wait4',
-        'donesub5']);
+        'donesub5',
+      ]);
 
       union.removeSub(sub1);
       union.removeSub(sub3);
@@ -353,24 +361,28 @@ isServer && define((require, exports, module) => {
 
       assert.equals(events, [
         'wait1',
-        'li', 'token1',
+        'li',
+        'token1',
         'liDone',
         'wait2',
 
-        'li', 'token2',
+        'li',
+        'token2',
         'donesub2',
 
         'liDone',
         'donesub1',
 
         'wait3',
-        'li', 'token3',
+        'li',
+        'token3',
         'donesub4',
 
         'liDone',
         'donesub3',
         'wait4',
-        'donesub5']);
+        'donesub5',
+      ]);
 
       union.removeSub(sub5);
       union.removeSub(sub5);
@@ -384,7 +396,7 @@ isServer && define((require, exports, module) => {
        * {##onEmpty} will be called
        *
        * See {##addSub}, {##initObservers}
-       **/
+       */
       api.protoMethod();
 
       //[
@@ -433,13 +445,15 @@ isServer && define((require, exports, module) => {
        * overriden ensure that `super.onEmpty()` is run.
        *
        * See {##initObservers}
-       **/
-      api.protoProperty('handles', {intro() {
-        /**
-         * An array to store any handles that should be stopped when the union is empty. A handle
-         * is anything that has a `stop` method.
-         **/
-      }});
+       */
+      api.protoProperty('handles', {
+        intro() {
+          /**
+           * An array to store any handles that should be stopped when the union is empty. A handle
+           * is anything that has a `stop` method.
+           */
+        },
+      });
       api.protoMethod();
       const sub = new Publication({id: 'sub1', conn});
       //[
@@ -473,8 +487,9 @@ isServer && define((require, exports, module) => {
       class MyUnion extends Union {
         onEmpty() {
           super.onEmpty();
-          for (const handle of this.handles)
+          for (const handle of this.handles) {
             handle.stop();
+          }
         }
 
         initObservers() {
@@ -546,13 +561,21 @@ isServer && define((require, exports, module) => {
       const book1 = await Book.create({updatedAt: new Date(now - 80000)});
       const book2 = await Book.create({updatedAt: new Date(now - 40000)});
       const book3 = await Book.create({updatedAt: new Date(now - 50000), state: 'D'});
-      const book4 = await Book.create({updatedAt: new Date(now - 31000), state: 'C'});//]
-      Book.whereNot = stub().returns({async forEach(cb) {
-        cb(book1); cb(book2); cb(book4);
-      }});
-      Book.where = stub().returns({async forEach(cb) {
-        cb(book2); cb(book3); cb(book4);
-      }});
+      const book4 = await Book.create({updatedAt: new Date(now - 31000), state: 'C'}); //]
+      Book.whereNot = stub().returns({
+        async forEach(cb) {
+          cb(book1);
+          cb(book2);
+          cb(book4);
+        },
+      });
+      Book.where = stub().returns({
+        async forEach(cb) {
+          cb(book2);
+          cb(book3);
+          cb(book4);
+        },
+      });
       //[#
 
       class MyUnion extends Union {
@@ -565,9 +588,14 @@ isServer && define((require, exports, module) => {
           } else {
             await Book.where({updatedAt: {$gte: new Date(minLastSubscribed)}}).forEach((doc) => {
               switch (doc.state) {
-              case 'D': remDoc(doc); break;
-              case 'C': chgDoc(doc, {state: doc.state}); break;
-              default: addDoc(doc);
+                case 'D':
+                  remDoc(doc);
+                  break;
+                case 'C':
+                  chgDoc(doc, {state: doc.state});
+                  break;
+                default:
+                  addDoc(doc);
               }
             });
           }
@@ -578,21 +606,20 @@ isServer && define((require, exports, module) => {
       const sub1 = new Publication({id: 'sub1', conn}); // no lastSubscribed
       await union.addSub(sub1);
 
-      assert.equals(mc.decodeLastSend(), [
-        ['A', ['Book', book1.attributes]],
-        ['A', ['Book', book2.attributes]],
-        ['A', ['Book', book4.attributes]],
-      ]);
+      assert.equals(mc.decodeLastSend(), [['A', ['Book', book1.attributes]], ['A', [
+        'Book',
+        book2.attributes,
+      ]], ['A', ['Book', book4.attributes]]]);
 
       const lastSubscribed = now - 600000;
 
       const sub2 = new Publication({id: 'sub2', conn: conn2, lastSubscribed});
       await union.addSub(sub2);
-      assert.equals(mc2.decodeLastSend(), [
-        ['A', ['Book', book2.attributes]],
-        ['R', ['Book', 'book3', void 0]],
-        ['C', ['Book', 'book4', {state: 'C'}]],
-      ]);
+      assert.equals(mc2.decodeLastSend(), [['A', ['Book', book2.attributes]], ['R', [
+        'Book',
+        'book3',
+        void 0,
+      ]], ['C', ['Book', 'book4', {state: 'C'}]]]);
       //]
     });
 
@@ -649,10 +676,11 @@ isServer && define((require, exports, module) => {
 
       const msgs = mc.decodeLastSend();
 
-      assert.equals(msgs, [
-        ['A', ['Book', book1.attributes]],
-        ['R', ['Book', book2._id, 'stopped']],
-      ]);
+      assert.equals(msgs, [['A', ['Book', book1.attributes]], ['R', [
+        'Book',
+        book2._id,
+        'stopped',
+      ]]]);
       //]
     });
 
@@ -672,7 +700,8 @@ isServer && define((require, exports, module) => {
 
     test('loadInitial queues batchUpdates', async () => {
       let now = util.dateNow();
-      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) *
+        Publication.lastSubscribedInterval;
 
       const db = new MockDB(['Book']);
       const mc = new MockConn(conn);
@@ -694,7 +723,9 @@ isServer && define((require, exports, module) => {
         async loadInitial(encoder) {
           events.push(`li`);
           await this.future.promise;
-          await Book.query.forEach((doc) => {encoder.addDoc(doc)});
+          await Book.query.forEach((doc) => {
+            encoder.addDoc(doc);
+          });
           events.push(`liDone`);
         }
       }
@@ -715,19 +746,22 @@ isServer && define((require, exports, module) => {
       await syncPoint('wait1', 'donesub1');
 
       assert.calledTwice(conn.sendEncoded);
-      assert.equals(mc.decodeMessage(conn.sendEncoded.firstCall.args[0]), [
-        ['A', ['Book', book1.attributes]],
-        ['A', ['Book', book2.attributes]],
-      ]);
+      assert.equals(mc.decodeMessage(conn.sendEncoded.firstCall.args[0]), [['A', [
+        'Book',
+        book1.attributes,
+      ]], ['A', ['Book', book2.attributes]]]);
       assert.equals(String.fromCharCode(conn.sendEncoded.lastCall.args[0][0]), 'C');
-      assert.equals(mc.decodeMessage(conn.sendEncoded.lastCall.args[0]), [
-        'Book', 'book1', {name: 'name change'}]);
+      assert.equals(mc.decodeMessage(conn.sendEncoded.lastCall.args[0]), ['Book', 'book1', {
+        name: 'name change',
+      }]);
     });
 
     test('addSub adds to running partition', async () => {
-      let now = + new Date(2019, 1, 1); intercept(util, 'dateNow', () => now);
+      let now = +new Date(2019, 1, 1);
+      intercept(util, 'dateNow', () => now);
 
-      now = Math.floor(now / Publication.lastSubscribedInterval) * Publication.lastSubscribedInterval;
+      now = Math.floor(now / Publication.lastSubscribedInterval) *
+        Publication.lastSubscribedInterval;
       const conn1 = conn;
       const conn2 = ConnTH.mockConnection('conn2');
       const conn3 = ConnTH.mockConnection('conn3');
@@ -792,23 +826,27 @@ isServer && define((require, exports, module) => {
 
       assert.equals(events, [
         'wait1',
-        'li', 10000,
+        'li',
+        10000,
         'liDone',
         'wait2',
 
-        'li', 4000,
+        'li',
+        4000,
         'donesub2',
 
         'liDone',
         'donesub1',
         'wait3',
-        'li', -60000,
+        'li',
+        -60000,
         'donesub3',
 
         'liDone',
         'donesub5',
         'wait4',
-        'donesub4']);
+        'donesub4',
+      ]);
     });
 
     test('encodeUpdate', async () => {
@@ -872,7 +910,7 @@ isServer && define((require, exports, module) => {
     test('sendEncodedWhenIdle', async () => {
       /**
        * Delays calling {##sendEncoded} until {##loadInitial} and {##loadByToken} have finished
-       **/
+       */
       api.protoMethod();
       //[
       const union = new Union();
@@ -898,8 +936,7 @@ isServer && define((require, exports, module) => {
     test('subs', async () => {
       /**
        * Return an iterator over the union's subs.
-       *
-       **/
+       */
       api.protoMethod();
 
       const conn2 = ConnTH.mockConnection('sess124');
@@ -920,7 +957,7 @@ isServer && define((require, exports, module) => {
       /**
        * Override this to manipulate the document sent to clients. By default calls
        * {#koru/session/server-connection.buildUpdate}.
-       **/
+       */
       api.protoMethod();
 
       const db = new MockDB(['Book']);
@@ -940,10 +977,11 @@ isServer && define((require, exports, module) => {
       const union = new MyUnion();
       const book1 = await Book.create();
 
-      assert.equals(
-        union.buildUpdate(DocChange.change(book1, {name: 'old name'})),
-        ['C', ['Book', 'book1', {name: 'filtered'}]],
-      );
+      assert.equals(union.buildUpdate(DocChange.change(book1, {name: 'old name'})), ['C', [
+        'Book',
+        'book1',
+        {name: 'filtered'},
+      ]]);
       //]
     });
 
@@ -951,7 +989,7 @@ isServer && define((require, exports, module) => {
       /**
        * buildBatchUpdate builds the {##batchUpdate} function that can be used to broadcast document
        * updates to multiple client subscriptions. It is called during Union construction.
-       **/
+       */
       api.protoMethod();
       //[
       class MyUnion extends Union {
@@ -972,7 +1010,7 @@ isServer && define((require, exports, module) => {
        * sent.
        *
        * See also {##initObservers}
-       **/
+       */
       api.protoMethod();
 
       //[
@@ -1002,22 +1040,25 @@ isServer && define((require, exports, module) => {
 
       const msgs = mc.decodeLastSend();
 
-      assert.equals(msgs, [
-        ['C', ['Book', 'book1', {name: 'name change'}]],
-        ['A', ['Book', {_id: 'book3', name: 'Book 3'}]],
-        ['R', ['Book', 'book2', void 0]],
-      ]);
+      assert.equals(msgs, [['C', ['Book', 'book1', {name: 'name change'}]], ['A', ['Book', {
+        _id: 'book3',
+        name: 'Book 3',
+      }]], ['R', ['Book', 'book2', void 0]]]);
       //]
     });
 
     test('multiple unions on one sub', async () => {
       const empty = [];
       class Union1 extends Union {
-        onEmpty() {empty.push('union1')}
+        onEmpty() {
+          empty.push('union1');
+        }
       }
 
       class Union2 extends Union {
-        onEmpty() {empty.push('union2')}
+        onEmpty() {
+          empty.push('union2');
+        }
       }
 
       const union11 = new Union1();
@@ -1034,6 +1075,15 @@ isServer && define((require, exports, module) => {
       union11.removeSub(sub);
 
       assert.equals(empty.join(' '), 'union1 union2 union1');
+    });
+
+    test('loadQueue error', async () => {
+      const union = {loadInitial: stub().throws('error')};
+      const lq = new Union[isTest].LoadQueue(union);
+      const sub = new Publication({id: 's123', conn});
+      await assert.exception(() => lq.add(sub, 12345));
+      assert.isTrue(isNaN(lq.discreteLastSubscribed));
+      assert.same(lq.waitingSubs.size, 0);
     });
   });
 });

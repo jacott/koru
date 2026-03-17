@@ -139,21 +139,25 @@ define((require, exports, module) => {
 
     async loadDocs(sub, {lastSubscribed}) {
       this.discreteLastSubscribed = sub.constructor.discreteLastSubscribed(lastSubscribed);
+      let msg;
       this.minLastSubscribed = lastSubscribed;
 
-      const msg = await this._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
+      try {
+        msg = await this._loadDocsPart1(sub, this.union.loadInitial, this.minLastSubscribed);
+      } finally {
+        this.discreteLastSubscribed = NaN;
 
-      this.discreteLastSubscribed = NaN;
-
-      let node = this.subs.front;
-      this.subs.clear();
-      const wnode = this.waitingSubs.lastNode;
-      if (wnode !== null) {
-        this.waitingSubs.deleteNode(wnode);
-        this.subs = wnode.value.queue;
+        let node = this.subs.front;
+        this.subs.clear();
+        const wnode = this.waitingSubs.lastNode;
+        if (wnode !== null) {
+          this.waitingSubs.deleteNode(wnode);
+          this.subs = wnode.value.queue;
+        }
+        if (msg !== undefined) {
+          this._loadDocsPart2(msg, node);
+        }
       }
-
-      this._loadDocsPart2(msg, node);
     }
   }
 
@@ -315,6 +319,10 @@ define((require, exports, module) => {
         }
       };
     }
+  }
+
+  if (isTest) {
+    Union[isTest] = {LoadQueue};
   }
 
   return Union;
