@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Main error class for koru errors.
-   **/
+   */
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -31,7 +31,9 @@ define((require, exports, module) => {
 
        **/
       api.protoProperty('error', {info: `The http error code for the error`});
-      api.protoProperty('reason', {info: `The textual reason or an \`object\` with specific details`});
+      api.protoProperty('reason', {
+        info: `The textual reason or an \`object\` with specific details`,
+      });
 
       const koru = {Error: api.class()};
       //[
@@ -47,6 +49,27 @@ define((require, exports, module) => {
 
       assert.equals(err2.reason, {name: [['is_invalid']]});
       //]
+    });
+
+    test('forbidden', () => {
+      const error = KoruError.forbidden();
+      assert.isTrue(error instanceof KoruError);
+      assert.same(error.error, 403);
+      assert.same(error.reason, 'Forbidden');
+    });
+
+    test('notFound', () => {
+      const error = KoruError.notFound();
+      assert.isTrue(error instanceof KoruError);
+      assert.same(error.error, 404);
+      assert.same(error.reason, 'Not Found');
+    });
+
+    test('notUnique', () => {
+      const error = KoruError.notUnique();
+      assert.isTrue(error instanceof KoruError);
+      assert.same(error.error, 409);
+      assert.same(error.reason, 'Not Unique');
     });
   });
 });
