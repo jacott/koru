@@ -10,8 +10,7 @@ define((require, exports, module) => {
   const message         = require('koru/session/message');
   const ServerConnection = require('koru/session/server-connection');
 
-  const subs$ = Symbol(), unionSym$ = Symbol(),
-        loadQueue$ = Symbol();
+  const subs$ = Symbol(), unionSym$ = Symbol(), loadQueue$ = Symbol();
 
   const WaitSubCompare = (a, b) => a.time - b.time;
 
@@ -64,7 +63,7 @@ define((require, exports, module) => {
 
     _loadDocsPart2(msg, node) {
       const send = String.fromCharCode(msg[0]) !== 'W' || msg.length > 2;
-      for (;node !== void 0; node = node.next) {
+      for (; node !== void 0; node = node.next) {
         const {sub, future} = node.value;
         send && sub.conn.sendEncoded(msg);
         future !== void 0 && future.resolve();
@@ -105,8 +104,7 @@ define((require, exports, module) => {
       if (this.subs.size !== 0) {
         // loadDocs is running
         const future = new Future();
-        if (this.discreteLastSubscribed == time &&
-            lastSubscribed >= this.minLastSubscribed) {
+        if (this.discreteLastSubscribed == time && lastSubscribed >= this.minLastSubscribed) {
           // My loadDocs is running
           this.subs.push({sub, future});
           await future.promise;
@@ -216,7 +214,9 @@ define((require, exports, module) => {
 
   class Union {
     constructor() {
-      this[subs$] = new DLinkedList(() => {this.onEmpty()});
+      this[subs$] = new DLinkedList(() => {
+        this.onEmpty();
+      });
       this.handles = [];
       this[loadQueue$] = null;
       this.batchUpdate = this.buildBatchUpdate();
@@ -228,7 +228,7 @@ define((require, exports, module) => {
       return sub[this[unionSym$]] !== void 0;
     }
 
-    async addSub(sub, lastSubscribed=sub.lastSubscribed) {
+    async addSub(sub, lastSubscribed = sub.lastSubscribed) {
       if (sub[this[unionSym$]] !== void 0) return;
       this.count++;
       await LoadQueue.addSub(this, sub, lastSubscribed);
@@ -275,16 +275,22 @@ define((require, exports, module) => {
       }
     }
 
-    subs() {return this[subs$].values()}
+    subs() {
+      return this[subs$].values();
+    }
 
-    buildUpdate(dc) {return ServerConnection.buildUpdate(dc)}
+    buildUpdate(dc) {
+      return ServerConnection.buildUpdate(dc);
+    }
 
     batchUpdate() {} // overriden during construction
 
     buildBatchUpdate() {
       let push = null;
 
-      const tidyUp = () => {push = null};
+      const tidyUp = () => {
+        push = null;
+      };
 
       return (dc) => {
         const upd = this.buildUpdate(dc);
