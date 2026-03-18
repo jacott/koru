@@ -146,8 +146,8 @@ isServer && define((require, exports, module) => {
     group('with connection', () => {
       let client;
 
-      const connect = (formatOptions) =>
-        new PgConn(PgType, formatOptions).connect({
+      const connect = (options) =>
+        new PgConn(PgType, options).connect({
           dbname: process.env.KORU_DB,
           port: 5432,
           options: '-c application_name=korutest',
@@ -212,13 +212,32 @@ isServer && define((require, exports, module) => {
       });
 
       test('nulls', async () => {
-        const client2 = await connect({excludeNulls: false});
+        const client2 = await connect({formatOptions: {excludeNulls: false}});
         after(() => {
           client2.destroy();
         });
 
         assert.equals(await client.exec(`SELECT 1+2 as a, null as b`), [{a: 3}]);
         assert.equals(await client2.exec(`SELECT 1+2 as a, null as b`), [{a: 3, b: null}]);
+      });
+
+      test('hide tenant', async () => {
+        const client2 = await connect({
+          tenant_id: 'org_id',
+          formatOptions: {excludeNulls: false, hide_tenant: true},
+        });
+        after(() => {
+          client2.destroy();
+        });
+
+        assert.equals(
+          await client.exec(`SELECT 1+2 as a, null as b, 123 as org_id, 456 as tenant_id`),
+          [{a: 3, org_id: 123, tenant_id: 456}],
+        );
+        assert.equals(
+          await client2.exec(`SELECT 1+2 as a, null as b, 123 as org_id, 456 as tenant_id`),
+          [{a: 3, b: null, tenant_id: 456}],
+        );
       });
 
       test('bytea', async () => {

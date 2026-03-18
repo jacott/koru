@@ -197,11 +197,11 @@ define((require, exports, module) => {
     client.withConn((conn) => query(conn, sql, values, oids));
 
   class Client {
-    constructor(url, name, formatOptions) {
+    constructor(url, name, options) {
       this[tx$] = Symbol();
       this._url = url;
       this.name = name;
-      this.formatOptions = formatOptions;
+      this.options = options;
       this[mutex$] = new SimpleMutex();
       this[pool$] = undefined;
     }
@@ -1340,14 +1340,10 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     isPG: true,
 
     get defaultDb() {
-      if (!defaultDb) {
-        defaultDb = new Client(
-          module.config().url,
-          'default',
-          module.config().formatOptions ?? DEFAULT_FORMAT_OPTIONS,
-        );
-      }
-      return defaultDb;
+      return defaultDb ??= new Client(module.config().url, 'default', {
+        tenant_id: module.config().tenant_id ?? 'tenant_id',
+        formatOptions: module.config().formatOptions ?? DEFAULT_FORMAT_OPTIONS,
+      });
     },
 
     closeDefaultDb,

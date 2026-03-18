@@ -78,13 +78,13 @@ define((require, exports, module) => {
   const FALSEY = {false: true, 0: true, f: true};
 
   class PgConn {
-    constructor(types, formatOptions = {}) {
+    constructor(types, options = {}) {
       this.types = types;
-      this.formatOptions = formatOptions;
+      this.options = options;
     }
 
     connect(options, callback) {
-      const client = new PgClient(this.types, this.formatOptions);
+      const client = new PgClient(this.types, this.options);
       if (typeof options === 'string') options = parseOptions(options);
       const connOpts = {};
       connOpts.user = options.user ?? process.env.USER;
@@ -175,9 +175,10 @@ define((require, exports, module) => {
   const isRowReturningTag = (tag) => ROW_RETURNING[tag[0]] ?? false;
 
   class PgClient {
-    constructor(types, formatOptions = {}) {
+    constructor(types, options = {}) {
       this.types = types;
-      this.formatOptions = formatOptions;
+      this.formatOptions = options.formatOptions ?? {};
+      this.tenant_id = options.tenant_id ?? 'tenant_id';
     }
 
     destroy() {
@@ -209,6 +210,7 @@ define((require, exports, module) => {
       return {
         fetch: async (callback) => {
           const {excludeNulls = true} = this.formatOptions;
+          const tenant_id = this.formatOptions.hide_tenant ? this.tenant_id : null;
           const getValue = this.buildGetValue();
           try {
             do {
@@ -220,9 +222,11 @@ define((require, exports, module) => {
                 const rec = {};
                 forEachColumn(rawRow, (rawValue, i) => {
                   const desc = columns[i];
+                  const name = desc.name;
+                  if (name === tenant_id) return;
                   const value = getValue(desc, rawValue);
                   if (!excludeNulls || value !== null) {
-                    rec[desc.name] = value;
+                    rec[name] = value;
                   }
                 });
                 callback(rec);

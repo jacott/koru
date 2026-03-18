@@ -22,8 +22,8 @@ isServer && define((require, exports, module) => {
       client.destroy();
     });
 
-    const connect = (formatOptions) =>
-      new PgConn(PgType, formatOptions).connect({
+    const connect = (options) =>
+      new PgConn(PgType, options).connect({
         dbname: process.env.KORU_DB,
         port: 5432,
         options: '-c application_name=korutest/pg-prep-sql',
