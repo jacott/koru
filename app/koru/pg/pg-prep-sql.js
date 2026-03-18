@@ -1,8 +1,10 @@
 define((require, exports, module) => {
   'use strict';
   const PgError         = require('koru/pg/pg-error');
-  const {getRow, forEachColumn, buildNameOidColumns, buildColumns, tagToCount} = require('koru/pg/pg-util');
+  const PgUtil          = require('koru/pg/pg-util');
   const util            = require('koru/util');
+
+  const {getRow, forEachColumn, buildNameOidColumns, buildColumns, tagToCount} = PgUtil;
 
   const {private$} = require('koru/symbols');
 
@@ -12,26 +14,35 @@ define((require, exports, module) => {
     constructor(client, pname, portal, ps) {
       this.name = pname;
       const pv = this[private$] = {
-        portal, getValue: client.buildGetValue(), columns: ps.columns,
-        excludeNulls: client.formatOptions.excludeNulls ?? true};
-      if (ps.columns === void 0) portal.describe(
-        (rawColumns) => {pv.columns = ps.columns = buildNameOidColumns(rawColumns)});
+        portal,
+        getValue: client.buildGetValue(),
+        columns: ps.columns,
+        excludeNulls: client.formatOptions.excludeNulls ?? true,
+      };
+      if (ps.columns === void 0) {
+        portal.describe((rawColumns) => {
+          pv.columns = ps.columns = buildNameOidColumns(rawColumns);
+        });
+      }
     }
 
-    async fetch(maxRows=0) {
+    async fetch(maxRows = 0) {
       const pv = this[private$];
       let {portal, getValue, excludeNulls} = pv;
-      if (! portal[private$].canFetch) return;
+      if (!portal[private$].canFetch) return;
       const rows = [];
-      const err = await portal.fetch(
-        (rawRow) => {rows.push(getRow(pv.columns, getValue, rawRow, excludeNulls))}, maxRows);
+      const err = await portal.fetch((rawRow) => {
+        rows.push(getRow(pv.columns, getValue, rawRow, excludeNulls));
+      }, maxRows);
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, portal.u8query?.uf8Slice());
       }
       return rows;
     }
 
-    close(err) {return this[private$].portal.close(err)}
+    close(err) {
+      return this[private$].portal.close(err);
+    }
   }
 
   class PgPrepSql {
@@ -65,14 +76,18 @@ define((require, exports, module) => {
     setOids(oids) {
       if (oids === void 0) return this;
       this.#paramCount = oids.length;
-      this.#paramMapper = (obj, callback) => {for (let i = 0; i < oids.length; ++i) callback(obj[i], oids[i])};
+      this.#paramMapper = (obj, callback) => {
+        for (let i = 0; i < oids.length; ++i) callback(obj[i], oids[i]);
+      };
       return this;
     }
 
     async fetchOne(client, ...args) {
       const port = this.portal(client, '', ...args);
       let rec;
-      const err = await port.fetch(this._readyQuery(client, port, (r) => {rec ??= r}));
+      const err = await port.fetch(this._readyQuery(client, port, (r) => {
+        rec ??= r;
+      }));
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
       }
@@ -83,18 +98,29 @@ define((require, exports, module) => {
     async fetch(client, ...args) {
       const port = this.portal(client, '', ...args);
       const rows = [];
-      const err = await port.fetch(this._readyQuery(client, port, (rec) => {rows.push(rec)}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      const err = await port.fetch(this._readyQuery(client, port, (rec) => {
+        rows.push(rec);
+      }));
+      if (err !== void 0) {
+        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      }
       return rows;
     }
 
     async execute(client, ...args) {
       const port = this.portal(client, '', ...args);
-      let tag; port.commandComplete((t) => {tag = t});
+      let tag;
+      port.commandComplete((t) => {
+        tag = t;
+      });
       const rows = [];
-      const err = await port.fetch(this._readyQuery(client, port, (rec) => {rows.push(rec)}));
-      if (err !== void 0) throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
-      return rows.length == 0 && ! tag.startsWith('SELECT ') ? tagToCount(tag) : rows;
+      const err = await port.fetch(this._readyQuery(client, port, (rec) => {
+        rows.push(rec);
+      }));
+      if (err !== void 0) {
+        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      }
+      return rows.length == 0 && !tag.startsWith('SELECT ') ? tagToCount(tag) : rows;
     }
 
     openCursor(client, pname, ...args) {
@@ -103,10 +129,12 @@ define((require, exports, module) => {
     }
 
     async describe(client, fields, ...args) {
-      const {excludeNulls=true} = client.formatOptions;
+      const {excludeNulls = true} = client.formatOptions;
       const port = this.portal(client, '', ...args);
       let {columns} = this;
-      const err = await port.describe((rawColumns) => {columns = this.columns = buildColumns(rawColumns, fields)}, true);
+      const err = await port.describe((rawColumns) => {
+        columns = this.columns = buildColumns(rawColumns, fields);
+      }, true);
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
       }
@@ -114,10 +142,14 @@ define((require, exports, module) => {
     }
 
     _readyQuery(client, port, callback) {
-      const {excludeNulls=true} = client.formatOptions;
+      const {excludeNulls = true} = client.formatOptions;
       let {columns} = this;
       port.addResultFormat();
-      if (columns === void 0) port.describe((rawColumns) => {columns = this.columns = buildNameOidColumns(rawColumns)});
+      if (columns === void 0) {
+        port.describe((rawColumns) => {
+          columns = this.columns = buildNameOidColumns(rawColumns);
+        });
+      }
 
       const getValue = client.buildGetValue();
       return (rawRow) => callback(getRow(columns, getValue, rawRow, excludeNulls));
@@ -141,18 +173,22 @@ define((require, exports, module) => {
       let index = -1;
       const pm = this.#paramMapper;
       if (pm !== void 0) {
-        const encoder = (value, oid=0) => {port.addParamOid(encodeBinary(b, value, oid == 0 ? guessOid(value) : oid))};
+        const encoder = (value, oid = 0) => {
+          port.addParamOid(encodeBinary(b, value, oid == 0 ? guessOid(value) : oid));
+        };
         for (const obj of args) index = pm(obj, encoder, index);
       }
       return port;
     }
   }
 
-  if (isTest) PgPrepSql[isTest] = {
-    reset: () => {
-      nameCounter = 0;
-    },
-  };
+  if (isTest) {
+    PgPrepSql[isTest] = {
+      reset: () => {
+        nameCounter = 0;
+      },
+    };
+  }
 
   return PgPrepSql;
 });

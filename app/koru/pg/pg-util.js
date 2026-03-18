@@ -29,10 +29,7 @@ define((require, exports, module) => {
     R: 'routine',
   };
 
-  const MessageNumberMap = {
-    P: true,
-    L: true,
-  };
+  const MessageNumberMap = {P: true, L: true};
 
   class PgMessage {
     constructor() {}
@@ -94,7 +91,8 @@ define((require, exports, module) => {
       columns.push({
         name: u8.utf8Slice(pos, strEnd),
         oid: u8.readInt32BE(strEnd + 7),
-        format: u8.readInt16BE(strEnd + 17)});
+        format: u8.readInt16BE(strEnd + 17),
+      });
       pos = strEnd + 19;
     }
 
@@ -120,12 +118,12 @@ define((require, exports, module) => {
     return columns;
   };
 
-  const getRow = (columns, getValue, rawRow, excludeNulls=true) => {
+  const getRow = (columns, getValue, rawRow, excludeNulls = true) => {
     const row = {};
     forEachColumn(rawRow, (rawValue, i) => {
       const desc = columns[i];
       const value = getValue(desc, rawValue);
-      if (! excludeNulls || value !== null) {
+      if (!excludeNulls || value !== null) {
         row[desc.name] = value;
       }
     });
@@ -159,7 +157,7 @@ define((require, exports, module) => {
     getRow,
     utf8Encode: (v) => Buffer.from(v.toString()),
     listener$,
-    tagToCount: (tag='') => {
+    tagToCount: (tag = '') => {
       const ridx = tag.lastIndexOf(' ');
       return ridx == -1 ? tag : +tag.slice(ridx + 1) || tag;
     },

@@ -15,10 +15,9 @@ define((require, exports, module) => {
 
   const listener$ = Symbol(), mutex$ = Symbol();
 
-  const [
-    BE_IDLE, BE_IN_TRANSACTION,
-    QCMD, dCMD, pCMD,
-  ] = 'ITQdp'.split('').map((c) => c.charCodeAt(0));
+  const [BE_IDLE, BE_IN_TRANSACTION, QCMD, dCMD, pCMD] = 'ITQdp'.split('').map((c) =>
+    c.charCodeAt(0)
+  );
 
   const TERMINATE = simpleCmd('X');
   const COPY_DONE = simpleCmd('c');
@@ -45,7 +44,9 @@ define((require, exports, module) => {
   const sasl = (pgConn) => {
     ub.length = 0;
     const nonce = pgConn[private$].nonce = Buffer.from(crypto.randomBytes(18).toString('base64'));
-    ub.appendByte(pCMD).writeInt32BE(SASL_AUTH.length + 1 + SASL_PRELUDE.length + nonce.length + 4+4);
+    ub.appendByte(pCMD).writeInt32BE(
+      SASL_AUTH.length + 1 + SASL_PRELUDE.length + nonce.length + 4 + 4,
+    );
     ub.append(SASL_AUTH).appendByte(0);
     ub.writeInt32BE(SASL_PRELUDE.length + nonce.length);
     ub.append(SASL_PRELUDE).append(nonce);
@@ -72,7 +73,8 @@ define((require, exports, module) => {
     const saltedPassword = crypto.pbkdf2Sync(
       pv.password,
       Buffer.from(res.s, 'base64'),
-      parseInt(res.i), 32,
+      parseInt(res.i),
+      32,
       'sha256',
     );
 
@@ -85,7 +87,10 @@ define((require, exports, module) => {
     pv.serverSignature = hmac(hmac(saltedPassword, 'Server Key'), auth).toString('base64');
     ub.length = 0;
     ub.appendByte(pCMD).writeInt32BE(0);
-    ub.appendUtf8Str('c=biws,r=' + res.r + ',p=' + xor(clientKey, hmac(sha256(clientKey), auth)).toString('base64'));
+    ub.appendUtf8Str(
+      'c=biws,r=' + res.r + ',p=' +
+        xor(clientKey, hmac(sha256(clientKey), auth)).toString('base64'),
+    );
     ub.writeInt32BE(ub.length - 1, 1);
 
     pgConn.socket.write(ub.subarray());
@@ -147,10 +152,7 @@ define((require, exports, module) => {
 
   // BackendKeyData
   addCommand('K', (pgConn, data) => {
-    pgConn.cancel = {
-      processId: data.readInt32BE(0),
-      secretKey: data.readInt32BE(4),
-    };
+    pgConn.cancel = {processId: data.readInt32BE(0), secretKey: data.readInt32BE(4)};
     return true;
   });
 
@@ -158,7 +160,7 @@ define((require, exports, module) => {
   addCommand('n', util.trueFunc);
 
   // EmptyQueryResponse
-  addCommand('I', (pgConn) => pgConn[listener$].error((PgMessage.error('EmptyQueryResponse'))));
+  addCommand('I', (pgConn) => pgConn[listener$].error(PgMessage.error('EmptyQueryResponse')));
 
   // CloseComplete
   addCommand('3', (pgConn, data) => pgConn[listener$].closeComplete(data));
@@ -167,7 +169,9 @@ define((require, exports, module) => {
   addCommand('Z', (pgConn, [ts]) => {
     const state = pgConn[private$].state = ts === BE_IDLE
       ? State.READY
-      : ts === BE_IN_TRANSACTION ? State.READY_IN_TRANSACTION : State.READY_IN_ROLLBACK;
+      : ts === BE_IN_TRANSACTION
+      ? State.READY_IN_TRANSACTION
+      : State.READY_IN_ROLLBACK;
     return pgConn[listener$].ready(state);
   });
 
@@ -175,7 +179,10 @@ define((require, exports, module) => {
   addCommand('E', (pgConn, data) => pgConn[listener$].error(PgMessage.readFields(data)));
 
   // NoticeResponse
-  addCommand('N', (pgConn, data) => (pgConn[private$].onNoticeCallback?.(PgMessage.readFields(data)), true));
+  addCommand(
+    'N',
+    (pgConn, data) => (pgConn[private$].onNoticeCallback?.(PgMessage.readFields(data)), true),
+  );
 
   // ParseComplete
   addCommand('1', (pgConn) => pgConn[listener$].parseComplete());
@@ -216,9 +223,10 @@ define((require, exports, module) => {
   // CopyFail
   addCommand('f', (pgConn, data) => pgConn[listener$].copyFail(data));
 
-  const makeCloseError = (message) => (message instanceof PgMessage)
-    ? message
-    : new PgMessage({message: message ?? 'connection closed'});
+  const makeCloseError = (message) =>
+    (message instanceof PgMessage)
+      ? message
+      : new PgMessage({message: message ?? 'connection closed'});
 
   const writeQuery = (conn, str) => {
     const utf8 = Buffer.from(str);
@@ -241,7 +249,9 @@ define((require, exports, module) => {
       (this[mutex$] = new SimpleMutex()).lock();
     }
 
-    get state() {return this[private$].state}
+    get state() {
+      return this[private$].state;
+    }
 
     async lock(listener) {
       const error = await this[mutex$].lock();
@@ -335,7 +345,7 @@ define((require, exports, module) => {
         while (len - pos > 4) {
           const expLen = ub.buffer.readInt32BE(pos + 1) + 1;
           if (len - pos < expLen) break;
-          const data = ub.subarray(pos + 1+4, expLen + pos);
+          const data = ub.subarray(pos + 1 + 4, expLen + pos);
           const cmdType = ub.buffer[pos];
           const cmd = BECMD[cmdType];
           pos += expLen;
@@ -343,9 +353,11 @@ define((require, exports, module) => {
           if (cmd !== undefined) {
             more = cmd(this, data);
           } else {
-            this[listener$].error(PgMessage.error(`Unknown response message: '${String.fromCharCode(cmdType)}'\n`));
+            this[listener$].error(
+              PgMessage.error(`Unknown response message: '${String.fromCharCode(cmdType)}'\n`),
+            );
           }
-          if (! more) return;
+          if (!more) return;
         }
 
         len = ub.length - pos;
@@ -364,9 +376,13 @@ define((require, exports, module) => {
       this[private$].close?.(error);
     }
 
-    isClosed() {return this[private$].state === State.CLOSED}
+    isClosed() {
+      return this[private$].state === State.CLOSED;
+    }
 
-    portal(name='') {return new PgPortal(this, name)}
+    portal(name = '') {
+      return new PgPortal(this, name);
+    }
 
     copyFromStream(str, callback) {
       const conn = this;
@@ -458,7 +474,9 @@ define((require, exports, module) => {
             pv.sendNext();
           }
         },
-        destroy: (err, cb) => {cb(err)},
+        destroy: (err, cb) => {
+          cb(err);
+        },
         autoDestroy: true,
       });
 
@@ -568,7 +586,7 @@ define((require, exports, module) => {
         return fetch(callback);
       };
 
-      const fetch = (callback=util.voidFunc) => {
+      const fetch = (callback = util.voidFunc) => {
         if (error !== undefined || execState < 1) return error;
         if (execState == 1) return initFetch(callback);
         return new Promise(async (resolve) => {
@@ -604,10 +622,18 @@ define((require, exports, module) => {
           });
         },
 
-        get isExecuting() {return execState != 0},
-        describe: (callback) => {rowDescCallback = callback},
-        commandComplete: (callback) => {ccCallback = callback},
-        get error() {return error},
+        get isExecuting() {
+          return execState != 0;
+        },
+        describe: (callback) => {
+          rowDescCallback = callback;
+        },
+        commandComplete: (callback) => {
+          ccCallback = callback;
+        },
+        get error() {
+          return error;
+        },
       };
     }
   }

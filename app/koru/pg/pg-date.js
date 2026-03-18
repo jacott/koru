@@ -46,31 +46,38 @@ define(() => {
     return new Date(Date.UTC(y - 4800, (quad + 10) % 12, julian - ((7834 * quad) >> 8)));
   };
 
-  const dd = (v, n=2) => v.toString().padStart(2, '0');
+  const dd = (v, n = 2) => v.toString().padStart(2, '0');
 
   const date2text = (v) => `${v.getUTCFullYear()}-${dd(v.getUTCMonth() + 1)}-${dd(v.getUTCDate())}`;
 
   const text2date = (str) => {
     const m = /^(\d{2,4})-(\d\d?)-(\d\d?)/.exec(str);
     if (m === null) return new Date(NaN);
-    return new Date(Date.UTC(+ m[1], + m[2] - 1, + m[3]));
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   };
 
   const ts2int8 = (ts) => (ts - POSTGRES_EPOCH_DATE) * 1000n;
   const int82ts = (n) => new Date(Number(POSTGRES_EPOCH_DATE + (n / 1000n)));
 
-  const ts2text = (v) => date2text(v) +
-        ` ${dd(v.getUTCHours())}:${dd(v.getUTCMinutes())}:${dd(v.getUTCSeconds())}.${dd(v.getUTCMilliseconds(), 3)}`;
+  const ts2text = (v) =>
+    date2text(v) +
+    ` ${dd(v.getUTCHours())}:${dd(v.getUTCMinutes())}:${dd(v.getUTCSeconds())}.${
+      dd(v.getUTCMilliseconds(), 3)
+    }`;
   const text2ts = (str) => {
     const m = /^(\d{2,4})-(\d\d?)-(\d\d?) *(\d\d?):(\d\d?):(\d\d?)(?:.(\d\d?\d?))?/.exec(str);
     if (m === null) return new Date(NaN);
-    return new Date(Date.UTC(+ m[1], + m[2] - 1, + m[3], + m[4], + m[5], + m[6], +(m[7] ?? '000').padEnd(3, '0')));
+    return new Date(
+      Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6], +(m[7] ?? '000').padEnd(3, '0')),
+    );
   };
 
   const coerceToDate = (v) => {
     switch (typeof v) {
-    case 'string': return new Date(Date.parse(v));
-    case 'number': return new Date(v);
+      case 'string':
+        return new Date(Date.parse(v));
+      case 'number':
+        return new Date(v);
     }
     return v;
   };
@@ -78,20 +85,26 @@ define(() => {
   return {
     coerceToDate,
 
-    date2j, j2date,
+    date2j,
+    j2date,
 
     register: ({registerName, registerOid}, {textDecodeInt}) => {
-      registerName('date',
-                   (buf, v) => buf.writeInt32BE(date2j(coerceToDate(v)) - POSTGRES_EPOCH_JDATE),
-                   (v) => j2date(v.readInt32BE(0) + POSTGRES_EPOCH_JDATE),
-                   (buf, v) => buf.appendUtf8Str(date2text(coerceToDate(v))),
-                   (v) => text2date(v.utf8Slice()));
+      registerName(
+        'date',
+        (buf, v) => buf.writeInt32BE(date2j(coerceToDate(v)) - POSTGRES_EPOCH_JDATE),
+        (v) => j2date(v.readInt32BE(0) + POSTGRES_EPOCH_JDATE),
+        (buf, v) => buf.appendUtf8Str(date2text(coerceToDate(v))),
+        (v) => text2date(v.utf8Slice()),
+      );
 
-      registerName('timestamp',
-                   (buf, v) => buf.writeBigInt64BE(ts2int8(BigInt.asIntN(64, BigInt(coerceToDate(v).getTime())))),
-                   (v) => int82ts(v.readBigInt64BE(0)),
-                   (buf, v) => buf.appendUtf8Str(ts2text(coerceToDate(v))),
-                   (v) => text2ts(v.utf8Slice()));
+      registerName(
+        'timestamp',
+        (buf, v) =>
+          buf.writeBigInt64BE(ts2int8(BigInt.asIntN(64, BigInt(coerceToDate(v).getTime())))),
+        (v) => int82ts(v.readBigInt64BE(0)),
+        (buf, v) => buf.appendUtf8Str(ts2text(coerceToDate(v))),
+        (v) => text2ts(v.utf8Slice()),
+      );
       registerOid('timestamp', 1114, 1115);
     },
   };

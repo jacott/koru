@@ -6,8 +6,9 @@ define((require) => {
     let text = '';
     const last = parts.length - 1;
     ++pos;
-    for (let i = 0; i < last; ++i)
+    for (let i = 0; i < last; ++i) {
       text += parts[i] + '$' + (posMap[parts[++i]] + pos);
+    }
     text += parts[last];
     return text;
   };
@@ -24,14 +25,14 @@ define((require) => {
   };
 
   class SQLStatement {
-    constructor(text='') {
+    constructor(text = '') {
       const parts = text.split(/\{\$(\w+)\}/);
       const paramMap = [], posMap = {};
       setParams(0, parts, paramMap, posMap);
       this[cache$] = {paramMap, posMap, parts, text: '', pos: -1};
     }
 
-    convertArgs(params, initial=[]) {
+    convertArgs(params, initial = []) {
       const cache = this[cache$];
       if (cache.pos != initial.length) {
         cache.text = makeText(cache.parts, cache.posMap, cache.pos = initial.length);

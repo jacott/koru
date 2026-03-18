@@ -21,7 +21,9 @@ isServer && define((require, exports, module) => {
 
     before(async () => {
       conn = await new PgProtocol({
-        user: process.env.USER, database: process.env.KORU_DB, application_name: 'koru-test/pg-portal',
+        user: process.env.USER,
+        database: process.env.KORU_DB,
+        application_name: 'koru-test/pg-portal',
       }).connect(await createReadySocket('/var/run/postgresql/.s.PGSQL.5432', conn));
     });
 
@@ -32,14 +34,19 @@ isServer && define((require, exports, module) => {
 
     afterEach(async () => {
       if (p !== void 0) {
-        assert((p[private$].state & 1) == 0, 'portal still locked ' + p[private$].state.toString(2));
+        assert(
+          (p[private$].state & 1) == 0,
+          'portal still locked ' + p[private$].state.toString(2),
+        );
         assert(p.error?.severity !== 'FATAL', p.error?.message);
         await p.close();
       }
     });
 
     const startTransaction = async () => {
-      after(async () => {assert.same(await simpleExec(conn, 'rollback'), 'ROLLBACK')});
+      after(async () => {
+        assert.same(await simpleExec(conn, 'rollback'), 'ROLLBACK');
+      });
       assert.same(await simpleExec(conn, 'begin'), 'BEGIN');
     };
 
@@ -48,16 +55,14 @@ isServer && define((require, exports, module) => {
       p.parse('', `SELECT $1 + $2`, 0);
       await p.describeStatement(void 0, true);
       assert(p.error);
-      assert.exception(
-        p.error,
-        {
-          severity: 'ERROR',
-          code: '42725',
-          message: 'operator is not unique: unknown + unknown',
-          hint: 'Could not choose a best candidate operator. You might need to add explicit type casts.',
-          position: 11,
-        },
-      );
+      assert.exception(p.error, {
+        severity: 'ERROR',
+        code: '42725',
+        message: 'operator is not unique: unknown + unknown',
+        hint:
+          'Could not choose a best candidate operator. You might need to add explicit type casts.',
+        position: 11,
+      });
     });
 
     test('error during fetch', async () => {
@@ -68,7 +73,9 @@ isServer && define((require, exports, module) => {
 
       const myError = new Error('myError');
 
-      const error = await p.fetch((row) => {throw myError;});
+      const error = await p.fetch((row) => {
+        throw myError;
+      });
       assert.isFalse(p.isExecuting);
       assert.equals(error, myError);
       assert.equals(p.error, myError);
@@ -80,7 +87,9 @@ isServer && define((require, exports, module) => {
       p.prepareValues();
       const rows = [];
 
-      let error = await p.fetch((row) => {rows.push(row)}, 2);
+      let error = await p.fetch((row) => {
+        rows.push(row);
+      }, 2);
       refute(error);
       assert.same(rows.length, 0);
       assert.isFalse(p.isExecuting);
@@ -125,7 +134,9 @@ isServer && define((require, exports, module) => {
       const rows = [];
       let tag;
 
-      p.commandComplete((t) => {tag = t});
+      p.commandComplete((t) => {
+        tag = t;
+      });
       let error = await p.fetch((row) => rows.push(1), 2);
       refute(error);
       assert.isTrue(p.isMore);
@@ -190,9 +201,17 @@ isServer && define((require, exports, module) => {
     });
 
     test('close before fetch started', async () => {
-      const p1 = conn.portal('p1').parse('', `select * from unnest(Array[$1,2,3], Array[4,5,6]) as x(a,b);`, 1);
+      const p1 = conn.portal('p1').parse(
+        '',
+        `select * from unnest(Array[$1,2,3], Array[4,5,6]) as x(a,b);`,
+        1,
+      );
       p1.addParamOid(encodeBinary(p1.prepareValues(), 1, 21));
-      const p2 = conn.portal('p2').parse('', `select * from unnest(Array[10,$1,30], Array[4,5,6]) as x(a,b);`, 1);
+      const p2 = conn.portal('p2').parse(
+        '',
+        `select * from unnest(Array[10,$1,30], Array[4,5,6]) as x(a,b);`,
+        1,
+      );
       p2.addParamOid(encodeBinary(p2.prepareValues(), 2, 21));
 
       const c1 = stub();
@@ -232,7 +251,9 @@ isServer && define((require, exports, module) => {
       p.addParamOid(23);
       p.addParamOid(23);
       let columns;
-      await p.describeStatement((rawColumns) => {columns = buildNameOidColumns(rawColumns)}, true);
+      await p.describeStatement((rawColumns) => {
+        columns = buildNameOidColumns(rawColumns);
+      }, true);
 
       refute(p.error);
       assert.same(p[private$].state, 22);
@@ -243,12 +264,13 @@ isServer && define((require, exports, module) => {
       p = conn.portal();
       p.parse('', `SELECT $1, $2 as col2, $3 as col3`, 3);
       const b = p.prepareValues([1]);
-      p.addParamOid(encodeBinary(b, 'hello', 25))
-        .addParamOid(encodeBinary(b, 123.456, 701))
+      p.addParamOid(encodeBinary(b, 'hello', 25)).addParamOid(encodeBinary(b, 123.456, 701))
         .addParamOid(encodeBinary(b, true, 16));
       p.addResultFormat([1]);
       let columns;
-      await p.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)}, true);
+      await p.describe((rawColumns) => {
+        columns = buildNameOidColumns(rawColumns);
+      }, true);
 
       const col0 = columns[0];
       assert.same(col0.name, '?column?');
@@ -269,13 +291,18 @@ isServer && define((require, exports, module) => {
       p = conn.portal();
       p.parse('', `SELECT $1, $2 as col2, $3`, 3);
       const b = p.prepareValues([1, 1, 0]);
-      p.addParamOid(encodeBinary(b, 1, 23)).addParamOid(encodeBinary(b, 123.456, 701))
-        .addParamOid(encodeText(b, 123, 23));
+      p.addParamOid(encodeBinary(b, 1, 23)).addParamOid(encodeBinary(b, 123.456, 701)).addParamOid(
+        encodeText(b, 123, 23),
+      );
       p.addResultFormat([1]);
 
       const result = await runQuery(p);
 
-      assert.equals(result.rows, [{'0:?column?,23': 1, '1:col2,701': 123.456, '2:?column?,23': 123}]);
+      assert.equals(result.rows, [{
+        '0:?column?,23': 1,
+        '1:col2,701': 123.456,
+        '2:?column?,23': 123,
+      }]);
 
       const col0 = result.columns[0];
       assert.same(col0.name, '?column?');
@@ -301,44 +328,39 @@ isServer && define((require, exports, module) => {
 
       refute(p.error);
 
-      assert.equals(result.rows, [
-        {
-          '0:a,1009': ['abc'],
-        },
-      ]);
+      assert.equals(result.rows, [{'0:a,1009': ['abc']}]);
       assert.equals(result.tag, 'SELECT 1');
     });
 
     test('execute with nulls', async () => {
       p = conn.portal();
-      p.parse('',
-              `SELECT $5 as th, 'world' as tw, $1 as a, $2 as b, $1, $4, NULL, NULL, $3, $3`, 5);
+      p.parse(
+        '',
+        `SELECT $5 as th, 'world' as tw, $1 as a, $2 as b, $1, $4, NULL, NULL, $3, $3`,
+        5,
+      );
       const b = p.prepareValues([1, 1, 1, 0, 1]);
-      p.addParamOid(encodeBinary(b, 1, 23))
-        .addParamOid(encodeBinary(b, 123.456, 701))
-        .addParamOid(encodeBinary(b, null, 25))
-        .addParamOid(encodeText(b, 123, 23))
-        .addParamOid(encodeBinary(b, 'hello', 25));
+      p.addParamOid(encodeBinary(b, 1, 23)).addParamOid(encodeBinary(b, 123.456, 701)).addParamOid(
+        encodeBinary(b, null, 25),
+      ).addParamOid(encodeText(b, 123, 23)).addParamOid(encodeBinary(b, 'hello', 25));
       p.addResultFormat([0, 1, 1, 0, 0, 1, 1, 0, 1, 0]);
       const result = await runQuery(p);
 
       refute(p.error);
       assert.equals(result.tag, 'SELECT 1');
 
-      assert.equals(result.rows, [
-        {
-          '0:th,25': 'hello',
-          '1:tw,25': 'world',
-          '2:a,23': 1,
-          '3:b,701': 123.456,
-          '4:?column?,23': 1,
-          '5:?column?,23': 123,
-          '6:?column?,25': null,
-          '7:?column?,25': null,
-          '8:?column?,25': null,
-          '9:?column?,25': null,
-        },
-      ]);
+      assert.equals(result.rows, [{
+        '0:th,25': 'hello',
+        '1:tw,25': 'world',
+        '2:a,23': 1,
+        '3:b,701': 123.456,
+        '4:?column?,23': 1,
+        '5:?column?,23': 123,
+        '6:?column?,25': null,
+        '7:?column?,25': null,
+        '8:?column?,25': null,
+        '9:?column?,25': null,
+      }]);
     });
 
     test('error during execute', async () => {
@@ -357,7 +379,9 @@ isServer && define((require, exports, module) => {
       b = p.prepareValues();
       p.addParamOid(encodeBinary(b, 1, 23));
       const result = [];
-      await p.fetch((row) => {result.push(row)});
+      await p.fetch((row) => {
+        result.push(row);
+      });
       refute(p.error);
       assert.equals(result, [m.object]);
     });

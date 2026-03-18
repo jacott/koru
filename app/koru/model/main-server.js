@@ -33,9 +33,13 @@ define((require, exports, module) => {
     for (const name in session._rpcs) adder(name);
   });
 
-  koru.onunload(module, () => {session.deregisterGlobalDictionaryAdder?.(module)});
+  koru.onunload(module, () => {
+    session.deregisterGlobalDictionaryAdder?.(module);
+  });
 
-  Changes.KEYWORDS.forEach((word) => {session.addToDict(word)});
+  Changes.KEYWORDS.forEach((word) => {
+    session.addToDict(word);
+  });
 
   {
     const dbBrokerDesc = Object.getOwnPropertyDescriptor(dbBroker, 'db');
@@ -73,7 +77,7 @@ define((require, exports, module) => {
 
   const ModelEnv = {
     destroyModel(model, drop) {
-      if (! model) return;
+      if (!model) return;
       const rd = _resetDocs[model.modelName];
       rd?.();
       if (drop === 'drop') {
@@ -88,34 +92,36 @@ define((require, exports, module) => {
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 
-      BaseModel.remoteSave = (model, id, changes, userId) => TransQueue.transaction(model.db, async () => {
-        let doc = await model.findById(id ?? changes._id);
+      BaseModel.remoteSave = (model, id, changes, userId) =>
+        TransQueue.transaction(model.db, async () => {
+          let doc = await model.findById(id ?? changes._id);
 
-        const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
-          changes;
-        if (id != null) {
+          const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ??
+            changes;
+          if (id != null) {
+            Val.allowIfFound(doc, '_id');
+            doc.changes = topLevel;
+          } else {
+            if (doc !== undefined) return; // replay or duplicate id so don't update, don't throw error
+            doc = new model(null, topLevel);
+          }
+          assertAuthorize(doc);
+          await doc.authorize(userId);
+          if (topLevel !== changes && topLevel !== undefined) {
+            Changes.updateCommands(changes, doc.changes, topLevel);
+            doc.changes = changes;
+          }
+          await doc.$save('assert');
+        });
+
+      BaseModel.remoteRemove = (model, id, userId) =>
+        TransQueue.transaction(model.db, async () => {
+          const doc = await model.findById(id);
           Val.allowIfFound(doc, '_id');
-          doc.changes = topLevel;
-        } else {
-          if (doc !== undefined) return; // replay or duplicate id so don't update, don't throw error
-          doc = new model(null, topLevel);
-        }
-        assertAuthorize(doc);
-        await doc.authorize(userId);
-        if (topLevel !== changes && topLevel !== undefined) {
-          Changes.updateCommands(changes, doc.changes, topLevel);
-          doc.changes = changes;
-        }
-        await doc.$save('assert');
-      });
-
-      BaseModel.remoteRemove = (model, id, userId) => TransQueue.transaction(model.db, async () => {
-        const doc = await model.findById(id);
-        Val.allowIfFound(doc, '_id');
-        assertAuthorize(doc);
-        await doc.authorize(userId, {remove: true});
-        await doc.$remove();
-      });
+          assertAuthorize(doc);
+          await doc.authorize(userId, {remove: true});
+          await doc.$remove();
+        });
 
       const prepareIndex = (model, args) => {
         let filterTest;
@@ -130,8 +136,12 @@ define((require, exports, module) => {
         for (let i = 0; i < args.length; ++i) {
           const arg = args[i];
           switch (arg) {
-            case 1: dir = 1; break;
-            case -1: dir = -1; break;
+            case 1:
+              dir = 1;
+              break;
+            case -1:
+              dir = -1;
+              break;
             default:
               sort.push(arg);
               dir == -1 && sort.push(-1);
@@ -142,12 +152,18 @@ define((require, exports, module) => {
         return {model, sort, from: args.slice(from), filterTest, stop: util.voidFunc};
       };
 
-      function addUniqueIndex(...args) {return prepareIndex(this, args)}
+      function addUniqueIndex(...args) {
+        return prepareIndex(this, args);
+      }
 
-      function addIndex(...args) {return prepareIndex(this, args)}
+      function addIndex(...args) {
+        return prepareIndex(this, args);
+      }
 
       util.mergeNoEnum(ModelMap, {
-        get defaultDb() {return driver.defaultDb},
+        get defaultDb() {
+          return driver.defaultDb;
+        },
       });
 
       BaseModel[makeDoc$] = function (attrs) {
@@ -159,11 +175,11 @@ define((require, exports, module) => {
         }
         doc.attributes = attrs;
         return doc;
-      }
+      };
 
       BaseModel.prototype.$remove = function () {
         return new Query(this.constructor).onId(this._id).remove();
-      }
+      };
 
       const clearDocChanges = (doc) => {
         const model = doc.constructor;
@@ -188,11 +204,11 @@ define((require, exports, module) => {
         return clearDocChanges(doc);
       };
 
-      BaseModel.prototype.$reload = function (full=false) {
-        if (! full) return clearDocChanges(this);
+      BaseModel.prototype.$reload = function (full = false) {
+        if (!full) return clearDocChanges(this);
 
         return fullReload(this);
-      }
+      };
 
       ModelEnv.save = async (doc, callback) => {
         const model = doc.constructor;
@@ -202,7 +218,7 @@ define((require, exports, module) => {
         const now = util.newDate();
 
         if (doc.attributes._id == null) {
-          if (! model.$fields._id.auto) {
+          if (!model.$fields._id.auto) {
             changes._id ??= Random.id();
           }
           _support._addUserIds(changes, model.userIds, util.thread.userId);
@@ -250,17 +266,20 @@ define((require, exports, module) => {
       });
 
       util.merge(_support, {
-        resetDocs(model) {_resetDocs[model.modelName]?.()},
+        resetDocs(model) {
+          _resetDocs[model.modelName]?.();
+        },
         bumpVersion() {
           return _support.performBumpVersion(this.constructor, this._id, this._version);
         },
 
         transaction: (model, func) => model.db.transaction(func),
 
-        remote: (model, name, func) => function (...args) {
-          Val.allowAccessIf(this.userId != null);
-          return model.db.transaction(() => (func.apply(this, args)));
-        },
+        remote: (model, name, func) =>
+          function (...args) {
+            Val.allowAccessIf(this.userId != null);
+            return model.db.transaction(() => (func.apply(this, args)));
+          },
       });
     },
 
@@ -336,7 +355,9 @@ define((require, exports, module) => {
           }
         },
 
-        _$docCacheClear: () => {util.thread[docCache$] = undefined},
+        _$docCacheClear: () => {
+          util.thread[docCache$] = undefined;
+        },
       });
     },
   };

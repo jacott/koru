@@ -14,16 +14,23 @@ define((require, exports, module) => {
     });
 
     test('toString', () => {
-      const err = new PgError({
-        message: 'test error',
-        severity: 'ERROR',
-        code: '1234E',
-        position: 12,
-        hint: 'here is a hint',
-      }, 'ab\ncde\nlonger line containing error\nsome extra stuff', ['p1', 2, 'p3']);
-      assert.same(err.toString(), 'PgError(ERROR): test error (1234E)\n\nab\ncde\n' +
-                  'longer line containing error\n----^\nsome extra stuff\n' +
-                  "Hint: here is a hint\nParams: ['p1', 2, 'p3']");
+      const err = new PgError(
+        {
+          message: 'test error',
+          severity: 'ERROR',
+          code: '1234E',
+          position: 12,
+          hint: 'here is a hint',
+        },
+        'ab\ncde\nlonger line containing error\nsome extra stuff',
+        ['p1', 2, 'p3'],
+      );
+      assert.same(
+        err.toString(),
+        'PgError(ERROR): test error (1234E)\n\nab\ncde\n' +
+          'longer line containing error\n----^\nsome extra stuff\n' +
+          "Hint: here is a hint\nParams: ['p1', 2, 'p3']",
+      );
     });
   });
 });

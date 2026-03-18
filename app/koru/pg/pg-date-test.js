@@ -25,10 +25,14 @@ isServer && define((require, exports, module) => {
         const time = new Date(Date.UTC(2012, 3, 5));
 
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1082], [0]), [{a: time}]);
-        assert.equals(await client.exec(`SELECT '2012-04-05'::date as a`, [], [], [0]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT '2012-04-05'::date as a`, [], [], [0]), [{
+          a: time,
+        }]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1082]), [{a: time}]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1082]), [{a: time}]);
-        assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1082], [0]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1082], [0]), [{
+          a: time,
+        }]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time.toString()], [1082]), [{a: time}]);
         assert.equals(await client.exec(`SELECT $1 as a`, ['2012-04-05'], [1082]), [{a: time}]);
       });
@@ -37,20 +41,38 @@ isServer && define((require, exports, module) => {
         let time = new Date(Date.UTC(2012, 3, 5, 6, 7, 8, 23));
         const date = new Date(Date.UTC(2012, 3, 5));
 
-        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990000], [1114], [0]), [{a: new Date(1658566990000)}]);
-        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990001], [1114], [0]), [{a: new Date(1658566990001)}]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990000], [1114], [0]), [{
+          a: new Date(1658566990000),
+        }]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [1658566990001], [1114], [0]), [{
+          a: new Date(1658566990001),
+        }]);
 
-        assert.equals(await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`), [{a: time}]);
-        assert.equals(await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`, [], [], [1]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`), [{
+          a: time,
+        }]);
+        assert.equals(
+          await client.exec(`SELECT '2012-04-05 06:07:08.023'::timestamp as a`, [], [], [1]),
+          [{a: time}],
+        );
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1114]), [{a: time}]);
-        assert.equals(await client.exec(`SELECT $1 as a`, [time.toISOString()], [1114]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [time.toISOString()], [1114]), [{
+          a: time,
+        }]);
         assert.equals(await client.exec(`SELECT $1::date as a`, [time], [1114]), [{a: date}]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1114]), [{a: time}]);
-        assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1114], [0]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT $1 as a`, [time.getTime()], [1114], [0]), [{
+          a: time,
+        }]);
 
         time = new Date(1657837500400);
-        assert.equals(await client.exec(`SELECT '2022-07-14 22:25:00.400'::timestamp as a`), [{a: time}]);
-        assert.equals(await client.exec(`SELECT '2022-07-14 22:25:00.400'::timestamp as a`, [], [1114], [0]), [{a: time}]);
+        assert.equals(await client.exec(`SELECT '2022-07-14 22:25:00.400'::timestamp as a`), [{
+          a: time,
+        }]);
+        assert.equals(
+          await client.exec(`SELECT '2022-07-14 22:25:00.400'::timestamp as a`, [], [1114], [0]),
+          [{a: time}],
+        );
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1114], [0]), [{a: time}]);
         assert.equals(await client.exec(`SELECT $1 as a`, [time], [1114]), [{a: time}]);
 

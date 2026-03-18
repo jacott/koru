@@ -28,9 +28,7 @@ isServer && define((require, exports, module) => {
 
       await p;
 
-      const listener = {
-        addRowDesc: stub((v) => v[0] != 0),
-      };
+      const listener = {addRowDesc: stub((v) => v[0] != 0)};
 
       await conn.lock(listener);
 
@@ -60,7 +58,9 @@ isServer && define((require, exports, module) => {
 
       before(async () => {
         conn = new PgProtocol({
-          user: process.env.USER, database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
+          user: process.env.USER,
+          database: process.env.KORU_DB,
+          application_name: 'koru-test/pg-protocol',
         });
         await conn.connect(await createReadySocket('/var/run/postgresql/.s.PGSQL.5432', conn));
       });
@@ -82,12 +82,12 @@ isServer && define((require, exports, module) => {
 
       test('bad connect', async () => {
         const socket = await createReadySocket('/var/run/postgresql/.s.PGSQL.5432', conn);
-        after(() => {socket.destroy()});
+        after(() => {
+          socket.destroy();
+        });
         let sql;
         try {
-          await new PgProtocol({
-            host: 'hello',
-          }).connect(socket);
+          await new PgProtocol({host: 'hello'}).connect(socket);
         } catch (_sql) {
           sql = _sql;
         }
@@ -107,16 +107,21 @@ isServer && define((require, exports, module) => {
         await simpleExec(conn, `CREATE ROLE "testuser1" SUPERUSER LOGIN PASSWORD '123'`);
 
         const c2 = new PgProtocol({
-          user: 'testuser1', database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
+          user: 'testuser1',
+          database: process.env.KORU_DB,
+          application_name: 'koru-test/pg-protocol',
         });
 
         await assert.exception(
-          async () => c2.connect(await createReadySocket({host: 'localhost', port: 5432}, c2), '1234'),
+          async () =>
+            c2.connect(await createReadySocket({host: 'localhost', port: 5432}, c2), '1234'),
           {code: '28P01'},
         );
 
         const c3 = new PgProtocol({
-          user: 'testuser1', database: process.env.KORU_DB, application_name: 'koru-test/pg-protocol',
+          user: 'testuser1',
+          database: process.env.KORU_DB,
+          application_name: 'koru-test/pg-protocol',
         });
         let err;
         try {
@@ -145,8 +150,12 @@ isServer && define((require, exports, module) => {
           const query = conn.exec(`select '{"a":"b"}'::jsonb;`);
           do {
             let columns, tag;
-            query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
-            query.commandComplete((t) => {tag = t});
+            query.describe((rawColumns) => {
+              columns = buildNameOidColumns(rawColumns);
+            });
+            query.commandComplete((t) => {
+              tag = t;
+            });
             await query.fetch((rawRow) => {
               const rec = {};
               forEachColumn(rawRow, (rawValue, i) => {
@@ -158,7 +167,7 @@ isServer && define((require, exports, module) => {
             if (query.isExecuting) {
               assert.equals(tag, 'SELECT 1');
             }
-          } while (query.isExecuting)
+          } while (query.isExecuting);
           assert.equals(results, [{jsonb: {a: 'b'}}]);
         } catch (err) {
           assert.fail(JSON.stringify(err));
@@ -173,7 +182,9 @@ isServer && define((require, exports, module) => {
         const q = conn.exec(`set client_min_messages = 'debug5'`);
 
         const completed = [];
-        q.commandComplete((tag) => {completed.push(tag)});
+        q.commandComplete((tag) => {
+          completed.push(tag);
+        });
         do {
           await q.fetch((row) => {
             const rec = {};
@@ -181,7 +192,7 @@ isServer && define((require, exports, module) => {
               rec[field.desc.name] = field.rawValue.toString();
             }
           });
-        } while (q.isExecuting)
+        } while (q.isExecuting);
 
         assert.equals(completed, ['SET']);
 
@@ -193,9 +204,13 @@ isServer && define((require, exports, module) => {
         const format = {};
         const copy = conn.copyToStream(
           `COPY (SELECT * FROM unnest(Array[1,2,3], Array[4,5,6]) as x(a,b)) TO STDOUT`,
-          (isText, cols) => {format.isText = isText, format.cols = cols},
+          (isText, cols) => {
+            format.isText = isText, format.cols = cols;
+          },
         );
-        copy.on('data', (chunk) => {result += chunk});
+        copy.on('data', (chunk) => {
+          result += chunk;
+        });
         try {
           await new Promise((resolve, reject) => {
             copy.on('error', reject);
@@ -207,7 +222,7 @@ isServer && define((require, exports, module) => {
 
         assert.equals(format, {isText: true, cols: [0, 0]});
 
-        assert.equals(result, "1\t4\n2\t5\n3\t6\n");
+        assert.equals(result, '1\t4\n2\t5\n3\t6\n');
       });
 
       test('copyFromStream', async () => {
@@ -216,12 +231,15 @@ isServer && define((require, exports, module) => {
         after(() => simpleExec(conn, 'ROLLBACK'));
 
         await conn.copyFromStream(`COPY ab FROM STDIN`, (stream, format) => {
-          stream.write("1\t4\n2\t5\n3\t6\n");
+          stream.write('1\t4\n2\t5\n3\t6\n');
           stream.end();
         });
 
         assert.equals((await runQuery(conn.exec('SELECT * from ab'))).rows, [
-          {'0:a,21': 1, '1:b,21': 4}, {'0:a,21': 2, '1:b,21': 5}, {'0:a,21': 3, '1:b,21': 6}]);
+          {'0:a,21': 1, '1:b,21': 4},
+          {'0:a,21': 2, '1:b,21': 5},
+          {'0:a,21': 3, '1:b,21': 6},
+        ]);
       });
 
       test('exec', async () => {
@@ -229,7 +247,9 @@ isServer && define((require, exports, module) => {
         const query = conn.exec(`select * from unnest(Array[1,2,3], Array[4,5,6]) as x(a,b);`);
         const completed = [];
         let columns;
-        query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+        query.describe((rawColumns) => {
+          columns = buildNameOidColumns(rawColumns);
+        });
         query.commandComplete((tag) => completed.push(tag));
         do {
           await query.fetch((rawRow) => {
@@ -240,7 +260,7 @@ isServer && define((require, exports, module) => {
             results.push(rec);
           });
           refute(query.error);
-        } while (query.isExecuting)
+        } while (query.isExecuting);
 
         assert.equals(completed, ['SELECT 3']);
 
@@ -252,7 +272,9 @@ isServer && define((require, exports, module) => {
 
         const myError = new Error('myError');
 
-        const error = await query.fetch((row) => {throw myError});
+        const error = await query.fetch((row) => {
+          throw myError;
+        });
         assert.isFalse(query.isExecuting);
         assert.equals(error, myError);
       });
@@ -273,7 +295,7 @@ isServer && define((require, exports, module) => {
         assert.same(close2, myError);
 
         assert.same(await f1, undefined);
-        while (q1.isExecuting) {await q1.fetch(c1)}
+        while (q1.isExecuting) await q1.fetch(c1);
 
         assert.same(await f2, myError);
         assert.same(q2.error, myError);
@@ -288,7 +310,9 @@ select * from unnest(Array[7,8,9], Array[4,5,6]) as x(a,b);
 END;`);
         const results = [];
         let columns;
-        query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+        query.describe((rawColumns) => {
+          columns = buildNameOidColumns(rawColumns);
+        });
         query.commandComplete((tag) => results.push(tag));
         do {
           await query.fetch((rawRow) => {
@@ -298,11 +322,16 @@ END;`);
             });
             rows.push(rec);
           });
-        } while (query.isExecuting)
+        } while (query.isExecuting);
 
         assert.equals(rows, [
-          {a: '1', b: '4'}, {a: '2', b: '5'}, {a: '3', b: '6'},
-          {a: '7', b: '4'}, {a: '8', b: '5'}, {a: '9', b: '6'}]);
+          {a: '1', b: '4'},
+          {a: '2', b: '5'},
+          {a: '3', b: '6'},
+          {a: '7', b: '4'},
+          {a: '8', b: '5'},
+          {a: '9', b: '6'},
+        ]);
         assert.equals(results, ['SELECT 3', 'BEGIN', 'SELECT 3', 'COMMIT']);
       });
     });

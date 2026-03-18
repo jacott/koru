@@ -3,7 +3,7 @@ isServer && define((require, exports, module) => {
   /**
    * A SQL statement with embedded parameters pre compiled to improve efficiency. Not to be confused
    * with an SQL prepared statement; this is a client side optimization only.
-   **/
+   */
   const Driver          = require('koru/pg/driver');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -24,9 +24,13 @@ isServer && define((require, exports, module) => {
       const SQLStatement = api.class();
       //[
       const statment = new SQLStatement(
-        `SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`);
+        `SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`,
+      );
 
-      assert.equals((await Driver.defaultDb.query(statment, {foo: 10, bar: 5}))[0], {a: 15, b: '100'});
+      assert.equals((await Driver.defaultDb.query(statment, {foo: 10, bar: 5}))[0], {
+        a: 15,
+        b: '100',
+      });
 
       assert.equals((await Driver.defaultDb.query(new SQLStatement('select 1 as a')))[0], {a: 1});
       //]
@@ -47,15 +51,18 @@ isServer && define((require, exports, module) => {
        **/
       api.protoMethod();
 
-      api.protoProperty('text', {info() {
-        /**
-         * The converted query text with inserted numeric parameters; changes when {##convertArgs} is
-         * called.
-         *
-         **/
-      }});
+      api.protoProperty('text', {
+        info() {
+          /**
+           * The converted query text with inserted numeric parameters; changes when {##convertArgs} is
+           * called.
+           */
+        },
+      });
       //[
-      const statment = new SQLStatement(`SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`);
+      const statment = new SQLStatement(
+        `SELECT {$foo}::int+{$bar}::int as a, {$foo}::text || '0' as b`,
+      );
 
       assert.equals(statment.convertArgs({foo: 10, bar: 9}), [10, 9]);
 
@@ -73,7 +80,7 @@ isServer && define((require, exports, module) => {
     test('clone', () => {
       /**
        * Clone this SQLStatement.
-       **/
+       */
       api.protoMethod();
       //[
       const s1 = new SQLStatement(`SELECT {$foo}::int`);

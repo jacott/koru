@@ -22,7 +22,10 @@ define((require) => {
       async insert(doc) {
         const model = doc.constructor;
         await TransQueue.nonNested(model.db, async () => {
-          const result = await model.docs.insert(doc.attributes, doc.attributes._id ? undefined : 'RETURNING _id');
+          const result = await model.docs.insert(
+            doc.attributes,
+            doc.attributes._id ? undefined : 'RETURNING _id',
+          );
           if (Array.isArray(result)) {
             doc.attributes._id = result[0]._id;
           }
@@ -96,7 +99,12 @@ define((require) => {
             this.from({direction, values: from, order: idx.from, excludeFirst: excludeFrom});
           }
           if (to) {
-            this.from({direction: direction * -1, values: to, order: idx.from, excludeFirst: excludeTo});
+            this.from({
+              direction: direction * -1,
+              values: to,
+              order: idx.from,
+              excludeFirst: excludeTo,
+            });
           }
         }
 
@@ -240,7 +248,9 @@ define((require) => {
       },
 
       async update(changesOrField = {}, value) {
-        const origChanges = (typeof changesOrField === 'string') ? {[changesOrField]: value} : changesOrField;
+        const origChanges = (typeof changesOrField === 'string')
+          ? {[changesOrField]: value}
+          : changesOrField;
         const {model, singleId} = this;
         Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 

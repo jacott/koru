@@ -6,8 +6,7 @@ isServer && define((require, exports, module) => {
    * @config url The default url to connect to; see [libpq - Connection
    * Strings](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for
    * examples. Note ssl is not support at this time.
-   *
-   **/
+   */
   const koru            = require('koru');
   const Enumerable      = require('koru/enumerable');
   const TH              = require('koru/test-helper');
@@ -33,21 +32,22 @@ isServer && define((require, exports, module) => {
       await pg.defaultDb.dropTable('Foo');
     });
 
-    const clientSubject = () => API.innerSubject(pg.defaultDb.constructor, null, {
-      abstract() {
-        /**
-         * A connection to a database.
-         *
-         * See {#../driver.connect}
-         **/
-      },
-      initExample() {
-        const Client = pg.defaultDb.constructor;
-      },
-      initInstExample() {
-        const client = pg.defaultDb;
-      },
-    });
+    const clientSubject = () =>
+      API.innerSubject(pg.defaultDb.constructor, null, {
+        abstract() {
+          /**
+           * A connection to a database.
+           *
+           * See {#../driver.connect}
+           */
+        },
+        initExample() {
+          const Client = pg.defaultDb.constructor;
+        },
+        initInstExample() {
+          const client = pg.defaultDb;
+        },
+      });
 
     group('Client', () => {
       let Client, api;
@@ -83,7 +83,8 @@ isServer && define((require, exports, module) => {
           assert.equals(pg.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
           assert.equals(
             pg.defaultDb.jsFieldToPg('map', {type: 'object', default: {treasure: 'lost'}}),
-            `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
+            `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`,
+          );
         });
         //]
       });
@@ -129,25 +130,31 @@ isServer && define((require, exports, module) => {
         const a = 3, b = 2;
 
         assert.equals(
-          (await pg.defaultDb.query(`SELECT {$a}::int + {$b}::int as ans`, {a, b}))[0].ans, 5);
+          (await pg.defaultDb.query(`SELECT {$a}::int + {$b}::int as ans`, {a, b}))[0].ans,
+          5,
+        );
 
         assert.equals(
-          (await pg.defaultDb.query(`SELECT $1::int + $2::int as ans`, [a, b]))[0].ans, 5);
+          (await pg.defaultDb.query(`SELECT $1::int + $2::int as ans`, [a, b]))[0].ans,
+          5,
+        );
 
-        assert.equals(
-          (await pg.defaultDb.query`SELECT ${a}::int + ${b}::int as ans`)[0].ans, 5);
+        assert.equals((await pg.defaultDb.query`SELECT ${a}::int + ${b}::int as ans`)[0].ans, 5);
 
         const statment = new SQLStatement(`SELECT {$a}::int + {$b}::int as ans`);
-        assert.equals(
-          (await pg.defaultDb.query(statment, {a, b}))[0].ans, 5);
+        assert.equals((await pg.defaultDb.query(statment, {a, b}))[0].ans, 5);
         //]
       });
 
       test('oidQuery', async () => {
         // 700 = float4
         assert.equals(
-          Math.floor((await pg.defaultDb.oidQuery(`SELECT $1 + $2 as ans`, [1, 2.3], [700, 700]))[0].ans * 100),
-          329);
+          Math.floor(
+            (await pg.defaultDb.oidQuery(`SELECT $1 + $2 as ans`, [1, 2.3], [700, 700]))[0].ans *
+              100,
+          ),
+          329,
+        );
       });
 
       test('ensuredTran', async () => {
@@ -166,10 +173,13 @@ isServer && define((require, exports, module) => {
       test('explainQuery', async () => {
         /**
          * Run an EXPLAIN ANALYZE on given query and return result text.
-         **/
+         */
         api.protoMethod();
         //[
-        const ans = await pg.defaultDb.explainQuery(`SELECT {$a}::int + {$b}::int as ans`, {a: 1, b: 2});
+        const ans = await pg.defaultDb.explainQuery(`SELECT {$a}::int + {$b}::int as ans`, {
+          a: 1,
+          b: 2,
+        });
 
         assert.match(ans, /^Result.*cost=.*\nPlanning time:.*\nExecution time/i);
       });
@@ -192,10 +202,15 @@ isServer && define((require, exports, module) => {
         api.protoMethod();
         //[
         try {
-          assert.same((await pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'], {}))[0].a, 'ab');
+          assert.same(
+            (await pg.defaultDb.timeLimitQuery(`SELECT 'a' || $1 as a`, ['b'], {}))[0].a,
+            'ab',
+          );
 
-          const ans = await pg.defaultDb.timeLimitQuery(
-            `SELECT pg_sleep($1)`, [1.002], {timeout: 1, timeoutMessage: 'My message'});
+          const ans = await pg.defaultDb.timeLimitQuery(`SELECT pg_sleep($1)`, [1.002], {
+            timeout: 1,
+            timeoutMessage: 'My message',
+          });
           assert.fail('Expected timeout ');
         } catch (e) {
           if (e.error !== 504) throw e;
@@ -229,7 +244,7 @@ isServer && define((require, exports, module) => {
        *
        * @param [name] The name to give to the connection. By default
        * it is the schema name.
-       **/
+       */
       api.method('connect');
       const conn1 = await pg.connect(
         "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'",
@@ -259,8 +274,7 @@ isServer && define((require, exports, module) => {
     test('defaultDb', async () => {
       /**
        * Return the default Client database connection.
-       *
-       **/
+       */
       api.property('defaultDb');
       const db = pg.defaultDb;
       assert.same(db, pg.defaultDb);
@@ -271,7 +285,10 @@ isServer && define((require, exports, module) => {
       await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', [123, {a: 1}]);
       await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', [456, {b: [1]}]);
 
-      assert.same((await db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', ['']))[0].exists, true);
+      assert.same(
+        (await db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', ['']))[0].exists,
+        true,
+      );
       assert.equals((await db.query('select 1+1 as a'))[0], {a: 2});
       assert.equals(await db.query('select 1 as a; select 2 as b'), [{a: 1}, {b: 2}]);
     });
@@ -283,50 +300,46 @@ isServer && define((require, exports, module) => {
     test('bytea', async () => {
       const db = pg.defaultDb;
       await db.query('CREATE TABLE "Foo" (_id text PRIMARY KEY, "foo" bytea)');
-      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)',
-        ['123', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255])]);
+      await db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', [
+        '123',
+        Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255]),
+      ]);
 
       const results = await db.query('select * from "Foo"');
       assert.equals(Buffer.from(results[0].foo).toString('hex'), '000102030405060708feff');
     });
 
     test('insert suffix', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        _id: 'integer',
-        name: 'text',
-      });
+      const foo = pg.defaultDb.table('Foo', {_id: 'integer', name: 'text'});
 
-      assert.equals(await foo.insert({_id: 123, name: 'a name'}, 'RETURNING name'), [{name: 'a name'}]);
+      assert.equals(await foo.insert({_id: 123, name: 'a name'}, 'RETURNING name'), [{
+        name: 'a name',
+      }]);
     });
 
     test('throwMissingTable', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        _id: 'integer',
-        name: 'text',
-      });
+      const foo = pg.defaultDb.table('Foo', {_id: 'integer', name: 'text'});
 
-      await assert.exception(() => foo.readColumns(false), {message: m((msg) => /column query failed:/.test(msg))});
+      await assert.exception(() => foo.readColumns(false), {
+        message: m((msg) => /column query failed:/.test(msg)),
+      });
     });
 
     test('override _id spec', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        _id: 'integer',
-      });
+      const foo = pg.defaultDb.table('Foo', {_id: 'integer'});
 
       assert.same(foo.dbType('_id'), 'integer');
 
       await foo.insert({_id: 123});
       assert.isTrue(await foo.exists({_id: 123}));
-      await assert.exception(
-        () => foo.insert({_id: 123}),
-        {severity: 'ERROR', message: m(/duplicate key value/)},
-      );
+      await assert.exception(() => foo.insert({_id: 123}), {
+        severity: 'ERROR',
+        message: m(/duplicate key value/),
+      });
     });
 
     test('Array insert', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        bar_ids: 'has_many',
-      });
+      const foo = pg.defaultDb.table('Foo', {bar_ids: 'has_many'});
 
       assert.same(foo.dbType('bar_ids'), 'text[]');
 
@@ -335,9 +348,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('Array in jsonb', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        bar_ids: 'object',
-      });
+      const foo = pg.defaultDb.table('Foo', {bar_ids: 'object'});
 
       assert.same(foo.dbType('bar_ids'), 'jsonb');
       const a = new Date();
@@ -346,28 +357,43 @@ isServer && define((require, exports, module) => {
     });
 
     test('$elemMatch', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        widget: 'object',
-      });
+      const foo = pg.defaultDb.table('Foo', {widget: 'object'});
 
       const values = [];
       const oids = [];
-      const where = await foo.where({widget: {$elemMatch: {id: '1', value: {$in: [50, 10]}}}}, values, oids);
+      const where = await foo.where(
+        {widget: {$elemMatch: {id: '1', value: {$in: [50, 10]}}}},
+        values,
+        oids,
+      );
 
-      assert.equals(where, `jsonb_typeof("widget") = 'array' AND ` +
-        `EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) ` +
-        `where "id"=$1 AND "value" = ANY($2))`);
+      assert.equals(
+        where,
+        `jsonb_typeof("widget") = 'array' AND ` +
+          `EXISTS(SELECT 1 FROM jsonb_to_recordset("widget") as __x("id" text,"value" integer) ` +
+          `where "id"=$1 AND "value" = ANY($2))`,
+      );
       assert.equals(values, ['1', [50, 10]]);
       assert.equals(oids, [0, 0]);
 
-      await foo.insert(
-        {_id: '123', widget: [{id: '1', value: 200}, {id: '5', value: 500}, {id: '2', value: 100}]});
-      await foo.insert(
-        {_id: '234', widget: [{id: '1', value: 100}, {id: '4', value: 400}, {id: '3', value: 200}]});
+      await foo.insert({
+        _id: '123',
+        widget: [{id: '1', value: 200}, {id: '5', value: 500}, {id: '2', value: 100}],
+      });
+      await foo.insert({
+        _id: '234',
+        widget: [{id: '1', value: 100}, {id: '4', value: 400}, {id: '3', value: 200}],
+      });
 
       assert.equals(await foo.count({widget: {$elemMatch: {id: '1', value: {$in: null}}}}), 0);
-      assert.equals(await foo.count({widget: {$elemMatch: {id: '1', value: {$in: [100, 200]}}}}), 2);
-      assert.equals(await foo.count({widget: {$elemMatch: {id: '1', value: {$in: [100, 300]}}}}), 1);
+      assert.equals(
+        await foo.count({widget: {$elemMatch: {id: '1', value: {$in: [100, 200]}}}}),
+        2,
+      );
+      assert.equals(
+        await foo.count({widget: {$elemMatch: {id: '1', value: {$in: [100, 300]}}}}),
+        1,
+      );
       assert.equals(await foo.count({widget: {$elemMatch: {id: '4'}}}), 1);
       assert.equals(await foo.count({widget: {$elemMatch: {id: '6'}}}), 0);
       assert.equals(await foo.count({widget: {$elemMatch: {id: '1'}}}), 2);
@@ -375,9 +401,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('multipart key', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        widget: 'object',
-      });
+      const foo = pg.defaultDb.table('Foo', {widget: 'object'});
       await foo.insert({_id: '123', widget: {a: {b: {c: 1}}}});
 
       assert.equals(await foo.count({'widget.a.b.c': 1}), 1);
@@ -401,13 +425,12 @@ isServer && define((require, exports, module) => {
         {name: 'widget', oid: 3802, arraydim: 0, order: 2, isJson: true},
         {name: 'lots', oid: 1007, arraydim: 1, order: 3, isJson: false},
         {name: 'createdOn', oid: 1082, arraydim: 0, order: 4, isJson: false},
-        {name: 'updatedAt', oid: 1114, arraydim: 0, order: 5, isJson: false}]);
+        {name: 'updatedAt', oid: 1114, arraydim: 0, order: 5, isJson: false},
+      ]);
     });
 
     test('json', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        widget: 'object',
-      });
+      const foo = pg.defaultDb.table('Foo', {widget: 'object'});
       await foo.insert({_id: '123', widget: 'dodacky'});
       await foo.insert({_id: '124', widget: null});
 
@@ -419,9 +442,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('ARRAY column', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        widget: 'integer[]',
-      });
+      const foo = pg.defaultDb.table('Foo', {widget: 'integer[]'});
 
       assert.same(foo.dbType('widget'), 'integer[]');
 
@@ -439,9 +460,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('date', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        createdOn: 'date',
-      });
+      const foo = pg.defaultDb.table('Foo', {createdOn: 'date'});
 
       assert.same(foo.dbType('createdOn'), 'date');
 
@@ -456,9 +475,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('$regex', async () => {
-      const foo = pg.defaultDb.table('Foo', {
-        story: 'text',
-      });
+      const foo = pg.defaultDb.table('Foo', {story: 'text'});
 
       await foo.insert({_id: '123', story: 'How now brown cow'});
 
@@ -484,8 +501,11 @@ isServer && define((require, exports, module) => {
         await foo.transaction(async () => {
           let i = -1;
           for (const name of 'one two three Four five'.split(' ')) {
-            await foo.insert({_id: name + ++i, name,
-              createdAt: new Date(util.dateNow() - i * 1e6)});
+            await foo.insert({
+              _id: name + ++i,
+              name,
+              createdAt: new Date(util.dateNow() - i * 1e6),
+            });
           }
         });
         assert.called(foo._ensureTable);
@@ -498,7 +518,7 @@ isServer && define((require, exports, module) => {
           try {
             const ans = await cursor.next();
           } finally {
-            await cursor.close();     // should not raise error
+            await cursor.close(); // should not raise error
           }
         }, {code: '42703'});
       });
@@ -522,27 +542,37 @@ isServer && define((require, exports, module) => {
         assert.equals(
           await client.query(
             'select count(*) from "Foo" where name like {$likeE} OR name = {$four}',
-            {likeE: '%e', four: 'Four'}),
-          [{count: 4}]);
+            {likeE: '%e', four: 'Four'},
+          ),
+          [{count: 4}],
+        );
       });
 
       test('$sql', async () => {
         assert.equals(await foo.count({$sql: "name like '%e'"}), 3);
-        assert.equals(await foo.count({$sql: ['name like {$likeE} OR name = {$four}',
-          {likeE: '%e', four: 'Four'}]}), 4);
+        assert.equals(
+          await foo.count({
+            $sql: ['name like {$likeE} OR name = {$four}', {likeE: '%e', four: 'Four'}],
+          }),
+          4,
+        );
         assert.equals(await foo.count({$sql: ['name like $1 OR name = $2', ['%e', 'Four']]}), 4);
-        assert.equals(foo.show({$sql: ['{$one} + {$two} + {$one}', {one: 11, two: 22, three: 33}]}),
-          ' WHERE $1 + $2 + $1, ([11, 22]); oids: [0, 0]');
+        assert.equals(
+          foo.show({$sql: ['{$one} + {$two} + {$one}', {one: 11, two: 22, three: 33}]}),
+          ' WHERE $1 + $2 + $1, ([11, 22]); oids: [0, 0]',
+        );
       });
 
       test('fields', async () => {
         assert.equals(await foo.findOne({_id: 'one0'}, {version: false, age: false}), {
-          _id: 'one0', name: 'one', createdAt: m.date});
+          _id: 'one0',
+          name: 'one',
+          createdAt: m.date,
+        });
         assert.equals(await foo.findOne({_id: 'one0'}, {name: true}), {_id: 'one0', name: 'one'});
         await foo.transaction(async () => {
           const c = foo.find({_id: 'one0'}, {fields: {name: true, age: true}});
-          assert.equals(await c.next(), {
-            _id: 'one0', name: 'one', age: 10});
+          assert.equals(await c.next(), {_id: 'one0', name: 'one', age: 10});
           try {
             foo.find({}, {fields: {age: true, name: false}});
           } catch (err) {
@@ -591,12 +621,20 @@ isServer && define((require, exports, module) => {
       test('collation', async () => {
         let cursor = foo.find({}, {sort: ['(name collate "C")']});
         assert.equals((await cursor.next(100)).map((d) => d.name), [
-          'Four', 'five', 'one', 'three', 'two',
+          'Four',
+          'five',
+          'one',
+          'three',
+          'two',
         ]);
 
         cursor = foo.find({}, {sort: ['name']}); // natural en_US
         assert.equals((await cursor.next(100)).map((d) => d.name), [
-          'five', 'Four', 'one', 'three', 'two',
+          'five',
+          'Four',
+          'one',
+          'three',
+          'two',
         ]);
       });
     });
@@ -604,10 +642,7 @@ isServer && define((require, exports, module) => {
     group('Static table', () => {
       let foo;
       before(async () => {
-        foo = pg.defaultDb.table('Foo', {
-          name: 'text',
-          age: {type: 'number', default: 10},
-        });
+        foo = pg.defaultDb.table('Foo', {name: 'text', age: {type: 'number', default: 10}});
       });
 
       beforeEach(async () => {
@@ -674,10 +709,7 @@ isServer && define((require, exports, module) => {
         await foo.ensureIndex({name: -1}, {unique: true});
 
         await foo.insert({_id: '1', name: 'Foo'});
-        await assert.exception(
-          () => foo.insert({_id: '2', name: 'Foo'}),
-          {code: '23505'},
-        );
+        await assert.exception(() => foo.insert({_id: '2', name: 'Foo'}), {code: '23505'});
 
         await foo.ensureIndex({name: -1}, {unique: true});
         await foo.ensureIndex({name: 1, _id: -1});
@@ -693,8 +725,11 @@ isServer && define((require, exports, module) => {
       });
 
       test('query all', async () => {
-        assert.equals(await foo.query({}), [
-          {_id: '123', name: 'abc', age: 10}, {_id: '456', name: 'def', age: 10}]);
+        assert.equals(await foo.query({}), [{_id: '123', name: 'abc', age: 10}, {
+          _id: '456',
+          name: 'def',
+          age: 10,
+        }]);
       });
 
       test('$inequality', async () => {
@@ -716,44 +751,45 @@ isServer && define((require, exports, module) => {
       });
 
       test("can't add field", async () => {
-        await assert.exception(
-          () => foo.update({name: 'abc'}, {foo: 'eee'}),
-          {code: '42703'});
+        await assert.exception(() => foo.update({name: 'abc'}, {foo: 'eee'}), {code: '42703'});
       });
 
       test('abort startTransaction, endTransaction', async () => {
         const client = foo._client;
-        clientSubject().protoProperty('inTransaction', {intro() {
-          /**
-           * determine if client is in a transaction
-           **/
-        }});
+        clientSubject().protoProperty('inTransaction', {
+          intro() {
+            /**
+             * determine if client is in a transaction
+             */
+          },
+        });
 
         assert.isFalse(client.inTransaction);
-        const tx = await client.startTransaction(); {
-        assert.same(tx.transaction, 'COMMIT');
-
-        assert.isTrue(client.inTransaction);
-        tx.transaction = 'ROLLBACK';
-        assert.isTrue(client.inTransaction);
-        tx.transaction = 'COMMIT';
-
-        await foo.updateById('123', {name: 'a1'});
-
-        assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
-
-        assert.same(await client.startTransaction(), tx);
+        const tx = await client.startTransaction();
         {
-          assert.isTrue(client.inTransaction);
-          assert.equals(tx.savepoint, 1);
+          assert.same(tx.transaction, 'COMMIT');
 
-          await foo.updateById('123', {name: 'a2'});
-          assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+          assert.isTrue(client.inTransaction);
+          tx.transaction = 'ROLLBACK';
+          assert.isTrue(client.inTransaction);
+          tx.transaction = 'COMMIT';
+
+          await foo.updateById('123', {name: 'a1'});
+
+          assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
+
+          assert.same(await client.startTransaction(), tx);
+          {
+            assert.isTrue(client.inTransaction);
+            assert.equals(tx.savepoint, 1);
+
+            await foo.updateById('123', {name: 'a2'});
+            assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+          }
+          assert.same(await client.endTransaction('abort'), 0);
+          assert.isTrue(client.inTransaction);
+          assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
         }
-        assert.same(await client.endTransaction('abort'), 0);
-        assert.isTrue(client.inTransaction);
-        assert.equals((await foo.findOne({_id: '123'})).name, 'a1');
-      }
 
         assert.same(await client.endTransaction('abort'), -1);
         assert.isFalse(client.inTransaction);
@@ -766,15 +802,19 @@ isServer && define((require, exports, module) => {
       });
 
       test('commit startTransaction, endTransaction', async () => {
-        await foo._client.startTransaction(); {
-        await foo.updateById('123', {name: 'a1'});
+        await foo._client.startTransaction();
+        {
+          await foo.updateById('123', {name: 'a1'});
 
-        await foo._client.startTransaction(); {
-        await foo.updateById('123', {name: 'a2'});
-        assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
-      } await foo._client.endTransaction();
-        assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
-      } await foo._client.endTransaction();
+          await foo._client.startTransaction();
+          {
+            await foo.updateById('123', {name: 'a2'});
+            assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+          }
+          await foo._client.endTransaction();
+          assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
+        }
+        await foo._client.endTransaction();
         assert.equals((await foo.findOne({_id: '123'})).name, 'a2');
       });
 
@@ -818,8 +858,10 @@ isServer && define((require, exports, module) => {
           if (ex !== 'abort') throw ex;
         }
         foo._resetTable();
-        assert.msg('should not  have a foo column')
-          .equals(await foo.findOne({_id: '123'}), {_id: '123', name: 'abc'});
+        assert.msg('should not  have a foo column').equals(await foo.findOne({_id: '123'}), {
+          _id: '123',
+          name: 'abc',
+        });
       });
 
       test('query all', async () => {
@@ -834,8 +876,10 @@ isServer && define((require, exports, module) => {
       test('update', async () => {
         assert.same(await foo.update({name: 'abc'}, {name: 'def'}), 2);
 
-        assert.equals(
-          await foo.query({name: 'def'}), [{_id: '123', name: 'def'}, {_id: '456', name: 'def'}]);
+        assert.equals(await foo.query({name: 'def'}), [{_id: '123', name: 'def'}, {
+          _id: '456',
+          name: 'def',
+        }]);
         assert.same(await foo.update({_id: '123'}, {name: 'zzz', age: 7}), 1);
 
         assert.equals(await foo.query({_id: '123'}), [{_id: '123', name: 'zzz', age: 7}]);

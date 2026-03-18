@@ -7,22 +7,20 @@ define((require, exports, module) => {
   const PgProtocol      = require('koru/pg/pg-protocol');
   const {forEachColumn, buildNameOidColumns, tagToCount} = require('koru/pg/pg-util');
 
-  const INVALID_CONNECTION_STRING = {
-    severity: 'FATAL',
-    message: 'Invalid connection string',
-  };
+  const INVALID_CONNECTION_STRING = {severity: 'FATAL', message: 'Invalid connection string'};
 
   const findStrEnd = (str, delim, pos) => {
     for (let i = pos; i < str.length; ++i) {
       const c = str[i];
-      if (c === '\\') {++i} else if (c === delim) {
+      if (c === '\\') ++i;
+      else if (c === delim) {
         return i;
       }
     }
     return -1;
   };
 
-  const splitToNameValue = (str, nv={}, pos=0) => {
+  const splitToNameValue = (str, nv = {}, pos = 0) => {
     while (pos < str.length) {
       let ei = str.indexOf('=', pos);
       if (ei == -1) return;
@@ -73,20 +71,14 @@ define((require, exports, module) => {
     return options;
   };
 
-  const SOCKET_OPTONS = {
-    host: 'host', port: 'port', keepalives: 'keepAlive',
-  };
+  const SOCKET_OPTONS = {host: 'host', port: 'port', keepalives: 'keepAlive'};
 
-  const FILTERED_OPTIONS = {
-    ...SOCKET_OPTONS,
-    dbname: true, options: true,
-    password: true,
-  };
+  const FILTERED_OPTIONS = {...SOCKET_OPTONS, dbname: true, options: true, password: true};
 
   const FALSEY = {false: true, 0: true, f: true};
 
   class PgConn {
-    constructor(types, formatOptions={}) {
+    constructor(types, formatOptions = {}) {
       this.types = types;
       this.formatOptions = formatOptions;
     }
@@ -114,9 +106,9 @@ define((require, exports, module) => {
         }
         const {keepAlive} = socketOpts;
         if (typeof keepAlive === 'number') {
-          socketOpts.keepAlive = !! keepAlive;
+          socketOpts.keepAlive = !!keepAlive;
         } else if (typeof keepAlive === 'string') {
-          socketOpts.keepAlive = ! FALSEY[keepAlive];
+          socketOpts.keepAlive = !FALSEY[keepAlive];
         }
         socket = net.createConnection(socketOpts);
       }
@@ -145,17 +137,18 @@ define((require, exports, module) => {
         });
       });
 
-      if (callback === undefined) return p.catch(async (err) => {
-        if (err instanceof Error) throw err;
-        throw new PgError(err);
-      });
+      if (callback === undefined) {
+        return p.catch(async (err) => {
+          if (err instanceof Error) throw err;
+          throw new PgError(err);
+        });
+      }
 
-      p.then(
-        () => {callback(null, client)},
-        (err) => {
-          callback(err instanceof Error ? err : new PgError(err));
-        },
-      );
+      p.then(() => {
+        callback(null, client);
+      }, (err) => {
+        callback(err instanceof Error ? err : new PgError(err));
+      });
 
       return client;
     }
@@ -170,7 +163,7 @@ define((require, exports, module) => {
     const b = port.prepareValues();
     let i = -1;
     for (const value of paramValues) {
-      const oid = (++i < oidCount ? paramOids[i] ?? 0 : 0);
+      const oid = ++i < oidCount ? paramOids[i] ?? 0 : 0;
       port.addParamOid(encodeBinary(b, value, oid == 0 ? guessOid(value) : oid));
     }
     port.addResultFormat(resultFormatCodes);
@@ -182,7 +175,7 @@ define((require, exports, module) => {
   const isRowReturningTag = (tag) => ROW_RETURNING[tag[0]] ?? false;
 
   class PgClient {
-    constructor(types, formatOptions={}) {
+    constructor(types, formatOptions = {}) {
       this.types = types;
       this.formatOptions = formatOptions;
     }
@@ -192,7 +185,9 @@ define((require, exports, module) => {
       this.conn.socket.destroy();
     }
 
-    isClosed() {return this.conn.isClosed()}
+    isClosed() {
+      return this.conn.isClosed();
+    }
 
     buildGetValue() {
       const {types: {decodeText, decodeBinary}} = this;
@@ -200,8 +195,8 @@ define((require, exports, module) => {
       return (desc, rawValue) => {
         if (rawValue == null) return null;
         const value = desc.format == 1
-              ? decodeBinary(desc.oid, rawValue)
-              : decodeText(desc.oid, rawValue);
+          ? decodeBinary(desc.oid, rawValue)
+          : decodeText(desc.oid, rawValue);
         if (value === undefined && desc.oid !== 2278) {
           throw {message: `unknown oid ${desc.oid} for column: ${desc.name}`};
         }
@@ -213,31 +208,35 @@ define((require, exports, module) => {
       let completed;
       return {
         fetch: async (callback) => {
-          const {excludeNulls=true} = this.formatOptions;
+          const {excludeNulls = true} = this.formatOptions;
           const getValue = this.buildGetValue();
           try {
             do {
               let columns;
-              query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
+              query.describe((rawColumns) => {
+                columns = buildNameOidColumns(rawColumns);
+              });
               await query.fetch((rawRow) => {
                 const rec = {};
                 forEachColumn(rawRow, (rawValue, i) => {
                   const desc = columns[i];
                   const value = getValue(desc, rawValue);
-                  if (! excludeNulls || value !== null) {
+                  if (!excludeNulls || value !== null) {
                     rec[desc.name] = value;
                   }
                 });
                 callback(rec);
               });
               if (query.error !== undefined) throw query.error;
-            } while (query.isExecuting)
+            } while (query.isExecuting);
           } catch (err) {
             err = await query.close(err);
             throw (err instanceof Error) ? err : new PgError(err, queryString, paramValues);
           }
         },
-        get isExecuting() {return query.isExecuting},
+        get isExecuting() {
+          return query.isExecuting;
+        },
         commandComplete: (callback) => query.commandComplete(callback),
       };
     }
@@ -247,10 +246,14 @@ define((require, exports, module) => {
         const result = [];
         let ans, tag;
         do {
-          query.commandComplete((t) => {tag = t});
-          await query.fetch((row) => {result.push(row)}, maxRows);
+          query.commandComplete((t) => {
+            tag = t;
+          });
+          await query.fetch((row) => {
+            result.push(row);
+          }, maxRows);
           if (query.error) throw query.error;
-        } while (query.isExecuting)
+        } while (query.isExecuting);
         return result.length != 0 || isRowReturningTag(tag) ? result : tagToCount(tag);
       } catch (err) {
         if (err instanceof Error) throw err;
@@ -263,7 +266,8 @@ define((require, exports, module) => {
         paramValues === undefined
           ? this.conn.exec(queryString)
           : execParams(this, '', queryString, paramValues, paramOids, resultFormatCodes),
-        queryString, paramValues,
+        queryString,
+        paramValues,
       );
     }
 

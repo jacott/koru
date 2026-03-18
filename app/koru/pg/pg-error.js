@@ -2,10 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const util            = require('koru/util');
 
-  const TRANSLATE = {
-    23505: 409,
-    57014: 504,
-  };
+  const TRANSLATE = {23505: 409, 57014: 504};
 
   class PgError extends Error {
     constructor(details, queryStr, paramValues) {
@@ -31,7 +28,6 @@ define((require, exports, module) => {
           let j = s.indexOf('\n', position);
           if (j == -1) j = s.length;
           s = `${s.slice(0, j)}\n${''.padEnd(position - 2 - i, '-')}^${s.slice(j)}`;
-
         }
         message += '\n\n' + s;
       }

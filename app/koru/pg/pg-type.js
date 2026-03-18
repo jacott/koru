@@ -3,8 +3,8 @@ define((require, exports, module) => {
   const PgDate          = require('koru/pg/pg-date');
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
-  const {qstr, identityFunc} = require('koru/util');
   const util            = require('koru/util');
+  const {qstr, identityFunc} = require('koru/util');
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -53,15 +53,19 @@ define((require, exports, module) => {
   const textDecoderNames = {};
   const arrayEncoderNames = {};
 
-  const assert = (truthy, message='assert failed') => {
+  const assert = (truthy, message = 'assert failed') => {
     if (truthy) return;
     if (typeof message === 'function') message = message();
     throw new PgError({message: message.toString()});
   };
 
   const registerName = (
-    name, encodeBinary, decodeBinary,
-    encodeText=encodeBinary, decodeText=decodeBinary, arrayEncodeText=encodeText,
+    name,
+    encodeBinary,
+    decodeBinary,
+    encodeText = encodeBinary,
+    decodeText = decodeBinary,
+    arrayEncodeText = encodeText,
   ) => {
     binaryEncoderNames[name] = encodeBinary;
     binaryDecoderNames[name] = decodeBinary;
@@ -150,7 +154,7 @@ define((require, exports, module) => {
   };
 
   const textArrayEncoder = (b, v, oid) => {
-    const delim = S_DEFAULT_DELIM;  // TODO this can be different for some types. Need to set from pg_type
+    const delim = S_DEFAULT_DELIM; // TODO this can be different for some types. Need to set from pg_type
     const elmOid = arrayElementOids[oid];
     const encode = arrayTextEncoders[elmOid];
 
@@ -179,7 +183,7 @@ define((require, exports, module) => {
     return b.subarray();
   };
 
-  const aryToSqlStr = (ary, oid=guessArrayOId(ary) ?? 199) => {
+  const aryToSqlStr = (ary, oid = guessArrayOId(ary) ?? 199) => {
     const b = new Uint8ArrayBuilder(ary.length * 3);
     textArrayEncoder(b, ary, oid);
     return b.subarray().utf8Slice();
@@ -241,7 +245,7 @@ define((require, exports, module) => {
     assert(elmOid !== undefined, 'unknown array element');
     const elmDecoder = textDecoders[elmOid];
 
-    const delim = S_DEFAULT_DELIM;  // TODO this can be different for some types. Need to set from pg_type
+    const delim = S_DEFAULT_DELIM; // TODO this can be different for some types. Need to set from pg_type
 
     const len = v.length;
 
@@ -359,15 +363,25 @@ define((require, exports, module) => {
     }
   };
 
-  registerName('char', (buf, v) => buf.appendByte(v.toString().charCodeAt(0) ?? 0), (v) => String.fromCharCode(v[0]));
+  registerName(
+    'char',
+    (buf, v) => buf.appendByte(v.toString().charCodeAt(0) ?? 0),
+    (v) => String.fromCharCode(v[0]),
+  );
 
-  registerName('text', textEncodeNative, textDecodeNative, textEncodeNative, textDecodeNative, arrayEncodeText);
+  registerName(
+    'text',
+    textEncodeNative,
+    textDecodeNative,
+    textEncodeNative,
+    textDecodeNative,
+    arrayEncodeText,
+  );
   registerAliases('text', 'name', 'varchar', 'bpchar');
   registerOid('text', 25, 1009);
   registerOid('name', 19, 1003);
 
-  registerName('bytea', (buf, v) => buf.append(v), identityFunc,
-               u8ToTextBytea, textByteaToU8);
+  registerName('bytea', (buf, v) => buf.append(v), identityFunc, u8ToTextBytea, textByteaToU8);
   registerOid('bytea', 17, 1001);
 
   const setBool = (buf, v) => buf.appendByte(v ? 1 : 0);
@@ -387,16 +401,16 @@ define((require, exports, module) => {
   registerName('void', util.voidFunc, util.voidFunc);
   registerOid('void', 2278, 0);
 
-  registerName('bool', setBool, getBool,
-               (buf, v) => buf.append(v ? S_t : S_f),
-               (v) => v[0] != S_f);
+  registerName('bool', setBool, getBool, (buf, v) => buf.append(v ? S_t : S_f), (v) => v[0] != S_f);
   registerOid('bool', 16, 1000);
 
-  registerName('int2',
-               (buf, v) => buf.writeInt16BE(v),
-               (v) => v.readInt16BE(0),
-               textEncodeNative,
-               textDecodeInt);
+  registerName(
+    'int2',
+    (buf, v) => buf.writeInt16BE(v),
+    (v) => v.readInt16BE(0),
+    textEncodeNative,
+    textDecodeInt,
+  );
   registerOid('int2', 21, 1005, 23);
 
   registerName('int4', setInt32, getInt32, textEncodeNative, textDecodeInt);
@@ -405,18 +419,22 @@ define((require, exports, module) => {
   registerName('int8', setInt64, getInt64, textEncodeNative, textDecodeInt);
   registerOid('int8', 20, 1016);
 
-  registerName('float4',
-               (buf, v) => buf.writeFloatBE(v),
-               (v) => v.readFloatBE(0),
-               textEncodeNative,
-               textDecodeFloat);
+  registerName(
+    'float4',
+    (buf, v) => buf.writeFloatBE(v),
+    (v) => v.readFloatBE(0),
+    textEncodeNative,
+    textDecodeFloat,
+  );
   registerOid('float4', 700, 1021, 701);
 
-  registerName('float8',
-               (buf, v) => buf.writeDoubleBE(v),
-               (v) => v.readDoubleBE(0),
-               textEncodeNative,
-               textDecodeFloat);
+  registerName(
+    'float8',
+    (buf, v) => buf.writeDoubleBE(v),
+    (v) => v.readDoubleBE(0),
+    textEncodeNative,
+    textDecodeFloat,
+  );
   registerOid('float8', 701, 1022);
 
   registerName('jsonb', setJsonb, getJsonb, setJson, getJson);
@@ -430,29 +448,28 @@ define((require, exports, module) => {
     if (obj == null) return 25;
     let oid = 0;
     switch (typeof obj) {
-    case 'boolean': return 16;
-    case 'bigint': return 20;
-    case 'number':
-      if (obj === Math.floor(obj)) {
-        return obj > MAX32INT
-          ? (obj === Infinity ? 701 : 20)
-          : (obj > MAX16INT
-             ? 23
-             : (obj >= MIN16INT
-                ? 21
-                : (obj >= MIN32INT
-                   ? 23
-                   : obj === -Infinity ? 701 : 20)));
-      } else {
-        return 701;
-      }
-    case 'string': return 25;
-    case 'object':
-      const {constructor} = obj;
-      if (constructor === Uint8Array || constructor === Buffer) return 17;
-      if (constructor === Date) return 1114;
-      if (Array.isArray(obj)) return guessArrayOId(obj) ?? 3802;
-      return 3802;
+      case 'boolean':
+        return 16;
+      case 'bigint':
+        return 20;
+      case 'number':
+        if (obj === Math.floor(obj)) {
+          return obj > MAX32INT
+            ? (obj === Infinity ? 701 : 20)
+            : (obj > MAX16INT
+              ? 23
+              : (obj >= MIN16INT ? 21 : (obj >= MIN32INT ? 23 : obj === -Infinity ? 701 : 20)));
+        } else {
+          return 701;
+        }
+      case 'string':
+        return 25;
+      case 'object':
+        const {constructor} = obj;
+        if (constructor === Uint8Array || constructor === Buffer) return 17;
+        if (constructor === Date) return 1114;
+        if (Array.isArray(obj)) return guessArrayOId(obj) ?? 3802;
+        return 3802;
     }
   };
 
@@ -550,7 +567,7 @@ define((require, exports, module) => {
       if (typeof str === 'number') {
         return "'" + str.toString() + "'";
       } else {
-        const i = str.indexOf("\u0000");
+        const i = str.indexOf('\u0000');
         if (i !== -1) str = str.slice(0, i);
         str = str.toString().replace("'", "''");
         const be = str.replace('\\', '\\\\');
@@ -559,13 +576,15 @@ define((require, exports, module) => {
     },
 
     async assignOids(conn) {
-      const query = conn.execRows(`select oid::int,typname,typarray::int,typinput from pg_type where typarray <> 0`);
+      const query = conn.execRows(
+        `select oid::int,typname,typarray::int,typinput from pg_type where typarray <> 0`,
+      );
       do {
         let count = 0;
         await query.fetch((n) => {
           registerOid(n.typname, n.oid, n.typarray);
         });
-      } while (query.isExecuting)
+      } while (query.isExecuting);
     },
   };
 

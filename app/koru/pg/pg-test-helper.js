@@ -5,25 +5,27 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const net             = requirejs.nodeRequire('node:net');
 
-  const doQuery = async (query, maxRows=0, field) => {
+  const doQuery = async (query, maxRows = 0, field) => {
     const rows = [];
     let columns, tag;
-    query.describe((rawColumns) => {columns = buildNameOidColumns(rawColumns)});
-    query.commandComplete((t) => {tag = t});
+    query.describe((rawColumns) => {
+      columns = buildNameOidColumns(rawColumns);
+    });
+    query.commandComplete((t) => {
+      tag = t;
+    });
     do {
       await query.fetch((rawRow) => {
         const rec = {};
         forEachColumn(rawRow, (rawValue, i) => {
           const {name, format, oid} = columns[i];
 
-          rec[field == null ? `${i}:${name},${oid}` : columns[i][field]] = rawValue && (
-            format == 0
-              ? decodeText(oid, rawValue)
-              : decodeBinary(oid, rawValue));
+          rec[field == null ? `${i}:${name},${oid}` : columns[i][field]] = rawValue &&
+            (format == 0 ? decodeText(oid, rawValue) : decodeBinary(oid, rawValue));
         });
         rows.push(rec);
       }, maxRows);
-    } while (query.isExecuting)
+    } while (query.isExecuting);
 
     refute(query.error);
 
@@ -31,17 +33,22 @@ define((require, exports, module) => {
   };
 
   return {
-    createReadySocket: (path, conn) => new Promise((resolve, reject) => {
-      const socket = net.createConnection(path, () => resolve(socket));
-      socket.on('error', (err) => {conn?.close()});
-    }),
+    createReadySocket: (path, conn) =>
+      new Promise((resolve, reject) => {
+        const socket = net.createConnection(path, () => resolve(socket));
+        socket.on('error', (err) => {
+          conn?.close();
+        });
+      }),
 
     runQuery: (query, maxRows, field) => doQuery(query, maxRows, field),
 
     simpleExec: async (conn, str) => {
       let comp;
       const q = conn.exec(str);
-      q.commandComplete((t) => {comp = t});
+      q.commandComplete((t) => {
+        comp = t;
+      });
       await q.fetch();
       return comp;
     },
