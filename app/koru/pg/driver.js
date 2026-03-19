@@ -63,6 +63,7 @@ define((require, exports, module) => {
 
   const acquireConn = async (client) => {
     const conn = await fetchPool(client).acquire();
+    await client.onAquire?.(conn);
     conn[count$] = 0;
     const tx = getTransction(client);
     assert(tx.actualSavepoint == -1);
@@ -204,6 +205,7 @@ define((require, exports, module) => {
       this.options = options;
       this[mutex$] = new SimpleMutex();
       this[pool$] = undefined;
+      this.onAquire = this.options?.onAquire;
     }
 
     get connectionCount() {
@@ -1348,8 +1350,8 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
 
     closeDefaultDb,
 
-    connect(url, name) {
-      return new Client(url, name);
+    connect(url, name, options) {
+      return new Client(url, name, options);
     },
 
     get config() {

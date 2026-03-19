@@ -242,8 +242,14 @@ isServer && define((require, exports, module) => {
       /**
        * Create a new database Client connected to the `url`
        *
+       * @param url The [connection
+       * string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
+
        * @param [name] The name to give to the connection. By default
        * it is the schema name.
+
+       * @param [options.onAquire] a async function that is passed a {#koru/pg/pg-conn} when a
+       * connection is acquired from the connection pool.
        */
       api.method('connect');
       const conn1 = await pg.connect(
@@ -254,6 +260,29 @@ isServer && define((require, exports, module) => {
 
       const conn2 = await pg.connect('postgresql://localhost/korutest', 'conn2');
       assert.same(conn2.name, 'conn2');
+    });
+
+    test('onAquire', async () => {
+      api.method('connect');
+      let n = 122;
+      const conn1 = pg.connect(
+        "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'",
+        'test',
+        {
+          async onAquire(conn) {
+            await conn.exec(`SET app.test = ${++n};`);
+          },
+        },
+      );
+      await conn1.withConn(async () => {
+        assert.equals(await conn1.query(`select current_setting('app.test')::int as a`), [{
+          a: 123,
+        }]);
+        assert.equals(await conn1.query(`select current_setting('app.test')::int as a`), [{
+          a: 123,
+        }]);
+      });
+      assert.equals(await conn1.query(`select current_setting('app.test')::int as a`), [{a: 124}]);
     });
 
     test('can call getConn twice without wait', async () => {
