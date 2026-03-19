@@ -172,8 +172,9 @@ define((require, exports, module) => {
           const doc = new this(attrs);
           this._$docCacheSet(doc);
           return doc;
+        } else {
+          doc.attributes = attrs;
         }
-        doc.attributes = attrs;
         return doc;
       };
 

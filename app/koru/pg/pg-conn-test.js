@@ -224,7 +224,7 @@ isServer && define((require, exports, module) => {
       test('hide tenant', async () => {
         const client2 = await connect({
           tenant_id: 'org_id',
-          formatOptions: {excludeNulls: false, hide_tenant: true},
+          formatOptions: {excludeNulls: false, hideTenant: true},
         });
         after(() => {
           client2.destroy();

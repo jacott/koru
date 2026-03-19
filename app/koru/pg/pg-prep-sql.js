@@ -18,6 +18,7 @@ define((require, exports, module) => {
         getValue: client.buildGetValue(),
         columns: ps.columns,
         excludeNulls: client.formatOptions.excludeNulls ?? true,
+        hideTenant: client.hideTenantName,
       };
       if (ps.columns === void 0) {
         portal.describe((rawColumns) => {
@@ -28,11 +29,11 @@ define((require, exports, module) => {
 
     async fetch(maxRows = 0) {
       const pv = this[private$];
-      let {portal, getValue, excludeNulls} = pv;
+      let {portal, getValue, excludeNulls, hideTenant} = pv;
       if (!portal[private$].canFetch) return;
       const rows = [];
       const err = await portal.fetch((rawRow) => {
-        rows.push(getRow(pv.columns, getValue, rawRow, excludeNulls));
+        rows.push(getRow(pv.columns, getValue, rawRow, excludeNulls, hideTenant));
       }, maxRows);
       if (err !== void 0) {
         throw (err instanceof Error) ? err : new PgError(err, portal.u8query?.uf8Slice());
@@ -130,6 +131,7 @@ define((require, exports, module) => {
 
     async describe(client, fields, ...args) {
       const {excludeNulls = true} = client.formatOptions;
+      const hideTenant = client.hideTenantName;
       const port = this.portal(client, '', ...args);
       let {columns} = this;
       const err = await port.describe((rawColumns) => {
@@ -143,6 +145,7 @@ define((require, exports, module) => {
 
     _readyQuery(client, port, callback) {
       const {excludeNulls = true} = client.formatOptions;
+      const hideTenant = client.hideTenantName;
       let {columns} = this;
       port.addResultFormat();
       if (columns === void 0) {
@@ -152,7 +155,7 @@ define((require, exports, module) => {
       }
 
       const getValue = client.buildGetValue();
-      return (rawRow) => callback(getRow(columns, getValue, rawRow, excludeNulls));
+      return (rawRow) => callback(getRow(columns, getValue, rawRow, excludeNulls, hideTenant));
     }
 
     portal(client, pname, ...args) {

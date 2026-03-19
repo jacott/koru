@@ -118,10 +118,14 @@ define((require, exports, module) => {
     return columns;
   };
 
-  const getRow = (columns, getValue, rawRow, excludeNulls = true) => {
+  const getRow = (columns, getValue, rawRow, excludeNulls = true, hideTenant) => {
     const row = {};
     forEachColumn(rawRow, (rawValue, i) => {
       const desc = columns[i];
+      if (hideTenant === desc.name) {
+        return;
+      }
+
       const value = getValue(desc, rawValue);
       if (!excludeNulls || value !== null) {
         row[desc.name] = value;

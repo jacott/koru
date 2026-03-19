@@ -14,7 +14,7 @@ isServer && define((require, exports, module) => {
   const util            = require('koru/util');
   const SQLStatement    = require('./sql-statement');
 
-  const {stub, spy, match: m} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const API = api;
 
@@ -252,14 +252,71 @@ isServer && define((require, exports, module) => {
        * connection is acquired from the connection pool.
        */
       api.method('connect');
-      const conn1 = await pg.connect(
+      const conn1 = pg.connect(
         "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'",
       );
       assert.equals(await conn1.query('select 1 as a'), [{a: 1}]);
       assert.same(await conn1.schemaName(), 'public');
 
-      const conn2 = await pg.connect('postgresql://localhost/korutest', 'conn2');
+      const conn2 = pg.connect('postgresql://localhost/korutest', 'conn2');
       assert.same(conn2.name, 'conn2');
+    });
+
+    group('tenant pool', () => {
+      beforeEach(async () => {
+        await pg.defaultDb.query('create role test_role1 NOLOGIN; create role test_role2 NOLOGIN;');
+      });
+
+      afterEach(async () => {
+        await pg.defaultDb.query('drop role if exists test_role1; drop role if exists test_role2;');
+      });
+
+      test('constructor', async () => {
+        /**
+         * Create a new shared pool for tenant connections
+         */
+        const PgDriver = pg;
+        stubProperty(PgDriver, 'TenantPool', {value: api.innerSubject('TenantPool').class()});
+        assert.same(PgDriver.TenantRoleName, 'rls_user');
+        //[
+        stubProperty(PgDriver, 'TenantRoleName', {value: 'test_role1'});
+        const tp = new PgDriver.TenantPool(); // default config same as defaultDb
+        const tp2url = tp._url.replace(
+          /application_name=korutest/g,
+          'application_name=korutesttenant',
+        );
+        const tp2 = new PgDriver.TenantPool('tp2', tp2url, {
+          tenant_id: 'foo_id',
+          tenant_role: 'test_role2',
+          formatOptions: {excludeNulls: true, hideTenant: true},
+        });
+        assert.same(tp2._url, tp2url);
+        const conn1 = tp.connect('tid123');
+        const conn2 = tp2.connect('tid456');
+        const conn3 = tp2.connect('tid789');
+        assert.equals(
+          await conn1.query(
+            `select current_role as a, 2 as foo_id, current_setting('app.current_tenant_id') as t`,
+          ),
+          [{a: 'test_role1', foo_id: 2, t: 'tid123'}],
+        );
+        assert.equals(
+          await conn2.query(
+            `select current_role as a, 2 as foo_id, current_setting('app.current_foo_id') as t`,
+          ),
+          [{a: 'test_role2', t: 'tid456'}],
+        );
+        await conn2.query(`set app.cvar = 'abc'`);
+        assert.equals(
+          await conn3.query(
+            `select current_role as a, current_setting('app.cvar') as c, current_setting('app.current_foo_id') as t`,
+          ),
+          [{a: 'test_role2', c: 'abc', t: 'tid789'}],
+        );
+        //]
+
+        assert.exception(() => tp.connect("can't"));
+      });
     });
 
     test('onAquire', async () => {

@@ -198,7 +198,11 @@ define((require, exports, module) => {
     client.withConn((conn) => query(conn, sql, values, oids));
 
   class Client {
-    constructor(url, name, options) {
+    constructor(
+      url,
+      name,
+      options = {formatOptions: module.config().formatOptions ?? DEFAULT_FORMAT_OPTIONS},
+    ) {
       this[tx$] = Symbol();
       this._url = url;
       this.name = name;
@@ -390,13 +394,43 @@ define((require, exports, module) => {
       }
     }
   }
-
   Client.prototype.exec = Client.prototype.query;
-
   Client.prototype[private$] = {tx$};
 
+  class TenantClient extends Client {
+    constructor(name, tenantPool) {
+      if (name.includes("'")) {
+        throw new Error('Invalid name ' + name);
+      }
+
+      super(null, name, null);
+      this[pool$] = tenantPool[pool$];
+      const setup = tenantPool._setup_prefix + name + "'";
+      this.onAquire = (pgconn) => pgconn.exec(setup);
+    }
+  }
+
+  class TenantPool {
+    constructor(name = 'TenantPool', url, options) {
+      this._url = url ?? Driver.defaultDb._url;
+      this.options = options ?? Driver.defaultDb.options;
+      this._setup_prefix = `SET ROLE = "${this.options.tenant_role ?? Driver.TenantRoleName}";
+SET app.current_${this.options.tenant_id ?? 'tenant_id'} = '`;
+      this[pool$] = new Pool({
+        name,
+        create: (callback) => newConnection(this, callback),
+        destroy: (conn) => conn.destroy(),
+        idleTimeoutMillis: 30 * 1000,
+      });
+    }
+
+    connect(name) {
+      return new TenantClient(name, this);
+    }
+  }
+
   const newConnection = (client, callback) => {
-    new PgConn(PgType).connect(client._url, (err, conn) => {
+    new PgConn(PgType, client.options).connect(client._url, (err, conn) => {
       if (err == null && PgType[oidsLoaded$] === undefined) {
         conn[count$] = 0;
         PgType.assignOids(conn).then(() => {
@@ -1342,10 +1376,7 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     isPG: true,
 
     get defaultDb() {
-      return defaultDb ??= new Client(module.config().url, 'default', {
-        tenant_id: module.config().tenant_id ?? 'tenant_id',
-        formatOptions: module.config().formatOptions ?? DEFAULT_FORMAT_OPTIONS,
-      });
+      return defaultDb ??= new Client(module.config().url, 'default');
     },
 
     closeDefaultDb,
@@ -1357,9 +1388,13 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     get config() {
       return module.config();
     },
+
+    TenantPool,
+
+    TenantRoleName: 'rls_user',
   };
 
-  module.onUnload(closeDefaultDb);
+  koru.onunload(module, 'reload');
 
   return Driver;
 });

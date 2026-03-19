@@ -179,6 +179,7 @@ define((require, exports, module) => {
       this.types = types;
       this.formatOptions = options.formatOptions ?? {};
       this.tenant_id = options.tenant_id ?? 'tenant_id';
+      this.hideTenantName = options.formatOptions?.hideTenant ? this.tenant_id : undefined;
     }
 
     destroy() {
@@ -210,7 +211,7 @@ define((require, exports, module) => {
       return {
         fetch: async (callback) => {
           const {excludeNulls = true} = this.formatOptions;
-          const tenant_id = this.formatOptions.hide_tenant ? this.tenant_id : null;
+          const hideTenant = this.hideTenantName;
           const getValue = this.buildGetValue();
           try {
             do {
@@ -223,7 +224,7 @@ define((require, exports, module) => {
                 forEachColumn(rawRow, (rawValue, i) => {
                   const desc = columns[i];
                   const name = desc.name;
-                  if (name === tenant_id) return;
+                  if (name === hideTenant) return;
                   const value = getValue(desc, rawValue);
                   if (!excludeNulls || value !== null) {
                     rec[name] = value;
