@@ -17,7 +17,7 @@ define((require) => {
         thread.dbId = value.name;
       },
       get dbId() {
-        return dbBroker.db.name;
+        return util.thread.dbId;
       },
 
       clearDbId: () => {

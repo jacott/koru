@@ -2,10 +2,11 @@ isServer && define((require, exports, module) => {
   'use strict';
   /**
    * dbBroker allows for multiple databases to be connected to one nodejs instance
-   **/
+   */
   const DocChange       = require('koru/model/doc-change');
   const Driver          = require('koru/pg/driver');
   const api             = require('koru/test/api');
+  const util            = require('koru/util');
   const Model           = require('./main');
   const TH              = require('./test-helper');
   const Val             = require('./validation');
@@ -52,7 +53,7 @@ isServer && define((require, exports, module) => {
     test('db', async () => {
       /**
        * The database for the current thread
-       **/
+       */
       api.property();
       const {TestModel, altDb, defDb} = v;
       v.doc = await TestModel.create({name: 'bar1'});
@@ -81,6 +82,9 @@ isServer && define((require, exports, module) => {
 
       sut.db = altDb;
       assert.same(await TestModel.query.count(), 1);
+      assert.same(sut.dbId, 'alt');
+      util.thread.dbId = 'changed';
+      assert.same(sut.dbId, 'changed');
 
       await revertTodefault();
       assert.same(await TestModel.query.count(), 2);
@@ -99,11 +103,14 @@ isServer && define((require, exports, module) => {
       class DBRunner extends dbBroker.DBRunner {
         constructor(a, b) {
           super();
-          this.a = a; this.b = b;
+          this.a = a;
+          this.b = b;
           this.hasStopped = false;
         }
 
-        stopped() {this.hasStopped = true}
+        stopped() {
+          this.hasStopped = true;
+        }
       }
 
       const DBS = sut.makeFactory(DBRunner, 1, 2);
