@@ -5,25 +5,36 @@ define((require) => {
   const dbBroker        = require('./db-broker');
 
   return (model) => {
-    const dbObservers = Object.create(null);
     const modelObMap = Object.create(null);
     const {modelName} = model;
 
+    const initObservers = (dbId) => {
+      const observers = util.createDictionary();
+      return [
+        observers,
+        model.onChange((dc) => {
+          const cbs = observers[dc.doc._id];
+          if (cbs !== void 0) {
+            return cbs.notify(dc);
+          }
+        }),
+      ];
+    };
+
     const observeId = (id, callback) => {
       const {dbId} = dbBroker;
-      const observers = dbObservers[dbId] ??= util.createDictionary();
+      const observers = (modelObMap[dbId] ??= initObservers(dbId))[0];
 
       const obs = observers[id] ??= new Observable(() => {
         delete observers[id];
         for (const _ in observers) return;
         const modelObserver = modelObMap[dbId];
         if (modelObserver !== undefined) {
-          modelObserver.stop();
+          modelObserver[1].stop();
           delete modelObMap[dbId];
         }
       });
 
-      observeModel(observers);
       return obs.add(callback);
     };
     model.observeId = observeId;
@@ -57,16 +68,5 @@ define((require) => {
         for (const key in set) set[key].stop();
       },
     });
-
-    const observeModel = (observers) => {
-      if (modelObMap[dbBroker.dbId] === void 0) {
-        modelObMap[dbBroker.dbId] = model.onChange((dc) => {
-          const cbs = observers[dc.doc._id];
-          if (cbs !== void 0) {
-            return cbs.notify(dc);
-          }
-        });
-      }
-    };
   };
 });
