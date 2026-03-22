@@ -11,28 +11,31 @@ define((require) => {
 
     const observeId = (id, callback) => {
       const {dbId} = dbBroker;
-      const observers = dbObservers[dbId] || (dbObservers[dbId] = util.createDictionary());
+      const observers = dbObservers[dbId] ??= util.createDictionary();
 
-      const obs = observers[id] || (observers[id] = new Observable(() => {
+      const obs = observers[id] ??= new Observable(() => {
         delete observers[id];
         for (const _ in observers) return;
         const modelObserver = modelObMap[dbId];
-        if (modelObserver) {
+        if (modelObserver !== undefined) {
           modelObserver.stop();
           delete modelObMap[dbId];
         }
-      }));
+      });
+
       observeModel(observers);
       return obs.add(callback);
     };
     model.observeId = observeId;
 
-    const observeIds = (ids, callback) => stopObservers(
-      ids.map((id) => observeId(id, callback)), callback);
+    const observeIds = (ids, callback) =>
+      stopObservers(ids.map((id) => observeId(id, callback)), callback);
     model.observeIds = observeIds;
 
     const stopObservers = (obs, callback) => ({
-      stop: () => {for (let i = 0; i < obs.length; ++i) obs[i].stop()},
+      stop: () => {
+        for (let i = 0; i < obs.length; ++i) obs[i].stop();
+      },
 
       replaceIds: (newIds) => {
         const set = Object.create(null);
