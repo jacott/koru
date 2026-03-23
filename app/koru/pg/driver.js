@@ -59,13 +59,13 @@ define((require, exports, module) => {
     defaultDb = null;
   };
 
-  const getTransction = (client) => util.thread[client[tx$]] ??= new Transaction();
+  const getTransaction = (client) => util.thread[client[tx$]] ??= new Transaction();
 
   const acquireConn = async (client) => {
     const conn = await fetchPool(client).acquire();
     await client.onAquire?.(conn);
     conn[count$] = 0;
-    const tx = getTransction(client);
+    const tx = getTransaction(client);
     assert(tx.actualSavepoint == -1);
     if (tx.actualSavepoint < tx.savepoint) {
       ++conn[count$];
@@ -85,7 +85,7 @@ define((require, exports, module) => {
   const getConn = async (client) => {
     await client[mutex$].lock();
     try {
-      const conn = getTransction(client).conn ??= await acquireConn(client);
+      const conn = getTransaction(client).conn ??= await acquireConn(client);
       ++conn[count$];
       return conn;
     } finally {
@@ -94,7 +94,7 @@ define((require, exports, module) => {
   };
 
   const releaseConn = (client) => {
-    const tx = getTransction(client);
+    const tx = getTransaction(client);
     if (tx.conn === undefined) return;
     if (--tx.conn[count$] === 0) {
       fetchPool(client).release(tx.conn);
@@ -248,11 +248,11 @@ define((require, exports, module) => {
     }
 
     get existingTran() {
-      return getTransction(this);
+      return getTransaction(this);
     }
 
     async withConn(callback) {
-      const {conn} = getTransction(this);
+      const {conn} = getTransaction(this);
       if (conn !== undefined) return callback.call(this, conn);
       try {
         return await callback.call(this, await getConn(this));
@@ -314,11 +314,11 @@ define((require, exports, module) => {
     }
 
     get inTransaction() {
-      return getTransction(this).savepoint != -1;
+      return getTransaction(this).savepoint != -1;
     }
 
     startTransaction() {
-      const tx = getTransction(this);
+      const tx = getTransaction(this);
       if (++tx.savepoint == 0) {
         tx.transaction = 'COMMIT';
       } else if (tx.actualSavepoint != -1) {
@@ -342,7 +342,7 @@ define((require, exports, module) => {
     }
 
     async endTransaction(abort) {
-      const tx = getTransction(this);
+      const tx = getTransaction(this);
       if (tx.savepoint == -1) throw new Error('No transaction in progress!');
       if (tx.savepoint > tx.actualSavepoint) {
         if (--tx.savepoint == -1) {
@@ -374,6 +374,20 @@ define((require, exports, module) => {
       }
 
       return tx.savepoint;
+    }
+
+    async shareTransactionFrom(from, body) {
+      const ttx = getTransaction(this);
+      if (ttx.savepoint !== -1) throw new Error('Transaction already in progress!');
+      const ftx = getTransaction(from);
+      if (ftx.savepoint === -1) throw new Error('No transaction in progress!');
+
+      try {
+        util.thread[this[tx$]] = ftx;
+        return await body.call(this, ftx);
+      } finally {
+        util.thread[this[tx$]] = ttx;
+      }
     }
 
     async transaction(callback) {
@@ -1059,7 +1073,7 @@ SET app.current_${this.options.tenant_id ?? 'tenant_id'} = '`;
     }
 
     const client = cursor.table._client;
-    const tx = getTransction(client);
+    const tx = getTransaction(client);
     let sql = cursor._sql;
 
     if (cursor._sort) {
@@ -1298,7 +1312,7 @@ SET app.current_${this.options.tenant_id ?? 'tenant_id'} = '`;
     const type = pgFieldType(richType);
 
     if (typeof colSchema === 'object' && colSchema.default != null) {
-      const tx = getTransction(client);
+      const tx = getTransaction(client);
       let literal = colSchema.default;
       if (type === 'jsonb') {
         literal = escapeLiteral(JSON.stringify(literal)) + '::jsonb';
@@ -1392,6 +1406,9 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
     TenantPool,
 
     TenantRoleName: 'rls_user',
+
+    Client,
+    TenantClient,
   };
 
   koru.onunload(module, 'reload');
