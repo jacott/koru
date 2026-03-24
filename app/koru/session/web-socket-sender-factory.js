@@ -45,6 +45,10 @@ define((require) => {
       waitSends.length = 0;
     });
 
+    base.provide('F', function (args) {
+      this[private$].failed(...args);
+    });
+
     base.provide('K', function ack(data) {
       const now = adjustedNow();
       const serverTime = +data;
@@ -262,6 +266,8 @@ define((require) => {
           heatbeatFail();
         }
       };
+
+      session[private$].failed = (code, reason) => ws.onclose({code, reason});
 
       session[private$].queueHeatBeat = () => {
         stopHeartbeat();

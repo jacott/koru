@@ -96,6 +96,23 @@ define((require, exports, module) => {
       assert.same(v.ws.onerror, util.voidFunc);
     });
 
+    test('F fail message', () => {
+      assert.same(v.sess.state._state, 'closed');
+
+      v.sess.start();
+
+      const stateMsg = stub();
+
+      after(v.sess.state.onChange(stateMsg));
+
+      let fFunc;
+      assert.calledWith(v.sess.provide, 'F', m((f) => fFunc = f));
+
+      fFunc.call(v.sess, [404, 'not found']);
+
+      assert.calledWith(stateMsg, false, 404, 'not found');
+    });
+
     test('hearbeat queuing', () => {
       v.sess.start();
       v.ws.send = stub();
@@ -235,7 +252,7 @@ define((require, exports, module) => {
       assert.equals(sess1._rpcs, {});
       assert.equals(sess1._commands, {});
       assert.equals(sess2._commands, {});
-      assert.equals(Object.keys(base._commands).sort().join(''), 'BKLUWX');
+      assert.equals(Object.keys(base._commands).sort().join(''), 'BFKLUWX');
       assert.same(base._commands.B, bfunc);
     });
 
