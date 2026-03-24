@@ -19,12 +19,13 @@ isServer && define((require, exports, module) => {
   let v = {};
 
   const revertTodefault = async () => {
-    v.obAny && v.obAny.stop();
-    v.obDef && v.obDef.stop();
-    v.obAlt && v.obAlt.stop();
+    v.obAny?.stop();
+    v.obDef?.stop();
+    v.obAlt?.stop();
     v.obDef = v.obAlt = v.obAny = null;
-    if (v.altDb) {
+    if (v.altDb != null) {
       await v.altDb.query('DROP SCHEMA alt CASCADE');
+      v.altDb.end();
       sut.db = null;
       v.altDb = null;
     }
@@ -47,6 +48,7 @@ isServer && define((require, exports, module) => {
 
     afterEach(async () => {
       await Model._destroyModel('TestModel', 'drop');
+      v.altDb?.end();
       v = {};
     });
 

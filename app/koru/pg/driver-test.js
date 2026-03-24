@@ -255,10 +255,12 @@ isServer && define((require, exports, module) => {
       const conn1 = pg.connect(
         "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'",
       );
+      after(() => conn1.end());
       assert.equals(await conn1.query('select 1 as a'), [{a: 1}]);
       assert.same(await conn1.schemaName(), 'public');
 
       const conn2 = pg.connect('postgresql://localhost/korutest', 'conn2');
+      after(() => conn2.end());
       assert.same(conn2.name, 'conn2');
     });
 
@@ -278,6 +280,10 @@ isServer && define((require, exports, module) => {
         });
         const conn1 = tp.connect();
         const conn2 = tp.connect('t123');
+        after(() => {
+          conn1.end();
+          conn2.end();
+        });
         assert.same(conn1.name, '<DEFAULT>');
         assert.equals(
           await conn1.query(
@@ -310,6 +316,11 @@ isServer && define((require, exports, module) => {
         const tp = new PgDriver.TenantPool();
         const conn1 = tp.connect('tid123');
         const conn2 = tp.connect('tid456');
+        after(() => {
+          conn1.end();
+          conn2.end();
+        });
+
         for (let i = 0; i < 12; ++i) {
           await conn1.transaction(async (tx1) => {
             await conn1.query(`set local app.test_var = 1`);
@@ -353,6 +364,12 @@ isServer && define((require, exports, module) => {
         const conn1 = tp.connect('tid123');
         const conn2 = tp2.connect('tid456');
         const conn3 = tp2.connect('tid789');
+        after(() => {
+          conn1.end();
+          conn2.end();
+          conn3.end();
+        });
+
         assert.equals(
           await conn1.query(
             `select current_role as a, 2 as foo_id, current_setting('app.current_tenant_id') as t`,
@@ -390,6 +407,8 @@ isServer && define((require, exports, module) => {
           },
         },
       );
+      after(() => conn1.end());
+
       await conn1.withConn(async () => {
         assert.equals(await conn1.query(`select current_setting('app.test')::int as a`), [{
           a: 123,

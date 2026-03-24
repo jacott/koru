@@ -2,7 +2,7 @@ isServer && define((require, exports, module) => {
   'use strict';
   /**
    * Manage durable Message queues.
-   **/
+   */
   const koru            = require('koru');
   const Future          = require('koru/future');
   const Model           = require('koru/model');
@@ -60,16 +60,43 @@ isServer && define((require, exports, module) => {
 
       const doSomethingWith = stub();
 
-      after(() => {mqFactory.deregisterQueue('bar')});
+      after(() => {
+        mqFactory.deregisterQueue('bar');
+      });
 
       //[
-      mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}});
       mqFactory.registerQueue({
-        module, name: 'bar', retryInterval: -1, action(msg) {doSomethingWith(msg)}});
+        name: 'foo',
+        action(msg) {
+          doSomethingWith(msg);
+        },
+      });
+      mqFactory.registerQueue({
+        module,
+        name: 'bar',
+        retryInterval: -1,
+        action(msg) {
+          doSomethingWith(msg);
+        },
+      });
       //]
-      assert.exception(() => {mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      assert.exception(() => {
+        mqFactory.registerQueue({
+          name: 'foo',
+          action(msg) {
+            doSomethingWith(msg);
+          },
+        });
+      });
       mqFactory.deregisterQueue('foo');
-      refute.exception(() => {mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      refute.exception(() => {
+        mqFactory.registerQueue({
+          name: 'foo',
+          action(msg) {
+            doSomethingWith(msg);
+          },
+        });
+      });
     });
 
     group('with multi-db', () => {
@@ -81,12 +108,14 @@ isServer && define((require, exports, module) => {
       });
 
       afterEach(async () => {
-        if (v.altDb) {
+        if (v.altDb != null) {
           dbBroker.db = v.altDb;
           mqFactory.stopAll();
           await TH.rollbackTransaction(v.altDb);
           dbBroker.clearDbId();
           await v.altDb.query('DROP SCHEMA IF EXISTS alt CASCADE');
+          v.altDb.end();
+          v.altDb = null;
         }
         dbBroker.db = v.defDb;
         mqFactory.stopAll();
@@ -100,15 +129,22 @@ isServer && define((require, exports, module) => {
         const f1 = new Future();
         const f2 = new Future();
         stubProperty(mqFactory[dbs$].current, 'table', {
-          value: {_name: 'Test_TABEL', async _ensureTable() {
-            await 1;
-            order.push(1);
-          }, async readColumns() {
-            f2.resolve();
-            await f1.promise;
-            order.push(2);
-          }}});
-        const p = mqFactory._initTableSchema().then(() => {order.push(3)});
+          value: {
+            _name: 'Test_TABEL',
+            async _ensureTable() {
+              await 1;
+              order.push(1);
+            },
+            async readColumns() {
+              f2.resolve();
+              await f1.promise;
+              order.push(2);
+            },
+          },
+        });
+        const p = mqFactory._initTableSchema().then(() => {
+          order.push(3);
+        });
         order.push(0);
         await f2.promise;
         f1.resolve();
@@ -117,7 +153,9 @@ isServer && define((require, exports, module) => {
 
         const schema = dbBroker.db.query.args(0, 0);
         dbBroker.db.query.restore();
-        assert.equals(schema, `
+        assert.equals(
+          schema,
+          `
 CREATE TABLE "Test_TABEL" (
     _id bigint NOT NULL,
     name text COLLATE pg_catalog."C" NOT NULL,
@@ -139,14 +177,19 @@ ALTER TABLE ONLY "Test_TABEL" ALTER COLUMN _id
 
 CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
   USING btree (name, "dueAt", _id);
-`);
+`,
+        );
       });
 
       test('local registerQueue', async () => {
-        mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
-          v.args = args;
-          v.db = dbBroker.db;
-        }});
+        mqFactory.registerQueue({
+          name: 'bar',
+          local: true,
+          action(...args) {
+            v.args = args;
+            v.db = dbBroker.db;
+          },
+        });
 
         mqFactory.registerQueue({name: 'panda', local: true, action(...args) {}});
 
@@ -165,10 +208,14 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
         let altBarFuture = new Future();
 
-        mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
-          v.altArgs = args;
-          altBarFuture.resolve();
-        }});
+        mqFactory.registerQueue({
+          name: 'bar',
+          local: true,
+          action(...args) {
+            v.altArgs = args;
+            altBarFuture.resolve();
+          },
+        });
 
         assert.same(v.db, undefined);
 
@@ -222,16 +269,22 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         koru.setTimeout.reset();
         koru.clearTimeout.reset();
 
-        mqFactory.registerQueue({name: 'panda', local: true, retryInterval: 30*1000, async action(msg) {
-          await 1;
-          v.msg = msg;
-        }});
+        mqFactory.registerQueue({
+          name: 'panda',
+          local: true,
+          retryInterval: 30 * 1000,
+          async action(msg) {
+            await 1;
+            v.msg = msg;
+          },
+        });
 
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         await mqFactory.getQueue('panda').init();
 
-        assert.calledWith(koru.setTimeout, m.func, 30*1000);
+        assert.calledWith(koru.setTimeout, m.func, 30 * 1000);
 
         await koru.setTimeout.yieldAndReset();
 
@@ -257,14 +310,29 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
       test('start', async () => {
         /**
          * Start timers on all queues within current database with existing messages
-         **/
+         */
         api.protoMethod('start');
 
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
-        mqFactory.registerQueue({module, name: 'foo', action(args) {v.foo = [dbBroker.db, args]}});
-        mqFactory.registerQueue({module, name: 'bar', action(args) {v.bar = [dbBroker.db, args]}});
-        after(() => {mqFactory.deregisterQueue('bar')});
+        mqFactory.registerQueue({
+          module,
+          name: 'foo',
+          action(args) {
+            v.foo = [dbBroker.db, args];
+          },
+        });
+        mqFactory.registerQueue({
+          module,
+          name: 'bar',
+          action(args) {
+            v.bar = [dbBroker.db, args];
+          },
+        });
+        after(() => {
+          mqFactory.deregisterQueue('bar');
+        });
 
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout').returns(123);
@@ -355,14 +423,20 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
        * The class for queue instances.
        *
        * See {#../mq-factory#getQueue}
-       **/
+       */
       let mqApi;
       beforeEach(() => {
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout');
         koru.setTimeout.invokes((c) => 120 + koru.setTimeout.callCount);
         mqFactory.registerQueue({
-          module, name: 'foo', action(...args) {return v.action(...args)}, retryInterval: 300});
+          module,
+          name: 'foo',
+          action(...args) {
+            return v.action(...args);
+          },
+          retryInterval: 300,
+        });
 
         mqApi = api.innerSubject(MQ);
       });
@@ -392,9 +466,12 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
          * @param message the message to action
 
          **/
-        v.action = (...args) => {v.args = args};
+        v.action = (...args) => {
+          v.args = args;
+        };
 
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
@@ -412,12 +489,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
           name: 'foo',
           dueAt: new Date(now + 10),
           message: {another: 'message'},
-        }, {
-          _id: 1,
-          name: 'foo',
-          dueAt: new Date(now + 30),
-          message: {my: 'message'},
-        }]);
+        }, {_id: 1, name: 'foo', dueAt: new Date(now + 30), message: {my: 'message'}}]);
         //]
 
         assert.same(v.args, undefined);
@@ -427,11 +499,10 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
         now += 10;
         await call.yield();
 
-        assert.equals(v.args, [{
-          _id: 2,
-          dueAt: new Date(now),
-          message: {another: 'message'},
-        }, queue]);
+        assert.equals(v.args, [
+          {_id: 2, dueAt: new Date(now), message: {another: 'message'}},
+          queue,
+        ]);
 
         assert.calledOnceWith(koru.setTimeout, m.func, 20);
 
@@ -447,11 +518,10 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
         refute.called(koru.setTimeout);
 
-        assert.equals(v.args, [{
-          _id: 1,
-          dueAt: new Date(now - 10),
-          message: {my: 'message'},
-        }, queue]);
+        assert.equals(v.args, [
+          {_id: 1, dueAt: new Date(now - 10), message: {my: 'message'}},
+          queue,
+        ]);
 
         assert.equals(await v.defDb.query('select * from "_test_MQ" order by "dueAt"'), []);
       });
@@ -466,7 +536,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
          * @returns an array of messages in queue order
          **/
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
@@ -486,11 +557,7 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
           _id: 2,
           dueAt: new Date(now + 10),
           message: {another: 'message'},
-        }, {
-          _id: 1,
-          dueAt: new Date(now + 30),
-          message: {my: 'message'},
-        }]);
+        }, {_id: 1, dueAt: new Date(now + 30), message: {my: 'message'}}]);
 
         assert.equals(await queue.peek(5, new Date(now + 10)), [{
           _id: 2,
@@ -506,7 +573,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
          * @param _id the id of the message to remove.
          **/
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
 
@@ -531,7 +599,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
       });
 
       test('error in action', async () => {
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
         v.action = async (args) => {
@@ -552,7 +621,9 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
         assert.calledOnce(koru.setTimeout);
 
-        after(() => {mqFactory.deregisterQueue('bar')});
+        after(() => {
+          mqFactory.deregisterQueue('bar');
+        });
         mqFactory.registerQueue({name: 'bar', action: v.action, retryInterval: -1});
 
         await mqFactory.getQueue('bar').add({message: [4, 5, 6]});
@@ -563,7 +634,9 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
 
         assert.equals(queue.error, v.error);
 
-        v.action = (args) => {v.args = args};
+        v.action = (args) => {
+          v.args = args;
+        };
 
         await koru.setTimeout.firstCall.yield();
 
@@ -579,7 +652,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
          * Skip any retry interval and send the message now if dueAt has passed.
          */
         mqApi.protoMethod();
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         //[
         const queue = mqFactory.getQueue('foo');
@@ -608,7 +682,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
       });
 
       test('retryAfter', async () => {
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
         v.action = async (args) => {
@@ -621,7 +696,8 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
       });
 
       test('delay more than one day', async () => {
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         stub(TransQueue, 'onSuccess');
 
@@ -651,11 +727,14 @@ CREATE UNIQUE INDEX "Test_TABEL_name_dueAt__id" ON "Test_TABEL"
       });
 
       test('queue from within action', async () => {
-        let now = util.dateNow(); intercept(util, 'dateNow', () => now);
+        let now = util.dateNow();
+        intercept(util, 'dateNow', () => now);
 
         const queue = mqFactory.getQueue('foo');
         v.action = async (args) => {
-          v.action = (args) => {v.args = args};
+          v.action = (args) => {
+            v.args = args;
+          };
           await queue.add({dueAt: new Date(now + 50), message: {last: 'msg'}});
           await queue.add({dueAt: new Date(now - 20), message: [1, 2, 3]});
         };

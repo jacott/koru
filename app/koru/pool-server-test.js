@@ -12,7 +12,9 @@ define((require, exports, module) => {
   TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
     let create, conn, destroy;
     beforeEach(() => {
-      create = (cb) => {cb(null, conn)};
+      create = (cb) => {
+        cb(null, conn);
+      };
       destroy = stub();
 
       stub(global, 'setTimeout').returns(123);
@@ -21,11 +23,7 @@ define((require, exports, module) => {
 
     test('acquire, release', async () => {
       conn = [1];
-      const pool = new PoolServer({
-        create,
-        destroy,
-        max: 2,
-      });
+      const pool = new PoolServer({create, destroy, max: 2});
 
       let now = Date.now();
       try {
@@ -58,11 +56,7 @@ define((require, exports, module) => {
     });
 
     test('connectionCount', async () => {
-      const pool = new PoolServer({
-        create,
-        destroy,
-        max: 2,
-      });
+      const pool = new PoolServer({create, destroy, max: 2});
 
       assert.same(pool.connectionCount, 0);
       await pool.acquire();
@@ -75,11 +69,7 @@ define((require, exports, module) => {
 
     test('destroy', async () => {
       conn = [1];
-      const pool = new PoolServer({
-        create,
-        destroy,
-        max: 2,
-      });
+      const pool = new PoolServer({create, destroy, max: 2});
 
       let now = Date.now();
       try {

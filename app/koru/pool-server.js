@@ -18,9 +18,9 @@ define((require) => {
 
   const fetchHead = (v, {headKey, tailKey}) => {
     const head = v[headKey];
-    if (!head) return;
+    if (head == null) return null;
 
-    if (!(v[headKey] = head.next)) {
+    if ((v[headKey] = head.next) == null) {
       v[tailKey] = null;
     } else {
       head.next.prev = null;
@@ -32,11 +32,10 @@ define((require) => {
   const addTail = (v, {headKey, tailKey}, node) => {
     node.prev = v[tailKey];
     v[tailKey] = node;
-    if (v[tailKey].prev) {
+    if (v[tailKey].prev != null) {
       v[tailKey].prev.next = v[tailKey];
-    } else if (!v[headKey]) {
+    } else if (v[headKey] == null) {
       v[headKey] = v[tailKey];
-      return true;
     }
   };
 
@@ -46,6 +45,7 @@ define((require) => {
         {max: 10, min: 0, idleTimeoutMillis: 30 * 1000},
         config,
       );
+      v.idleTimeout = null;
       v.idleHead =
         v.idelTail =
         v.waitHead =
@@ -62,8 +62,7 @@ define((require) => {
       const v = this[private$];
       if (v.draining) throw new Error('The pool is closed for draining');
       const head = fetchHead(v, idleKeys);
-      if (head) {
-        ++v.count;
+      if (head != null) {
         return head.conn;
       }
 
@@ -114,7 +113,7 @@ define((require) => {
         }
       };
 
-      if (!v.idleTimeout) {
+      if (v.idleTimeout === null) {
         if (wait) {
           fetchHead(v, idleKeys);
           wait.future.resolve(conn);
@@ -126,9 +125,6 @@ define((require) => {
         const idle = fetchHead(v, idleKeys);
         v.idleTimeout = setTimeout(clearIdle, idle.at - now);
         wait.future.resolve(idle.conn);
-      } else {
-        assert(v.count !== 0);
-        --v.count;
       }
     }
 
@@ -138,7 +134,7 @@ define((require) => {
       v.draining = true;
       clearWait(v, new Error('The pool is closed for draining'));
       let idle;
-      if (v.idleTimeout) {
+      if (v.idleTimeout != null) {
         global.clearTimeout(v.idleTimeout);
       }
       v.idleTimeout = null;
