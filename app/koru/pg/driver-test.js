@@ -271,26 +271,63 @@ isServer && define((require, exports, module) => {
         await pg.defaultDb.query('drop role if exists test_role1; drop role if exists test_role2;');
       });
 
+      test('Default client', async () => {
+        const PgDriver = pg;
+        const tp = new PgDriver.TenantPool(null, null, {
+          formatOptions: {excludeNulls: false, hideTenant: true},
+        });
+        const conn1 = tp.connect();
+        const conn2 = tp.connect('t123');
+        assert.same(conn1.name, '<DEFAULT>');
+        assert.equals(
+          await conn1.query(
+            `select 1 as tenant_id, current_setting('app.current_tenant_id', true) as x`,
+          ),
+          [{tenant_id: 1, x: ''}],
+        );
+        assert.equals(
+          await conn2.query(
+            `select 2 as tenant_id, current_setting('app.current_tenant_id', true) as x`,
+          ),
+          [{x: 't123'}],
+        );
+        assert.equals(
+          await conn1.query(
+            `select 3 as tenant_id, current_setting('app.current_tenant_id', true) as x`,
+          ),
+          [{tenant_id: 3, x: ''}],
+        );
+        assert.equals(
+          await conn2.query(
+            `select 4 as tenant_id, current_setting('app.current_tenant_id', true) as x`,
+          ),
+          [{x: 't123'}],
+        );
+      });
+
       test('shareTransactionFrom', async () => {
         const PgDriver = pg;
         const tp = new PgDriver.TenantPool();
         const conn1 = tp.connect('tid123');
         const conn2 = tp.connect('tid456');
-        await conn1.transaction(async (tx1) => {
-          await conn1.query(`set local app.test_var = 1`);
-          await conn2.shareTransactionFrom(conn1, async (tx2) => {
-            assert.same(tx1, tx2);
-            assert.equals(await conn2.query(`select current_setting('app.test_var') as x`), [{
-              x: '1',
-            }]);
+        for (let i = 0; i < 12; ++i) {
+          await conn1.transaction(async (tx1) => {
+            await conn1.query(`set local app.test_var = 1`);
+            await conn2.shareTransactionFrom(conn1, async (tx2) => {
+              assert.same(tx1, tx2);
+              assert.equals(await conn2.query(`select current_setting('app.test_var') as x`), [{
+                x: '1',
+              }]);
+            });
+            await conn2.transaction(async (tx2) => {
+              refute.same(tx1, tx2);
+              assert.equals(
+                await conn2.query(`select current_setting('app.test_xvar', true) as x`),
+                [{}],
+              );
+            });
           });
-          await conn2.transaction(async (tx2) => {
-            refute.same(tx1, tx2);
-            assert.equals(await conn2.query(`select current_setting('app.test_xvar', true) as x`), [
-              {},
-            ]);
-          });
-        });
+        }
       });
 
       test('constructor', async () => {

@@ -5,15 +5,9 @@ define((require) => {
 
   const {private$} = require('koru/symbols');
 
-  const idleKeys = {
-    headKey: 'idleHead',
-    tailKey: 'idleTail',
-  };
+  const idleKeys = {headKey: 'idleHead', tailKey: 'idleTail'};
 
-  const waitKeys = {
-    headKey: 'waitHead',
-    tailKey: 'waitTail',
-  };
+  const waitKeys = {headKey: 'waitHead', tailKey: 'waitTail'};
 
   const clearWait = (v, err) => {
     let head;
@@ -24,9 +18,9 @@ define((require) => {
 
   const fetchHead = (v, {headKey, tailKey}) => {
     const head = v[headKey];
-    if (! head) return;
+    if (!head) return;
 
-    if (! (v[headKey] = head.next)) {
+    if (!(v[headKey] = head.next)) {
       v[tailKey] = null;
     } else {
       head.next.prev = null;
@@ -40,7 +34,7 @@ define((require) => {
     v[tailKey] = node;
     if (v[tailKey].prev) {
       v[tailKey].prev.next = v[tailKey];
-    } else if (! v[headKey]) {
+    } else if (!v[headKey]) {
       v[headKey] = v[tailKey];
       return true;
     }
@@ -48,16 +42,21 @@ define((require) => {
 
   class Pool {
     constructor(config) {
-      const v = this[private$] = Object.assign({
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30*1000,
-      }, config);
-      v.idleHead = v.idelTail = v.waitHead = v.waitTail = undefined;
+      const v = this[private$] = Object.assign(
+        {max: 10, min: 0, idleTimeoutMillis: 30 * 1000},
+        config,
+      );
+      v.idleHead =
+        v.idelTail =
+        v.waitHead =
+        v.waitTail =
+          undefined;
       v.count = 0;
     }
 
-    get connectionCount() {return this[private$].count}
+    get connectionCount() {
+      return this[private$].count;
+    }
 
     acquire() {
       const v = this[private$];
@@ -105,6 +104,7 @@ define((require) => {
         const now = Date.now();
         while (v.idleHead) {
           if (v.idleHead.at <= now) {
+            assert(v.count !== 0);
             --v.count;
             v.destroy(fetchHead(v, idleKeys).conn);
           } else {
@@ -114,7 +114,7 @@ define((require) => {
         }
       };
 
-      if (! v.idleTimeout) {
+      if (!v.idleTimeout) {
         if (wait) {
           fetchHead(v, idleKeys);
           wait.future.resolve(conn);
@@ -127,6 +127,7 @@ define((require) => {
         v.idleTimeout = setTimeout(clearIdle, idle.at - now);
         wait.future.resolve(idle.conn);
       } else {
+        assert(v.count !== 0);
         --v.count;
       }
     }

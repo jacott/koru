@@ -377,6 +377,7 @@ define((require, exports, module) => {
     }
 
     async shareTransactionFrom(from, body) {
+      assert(this[pool$] === from[pool$]);
       const ttx = getTransaction(this);
       if (ttx.savepoint !== -1) throw new Error('Transaction already in progress!');
       const ftx = getTransaction(from);
@@ -413,14 +414,27 @@ define((require, exports, module) => {
 
   class TenantClient extends Client {
     constructor(name, tenantPool) {
-      if (name.includes("'")) {
+      if (name != null && name.includes("'")) {
         throw new Error('Invalid name ' + name);
       }
 
-      super(null, name, null);
+      super(null, name ?? '<DEFAULT>', null);
       this[pool$] = tenantPool[pool$];
-      const setup = tenantPool._setup_prefix + name + "'";
-      this.onAquire = (pgconn) => pgconn.exec(setup);
+      if (name == null) {
+        const setup = tenantPool._setup_default;
+
+        this.onAquire = (pgconn) => {
+          pgconn.hideTenantName = undefined;
+          return pgconn.exec(setup);
+        };
+      } else {
+        const setup = tenantPool._setup_prefix + name + "';";
+        const hide = !!tenantPool.options.formatOptions?.hideTenant;
+        this.onAquire = (pgconn) => {
+          pgconn.hideTenantName = hide ? pgconn.tenant_id : undefined;
+          return pgconn.exec(setup);
+        };
+      }
     }
   }
 
@@ -428,8 +442,10 @@ define((require, exports, module) => {
     constructor(name = 'TenantPool', url, options) {
       this._url = url ?? Driver.defaultDb._url;
       this.options = options ?? Driver.defaultDb.options;
+      this.tenant_var = `app.current_${this.options.tenant_id ?? 'tenant_id'}`;
       this._setup_prefix = `SET ROLE = "${this.options.tenant_role ?? Driver.TenantRoleName}";
-SET app.current_${this.options.tenant_id ?? 'tenant_id'} = '`;
+SET ${this.tenant_var} = '`;
+      this._setup_default = `RESET ROLE; SET ${this.tenant_var} TO DEFAULT;`;
       this[pool$] = new Pool({
         name,
         create: (callback) => newConnection(this, callback),
