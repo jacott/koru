@@ -1,33 +1,33 @@
-define(()=>{
+define(() => {
   'use strict';
-  return dbBroker =>{
-
-    const stop = isClient ? self =>{
-      const orig = dbBroker.dbId;
-      try {
-        dbBroker.dbId = self.dbId;
-        self.stopped();
-      } finally {
-        dbBroker.dbId = orig;
+  return (dbBroker) => {
+    const stop = isClient
+      ? (self) => {
+        const orig = dbBroker.dbId;
+        try {
+          dbBroker.dbId = self.dbId;
+          self.stopped();
+        } finally {
+          dbBroker.dbId = orig;
+        }
       }
-    } : self =>{
-      const orig = dbBroker.db;
-      try {
-        dbBroker.db = self.db;
-        self.stopped();
-      } finally {
-        dbBroker.db = orig;
-      }
-    };
+      : (self) => {
+        const orig = dbBroker.db;
+        try {
+          dbBroker.db = self.db;
+          self.stopped();
+        } finally {
+          dbBroker.db = orig;
+        }
+      };
 
     const initArgs$ = Symbol();
 
-    const initDbs = dbs=>{
+    const initDbs = (dbs) => {
       dbs.list = {};
       dbs.dbId = '';
       dbs.db = undefined;
     };
-
 
     class DBS {
       constructor(DBRunner, ...args) {
@@ -38,9 +38,9 @@ define(()=>{
 
       get current() {
         if (dbBroker.dbId === this.dbId) return this.db;
-        this.db = this.list[this.dbId = dbBroker.dbId];
-        if (this.db !== undefined) return this.db;
-        return this.db = this.list[this.dbId] = new this.DBRunner(...this[initArgs$]);
+        return this.db = this.list[this.dbId = dbBroker.dbId] ??= new this.DBRunner(
+          ...this[initArgs$],
+        );
       }
 
       stop() {
@@ -62,14 +62,14 @@ define(()=>{
       }
 
       stopped() {
-        for (const h of this.handles)
+        for (const h of this.handles) {
           h.stop();
+        }
         this.handles.length = 0;
       }
     }
 
-
-    dbBroker.makeFactory = (DBRunner, ...args)=> new DBS(DBRunner, ...args);
+    dbBroker.makeFactory = (DBRunner, ...args) => new DBS(DBRunner, ...args);
 
     dbBroker.DBRunner = DBRunner;
   };
