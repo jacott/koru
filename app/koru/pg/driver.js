@@ -2,6 +2,7 @@ define((require, exports, module) => {
   'use strict';
   const Enumerable      = require('koru/enumerable');
   const Future          = require('koru/future');
+  const makeSubject     = require('koru/make-subject');
   const Observable      = require('koru/observable');
   const PgConn          = require('koru/pg/pg-conn');
   const PgType          = require('koru/pg/pg-type');
@@ -35,6 +36,7 @@ define((require, exports, module) => {
   };
 
   const pool$ = Symbol(),
+    notifyRelease$ = Symbol(),
     mutex$ = Symbol(),
     count$ = Symbol(),
     oidsLoaded$ = Symbol(),
@@ -210,6 +212,21 @@ define((require, exports, module) => {
       this[mutex$] = new SimpleMutex();
       this[pool$] = undefined;
       this.onAquire = this.options?.onAquire;
+      this[count$] = 0;
+      makeSubject(this, 'monitorReservation', notifyRelease$);
+    }
+
+    reserve() {
+      const count = ++this[count$];
+      this[notifyRelease$](this, count, 1);
+      return count;
+    }
+
+    release() {
+      const count = --this[count$];
+      if (count === -1) throw new Error(`release without reserve on ${this[inspect$]()})`);
+      this[notifyRelease$](this, count, -1);
+      return count;
     }
 
     get connectionCount() {
@@ -237,14 +254,6 @@ define((require, exports, module) => {
         pool.drain();
       }
       this[pool$] = undefined;
-    }
-
-    _getConn() {
-      return getConn(this);
-    }
-
-    _releaseConn() {
-      return releaseConn(this);
     }
 
     get existingTran() {
@@ -409,6 +418,7 @@ define((require, exports, module) => {
       }
     }
   }
+
   Client.prototype.exec = Client.prototype.query;
   Client.prototype[private$] = {tx$};
 
@@ -1428,6 +1438,13 @@ AND atttypid > 0 AND attnum > 0 ORDER BY attnum`;
   };
 
   koru.onunload(module, 'reload');
+
+  if (isTest) {
+    Driver[isTest] = {
+      getConn: (client) => getConn(client),
+      releaseConn: (client) => releaseConn(client),
+    };
+  }
 
   return Driver;
 });

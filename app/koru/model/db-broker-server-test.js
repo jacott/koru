@@ -101,6 +101,7 @@ isServer && define((require, exports, module) => {
        **/
       api.method();
       const {defDb, altDb} = v;
+      dbBroker.db = defDb;
       //[
       class DBRunner extends dbBroker.DBRunner {
         constructor(a, b) {
@@ -117,7 +118,7 @@ isServer && define((require, exports, module) => {
 
       const DBS = sut.makeFactory(DBRunner, 1, 2);
 
-      const defRunner = DBS.current;
+      let defRunner = DBS.current;
 
       assert.same(defRunner.a, 1);
       assert.same(defRunner.b, 2);
@@ -125,13 +126,13 @@ isServer && define((require, exports, module) => {
       assert.same(defRunner.constructor, DBRunner);
       assert.same(defRunner.db, defDb);
 
-      sut.db = altDb;
+      dbBroker.db = altDb;
 
-      const altRunner = DBS.current;
+      let altRunner = DBS.current;
 
       assert.same(altRunner.db, altDb);
 
-      sut.db = defDb;
+      dbBroker.db = defDb;
 
       assert.same(DBS.current, defRunner);
 
@@ -139,12 +140,34 @@ isServer && define((require, exports, module) => {
 
       assert.isFalse(defRunner.hasStopped);
 
+      /// DBS.stop
+
       DBS.stop();
 
       assert.equals(DBS.list, {});
 
       assert.isTrue(defRunner.hasStopped);
       assert.isTrue(altRunner.hasStopped);
+
+      /// DBS.remove
+
+      dbBroker.db = altDb;
+      altRunner = DBS.current;
+
+      dbBroker.db = defDb;
+      defRunner = DBS.current;
+      assert.same(defRunner.db, defDb);
+      defRunner.hasStopped = altRunner.hasStopped = false;
+
+      assert.equals(Object.keys(DBS.list).sort(), ['alt', 'default']);
+
+      DBS.remove('alt');
+
+      assert.equals(Object.keys(DBS.list), ['default']);
+
+      assert.isFalse(defRunner.hasStopped);
+      assert.isTrue(altRunner.hasStopped);
+
       //]
     });
   });

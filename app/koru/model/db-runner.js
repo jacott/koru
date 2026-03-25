@@ -43,6 +43,14 @@ define(() => {
         );
       }
 
+      remove(dbId) {
+        const runner = this.list[dbId];
+        if (runner !== undefined) {
+          delete this.list[dbId];
+          runner.stop();
+        }
+      }
+
       stop() {
         const {list} = this;
         initDbs(this);

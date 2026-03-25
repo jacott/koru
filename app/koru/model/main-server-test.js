@@ -33,7 +33,7 @@ define((require, exports, module) => {
     group('$docCache', () => {
       beforeEach(async () => {
         v.defDb = Driver.defaultDb;
-        v.altDb = await Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
+        v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
         await v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
       });
 
@@ -133,17 +133,40 @@ define((require, exports, module) => {
     test('when no changes in save', async () => {
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
-      v.doc = await TestModel.create({name: 'foo'});
-      after(TestModel.onChange(v.onChange = stub()));
-      after(TestModel.beforeSave(v.beforeSave = stub()));
+      const client = Driver.connect(Driver.defaultDb._url, 'test-client1');
+      after(() => {
+        client.end();
+      });
+      const released = stub();
+      client.monitorReservation(released);
+      dbBroker.db = client;
 
-      await v.doc.$save();
-      await TestModel.query.onId(v.doc._id).update({});
+      const onChange = stub(), onChange2 = stub(), beforeSave = stub();
+      const ocs = TestModel.onChange(onChange);
+      const doc = await TestModel.create({name: 'foo'});
+      await doc.$save();
+      const ocs2 = TestModel.onChange(onChange2);
+      after(TestModel.beforeSave(beforeSave));
+      after(() => {
+        ocs.stop();
+        ocs2.stop();
+      });
 
-      assert.same(v.doc.$reload().name, 'foo');
-      assert.same((await v.doc.$reload(true)).name, 'foo');
-      refute.called(v.onChange);
-      refute.called(v.beforeSave);
+      assert.called(onChange);
+      await TestModel.query.onId(doc._id).update({});
+
+      assert.same(doc.$reload().name, 'foo');
+      assert.same((await doc.$reload(true)).name, 'foo');
+      refute.called(onChange2);
+      refute.called(beforeSave);
+
+      ocs.stop();
+      assert.calledWith(released, client, 1, 1);
+      ocs2.stop();
+      assert.calledWith(released, client, 0, -1);
+      released.reset();
+      TestModel.onChange(stub()).stop();
+      assert.calledWith(released, client);
     });
 
     test('reload and caching', async () => {

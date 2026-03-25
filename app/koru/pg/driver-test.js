@@ -23,6 +23,8 @@ isServer && define((require, exports, module) => {
 
   const mf = m.field;
 
+  const {releaseConn, getConn} = pg[isTest];
+
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     before(() => {
       api.module({subjectName: 'pg'});
@@ -220,7 +222,7 @@ isServer && define((require, exports, module) => {
       });
     });
 
-    test('connectionCount', async () => {
+    test('reservation', async () => {
       /**
        * The number of connections to database server
        */
@@ -230,12 +232,30 @@ isServer && define((require, exports, module) => {
       db.end(); // ensure empty
       assert.same(db.connectionCount, 0);
       try {
-        const conn = await db._getConn();
+        const conn = await getConn(db);
         assert.same(db.connectionCount, 1);
       } finally {
-        db._releaseConn();
+        releaseConn(db);
       }
       //]
+    });
+
+    test('reservation', () => {
+      const mon = stub();
+      const c2 = pg.connect();
+      after(() => c2.end());
+      after(c2.monitorReservation(mon));
+      const count = c2.reserve();
+      const count2 = c2.reserve();
+      c2.release();
+
+      assert.calledThrice(mon);
+      assert.calledWith(mon, c2, 2, 1);
+      assert.calledWith(mon, c2, 1, -1);
+      mon.reset();
+      assert.same(c2.release(), count - 1);
+      assert.calledWith(mon, c2, 0, -1);
+      assert.same(count + 1, count2);
     });
 
     test('connection', async () => {
@@ -422,16 +442,16 @@ isServer && define((require, exports, module) => {
 
     test('can call getConn twice without wait', async () => {
       const db = pg.defaultDb;
-      const c1p = db._getConn();
-      const c2p = db._getConn();
+      const c1p = getConn(db);
+      const c2p = getConn(db);
 
       try {
         const c1 = await c1p;
         const c2 = await c2p;
         assert.same(c1, c2);
       } finally {
-        db._releaseConn();
-        db._releaseConn();
+        releaseConn(db);
+        releaseConn(db);
       }
     });
 

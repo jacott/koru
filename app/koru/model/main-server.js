@@ -305,7 +305,7 @@ define((require, exports, module) => {
       util.merge(model, {
         notify(...args) {
           const subject = model.db[notifyMap$];
-          if (subject) {
+          if (subject !== undefined) {
             const p = subject.notify(...args);
             if (isPromise(p)) return p.then(() => anyChange.notify(...args));
           }
@@ -314,7 +314,12 @@ define((require, exports, module) => {
         },
         onAnyChange: (callback) => anyChange.add(callback),
         onChange(callback) {
-          const subject = model.db[notifyMap$] ??= new Observable();
+          const {db} = model;
+          const subject = db[notifyMap$] ??= (db.reserve(),
+            new Observable(() => {
+              db[notifyMap$] = undefined;
+              db.release();
+            }));
           return subject.onChange(callback);
         },
         get docs() {
