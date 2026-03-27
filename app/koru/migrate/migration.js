@@ -40,7 +40,7 @@ define((require, exports, module) => {
     }
   }
 
-  const createTable = async (add, client, {name, fields, unlogged, indexes, primaryKey=true}) => {
+  const createTable = async (add, client, {name, fields, unlogged, indexes, primaryKey = true}) => {
     if (Array.isArray(fields)) {
       fields = buildFields(fields);
     }
@@ -55,7 +55,9 @@ define((require, exports, module) => {
         }
       }
 
-      await client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
+      await client.query(
+        `CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`,
+      );
       if (indexes) {
         for (const args of indexes) await addIndex(true, client, {tableName: name, args});
       }
@@ -69,7 +71,7 @@ define((require, exports, module) => {
     if (add && options.add) {
       await options.add(client);
     }
-    if (! add && options.revert) {
+    if (!add && options.revert) {
       await options.revert(client);
     }
     util.forEach(options.resetTables, (name) => resetTable(name));
@@ -78,17 +80,14 @@ define((require, exports, module) => {
   const addIndex = async (add, client, {tableName, args}) => {
     let i = 0;
     const isArray = Array.isArray(args);
-    const unique = isArray ? args[0] === '*unique' : !! args.unique;
-    const columns = isArray
-          ? (unique ? args.slice(1) : args)
-          : args.columns;
+    const unique = isArray ? args[0] === '*unique' : !!args.unique;
+    const columns = isArray ? (unique ? args.slice(1) : args) : args.columns;
     const iname = args.name ||
-          tableName + '_' + columns.map((field) => field.replace(/\s.*$/, '')).join('_');
+      tableName + '_' + columns.map((field) => field.replace(/\s.*$/, '')).join('_');
     if (add) {
       const order = columns.map((field) => field.replace(/(^\S+)/, '"$1"')).join(',');
       const where = args.where ? `where ${args.where}` : '';
-      await client.query(
-        `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${tableName}"
+      await client.query(`${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${tableName}"
 USING btree (${order}) ${where}`);
     } else {
       await client.query(`DROP INDEX "${iname}"`);
@@ -112,10 +111,17 @@ USING btree (${order}) ${where}`);
     const fields = buildFields(args);
     if (add) {
       await client.query(`ALTER TABLE "${tableName}"
-${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(',')}`);
+${
+        Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(
+          ',',
+        )
+      }`);
     } else {
-      await client.query(`ALTER TABLE "${tableName}" ${
-                         Object.keys(fields).map((col) => `DROP column "${col}"`).join(',')}`);
+      await client.query(
+        `ALTER TABLE "${tableName}" ${
+          Object.keys(fields).map((col) => `DROP column "${col}"`).join(',')
+        }`,
+      );
     }
     resetTable(tableName);
   };
@@ -130,7 +136,9 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
   const readMigration = async (mig) => {
     const id = mig + '.js';
     try {
-      return await new Promise((resolve, reject) => {require([id], resolve, reject)});
+      return await new Promise((resolve, reject) => {
+        require([id], resolve, reject);
+      });
     } finally {
       koru.unload(id);
     }
@@ -156,7 +164,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
 
       for (let i = 0; i < filenames.length; ++i) {
         const row = filenames[i].replace(/\.js$/, '');
-        if (! migrations[row]) {
+        if (!migrations[row]) {
           await this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
           this._migrations[row] = true;
         }
@@ -164,7 +172,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
     }
 
     async migrateTo(dirPath, pos, verbose) {
-      if (! dirPath || ! pos) throw new Error('Please specifiy where to migrate to');
+      if (!dirPath || !pos) throw new Error('Please specifiy where to migrate to');
       const filenames = (await fsp.readdir(dirPath)).filter(onlyMigrateFiles).sort();
 
       const migrations = await this._getMigrations();
@@ -174,7 +182,7 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
         if (row > pos) {
           break;
         }
-        if (! migrations[row]) {
+        if (!migrations[row]) {
           verbose && console.log('Adding ' + row);
           await this.addMigration(row, await readMigration(dirPath + '/' + row));
         }
@@ -188,15 +196,16 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
     }
 
     async migrationExists(name) {
-      return !! (await this._getMigrations())[name];
+      return !!(await this._getMigrations())[name];
     }
 
     async _getMigrations() {
       if (this._migrations) return this._migrations;
       await this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
       this._migrations = Object.create(null);
-      (await this._client.query('SELECT name FROM "Migration"')).
-        forEach((row) => this._migrations[row.name] = true);
+      (await this._client.query('SELECT name FROM "Migration"')).forEach((row) =>
+        this._migrations[row.name] = true
+      );
       return this._migrations;
     }
 
@@ -206,7 +215,10 @@ ${Object.keys(fields).map((col) => `ADD column ${client.jsFieldToPg(col, fields[
         if ((await this.migrationExists(name)) === add) return;
 
         const mc = new Commander();
-        {const p = callback(mc); isPromise(p) && await p}
+        {
+          const p = callback(mc);
+          isPromise(p) && await p;
+        }
         if (add) {
           for (const {action, args} of mc[actions$]) {
             await action(add, client, args);

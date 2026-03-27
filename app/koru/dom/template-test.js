@@ -2,7 +2,7 @@ isClient && define((require, exports, module) => {
   'use strict';
   /**
    * Template is used to create interactive [Dom Trees](#mdn:/API/Node)
-   **/
+   */
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const Ctx             = require('koru/dom/ctx');
@@ -32,12 +32,7 @@ isClient && define((require, exports, module) => {
       Dom.stopEvent(ev);
       assert.called(ev.stopImmediatePropagation);
       assert.called(ev.preventDefault);
-      const Tpl = Dom.newTemplate({
-        name: 'Foo',
-        nodes: [{
-          name: 'div',
-        }],
-      });
+      const Tpl = Dom.newTemplate({name: 'Foo', nodes: [{name: 'div'}]});
 
       Tpl.$events({
         'click'(event) {
@@ -95,10 +90,7 @@ isClient && define((require, exports, module) => {
 
       Dom.newTemplate({
         name: 'Bar.Fnord.Sub.Sub',
-        nodes: [{
-          name: 'div',
-          children: ['hello Fnord'],
-        }],
+        nodes: [{name: 'div', children: ['hello Fnord']}],
       });
 
       assert.dom(Dom.tpl.Bar.Baz.Buzz.$render({}), function () {
@@ -109,19 +101,10 @@ isClient && define((require, exports, module) => {
     test('partial with helper data', () => {
       Dom.newTemplate({
         name: 'Bar.Parent',
-        nodes: [{
-          name: 'div',
-          children: [' ', ['>', ['.', '/Bar', ['Child']], ['fooHelper']]],
-        }],
+        nodes: [{name: 'div', children: [' ', ['>', ['.', '/Bar', ['Child']], ['fooHelper']]]}],
       });
 
-      Dom.newTemplate({
-        name: 'Bar.Child',
-        nodes: [{
-          name: 'p',
-          children: ['', ['', 'value1']],
-        }],
-      });
+      Dom.newTemplate({name: 'Bar.Child', nodes: [{name: 'p', children: ['', ['', 'value1']]}]});
 
       Dom.tpl.Bar.Parent.$helpers({
         fooHelper() {
@@ -129,28 +112,30 @@ isClient && define((require, exports, module) => {
         },
       });
 
-      assert.dom(Dom.tpl.Bar.Parent.$render({child: {value1() {return 'Success'}}}), function () {
-        assert.dom('div>p', 'Success');
-      });
+      assert.dom(
+        Dom.tpl.Bar.Parent.$render({
+          child: {
+            value1() {
+              return 'Success';
+            },
+          },
+        }),
+        function () {
+          assert.dom('div>p', 'Success');
+        },
+      );
     });
 
     group('partial', () => {
       beforeEach(() => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes: [{
-            name: 'section',
-            attrs: [['=', 'id', 'FooId']],
-            children: [' ', ['>', '/Bar']],
-          }],
+          nodes: [{name: 'section', attrs: [['=', 'id', 'FooId']], children: [' ', ['>', '/Bar']]}],
         });
 
         Dom.newTemplate({
           name: 'Bar',
-          nodes: [{
-            name: 'div',
-            children: [' ', ['>', 'Baz', [['=', 'initials', 'myFunc']]]],
-          }],
+          nodes: [{name: 'div', children: [' ', ['>', 'Baz', [['=', 'initials', 'myFunc']]]]}],
         });
 
         Dom.newTemplate({
@@ -158,10 +143,7 @@ isClient && define((require, exports, module) => {
           nodes: [{
             name: 'input',
             attrs: [['=', 'type', 'text'], ['=', 'value', ['', 'initials']]],
-            children: [{
-              name: 'article',
-              attrs: [['=', 'id', 'BazArticle']],
-            }],
+            children: [{name: 'article', attrs: [['=', 'id', 'BazArticle']]}],
           }],
         });
       });
@@ -277,8 +259,10 @@ isClient && define((require, exports, module) => {
         const data = {arg: 'me'};
         Dom.tpl.Foo.$render(data);
 
-        assert.calledWith(Dom.tpl.Bar.$created, match(
-          (ctx) => (assert.same(ctx.data, data), true)));
+        assert.calledWith(
+          Dom.tpl.Bar.$created,
+          match((ctx) => (assert.same(ctx.data, data), true)),
+        );
       });
 
       test('scoping', () => {
@@ -298,10 +282,7 @@ isClient && define((require, exports, module) => {
 
     test('$actions', () => {
       Dom.newTemplate({name: 'Foo'});
-      Dom.tpl.Foo.$actions({
-        one: v.one = stub(),
-        two: stub(),
-      });
+      Dom.tpl.Foo.$actions({one: v.one = stub(), two: stub()});
 
       assert.same(Dom.tpl.Foo._events.length, 2);
       assert.same(Dom.tpl.Foo._events[0][0], 'click');
@@ -320,11 +301,7 @@ isClient && define((require, exports, module) => {
 
        * blur and focusout should not fire if document.activeElement === event.target
        **/
-      Dom.newTemplate({name: 'Foo', nodes: [{
-        name: 'div', children: [
-          {name: 'button'},
-        ],
-      }]});
+      Dom.newTemplate({name: 'Foo', nodes: [{name: 'div', children: [{name: 'button'}]}]});
       Dom.tpl.Foo.$events({
         'focus button': v.focus = stub(),
         'blur button': v.blur = stub(),
@@ -363,14 +340,8 @@ isClient && define((require, exports, module) => {
 
     group('menustart', () => {
       beforeEach(() => {
-        Dom.newTemplate({name: 'Foo', nodes: [{
-          name: 'div', children: [
-            {name: 'button'},
-          ],
-        }]});
-        Dom.tpl.Foo.$events({
-          'menustart button': v.menustart = stub(),
-        });
+        Dom.newTemplate({name: 'Foo', nodes: [{name: 'div', children: [{name: 'button'}]}]});
+        Dom.tpl.Foo.$events({'menustart button': v.menustart = stub()});
 
         v.foo = Dom.tpl.Foo.$render({});
         document.body.append(v.foo);
@@ -378,10 +349,7 @@ isClient && define((require, exports, module) => {
         spy(v.foo, 'addEventListener');
         Dom.tpl.Foo.$attachEvents(v.foo);
         v.target = v.foo.querySelector('button');
-        v.ev = {
-          target: v.target,
-          currentTarget: v.foo,
-        };
+        v.ev = {target: v.target, currentTarget: v.foo};
       });
 
       test('non touch pointerdown', () => {
@@ -399,8 +367,11 @@ isClient && define((require, exports, module) => {
       });
 
       test('$detachEvents', () => {
-        assert.calledWithExactly(v.foo.addEventListener, 'pointerdown', match(
-          (f) => v.pointerdown = f));
+        assert.calledWithExactly(
+          v.foo.addEventListener,
+          'pointerdown',
+          match((f) => v.pointerdown = f),
+        );
         spy(v.foo, 'removeEventListener');
         Dom.tpl.Foo.$detachEvents(v.foo);
 
@@ -410,14 +381,11 @@ isClient && define((require, exports, module) => {
 
     group('dragstart on touch', () => {
       beforeEach(() => {
-        Dom.newTemplate({name: 'Foo', nodes: [{
-          name: 'div', children: [
-            {name: 'span', attrs: [['=', 'draggable', 'true']]},
-          ],
-        }]});
-        Dom.tpl.Foo.$events({
-          'dragstart span': v.dragStart = stub(),
+        Dom.newTemplate({
+          name: 'Foo',
+          nodes: [{name: 'div', children: [{name: 'span', attrs: [['=', 'draggable', 'true']]}]}],
         });
+        Dom.tpl.Foo.$events({'dragstart span': v.dragStart = stub()});
 
         v.foo = Dom.tpl.Foo.$render({});
         document.body.append(v.foo);
@@ -425,26 +393,38 @@ isClient && define((require, exports, module) => {
         stub(v.foo, 'addEventListener');
         Dom.tpl.Foo.$attachEvents(v.foo);
         assert.calledWithExactly(v.foo.addEventListener, 'dragstart', match.func);
-        assert.calledWithExactly(v.foo.addEventListener, 'touchstart', match(
-          (f) => v.touchstart = f));
+        assert.calledWithExactly(
+          v.foo.addEventListener,
+          'touchstart',
+          match((f) => v.touchstart = f),
+        );
 
         stub(koru, 'setTimeout').returns(321);
         stub(koru, 'clearTimeout');
         v.target = v.foo.querySelector('span');
         stub(document, 'addEventListener');
         v.touchstartEvent = {
-          type: 'touchstart', currentTarget: v.foo,
+          type: 'touchstart',
+          currentTarget: v.foo,
           target: v.target,
           touches: [{clientX: 30, clientY: 60}],
         };
         v.start = () => {
           v.touchstart(v.touchstartEvent);
 
-          assert.calledWith(document.addEventListener, 'touchend', match((f) => v.touchend = f),
-                            Dom.captureEventOption);
+          assert.calledWith(
+            document.addEventListener,
+            'touchend',
+            match((f) => v.touchend = f),
+            Dom.captureEventOption,
+          );
 
-          assert.calledWith(document.addEventListener, 'touchmove', match((f) => v.touchmove = f),
-                            Dom.captureEventOption);
+          assert.calledWith(
+            document.addEventListener,
+            'touchmove',
+            match((f) => v.touchmove = f),
+            Dom.captureEventOption,
+          );
         };
       });
 
@@ -455,18 +435,29 @@ isClient && define((require, exports, module) => {
 
         koru.setTimeout.reset();
         stub(document, 'removeEventListener');
-        v.touchstart(v.ev = {
-          type: 'touchstart', currentTarget: v.foo,
-          target: v.target,
-          touches: [{clientX: 30, clientY: 60}, {clientX: 30, clientY: 60}],
-        });
+        v.touchstart(
+          v.ev = {
+            type: 'touchstart',
+            currentTarget: v.foo,
+            target: v.target,
+            touches: [{clientX: 30, clientY: 60}, {clientX: 30, clientY: 60}],
+          },
+        );
 
         assert.calledWith(koru.clearTimeout, 321);
         refute.called(koru.setTimeout);
-        assert.calledWith(document.removeEventListener, 'touchend', v.touchend,
-                          Dom.captureEventOption);
-        assert.calledWith(document.removeEventListener, 'touchmove', v.touchmove,
-                          Dom.captureEventOption);
+        assert.calledWith(
+          document.removeEventListener,
+          'touchend',
+          v.touchend,
+          Dom.captureEventOption,
+        );
+        assert.calledWith(
+          document.removeEventListener,
+          'touchmove',
+          v.touchmove,
+          Dom.captureEventOption,
+        );
 
         v.touchstart(v.touchstartEvent);
 
@@ -520,20 +511,21 @@ isClient && define((require, exports, module) => {
         koru.setTimeout.yield();
 
         stub(Dom, 'triggerEvent');
-        v.touchmove(v.ev = {
-          target: v.target,
-          touches: [{clientX: 35, clientY: 60}],
-          preventDefault: stub(),
-          stopImmediatePropagation: stub(),
-        });
+        v.touchmove(
+          v.ev = {
+            target: v.target,
+            touches: [{clientX: 35, clientY: 60}],
+            preventDefault: stub(),
+            stopImmediatePropagation: stub(),
+          },
+        );
 
         assert.calledWith(Dom.triggerEvent, v.target, 'pointermove', {clientX: 35, clientY: 60});
         assert.called(v.ev.preventDefault);
         assert.called(v.ev.stopImmediatePropagation);
 
         stub(document, 'removeEventListener');
-        v.touchend({target: v.target,
-                    touches: []});
+        v.touchend({target: v.target, touches: []});
 
         assert.calledWith(Dom.triggerEvent, v.target, 'pointerup', {clientX: 35, clientY: 60});
 
@@ -542,12 +534,10 @@ isClient && define((require, exports, module) => {
     });
 
     test('event calling', () => {
-      Dom.newTemplate({name: 'Foo', nodes: [{
-        name: 'div', children: [
-          {name: 'span'},
-          {name: 'button'},
-        ],
-      }]});
+      Dom.newTemplate({
+        name: 'Foo',
+        nodes: [{name: 'div', children: [{name: 'span'}, {name: 'button'}]}],
+      });
       v.spanCall = stub();
       Dom.tpl.Foo.$events({
         'click div': v.divCall = stub(),
@@ -563,7 +553,9 @@ isClient && define((require, exports, module) => {
 
       assert.dom('body>div', function () {
         const top = this;
-        after(() => {Dom.remove(top)});
+        after(() => {
+          Dom.remove(top);
+        });
         spy(top, 'addEventListener');
         Dom.tpl.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
@@ -572,7 +564,9 @@ isClient && define((require, exports, module) => {
         });
         assert.dom('span', function () {
           top.addEventListener.yield({
-            currentTarget: top, target: this, type: 'click',
+            currentTarget: top,
+            target: this,
+            type: 'click',
             stopImmediatePropagation: v.sip = stub(),
             preventDefault: v.pd = stub(),
           });
@@ -583,12 +577,15 @@ isClient && define((require, exports, module) => {
         refute.called(v.pd);
 
         // stopEvent
-        v.spanCall.reset(); v.divCall.reset();
+        v.spanCall.reset();
+        v.divCall.reset();
         v.stop = 'stopEvent';
 
         assert.dom('span', function () {
           top.addEventListener.yield({
-            currentTarget: top, target: this, type: 'click',
+            currentTarget: top,
+            target: this,
+            type: 'click',
             stopImmediatePropagation: v.sip = stub(),
             preventDefault: v.pd = stub(),
           });
@@ -599,12 +596,15 @@ isClient && define((require, exports, module) => {
         assert.called(v.pd);
 
         // stopPropigation
-        v.spanCall.reset(); v.divCall.reset();
+        v.spanCall.reset();
+        v.divCall.reset();
         v.stop = 'stopPropigation';
 
         assert.dom('span', function () {
           top.addEventListener.yield({
-            currentTarget: top, target: this, type: 'click',
+            currentTarget: top,
+            target: this,
+            type: 'click',
             stopImmediatePropagation: v.sip = stub(),
             preventDefault: v.pd = stub(),
           });
@@ -629,8 +629,10 @@ isClient && define((require, exports, module) => {
       //[
       const Tpl = new Template('MyTemplate');
       Template.addTemplates(Tpl, {
-        name: 'Sub1', nodes: ['sub 1'],
-        nested: [{name: 'Sub', nodes: ['sub 1 sub']}]});
+        name: 'Sub1',
+        nodes: ['sub 1'],
+        nested: [{name: 'Sub', nodes: ['sub 1 sub']}],
+      });
       assert.same(Tpl.Sub1.Sub.$render({}).textContent, 'sub 1 sub');
       //]
     });
@@ -649,13 +651,13 @@ isClient && define((require, exports, module) => {
          * {#koru/dom/template-compiler} which is called automatically
          * on html files loaded using
          * `require('koru/html!path/to/my-template.html')`
-         **/
+         */
         api.method('newTemplate');
-        const myMod = {id: 'myMod', onUnload: stub(),
-                       __proto__: Module.prototype};
-        assert.same(Template.newTemplate(myMod, {
-          name: 'Foo', nodes: [{name: 'div'}],
-        }), Dom.tpl.Foo);
+        const myMod = {id: 'myMod', onUnload: stub(), __proto__: Module.prototype};
+        assert.same(
+          Template.newTemplate(myMod, {name: 'Foo', nodes: [{name: 'div'}]}),
+          Dom.tpl.Foo,
+        );
 
         const tpl = Dom.tpl.Foo;
         assert.same(tpl.name, 'Foo');
@@ -740,9 +742,7 @@ isClient && define((require, exports, module) => {
 
       test('updateAllTags called only if data', () => {
         const myHelper = stub();
-        Dom.tpl.Foo.$helpers({
-          myHelper,
-        });
+        Dom.tpl.Foo.$helpers({myHelper});
 
         Dom.tpl.Foo.$render();
         Dom.tpl.Foo.$render(null);
@@ -755,7 +755,9 @@ isClient && define((require, exports, module) => {
       });
 
       test('setBoolean', () => {
-        refute.exception(() => {Dom.setBoolean('disabled', true)});
+        refute.exception(() => {
+          Dom.setBoolean('disabled', true);
+        });
 
         assert.dom(document.createElement('div'), function () {
           Dom.setBoolean('checked', true, this);
@@ -787,7 +789,11 @@ isClient && define((require, exports, module) => {
         });
 
         test('focus', () => {
-          document.body.appendChild(Dom.textToHtml('<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>'));
+          document.body.appendChild(
+            Dom.textToHtml(
+              '<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>',
+            ),
+          );
           assert.dom('form', function () {
             assert.dom('[name=b2]', function () {
               this.focus();
@@ -875,20 +881,17 @@ isClient && define((require, exports, module) => {
 
     test('setting namespace', () => {
       Template.newTemplate({
-        name: 'Foo', ns: 'http://www.w3.org/2000/svg',
+        name: 'Foo',
+        ns: 'http://www.w3.org/2000/svg',
         nodes: [{
           name: 'g',
-          children: [{
-            name: 'image',
-            attrs: [['=', 'xlink:href', '/abc.jpg']],
-          }, {
+          children: [{name: 'image', attrs: [['=', 'xlink:href', '/abc.jpg']]}, {
             name: 'image',
             attrs: [['=', 'xlink:href', ['', 'image2']]],
           }, {
             name: 'foreignObject',
-            attrs: [], children: [
-              {name: 'div', ns: 'http://www.w3.org/1999/xhtml'},
-            ],
+            attrs: [],
+            children: [{name: 'div', ns: 'http://www.w3.org/1999/xhtml'}],
           }],
         }],
       });
@@ -914,11 +917,7 @@ isClient && define((require, exports, module) => {
     test('rendering fragment', () => {
       Template.newTemplate({
         name: 'Foo',
-        nodes: [{
-          name: 'div',
-          attrs: [['=', 'id', 'div1']],
-          children: [' ', ['', 'bar'], ' '],
-        }, {
+        nodes: [{name: 'div', attrs: [['=', 'id', 'div1']], children: [' ', ['', 'bar'], ' ']}, {
           name: 'div',
           attrs: [['=', 'id', 'div2']],
         }],
@@ -933,11 +932,7 @@ isClient && define((require, exports, module) => {
     test('inserting Document Fragment', () => {
       Template.newTemplate({
         name: 'Foo',
-        nodes: [{
-          name: 'div',
-          attrs: [],
-          children: [' ', ['', 'bar'], ' '],
-        }],
+        nodes: [{name: 'div', attrs: [], children: [' ', ['', 'bar'], ' ']}],
       });
 
       let content;
@@ -998,17 +993,13 @@ isClient && define((require, exports, module) => {
       });
 
       test('autostop', () => {
-        Dom.newTemplate({
-          name: 'Foo',
-          nodes: [{name: 'div'}],
-        });
+        Dom.newTemplate({name: 'Foo', nodes: [{name: 'div'}]});
 
         const elm = Dom.tpl.Foo.$render({});
         const ctx = Dom.ctx(elm);
         const stub1 = stub();
         const stub2 = stub();
-        ctx.onDestroy({stop: stub1})
-          .onDestroy(stub2);
+        ctx.onDestroy({stop: stub1}).onDestroy(stub2);
 
         Dom.remove(elm);
 
@@ -1022,13 +1013,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('cleanup on exception', () => {
-        Dom.newTemplate({
-          name: 'Foo',
-          nodes: [{
-            name: 'div',
-            children: [' ', ['', 'bar'], ' '],
-          }],
-        });
+        Dom.newTemplate({name: 'Foo', nodes: [{name: 'div', children: [' ', ['', 'bar'], ' ']}]});
 
         Dom.tpl.Foo.$helpers({
           bar() {
@@ -1049,10 +1034,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('no frag if only one child node', () => {
-        Dom.newTemplate({
-          name: 'Foo',
-          nodes: [{name: 'div'}],
-        });
+        Dom.newTemplate({name: 'Foo', nodes: [{name: 'div'}]});
 
         const elm = Dom.tpl.Foo.$render({});
         assert.same(elm.nodeType, document.ELEMENT_NODE);
@@ -1060,10 +1042,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('frag if multi childs', () => {
-        Dom.newTemplate({
-          name: 'Foo',
-          nodes: [{name: 'div'}, {name: 'span'}, {name: 'section'}],
-        });
+        Dom.newTemplate({name: 'Foo', nodes: [{name: 'div'}, {name: 'span'}, {name: 'section'}]});
         const frag = Dom.tpl.Foo.$render({});
         assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
 
@@ -1078,12 +1057,11 @@ isClient && define((require, exports, module) => {
         Dom.newTemplate({
           name: 'Foo',
           nodes: [{
-            name: 'div', attrs: [
-              ['=', 'id', ['', 'id']],
-              ['=', 'class', ['', 'classes']],
-              ['=', 'data-id', ['', ['.', 'user', ['_id']]]],
-              ['', 'draggable'],
-            ],
+            name: 'div',
+            attrs: [['=', 'id', ['', 'id']], ['=', 'class', ['', 'classes']], ['=', 'data-id', [
+              '',
+              ['.', 'user', ['_id']],
+            ]], ['', 'draggable']],
             children: [],
           }],
         });
@@ -1114,12 +1092,7 @@ isClient && define((require, exports, module) => {
       });
 
       test('parent', () => {
-        Dom.newTemplate({
-          name: 'Foo.Bar',
-          nested: [{
-            name: 'Baz',
-          }],
-        });
+        Dom.newTemplate({name: 'Foo.Bar', nested: [{name: 'Baz'}]});
 
         assert.same(null, Dom.tpl.Foo.parent);
         assert.same(Dom.tpl.Foo, Dom.tpl.Foo.Bar.parent);
@@ -1145,10 +1118,7 @@ isClient && define((require, exports, module) => {
               attrs: [['=', 'class', 'search']],
               children: [['', ['.', 'user', ['initials']]]],
             }],
-          }, {
-            name: 'h2',
-            children: [['', ['.', 'user', ['name']]]],
-          }],
+          }, {name: 'h2', children: [['', ['.', 'user', ['name']]]]}],
         });
 
         Dom.tpl.Foo.$helpers({
@@ -1157,14 +1127,24 @@ isClient && define((require, exports, module) => {
           },
         });
 
-        const elm = Dom.tpl.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc() {
-          return this.name;
-        }}});
+        const elm = Dom.tpl.Foo.$render(
+          v.data = {
+            user: {
+              initial: 'fb',
+              name: 'Foo',
+              nameFunc() {
+                return this.name;
+              },
+            },
+          },
+        );
         document.body.appendChild(elm);
 
         assert.dom('h1', 'Foo', function () {
-          assert.msg('should set this correctly when calling nested function')
-            .same(this.getAttribute('data-foo'), 'Foo');
+          assert.msg('should set this correctly when calling nested function').same(
+            this.getAttribute('data-foo'),
+            'Foo',
+          );
 
           v.data.user.name = 'Bar';
           Dom.ctx(elm).updateElement(this);
@@ -1175,13 +1155,7 @@ isClient && define((require, exports, module) => {
       test('updateElement 2', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes: [{
-            name: 'div',
-            children: [['', 'name'], {
-              name: 'p',
-              children: [['', 'name']],
-            }],
-          }],
+          nodes: [{name: 'div', children: [['', 'name'], {name: 'p', children: [['', 'name']]}]}],
         });
 
         const data = {name: 'foo'};
@@ -1199,10 +1173,7 @@ isClient && define((require, exports, module) => {
       test('body', () => {
         Dom.newTemplate({
           name: 'Foo',
-          nodes: [{
-            name: 'div',
-            children: [['', ['.', 'user', ['initials']]]],
-          }],
+          nodes: [{name: 'div', children: [['', ['.', 'user', ['initials']]]]}],
         });
 
         assert.dom(Dom.tpl.Foo.$render({user: {initials: 'fb'}}), 'fb');
@@ -1210,10 +1181,7 @@ isClient && define((require, exports, module) => {
     });
 
     test('registerHelpers', () => {
-      const Foo = Dom.newTemplate({
-        name: 'Foo.Super',
-        nodes: [],
-      });
+      const Foo = Dom.newTemplate({name: 'Foo.Super', nodes: []});
 
       Foo.$helpers({
         _test_name() {
@@ -1222,11 +1190,17 @@ isClient && define((require, exports, module) => {
       });
 
       Dom.registerHelpers({
-        _test_name() {return 'global name'},
-        _test_age() {return 'global age'},
+        _test_name() {
+          return 'global name';
+        },
+        _test_age() {
+          return 'global age';
+        },
       });
 
-      after(() => {Dom._helpers._test_name = Dom._helpers._test_age = null});
+      after(() => {
+        Dom._helpers._test_name = Dom._helpers._test_age = null;
+      });
 
       const data = {name: 'sally'};
 
@@ -1236,13 +1210,9 @@ isClient && define((require, exports, module) => {
     });
 
     test('extends', () => {
-      const Super = Dom.newTemplate({
-        name: 'Foo.Super',
-      });
+      const Super = Dom.newTemplate({name: 'Foo.Super'});
 
-      Dom.newTemplate({
-        name: 'Foo.Super.Duper',
-      });
+      Dom.newTemplate({name: 'Foo.Super.Duper'});
 
       Super.$helpers({
         superFoo() {
@@ -1259,13 +1229,8 @@ isClient && define((require, exports, module) => {
       const Sub = Dom.newTemplate({
         name: 'Foo.Sub',
         extends: '../Foo.Super', // test lookup works
-        nodes: [{
-          name: 'div',
-          children: [['', 'superFoo']],
-        }],
-        nested: [{
-          name: 'Duper',
-        }],
+        nodes: [{name: 'div', children: [['', 'superFoo']]}],
+        nested: [{name: 'Duper'}],
       });
 
       assert.same(Sub.Duper.parent, Sub);

@@ -25,13 +25,15 @@ define((require) => {
       if (event.touches.length !== 0) return;
       if (v.dragging) {
         Dom.triggerEvent(event.target, 'pointerup', {
-          clientX: touch.clientX, clientY: touch.clientY});
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        });
       }
       cancel();
     };
 
     const tm = (event) => {
-      if (! v.dragging) {
+      if (!v.dragging) {
         return cancel();
       }
 
@@ -41,7 +43,9 @@ define((require) => {
       event.stopImmediatePropagation();
 
       Dom.triggerEvent(event.target, 'pointermove', {
-        clientX: touch.clientX, clientY: touch.clientY});
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      });
     };
 
     const cancel = () => {
@@ -76,9 +80,11 @@ define((require) => {
     };
   };
 
-  const onBlur = (event) => {if (document.activeElement !== event.target) onEvent(event)};
+  const onBlur = (event) => {
+    if (document.activeElement !== event.target) onEvent(event);
+  };
 
-  const onEvent = (event, type=event.type) => {
+  const onEvent = (event, type = event.type) => {
     const prevEvent = currentEvent;
     const prevCtx = Ctx._currentCtx;
     currentEvent = event;
@@ -108,7 +114,9 @@ define((require) => {
       }
 
       for (const key in later) {
-        for (elm = elm?.parentNode; elm != null && elm !== event.currentTarget; elm = elm.parentNode) {
+        for (
+          elm = elm?.parentNode; elm != null && elm !== event.currentTarget; elm = elm.parentNode
+        ) {
           for (const key in later) {
             if (key !== ':TOP' && matches.call(elm, key)) {
               if (fire(event, elm, eventTypes[key])) return;
@@ -149,25 +157,25 @@ define((require) => {
       const eventTypes = events[eventType];
       events[eventType] = null;
       switch (eventType) {
-      case 'focus':
-        parent.removeEventListener(eventType, onEvent, true);
-        break;
-      case 'blur':
-        parent.removeEventListener(eventType, onBlur, true);
-        break;
-      case 'focusout':
-        parent.removeEventListener(eventType, onBlur);
-        break;
-      case 'dragstart':
-        parent.removeEventListener(eventType, onEvent);
-        parent.removeEventListener('touchstart', dragTouchStart);
-        break;
-      case 'menustart':
-        parent.removeEventListener('pointerdown', menustart);
-        parent.removeEventListener('click', menustart);
-        break;
-      default:
-        parent.removeEventListener(eventType, onEvent);
+        case 'focus':
+          parent.removeEventListener(eventType, onEvent, true);
+          break;
+        case 'blur':
+          parent.removeEventListener(eventType, onBlur, true);
+          break;
+        case 'focusout':
+          parent.removeEventListener(eventType, onBlur);
+          break;
+        case 'dragstart':
+          parent.removeEventListener(eventType, onEvent);
+          parent.removeEventListener('touchstart', dragTouchStart);
+          break;
+        case 'menustart':
+          parent.removeEventListener('pointerdown', menustart);
+          parent.removeEventListener('click', menustart);
+          break;
+        default:
+          parent.removeEventListener(eventType, onEvent);
       }
     }
   };
@@ -205,8 +213,10 @@ define((require) => {
         result = (template ?? root)[name];
       }
     }
-    if (rest != null) for (let i = 0; result != null && i < rest.length; ++i) {
-      result = result[rest[i]];
+    if (rest != null) {
+      for (let i = 0; result != null && i < rest.length; ++i) {
+        result = result[rest[i]];
+      }
     }
 
     return result;
@@ -215,12 +225,14 @@ define((require) => {
   const addNodeEval = (template, node, parent) => {
     let elm;
     switch (node[0]) {
-    case '-':
-      elm = null; break;
-    case '':
-      elm = document.createTextNode(''); break;
-    default:
-      elm = document.createComment('empty');
+      case '-':
+        elm = null;
+        break;
+      case '':
+        elm = document.createTextNode('');
+        break;
+      default:
+        elm = document.createComment('empty');
     }
 
     Ctx._currentCtx.evals.push(parseNode(template, node, [elm]));
@@ -287,11 +299,10 @@ define((require) => {
           }
         }
         const elm = ns === void 0
-              ? (
-                name === 'svg'
-                  ? document.createElementNS(ns = SVGNS, name)
-                  : document.createElement(name))
-              : document.createElementNS(ns, name);
+          ? (name === 'svg'
+            ? document.createElementNS(ns = SVGNS, name)
+            : document.createElement(name))
+          : document.createElementNS(ns, name);
         attrs !== void 0 && setAttrs(template, elm, attrs);
         children != null && addNodes(template, elm, children, ns);
         parent.appendChild(elm);
@@ -356,9 +367,11 @@ define((require) => {
       }
     }
 
-    static get root() {return root}
+    static get root() {
+      return root;
+    }
 
-    static newTemplate(module, blueprint, parent=this.root) {
+    static newTemplate(module, blueprint, parent = this.root) {
       if (blueprint === void 0) {
         return this.addTemplates(parent, module);
       }
@@ -394,8 +407,10 @@ define((require) => {
       }
       const {nested} = blueprint;
 
-      if (nested != null) for (let i = 0; i < nested.length; ++i) {
-        this.addTemplates(parent, nested[i]);
+      if (nested != null) {
+        for (let i = 0; i < nested.length; ++i) {
+          this.addTemplates(parent, nested[i]);
+        }
       }
 
       return parent;
@@ -422,12 +437,14 @@ define((require) => {
         origin = Dom.ctx(origin);
       }
 
-      for (;origin != null; origin = origin.parentCtx) {
+      for (; origin != null; origin = origin.parentCtx) {
         if (origin.template === this) return origin;
       }
     }
 
-    $data(origin) {return this.$ctx(origin)?.data}
+    $data(origin) {
+      return this.$ctx(origin)?.data;
+    }
 
     $autoRender(data, parentCtx) {
       const elm = this.$render(data, parentCtx);
@@ -479,14 +496,15 @@ define((require) => {
     }
 
     $events(events) {
-      for (const key in events)
+      for (const key in events) {
         this.$event(key, events[key]);
+      }
       return this;
     }
 
     $event(key, func) {
       const m = /^(\S+)(.*)/.exec(key);
-      if (! m) throw new Error('invalid event spec: ' + key);
+      if (!m) throw new Error('invalid event spec: ' + key);
       this._events.push([m[1], m[2].trim(), func]);
       return this;
     }
@@ -527,7 +545,7 @@ define((require) => {
       return 'Template(' + this.$fullname + ')';
     }
 
-    $contains(subTemplate=null) {
+    $contains(subTemplate = null) {
       while (subTemplate !== null) {
         if (this === subTemplate) {
           return true;
@@ -537,8 +555,12 @@ define((require) => {
       return false;
     }
 
-    static get _currentEvent() {return currentEvent}
-    static set _currentEvent(value) {currentEvent = value}
+    static get _currentEvent() {
+      return currentEvent;
+    }
+    static set _currentEvent(value) {
+      currentEvent = value;
+    }
   }
 
   const nativeOn = (parent, eventType, selector, func) => {
@@ -548,25 +570,25 @@ define((require) => {
     if (eventTypes === void 0) {
       eventTypes = events[eventType] = {};
       switch (eventType) {
-      case 'focus':
-        parent.addEventListener(eventType, onEvent, true);
-        break;
-      case 'blur':
-        parent.addEventListener(eventType, onBlur, true);
-        break;
-      case 'focusout':
-        parent.addEventListener(eventType, onBlur);
-        break;
-      case 'dragstart':
-        parent.addEventListener(eventType, onEvent);
-        parent.addEventListener('touchstart', dragTouchStart);
-        break;
-      case 'menustart':
-        parent.addEventListener('pointerdown', menustart);
-        parent.addEventListener('click', menustart);
-        break;
-      default:
-        parent.addEventListener(eventType, onEvent);
+        case 'focus':
+          parent.addEventListener(eventType, onEvent, true);
+          break;
+        case 'blur':
+          parent.addEventListener(eventType, onBlur, true);
+          break;
+        case 'focusout':
+          parent.addEventListener(eventType, onBlur);
+          break;
+        case 'dragstart':
+          parent.addEventListener(eventType, onEvent);
+          parent.addEventListener('touchstart', dragTouchStart);
+          break;
+        case 'menustart':
+          parent.addEventListener('pointerdown', menustart);
+          parent.addEventListener('click', menustart);
+          break;
+        default:
+          parent.addEventListener(eventType, onEvent);
       }
     }
 
@@ -576,9 +598,7 @@ define((require) => {
   const lookupTemplate = Template.lookupTemplate = (tpl, name) => {
     const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
-    return m == null
-      ? fetchTemplate(tpl, name)
-      : fetchTemplate(tpl, m[1], m[2].split('.'));
+    return m == null ? fetchTemplate(tpl, name) : fetchTemplate(tpl, m[1], m[2].split('.'));
   };
 
   return Template;
