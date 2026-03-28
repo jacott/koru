@@ -13,72 +13,9 @@ define((require) => {
   const {ctx$, inspect$} = require('koru/symbols');
 
   const {TEXT_NODE} = document;
-  const dragTouchStart$ = Symbol(), template$ = Symbol(), parsed$ = Symbol();
+  const template$ = Symbol(), parsed$ = Symbol();
 
   let currentEvent;
-
-  const dragTouchStart = (event) => {
-    let touch = event.touches[0];
-    let v = event.currentTarget[dragTouchStart$];
-
-    const te = (event) => {
-      if (event.touches.length !== 0) return;
-      if (v.dragging) {
-        Dom.triggerEvent(event.target, 'pointerup', {
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        });
-      }
-      cancel();
-    };
-
-    const tm = (event) => {
-      if (!v.dragging) {
-        return cancel();
-      }
-
-      touch = event.touches[0];
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      Dom.triggerEvent(event.target, 'pointermove', {
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      });
-    };
-
-    const cancel = () => {
-      if (v == null) return;
-      document.removeEventListener('touchend', te, Dom.captureEventOption);
-      document.removeEventListener('touchmove', tm, Dom.captureEventOption);
-      koru.clearTimeout(v.timer);
-      v.currentTarget[dragTouchStart$] = null;
-      v = null;
-    };
-
-    v?.cancel?.();
-
-    if (event.touches.length !== 1) {
-      return;
-    }
-
-    document.addEventListener('touchend', te, Dom.captureEventOption);
-    document.addEventListener('touchmove', tm, Dom.captureEventOption);
-
-    v = event.currentTarget[dragTouchStart$] = {
-      dragging: false,
-      currentTarget: event.currentTarget,
-      target: event.target,
-      data: {clientX: touch.clientX, clientY: touch.clientY},
-      timer: koru.setTimeout(() => {
-        const {target, data} = v;
-        v.dragging = true;
-        Dom.triggerEvent(target, 'dragstart', data);
-      }, 300),
-      cancel,
-    };
-  };
 
   const onBlur = (event) => {
     if (document.activeElement !== event.target) onEvent(event);
@@ -168,7 +105,6 @@ define((require) => {
           break;
         case 'dragstart':
           parent.removeEventListener(eventType, onEvent);
-          parent.removeEventListener('touchstart', dragTouchStart);
           break;
         case 'menustart':
           parent.removeEventListener('pointerdown', menustart);
@@ -581,7 +517,6 @@ define((require) => {
           break;
         case 'dragstart':
           parent.addEventListener(eventType, onEvent);
-          parent.addEventListener('touchstart', dragTouchStart);
           break;
         case 'menustart':
           parent.addEventListener('pointerdown', menustart);
