@@ -35,6 +35,10 @@ define((require, exports, module) => {
       this[actions$].push({action: addColumns, args: {tableName, args}});
     }
 
+    removeColumns(tableName, ...args) {
+      this[actions$].push({action: removeColumns, args: {tableName, args}});
+    }
+
     addIndex(tableName, spec) {
       this[actions$].push({action: addIndex, args: {tableName, args: spec}});
     }
@@ -125,6 +129,8 @@ ${
     }
     resetTable(tableName);
   };
+
+  const removeColumns = (add, client, opts) => addColumns(!add, client, opts);
 
   const resetTable = (tableName) => {
     const model = ModelMap[tableName];
