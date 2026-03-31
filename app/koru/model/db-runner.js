@@ -53,8 +53,8 @@ define(() => {
 
       stop() {
         const {list} = this;
-        initDbs(this);
         for (const id in list) list[id].stop();
+        initDbs(this); // This needs to happen after because current might be accessed.
       }
     }
 

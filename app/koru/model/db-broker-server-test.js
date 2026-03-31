@@ -13,8 +13,7 @@ isServer && define((require, exports, module) => {
 
   const {stub, spy} = TH;
 
-  const sut = require('./db-broker');
-  const dbBroker = sut;
+  const dbBroker = require('./db-broker');
 
   let v = {};
 
@@ -26,7 +25,7 @@ isServer && define((require, exports, module) => {
     if (v.altDb != null) {
       await v.altDb.query('DROP SCHEMA alt CASCADE');
       v.altDb.end();
-      sut.db = null;
+      dbBroker.db = null;
       v.altDb = null;
     }
   };
@@ -66,7 +65,7 @@ isServer && define((require, exports, module) => {
       v.defChanged.reset();
       v.anyChanged.reset();
 
-      sut.db = altDb;
+      dbBroker.db = altDb;
 
       const obAlt = TestModel.onChange(v.altChanged = stub());
 
@@ -79,17 +78,40 @@ isServer && define((require, exports, module) => {
       assert.calledWith(v.altChanged, DocChange.add(v.doc));
       assert.calledWith(v.anyChanged, DocChange.add(v.doc));
 
-      sut.db = defDb;
+      dbBroker.db = defDb;
       assert.same(await TestModel.query.count(), 2);
 
-      sut.db = altDb;
+      dbBroker.db = altDb;
       assert.same(await TestModel.query.count(), 1);
-      assert.same(sut.dbId, 'alt');
+      assert.same(dbBroker.dbId, 'alt');
       util.thread.dbId = 'changed';
-      assert.same(sut.dbId, 'changed');
+      assert.same(dbBroker.dbId, 'changed');
 
       await revertTodefault();
       assert.same(await TestModel.query.count(), 2);
+    });
+
+    test('DBS.stop', () => {
+      class DBRunner extends dbBroker.DBRunner {
+        constructor(a) {
+          super();
+          this.a = a;
+          this.hasStopped = false;
+        }
+
+        stopped() {
+          ++DBS.current.a;
+          this.hasStopped = true;
+        }
+      }
+
+      const DBS = dbBroker.makeFactory(DBRunner, 0);
+
+      assert.same(DBS.current.a, 0);
+      assert.same(DBS.current.a, 0);
+
+      DBS.stop();
+      assert.same(DBS.current.a, 0); // this tests db-runner calles initDbs after running stop callbacks
     });
 
     test('makeFactory', () => {
@@ -116,7 +138,7 @@ isServer && define((require, exports, module) => {
         }
       }
 
-      const DBS = sut.makeFactory(DBRunner, 1, 2);
+      const DBS = dbBroker.makeFactory(DBRunner, 1, 2);
 
       let defRunner = DBS.current;
 
