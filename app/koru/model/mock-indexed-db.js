@@ -91,6 +91,11 @@ define((require) => {
       if (this._isKeyCursor) throw new Error(`can't delete with keycursor`);
       delete this.store.docs[this.primaryKey];
     }
+
+    update(record) {
+      this.store.put(record);
+      return {};
+    }
   }
 
   class Index {

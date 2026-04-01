@@ -142,6 +142,27 @@ isClient && define((require, exports, module) => {
         assert.equals(v.ans, [v.r3, v.r2]);
       });
 
+      test('cursor.update', () => {
+        v.t1.openCursor().onsuccess = ({target: {result}}) => {
+          if (result) {
+            const v = result.value;
+            ++v.age;
+            result.update(v);
+            result.continue();
+          }
+        };
+
+        v.idb._run();
+
+        v.t1.getAll().onsuccess = ({target: {result}}) => {
+          v.ans = result;
+        };
+
+        v.idb._run();
+
+        assert.equals(v.ans.map((r) => r.age), [11, 5, 4, 8]);
+      });
+
       test('count', () => {
         v.t1.count().onsuccess = ({target: {result}}) => {
           v.ans = result;
