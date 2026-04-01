@@ -57,13 +57,20 @@ isClient && define((require, exports, module) => {
     test('options', () => {
       stub(Dom.tpl.Form, 'field');
       const opts = {
-        'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
-        name: 'theName', type: 'foo',
-        notthis: 'not this'};
+        'html-form-notme': 'notme',
+        'html-me': 'html me',
+        ext1: 'extend 1',
+        value: '123',
+        name: 'theName',
+        type: 'foo',
+        notthis: 'not this',
+      };
       sut._helpers.field.call(opts);
 
-      assert.calledWith(Dom.tpl.Form.field, {theName: '123'}, 'theName',
-                        {type: 'foo', me: 'html me'}, opts);
+      assert.calledWith(Dom.tpl.Form.field, {theName: '123'}, 'theName', {
+        type: 'foo',
+        me: 'html me',
+      }, opts);
     });
 
     test('no doc', () => {
@@ -81,8 +88,14 @@ isClient && define((require, exports, module) => {
 
     test('render', () => {
       const sut = Dom.tpl.InPlaceForm.$render({
-        doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
-        name: 'foo', 'html-id': 'My_foo', 'html-form-id': 'MyFormId', 'html-maxLength': 4});
+        doc: {foo: 'abc'},
+        applyName: 'Save',
+        type: 'text',
+        name: 'foo',
+        'html-id': 'My_foo',
+        'html-form-id': 'MyFormId',
+        'html-maxLength': 4,
+      });
 
       assert.dom(sut, () => {
         assert.same(sut.id, 'MyFormId');
@@ -142,7 +155,12 @@ isClient && define((require, exports, module) => {
       assert.called(widget.close);
 
       widget.close.reset();
-      doc = {$save() {this[error$] = {name: [['is_invalid']]}}, changes: {name: 'nn'}};
+      doc = {
+        $save() {
+          this[error$] = {name: [['is_invalid']]};
+        },
+        changes: {name: 'nn'},
+      };
       sut.saveField(doc, form, widget);
       refute.className(form, 'submitting');
       assert.dom(form, (form) => {
@@ -212,10 +230,7 @@ isClient && define((require, exports, module) => {
 
     test('enterSubmits', () => {
       let arg;
-      const widget = Dom.tpl.InPlaceForm.newWidget({
-        doc: {name: 'abc'},
-        enterSubmits: true,
-      });
+      const widget = Dom.tpl.InPlaceForm.newWidget({doc: {name: 'abc'}, enterSubmits: true});
       widget.onSubmit(function (_arg) {
         assert.same(this, widget);
         arg = _arg;
@@ -227,7 +242,8 @@ isClient && define((require, exports, module) => {
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13, shiftKey: true});
         refute.same(arg, 'new text');
-        TH.trigger('input', 'keydown', {which: 13})});
+        TH.trigger('input', 'keydown', {which: 13});
+      });
 
       assert.same(arg, 'new text');
     });
@@ -235,7 +251,10 @@ isClient && define((require, exports, module) => {
     test('delete event', () => {
       let arg;
       const widget = Dom.tpl.InPlaceForm.newWidget({
-        doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
+        doc: {name: 'abc'},
+        deleteName: 'Delete me',
+        deleteConfirmMsg: 'Are you sure about it?',
+      });
 
       widget.onDelete(function () {
         assert.same(this, widget);
@@ -327,13 +346,15 @@ isClient && define((require, exports, module) => {
     });
 
     test('GenericShow', () => {
-      Ipf = Dom.newTemplate(TemplateCompiler.toJavascript(`
+      Ipf = Dom.newTemplate(
+        TemplateCompiler.toJavascript(`
 <template name="Test.InPlaceForm">
   <ul id="InPlaceFormTest">
     {{editInPlace name="nickname"}}
   </ul>
 </template>
-`).toJson());
+`).toJson(),
+      );
 
       sut.autoRegister(Ipf);
       const doc = {nickname: 'The Bard of Avon'};

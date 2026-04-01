@@ -53,9 +53,7 @@ define((require) => {
     field() {
       if (this.editTpl) return this.editTpl.$autoRender(this);
 
-      const fieldOptions = {
-        type: this.type,
-      };
+      const fieldOptions = {type: this.type};
 
       for (const key in this) {
         const m = /^html-(form-)?(.*)$/.exec(key);
@@ -75,7 +73,7 @@ define((require) => {
     },
 
     deleteButton() {
-      if (! this.deleteName) {
+      if (!this.deleteName) {
         return '';
       }
 
@@ -136,16 +134,16 @@ define((require) => {
 
     'keydown'(event) {
       switch (event.which) {
-      case 13:
-        if (! event.shiftKey && (Dom.ctrlOrMeta(event) || $.ctx.data.enterSubmits)) {
+        case 13:
+          if (!event.shiftKey && (Dom.ctrlOrMeta(event) || $.ctx.data.enterSubmits)) {
+            Dom.stopEvent();
+            submit.call(this, event);
+          }
+          break;
+        case 27:
           Dom.stopEvent();
-          submit.call(this, event);
-        }
-        break;
-      case 27:
-        Dom.stopEvent();
-        cancel(this);
-        break;
+          cancel(this);
+          break;
       }
     },
 
@@ -173,7 +171,9 @@ define((require) => {
   });
 
   Tpl.$extend({
-    $created: (ctx, elm) => {ctx.data?.editTpl?.$opened?.(elm)},
+    $created: (ctx, elm) => {
+      ctx.data?.editTpl?.$opened?.(elm);
+    },
 
     newWidget: (options) => new Widget(options),
 
@@ -192,7 +192,7 @@ define((require) => {
         'click .ui-editable'(event) {
           Dom.stopEvent();
           const range = Dom.getRange();
-          if (range !== null && ! range.collapsed) return;
+          if (range !== null && !range.collapsed) return;
           const target = this;
           if (Dom.matches(target, '.readOnly *')) return;
           const ctx = Dom.ctx(target);
@@ -216,9 +216,11 @@ define((require) => {
     },
 
     saveField: (doc, form, widget) => {
-      if (doc[error$] === void 0) for (const _ in doc.changes) {
-        doc.$save();
-        break;
+      if (doc[error$] === void 0) {
+        for (const _ in doc.changes) {
+          doc.$save();
+          break;
+        }
       }
       if (doc[error$] !== void 0) {
         Dom.removeClass(form, 'submitting');

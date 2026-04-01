@@ -79,9 +79,13 @@ define((require) => {
       this._onsuccess({target: {result: this._data.length > ++this._position ? this : null}});
     }
 
-    get value() {return this._data[this._position]}
+    get value() {
+      return {...this._data[this._position]};
+    }
 
-    get primaryKey() {return this._data[this._position][this.store[idField$]]}
+    get primaryKey() {
+      return this._data[this._position][this.store[idField$]];
+    }
 
     delete() {
       if (this._isKeyCursor) throw new Error(`can't delete with keycursor`);
@@ -98,35 +102,34 @@ define((require) => {
       this.docs = os.docs;
       this[idField$] = os[idField$];
       this.compare = Array.isArray(keyPath)
-        ? (
-          ar, br) => {
-            const av = values(ar, keyPath), bv = values(br, keyPath);
-            for (let i = 0; i < keyPath.length; ++i) {
-              const a = av[i], b = bv[i];
-              if (a != b) {
-                return a < b ? -1 : 1;
-              }
+        ? (ar, br) => {
+          const av = values(ar, keyPath), bv = values(br, keyPath);
+          for (let i = 0; i < keyPath.length; ++i) {
+            const a = av[i], b = bv[i];
+            if (a != b) {
+              return a < b ? -1 : 1;
             }
-            return compareById(ar, br);
           }
-      : (ar, br) => {
-        const {[keyPath]: a} = ar, {[keyPath]: b} = br;
-        return a < b ? -1 : a === b ? compareById(ar, br) : 1;
-      };
+          return compareById(ar, br);
+        }
+        : (ar, br) => {
+          const {[keyPath]: a} = ar, {[keyPath]: b} = br;
+          return a < b ? -1 : a === b ? compareById(ar, br) : 1;
+        };
     }
 
     get(key) {
       const self = this;
       const {docs, db} = this.os;
-      if (Array.isArray(self.keyPath) && ! Array.isArray(key)) {
+      if (Array.isArray(self.keyPath) && !Array.isArray(key)) {
         key = [key];
       }
       return {
         set onsuccess(f) {
-          const result = util.deepCopy(
-            findDoc(docs, self.keyPath, key)
-              .sort(self.compare)[0]);
-          db._addPending(() => {f({target: {result}})});
+          const result = util.deepCopy(findDoc(docs, self.keyPath, key).sort(self.compare)[0]);
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -136,11 +139,12 @@ define((require) => {
       const {docs, db} = this.os;
       return {
         set onsuccess(f) {
-          const result = Object.keys(docs)
-                .filter((k) => ! query || query.includes(values(docs[k], self.keyPath)))
-                .map((k) => util.deepCopy(docs[k]))
-                .sort(self.compare);
-          db._addPending(() => {f({target: {result}})});
+          const result = Object.keys(docs).filter((k) =>
+            !query || query.includes(values(docs[k], self.keyPath))
+          ).map((k) => util.deepCopy(docs[k])).sort(self.compare);
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -151,12 +155,12 @@ define((require) => {
       const {docs, db} = this.os;
       return {
         set onsuccess(f) {
-          const result = Object.keys(docs)
-                .filter((k) => ! query || query.includes(values(docs[k], self.keyPath)))
-                .map((k) => docs[k])
-                .sort(self.compare)
-                .map((d) => d[idField]);
-          db._addPending(() => {f({target: {result}})});
+          const result = Object.keys(docs).filter((k) =>
+            !query || query.includes(values(docs[k], self.keyPath))
+          ).map((k) => docs[k]).sort(self.compare).map((d) => d[idField]);
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -185,8 +189,12 @@ define((require) => {
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
-            (s, k) => s + (! query || query.includes(values(docs[k], self.keyPath)) ? 1 : 0), 0);
-          db._addPending(() => {f({target: {result}})});
+            (s, k) => s + (!query || query.includes(values(docs[k], self.keyPath)) ? 1 : 0),
+            0,
+          );
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -198,11 +206,8 @@ define((require) => {
 
   function findDoc(docs, keyPath, key) {
     const matcher = Array.isArray(keyPath)
-          ? (
-            (doc) => key.every(
-              (v, i) => doc[keyPath[i]] === v,
-            ))
-          : (doc) => doc[keyPath] === key;
+      ? ((doc) => key.every((v, i) => doc[keyPath[i]] === v))
+      : (doc) => doc[keyPath] === key;
     const ans = [];
     for (let id in docs) {
       const doc = docs[id];
@@ -216,7 +221,7 @@ define((require) => {
   }
 
   class ObjectStore {
-    constructor(name, db, idField='_id') {
+    constructor(name, db, idField = '_id') {
       this.db = db;
       this.name = name;
       this[idField$] = idField;
@@ -229,7 +234,9 @@ define((require) => {
       return {
         set onsuccess(f) {
           const result = util.deepCopy(docs[id]);
-          db._addPending(() => {f({target: {result}})});
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -238,10 +245,12 @@ define((require) => {
       const {docs, db} = this;
       return {
         set onsuccess(f) {
-          const result = Object.keys(docs).sort()
-                .filter((k) => ! query || query.includes(k))
-                .map((k) => util.deepCopy(docs[k]));
-          db._addPending(() => {f({target: {result}})});
+          const result = Object.keys(docs).sort().filter((k) => !query || query.includes(k)).map((
+            k,
+          ) => util.deepCopy(docs[k]));
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -260,8 +269,12 @@ define((require) => {
       return {
         set onsuccess(f) {
           const result = Object.keys(docs).reduce(
-            (s, k) => s + (! query || query.includes(k) ? 1 : 0), 0);
-          db._addPending(() => {f({target: {result}})});
+            (s, k) => s + (!query || query.includes(k) ? 1 : 0),
+            0,
+          );
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -273,7 +286,9 @@ define((require) => {
       return {
         set onsuccess(f) {
           const result = doc[idField];
-          db._addPending(() => {f({target: {result}})});
+          db._addPending(() => {
+            f({target: {result}});
+          });
         },
       };
     }
@@ -282,7 +297,11 @@ define((require) => {
       delete this.docs[id];
       const {db} = this;
       return {
-        set onsuccess(f) {db._addPending(() => {f({target: {result: undefined}})})},
+        set onsuccess(f) {
+          db._addPending(() => {
+            f({target: {result: undefined}});
+          });
+        },
       };
     }
 
@@ -292,7 +311,11 @@ define((require) => {
       }
       const {db} = this;
       return {
-        set onsuccess(f) {db._addPending(() => {f({target: {result: undefined}})})},
+        set onsuccess(f) {
+          db._addPending(() => {
+            f({target: {result: undefined}});
+          });
+        },
       };
     }
 

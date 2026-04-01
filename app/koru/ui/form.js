@@ -19,9 +19,14 @@ define((require) => {
   const OnOff = Tpl.OnOff;
 
   const IGNORE = {
-    type: true, data: true, label: true,
-    includeBlank: true, selectList: true, value: true,
-    displayValue: true, popupClass: true,
+    type: true,
+    data: true,
+    label: true,
+    includeBlank: true,
+    selectList: true,
+    value: true,
+    displayValue: true,
+    popupClass: true,
   };
 
   const DEFAULT_HELPERS = {
@@ -34,17 +39,14 @@ define((require) => {
       const options = this.options;
 
       for (let attr in options) {
-        if (! (attr in IGNORE)) {
+        if (!(attr in IGNORE)) {
           elm.setAttribute(attr, options[attr]);
         }
       }
     },
   };
 
-  const EDITORS = {
-    richTextEditor: RichTextEditorToolbar,
-    plainTextEditor: PlainText.Editor,
-  };
+  const EDITORS = {richTextEditor: RichTextEditorToolbar, plainTextEditor: PlainText.Editor};
 
   let modalize;
 
@@ -69,7 +71,7 @@ define((require) => {
         if (event.target.getAttribute('contenteditable') === 'true') return;
         return modalize.func.call(this, event);
       }
-    } else if (! Dom.contains(elm, event.target)) {
+    } else if (!Dom.contains(elm, event.target)) {
       return modalize.func.call(this, event);
     }
   }
@@ -78,7 +80,7 @@ define((require) => {
     Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
   };
 
-  const field = (doc, name, options={}, extend) => {
+  const field = (doc, name, options = {}, extend) => {
     const data = {name, doc, options};
     if ('selectList' in options) {
       return ((options.type && Tpl[util.capitalize(options.type)]) ?? Tpl.Select).$autoRender(data);
@@ -101,35 +103,42 @@ define((require) => {
     }
   };
 
-  const changeColorEvent = (field, options) => function (event) {
-    Dom.stopEvent();
-    const doc = $.data();
+  const changeColorEvent = (field, options) =>
+    function (event) {
+      Dom.stopEvent();
+      const doc = $.data();
 
-    const fieldSpec = doc.classMethods.$fields[field];
-    const alpha = fieldSpec ? fieldSpec.color === 'alpha' : false;
+      const fieldSpec = doc.classMethods.$fields[field];
+      const alpha = fieldSpec ? fieldSpec.color === 'alpha' : false;
 
-    Dom.tpl.ColorPicker.choose({color: doc[field], alpha, anchor: this, callback: (result) => {
-      if (result) {
-        saveChange(doc, field, result, options);
+      Dom.tpl.ColorPicker.choose({
+        color: doc[field],
+        alpha,
+        anchor: this,
+        callback: (result) => {
+          if (result) {
+            saveChange(doc, field, result, options);
+          }
+        },
+      });
+    };
+
+  const changeFieldEvent = (field, options) =>
+    function (event) {
+      Dom.stopEvent();
+      const doc = $.data();
+
+      let value;
+      switch (this.type) {
+        case 'checkbox':
+          value = this.checked;
+          break;
+        default:
+          value = this.value;
       }
-    }});
-  }
 
-  const changeFieldEvent = (field, options) => function (event) {
-    Dom.stopEvent();
-    const doc = $.data();
-
-    let value;
-    switch (this.type) {
-      case 'checkbox':
-        value = this.checked;
-        break;
-      default:
-        value = this.value;
-    }
-
-    saveChange(doc, field, value, options);
-  }
+      saveChange(doc, field, value, options);
+    };
 
   const saveChange = (doc, field, value, options) => {
     const form = document.getElementById(options.template.name);
@@ -171,9 +180,9 @@ define((require) => {
      * @deprecated
      */
     cancelModalize(all) {
-      if (! modalize) return null;
+      if (!modalize) return null;
       modalize = all === 'all' ? null : modalize.parent;
-      if (! modalize) {
+      if (!modalize) {
         document.removeEventListener('pointerdown', modalizeCallback, true);
         document.removeEventListener('keydown', modalizeCallback);
         return null;
@@ -191,16 +200,14 @@ define((require) => {
       const doc = ctx.data;
       const form = elm.getElementsByClassName('fields')[0];
 
-      if (! form) throw new Error('no "fields" class within ' + elmId);
+      if (!form) throw new Error('no "fields" class within ' + elmId);
       Tpl.fillDoc(doc, form);
 
       if (options.success === undefined && options.save === undefined) {
         options = {success: options};
       }
 
-      const result = options.save
-        ? options.save(doc, form, elm)
-        : doc.$save();
+      const result = options.save ? options.save(doc, form, elm) : doc.$save();
 
       const successPage = options.success;
 
@@ -337,13 +344,15 @@ define((require) => {
 
       msg = format.translate(msg);
 
-      if (! fieldElm) return;
+      if (!fieldElm) return;
 
       let msgElm = fieldElm.nextElementSibling, ms;
       if (msgElm?.classList.contains('errorMsg')) {
         ms = msgElm.style;
-        ms.removeProperty('margin-top'); ms.removeProperty('margin-left');
-        ms.removeProperty('height'); ms.removeProperty('width');
+        ms.removeProperty('margin-top');
+        ms.removeProperty('margin-left');
+        ms.removeProperty('height');
+        ms.removeProperty('width');
       } else {
         msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
@@ -360,10 +369,11 @@ define((require) => {
         const mpos = msgElm.getBoundingClientRect();
         ms.setProperty('margin-top', (fpos.top - mpos.top - mpos.height) + 'px');
 
-        ms.setProperty('margin-left', (
-          Dom.hasClass(fieldElm, 'errorRight')
-            ? fpos.right - mpos.right
-            : fpos.left - mpos.left) + 'px');
+        ms.setProperty(
+          'margin-left',
+          (Dom.hasClass(fieldElm, 'errorRight') ? fpos.right - mpos.right : fpos.left - mpos.left) +
+            'px',
+        );
       }
       Dom.setClass('animate', msg, msgElm);
 
@@ -374,7 +384,7 @@ define((require) => {
       const action = options.action ?? 'change';
       const events = {};
       for (const field of options.fields) {
-        if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
+        if (action === 'change' && /color/i.test(field) && !/enable/i.test(field)) {
           events['click [name=' + field + ']'] = changeColorEvent(field, options);
         } else {
           events[action + ' [name=' + field + ']'] = changeFieldEvent(field, options);
@@ -414,14 +424,14 @@ define((require) => {
         }
       }
 
-      if (! found) {
+      if (!found) {
         const includeBlank = options.includeBlank;
         if (typeof includeBlank === 'string') {
           result = includeBlank;
         }
       }
 
-      Dom.setClass('noValue', ! found);
+      Dom.setClass('noValue', !found);
       Dom.removeChildren(button);
       if (result?.cloneNode !== undefined) {
         button.appendChild(result.cloneNode(true));
@@ -431,12 +441,13 @@ define((require) => {
     },
   });
 
-  const selectMenuList = (list, includeBlank) => includeBlank
-    ? [
-      ['', Dom.h({i: typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
-      ...list,
-    ]
-    : list;
+  const selectMenuList = (list, includeBlank) =>
+    includeBlank
+      ? [
+        ['', Dom.h({i: typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
+        ...list,
+      ]
+      : list;
 
   Tpl.SelectMenu.$extend({
     $created(ctx, elm) {
@@ -450,11 +461,11 @@ define((require) => {
         case 'string':
           switch (list) {
             case 'inclusionIn':
-              data.selectList = (includeBlank) => selectMenuList(
-                data.doc.constructor.$fields[data.name].inclusion.in
-                  .map((v) => [v, v]),
-                includeBlank,
-              );
+              data.selectList = (includeBlank) =>
+                selectMenuList(
+                  data.doc.constructor.$fields[data.name].inclusion.in.map((v) => [v, v]),
+                  includeBlank,
+                );
               break;
             default:
               throw new Error(`Invalid value for selectList: ${list}`);
@@ -499,7 +510,7 @@ define((require) => {
     const value = data.doc[data.name];
     const options = data.options;
     let sl = options.selectList;
-    if (! sl) throw new Error('invalid selectList for ' + data.name);
+    if (!sl) throw new Error('invalid selectList for ' + data.name);
     if ('fetch' in sl) {
       sl = sl.fetch();
     }
@@ -609,7 +620,7 @@ define((require) => {
       });
     },
 
-    displayField(name, options={}) {
+    displayField(name, options = {}) {
       const data = hasOwn(options, 'data') ? options.data : this;
 
       const value = document.createElement('span');
