@@ -911,7 +911,12 @@ define((require, exports, module) => {
       });
 
       test('create', async () => {
+        /**
+         * Create a new Model instance in the database.
+         */
+        api.method();
         const {Book} = v;
+        //[
         const attrs = {title: 'testing'};
 
         const doc = await Book.create(attrs);
@@ -920,7 +925,25 @@ define((require, exports, module) => {
 
         attrs._id = doc._id;
 
-        assert.same(doc.attributes, await Book.findById(doc._id).attributes);
+        assert.same(doc.attributes, Book.findById(doc._id).attributes);
+        //]
+
+        let init = [];
+
+        class Foo extends Book {
+          constructor(attrs, changes) {
+            init.push(attrs, changes);
+            super(attrs, changes);
+          }
+        }
+
+        const foo = await Foo.create({_id: '123', title: 'foo'});
+
+        assert.equals(init, [null, {_id: '123', title: 'foo'}]);
+
+        assert.same(foo.attributes, Book.findById('123').attributes);
+
+        assert.same(foo._id, '123');
       });
 
       test('$partial in $isValid', async () => {
@@ -1107,6 +1130,19 @@ define((require, exports, module) => {
         assert.equals(copy._id, null);
         assert.equals(copy.changes._id, null);
         //]
+
+        let init = [];
+
+        class Foo extends BaseModel {
+          constructor(attrs, changes) {
+            init.push(attrs, changes);
+            super(attrs, changes);
+          }
+        }
+
+        Foo.build({_id: '123', name: 'foo'});
+
+        assert.equals(init, [null, {_id: null, name: 'foo'}]);
       });
 
       test('setFields', () => {

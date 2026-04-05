@@ -115,11 +115,7 @@ define((require, exports, module) => {
       } else {
         // new record
         this.attributes = {};
-        this.changes = Object.assign({}, this.constructor._defaults);
-        if (attributes != null) {
-          Object.assign(this.changes, attributes);
-        }
-        Object.assign(this.changes, changes);
+        this.changes = {...this.constructor._defaults, ...attributes, ...changes};
       }
     }
 
@@ -145,9 +141,8 @@ define((require, exports, module) => {
       return ifPromise(ans, () => ifPromise(saveFunc(doc, callback), util.trueFunc));
     }
 
-    static create(attributes) {
-      const doc = new this({});
-      attributes != null && Object.assign(doc.changes, deepCopy(attributes));
+    static create(attributes = {}) {
+      const doc = new this(null, deepCopy(attributes));
       const p = doc.$save();
       return isPromise(p) ? p.then(() => doc) : doc;
     }
@@ -157,15 +152,13 @@ define((require, exports, module) => {
       return isPromise(p) ? p.then(() => attrs._id) : attrs._id;
     }
 
-    static build(attributes, allow_id = false) {
-      const doc = new this({});
-      attributes = attributes == null ? {} : deepCopy(attributes);
-
-      if (attributes._id != null && !allow_id) {
-        attributes._id = null;
+    static build(changes = {}, allow_id = false) {
+      changes = deepCopy(changes);
+      if (!allow_id && changes._id != null) {
+        changes._id = null;
       }
-      attributes == null || Object.assign(doc.changes, deepCopy(attributes));
-      return doc;
+
+      return new this(null, changes);
     }
 
     static transaction(func) {
