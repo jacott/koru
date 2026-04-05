@@ -58,11 +58,7 @@ define((require) => {
   const waitOnBusyQueue = (db) => {
     const op = db[busyQueue$];
     if (op == null) return Promise.resolve();
-    return op.then(() => {
-      if (op === db[busyQueue$]) {
-        db[busyQueue$] = null;
-      } else return waitOnBusyQueue(db);
-    });
+    return op.then(() => db);
   };
 
   const dbClosedError = () => new Error('DB closed');
@@ -104,7 +100,7 @@ define((require) => {
       }
       req.onerror = req.onblocked = (event) => {
         this[busyQueue$] = undefined;
-        error(this, event);
+        error(this, event, reject);
       };
       req.onsuccess = (event) => {
         const idb = this[iDB$] = event.target.result;
@@ -361,7 +357,7 @@ define((require) => {
   };
 
   const wrapOSRequest = (db, modelName, body) =>
-    wrapRequest(db, () => body(db[iDB$].transaction(modelName).objectStore(modelName)));
+    runBody(db, () => body(db[iDB$].transaction(modelName).objectStore(modelName)));
 
   const wrapRequest = (db, body) => runBody(db, body);
 
