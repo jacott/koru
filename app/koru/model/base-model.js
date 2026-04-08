@@ -131,6 +131,8 @@ define((require, exports, module) => {
         case 'force':
           ans = doc.$isValid();
           break;
+        case 'novalidate':
+          break;
         default:
           return ifPromise(
             doc.$isValid(),

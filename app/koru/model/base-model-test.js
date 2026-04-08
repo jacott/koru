@@ -629,8 +629,9 @@ define((require, exports, module) => {
          * Validate the document and persist to server DB. Runs `before`, `after` and {##onChange}
          * hooks.
 
-         * @param mode If `"assert"` calls {##$assertValid} otherwise calls {##$isValid}. If
-         * `"force"` will save even if validation fails.
+         * @param mode If `"assert"` calls {##$assertValid}, `"novalidate"` does not run any
+         * validation, otherwise calls {##$isValid}. If `"force"` will save even if validation
+         * fails.
          **/
 
         beforeEach(() => {
@@ -694,6 +695,30 @@ define((require, exports, module) => {
           assert.same(book[error$], undefined);
 
           assert.same((await book.$reload(true)).author, 'T & T');
+          //]
+        });
+
+        test('mode novalidate', async () => {
+          const {Book} = v;
+          //[
+          // "novalidate" mode
+          Book.defineFields({
+            author: {
+              type: 'text',
+              validate() {
+                this.author += 'changed';
+              },
+            },
+          });
+          const book = Book.build({author: 'Ian M. Banks'});
+
+          spy(book, '$isValid');
+
+          await book.$save('novalidate');
+
+          refute.called(book.$isValid); // assert validation methods were NOT run
+
+          assert.same(await Book.where({_id: book._id, author: 'Ian M. Banks'}).count(), 1);
           //]
         });
       });
