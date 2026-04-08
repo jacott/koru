@@ -216,10 +216,11 @@ define((require) => {
     },
 
     saveField: (doc, form, widget) => {
-      if (doc[error$] === void 0) {
-        for (const _ in doc.changes) {
+      if (doc[error$] === undefined && !util.isObjEmpty(doc.changes)) {
+        try {
           doc.$save();
-          break;
+        } finally {
+          doc.$clearChanges();
         }
       }
       if (doc[error$] !== void 0) {

@@ -159,6 +159,9 @@ isClient && define((require, exports, module) => {
         $save() {
           this[error$] = {name: [['is_invalid']]};
         },
+        $clearChanges() {
+          this.changes = {};
+        },
         changes: {name: 'nn'},
       };
       sut.saveField(doc, form, widget);
@@ -167,8 +170,16 @@ isClient && define((require, exports, module) => {
         assert.dom('[name=name].error+error>div', 'is not valid');
       });
 
+      assert.equals(doc.changes, {});
+
       refute.called(widget.close);
-      doc = {$save() {}, changes: {name: 'nn'}};
+      doc = {
+        $save() {},
+        $clearChanges() {
+          this.changes = {};
+        },
+        changes: {name: 'nn'},
+      };
 
       sut.saveField(doc, form, widget);
 
