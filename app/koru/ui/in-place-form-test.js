@@ -170,11 +170,19 @@ isClient && define((require, exports, module) => {
         assert.dom('[name=name].error+error>div', 'is not valid');
       });
 
+      assert.equals(doc.changes, {name: 'nn'});
+
+      // clear changes for existing docs
+      doc.attributes = {_id: 'doc123'};
+      doc[error$] = undefined;
+      sut.saveField(doc, form, widget);
       assert.equals(doc.changes, {});
 
       refute.called(widget.close);
       doc = {
-        $save() {},
+        $save() {
+          this.attributes = {_id: 'doc456'};
+        },
         $clearChanges() {
           this.changes = {};
         },
@@ -184,6 +192,9 @@ isClient && define((require, exports, module) => {
       sut.saveField(doc, form, widget);
 
       assert.called(widget.close);
+
+      // clear changes for existing docs
+      assert.equals(doc.changes, {});
     });
 
     test('apply event', () => {
