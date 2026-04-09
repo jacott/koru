@@ -424,7 +424,13 @@ define((require, exports, module) => {
     }
 
     $assertValid() {
-      return ifPromise(this.$isValid(), (ans) => Val.allowIfValid(ans, this));
+      return ifPromise(this.$isValid(), (ans) => {
+        if (!ans && this.attributes._id != null) {
+          this.$clearChanges();
+        }
+
+        Val.allowIfValid(ans, this);
+      });
     }
 
     $equals(other) {

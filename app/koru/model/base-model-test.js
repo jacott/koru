@@ -606,8 +606,9 @@ define((require, exports, module) => {
               if (!this[field]) return 'is_required';
             },
           },
+          title: {type: 'text', required: true},
         });
-        const book = Book.build();
+        const book = Book.build({title: 'Seveneves'});
 
         try {
           await book.$assertValid();
@@ -618,9 +619,17 @@ define((require, exports, module) => {
           assert.equals(err.reason, {author: [['is_required']]});
         }
 
-        book.author = 'T & T';
+        book.author = 'Neal Stephenson';
         await book.$assertValid();
         assert.same(book[error$], undefined);
+
+        // if the book has a saved _id then changes are cleared on failed assert
+
+        assert.equals(book.changes, {title: 'Seveneves', author: 'Neal Stephenson'});
+        book.attributes._id = 'book123';
+        book.title = null;
+        await assert.exception(() => book.$assertValid());
+        assert.equals(book.changes, {});
         //]
       });
 
