@@ -220,7 +220,9 @@ define((require) => {
         try {
           doc.$save();
         } finally {
-          doc.$clearChanges();
+          if (doc.attributes._id != null) {
+            doc.$clearChanges();
+          }
         }
       }
       if (doc[error$] !== void 0) {
