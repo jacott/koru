@@ -186,6 +186,93 @@ isClient && define((require, exports, module) => {
       assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
     });
 
+    test('saveDoc', () => {
+      let form = Dom.h({
+        form: [{button: 'hello', $name: 'foo_id'}, {input: '', $name: 'bar', $value: 'barVal'}, {
+          input: '',
+          $name: 'other',
+          $value: 'otherV',
+        }],
+      });
+
+      let doc = {
+        constructor: {$fields: {foo_id: 1, bar: 1}},
+        foo_id: 'fv',
+        $save() {
+          this[error$] = {bar: [['is_invalid']]};
+          this.attributes = {_id: 'id123'};
+          this.changes = {bar: 'barVal'};
+          return false;
+        },
+        $clearChanges: stub(),
+      };
+
+      Form.saveDoc(doc, form);
+      assert.called(doc.$clearChanges);
+
+      assert.equals(doc.bar, 'barVal');
+      assert.dom(form, () => {
+        assert.dom('.error+error.errorMsg>div', 'is not valid');
+      });
+
+      doc.$clearChanges.reset();
+      doc.$save = stub().returns(true);
+      Form.saveDoc(doc, form);
+      refute.called(doc.$clearChanges);
+    });
+
+    test('saveChanges', () => {
+      let form = Dom.h({
+        form: [{button: 'hello', $name: 'foo_id'}, {input: '', $name: 'bar', $value: 'barVal'}, {
+          input: '',
+          $name: 'other',
+          $value: 'otherV',
+        }],
+      });
+
+      let doc = {
+        constructor: {$fields: {foo_id: 1, bar: 1}},
+        foo_id: 'fv',
+        $save() {
+          this[error$] = {bar: [['is_invalid']]};
+          this.attributes = {_id: 'id123'};
+          return false;
+        },
+        $clearChanges: stub(),
+      };
+
+      Form.saveChanges(doc, form);
+      assert.called(doc.$clearChanges);
+
+      assert.dom(form, () => {
+        assert.dom('.error+error.errorMsg>div', 'is not valid');
+      });
+
+      doc.$clearChanges.reset();
+      doc.$save = stub().returns(true);
+      doc.changes = {bar: 'barValue'};
+      doc.$invertChanges = (changes) => {
+        return {bar: changes.bar + 'inverted'};
+      };
+      const onChange = stub();
+      Form.saveChanges(doc, form, onChange);
+      refute.called(doc.$clearChanges);
+      assert.calledWith(onChange, doc, {bar: 'barValue'}, {bar: 'barValueinverted'});
+
+      assert.dom(form, () => {
+        refute.dom('input.error');
+      });
+      refute.called(doc.$clearChanges);
+
+      doc.$save.returns(false);
+
+      Form.saveChanges(doc, form, onChange);
+      assert.dom(form, () => {
+        assert.dom('.error+error.errorMsg>div', 'is not valid');
+      });
+      assert.called(doc.$clearChanges);
+    });
+
     test('submitFunc', () => {
       const top = Dom.h({
         id: 'top',
@@ -204,6 +291,8 @@ isClient && define((require, exports, module) => {
         $save() {
           this[error$] = {name: [['bad name']]};
         },
+        attributes: {_id: 'id123'},
+        $clearChanges: stub(),
       };
 
       stub(Dom, 'stopEvent');
@@ -213,6 +302,7 @@ isClient && define((require, exports, module) => {
       sf();
 
       assert.called(Dom.stopEvent);
+      assert.called(ctx.data.$clearChanges);
 
       assert.same(ctx.data.name, 'foo');
       assert.same(ctx.data.age, '12');

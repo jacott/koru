@@ -227,6 +227,9 @@ define((require) => {
         }
       } else {
         Tpl.renderErrors(doc, form);
+        if (doc.attributes?._id != null) {
+          doc.$clearChanges();
+        }
       }
     },
 
@@ -249,12 +252,15 @@ define((require) => {
       }
 
       Tpl.renderErrors(doc, form);
+      if (doc.attributes?._id != null) {
+        doc.$clearChanges();
+      }
     },
 
     saveChanges(doc, form, onChange) {
       Tpl.clearErrors(form);
       let changes, undo;
-      if (onChange) {
+      if (onChange != null) {
         changes = doc.changes;
         undo = doc.$invertChanges(changes);
       }
@@ -264,6 +270,9 @@ define((require) => {
       }
 
       Tpl.renderErrors(doc, form);
+      if (doc.attributes?._id != null) {
+        doc.$clearChanges();
+      }
     },
 
     getRadioValue(elm, name) {
