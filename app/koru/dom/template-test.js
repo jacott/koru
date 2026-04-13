@@ -451,6 +451,12 @@ isClient && define((require, exports, module) => {
             Dom.captureEventOption,
           );
         }
+        assert.calledWith(
+          document.removeEventListener,
+          'touchmove',
+          util.voidFunc,
+          Dom.captureEventOption,
+        );
         assert.calledWith(koru.clearTimeout, 321);
       };
 
@@ -460,6 +466,12 @@ isClient && define((require, exports, module) => {
       test('touch and hold', () => {
         start();
 
+        assert.called(
+          document.addEventListener,
+          'touchmove',
+          util.voidFunc,
+          Dom.captureEventOption,
+        );
         refute.called(document.removeEventListener);
         assert.calledWith(koru.setTimeout, match.func, 300);
 
@@ -468,7 +480,7 @@ isClient && define((require, exports, module) => {
 
         pointerdown(pointerDownEvent);
         assert.calledWith(koru.clearTimeout, 321);
-        assert.calledThrice(document.removeEventListener);
+        assert.same(document.removeEventListener.callCount, 4);
         assertStopped();
 
         assert.calledWith(koru.setTimeout, match((to) => to = to), 300);

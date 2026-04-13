@@ -51,6 +51,7 @@ define((require) => {
       document.addEventListener('pointermove', this.listener, Dom.captureEventOption);
       document.addEventListener('pointerup', this.listener, Dom.captureEventOption);
       document.addEventListener('pointercancel', this.listener, Dom.captureEventOption);
+      document.addEventListener('touchmove', util.voidFunc, Dom.captureEventOption);
     }
 
     stop() {
@@ -62,6 +63,7 @@ define((require) => {
       document.removeEventListener('pointermove', this.listener, Dom.captureEventOption);
       document.removeEventListener('pointerup', this.listener, Dom.captureEventOption);
       document.removeEventListener('pointercancel', this.listener, Dom.captureEventOption);
+      document.removeEventListener('touchmove', util.voidFunc, Dom.captureEventOption);
       dragstartSym = null;
     }
   }
