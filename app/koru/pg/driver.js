@@ -1351,6 +1351,9 @@ SET ${this.tenant_var} = '`;
             if (Array.isArray(literal)) {
               literal = escapeLiteral(PgType.aryToSqlStr(literal)) + '::' + type;
               break;
+            } else if (typeof literal.sql === 'string') {
+              literal = literal.sql;
+              break;
             }
           default:
             literal = escapeLiteral(literal) + '::' + type;

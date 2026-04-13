@@ -66,8 +66,8 @@ isServer && define((require, exports, module) => {
 
          * @param fields name-value entries describing the fields of the table. The value for each
          * field can be a string containing the type or a object containing:
-
-
+         *   `type`, `default`, `defaultRaw`
+         * `default` expects a literal whereas `defaultRaw` passes the value verbatim.
 
          * @param indexes a list of index specifications to add to the table. See {##addIndex}
          **/
@@ -210,6 +210,19 @@ isServer && define((require, exports, module) => {
         const doc = (await client.query('SELECT * from "TestTable"'))[0];
         assert.same(doc.foo, 2);
         refute.hasOwn(doc, '_id');
+      });
+
+      test('default sql', async () => {
+        await sut.addMigration('20151003T20-30-20-create-TestModel', (mig) => {
+          mig.createTable({
+            name: 'TestTable',
+            primaryKey: false,
+            fields: {title: 'text', name: {type: 'text', default: {sql: `(1 + 2)::text`}}},
+          });
+        });
+        await client.query('INSERT INTO "TestTable" (title) values ($1)', ['Ms']);
+        const doc = (await client.query('SELECT * from "TestTable"'))[0];
+        assert.same(doc.name, '3');
       });
 
       test('composite primary key', async () => {
