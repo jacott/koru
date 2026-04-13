@@ -49,7 +49,7 @@ define((require, exports, module) => {
       fields = buildFields(fields);
     }
     if (add) {
-      const list = primaryKey ? ['_id text collate "C" PRIMARY KEY'] : [];
+      const list = primaryKey === true ? ['_id text collate "C" PRIMARY KEY'] : [];
       for (const col in fields) {
         const colspec = client.jsFieldToPg(col, fields[col]);
         if (/\bprimary key\b/i.test(colspec)) {
@@ -57,6 +57,19 @@ define((require, exports, module) => {
         } else {
           list.push(colspec);
         }
+      }
+      switch (typeof primaryKey) {
+        case 'string':
+          if (/\bprimary key\b/i.test(primaryKey)) {
+            list.push(primaryKey);
+          } else {
+            list.push(`PRIMARY KEY (${primaryKey})`);
+          }
+          break;
+        case 'object':
+          if (Array.isArray(primaryKey)) {
+            list.push(`PRIMARY KEY (${primaryKey.map((c) => '"' + c.toString() + '"').join(',')})`);
+          }
       }
 
       await client.query(
