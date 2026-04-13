@@ -17,6 +17,55 @@ define((require) => {
 
   let currentEvent;
 
+  let dragstartSym = null;
+
+  const dragstart = (event) => {
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+
+    dragstartSym?.stop();
+    dragstartSym = new DragStart(event);
+  };
+
+  const bigMove = (ev1, ev2) =>
+    Math.abs(ev1.clientX - ev2.clientX) + Math.abs(ev1.clientX - ev2.clientX) > 8;
+
+  class DragStart {
+    constructor(origEv) {
+      let lastEvent = origEv;
+      this.listener = (ev) => {
+        if (ev.type !== 'pointermove' || ev.pointerId !== origEv.pointerId || bigMove(origEv, ev)) {
+          this.stop();
+        } else {
+          lastEvent = ev;
+        }
+      };
+      this.timer = koru.setTimeout(() => {
+        Dom.triggerEvent(origEv.target, 'dragstart', {
+          clientX: lastEvent.clientX,
+          clientY: lastEvent.clientY,
+        });
+        this.stop();
+      }, 300);
+      document.addEventListener('pointermove', this.listener, Dom.captureEventOption);
+      document.addEventListener('pointerup', this.listener, Dom.captureEventOption);
+      document.addEventListener('pointercancel', this.listener, Dom.captureEventOption);
+    }
+
+    stop() {
+      if (this.timer !== undefined) {
+        koru.clearTimeout(this.timer);
+        this.timer = undefined;
+      }
+
+      document.removeEventListener('pointermove', this.listener, Dom.captureEventOption);
+      document.removeEventListener('pointerup', this.listener, Dom.captureEventOption);
+      document.removeEventListener('pointercancel', this.listener, Dom.captureEventOption);
+      dragstartSym = null;
+    }
+  }
+
   const onBlur = (event) => {
     if (document.activeElement !== event.target) onEvent(event);
   };
@@ -105,6 +154,7 @@ define((require) => {
           break;
         case 'dragstart':
           parent.removeEventListener(eventType, onEvent);
+          parent.removeEventListener('pointerdown', dragstart);
           break;
         case 'menustart':
           parent.removeEventListener('pointerdown', menustart);
@@ -517,6 +567,7 @@ define((require) => {
           break;
         case 'dragstart':
           parent.addEventListener(eventType, onEvent);
+          parent.addEventListener('pointerdown', dragstart);
           break;
         case 'menustart':
           parent.addEventListener('pointerdown', menustart);

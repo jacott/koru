@@ -379,6 +379,173 @@ isClient && define((require, exports, module) => {
       });
     });
 
+    group('dragstart on touch', () => {
+      let pointerDownEvent, start, target, foo, dragStart, pointerdown, listener;
+
+      beforeEach(() => {
+        Dom.newTemplate({
+          name: 'Foo',
+          nodes: [{name: 'div', children: [{name: 'span', attrs: [['=', 'draggable', 'true']]}]}],
+        });
+        Dom.tpl.Foo.$events({'dragstart span': dragStart = stub()});
+
+        foo = Dom.tpl.Foo.$render({});
+        document.body.append(foo);
+
+        stub(foo, 'addEventListener');
+        Dom.tpl.Foo.$attachEvents(foo);
+        assert.calledWithExactly(foo.addEventListener, 'dragstart', match.func);
+        assert.calledWithExactly(
+          foo.addEventListener,
+          'pointerdown',
+          match((f) => pointerdown = f),
+        );
+
+        stub(koru, 'setTimeout').returns(321);
+        stub(koru, 'clearTimeout');
+        target = foo.querySelector('span');
+        stub(document, 'addEventListener');
+        pointerDownEvent = {
+          type: 'pointerdown',
+          pointerType: 'touch',
+          currentTarget: foo,
+          target: target,
+          pointerId: 1,
+          clientX: 30,
+          clientY: 60,
+        };
+        start = () => {
+          pointerdown(pointerDownEvent);
+
+          listener = null;
+
+          for (const type of ['move', 'cancel', 'up']) {
+            assert.calledWith(
+              document.addEventListener,
+              'pointer' + type,
+              match((f) => {
+                if (listener === null) {
+                  listener = f;
+                  return true;
+                } else {
+                  return listener === f;
+                }
+              }),
+              Dom.captureEventOption,
+            );
+          }
+
+          after(() => {
+            listener({type: 'pointercancel'});
+          });
+        };
+        stub(document, 'removeEventListener');
+      });
+
+      const assertStopped = () => {
+        for (const t of 'up cancel move'.split(' ')) {
+          assert.calledWith(
+            document.removeEventListener,
+            'pointer' + t,
+            listener,
+            Dom.captureEventOption,
+          );
+        }
+        assert.calledWith(koru.clearTimeout, 321);
+      };
+
+      const trigger = (type, clientX = 30, clientY = 60, pointerId = 1) =>
+        listener({type: 'pointer' + type, pointerId, clientX, clientY});
+
+      test('touch and hold', () => {
+        start();
+
+        refute.called(document.removeEventListener);
+        assert.calledWith(koru.setTimeout, match.func, 300);
+
+        refute.called(koru.clearTimeout);
+        koru.setTimeout.reset();
+
+        pointerdown(pointerDownEvent);
+        assert.calledWith(koru.clearTimeout, 321);
+        assert.calledThrice(document.removeEventListener);
+        assertStopped();
+
+        assert.calledWith(koru.setTimeout, match((to) => to = to), 300);
+        refute.called(dragStart);
+        stub(Dom, 'triggerEvent');
+        koru.setTimeout.yieldAndReset();
+        assert.calledWith(Dom.triggerEvent, target, 'dragstart', {clientX: 30, clientY: 60});
+        assertStopped();
+      });
+
+      test('mouse down', () => {
+        pointerDownEvent.pointerType = 'mouse';
+        pointerdown(pointerDownEvent);
+        refute.called(koru.setTimeout);
+      });
+
+      test('detach stops', () => {
+        stub(foo, 'removeEventListener');
+        Dom.tpl.Foo.$detachEvents(foo);
+
+        assert.calledWithExactly(foo.removeEventListener, 'dragstart', match.func);
+        assert.calledWithExactly(foo.removeEventListener, 'pointerdown', pointerdown);
+      });
+
+      test('big move stops', () => {
+        start();
+
+        refute.called(koru.clearTimeout);
+
+        trigger('move', 45, 70);
+
+        assertStopped();
+      });
+
+      test('wrong pointer move stops', () => {
+        start();
+
+        refute.called(koru.clearTimeout);
+
+        trigger('move', 30, 60, 2);
+
+        assertStopped();
+      });
+
+      test('cancel stops', () => {
+        start();
+
+        refute.called(koru.clearTimeout);
+
+        trigger('cancel');
+
+        assertStopped();
+      });
+
+      test('up stops', () => {
+        start();
+
+        refute.called(koru.clearTimeout);
+
+        trigger('up');
+
+        assertStopped();
+      });
+
+      test('dragging a little', () => {
+        start();
+
+        stub(Dom, 'triggerEvent');
+        trigger('move', 32, 64);
+
+        koru.setTimeout.yieldAndReset();
+
+        assert.calledWith(Dom.triggerEvent, target, 'dragstart', {clientX: 32, clientY: 64});
+        assertStopped();
+      });
+    });
+
     test('event calling', () => {
       Dom.newTemplate({
         name: 'Foo',
