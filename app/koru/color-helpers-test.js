@@ -1,19 +1,19 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const Dom             = require('koru/dom');
   const TH              = require('koru/test-helper');
 
   const {stub, spy, util} = TH;
 
-  const sut  = require('./color-helpers');
+  const sut = require('./color-helpers');
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       v = {};
     });
 
-    test("setBackgroundColor w. alpha", ()=>{
+    test('setBackgroundColor w. alpha', () => {
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -27,7 +27,35 @@ define((require, exports, module)=>{
       assert.same(element.className, 'verylight');
     });
 
-    test("setBackgroundAndBorderColor w. alpha", ()=>{
+    test('setFgBgColor defaults', () => {
+      const element = Dom.h({});
+      TH.stubProperty(Dom, 'current', {value: {element}});
+
+      Dom._helpers.setFgBgColor.call({}, '#77ff0041', '#00ffff82');
+
+      const {style} = element;
+      assert.colorEqual(style.backgroundColor, [0, 255, 255, 0.51], 0.01);
+      assert.colorEqual(style.color, [119, 255, 0, 0.255], 0.01);
+      assert.equals(style.borderColor, '');
+
+      assert.same(element.className, 'verylight');
+    });
+
+    test('setFgBgColor defaults', () => {
+      const element = Dom.h({});
+      TH.stubProperty(Dom, 'current', {value: {element}});
+
+      Dom._helpers.setFgBgColor.call({color: '#77ff0044', backgroundColor: '#00ffff12'});
+
+      const {style} = element;
+      assert.colorEqual(style.backgroundColor, [0, 255, 255, 0.07], 0.01);
+      assert.colorEqual(style.color, [119, 255, 0, 0.267], 0.01);
+      assert.equals(style.borderColor, '');
+
+      assert.same(element.className, 'verylight');
+    });
+
+    test('setBackgroundAndBorderColor w. alpha', () => {
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -41,7 +69,7 @@ define((require, exports, module)=>{
       assert.same(element.className, 'verylight');
     });
 
-    test("setBackgroundColor no alpha", ()=>{
+    test('setBackgroundColor no alpha', () => {
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -55,7 +83,7 @@ define((require, exports, module)=>{
       assert.same(element.className, 'verylight');
     });
 
-    test("setBackgroundAndBorderColor no alpha", ()=>{
+    test('setBackgroundAndBorderColor no alpha', () => {
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 

@@ -201,6 +201,15 @@ define((require, exports, module) => {
       return tmpStyleResult;
     },
 
+    setFgBgColorStyle(style, fg, bg = '#ffffff00') {
+      style.setProperty('background-color', hex2Style(bg));
+      style.setProperty(
+        'color',
+        hex2Style(fg ?? (contrastColors[bg] ??= contrastColor(bg, '#4d4d4d'))),
+      );
+      return style;
+    },
+
     setBackgroundColorStyle(style, color) {
       const uc = color || '#ffffff';
       style.setProperty('background-color', hex2Style(color));

@@ -123,6 +123,22 @@ define((require, exports, module) => {
       assert.calledWith(style.setProperty, 'color', '#4d4d4d');
     });
 
+    test('setFgBgColorStyle', () => {
+      const style = {setProperty: stub()};
+
+      uColor.setFgBgColorStyle(style, '#007a00', '#717a1d12');
+      assert.calledTwice(style.setProperty);
+      assert.calledWith(style.setProperty, 'background-color', 'rgba(113,122,29,0.0703)');
+      assert.calledWith(style.setProperty, 'color', '#007a00');
+
+      style.setProperty.reset();
+
+      uColor.setBackgroundColorStyle(style, '');
+      assert.calledTwice(style.setProperty);
+      assert.calledWith(style.setProperty, 'background-color', '');
+      assert.calledWith(style.setProperty, 'color', '#4d4d4d');
+    });
+
     test('setColorAndContrastStyleVars', () => {
       const style = {setProperty: stub()};
 
