@@ -339,7 +339,8 @@ isClient && define((require, exports, module) => {
     group('loadDoc', () => {
       /**
        * Insert a record into a model but ignore #queueChange for same record and do nothing if
-       * record already in model unless model[stopGap$] symbol is true;
+       * record already in model unless model[stopGap$] symbol is true, in which case remove
+       * simulation entry and replace the record.
        *
        * If record is simulated make from change from client point-of-view else server POV.
        */
@@ -495,8 +496,11 @@ isClient && define((require, exports, module) => {
         });
 
         test('non simulated update', async () => {
+          const simDocs = Query.simDocsFor(v.TestModel);
           await v.db.whenReady();
           v.TestModel.onChange(v.oc = stub());
+
+          simDocs.foo123 = [{name: 'Loading...'}, undefined];
 
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
           await v.db.whenReady();

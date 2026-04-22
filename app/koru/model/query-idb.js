@@ -141,11 +141,13 @@ define((require) => {
     loadDoc(modelName, rec) {
       const model = Model[modelName], id = rec._id;
       const curr = model.docs[id];
-      if (curr !== undefined && curr[stopGap$] !== true) return;
+      if (curr !== undefined) {
+        if (curr[stopGap$] !== true) return;
+        curr[stopGap$] = undefined;
+        delete simDocsFor(model)[id];
+      }
       const orig = notMe;
       try {
-        if (curr !== undefined) curr[stopGap$] = undefined;
-
         let sim = rec.$sim;
         if (sim !== undefined) {
           rec.$sim = undefined;
