@@ -18,29 +18,23 @@ define((require, exports, module) => {
   const dbs = createDictionary();
 
   const newDB = (name) => {
-    const db = dbs[name] = {};
+    const db = {};
     Object.defineProperty(db, 'name', {enumerable: false, configurable: true, value: name});
-
     return db;
   };
 
   Object.defineProperty(ModelMap, 'db', {
     enumerable: false,
     configurable: true,
-    get: () => dbs[dbBroker.dbId] ?? newDB(dbBroker.dbId),
+    get: () => dbs[dbBroker.dbId] ??= newDB(dbBroker.dbId),
     set: (db) => dbBroker.dbId = db.name,
   });
 
-  const getProp = (dbId, modelName, prop) => {
-    const obj = dbs[dbId];
-    if (obj === undefined) return undefined;
-    const map = obj[modelName];
-    return map === undefined ? undefined : map[prop];
-  };
+  const getProp = (dbId, modelName, prop) => dbs[dbId]?.[modelName]?.[prop];
 
   const getSetProp = (dbId, modelName, prop, setter) => {
-    const obj = dbs[dbId] === undefined ? newDB(dbId) : dbs[dbId];
-    const map = obj[modelName] ? obj[modelName] : (obj[modelName] = {});
+    const obj = dbs[dbId] ??= newDB(dbId);
+    const map = obj[modelName] ??= {};
     const ans = map[prop];
     return ans !== undefined ? ans : (map[prop] = setter());
   };
@@ -102,7 +96,7 @@ define((require, exports, module) => {
     save,
 
     destroyModel(model, drop) {
-      if (!model) return;
+      if (model == null) return;
 
       let modelName = model.modelName;
 
@@ -166,13 +160,13 @@ define((require, exports, module) => {
           now = util.newDate();
 
         if (doc !== undefined) {
-          if (id) {
+          if (id != null) {
             localUpdate(doc, changes, this.userId);
           } else if (isObjEmpty(doc.attributes)) {
             doc.attributes = changes;
             localInsert(doc, this.userId);
           }
-        } else if (!id) {
+        } else if (id == null) {
           localInsert(new model(changes), this.userId);
         }
       });
@@ -241,7 +235,7 @@ define((require, exports, module) => {
         notify(...args) {
           chkdb();
           const subject = getProp(dbId, modelName, 'notify');
-          if (subject) {
+          if (subject !== undefined) {
             subject.notify(...args);
           }
 

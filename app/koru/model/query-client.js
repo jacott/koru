@@ -41,12 +41,12 @@ define((require, exports, module) => {
 
       revertSimChanges() {
         return TransQueue.nonNested(() => {
-          const dbs = Model._databases && Model._databases[dbBroker.dbId];
+          const dbs = Model._databases?.[dbBroker.dbId];
           if (dbs === undefined) return;
 
           for (const modelName in dbs) {
             const model = Model[modelName];
-            const modelDocs = model && model.docs;
+            const modelDocs = model?.docs;
             if (modelDocs === undefined) continue;
             const docs = dbs[modelName].simDocs;
             if (docs === undefined) continue;
@@ -126,14 +126,15 @@ define((require, exports, module) => {
           const doc = model.docs[id];
           if (session.state.pendingCount() != 0) {
             if (fromServer(model, id, attrs)) {
-              if (doc !== undefined) doc[stopGap$] = undefined;
+              if (doc?.[stopGap$] !== undefined) doc[stopGap$] = undefined;
               return;
             }
           }
 
           if (doc !== undefined) {
             // already exists; convert to update
-            doc[stopGap$] = undefined;
+            if (doc[stopGap$] !== undefined) doc[stopGap$] = undefined; // avoid hidden class change
+
             const old = doc.attributes;
             for (const key in old) {
               if (attrs[key] === undefined) {
@@ -165,7 +166,7 @@ define((require, exports, module) => {
 
     util.merge(Query.prototype, {
       get docs() {
-        return this._docs || (this._docs = this.model.docs);
+        return this._docs ??= this.model.docs;
       },
 
       indexCompareFunction() {
@@ -288,7 +289,7 @@ define((require, exports, module) => {
         return TransQueue.nonNested(() => {
           let count = 0;
 
-          dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+          dbBroker.withDB(this._dbId ?? dbBroker.dbId, () => {
             const {model, docs} = this;
             const isPending = session.state.pendingCount() != 0;
             if (isPending && this.isFromServer !== '') {
@@ -328,7 +329,7 @@ define((require, exports, module) => {
         return TransQueue.nonNested(() => {
           let count = 0;
 
-          return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+          return dbBroker.withDB(this._dbId ?? dbBroker.dbId, () => {
             const isPending = session.state.pendingCount() != 0;
             if (
               isPending && this.isFromServer !== '' && fromServer(model, this.singleId, origChanges)
@@ -381,13 +382,13 @@ define((require, exports, module) => {
       }
     };
 
-    function* g_findMatching(q) {
-      let {_limit} = q || 0;
+    function* g_findMatching(q = 0) {
+      let {_limit} = q;
       if (q.model === undefined) return;
 
       if (q._index !== undefined) {
         const {idx, params, options} = q._index;
-        const orig = dbBroker.dbId, thisDb = q._dbId || orig;
+        const orig = dbBroker.dbId, thisDb = q._dbId ?? orig;
         let lu;
         if (orig === thisDb) {
           lu = idx.lookup(params, options);
@@ -455,7 +456,7 @@ define((require, exports, module) => {
 
       if (this._index !== undefined) {
         const {idx, params, options} = this._index;
-        const orig = dbBroker.dbId, thisDb = this._dbId || orig;
+        const orig = dbBroker.dbId, thisDb = this._dbId ?? orig;
         let lu;
         if (orig === thisDb) {
           lu = idx.lookup(params, options);

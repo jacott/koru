@@ -77,7 +77,7 @@ define((require, exports, module) => {
 
   const ModelEnv = {
     destroyModel(model, drop) {
-      if (!model) return;
+      if (model == null) return;
       const rd = _resetDocs[model.modelName];
       rd?.();
       if (drop === 'drop') {
@@ -353,7 +353,7 @@ define((require, exports, module) => {
         },
 
         _$docCacheDelete: (doc) => {
-          if (doc._id) {
+          if (doc._id != null) {
             const dc = getDc();
             if (dc !== undefined) {
               delete dc[doc._id];
