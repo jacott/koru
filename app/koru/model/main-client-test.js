@@ -32,14 +32,13 @@ define((require, exports, module) => {
        * are not persisted. See {#/koru/model/query-idb#queueChange}.
        * stopGap records are created even if the have validation
        * errors.
-       **/
+       */
       stub(session, 'rpc');
-      const TestModel = Model.define('TestModel').defineFields({
-        name: 'text'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       TestModel.prototype.validate = function () {
         Val.addError(this, 'dob', 'is_invalid');
-      }
+      };
 
       v.foo = TestModel.createStopGap({_id: 'foo123', name: 'testing'});
       refute.called(session.rpc);
@@ -79,8 +78,14 @@ define((require, exports, module) => {
       const doc = TestModel.build({name: 'foo'});
       doc.$save({callback: v.callback = stub()});
 
-      assert.calledWith(save, 'save', 'TestModel', TH.match.id,
-                        {_id: TH.match.id, name: 'foo'}, v.callback);
+      assert.calledWith(
+        save,
+        'save',
+        'TestModel',
+        TH.match.id,
+        {_id: TH.match.id, name: 'foo'},
+        v.callback,
+      );
     });
 
     test('transaction', () => {

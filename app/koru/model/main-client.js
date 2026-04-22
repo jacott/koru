@@ -19,15 +19,14 @@ define((require, exports, module) => {
 
   const newDB = (name) => {
     const db = dbs[name] = {};
-    Object.defineProperty(db, 'name', {
-      enumerable: false, configurable: true, value: name,
-    });
+    Object.defineProperty(db, 'name', {enumerable: false, configurable: true, value: name});
 
     return db;
   };
 
   Object.defineProperty(ModelMap, 'db', {
-    enumerable: false, configurable: true,
+    enumerable: false,
+    configurable: true,
     get: () => dbs[dbBroker.dbId] ?? newDB(dbBroker.dbId),
     set: (db) => dbBroker.dbId = db.name,
   });
@@ -46,7 +45,9 @@ define((require, exports, module) => {
     return ans !== undefined ? ans : (map[prop] = setter());
   };
 
-  function findById(id) {return this.docs[id]}
+  function findById(id) {
+    return this.docs[id];
+  }
 
   const localInsert = (doc, userId) => {
     const model = doc.constructor;
@@ -65,12 +66,12 @@ define((require, exports, module) => {
     _support.performUpdate(doc, changes);
   };
 
-  const save = (doc, callback=koru.globalCallback) => {
+  const save = (doc, callback = koru.globalCallback) => {
     let _id = doc.attributes._id;
     const model = doc.constructor;
 
     if (_id == null) {
-      if (! doc.changes._id) doc.changes._id = Random.id();
+      if (!doc.changes._id) doc.changes._id = Random.id();
       _id = doc.changes._id;
       if (model.docs[_id] !== undefined) throw new koru.Error(400, {_id: [['not_unique']]});
       if (doc[stopGap$] !== undefined) {
@@ -101,7 +102,7 @@ define((require, exports, module) => {
     save,
 
     destroyModel(model, drop) {
-      if (! model) return;
+      if (!model) return;
 
       let modelName = model.modelName;
 
@@ -113,7 +114,12 @@ define((require, exports, module) => {
     init(BaseModel, supportBase) {
       _support = supportBase;
 
-      Object.defineProperty(ModelMap, '_databases', {enumerable: false, get() {return dbs}});
+      Object.defineProperty(ModelMap, '_databases', {
+        enumerable: false,
+        get() {
+          return dbs;
+        },
+      });
       Object.defineProperty(ModelMap, '_getProp', {enumerable: false, value: getProp});
       Object.defineProperty(ModelMap, '_getSetProp', {enumerable: false, value: getSetProp});
 
@@ -136,14 +142,13 @@ define((require, exports, module) => {
 
       util.merge(BaseModel.prototype, {
         $remove() {
-          session.rpc('remove', this.constructor.modelName, this._id,
-                      koru.globalCallback);
+          session.rpc('remove', this.constructor.modelName, this._id, koru.globalCallback);
         },
 
         /**
          * Warning: $reload does not ensure that this doc belongs to the
          * current database.
-         **/
+         */
         $reload() {
           const doc = this.constructor.findById(this._id);
           this.attributes = doc ? doc.attributes : {};
@@ -156,9 +161,9 @@ define((require, exports, module) => {
 
       session.defineRpc('save', function (modelName, id, changes) {
         const model = ModelMap[modelName],
-              docs = model.docs,
-              doc = docs[id ?? changes._id],
-              now = util.newDate();
+          docs = model.docs,
+          doc = docs[id ?? changes._id],
+          now = util.newDate();
 
         if (doc !== undefined) {
           if (id) {
@@ -167,7 +172,7 @@ define((require, exports, module) => {
             doc.attributes = changes;
             localInsert(doc, this.userId);
           }
-        } else if (! id) {
+        } else if (!id) {
           localInsert(new model(changes), this.userId);
         }
       });
