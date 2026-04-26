@@ -105,7 +105,12 @@ define((require) => {
     classes() {
       return this.options.name + '-field';
     },
+
     value() {
+      if (this.options.type === 'checkbox') {
+        return this.doc[this.options.name] ? 'True' : 'False';
+      }
+
       return this.doc[this.options.name] ?? '';
     },
   });
@@ -116,9 +121,18 @@ define((require) => {
     const ctx = Dom.ctx(this);
     const widget = ctx[widget$];
 
-    const input = this.firstChild;
+    const input = this.querySelector(
+      ctx.data.type === 'richTextEditor' ? '.richTextEditor' : Dom.INPUT_SELECTOR,
+    );
 
-    const {value} = input;
+    let value;
+    switch (input.getAttribute('type')) {
+      case 'checkbox':
+        value = input.checked;
+        break;
+      default:
+        value = input.value;
+    }
 
     widget._onSubmit?.(value, this);
   }

@@ -540,7 +540,10 @@ define((require) => {
     contains: (parent, elm) => (parent != null && parent.contains(elm)) ? parent : null,
 
     updateInput: (input, value) => {
-      if (value !== input.value) {
+      const type = input.getAttribute('type');
+      if (type === 'checkbox') {
+        input.checked = !!value;
+      } else if (value !== input.value) {
         input.value = value;
       }
       return value;

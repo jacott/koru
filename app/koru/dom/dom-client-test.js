@@ -844,7 +844,11 @@ define((require, exports, module) => {
 
     group('inputValue helper', () => {
       test('restore', () => {
-        const elm = Ctx[private$].currentElement = {};
+        const elm = Ctx[private$].currentElement = {
+          getAttribute(k) {
+            return k === 'type' ? 'text' : null;
+          },
+        };
         TH.stubProperty(elm, 'value', {
           get() {
             return '34';

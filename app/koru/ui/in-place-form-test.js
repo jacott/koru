@@ -22,9 +22,10 @@ isClient && define((require, exports, module) => {
       </div>
     </template>
     <template name="Edit_autoShowEdit">
-      <div>
+      <label>
+        <span>auto edit</span>
         <input name="autoShowEdit" class="editTpl" value="{{doc.autoShowEdit}}">
-      </div>
+      </label>
     </template>
   </ul>
 </template>
@@ -109,9 +110,55 @@ isClient && define((require, exports, module) => {
       });
     });
 
+    test('custom Show/Edit checkbox', () => {
+      const Ipf = Dom.newTemplate(
+        TemplateCompiler.toJavascript(`
+<template name="Test.InPlaceForm">
+  <ul id="InPlaceFormTest">
+    {{editInPlace name="autoShowEdit"}}
+    <template name="Show_autoShowEdit">
+      <div>
+        <button name="autoShowEdit" class="ui-editable showTpl">{{doc.autoShowEdit}}</button>
+      </div>
+    </template>
+    <template name="Edit_autoShowEdit">
+      <label>
+        <span>auto edit</span>
+        <input name="autoShowEdit" class="editTpl" type="checkbox" checked="{{doc.autoShowEdit}}">
+      </label>
+    </template>
+  </ul>
+</template>
+`).toJson(),
+      );
+
+      sut.autoRegister(Ipf);
+      const doc = {autoShowEdit: 'bar', $reload: stub()};
+      document.body.appendChild(Ipf.$autoRender(doc));
+
+      assert.dom('#InPlaceFormTest', (elm) => {
+        assert.dom('[name=autoShowEdit].ui-editable.showTpl', 'bar');
+
+        doc.autoShowEdit = true;
+
+        // this was stopping custom edit template from showing
+        Dom.myCtx(elm).updateAllTags();
+
+        TH.click('[name=autoShowEdit].ui-editable.showTpl', 'true');
+
+        assert.dom('input.editTpl[checked=true]', (input) => {
+          TH.click(input);
+        });
+
+        TH.click('[type=submit]');
+
+        assert.equals(doc.autoShowEdit, false);
+      });
+    });
+
     test('custom Show/Edit templates', () => {
       sut.autoRegister(Ipf);
-      const doc = {autoShowEdit: 'bar'};
+      const doc = {autoShowEdit: 'bar', $reload: stub()};
       document.body.appendChild(Ipf.$autoRender(doc));
 
       assert.dom('#InPlaceFormTest', (elm) => {
@@ -124,7 +171,13 @@ isClient && define((require, exports, module) => {
 
         TH.click('[name=autoShowEdit].ui-editable.showTpl', 'foo');
 
-        assert.dom('input.editTpl', {value: 'foo'});
+        assert.dom('input.editTpl', {value: 'foo'}, (input) => {
+          TH.input(input, 'bar');
+        });
+
+        TH.click('[type=submit]');
+
+        assert.equals(doc.autoShowEdit, 'bar');
       });
     });
 
