@@ -191,7 +191,7 @@ isServer && define((require, exports, module) => {
 
       test('client connection good dictionary', async () => {
         const path =
-          `/ws/${koru.PROTOCOL_VERSION}/${sess.version}/${sess.versionHash}?field=one&dict=${dictHash}`;
+          `/junk/at/startws/${koru.PROTOCOL_VERSION}/${sess.version}/${sess.versionHash}?field=one&dict=${dictHash}`;
         await checkVersion(path, SessionVersion.VERSION_GOOD_DICTIONARY);
 
         assert.isTrue(sess.conns['75'] instanceof MyServerConnection);

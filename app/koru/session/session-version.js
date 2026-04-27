@@ -10,6 +10,32 @@ define((require, exports, module) => {
   const VERSION_GOOD_DICTIONARY = 4;
   const VERSION_BAD_DICTIONARY = 5;
 
+  const MARKER = 'ws/';
+  const stripedWsPath = (path) => {
+    const index = path.indexOf(MARKER);
+
+    if (index === -1) return [];
+
+    const result = [];
+    const len = path.length;
+    // Start searching immediately after '/ws/'
+    let start = index + 3;
+
+    for (let i = start; i <= len; i++) {
+      const pi = path[i];
+      if (i === len || pi === '/' || pi === '?') {
+        if (i > start) {
+          result.push(path.slice(start, i));
+          if (result.length === 3 || pi === '?') {
+            break;
+          }
+        }
+        start = i + 1;
+      }
+    }
+
+    return result;
+  };
   return {
     VERSION_RELOAD,
     VERSION_CLIENT_AHEAD,
@@ -18,14 +44,13 @@ define((require, exports, module) => {
     VERSION_BAD_DICTIONARY,
 
     comparePathVersion(session, url) {
-      const gd = GlobalDict.main;
-
-      const gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
-      const parts = url === null ? null : url.split('?', 2);
-      const [clientProtocol, clientVersion, clientHash] = url === null
-        ? []
-        : parts[0].split('/').slice(2);
       if (url === null) return VERSION_BAD_DICTIONARY;
+      const gd = GlobalDict.main;
+      const gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
+
+      const [clientProtocol, clientVersion = '', clientHash = ''] = url === null
+        ? []
+        : stripedWsPath(url);
       if (+clientProtocol !== koru.PROTOCOL_VERSION) {
         return VERSION_RELOAD;
       }
@@ -46,9 +71,12 @@ define((require, exports, module) => {
           }
         }
       } else {
-        const search = util.searchStrToMap(parts[1]);
-        if (search.dict === gd.dictHashStr) {
-          return VERSION_GOOD_DICTIONARY;
+        const i = url.indexOf('?');
+        if (i !== -1) {
+          const search = util.searchStrToMap(url.slice(i + 1));
+          if (search.dict === gd.dictHashStr) {
+            return VERSION_GOOD_DICTIONARY;
+          }
         }
       }
       return VERSION_BAD_DICTIONARY;
