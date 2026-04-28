@@ -26,9 +26,12 @@ define((require, exports, module) => {
       if (i === len || pi === '/' || pi === '?') {
         if (i > start) {
           result.push(path.slice(start, i));
-          if (result.length === 3 || pi === '?') {
+          if (result.length === 3) {
             break;
           }
+        }
+        if (pi === '?') {
+          break;
         }
         start = i + 1;
       }
@@ -48,9 +51,7 @@ define((require, exports, module) => {
       const gd = GlobalDict.main;
       const gdict = gd.globalDictEncoded(), dictHash = gd.dictHashStr;
 
-      const [clientProtocol, clientVersion = '', clientHash = ''] = url === null
-        ? []
-        : stripedWsPath(url);
+      const [clientProtocol, clientVersion = '', clientHash = ''] = stripedWsPath(url);
       if (+clientProtocol !== koru.PROTOCOL_VERSION) {
         return VERSION_RELOAD;
       }
