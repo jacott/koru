@@ -32,11 +32,11 @@ define((require, exports, module) => {
       });
 
       test('failure', async () => {
-        const io = await sUtil.execFile('date', '--badarg');
+        const io = await sUtil.execFile('cat', '--foo');
 
         assert.same(io.error.code, 1);
-        assert.match(io.error.toString(), /unrecogni.ed option/);
-        assert.match(io.stderr, /unrecogni.ed option/);
+        assert.match(io.error.toString(), /unexpected argument/);
+        assert.match(io.stderr, /unexpected argument/);
       });
 
       test('collecting stdout stderr', async () => {
