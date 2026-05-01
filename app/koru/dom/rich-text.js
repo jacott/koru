@@ -7,12 +7,26 @@ define((require) => {
 
   const {ELEMENT_NODE, TEXT_NODE} = document;
 
-  const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
-  LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
-  MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
-  FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
-  STRIKE = 18,
-  LI = 20, H1 = 21;
+  const OL = 1,
+    UL = 2,
+    NEST = 3,
+    CODE = 4,
+    LINK = 5,
+    LEFT = 6,
+    RIGHT = 7,
+    CENTER = 8,
+    JUSTIFY = 9,
+    MULTILINE = 10,
+    BOLD = 11,
+    ITALIC = 12,
+    UNDERLINE = 13,
+    FONT = 14,
+    BGCOLOR = 15,
+    COLOR = 16,
+    SIZE = 17,
+    STRIKE = 18,
+    LI = 20,
+    H1 = 21;
 
   const FONT_FACE_TO_ID = {
     'sans-serif': 0,
@@ -31,30 +45,23 @@ define((require) => {
 
   const FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
 
-  const ALIGN_TEXT_TO_CODE = {
-    left: LEFT,
-    right: RIGHT,
-    center: CENTER,
-    justify: JUSTIFY,
-  };
+  const ALIGN_TEXT_TO_CODE = {left: LEFT, right: RIGHT, center: CENTER, justify: JUSTIFY};
 
   const ALIGN_CODE_TO_TEXT = [];
   for (const id in ALIGN_TEXT_TO_CODE) {
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
   }
 
-  Object.assign(ALIGN_TEXT_TO_CODE, {
-    start: LEFT,
-    end: RIGHT,
-    'justify-all': JUSTIFY,
-  });
+  Object.assign(ALIGN_TEXT_TO_CODE, {start: LEFT, end: RIGHT, 'justify-all': JUSTIFY});
 
   const LINK_TO_HTML = [{
     id: 0,
     class: '',
-    fromHtml(node) {return node.getAttribute('href')},
+    fromHtml(node) {
+      return node.getAttribute('href');
+    },
     toHtml(node, ref) {
-      if (! /[\/#]/.test(ref[0])) {
+      if (!/[\/#]/.test(ref[0])) {
         node.setAttribute('target', '_blank');
         node.setAttribute('rel', 'noopener');
       }
@@ -63,9 +70,7 @@ define((require) => {
     },
   }];
 
-  const LINK_FROM_HTML = {
-    '': LINK_TO_HTML[0],
-  };
+  const LINK_FROM_HTML = {'': LINK_TO_HTML[0]};
 
   const fromHtml = (html, options) => {
     const builder = new MarkupBuilder(options);
@@ -154,10 +159,11 @@ define((require) => {
     ignoreInline() {}
 
     fromChildren(parent) {
-      const endAlign = (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) &&
-        (parent.getAttribute('align') || parent.style.textAlign))
-        ? textAlign.call(this, parent)
-        : undefined;
+      const endAlign =
+        (parent.nodeType === ELEMENT_NODE && !isInlineNode(parent) &&
+            (parent.getAttribute('align') || parent.style.textAlign))
+          ? textAlign.call(this, parent)
+          : undefined;
 
       const nodes = parent.childNodes;
       const last = nodes.length - 1;
@@ -176,7 +182,7 @@ define((require) => {
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
             const text = node.nodeValue.replace(/[ \n\t\r]+/g, ' ');
-            if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
+            if (!text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
             this.needNL && this.newline();
             this.applyInlines();
             this.lines[this.lines.length - 1] += text;
@@ -212,7 +218,7 @@ define((require) => {
 
     return function () {
       this.markup[endMarker] = this.lines.length - 1 - start;
-    }
+    };
   }
 
   function fromDiv(node) {
@@ -229,21 +235,23 @@ define((require) => {
     this.markup[endMarker] = this.lines.length - 1 - start;
   }
 
-  const fromInline = (code) => function fromInline(node, index, pos) {
-    if (pos === undefined) {
-      this.markup.push(code, this.relative(index), this.lines[index].length, 0);
-    } else {
-      this.markup[pos + 3] = index;
-    }
-  }
+  const fromInline = (code) =>
+    function fromInline(node, index, pos) {
+      if (pos === undefined) {
+        this.markup.push(code, this.relative(index), this.lines[index].length, 0);
+      } else {
+        this.markup[pos + 3] = index;
+      }
+    };
 
-  const fromBlock = (code) => function fromBlock(node) {
-    const start = this.lines.length;
-    this.markup.push(code, this.relative(start), 0);
-    const endMarker = this.markup.length - 1;
-    this.fromChildren(node);
-    this.markup[endMarker] = this.lines.length - 1 - start;
-  }
+  const fromBlock = (code) =>
+    function fromBlock(node) {
+      const start = this.lines.length;
+      this.markup.push(code, this.relative(start), 0);
+      const endMarker = this.markup.length - 1;
+      this.fromChildren(node);
+      this.markup[endMarker] = this.lines.length - 1 - start;
+    };
 
   function fromPre(parent) {
     const builder = this;
@@ -264,7 +272,12 @@ define((require) => {
       const lPos = lines[cIdx].length;
       lines[cIdx] += text.replace(/\u00A0/g, ' ');
       if (hlCode !== undefined && lines[cIdx].length !== lPos) {
-        builder.markup.push(hlCode, builder.relative(cIdx), lPos - prevLen, lines[cIdx].length - lPos);
+        builder.markup.push(
+          hlCode,
+          builder.relative(cIdx),
+          lPos - prevLen,
+          lines[cIdx].length - lPos,
+        );
         hlCode = undefined;
         prevLen = lines[cIdx].length;
       }
@@ -293,14 +306,14 @@ define((require) => {
         prevLen = 0;
         builder.newline();
       } else {
-        if (! INLINE_TAGS[node.tagName]) {
+        if (!INLINE_TAGS[node.tagName]) {
           needNl = true;
         }
         const nodes = node.childNodes;
         for (let i = 0; i < nodes.length; ++i) {
           extractText(nodes[i]);
         }
-        if (! INLINE_TAGS[node.tagName]) {
+        if (!INLINE_TAGS[node.tagName]) {
           needNl = true;
         }
       }
@@ -313,11 +326,11 @@ define((require) => {
   }
 
   const CODE_TO_CLASS = [
-    'hll',// { background-color: #ffffcc }
-    'c',  // { color: #408080; font-style: italic } /* Comment */
-    'err',// { border: 1px solid #FF0000 } /* Error */
-    'k',  // { color: #008000; font-weight: bold } /* Keyword */
-    'o',  // { color: #666666 } /* Operator */
+    'hll', // { background-color: #ffffcc }
+    'c', // { color: #408080; font-style: italic } /* Comment */
+    'err', // { border: 1px solid #FF0000 } /* Error */
+    'k', // { color: #008000; font-weight: bold } /* Keyword */
+    'o', // { color: #666666 } /* Operator */
     'cm', // { color: #408080; font-style: italic } /* Comment.Multiline */
     'cp', // { color: #BC7A00 } /* Comment.Preproc */
     'c1', // { color: #408080; font-style: italic } /* Comment.Single */
@@ -338,8 +351,8 @@ define((require) => {
     'kp', // { color: #008000 } /* Keyword.Pseudo */
     'kr', // { color: #008000; font-weight: bold } /* Keyword.Reserved */
     'kt', // { color: #B00040 } /* Keyword.Type */
-    'm',  // { color: #666666 } /* Literal.Number */
-    's',  // { color: #BA2121 } /* Literal.String */
+    'm', // { color: #666666 } /* Literal.Number */
+    's', // { color: #BA2121 } /* Literal.String */
     'na', // { color: #7D9029 } /* Name.Attribute */
     'nb', // { color: #008000 } /* Name.Builtin */
     'nc', // { color: #0000FF; font-weight: bold } /* Name.Class */
@@ -353,7 +366,7 @@ define((require) => {
     'nt', // { color: #008000; font-weight: bold } /* Name.Tag */
     'nv', // { color: #19177C } /* Name.Variable */
     'ow', // { color: #AA22FF; font-weight: bold } /* Operator.Word */
-    'w',  // { color: #bbbbbb } /* Text.Whitespace */
+    'w', // { color: #bbbbbb } /* Text.Whitespace */
     'mf', // { color: #666666 } /* Literal.Number.Float */
     'mh', // { color: #666666 } /* Literal.Number.Hex */
     'mi', // { color: #666666 } /* Literal.Number.Integer */
@@ -373,7 +386,7 @@ define((require) => {
     'vc', // { color: #19177C } /* Name.Variable.Class */
     'vg', // { color: #19177C } /* Name.Variable.Global */
     'vi', // { color: #19177C } /* Name.Variable.Instance */
-    'il' // { color: #666666 } /* Literal.Number.Integer.Long */
+    'il', // { color: #666666 } /* Literal.Number.Integer.Long */
   ];
 
   const CLASS_TO_CODE = {};
@@ -440,7 +453,7 @@ define((require) => {
 
   function fromSize(muIndex, code, name, value, index) {
     const size = FONT_SIZE_TO_EM[value.replace(/^-[a-z]+-/, '')];
-    if (! size && value.slice(-2) !== 'em') {
+    if (!size && value.slice(-2) !== 'em') {
       return;
     }
 
@@ -524,7 +537,15 @@ define((require) => {
           const spanStyle = SPAN_STYLES[name];
 
           if (spanStyle) {
-            spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index, spanStyle[2]);
+            spanStyle[1].call(
+              this,
+              markupLen,
+              spanStyle[0],
+              name,
+              style[name],
+              index,
+              spanStyle[2],
+            );
           }
         }
       } else {
@@ -539,7 +560,7 @@ define((require) => {
           const spanStyle = SPAN_STYLES[name];
 
           if (spanStyle) {
-            this.markup[(count += 4)] = index;
+            this.markup[count += 4] = index;
           }
         }
       }
@@ -559,7 +580,7 @@ define((require) => {
   const toHtml = (lines, markup, result) => new HtmlBuilder().toHtml(lines, markup, result);
 
   class HtmlBuilder {
-    toHtml(lines, markup, html=document.createDocumentFragment()) {
+    toHtml(lines, markup, html = document.createDocumentFragment()) {
       lines = typeof lines === 'string' ? lines.split('\n') : lines;
       this.markup = markup || [];
       this.lidx = this.midx = 0;
@@ -570,7 +591,9 @@ define((require) => {
       this.line = null;
       for (let index = 0; index < lines.length; ++index) {
         this.line = lines[this.lidx = index];
-        while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
+        while (
+          index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && !nrule.inline)
+        ) {
           state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
           state.rule.call(this, state);
         }
@@ -588,16 +611,22 @@ define((require) => {
       return html;
     }
 
-    offset(offset) {return this.markup[this.midx + offset]}
+    offset(offset) {
+      return this.markup[this.midx + offset];
+    }
 
     nextRule(offset) {
       this.midx += offset;
       this.lineCount[this.midx] = this.lidx + this.markup[this.midx + 1];
     }
 
-    nextMarkupLine() {return this.lineCount[this.midx]}
+    nextMarkupLine() {
+      return this.lineCount[this.midx];
+    }
 
-    endMarkup() {return this.lineCount[this.midx] + this.offset(2)}
+    endMarkup() {
+      return this.lineCount[this.midx] + this.offset(2);
+    }
 
     toChildren(state) {
       let nextMarkup = this.nextMarkupLine();
@@ -622,9 +651,7 @@ define((require) => {
             inlineStart: this.offset(2),
             inlineEnd: this.offset(3),
           };
-          this.nextRule(rule.muInc),
-
-          state.rule.call(this, state);
+          this.nextRule(rule.muInc), state.rule.call(this, state);
           startPos = state.inlineEnd;
           state = state.oldState;
           state.inlineStart = startPos;
@@ -633,13 +660,12 @@ define((require) => {
         }
       }
 
-      if (! this.line) {
+      if (!this.line) {
         state.result.appendChild(document.createElement('BR'));
       } else {
         const text = this.line.slice(startPos, endPos);
 
-        text !== '' &&
-          state.result.appendChild(document.createTextNode(text));
+        text !== '' && state.result.appendChild(document.createTextNode(text));
       }
       state.inlineEnd = endPos;
     }
@@ -647,7 +673,7 @@ define((require) => {
 
   const toBlock = (tag) => {
     function block(state) {
-      if (! state.begun) {
+      if (!state.begun) {
         this.nextRule(3);
         return state.begun = true;
       }
@@ -666,12 +692,13 @@ define((require) => {
 
   const toDiv = toBlock('DIV');
 
-  const toNested = (blockTag, innerFunc) => function (state) {
-    state.begun = true;
-    state.result.appendChild(state.result = document.createElement(blockTag));
-    state.rule = innerFunc;
-    this.nextRule(3);
-  }
+  const toNested = (blockTag, innerFunc) =>
+    function (state) {
+      state.begun = true;
+      state.result.appendChild(state.result = document.createElement(blockTag));
+      state.rule = innerFunc;
+      this.nextRule(3);
+    };
 
   function innerH(state) {
     const oldResult = state.result;
@@ -682,12 +709,13 @@ define((require) => {
     state.result = oldResult;
   }
 
-  const toHeading = (blockTag) => function (state) {
-    state.begun = true;
-    state.result.appendChild(state.result = document.createElement(blockTag));
-    state.rule = innerH;
-    this.nextRule(3);
-  }
+  const toHeading = (blockTag) =>
+    function (state) {
+      state.begun = true;
+      state.result.appendChild(state.result = document.createElement(blockTag));
+      state.rule = innerH;
+      this.nextRule(3);
+    };
 
   function toLi(state) {
     state.begun = true;
@@ -709,20 +737,20 @@ define((require) => {
   }
 
   function toAlign(state) {
-    if (! state.begun) {
+    if (!state.begun) {
       state.rule = state.oldState.rule;
       const oldAlign = this.align;
       this.align = ALIGN_CODE_TO_TEXT[this.offset(0)];
       this.nextRule(3);
       state.endCall = function () {
         this.align = oldAlign;
-      }
+      };
       return state.begun = true;
     }
   }
 
   function toCode(state) {
-    if (! state.begun) {
+    if (!state.begun) {
       const pre = document.createElement('PRE');
       if (state.oldState.rule.tag === 'LI') {
         const li = document.createElement('LI');
@@ -781,22 +809,26 @@ define((require) => {
     if (text) {
       state.result.appendChild(document.createTextNode(text));
     }
-    if (! state.result.firstChild || this.lidx !== state.lastLine) {
+    if (!state.result.firstChild || this.lidx !== state.lastLine) {
       state.result.appendChild(document.createElement('BR'));
     }
   }
 
   const CODE_TO_STYLE_NAME = [], CODE_TO_STYLE_VALUE = [];
-  CODE_TO_STYLE_NAME[BOLD] = 'font-weight'; CODE_TO_STYLE_VALUE[BOLD] = 'bold';
-  CODE_TO_STYLE_NAME[ITALIC] = 'font-style'; CODE_TO_STYLE_VALUE[ITALIC] = 'italic';
-  CODE_TO_STYLE_NAME[UNDERLINE] = 'text-decoration'; CODE_TO_STYLE_VALUE[UNDERLINE] = 'underline';
-  CODE_TO_STYLE_NAME[STRIKE] = 'text-decoration'; CODE_TO_STYLE_VALUE[STRIKE] = 'line-through';
+  CODE_TO_STYLE_NAME[BOLD] = 'font-weight';
+  CODE_TO_STYLE_VALUE[BOLD] = 'bold';
+  CODE_TO_STYLE_NAME[ITALIC] = 'font-style';
+  CODE_TO_STYLE_VALUE[ITALIC] = 'italic';
+  CODE_TO_STYLE_NAME[UNDERLINE] = 'text-decoration';
+  CODE_TO_STYLE_VALUE[UNDERLINE] = 'underline';
+  CODE_TO_STYLE_NAME[STRIKE] = 'text-decoration';
+  CODE_TO_STYLE_VALUE[STRIKE] = 'line-through';
   CODE_TO_STYLE_NAME[BGCOLOR] = 'background-color';
   CODE_TO_STYLE_NAME[COLOR] = 'color';
   CODE_TO_STYLE_NAME[FONT] = 'font-family';
   CODE_TO_STYLE_VALUE[FONT] = function (value) {
     return FONT_ID_TO_FACE[value] || value;
-  }
+  };
   CODE_TO_STYLE_NAME[SIZE] = 'font-size';
 
   function toInline(state) {
@@ -806,7 +838,9 @@ define((require) => {
     state.result.style[CODE_TO_STYLE_NAME[code]] = CODE_TO_STYLE_VALUE[code];
     this.toChildren(state);
     state.result = oldResult;
-  } toInline.inline = true; toInline.muInc = 4;
+  }
+  toInline.inline = true;
+  toInline.muInc = 4;
 
   function toInlineValue(state) {
     const oldResult = state.result;
@@ -815,10 +849,14 @@ define((require) => {
     const value = this.markup[state.index + 4];
     const decode = CODE_TO_STYLE_VALUE[code];
     state.result.style.setProperty(
-      CODE_TO_STYLE_NAME[code], decode === undefined ? value : decode(value));
+      CODE_TO_STYLE_NAME[code],
+      decode === undefined ? value : decode(value),
+    );
     this.toChildren(state);
     state.result = oldResult;
-  } toInlineValue.inline = true; toInlineValue.muInc = 5;
+  }
+  toInlineValue.inline = true;
+  toInlineValue.muInc = 5;
 
   function toMultiInline(state) {
     const oldResult = state.result;
@@ -831,13 +869,17 @@ define((require) => {
       const sn = CODE_TO_STYLE_NAME[code];
       const sv = typeof decode === 'string'
         ? decode
-        : decode === undefined ? value[++idx] : decode(value[++idx]);
+        : decode === undefined
+        ? value[++idx]
+        : decode(value[++idx]);
       const ov = style.getPropertyValue(sn);
       style.setProperty(sn, ov ? ov + ' ' + sv : sv);
     }
     this.toChildren(state);
     state.result = oldResult;
-  } toMultiInline.inline = true; toMultiInline.muInc = 5;
+  }
+  toMultiInline.inline = true;
+  toMultiInline.muInc = 5;
 
   function toLink(state) {
     const oldResult = state.result;
@@ -853,14 +895,15 @@ define((require) => {
     const tnode = state.result.lastChild;
     code.toHtml(state.result, ref);
     state.result = oldResult;
-  } toLink.inline = true; toLink.muInc = 6;
+  }
+  toLink.inline = true;
+  toLink.muInc = 6;
 
   const TO_RULES = [];
   TO_RULES[0] = toDiv;
   TO_RULES[OL] = toNested('OL', toDiv);
   TO_RULES[UL] = toNested('UL', toDiv);
-  TO_RULES[LI] = toLi,
-  TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
+  TO_RULES[LI] = toLi, TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
   TO_RULES[CODE] = toCode;
 
   TO_RULES[LINK] = toLink;
@@ -904,7 +947,7 @@ define((require) => {
 
     isValid(text, markup) {
       if (text == null && markup == null) return true;
-      if (typeof text !== 'string' || ! (markup == null || Array.isArray(markup))) {
+      if (typeof text !== 'string' || !(markup == null || Array.isArray(markup))) {
         return false;
       }
 
@@ -931,7 +974,7 @@ define((require) => {
     fontType(face) {
       const idn = +face;
       if (idn !== idn) {
-        if (! face) return 'sans-serif';
+        if (!face) return 'sans-serif';
         face = face.replace(/['"\s]/g, '');
         const id = FONT_FACE_TO_ID[face];
         return id === undefined ? face : FONT_ID_TO_STD[+id];
