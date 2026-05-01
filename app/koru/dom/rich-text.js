@@ -636,6 +636,10 @@ define((require) => {
       if (this.lidx === nextMarkup) {
         while (this.lidx === nextMarkup && this.offset(2) < endPos) {
           const rule = TO_RULES[this.offset(0)];
+          if (rule === undefined) {
+            throw new Error(`Invalid rich-text rule ${this.offset(0)}`);
+          }
+
           const text = this.line.slice(state.inlineStart || 0, this.offset(2));
 
           if (text) {
