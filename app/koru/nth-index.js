@@ -5,7 +5,7 @@ define((require) => {
   class NthIndex {
     constructor(size) {
       this.size = size;
-      this.ids = Object.create(null);
+      this.ids = util.createDictionary();
     }
 
     has(...args) {
