@@ -109,8 +109,20 @@ define((require) => {
       return yieldCall(call.args, args);
     }
 
-    yieldAll(...args) {
+    yieldAllAndReset(...args) {
       const {calls} = this;
+      this.reset();
+      if (calls === void 0) {
+        assert.fail("Can't yield; stub has not been called", 1);
+      }
+      return this.yieldCalls(calls, ...args);
+    }
+
+    yieldAll(...args) {
+      return this.yieldCalls(this.calls, ...args);
+    }
+
+    yieldCalls(calls, ...args) {
       if (calls === void 0) {
         assert.fail("Can't yield; stub has not been called", 1);
       }
