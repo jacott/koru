@@ -283,6 +283,13 @@ define((require, exports, module) => {
         assert.equals(Array.from(change.subDocKeys('index')).sort(), ['d', 'h', 'p']);
       });
 
+      test('missing doc', () => {
+        const change = DocChange.change(null, {});
+        refute.exception(() => {
+          change._set(null, {});
+        });
+      });
+
       test('subDocKeys missing was', () => {
         const book = new Book({
           _id: 'book1',

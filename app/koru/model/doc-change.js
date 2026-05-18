@@ -58,7 +58,7 @@ define((require) => {
     _set(doc, undo) {
       if (this[changes$] !== undefined) this[changes$] = undefined;
       this[doc$] = doc;
-      this[id$] = doc._id;
+      this[id$] = doc?._id;
       if (this[type$] === 'chg') this[undo$] = undo;
       return this;
     }
