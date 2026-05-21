@@ -68,6 +68,10 @@ define((require, exports, module) => {
     // }
   };
 
+  Actions[CursorMessage.Broadcast] = function (data) {
+    this.receiveBroadcast?.(data[2], data.subarray(3));
+  };
+
   const correctId = (canvas, data) => canvas.canvas_id.equals(CursorMessage.decodeCanvas(data));
 
   Actions[CursorMessage.NewClients] = function (data) {
@@ -129,12 +133,23 @@ define((require, exports, module) => {
     mySlot = 255;
     [dimCache$] = {left: 0.1, top: 0.1, width: 0.1, height: 0.1, xfrac: 0.1, yfrac: 0.1};
 
-    constructor({me, sender, addClientSprite, removeClientSprite, getDimensions, clientMoved}) {
+    constructor(
+      {
+        me,
+        sender,
+        addClientSprite,
+        removeClientSprite,
+        receiveBroadcast,
+        getDimensions,
+        clientMoved,
+      },
+    ) {
       this.me = me;
       this.send = sender;
       this.addClientSprite = addClientSprite;
       this.removeClientSprite = removeClientSprite;
       this.getDimensions = getDimensions;
+      this.receiveBroadcast = receiveBroadcast;
       this.clientMoved = clientMoved;
     }
 
@@ -188,6 +203,10 @@ define((require, exports, module) => {
           Math.max(0, Math.min(1, (y - dimCache.top) * dimCache.yfrac)),
         ),
       );
+    }
+
+    broadcast(slot, data) {
+      this.send(CursorMessage.encodeBroadcast(slot, data));
     }
   }
 

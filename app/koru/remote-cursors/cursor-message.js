@@ -12,6 +12,7 @@ define((require) => {
   const COORD_SIZE = 4;
   const MOVE_SIZE = COORD_SIZE + 1;
   const SHAPE_SIZE = COORD_SIZE + 3 + idLen;
+  const BCAST_SIZE = 3;
 
   const moveArraySize = (n) => 2 + MOVE_SIZE * n;
   const shapeArraySize = (n) => 2 + SHAPE_SIZE * n;
@@ -23,6 +24,7 @@ define((require) => {
   const NewClients = 2;
   const RemovedClients = 3;
   const AssignSlot = 4;
+  const Broadcast = 5;
 
   const ndv = (u8) => new DataView(u8.buffer, u8.byteOffset);
   const readId = (u8, offset) => Id.read(ndv(u8), offset);
@@ -49,6 +51,7 @@ define((require) => {
     MOVE_SIZE,
     SHAPE_SIZE,
     Move,
+    Broadcast,
     AttachShape,
     NewClients,
     RemovedClients,
@@ -58,6 +61,19 @@ define((require) => {
     shapeArraySize,
 
     encodeMove: (x, y) => encodeCommonPos(Move, 2, x, y),
+
+    encodeBroadcast(slot, data) {
+      const u8 = new Uint8Array(data.length + BCAST_SIZE);
+      u8[0] = CURSOR_CMD;
+      u8[1] = Broadcast;
+      u8[2] = slot;
+      u8.set(data, BCAST_SIZE);
+      return u8;
+    },
+
+    decodeBroadcast(u8) {
+      return u8.length < BCAST_SIZE ? [0, []] : [u8[2], u8.subarray(BCAST_SIZE)];
+    },
 
     *decodeClientMoves(u8) {
       const dv = ndv(u8);

@@ -11,7 +11,16 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let canvasElm, cbb, me, sender;
-    let findClient, findShape, addClientSprite, removeClientSprite, now, cc, canvas_id, getMsg, msg;
+    let findClient,
+      findShape,
+      addClientSprite,
+      removeClientSprite,
+      receiveBroadcast,
+      now,
+      cc,
+      canvas_id,
+      getMsg,
+      msg;
     let clientCount = 0;
 
     const $style = 'position:fixed;top:51px;left:17px;width:600px;height:400px;';
@@ -37,6 +46,7 @@ define((require, exports, module) => {
         clientCount = count;
         Dom.remove(client.elm);
       };
+      receiveBroadcast = stub();
 
       now = util.dateNow();
       cc = new CursorCanvas({
@@ -45,6 +55,7 @@ define((require, exports, module) => {
         getDimensions: () => cbb,
         addClientSprite,
         removeClientSprite,
+        receiveBroadcast,
         clientMoved(mv, {width, height}) {
           if (mv.elm !== null) {
             mv.elm.style.setProperty(
@@ -213,6 +224,26 @@ define((require, exports, module) => {
       assert.calledOnceWith(sender, getMsg);
 
       assert.equals(decodeMove(msg), {x: 32768, y: 32768});
+    });
+
+    test('send broadcast', () => {
+      cc.monitor(canvasElm, canvas_id);
+      sender.reset();
+
+      cc.broadcast(20, [1, 2, 3]);
+      assert.calledOnceWith(sender, getMsg);
+
+      assert.equals(msg, new Uint8Array([0x3e, 5, 20, 1, 2, 3]));
+    });
+
+    test('receiveBroadcast', () => {
+      cc.monitor(canvasElm, canvas_id);
+      cc.receive(CursorMessage.encodeBroadcast(3, [1, 2, 3]));
+
+      assert.calledOnceWith(cc.receiveBroadcast, 3);
+
+      const msg = cc.receiveBroadcast.args(0, 1);
+      assert.equals(msg, new Uint8Array([1, 2, 3]));
     });
 
     group('show cursors', () => {

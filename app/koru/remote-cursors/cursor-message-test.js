@@ -150,5 +150,12 @@ define((require, exports, module) => {
         ]);
       });
     });
+
+    test('encode, decodeBroadcast', () => {
+      const msg = CursorMessage.encodeBroadcast(20, [1, 2, 3]);
+      assert.equals(msg, new Uint8Array([0x3e, 5, 20, 1, 2, 3]));
+
+      assert.equals(CursorMessage.decodeBroadcast(msg), [20, new Uint8Array([1, 2, 3])]);
+    });
   });
 });
