@@ -1,4 +1,4 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const Dom             = require('../dom');
   const util            = require('../util');
@@ -8,8 +8,9 @@ define((require)=>{
   const SYM_NAMES = {};
 
   function exec(event, ignoreFocus) {
-    if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR))
+    if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR)) {
       return;
+    }
 
     const keyMap = this;
     const code = String.fromCharCode(event.which);
@@ -18,7 +19,7 @@ define((require)=>{
     let map, mod = eventMod(event);
 
     if (mod != 0) {
-      map = keyMap.map['*'+String.fromCharCode(mod)];
+      map = keyMap.map['*' + String.fromCharCode(mod)];
       if (map === undefined) return;
     } else {
       map = keyMap.map;
@@ -31,18 +32,18 @@ define((require)=>{
     if (Array.isArray(map)) {
       map[1](event, map[0]);
     } else {
-      const cancel = ()=>{
+      const cancel = () => {
         window.removeEventListener('keydown', nextKey, true);
         document.body.removeEventListener('pointerleave', cancel, true);
       };
-      const nextKey = event =>{
+      const nextKey = (event) => {
         const code = String.fromCharCode(event.which);
         if (MODIFIERS[code] !== undefined) return;
 
         mod = eventMod(event);
 
         if (mod != 0) {
-          map = map['*'+String.fromCharCode(mod)];
+          map = map['*' + String.fromCharCode(mod)];
           if (map === undefined) {
             cancel();
             return;
@@ -50,7 +51,7 @@ define((require)=>{
         }
 
         map = map[code];
-        if (map && ! Array.isArray(map)) {
+        if (map && !Array.isArray(map)) {
           Dom.stopEvent(event);
           return;
         }
@@ -64,17 +65,17 @@ define((require)=>{
     }
   }
 
-  const makeTitle = (name, keySeq)=>{
-    keySeq = keySeq.replace(/[\u0000-\u002B,\u0080-\u00DE]/g, m =>{
+  const makeTitle = (name, keySeq) => {
+    keySeq = keySeq.replace(/[\u0000-\u002B,\u0080-\u00DE]/g, (m) => {
       const mc = MOD_NAMES[m];
-      if (mc)
-        return mc+'-';
-      else {
+      if (mc) {
+        return mc + '-';
+      } else {
         const name = SYM_NAMES[m];
-        return name.length == 1 ? name : "<"+name+">";
+        return name.length == 1 ? name : '<' + name + '>';
       }
     });
-    return keySeq ? name + ' ['+keySeq+']' : name;
+    return keySeq ? name + ' [' + keySeq + ']' : name;
   };
 
   class KeyMap {
@@ -83,30 +84,30 @@ define((require)=>{
       this.descMap = {};
     }
 
-    addKeys(funcs, {mapCtrlToMeta}={}) {
+    addKeys(funcs, {mapCtrlToMeta} = {}) {
       const top = this.map;
       let mod, km;
 
-      const procMod = ()=>{
+      const procMod = () => {
         if (mod != 0) {
-          const key = '*'+String.fromCharCode(mod);
+          const key = '*' + String.fromCharCode(mod);
           km = km[key] || (km[key] = {});
           mod = 0;
         }
       };
 
-      for(const name in funcs) {
+      for (const name in funcs) {
         const line = funcs[name];
-        const lastIdx = line.length -1;
+        const lastIdx = line.length - 1;
         const func = line[lastIdx];
         this.descMap[name] = [line[0], func];
-        for(let j = 0; j < lastIdx; ++j) {
+        for (let j = 0; j < lastIdx; ++j) {
           let keySeq = line[j];
-          for(let k = 0; k < mapCtrlToMeta ? 2 : 1; ++k) {
+          for (let k = 0; k < mapCtrlToMeta ? 2 : 1; ++k) {
             km = top;
             mod = 0;
             let i = 0;
-            for(; i < keySeq.length - 1; ++i) {
+            for (; i < keySeq.length - 1; ++i) {
               const code = keySeq[i];
               const modk = MODIFIERS[code];
 
@@ -116,14 +117,15 @@ define((require)=>{
               }
               procMod();
               km = km[code] || (km[code] = {});
-              if (Array.isArray(km))
-                throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
+              if (Array.isArray(km)) {
+                throw new Error(`Not a key map for: '${keySeq.slice(0, i + 1)}' => ${km}`);
+              }
             }
             procMod();
 
             km[keySeq[i]] = [name, func];
-            if (k == 0 && mapCtrlToMeta && ! /\u005B/.test(keySeq)) {
-              const seq2 = keySeq.replace(/\u0011/g,  '\u005B');
+            if (k == 0 && mapCtrlToMeta && !/\u005B/.test(keySeq)) {
+              const seq2 = keySeq.replace(/\u0011/g, '\u005B');
               if (seq2 !== keySeq) {
                 keySeq = seq2;
                 continue;
@@ -137,12 +139,12 @@ define((require)=>{
 
     getTitle(desc, name) {
       const sc = this.descMap[name];
-      if (! sc) return (this.descMap[name]=['', null, desc])[2];
+      if (!sc) return (this.descMap[name] = ['', null, desc])[2];
       return sc[2] || (sc[2] = makeTitle(desc, sc[0]));
     }
-  };
+  }
 
-  const KMFactory = (funcs, options) =>{
+  const KMFactory = (funcs, options) => {
     const keyMap = new KeyMap();
     keyMap.exec = exec.bind(keyMap);
 
@@ -153,20 +155,11 @@ define((require)=>{
 
   KMFactory.usesCommandKey = /Macintosh/.test(navigator.userAgent);
 
-  const isCtrlKey = {
-    Ctrl: true,
-    CTRL: true,
-    ctrl: true,
-  };
+  const isCtrlKey = {Ctrl: true, CTRL: true, ctrl: true};
 
-  KMFactory.modDisplay = mod => isCtrlKey[mod] === true && KMFactory.usesCommandKey ? "⌘" : mod;
+  KMFactory.modDisplay = (mod) => isCtrlKey[mod] === true && KMFactory.usesCommandKey ? '⌘' : mod;
 
-  [
-    '\u0010shift',
-    '\u0011ctrl',
-    '\u0012alt',
-    '\u005Bmeta',
-  ].forEach((code, i) => {
+  ['\u0010shift', '\u0011ctrl', '\u0012alt', '\u005Bmeta'].forEach((code, i) => {
     const name = code.slice(1);
     KMFactory[name] = code = code[0];
     MODIFIERS[code] = 1 << i;
@@ -174,32 +167,34 @@ define((require)=>{
     MOD_NAMES[code] = name;
   });
 
-  for (let code of [
-    '\u0025left',
-    '\u0026up',
-    '\u0027right',
-    '\u0028down',
-    '\u0021pgUp',
-    '\u0022pgDown',
-    '\u0023end',
-    '\u0024home',
-    '\u001Besc',
-    '\u002Edel',
-    '\renter',
-    ' space',
-    'Û[',
-    'Ý]',
-    'Ü\\',
-    '\u00c0`',
-  ]) {
+  for (
+    let code of [
+      '\u0025left',
+      '\u0026up',
+      '\u0027right',
+      '\u0028down',
+      '\u0021pgUp',
+      '\u0022pgDown',
+      '\u0023end',
+      '\u0024home',
+      '\u001Besc',
+      '\u002Edel',
+      '\renter',
+      ' space',
+      'Û[',
+      'Ý]',
+      'Ü\\',
+      '\u00c0`',
+    ]
+  ) {
     const name = code.slice(1);
     KMFactory[name] = code = code[0];
     SYM_NAMES[code] = name;
   }
 
-  KMFactory.modCodeToName = code => MOD_NAMES[code];
+  KMFactory.modCodeToName = (code) => MOD_NAMES[code];
 
-  const eventMod = event=>{
+  const eventMod = (event) => {
     let mod = 0;
     if (event.shiftKey) mod = 1;
     if (event.ctrlKey) mod += 2;
