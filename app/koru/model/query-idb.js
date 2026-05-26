@@ -309,7 +309,7 @@ define((require) => {
         if (db.isClosed) {
           koru.info(err.toString());
         } else {
-          koru.unhandledException(err);
+          koru.globalErrorCatch(err);
         }
       });
     });
