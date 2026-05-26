@@ -343,7 +343,7 @@ isClient && define((require, exports, module) => {
     });
 
     test('helper checked', () => {
-      const elmStub = {tagName: 'INPUT'};
+      const elmStub = {tagName: 'INPUT', checked: undefined};
       stub(Dom, 'setClass');
       stub(Dom, 'setBoolean');
       TH.stubProperty(Dom.current, 'element', {
@@ -352,6 +352,7 @@ isClient && define((require, exports, module) => {
         },
       });
       Dom._helpers.checked(true);
+      assert.same(elmStub.checked, true);
       refute.called(Dom.setClass);
       assert.calledWith(Dom.setBoolean, 'checked', true);
 

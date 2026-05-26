@@ -599,6 +599,7 @@ define((require) => {
       if ($.element.tagName === 'BUTTON') {
         Dom.setClass(onClass || 'on', value);
       } else {
+        $.element.checked = value;
         Dom.setBoolean('checked', value);
       }
     },
