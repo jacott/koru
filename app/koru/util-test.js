@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * The `util` module provides commonly performed utility functions.
-   **/
+   */
   const Random          = require('koru/random');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -50,8 +50,12 @@ define((require, exports, module) => {
 
       //[
       const book = {
-        get pages() {return this.pageCount},
-        set pages(v) {this.pageCount = v},
+        get pages() {
+          return this.pageCount;
+        },
+        set pages(v) {
+          this.pageCount = v;
+        },
       };
 
       let old;
@@ -59,7 +63,10 @@ define((require, exports, module) => {
       assert.same(old, undefined);
 
       assert.equals(Object.getOwnPropertyDescriptor(book, 'name'), {
-        value: 'Juggling mandarins', writable: true, enumerable: true, configurable: true,
+        value: 'Juggling mandarins',
+        writable: true,
+        enumerable: true,
+        configurable: true,
       });
 
       old = util.setProperty(book, 'pages', {get: () => 123});
@@ -67,7 +74,10 @@ define((require, exports, module) => {
       assert.same(old.get.call({pageCount: 2}), 2);
 
       assert.equals(Object.getOwnPropertyDescriptor(book, 'pages'), {
-        get: m.func, set: m.func, enumerable: true, configurable: true,
+        get: m.func,
+        set: m.func,
+        enumerable: true,
+        configurable: true,
       });
       book.pages = 4;
       assert.same(book.pages, 123);
@@ -87,8 +97,12 @@ define((require, exports, module) => {
       //[
       const book = {
         name: 'Juggling mandarins',
-        get pages() {return this.pageCount},
-        set pages(v) {this.pageCount = v},
+        get pages() {
+          return this.pageCount;
+        },
+        set pages(v) {
+          this.pageCount = v;
+        },
       };
 
       util.defineAlias(book, 'title', 'name');
@@ -109,7 +123,7 @@ define((require, exports, module) => {
        * simple comparison. Zero is only returned for exact matches.
        *
        * @return 0 if exact match otherwise -1 if `a` compomes before `b`; else 1
-       **/
+       */
 
       assert.same(util.localeCompare('a', 'a'), 0);
       assert.same(util.localeCompare('ab', 'àc'), -1);
@@ -134,7 +148,7 @@ define((require, exports, module) => {
        * @returns `dest` modified: each property in `source`, including non-enumerable properties,
        * has been added to `dest`, or where a property of that name already existed in `dest`, the
        * property in `dest` has been replaced with the property from `source`
-       **/
+       */
       api.method();
       //[
       const a = {a: 1, b: 2};
@@ -159,7 +173,7 @@ define((require, exports, module) => {
        *
        * @returns `number` to `dp` decimal places, converted to a string, padded with
        * zeros if `zeroFill` is `true`
-       **/
+       */
       api.method('toDp');
       //[
       assert.same(util.toDp(10.7, 0), '11');
@@ -193,7 +207,7 @@ define((require, exports, module) => {
        * @param fraction a fraction
        *
        * @returns a string comprised of the percent form of `fraction`, with the percent symbol, %
-       **/
+       */
       api.method('pc');
       //[
       assert.same(util.pc(1.2345678), '123.45678%');
@@ -206,7 +220,7 @@ define((require, exports, module) => {
        * @param value a value to be converted
        *
        * @returns `value` converted to a number; the suffix 'px' has been removed
-       **/
+       */
       api.method('sansPx');
       //[
       assert.same(util.sansPx('123.23px'), 123.23);
@@ -221,7 +235,7 @@ define((require, exports, module) => {
        * @param value a value to be converted
        *
        * @returns `value` converted to a number; the suffix '%' has been removed
-       **/
+       */
       api.method('sansPc');
       //[
       assert.same(util.sansPc('123.23%'), 123.23);
@@ -275,7 +289,7 @@ define((require, exports, module) => {
        *
        * @returns `0` if `oldstr` and `newstr` are the same, otherwise the length of the segment,
        * in the longer of `oldstr` and `newstr`, that doesn't match the other string
-       **/
+       */
       api.method('diffStringLength');
       //[
       assert.equals(util.diffStringLength('h💣elo wor💣ld', 'h💣el💣 world'), 7);
@@ -296,7 +310,7 @@ define((require, exports, module) => {
        * @returns the index of the first item in `list` that has a property `fieldName` that
        * contains a match for the regular expression `value`, or -1 if `list` does not
        * contain such an item
-       **/
+       */
       api.method('indexOfRegex');
       //[
       const list = [{foo: 'a'}, {foo: 'cbc'}];
@@ -312,7 +326,7 @@ define((require, exports, module) => {
        * @param obj an object
        *
        * @returns `true` if `obj` is empty, otherwise `false`
-       **/
+       */
       api.method('isObjEmpty');
       //[
       assert.isTrue(util.isObjEmpty());
@@ -328,7 +342,7 @@ define((require, exports, module) => {
        * @param keyMap a set of key-value pairs
        *
        * @returns `true` if `obj` has only keys also in `keyMap`, otherwise `false`
-       **/
+       */
       api.method('hasOnly');
       //[
       assert.isFalse(util.hasOnly({a: 1}, {b: true}));
@@ -346,7 +360,7 @@ define((require, exports, module) => {
        * @param str the string to search for
        *
        * @returns `true` if a key is found that starts with `str`, otherwise `false`
-       **/
+       */
       api.method('keyStartsWith');
       //[
       assert.isFalse(util.keyStartsWith(null, 'foo'));
@@ -364,7 +378,7 @@ define((require, exports, module) => {
        *
        * @returns {any-type} the value of the first property in `obj`, or `undefined` if
        * `obj` is empty
-       **/
+       */
       api.method('firstParam');
       //[
       assert.same(util.firstParam({a: 1, b: 2}), 1);
@@ -382,7 +396,7 @@ define((require, exports, module) => {
        * @param regex the regular expression to match
        *
        * @returns the result array from `regex.exec()` if a match is found, or `null` if not
-       **/
+       */
       api.method();
       //[
       assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(.)/)[1], 'c');
@@ -400,7 +414,7 @@ define((require, exports, module) => {
        *
        * @returns {undefined|number} Returns `undefined` if `item` is added to `list`.
        * Returns the index of `item` if `list` already contains `item`.
-       **/
+       */
       api.method('addItem');
       //[
       const list = ['a', 'b'];
@@ -430,7 +444,7 @@ define((require, exports, module) => {
        * @param {any-type} item the item to search `list` for
        *
        * @returns the index of `item` if `item` is in `list`, otherwise -1
-       **/
+       */
       api.method('itemIndex');
       //[
       const list = ['a', 'b', {one: 'c', two: 'd'}];
@@ -453,19 +467,24 @@ define((require, exports, module) => {
        * @param {any-type} item the item to remove from `list`
        *
        * @returns {any-type} the removed item, or `undefined` if `list` does not contain `item`
-       **/
+       */
       api.method('removeItem');
       //[
       const foo = [1, 2, 3];
-      assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
+      assert.same(util.removeItem(foo, 2), 2);
+      assert.equals(foo, [1, 3]);
 
-      util.removeItem(foo); assert.equals(foo, [1, 3]);
+      util.removeItem(foo);
+      assert.equals(foo, [1, 3]);
 
-      assert.same(util.removeItem(foo, 4), undefined); assert.equals(foo, [1, 3]);
+      assert.same(util.removeItem(foo, 4), undefined);
+      assert.equals(foo, [1, 3]);
 
-      util.removeItem(foo, 1); assert.equals(foo, [3]);
+      util.removeItem(foo, 1);
+      assert.equals(foo, [3]);
 
-      util.removeItem(foo, 3); assert.equals(foo, []);
+      util.removeItem(foo, 3);
+      assert.equals(foo, []);
 
       const bar = [{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}];
       assert.same(util.removeItem(bar, {name: 'bar', x: 1}), undefined);
@@ -485,7 +504,7 @@ define((require, exports, module) => {
        * @param map an object
        *
        * @returns a list made up of the values of the enumerable properties of `map`
-       **/
+       */
       api.method('values');
       //[
       assert.equals(util.values({a: 1, b: 2}), [1, 2]);
@@ -499,7 +518,7 @@ define((require, exports, module) => {
        * @param list2 a second list
        *
        * @returns `true` if `list1` and `list2` have any element in common, otherwise `false`
-       **/
+       */
       api.method('intersectp');
       //[
       assert(util.intersectp([1, 4], [4, 5]));
@@ -517,7 +536,7 @@ define((require, exports, module) => {
        *
        * @returns a list containing all the elements in `first` and one instance of each of the
        * unique elements in `rest` that are not also in `first`
-       **/
+       */
       api.method('union');
       //[
       assert.equals(util.union([1, 2, 2, 3], [3, 4, 4, 5], [3, 6]), [1, 2, 2, 3, 4, 5, 6]);
@@ -535,7 +554,7 @@ define((require, exports, module) => {
        * @param list2 another list
        *
        * @returns a list of all the elements of `list1` that are not also elements of `list2`
-       **/
+       */
       api.method('diff');
       //[
       assert.equals(util.diff(), []);
@@ -555,7 +574,7 @@ define((require, exports, module) => {
        *
        * @returns a list of all the elements of `list1` and `list2` that belong only to `list1`
        * or `list2`, not to both lists
-       **/
+       */
       api.method('symDiff');
       //[
       assert.equals(util.symDiff(), []);
@@ -569,7 +588,12 @@ define((require, exports, module) => {
     test('extend', () => {
       let item = 5;
       const sub = {a: 1, b: 2};
-      const sup = {b: 3, get c() {return item}};
+      const sup = {
+        b: 3,
+        get c() {
+          return item;
+        },
+      };
 
       util.merge(sub, sup);
 
@@ -591,12 +615,19 @@ define((require, exports, module) => {
        * @param exclude properties which are excluded from being added to or modified in `obj`
        *
        * @returns the modified `obj`.
-       **/
+       */
       api.method('mergeExclude');
       //[
       let item = 5,
-      sub = {a: 1, b: 2},
-      sup = {b: 3, get c() {return item}, d: 4, e: 5};
+        sub = {a: 1, b: 2},
+        sup = {
+          b: 3,
+          get c() {
+            return item;
+          },
+          d: 4,
+          e: 5,
+        };
 
       util.mergeExclude(sub, sup, {d: undefined, e: false});
 
@@ -632,8 +663,11 @@ define((require, exports, module) => {
       assert.equals(ans, {a: 1, c: 3, d: 4});
       assert.same(obj, ans);
 
-      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
-        {a: 1, c: 3, d: 4});
+      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']), {
+        a: 1,
+        c: 3,
+        d: 4,
+      });
       //]
     });
 
@@ -643,7 +677,7 @@ define((require, exports, module) => {
        * property called `toStringPrefix` it will prefix the error message
        *
        * See {#koru/stacktrace}
-       **/
+       */
       class AssertionError extends Core.AssertionError {
         recordError() {}
       }
@@ -678,15 +712,27 @@ define((require, exports, module) => {
        * from `obj`
        *
        * @returns an object made up of the properties in `obj` whose keys are named in `keys`
-       **/
+       */
       api.method('extractKeys');
       //[
       assert.equals(
-        util.extractKeys({a: 4, b: 'abc', get c() {return {value: true}}}, ['a', 'c', 'e']),
+        util.extractKeys({
+          a: 4,
+          b: 'abc',
+          get c() {
+            return {value: true};
+          },
+        }, ['a', 'c', 'e']),
         {a: 4, c: {value: true}},
       );
       assert.equals(
-        util.extractKeys({a: 4, b: 'abc', get c() {return {value: true}}}, {a: true, c: false, e: null}),
+        util.extractKeys({
+          a: 4,
+          b: 'abc',
+          get c() {
+            return {value: true};
+          },
+        }, {a: true, c: false, e: null}),
         {a: 4, c: {value: true}},
       );
       //]
@@ -701,11 +747,17 @@ define((require, exports, module) => {
        * collect from `obj`
        *
        * @returns an object made up of the properties in `obj` whose keys are not named in `keys`
-       **/
+       */
       api.method('extractNotKeys');
       //[
       assert.equals(
-        util.extractNotKeys({a: 4, b: 'abc', get c() {return {value: true}}}, {a: true, e: true}),
+        util.extractNotKeys({
+          a: 4,
+          b: 'abc',
+          get c() {
+            return {value: true};
+          },
+        }, {a: true, e: true}),
         {b: 'abc', c: {value: true}},
       );
       //]
@@ -721,11 +773,16 @@ define((require, exports, module) => {
        * include in the first object returned
        *
        * @returns the `include` and `exclude` objects.
-       **/
+       */
       api.method('splitKeys');
       //[
-      const {include, exclude} = util.splitKeys(
-        {a: 4, b: 'abc', get c() {return {value: true}}}, {a: true, e: true});
+      const {include, exclude} = util.splitKeys({
+        a: 4,
+        b: 'abc',
+        get c() {
+          return {value: true};
+        },
+      }, {a: true, e: true});
 
       assert.equals(include, {a: 4});
       assert.equals(exclude, {b: 'abc', c: {value: true}});
@@ -802,16 +859,32 @@ define((require, exports, module) => {
       assert.isFalse(util.deepEqual([1, 1], [1, matcher]));
       assert.isFalse(util.deepEqual([2, 2], [1, matcher]));
 
-      assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-        {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+      assert.isTrue(
+        util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {
+          a: 1,
+          b: {c: 1, d: [1, {e: [false]}]},
+        }),
+      );
 
-      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-        {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
-      assert.isFalse(util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}},
-        {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+      assert.isFalse(
+        util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {
+          a: 1,
+          b: {c: 1, d: [1, {e: [true]}]},
+        }),
+      );
+      assert.isFalse(
+        util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}}, {
+          a: 1,
+          b: {c: 0, d: [1, {e: [false]}]},
+        }),
+      );
 
-      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-        {a: 1, b: {c: 1, d: [1, {e: [false], f: null}]}}));
+      assert.isFalse(
+        util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {
+          a: 1,
+          b: {c: 1, d: [1, {e: [false], f: null}]},
+        }),
+      );
 
       assert.isTrue(util.deepEqual({a: 1, b: undefined}, {a: 1}));
 
@@ -819,7 +892,8 @@ define((require, exports, module) => {
 
       assert.exception((_) => {
         const a = {}, b = {};
-        a.a = a; b.a = b;
+        a.a = a;
+        b.a = b;
         assert.isFalse(util.deepEqual(a, b));
       }, {message: 'deepEqual maxLevel exceeded'});
     });
@@ -827,7 +901,7 @@ define((require, exports, module) => {
     test('elemMatch', () => {
       /**
        * true if all keys in a are deepEqual to the corresponding keys in b
-       **/
+       */
 
       assert.isTrue(util.elemMatch({}, {}));
       assert.isTrue(util.elemMatch(0, 0));
@@ -846,10 +920,14 @@ define((require, exports, module) => {
     });
 
     test('lookupDottedValue', () => {
-      assert.same(util.lookupDottedValue('foo.1.bar.baz', {
-        a: 1, foo: [{}, {bar: {baz: 'fnord'}}]}), 'fnord');
-      assert.same(util.lookupDottedValue(['foo', 1, 'bar', 'baz'], {
-        a: 1, foo: [{}, {bar: {baz: 'fnord'}}]}), 'fnord');
+      assert.same(
+        util.lookupDottedValue('foo.1.bar.baz', {a: 1, foo: [{}, {bar: {baz: 'fnord'}}]}),
+        'fnord',
+      );
+      assert.same(
+        util.lookupDottedValue(['foo', 1, 'bar', 'baz'], {a: 1, foo: [{}, {bar: {baz: 'fnord'}}]}),
+        'fnord',
+      );
     });
 
     test('includesAttributes', () => {
@@ -884,16 +962,19 @@ define((require, exports, module) => {
       assert.same(util.encodeURIComponent(), '');
       assert.same(util.encodeURIComponent(null), '');
 
-      assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"),
-        '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
+      assert.same(
+        util.encodeURIComponent("'!@#$%^&*()_hello world"),
+        '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world',
+      );
     });
 
     test('decodeURIComponent', () => {
       assert.same(util.decodeURIComponent(''), null);
-      assert.same(util.decodeURIComponent(
-        '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
-      assert.same(util.decodeURIComponent(
-        '<%= foo._id %>'), '<%= foo._id %>');
+      assert.same(
+        util.decodeURIComponent('%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'),
+        "'!@#$%^&*()_hello world again",
+      );
+      assert.same(util.decodeURIComponent('<%= foo._id %>'), '<%= foo._id %>');
     });
 
     test('searchStrToMap', () => {
@@ -907,11 +988,13 @@ define((require, exports, module) => {
        * @param list a list
        * @param visitor a function taking two arguments: the value of the current element in `list`,
        * and the index of that current element
-       **/
+       */
       api.method('forEach');
       //[
       const results = [];
-      util.forEach([1, 2, 3], (val, index) => {results.push(val + '.' + index)});
+      util.forEach([1, 2, 3], (val, index) => {
+        results.push(val + '.' + index);
+      });
       assert.equals(results, ['1.0', '2.1', '3.2']);
 
       // ignores null list
@@ -927,7 +1010,7 @@ define((require, exports, module) => {
        * @param list a list
        * @param visitor a function taking two arguments: the value of the current element in `list`,
        * and the index of that current element
-       **/
+       */
       api.method('reverseForEach');
       //[
       const results = [];
@@ -955,7 +1038,9 @@ define((require, exports, module) => {
 
       assert.same(args[3], 5);
 
-      function testArgs() {return arguments}
+      function testArgs() {
+        return arguments;
+      }
     });
 
     test('arrayToMap', () => {
@@ -976,26 +1061,31 @@ define((require, exports, module) => {
     test('toMap', () => {
       /**
        * convert to a `object`;
-       **/
+       */
       api.method();
       //[
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
-      assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]),
-        {a: true, b: true});
-      assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]),
-        {a: {foo: 'a'}, b: {foo: 'b'}});
-      assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]),
-        {a: {foo: 'a'}, b: {foo: 'b'}});
-      assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1},
-        {foo: 'b', baz: 2}]), {a: 1, b: 2});
-      assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]),
-        {foo: 'bar', a: 1});
-      assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]),
-        {1: 'a', bar: 'foo'});
-      assert.equals(util.toMap('foo', (c, i) => c.foo + i, [{foo: 'a'}, {foo: 'b'}]),
-        {a: 'a0', b: 'b1'});
+      assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]), {a: true, b: true});
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]), {
+        a: {foo: 'a'},
+        b: {foo: 'b'},
+      });
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]), {
+        a: {foo: 'a'},
+        b: {foo: 'b'},
+      });
+      assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1}, {foo: 'b', baz: 2}]), {
+        a: 1,
+        b: 2,
+      });
+      assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]), {foo: 'bar', a: 1});
+      assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]), {1: 'a', bar: 'foo'});
+      assert.equals(util.toMap('foo', (c, i) => c.foo + i, [{foo: 'a'}, {foo: 'b'}]), {
+        a: 'a0',
+        b: 'b1',
+      });
       //]
     });
 
@@ -1026,7 +1116,7 @@ define((require, exports, module) => {
       /**
        * Perform a binary search over a sorted `list` and return the closest index with a <= 0
        * `compare` result.
-       **/
+       */
       api.method();
       //[
       assert.same(util.binarySearch([], (row) => assert(false)), -1);
@@ -1079,7 +1169,7 @@ define((require, exports, module) => {
        * Create an object that hints to the VM that it will be used as a dynamic dictionary
        * rather than as a class.
        * @return a new object with no prototype
-       **/
+       */
       api.method('createDictionary');
       //[
       const dict = util.createDictionary();
@@ -1104,7 +1194,11 @@ define((require, exports, module) => {
       assert.same(util.shallowCopy(func), func);
 
       /** Complex object */
-      const X = Object.create({xx() {return 4}});
+      const X = Object.create({
+        xx() {
+          return 4;
+        },
+      });
       X.yy = (a) => 2 * a;
 
       let Xcopy = util.shallowCopy(X);
@@ -1147,8 +1241,13 @@ define((require, exports, module) => {
       /** sparse array **/
       const ans = util.deepCopy([1, 2, , , v.ab = ['a', 'b']]);
       refute.same(ans[5], v.ab);
-      assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`),
-        ['1:0', '2:1', , , `['a', 'b']:4`]);
+      assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`), [
+        '1:0',
+        '2:1',
+        ,
+        ,
+        `['a', 'b']:4`,
+      ]);
 
       const func = () => {};
       assert.same(util.deepCopy(func), func);
@@ -1248,7 +1347,7 @@ define((require, exports, module) => {
     test('compare', () => {
       /**
        * uses en-US collating
-       **/
+       */
       assert.isTrue(util.compare('albert', 'Beatrix') < 0);
       assert.isTrue(util.compare('Albert', 'beatrix') < 0);
       assert.isTrue(util.compare('Albert', 'albert') > 0);
@@ -1354,7 +1453,8 @@ define((require, exports, module) => {
 
       // using symbol for key
       const sym = Symbol();
-      a[sym] = 'G'; b[sym] = 'c';
+      a[sym] = 'G';
+      b[sym] = 'c';
       const compare = util.compareByField(sym);
       assert.same(compare(a, b), -1);
       assert.same(compare(b, a), 1);
@@ -1396,7 +1496,8 @@ define((require, exports, module) => {
 
       // using symbol for key
       const sym = Symbol();
-      a[sym] = 'G'; b[sym] = 'c';
+      a[sym] = 'G';
+      b[sym] = 'c';
       const compare = util.compareByFields('f1', sym);
       assert.same(compare(a, b), -1);
       assert.same(compare(b, a), 1);
@@ -1407,13 +1508,11 @@ define((require, exports, module) => {
     });
 
     test('hasOwn', () => {
-      const a = {
-        y: null,
-        z: undefined,
-      };
+      const a = {y: null, z: undefined};
 
       const b = Object.create(a);
-      b.y = false; b.a = 0;
+      b.y = false;
+      b.a = 0;
 
       const {hasOwn} = util;
 
@@ -1478,7 +1577,13 @@ define((require, exports, module) => {
     test('reverseMerge', () => {
       let item = 5;
       const sub = {a: 1, b: 2};
-      const sup = {d: 'd', b: 3, get c() {return item}};
+      const sup = {
+        d: 'd',
+        b: 3,
+        get c() {
+          return item;
+        },
+      };
 
       util.reverseMerge(sub, sup, {d: 1});
 
@@ -1491,9 +1596,11 @@ define((require, exports, module) => {
     });
 
     test('adjustTime', () => {
-      util.adjustTime(- util.timeAdjust);
+      util.adjustTime(-util.timeAdjust);
       stub(Date, 'now').returns(12345);
-      after((_) => {util.adjustTime(- util.timeAdjust)});
+      after((_) => {
+        util.adjustTime(-util.timeAdjust);
+      });
       assert.same(util.timeAdjust, 0);
       assert.same(util.timeUncertainty, 0);
 
@@ -1518,13 +1625,16 @@ define((require, exports, module) => {
       const result = util.withDateNow(date, () => {
         assert.equals(util.newDate(), date);
         assert.equals(util.dateNow(), +date);
-        assert.same(util.withDateNow(+date + 123, () => {
-          assert.equals(util.newDate(), new Date(+date + 123));
-          assert.equals(util.dateNow(), +date + 123);
+        assert.same(
+          util.withDateNow(+date + 123, () => {
+            assert.equals(util.newDate(), new Date(+date + 123));
+            assert.equals(util.dateNow(), +date + 123);
 
-          assert.equals(util.thread.dates, [undefined, 1370819436855]);
-          return 987;
-        }), 987);
+            assert.equals(util.thread.dates, [undefined, 1370819436855]);
+            return 987;
+          }),
+          987,
+        );
 
         assert.equals(util.newDate(), date);
         assert.equals(util.dateNow(), +date);
@@ -1564,10 +1674,7 @@ define((require, exports, module) => {
     });
 
     test('extractFromEmail', () => {
-      assert.equals(util.extractFromEmail('abc@Def.Co'), {
-        email: 'abc@def.co',
-        name: 'Abc',
-      });
+      assert.equals(util.extractFromEmail('abc@Def.Co'), {email: 'abc@def.co', name: 'Abc'});
 
       assert.equals(util.extractFromEmail('abc-def_xyz.qqq@vimaly.com'), {
         email: 'abc-def_xyz.qqq@vimaly.com',
@@ -1608,8 +1715,10 @@ define((require, exports, module) => {
       assert.isNull(util.parseEmailAddresses('foo@bar baz'));
       assert.isNull(util.parseEmailAddresses('foo@ba_r.com'));
 
-      assert.equals(util.parseEmailAddresses('foo@bar.baz.com fnord'),
-        {addresses: ['foo@bar.baz.com'], remainder: 'fnord'});
+      assert.equals(util.parseEmailAddresses('foo@bar.baz.com fnord'), {
+        addresses: ['foo@bar.baz.com'],
+        remainder: 'fnord',
+      });
 
       assert.equals(
         util.parseEmailAddresses('a b c <abc@def.com> foo-_+%bar@vimaly-test.com, '),
@@ -1637,7 +1746,7 @@ define((require, exports, module) => {
        * @returns an associated object which has the given `_id` and a prototype of
        * `object`. If an association for `key` is already attached to the `object` then it is used
        * otherwise a new one will be created.
-       **/
+       */
       api.method('withId');
       //[
       const jane = {name: 'Jane', likes: ['Books']};
@@ -1690,11 +1799,11 @@ define((require, exports, module) => {
 
     test('asyncArrayFrom', async () => {
       /**
-     * Convert an async iterator into an Array
-     */
+       * Convert an async iterator into an Array
+       */
       api.method();
       //[
-      async function *asyncIter() {
+      async function* asyncIter() {
         yield await 1;
         yield await 2;
       }
