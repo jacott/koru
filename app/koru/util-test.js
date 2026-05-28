@@ -1721,8 +1721,9 @@ define((require, exports, module) => {
       });
 
       assert.equals(
-        util.parseEmailAddresses('a b c <abc@def.com> foo-_+%bar@vimaly-test.com, '),
-        {addresses: ['a b c <abc@def.com>', 'foo-_+%bar@vimaly-test.com'], remainder: ''});
+        util.parseEmailAddresses('a b c <abc@def.international> foo-_+%bar@vimaly-test.com, '),
+        {addresses: ['a b c <abc@def.international>', 'foo-_+%bar@vimaly-test.com'], remainder: ''},
+      );
     });
 
     test('toHex', () => {

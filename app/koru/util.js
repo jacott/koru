@@ -1217,7 +1217,7 @@ define((require) => {
       const addresses = [];
 
       const remainder = input.replace(
-        /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>)[,\s]*/ig,
+        /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}>)[,\s]*/ig,
         (_, m1) => (addresses.push(m1), ''),
       );
 
