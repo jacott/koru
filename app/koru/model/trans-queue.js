@@ -1,3 +1,4 @@
+//;no-client-async
 define((require, exports, module) => {
   'use strict';
   const util            = require('koru/util');
@@ -5,36 +6,6 @@ define((require, exports, module) => {
   const tq$ = Symbol();
 
   let lastTime = 0;
-
-  const asyncTransactionResult = async (tq, prevTq, prevTime, p) => {
-    try {
-      const result = await p;
-      while (tq.success != null) {
-        const l = tq.success;
-        tq.success = null;
-        await runListAsync(l, 0);
-      }
-      return result;
-    } catch (err) {
-      const l = tq.abort;
-      if (l !== undefined) await runListAsync(l, 0);
-      throw err;
-    } finally {
-      await runFinallyAsync(tq, prevTq, prevTime);
-    }
-  };
-
-  const runFinallyAsync = async (tq, prevTq, prevTime) => {
-    const {thread} = util;
-    if (prevTq === undefined) {
-      thread.date = prevTime;
-    }
-    const l = tq.finally;
-    thread[tq$] = prevTq;
-    if (l !== undefined) await runListAsync(l, 0);
-  };
-
-  const runListAsync = async (list, i) => {for (;i < list.length; ++i) await list[i]()};
 
   const TransQueue = {
     nonNested(db, body) {
@@ -54,9 +25,11 @@ define((require, exports, module) => {
       return this.transaction(db.inTransaction ? undefined : db, body);
     },
 
-    get inTransaction() {return util.thread[tq$] !== undefined},
+    get inTransaction() {
+      return util.thread[tq$] !== undefined;
+    },
 
-    transaction: (db, body) => {
+    transaction: async (db, body) => {
       const {thread} = util;
       const prevTq = thread[tq$];
       const tq = thread[tq$] = {success: undefined, abort: undefined, finally: undefined};
@@ -74,49 +47,36 @@ define((require, exports, module) => {
         db = undefined;
       }
 
-      let p;
-
-      const inner = (tx) => {
+      const inner = async (tx) => {
         try {
-          const result = body.call(db, tx);
-          if (isPromise(result)) {
-            return p = asyncTransactionResult(tq, prevTq, prevTime, result);
-          }
+          const result = await body.call(db, tx);
 
           while (tq.success != null) {
             const l = tq.success;
             tq.success = null;
 
-            for (let i = 0; i < l.length; ++i) l[i]();
+            for (const cb of l) await cb();
           }
           return result;
         } catch (ex) {
           const l = tq.abort;
-          if (l != null) for (let i = 0; i < l.length; ++i) {
-            p = l[i]();
-            if (isPromise(p)) {
-              return p.then(() => runListAsync(l, i + 1).then(() => Promise.reject(ex)))
-                .finally(() => runFinallyAsync(tq, prevTq, prevTime));
-            }
+          if (l != null) {
+            for (const cb of l) await cb();
           }
           throw ex;
         } finally {
-          if (isPromise(p)) return p;
           if (prevTq === undefined) {
             thread.date = prevTime;
           }
           const l = tq.finally;
           thread[tq$] = prevTq;
-          if (l) for (let i = 0; i < l.length; ++i) {
-            p = l[i]();
-            if (isPromise(p)) {
-              return p.then(() => runListAsync(l, i + 1));
-            }
+          if (l) {
+            for (const cb of l) await cb();
           }
         }
       };
 
-      return db === undefined ? inner() : db.transaction(inner);
+      return db === undefined ? await inner() : await db.transaction(inner);
     },
 
     finally: (callback) => {
@@ -139,12 +99,18 @@ define((require, exports, module) => {
 
     isInTransaction: () => util.thread[tq$] !== undefined,
 
-    _clearLastTime: () => {lastTime = 0},
+    _clearLastTime: () => {
+      lastTime = 0;
+    },
   };
 
   if (isTest) {
     // called from test-case Core.start
-    (util[isTest] ??= []).push((Core) => Core.onTestStart(module, () => {lastTime = 0}));
+    (util[isTest] ??= []).push((Core) =>
+      Core.onTestStart(module, () => {
+        lastTime = 0;
+      })
+    );
   }
 
   return TransQueue;

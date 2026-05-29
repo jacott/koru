@@ -1,3 +1,4 @@
+//;no-client-async
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
@@ -56,40 +57,6 @@ define((require, exports, module) => {
   const callAfterLocalChange = (docChange) =>
     docChange.model[observers$].afterLocalChange?.notify(docChange);
 
-  const callAsyncWhenFinally = async (iter, doc, err) => {
-    for (let i = iter.next(); !i.done; i = iter.next()) {
-      try {
-        await i.value.callback(doc, err);
-      } catch (err1) {
-        if (err === undefined) err = err1;
-      }
-    }
-    if (err !== undefined) {
-      throw err;
-    }
-  };
-
-  const callWhenFinally = (doc, err) => {
-    const subj = doc.constructor[observers$].whenFinally;
-    if (subj !== undefined) {
-      const iter = subj[Symbol.iterator]();
-      for (let i = iter.next(); !i.done; i = iter.next()) {
-        let p;
-        try {
-          p = i.value.callback(doc, err);
-          if (isPromise(p)) {
-            return p.then(() => callAsyncWhenFinally(iter, doc, err));
-          }
-        } catch (err1) {
-          if (err === undefined) err = err1;
-        }
-      }
-    }
-    if (err !== undefined) {
-      throw err;
-    }
-  };
-
   const checkIsOkay = (self, topLevel, origChanges) => {
     const isOkay = self[error$] === undefined;
     if (topLevel !== null) {
@@ -119,39 +86,37 @@ define((require, exports, module) => {
       }
     }
 
-    static _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
+    static async _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
       const callback = mode?.callback;
-
-      let ans;
 
       switch (mode) {
         case 'assert':
-          ans = doc.$assertValid();
+          await doc.$assertValid();
           break;
         case 'force':
-          ans = doc.$isValid();
+          await doc.$isValid();
           break;
         case 'novalidate':
           break;
         default:
-          return ifPromise(
-            doc.$isValid(),
-            (isValid) => isValid && ifPromise(saveFunc(doc, callback), util.trueFunc),
-          );
+          if (!await doc.$isValid()) {
+            return false;
+          }
       }
 
-      return ifPromise(ans, () => ifPromise(saveFunc(doc, callback), util.trueFunc));
+      await saveFunc(doc, callback);
+      return true;
     }
 
-    static create(attributes = {}) {
+    static async create(attributes = {}) {
       const doc = new this(null, deepCopy(attributes));
-      const p = doc.$save();
-      return isPromise(p) ? p.then(() => doc) : doc;
+      await doc.$save();
+      return doc;
     }
 
-    static _insertAttrs(attrs) {
-      const p = Query._insertAttrs(this, attrs);
-      return isPromise(p) ? p.then(() => attrs._id) : attrs._id;
+    static async _insertAttrs(attrs) {
+      await Query._insertAttrs(this, attrs);
+      return attrs._id;
     }
 
     static build(changes = {}, allow_id = false) {
@@ -359,12 +324,13 @@ define((require, exports, module) => {
       return `Model.${type.modelName}("${this._id}"${arg2})`;
     }
 
-    $save(mode) {
-      return BaseModel._saveDoc(this, mode);
+    async $save(mode) {
+      return await BaseModel._saveDoc(this, mode);
     }
 
-    $$save() {
-      return ifPromise(this.$save('assert'), () => this);
+    async $$save() {
+      await this.$save('assert');
+      return this;
     }
 
     $savePartial(...args) {
@@ -375,7 +341,7 @@ define((require, exports, module) => {
       return savePartial(this, args, 'assert');
     }
 
-    $isValid() {
+    async $isValid() {
       const model = this.constructor, fVTors = model._fieldValidators;
 
       if (this[error$] !== undefined) this[error$] = undefined;
@@ -389,8 +355,6 @@ define((require, exports, module) => {
         Changes.setOriginal(this.changes, origChanges);
       }
 
-      let promises = [];
-
       if (fVTors !== undefined) {
         for (const field in fVTors) {
           const validators = fVTors[field];
@@ -403,8 +367,7 @@ define((require, exports, module) => {
                   ? this[original$] === undefined || this[original$][field] !== value
                   : this.$hasChanged(field))
               ) {
-                const p = args[0].call(Val, this, field, args[1], args[2]);
-                isPromise(p) && promises.push(p);
+                await args[0].call(Val, this, field, args[1], args[2]);
               }
             }
           }
@@ -412,25 +375,20 @@ define((require, exports, module) => {
       }
 
       if (this.validate !== undefined) {
-        const p = this.validate();
-        isPromise(p) && promises.push(p);
-      }
-
-      if (promises.length != 0) {
-        return Promise.all(promises).then(() => checkIsOkay(this, topLevel, origChanges));
+        await this.validate();
       }
 
       return checkIsOkay(this, topLevel, origChanges);
     }
 
-    $assertValid() {
-      return ifPromise(this.$isValid(), (ans) => {
-        if (!ans && this.attributes._id != null) {
-          this.$clearChanges();
-        }
+    async $assertValid() {
+      const ans = await this.$isValid();
 
-        Val.allowIfValid(ans, this);
-      });
+      if (!ans && this.attributes._id != null) {
+        this.$clearChanges();
+      }
+
+      Val.allowIfValid(ans, this);
     }
 
     $equals(other) {
@@ -523,70 +481,6 @@ define((require, exports, module) => {
     }
   }
 
-  const performInsert_2 = (doc, attrs) => {
-    let p;
-    try {
-      p = callBeforeObserver('beforeSave', doc);
-    } catch (err) {
-      return callWhenFinally(doc, err);
-    }
-
-    return isPromise(p)
-      ? p.then(() => performInsert_3(doc), (err) => callWhenFinally(doc, err))
-      : performInsert_3(doc);
-  };
-
-  const performUpdate_2 = (doc, attrs) => {
-    let p;
-    try {
-      p = callBeforeObserver('beforeSave', doc);
-    } catch (err) {
-      return callWhenFinally(doc, err);
-    }
-
-    return isPromise(p)
-      ? p.then(() => performUpdate_3(doc), (err) => callWhenFinally(doc, err))
-      : performUpdate_3(doc);
-  };
-
-  const performInsert_3 = (doc) => {
-    const attrs = doc.attributes;
-    doc.attributes = doc.changes;
-    doc.changes = attrs;
-    doc.constructor.hasVersioning && (doc.attributes._version = 1);
-
-    let p;
-    try {
-      p = Query.insert(doc);
-    } catch (err) {
-      return callWhenFinally(doc, err);
-    }
-
-    return isPromise(p)
-      ? p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err))
-      : callWhenFinally(doc);
-  };
-
-  const performUpdate_3 = (doc) => {
-    let p;
-    try {
-      const model = doc.constructor;
-      const st = new Query(model).onId(doc._id);
-
-      model.hasVersioning && st.inc('_version', 1);
-
-      const {changes} = doc;
-      doc.changes = {};
-      p = st.update(changes);
-    } catch (err) {
-      return callWhenFinally(doc, err);
-    }
-
-    return isPromise(p)
-      ? p.then(() => callWhenFinally(doc), (err) => callWhenFinally(doc, err))
-      : callWhenFinally(doc);
-  };
-
   const _support = {
     setupExtras: [],
 
@@ -594,37 +488,73 @@ define((require, exports, module) => {
       return new Query(model).onId(_id).where({_version}).inc('_version', 1).update();
     },
 
-    performInsert(doc) {
+    async performInsert(doc) {
       doc.changes = doc.attributes;
       const attrs = doc.attributes = {};
 
-      let p;
+      let err;
 
       try {
-        p = callBeforeObserver('beforeCreate', doc);
-      } catch (err) {
-        return callWhenFinally(doc, err);
+        await callBeforeObserver('beforeCreate', doc);
+        await callBeforeObserver('beforeSave', doc);
+        const attrs = doc.attributes;
+        doc.attributes = doc.changes;
+        doc.changes = attrs;
+        doc.constructor.hasVersioning && (doc.attributes._version = 1);
+        await Query.insert(doc);
+      } catch (er) {
+        err = er;
       }
-
-      return isPromise(p)
-        ? p.then(() => performInsert_2(doc), (err) => callWhenFinally(doc, err))
-        : performInsert_2(doc);
+      const subj = doc.constructor[observers$].whenFinally;
+      if (subj !== undefined) {
+        const iter = subj[Symbol.iterator]();
+        for (let i = iter.next(); !i.done; i = iter.next()) {
+          try {
+            await i.value.callback(doc, err);
+          } catch (err1) {
+            if (err === undefined) err = err1;
+          }
+        }
+      }
+      if (err !== undefined) {
+        throw err;
+      }
     },
 
-    performUpdate(doc, changes) {
+    async performUpdate(doc, changes) {
       doc.changes = changes;
 
-      let p;
+      let err;
 
       try {
-        p = callBeforeObserver('beforeUpdate', doc);
-      } catch (err) {
-        return callWhenFinally(doc, err);
+        await callBeforeObserver('beforeUpdate', doc);
+        await callBeforeObserver('beforeSave', doc);
+        const model = doc.constructor;
+        const st = new Query(model).onId(doc._id);
+
+        model.hasVersioning && st.inc('_version', 1);
+
+        const {changes} = doc;
+        doc.changes = {};
+        await st.update(changes);
+      } catch (er) {
+        err = er;
       }
 
-      return isPromise(p)
-        ? p.then(() => performUpdate_2(doc), (err) => callWhenFinally(doc, err))
-        : performUpdate_2(doc);
+      const subj = doc.constructor[observers$].whenFinally;
+      if (subj !== undefined) {
+        const iter = subj[Symbol.iterator]();
+        for (let i = iter.next(); !i.done; i = iter.next()) {
+          try {
+            await i.value.callback(doc, err);
+          } catch (err1) {
+            if (err === undefined) err = err1;
+          }
+        }
+      }
+      if (err !== undefined) {
+        throw err;
+      }
     },
 
     _updateTimestamps(changes, timestamps, now) {

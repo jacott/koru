@@ -46,7 +46,7 @@ define((require, exports, module) => {
       v = {};
     });
 
-    test('define', () => {
+    test('define', async () => {
       /**
        * Define and register a model.
        *
@@ -73,12 +73,12 @@ define((require, exports, module) => {
       assert.equals(book.changes, {title: 'The Hedge Knight'});
 
       book.pages = -1;
-      refute(book.$isValid());
+      refute(await book.$isValid());
       assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
       //]
     });
 
-    test('defineFields', () => {
+    test('defineFields', async () => {
       /**
        * Define the types and {#../validators/main;;validators} of the fields in a model. Usually
        * called with {#.define}
@@ -139,7 +139,7 @@ define((require, exports, module) => {
       assert.equals(book.changes, {title: 'The Hedge Knight'});
 
       book.pages = -1;
-      refute(book.$isValid());
+      refute(await book.$isValid());
       assert.equals(book[error$], {pages: [['must_be_greater_than', 0]]});
       //]
     });
@@ -204,7 +204,7 @@ define((require, exports, module) => {
 
       Book.registerValidator(TextValidator);
 
-      test('changesOnly', () => {
+      test('changesOnly', async () => {
         /**
          * Only changes to the field are validated
          *
@@ -216,32 +216,32 @@ define((require, exports, module) => {
         const book = Book.build();
         book.attributes.pages = -1;
 
-        assert(book.$isValid()); // wrong but no change
+        assert(await book.$isValid()); // wrong but no change
 
         book.pages = 'alsoWrong';
-        refute(book.$isValid()); // wrong and changed
+        refute(await book.$isValid()); // wrong and changed
         assert.equals(book[error$], {pages: [['not_a_number']]});
 
         book.pages = 2;
-        assert(book.$isValid()); // changed and okay
+        assert(await book.$isValid()); // changed and okay
         //]
       });
 
-      test('changesOnly original$', () => {
+      test('changesOnly original$', async () => {
         Book.defineFields({pages: {type: 'number', number: {'>': 0}, changesOnly: true}});
         const book = new Book();
         book.attributes.pages = -1;
 
         // original$ exists
         book[original$] = undefined;
-        refute(book.$isValid());
+        refute(await book.$isValid());
 
         book[original$] = {pages: -2};
         book.pages = 'alsoWrong';
-        refute(book.$isValid()); // wrong and changed
+        refute(await book.$isValid()); // wrong and changed
 
         book.pages = -2;
-        assert(book.$isValid()); // wrong but no change
+        assert(await book.$isValid()); // wrong but no change
       });
     });
 
@@ -381,14 +381,14 @@ define((require, exports, module) => {
               },
             },
           },
-          luckyNumber: ({
+          luckyNumber: {
             type: 'number',
             accessor: {
               set(value) {
                 Book.setField(this, 'luckyNumber', value === 13 ? 7 : value);
               },
             },
-          }),
+          },
         });
 
         const sut = Book.build();
@@ -1066,7 +1066,7 @@ define((require, exports, module) => {
         assert.isFalse(doc.$hasChanged('bar', {foo: 123}));
       });
 
-      test('$fieldDiff', () => {
+      test('$fieldDiff', async () => {
         const {Book} = v;
         const doc = new Book({_id: 't123', pages: {one: 123, two: 'a string', three: true}});
         doc.changes = {
@@ -1077,7 +1077,7 @@ define((require, exports, module) => {
           assert.equals(doc.changes.pages, {two: 'a string.sfx', three: true, four: [1, 2, 3]});
           assert.equals(doc.$fieldDiff('pages'), {one: null, two: 'a string.sfx', four: [1, 2, 3]});
         };
-        doc.$isValid();
+        await doc.$isValid();
       });
 
       test('duplicate id', async () => {

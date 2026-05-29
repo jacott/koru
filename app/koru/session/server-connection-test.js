@@ -253,7 +253,7 @@ isServer && define((require, exports, module) => {
       assert.calledWith(conn.ws.send, 'OneArg', {binary: true});
     });
 
-    test('batchMessage', () => {
+    test('batchMessage', async () => {
       /**
        * Batch a binary message and send once current transaction completes successfully. The
        * message is encoded immediately.
@@ -267,17 +267,17 @@ isServer && define((require, exports, module) => {
       stub(conn, 'sendEncoded');
       let finished = false;
       //[
-      TransQueue.transaction(() => {
+      await TransQueue.transaction(() => {
         conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
         conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
-        koru.runFiber(() => {
+        koru.runFiber(() =>
           TransQueue.transaction(() => {
             conn.batchMessage('R', ['Bar', {_id: 'bar1'}]);
-          });
-        });
-        koru.runFiber(() => {
+          })
+        );
+        koru.runFiber(async () => {
           try {
-            TransQueue.transaction(() => {
+            await TransQueue.transaction(() => {
               conn.batchMessage('R', ['Nat', {_id: 'nat1'}]);
               throw 'abort';
             });
@@ -298,7 +298,7 @@ isServer && define((require, exports, module) => {
 
       conn.sendEncoded.reset();
       try {
-        TransQueue.transaction(() => {
+        await TransQueue.transaction(() => {
           conn.batchMessage('R', ['Foo', {_id: 'foo1'}]);
           conn.batchMessage('R', ['Foo', {_id: 'foo2'}]);
           throw 'abort';

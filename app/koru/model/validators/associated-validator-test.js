@@ -1,3 +1,4 @@
+//;no-client-async
 define((require, exports, module) => {
   'use strict';
   /**
@@ -5,7 +6,7 @@ define((require, exports, module) => {
    *
    * Enable with {#../../validation.register;(module, AssociatedValidator)} which is conventionally
    * done in `app/models/model.js`
-   **/
+   */
   const ValidatorHelper = require('koru/model/validators/validator-helper');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -64,20 +65,21 @@ define((require, exports, module) => {
         const db = new Set(ids);
         const npdb = new Set(options && options.unpublished || []);
         intercept(Query.prototype, 'count', function () {
-          const {_id, published=false} = this._wheres;
+          const {_id, published = false} = this._wheres;
           let count = 0;
           if (this.model === Author && Array.isArray(_id)) {
-            for (const i of new Set(_id)) if (db.has(i) || (! published && npdb.has(i))) ++count;
+            for (const i of new Set(_id)) if (db.has(i) || (!published && npdb.has(i))) ++count;
           }
           return count;
         });
 
         intercept(Query.prototype, 'forEach', function (callback) {
           const {_id, published} = this._wheres;
-          if (this.model == Author && Array.isArray(_id) &&
-              util.deepEqual(this._fields, {_id: true})) {
+          if (
+            this.model == Author && Array.isArray(_id) && util.deepEqual(this._fields, {_id: true})
+          ) {
             for (const i of new Set(_id)) {
-              (db.has(i) || (! published && npdb.has(i))) && callback({_id: i});
+              (db.has(i) || (!published && npdb.has(i))) && callback({_id: i});
             }
           }
         });
@@ -88,10 +90,10 @@ define((require, exports, module) => {
         const npdb = new Set(options && options.unpublished || []);
         intercept(Query.prototype, 'count', async function () {
           await 1;
-          const {_id, published=false} = this._wheres;
+          const {_id, published = false} = this._wheres;
           let count = 0;
           if (this.model === Author && Array.isArray(_id)) {
-            for (const i of new Set(_id)) if (db.has(i) || (! published && npdb.has(i))) ++count;
+            for (const i of new Set(_id)) if (db.has(i) || (!published && npdb.has(i))) ++count;
           }
           return count;
         });
@@ -99,31 +101,30 @@ define((require, exports, module) => {
         intercept(Query.prototype, 'forEach', async function (callback) {
           await 1;
           const {_id, published} = this._wheres;
-          if (this.model == Author && Array.isArray(_id) &&
-              util.deepEqual(this._fields, {_id: true})) {
+          if (
+            this.model == Author && Array.isArray(_id) && util.deepEqual(this._fields, {_id: true})
+          ) {
             for (const i of new Set(_id)) {
-              (db.has(i) || (! published && npdb.has(i))) && await callback({_id: i});
+              (db.has(i) || (!published && npdb.has(i))) && await callback({_id: i});
             }
           }
         });
       };
 
-      test('not_found', () => {
+      test('not_found', async () => {
         /**
          * `true` will test that all ids exist in the associated model
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789']);
 
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
         const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
-        refute(book.$isValid());
+        refute(await book.$isValid());
         assert.equals(book[error$].author_ids, [['not_found']]);
         //]
       });
@@ -133,14 +134,12 @@ define((require, exports, module) => {
          * `true` will test that all ids exist in the associated model
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthorsAsync(['a123', 'a789']);
 
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
         const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
         refute(await book.$isValid());
@@ -148,59 +147,51 @@ define((require, exports, module) => {
         //]
       });
 
-      test('success', () => {
+      test('success', async () => {
         addAuthors(['a123', 'a789']);
 
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
-        const book = Book.build({author_ids: ['a123', 'a789']});
-
-        assert(book.$isValid());
-      });
-
-      test('success async', async () => {
-        addAuthorsAsync(['a123', 'a789']);
-
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
         const book = Book.build({author_ids: ['a123', 'a789']});
 
         assert(await book.$isValid());
       });
 
-      test('is_invalid', () => {
+      test('success async', async () => {
+        addAuthorsAsync(['a123', 'a789']);
+
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
+        const book = Book.build({author_ids: ['a123', 'a789']});
+
+        assert(await book.$isValid());
+      });
+
+      test('is_invalid', async () => {
         //[
         // is_invalid
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
         const book = Book.build({author_ids: 'a123'}); // not an array
 
-        refute(book.$isValid());
+        refute(await book.$isValid());
         assert.equals(book[error$].author_ids, [['is_invalid']]);
         //]
       });
 
       //[no-more-examples]
 
-      test('filter', () => {
+      test('filter', async () => {
         /**
          * `filter` will remove any invalid ids rather than invalidating the document.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789']);
 
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: {filter: true}},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: {filter: true}}});
         const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
-        assert(book.$isValid());
+        assert(await book.$isValid());
         assert.equals(book.author_ids, ['a123', 'a789']);
         //]
       });
@@ -208,45 +199,39 @@ define((require, exports, module) => {
       test('filter async', async () => {
         addAuthorsAsync(['a123', 'a789']);
 
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: {filter: true}},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: {filter: true}}});
         const book = Book.build({author_ids: ['a123', 'a456', 'a789']});
 
         assert(await book.$isValid());
         assert.equals(book.author_ids, ['a123', 'a789']);
       });
 
-      test('none', () => {
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true},
-        });
+      test('none', async () => {
+        Book.defineFields({author_ids: {type: 'has_many', associated: true}});
         const book = Book.build();
 
-        assert(book.$isValid());
+        assert(await book.$isValid());
       });
 
-      test('changesOnly', () => {
+      test('changesOnly', async () => {
         /**
          * When this `fieldOption` is true association only checks for ids which have changed.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789']);
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true, changesOnly: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true, changesOnly: true}});
         const book = Book.build();
         book.attributes.author_ids = ['a123', 'badId1', 'badId2'];
         book.author_ids = ['badId1', 'a123', 'a789'];
 
-        assert(book.$isValid()); // new id 'a789' exists
+        assert(await book.$isValid()); // new id 'a789' exists
 
         book.author_ids = ['badId3', 'a123', 'a789'];
 
-        refute(book.$isValid()); // new id 'badId3' not found
+        refute(await book.$isValid()); // new id 'badId3' not found
         assert.equals(book[error$].author_ids, [['not_found']]);
         //]
       });
@@ -256,13 +241,11 @@ define((require, exports, module) => {
          * When this `fieldOption` is true association only checks for ids which have changed.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthorsAsync(['a123', 'a789']);
-        Book.defineFields({
-          author_ids: {type: 'has_many', associated: true, changesOnly: true},
-        });
+        Book.defineFields({author_ids: {type: 'has_many', associated: true, changesOnly: true}});
         const book = Book.build();
         book.attributes.author_ids = ['a123', 'badId1', 'badId2'];
         book.author_ids = ['badId1', 'a123', 'a789'];
@@ -285,39 +268,35 @@ define((require, exports, module) => {
          * If `filter` is true duplicates will be removed
          *
          * {{example:1}}
-         **/
+         */
         before(() => {
           api.topic();
         });
 
-        test('unfiltered', () => {
+        test('unfiltered', async () => {
           //[
           addAuthors(['a123', 'a789']);
-          Book.defineFields({
-            author_ids: {type: 'has_many', associated: true},
-          });
+          Book.defineFields({author_ids: {type: 'has_many', associated: true}});
 
           const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
-          refute(book.$isValid());
+          refute(await book.$isValid());
           assert.equals(book[error$].author_ids, [['duplicates']]);
           assert.equals(book.author_ids, ['a123', 'a123', 'a789']);
           //]
         });
 
-        test('filtered', () => {
+        test('filtered', async () => {
           //[
           addAuthors(['a123', 'a789']);
-          Book.defineFields({
-            author_ids: {type: 'has_many', associated: {filter: true}},
-          });
+          Book.defineFields({author_ids: {type: 'has_many', associated: {filter: true}}});
 
           const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
-          assert(book.$isValid());
+          assert(await book.$isValid());
           assert.equals(book.author_ids, ['a123', 'a789']);
           //]
         });
 
-        test('filtered changesOnly', () => {
+        test('filtered changesOnly', async () => {
           addAuthors(['a123', 'a789']);
           Book.defineFields({
             author_ids: {type: 'has_many', associated: {filter: true}, changesOnly: true},
@@ -326,7 +305,7 @@ define((require, exports, module) => {
           const book = Book.build({author_ids: ['a123', 'a789', 'a123']});
           book.attributes.author_ids = ['bad1'];
 
-          assert(book.$isValid());
+          assert(await book.$isValid());
           assert.equals(book.author_ids, ['a123', 'a789']);
         });
 
@@ -344,38 +323,43 @@ define((require, exports, module) => {
         });
       });
 
-      test('finder', () => {
+      test('finder', async () => {
         /**
          * `finder` is a function that is called with the document as `this` and the ids to check as
          * the first argument.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789'], {unpublished: ['a456']});
         Book.defineFields({
-          author_ids: {type: 'has_many', associated: {finder(values) {
-            return Author.where('published', this.published).where('_id', values);
-          }}},
+          author_ids: {
+            type: 'has_many',
+            associated: {
+              finder(values) {
+                return Author.where('published', this.published).where('_id', values);
+              },
+            },
+          },
           published: {type: 'boolean'},
         });
 
         const book = Book.build({author_ids: ['a123', 'a456']});
-        assert(book.$isValid());
+        assert(await book.$isValid());
 
         const book2 = Book.build({author_ids: ['a123', 'a456'], published: true});
-        refute(book2.$isValid());
+        refute(await book2.$isValid());
         //]
       });
 
-      test('finder default', () => {
+      test('finder default', async () => {
         /**
          * If the document has a prototype method named `<field-name-sans/_ids?/>Find` then it will
          * be used to scope the query unless `finder` is present.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789'], {unpublished: ['a456']});
@@ -390,60 +374,56 @@ define((require, exports, module) => {
         });
 
         const book = Book.build({author_ids: ['a123', 'a456']});
-        assert(book.$isValid());
+        assert(await book.$isValid());
         book.authorFind = authorFind;
-        assert(book.$isValid());
+        assert(await book.$isValid());
 
         const book2 = Book.build({author_ids: ['a123', 'a456'], published: true});
-        assert(book2.$isValid());
+        assert(await book2.$isValid());
         book2.authorFind = authorFind;
-        refute(book2.$isValid());
+        refute(await book2.$isValid());
         //]
       });
 
-      test('model', () => {
+      test('model', async () => {
         /**
          * A `model` will override the associated model.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123', 'a789']);
 
-        Book.defineFields({
-          authors: {type: 'has_many', associated: true, model: Author},
-        });
+        Book.defineFields({authors: {type: 'has_many', associated: true, model: Author}});
         const book = Book.build({authors: ['a123']});
 
-        assert(book.$isValid());
+        assert(await book.$isValid());
 
         const book2 = Book.build({authors: ['a456']});
-        refute(book2.$isValid());
+        refute(await book2.$isValid());
         //]
       });
 
-      test('belongs_to', () => {
+      test('belongs_to', async () => {
         /**
          * When the field `type` is `'belongs_to'` the field value must be a string containing the
          * id of an association document.
          *
          * {{example:0}}
-         **/
+         */
         api.topic();
         //[
         addAuthors(['a123']);
 
-        Book.defineFields({
-          author_id: {type: 'belongs_to', associated: true},
-        });
+        Book.defineFields({author_id: {type: 'belongs_to', associated: true}});
         const book = Book.build({author_id: 'wrongId'});
 
-        refute(book.$isValid());
+        refute(await book.$isValid());
         assert.equals(book[error$].author_id, [['not_found']]);
 
         book.author_id = 'a123';
-        assert(book.$isValid());
+        assert(await book.$isValid());
         //]
       });
     });

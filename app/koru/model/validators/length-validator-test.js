@@ -1,11 +1,12 @@
-define((require, exports, module)=>{
+//;no-client-async
+define((require, exports, module) => {
   'use strict';
   /**
    * Validate the length of an object.
    *
    * Enable with {#../../validation.register;(module, LengthValidator)} which is conventionally done
    * in `app/models/model.js`
-   **/
+   */
   const ValidatorHelper = require('koru/model/validators/validator-helper');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
@@ -19,46 +20,40 @@ define((require, exports, module)=>{
   }
   Book.registerValidator(LengthValidator);
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    group("maxLength", ()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    group('maxLength', () => {
       /**
        * Ensure field is not greater than length.
 
        * @param len the maximum length of the field
        **/
 
-      before(()=>{
+      before(() => {
         api.method();
       });
 
-      test("too long", ()=>{
+      test('too long', async () => {
         //[
-        Book.defineFields({
-          title: {type: 'text', maxLength: 10}
-        });
+        Book.defineFields({title: {type: 'text', maxLength: 10}});
         const book = Book.build({title: 'Animal Farm'});
 
-        refute(book.$isValid());
-        assert.equals(book[error$].title, [["too_long", 10]]);
+        refute(await book.$isValid());
+        assert.equals(book[error$].title, [['too_long', 10]]);
         //]
       });
 
-      test("missing", ()=>{
-         Book.defineFields({
-          title: {type: 'text', maxLength: 10}
-        });
+      test('missing', async () => {
+        Book.defineFields({title: {type: 'text', maxLength: 10}});
         const book = Book.build();
 
-        assert(book.$isValid());
+        assert(await book.$isValid());
       });
 
-      test("not too long", ()=>{
-        Book.defineFields({
-          title: {type: 'text', maxLength: 20}
-        });
+      test('not too long', async () => {
+        Book.defineFields({title: {type: 'text', maxLength: 20}});
         const book = Book.build({title: 'Animal Farm'});
 
-        assert(book.$isValid());
+        assert(await book.$isValid());
       });
     });
   });
