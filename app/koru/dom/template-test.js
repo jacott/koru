@@ -380,7 +380,7 @@ isClient && define((require, exports, module) => {
     });
 
     group('dragstart on touch', () => {
-      let pointerDownEvent, start, target, foo, dragStart, pointerdown, listener;
+      let pointerDownEvent, pointerUpEvent, start, target, foo, dragStart, pointerdown, listener;
 
       beforeEach(() => {
         Dom.newTemplate({
@@ -414,6 +414,9 @@ isClient && define((require, exports, module) => {
           clientX: 30,
           clientY: 60,
         };
+
+        pointerUpEvent = {...pointerDownEvent, type: 'pointerup'};
+
         start = () => {
           pointerdown(pointerDownEvent);
 
@@ -434,12 +437,12 @@ isClient && define((require, exports, module) => {
               Dom.captureEventOption,
             );
           }
-
-          after(() => {
-            listener({type: 'pointercancel'});
-          });
         };
         stub(document, 'removeEventListener');
+      });
+
+      afterEach(() => {
+        Template[isTest].dragstartSym?.stop();
       });
 
       const assertStopped = () => {
@@ -473,22 +476,27 @@ isClient && define((require, exports, module) => {
           Dom.captureEventOption,
         );
         refute.called(document.removeEventListener);
-        assert.calledWith(koru.setTimeout, match.func, 300);
-
-        refute.called(koru.clearTimeout);
-        koru.setTimeout.reset();
-
-        pointerdown(pointerDownEvent);
-        assert.calledWith(koru.clearTimeout, 321);
-        assert.same(document.removeEventListener.callCount, 4);
-        assertStopped();
-
-        assert.calledWith(koru.setTimeout, match((to) => to = to), 300);
+        assert.calledWith(koru.setTimeout, match((to) => to = to), 520);
         refute.called(dragStart);
         stub(Dom, 'triggerEvent');
         koru.setTimeout.yieldAndReset();
         assert.calledWith(Dom.triggerEvent, target, 'dragstart', {clientX: 30, clientY: 60});
         assertStopped();
+      });
+
+      test('nested dragstart', () => {
+        pointerdown(pointerDownEvent);
+        pointerdown(pointerDownEvent);
+        assert.calledOnce(koru.setTimeout);
+        Template[isTest].dragstartSym.stop();
+        pointerdown(pointerDownEvent);
+        assert.calledTwice(koru.setTimeout);
+      });
+
+      test('dragstart event cancels emulation', () => {
+        pointerdown(pointerDownEvent);
+        Template[isTest].dragstart({...pointerDownEvent, type: 'dragstart'});
+        assert.same(Template[isTest].dragstartSym, null);
       });
 
       test('mouse down', () => {

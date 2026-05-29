@@ -19,13 +19,18 @@ define((require) => {
 
   let dragstartSym = null;
 
+  const DRAGSTART_WAIT = 520; // 520ms needs to be longer than native dragstart of 500ms
+
   const dragstart = (event) => {
-    if (event.pointerType === 'mouse') {
+    if (event.type === 'pointerdown' && (dragstartSym !== null || event.pointerType === 'mouse')) {
       return;
     }
-
     dragstartSym?.stop();
-    dragstartSym = new DragStart(event);
+    if (event.type === 'dragstart') {
+      onEvent(event);
+    } else {
+      dragstartSym = new DragStart(event);
+    }
   };
 
   const bigMove = (ev1, ev2) =>
@@ -36,18 +41,18 @@ define((require) => {
       let lastEvent = origEv;
       this.listener = (ev) => {
         if (ev.type !== 'pointermove' || ev.pointerId !== origEv.pointerId || bigMove(origEv, ev)) {
-          this.stop();
+          dragstartSym?.stop();
         } else {
           lastEvent = ev;
         }
       };
       this.timer = koru.setTimeout(() => {
+        dragstartSym?.stop();
         Dom.triggerEvent(origEv.target, 'dragstart', {
           clientX: lastEvent.clientX,
           clientY: lastEvent.clientY,
         });
-        this.stop();
-      }, 300);
+      }, 520);
       document.addEventListener('pointermove', this.listener, Dom.captureEventOption);
       document.addEventListener('pointerup', this.listener, Dom.captureEventOption);
       document.addEventListener('pointercancel', this.listener, Dom.captureEventOption);
@@ -155,7 +160,7 @@ define((require) => {
           parent.removeEventListener(eventType, onBlur);
           break;
         case 'dragstart':
-          parent.removeEventListener(eventType, onEvent);
+          parent.removeEventListener(eventType, dragstart);
           parent.removeEventListener('pointerdown', dragstart);
           break;
         case 'menustart':
@@ -568,7 +573,7 @@ define((require) => {
           parent.addEventListener(eventType, onBlur);
           break;
         case 'dragstart':
-          parent.addEventListener(eventType, onEvent);
+          parent.addEventListener(eventType, dragstart);
           parent.addEventListener('pointerdown', dragstart);
           break;
         case 'menustart':
@@ -588,6 +593,16 @@ define((require) => {
 
     return m == null ? fetchTemplate(tpl, name) : fetchTemplate(tpl, m[1], m[2].split('.'));
   };
+
+  if (isTest) {
+    Template[isTest] = {
+      get dragstartSym() {
+        return dragstartSym;
+      },
+
+      dragstart,
+    };
+  }
 
   return Template;
 });
