@@ -582,6 +582,10 @@ define((require) => {
   class HtmlBuilder {
     toHtml(lines, markup, html = document.createDocumentFragment()) {
       lines = typeof lines === 'string' ? lines.split('\n') : lines;
+      if (lines == null) {
+        return html;
+      }
+
       this.markup = markup || [];
       this.lidx = this.midx = 0;
       this.lineCount = [this.offset(1)];
