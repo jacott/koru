@@ -6,7 +6,7 @@ define((require, exports, module) => {
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, match: m} = TH;
+  const {stub, spy, match: m, stubProperty} = TH;
 
   const {ctx$, private$, endMarker$} = require('koru/symbols');
 
@@ -843,6 +843,22 @@ define((require, exports, module) => {
     });
 
     group('inputValue helper', () => {
+      test('no change on focus', () => {
+        const elm = Ctx[private$].currentElement = {
+          getAttribute(k) {
+            return k === 'type' ? 'text' : null;
+          },
+        };
+        Dom.setOriginalValue(elm, 'abc');
+        elm.value = '123';
+        Dom._helpers.inputValue('abc');
+        assert.same(elm.value, 'abc');
+        stubProperty(document, 'activeElement', {value: elm});
+        elm.value = '123';
+        Dom._helpers.inputValue('abc');
+        assert.same(elm.value, '123');
+      });
+
       test('restore', () => {
         const elm = Ctx[private$].currentElement = {
           getAttribute(k) {

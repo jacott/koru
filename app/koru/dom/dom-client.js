@@ -372,7 +372,14 @@ define((require) => {
 
     _helpers: {
       inputValue: (value) => {
-        Dom.setOriginalValue(Dom.current.element, value);
+        const {element} = Dom.current;
+        if (element[original$] === value) {
+          if (document.activeElement === element) {
+            return;
+          }
+        } else {
+          Dom.setOriginalValue(Dom.current.element, value);
+        }
         Dom.updateInput(Dom.current.element, value == null ? '' : '' + value);
       },
 
