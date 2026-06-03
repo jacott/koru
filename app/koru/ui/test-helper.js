@@ -28,11 +28,13 @@ define((require, exports, module) => {
       case 'string':
         for (let i = 0; i < key.length; ++i) {
           args.which = key.charCodeAt(i);
+          args.key = key[i];
           TH.trigger(node, event, args);
         }
         break;
       case 'number':
         args.which = key;
+        args.key = String.fromCharCode(key);
         TH.trigger(node, event, args);
         break;
       default:
