@@ -1,53 +1,60 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
+  'use strict';
   const koru            = require('koru');
+  const TH              = require('koru/test-helper');
   const MockPromise     = require('koru/test/mock-promise');
   const util            = require('koru/util');
-  const TH              = require('koru/test-helper');
 
   const {stub, spy, stubProperty} = TH;
 
   const sut = require('./sw-manager');
   const staticCacheName = 'app-v1';
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     let registration, newWorker, controller;
-    before(()=>{
+    before(() => {
       MockPromise.stubPromise();
     });
 
-    beforeEach(()=>{
-      TH.stubProperty(koru, 'globalErrorCatch', {value(err) {koru.unhandledException(err)}});
+    beforeEach(() => {
+      TH.stubProperty(koru, 'globalErrorCatch', {
+        value(err) {
+          koru.unhandledException(err);
+        },
+      });
       registration = {
         addEventListener: stub(),
-        update() {return Promise.resolve()},
+        update() {
+          return Promise.resolve();
+        },
       };
-      TH.stubProperty(navigator, 'serviceWorker', {value: {
-        register: stub().returns(Promise.resolve(registration)),
-        addEventListener: stub(),
-        removeEventListener: stub(),
-        get controller() {return controller || null},
-      }});
-      newWorker = (state='installed') =>  {
-        return {
+      TH.stubProperty(navigator, 'serviceWorker', {
+        value: {
+          register: stub().returns(Promise.resolve(registration)),
           addEventListener: stub(),
-          state,
-          scriptURL: 'http://test.com/service-worker.js',
-        };
+          removeEventListener: stub(),
+          get controller() {
+            return controller || null;
+          },
+        },
+      });
+      newWorker = (state = 'installed') => {
+        return {addEventListener: stub(), state, scriptURL: 'http://test.com/service-worker.js'};
       };
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       sut.stop();
       MockPromise._stop();
       registration = newWorker = controller = void 0;
     });
 
-    group("registration", ()=>{
-      beforeEach(()=>{
+    group('registration', () => {
+      beforeEach(() => {
         controller = newWorker('activated');
       });
 
-      test("pre installing", ()=>{
+      test('pre installing', () => {
         sut.start();
         assert.calledWith(navigator.serviceWorker.register, '/service-worker.js');
         Promise._poll();
@@ -65,7 +72,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(onUpdateWaiting, worker);
       });
 
-      test("already installing", ()=>{
+      test('already installing', () => {
         const updatefound = registration.addEventListener.withArgs('updatefound');
         sut.start();
         const worker = registration.installing = newWorker();
@@ -80,7 +87,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(onUpdateWaiting, worker);
       });
 
-      test("already waiting", ()=>{
+      test('already waiting', () => {
         const updatefound = registration.addEventListener.withArgs('updatefound');
         const worker = registration.waiting = newWorker('installed');
         sut.start();
@@ -98,7 +105,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("prepareNewVersion", ()=>{
+    test('prepareNewVersion', () => {
       const worker = newWorker('installed');
       stubProperty(sut, 'registration', {value: {waiting: worker}});
       worker.postMessage = stub();
@@ -107,7 +114,9 @@ isClient && define((require, exports, module)=>{
       sut.start();
 
       let done = false;
-      const p = sut.prepareNewVersion('abc123').then(()=>{done = true});
+      const p = sut.prepareNewVersion('abc123').then(() => {
+        done = true;
+      });
 
       assert.calledWith(worker.postMessage, {action: 'loadBase', search: '?abc123'});
 
@@ -121,12 +130,12 @@ isClient && define((require, exports, module)=>{
       assert(done);
     });
 
-    group("statechange", ()=>{
-      beforeEach(()=>{
+    group('statechange', () => {
+      beforeEach(() => {
         stub(koru, 'reload');
       });
 
-      test("first time activated", ()=>{
+      test('first time activated', () => {
         const onUpdateWaiting = stub();
         after(sut.onUpdateWaiting(onUpdateWaiting));
         const updatefound = registration.addEventListener.withArgs('updatefound');
@@ -139,13 +148,16 @@ isClient && define((require, exports, module)=>{
         worker.state = 'activated';
         worker.postMessage = stub();
         stubProperty(window, 'KORU_APP_VERSION', {
-          value: "v1.1.1-52-g80018ec,72a1a01b5fcf2b6ccaa45b11d42904ab"});
+          value: 'v1.1.1-52-g80018ec,72a1a01b5fcf2b6ccaa45b11d42904ab',
+        });
         worker.addEventListener.yield();
 
         refute.called(koru.reload);
         refute.called(onUpdateWaiting);
         assert.calledWith(worker.postMessage, {
-          action: 'loadBase', search: '?72a1a01b5fcf2b6ccaa45b11d42904ab'});
+          action: 'loadBase',
+          search: '?72a1a01b5fcf2b6ccaa45b11d42904ab',
+        });
 
         worker.addEventListener.yield();
         assert.calledOnce(worker.postMessage);
@@ -156,7 +168,7 @@ isClient && define((require, exports, module)=>{
         assert.calledTwice(worker.postMessage);
       });
 
-      test("new worker activated", ()=>{
+      test('new worker activated', () => {
         const updatefound = registration.addEventListener.withArgs('updatefound');
         controller = newWorker('activated');
         sut.start();
@@ -170,8 +182,8 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("onmessage", ()=>{
-      test("reload", ()=>{
+    group('onmessage', () => {
+      test('reload', () => {
         const onmessage = navigator.serviceWorker.addEventListener.withArgs('message');
         sut.start();
 
@@ -183,9 +195,9 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    group("update", ()=>{
+    group('update', () => {
       let tryUpdate, updating, done;
-      beforeEach(()=>{
+      beforeEach(() => {
         done = false;
         updating = void 0;
         tryUpdate = () => {
@@ -196,7 +208,7 @@ isClient && define((require, exports, module)=>{
         };
       });
 
-      test("update", ()=>{
+      test('update', () => {
         sut.start();
         tryUpdate();
         updating._resolve();
@@ -205,19 +217,23 @@ isClient && define((require, exports, module)=>{
         assert(done);
       });
 
-      test("no serviceworker update", ()=>{
+      test('no serviceworker update', () => {
         tryUpdate();
         assert(done);
       });
     });
 
-    group("loadNewVersion", ()=>{
+    group('loadNewVersion', () => {
       let caches, pc1;
-      beforeEach(()=>{
+      beforeEach(() => {
         pc1 = void 0;
         caches = {
-          keys() {return Promise.resolve(["c1", staticCacheName])},
-          open(name) {return Promise.resolve(this[name])},
+          keys() {
+            return Promise.resolve(['c1', staticCacheName]);
+          },
+          open(name) {
+            return Promise.resolve(this[name]);
+          },
           [staticCacheName]: {delete: stub('c2', null, () => Promise._resolveOrReject())},
           delete: stub().returns(pc1 = Promise._resolveOrReject()),
         };
@@ -225,14 +241,14 @@ isClient && define((require, exports, module)=>{
         stub(koru, 'reload');
       });
 
-      test("no worker", ()=>{
+      test('no worker', () => {
         sut.start();
 
         sut.loadNewVersion();
         assert.called(koru.reload);
       });
 
-      test("waiting", ()=>{
+      test('waiting', () => {
         registration.waiting = newWorker('installed');
         controller = newWorker('activated');
         registration.waiting.postMessage = stub();
@@ -249,7 +265,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(registration.waiting.postMessage, {action: 'reload'});
       });
 
-      test("activated", ()=>{
+      test('activated', () => {
         registration.active = controller = newWorker('activated');
         controller.postMessage = stub();
 

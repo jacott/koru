@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
   const Val             = require('koru/model/validation');
@@ -6,26 +6,26 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
 
   return {
-    flashUncaughtErrors: ()=>{
+    flashUncaughtErrors: () => {
       const {unexpectedError, globalErrorCatch, globalCallback} = koru;
 
       koru.unexpectedError = (userMsg, logMsg) => {
-        Flash.error('unexpected_error:'+(userMsg||logMsg));
-        koru.error('Unexpected error', (logMsg||userMsg));
+        Flash.error('unexpected_error:' + (userMsg || logMsg));
+        koru.error('Unexpected error', logMsg || userMsg);
       };
 
-      koru.globalErrorCatch = koru.globalCallback = e =>{
-        if (! e) return;
-        let reason = e.reason || e.toString();
+      koru.globalErrorCatch = koru.globalCallback = (e) => {
+        if (e == null) return;
+        let reason = e.reason ?? e.toString();
         if (typeof reason === 'object') {
           try {
             reason = Val.Error.toString(reason);
-          } catch(ex) {
+          } catch (ex) {
             reason = util.inspect(reason);
           }
           reason = `Update failed: ${reason}`;
         }
-        if (typeof e.error !== "number" || e.error >= 500) {
+        if (typeof e.error !== 'number' || e.error >= 500) {
           (e instanceof Error) && koru.unhandledException(e);
           Flash.error(reason);
         } else {
@@ -35,7 +35,7 @@ define((require, exports, module)=>{
         return true;
       };
 
-      return ()=>{
+      return () => {
         koru.unexpectedError = unexpectedError;
         koru.globalErrorCatch = globalErrorCatch;
         koru.globalCallback = globalCallback;
