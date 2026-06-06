@@ -10,12 +10,13 @@ define((require, exports, module) => {
       const {unexpectedError, globalErrorCatch, globalCallback} = koru;
 
       koru.unexpectedError = (userMsg, logMsg) => {
-        Flash.error('unexpected_error:' + (userMsg || logMsg));
-        koru.error('Unexpected error', logMsg || userMsg);
+        Flash.error('unexpected_error:' + (userMsg ?? logMsg));
+        koru.error('Unexpected error', logMsg ?? userMsg);
       };
 
       koru.globalErrorCatch = koru.globalCallback = (e) => {
         if (e == null) return;
+
         let reason = e.reason ?? e.toString();
         if (typeof reason === 'object') {
           try {
@@ -26,8 +27,12 @@ define((require, exports, module) => {
           reason = `Update failed: ${reason}`;
         }
         if (typeof e.error !== 'number' || e.error >= 500) {
-          (e instanceof Error) && koru.unhandledException(e);
-          Flash.error(reason);
+          if (koru.loadNewVersion !== undefined) {
+            koru.loadNewVersion();
+          } else {
+            (e instanceof Error) && koru.unhandledException(e);
+            Flash.error(reason);
+          }
         } else {
           isTest && (e instanceof Error) && koru.error(util.extractError(e));
           Flash.notice(reason);
