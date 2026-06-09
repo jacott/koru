@@ -518,7 +518,13 @@ isClient && define((require, exports, module) => {
 
         refute.called(koru.clearTimeout);
 
-        trigger('move', 45, 70);
+        trigger('move', 38, 60);
+        trigger('move', 30, 68);
+        trigger('move', 22, 60);
+        trigger('move', 30, 52);
+        refute.called(koru.clearTimeout);
+
+        trigger('move', 34, 65);
 
         assertStopped();
       });
@@ -557,11 +563,12 @@ isClient && define((require, exports, module) => {
         start();
 
         stub(Dom, 'triggerEvent');
+
         trigger('move', 32, 64);
 
         koru.setTimeout.yieldAndReset();
-
         assert.calledWith(Dom.triggerEvent, target, 'dragstart', {clientX: 32, clientY: 64});
+
         assertStopped();
       });
     });

@@ -34,7 +34,7 @@ define((require) => {
   };
 
   const bigMove = (ev1, ev2) =>
-    Math.abs(ev1.clientX - ev2.clientX) + Math.abs(ev1.clientX - ev2.clientX) > 8;
+    Math.abs(ev1.clientX - ev2.clientX) + Math.abs(ev1.clientY - ev2.clientY) > 8;
 
   class DragStart {
     constructor(origEv) {
