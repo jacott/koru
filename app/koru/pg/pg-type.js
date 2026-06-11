@@ -4,7 +4,8 @@ define((require, exports, module) => {
   const PgError         = require('koru/pg/pg-error');
   const Uint8ArrayBuilder = require('koru/uint8-array-builder');
   const util            = require('koru/util');
-  const {qstr, identityFunc} = require('koru/util');
+
+  const {qstr, identityFunc} = util;
 
   const E_INVALID_ARRAY_FORMAT = 'invalid format for array';
 
@@ -36,6 +37,7 @@ define((require, exports, module) => {
 
   const coerceMap = [];
   const oidNameMap = [];
+  const toOidMap = {};
 
   const binaryEncoders = [];
   const binaryDecoders = [];
@@ -308,6 +310,7 @@ define((require, exports, module) => {
     textDecoders[oid] = textDecoderNames[name];
     arrayTextEncoders[oid] = arrayEncoderNames[name];
     oidNameMap[oid] = name;
+    toOidMap[name] = oid;
     oidNameMap[arrayOid] = name + '[]';
 
     if (arrayOid != 0) {
@@ -402,6 +405,7 @@ define((require, exports, module) => {
   registerOid('void', 2278, 0);
 
   registerName('bool', setBool, getBool, (buf, v) => buf.append(v ? S_t : S_f), (v) => v[0] != S_f);
+  registerAliases('bool', 'boolean');
   registerOid('bool', 16, 1000);
 
   registerName(
@@ -560,6 +564,8 @@ define((require, exports, module) => {
       if (oid === undefined) throw new Error('unsupported javascript type ' + util.inspect(v));
       return oid;
     },
+
+    toOid: (n) => toOidMap[n] ?? 0,
 
     aryToSqlStr,
 

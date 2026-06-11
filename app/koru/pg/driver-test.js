@@ -9,6 +9,7 @@ isServer && define((require, exports, module) => {
    */
   const koru            = require('koru');
   const Enumerable      = require('koru/enumerable');
+  const PgType          = require('koru/pg/pg-type');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
@@ -145,6 +146,12 @@ isServer && define((require, exports, module) => {
 
         const statment = new SQLStatement(`SELECT {$a}::int + {$b}::int as ans`);
         assert.equals((await pg.defaultDb.query(statment, {a, b}))[0].ans, 5);
+
+        const PgType = require('koru/pg/pg-type');
+        const oidStmt = new SQLStatement(`SELECT pg_typeof({$whatAmI})::text AS ans`, {
+          whatAmI: PgType.toOid('bool'),
+        });
+        assert.equals((await pg.defaultDb.query(oidStmt, {whatAmI: null}))[0].ans, 'boolean');
         //]
       });
 

@@ -181,7 +181,7 @@ define((require, exports, module) => {
 
     if (text instanceof SQLStatement) {
       const args = text.convertArgs(arg1);
-      return [text.text, args];
+      return [text.text, args, text.argOids()];
     }
 
     if (Array.isArray(text)) {

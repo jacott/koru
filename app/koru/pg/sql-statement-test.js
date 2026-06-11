@@ -5,6 +5,7 @@ isServer && define((require, exports, module) => {
    * with an SQL prepared statement; this is a client side optimization only.
    */
   const Driver          = require('koru/pg/driver');
+  const PgType          = require('koru/pg/pg-type');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -38,7 +39,7 @@ isServer && define((require, exports, module) => {
 
     test('convertArgs', () => {
       /**
-       * Convert key-value param to a corresponding paramter array for this statement. If an
+       * Convert key-value param to a corresponding parameter array for this statement. If an
        * `initial` parameter is supplied then parameters will be appended to that array. This
        * determines what `$n` parameters will be returned in the `#text` property.
 
@@ -75,6 +76,22 @@ isServer && define((require, exports, module) => {
 
       const s2 = new SQLStatement(`SELECT {$foo} || {$foo} || {$bar} || {$bar}`);
       assert.equals(s2.text, 'SELECT $1 || $1 || $2 || $2');
+    });
+
+    test('argOids', () => {
+      /**
+       * Return converted Oid list for statement.
+       */
+      api.protoMethod();
+      //[
+      const PgType = require('koru/pg/pg-type');
+
+      const statment = new SQLStatement(`SELECT pg_typeof({$foo}),{$bar}`, {
+        bar: PgType.toOid('bool'),
+      });
+
+      assert.equals(statment.argOids(), [0, 16]);
+      //]
     });
 
     test('clone', () => {

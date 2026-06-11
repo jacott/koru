@@ -25,11 +25,17 @@ define((require) => {
   };
 
   class SQLStatement {
-    constructor(text = '') {
+    constructor(text = '', oids) {
       const parts = text.split(/\{\$(\w+)\}/);
       const paramMap = [], posMap = {};
       setParams(0, parts, paramMap, posMap);
-      this[cache$] = {paramMap, posMap, parts, text: '', pos: -1};
+      const argOids = oids == null ? undefined : paramMap.map((k) => oids[k] ?? 0);
+      this[cache$] = {paramMap, argOids, posMap, parts, text: '', pos: -1};
+      this.oids = oids;
+    }
+
+    argOids() {
+      return this[cache$].argOids;
     }
 
     convertArgs(params, initial = []) {
