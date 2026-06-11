@@ -5,29 +5,32 @@ define((require) => {
   const util            = require('koru/util');
   const koru            = require('../main');
 
-  const rpcQueue$ = Symbol(), baseId$ = Symbol(),
-        lastMsgId$ = Symbol(), nextMsgId$ = Symbol();
+  const rpcQueue$ = Symbol(), baseId$ = Symbol(), lastMsgId$ = Symbol(), nextMsgId$ = Symbol();
 
   function cancelRpc(msgId) {
     const rpcQueue = this[rpcQueue$];
     const entry = rpcQueue.get(msgId);
     if (entry !== void 0) {
       rpcQueue.delete(msgId);
-      this.state.decPending(! this.isRpcGet(entry[0][1]));
+      this.state.decPending(!this.isRpcGet(entry[0][1]));
       return true;
     }
   }
 
   function checkMsgId(msgId) {
-    const nid = parseInt(msgId.slice(0, - this[baseId$].length), 36);
+    const nid = parseInt(msgId.slice(0, -this[baseId$].length), 36);
     if (nid >= this[nextMsgId$]) {
-      this[nextMsgId$] = nid+1;
+      this[nextMsgId$] = nid + 1;
     }
   }
 
-  function lastMsgId() {return this[lastMsgId$]}
+  function lastMsgId() {
+    return this[lastMsgId$];
+  }
 
-  function isRpcPending() {return this[rpcQueue$].isRpcPending()}
+  function isRpcPending() {
+    return this[rpcQueue$].isRpcPending();
+  }
 
   function replaceRpcQueue(value) {
     const {queue} = this[rpcQueue$];
@@ -37,19 +40,10 @@ define((require) => {
     }
   }
 
-  function init(session, {rpcQueue=new RPCQueue()}={}) {
-    Object.assign(session, {
-      rpc,
-      _sendM,
-      cancelRpc,
-      isRpcPending,
-      checkMsgId,
-      replaceRpcQueue,
-    });
+  function init(session, {rpcQueue = new RPCQueue()} = {}) {
+    Object.assign(session, {rpc, _sendM, cancelRpc, isRpcPending, checkMsgId, replaceRpcQueue});
     Object.defineProperty(session, 'lastMsgId', {configurable: true, get: lastMsgId});
-    session[nextMsgId$] = 1,
-    session[lastMsgId$] = '',
-    session[baseId$] = Random.global.id();
+    session[nextMsgId$] = 1, session[lastMsgId$] = '', session[baseId$] = Random.global.id();
     session[rpcQueue$] = rpcQueue;
 
     session.state._onConnect['20-rpc'] ?? session.state.onConnect('20-rpc', onConnect);
@@ -83,9 +77,9 @@ define((require) => {
   function _sendM(name, args, func) {
     const msgId = this[lastMsgId$] = (this[nextMsgId$]++).toString(36) + this[baseId$];
     const data = [msgId, name];
-    if (args !== void 0) for (const arg of args) data.push(util.deepCopy(arg));
+    if (args !== void 0) { for (const arg of args) data.push(util.deepCopy(arg)); }
     this[rpcQueue$].push(this, data, func);
-    this.state.incPending(! this.isRpcGet(name));
+    this.state.incPending(!this.isRpcGet(name));
     this.state.isReady() && this.sendBinary('M', data);
     return msgId;
   }
