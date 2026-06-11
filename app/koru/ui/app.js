@@ -30,7 +30,7 @@ define((require, exports, module) => {
           if (koru.loadNewVersion !== undefined) {
             koru.loadNewVersion();
           } else {
-            (e instanceof Error) && koru.unhandledException(e);
+            (e instanceof Error) && e.fromServer !== true && koru.unhandledException(e);
             Flash.error(reason);
           }
         } else {

@@ -95,7 +95,9 @@ define((require, exports, module) => {
 
     globalCallback: (err, result) => {
       if (err) {
-        koru.globalErrorCatch === undefined ? koru.error(err) : koru.globalErrorCatch(err);
+        koru.globalErrorCatch === undefined
+          ? koru.unhandledException(err)
+          : koru.globalErrorCatch(err);
       }
     },
 

@@ -94,9 +94,9 @@ define((require) => {
     if (type === 'e') {
       const callback = args[1] ?? koru.globalCallback;
       if (data.length === 3) {
-        callback(new Error(data[2]));
+        callback(new koru.Error(500, data[2], true));
       } else {
-        callback(new koru.Error(+ data[2], data[3]));
+        callback(new koru.Error(+data[2], data[3], true));
       }
       return;
     }
