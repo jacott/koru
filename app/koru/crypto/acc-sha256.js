@@ -20,7 +20,7 @@ define((require) => {
              0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
              0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2];
 
-  const w = new Array(64);
+  const w = new Uint32Array(64);
 
   const {idLen, u32Id, u8Id, id} = util;
 
@@ -30,7 +30,7 @@ define((require) => {
   const u32 = new Uint32Array(ab);
 
   const core_sha256 = (m, l, H) => {
-    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7], i = H[8], j = H[9];
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
     let t1 = 0, t2 = 0;
 
     m[l >> 5] = (m[l >> 5] | (0x80 << (24 - l % 32))) >>> 0;
@@ -42,15 +42,18 @@ define((require) => {
           w[j] = m[j + i];
         } else {
           const gamma0x = w[j - 15], gamma1x = w[j - 2];
-          const gamma0 = ((gamma0x << 25) | (gamma0x >>> 7)) ^ ((gamma0x << 14) | (gamma0x >>> 18)) ^ (gamma0x >>> 3);
-          const gamma1 = ((gamma1x << 15) | (gamma1x >>> 17)) ^ ((gamma1x << 13) | (gamma1x >>> 19)) ^ (gamma1x >>> 10);
+          const gamma0 = ((gamma0x << 25) | (gamma0x >>> 7)) ^
+            ((gamma0x << 14) | (gamma0x >>> 18)) ^ (gamma0x >>> 3);
+          const gamma1 = ((gamma1x << 15) | (gamma1x >>> 17)) ^
+            ((gamma1x << 13) | (gamma1x >>> 19)) ^ (gamma1x >>> 10);
 
           w[j] = (gamma0 + w[j - 7] + gamma1 + w[j - 16]) >>> 0;
         }
 
         const ch = e & f ^ ~e & g;
         const maj = a & b ^ a & c ^ b & c;
-        const sigma0 = ((a << 30) | (a >>> 2)) ^ ((a << 19) | (a >>> 13)) ^ ((a << 10) | (a >>> 22));
+        const sigma0 = ((a << 30) | (a >>> 2)) ^ ((a << 19) | (a >>> 13)) ^
+          ((a << 10) | (a >>> 22));
         const sigma1 = ((e << 26) | (e >>> 6)) ^ ((e << 21) | (e >>> 11)) ^ ((e << 7) | (e >>> 25));
 
         t1 = ((h >>> 0) + sigma1 + ch + (K[j]) + (w[j])) >>> 0;
@@ -85,8 +88,7 @@ define((require) => {
 
   const toBinb = (ab) => {
     const len8 = ab.length << 3;
-    const bin = new Array((((len8 + 64) >>> 9) << 4) + 16);
-    bin.fill(0);
+    const bin = new Uint32Array((((len8 + 64) >>> 9) << 4) + 16);
 
     for (let i = 0; i < len8; i += 8) {
       bin[i >> 5] = (bin[i >> 5] | ab[i / 8] << (24 - i & 31)) >>> 0;
@@ -97,7 +99,16 @@ define((require) => {
 
   const add = (
     text,
-    hash = [0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19],
+    hash = [
+      0x6A09E667,
+      0xBB67AE85,
+      0x3C6EF372,
+      0xA54FF53A,
+      0x510E527F,
+      0x9B05688C,
+      0x1F83D9AB,
+      0x5BE0CD19,
+    ],
   ) => {
     const ab = (text instanceof TypedArray)
       ? ((text instanceof Uint8Array) ? text : new Uint8Array(text.buffer))
