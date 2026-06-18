@@ -25,6 +25,7 @@ define((require, exports, module) => {
       return this.transaction(db.inTransaction ? undefined : db, body);
     },
 
+    isInTransaction: () => util.thread[tq$] !== undefined,
     get inTransaction() {
       return util.thread[tq$] !== undefined;
     },
@@ -96,8 +97,6 @@ define((require, exports, module) => {
       if (tq === undefined) return;
       (tq.abort ??= []).push(callback);
     },
-
-    isInTransaction: () => util.thread[tq$] !== undefined,
 
     _clearLastTime: () => {
       lastTime = 0;

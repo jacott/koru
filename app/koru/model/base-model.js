@@ -234,8 +234,7 @@ define((require, exports, module) => {
 
     static defineFields(fields) {
       const proto = this.prototype;
-      let $fields = this.$fields;
-      if (!$fields) $fields = this.$fields = {_id: {type: 'id'}};
+      let $fields = this.$fields ??= {_id: {type: 'id'}};
       for (const field in fields) {
         const _options = fields[field];
         const options = (typeof _options === 'string') ? {type: _options} : _options;
@@ -244,7 +243,7 @@ define((require, exports, module) => {
         setUpValidators(this, field, options);
 
         if (options.default !== undefined) this._defaults[field] = options.default;
-        if (!options.pseudo_field) {
+        if (options.pseudo_field === undefined) {
           $fields[field] = options;
           if (options.accessor !== false) defineField(proto, field, options.accessor);
         }
@@ -363,7 +362,7 @@ define((require, exports, module) => {
             for (const vTor in validators) {
               const args = validators[vTor];
               if (
-                !args[2].changesOnly || ((original$ in this)
+                args[2].changesOnly !== true || ((original$ in this)
                   ? this[original$] === undefined || this[original$][field] !== value
                   : this.$hasChanged(field))
               ) {
@@ -398,7 +397,7 @@ define((require, exports, module) => {
     }
 
     $isNewRecord() {
-      return !this.attributes._id;
+      return this.attributes._id == null;
     }
 
     $change(field) {
@@ -500,17 +499,16 @@ define((require, exports, module) => {
         const attrs = doc.attributes;
         doc.attributes = doc.changes;
         doc.changes = attrs;
-        doc.constructor.hasVersioning && (doc.attributes._version = 1);
+        doc.constructor.hasVersioning === true && (doc.attributes._version = 1);
         await Query.insert(doc);
       } catch (er) {
         err = er;
       }
       const subj = doc.constructor[observers$].whenFinally;
       if (subj !== undefined) {
-        const iter = subj[Symbol.iterator]();
-        for (let i = iter.next(); !i.done; i = iter.next()) {
+        for (const value of subj) {
           try {
-            await i.value.callback(doc, err);
+            await value.callback(doc, err);
           } catch (err1) {
             if (err === undefined) err = err1;
           }
@@ -532,7 +530,7 @@ define((require, exports, module) => {
         const model = doc.constructor;
         const st = new Query(model).onId(doc._id);
 
-        model.hasVersioning && st.inc('_version', 1);
+        model.hasVersioning === true && st.inc('_version', 1);
 
         const {changes} = doc;
         doc.changes = {};
@@ -543,10 +541,9 @@ define((require, exports, module) => {
 
       const subj = doc.constructor[observers$].whenFinally;
       if (subj !== undefined) {
-        const iter = subj[Symbol.iterator]();
-        for (let i = iter.next(); !i.done; i = iter.next()) {
+        for (const value of subj) {
           try {
-            await i.value.callback(doc, err);
+            await value.callback(doc, err);
           } catch (err1) {
             if (err === undefined) err = err1;
           }
@@ -630,7 +627,7 @@ define((require, exports, module) => {
   const belongsTo = (model, name, field) =>
     function () {
       const value = this[field];
-      return value && model.findById(value);
+      return value == null ? undefined : model.findById(value);
     };
 
   const getValue = (field) =>
@@ -669,17 +666,16 @@ define((require, exports, module) => {
     },
 
     belongs_to(model, field, options) {
-      if (options.accessor === undefined) {
-        options.accessor = {
-          get: getValue(field),
-          set(value) {
-            setField(this, field, value ?? undefined);
-          },
-        };
-      }
+      options.accessor ??= {
+        get: getValue(field),
+        set(value) {
+          setField(this, field, value ?? undefined);
+        },
+      };
+
       const name = field.replace(/_id$/, '');
       let bt = options.model, btName;
-      if (!bt) {
+      if (bt === undefined) {
         btName = options.modelName ?? util.capitalize(name);
         bt = ModelMap[btName];
         options.model = bt;
@@ -699,7 +695,7 @@ define((require, exports, module) => {
 
     has_many(model, field, options) {
       let bt = options.model, name;
-      if (!bt) {
+      if (bt === undefined) {
         name = options.modelName ?? util.capitalize(util.sansId(field));
         bt = ModelMap[name];
         options.model = bt;

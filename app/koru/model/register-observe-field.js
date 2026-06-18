@@ -13,10 +13,10 @@ define((require) => {
 
     const asyncCallObservers = async (p, iter, called, docChange) => {
       await p;
-      for (let i = iter.next(); ! i.done; i = iter.next()) {
+      for (let i = iter.next(); !i.done; i = iter.next()) {
         const handle = i.value;
         const token = handle[token$];
-        if (! called.has(token)) {
+        if (!called.has(token)) {
           called.add(token);
           const p = handle.callback(docChange);
           if (isPromise(p)) await p;
@@ -26,12 +26,12 @@ define((require) => {
 
     const callObservers = (observers, called, docChange, value) => {
       const cbs = observers[value];
-      if (cbs === void 0) return;
+      if (cbs === undefined) return;
       const iter = cbs[Symbol.iterator]();
-      for (let i = iter.next(); ! i.done; i = iter.next()) {
+      for (let i = iter.next(); !i.done; i = iter.next()) {
         const handle = i.value;
         const token = handle[token$];
-        if (! called.has(token)) {
+        if (!called.has(token)) {
           called.add(token);
           const p = handle.callback(docChange);
           if (isPromise(p)) {
