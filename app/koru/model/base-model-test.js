@@ -802,6 +802,7 @@ define((require, exports, module) => {
       group('belongs_to', () => {
         let Publisher;
         beforeEach(() => {
+          dbBroker.db = null;
           Publisher = Model.define('Publisher').defineFields({name: 'text'});
         });
 
@@ -824,8 +825,9 @@ define((require, exports, module) => {
           assert.same(book.publisher_id, dbBroker.dbId);
 
           await Publisher.create({name: 'Macmillan', _id: 'default'});
+          const publisher = await book.publisher;
 
-          assert.same(book.publisher.name, 'Macmillan');
+          assert.same(publisher.name, 'Macmillan');
           //]
         });
 
@@ -1224,6 +1226,20 @@ define((require, exports, module) => {
 
         assert.same(Book.toDoc(doc)._id, 'theId');
         assert.same(Book.toDoc('astring'), 'found astring');
+      });
+
+      test('save in transaction', async () => {
+        const {Book} = v;
+        let inTransaction = [];
+        Book.prototype.validate = () => {
+          inTransaction.push(1, TransQueue.inTransaction);
+        };
+        Book.onChange((dc) => {
+          inTransaction.push(2, TransQueue.inTransaction);
+        });
+        const doc = Book.build();
+        await doc.$$save();
+        assert.equals(inTransaction, [1, true, 2, true]);
       });
     });
   });

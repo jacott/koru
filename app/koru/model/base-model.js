@@ -86,26 +86,28 @@ define((require, exports, module) => {
       }
     }
 
-    static async _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
-      const callback = mode?.callback;
+    static _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
+      return TransQueue.nonNested(async () => {
+        const callback = mode?.callback;
 
-      switch (mode) {
-        case 'assert':
-          await doc.$assertValid();
-          break;
-        case 'force':
-          await doc.$isValid();
-          break;
-        case 'novalidate':
-          break;
-        default:
-          if (!await doc.$isValid()) {
-            return false;
-          }
-      }
+        switch (mode) {
+          case 'assert':
+            await doc.$assertValid();
+            break;
+          case 'force':
+            await doc.$isValid();
+            break;
+          case 'novalidate':
+            break;
+          default:
+            if (!await doc.$isValid()) {
+              return false;
+            }
+        }
 
-      await saveFunc(doc, callback);
-      return true;
+        await saveFunc(doc, callback);
+        return true;
+      });
     }
 
     static async create(attributes = {}) {
