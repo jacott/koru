@@ -4,14 +4,19 @@ define((require, exports, module) => {
 
   const TWENTY_DAYS = 20 * util.DAY;
 
+  let reloading = false;
+
   return (koru) => {
     koru.onunload(module, 'reload');
 
     util.merge(koru, {
       reload() {
+        if (reloading) return;
         if (koru.loadError) throw koru.loadError;
 
-        (window.top || window).location.reload(true);
+        reloading = true;
+        window.stop();
+        (window.top ?? window).location.reload(true);
       },
 
       appDir: module.toUrl('').slice(0, -1),
@@ -39,9 +44,7 @@ define((require, exports, module) => {
       afTimeout(func, duration) {
         let af = null;
         let cancel;
-        const endTime = duration > TWENTY_DAYS
-          ? Date.now() + duration
-          : 0;
+        const endTime = duration > TWENTY_DAYS ? Date.now() + duration : 0;
         const inner = () => {
           if (endTime !== 0) {
             const now = Date.now();
