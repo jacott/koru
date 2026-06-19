@@ -10,12 +10,13 @@ define((require, exports, module) => {
     koru.onunload(module, 'reload');
 
     util.merge(koru, {
-      reload() {
+      reload(mod) {
         if (reloading) return;
         if (koru.loadError) throw koru.loadError;
 
         reloading = true;
         window.stop();
+        mod?.id != null && koru.info(`reload requested by ${mod.id}`);
         (window.top ?? window).location.reload(true);
       },
 
