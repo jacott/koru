@@ -2,14 +2,14 @@ isServer && define((require, exports, module) => {
   'use strict';
   /**
    * A Prepared query that is automatticaly named for reused on DB connections.
-   *
    */
+  const koru            = require('koru');
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const TH              = require('koru/model/test-db-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, util} = TH;
+  const {stub, spy, util, stubProperty} = TH;
 
   const PsSql = require('./ps-sql');
 
@@ -23,12 +23,7 @@ isServer && define((require, exports, module) => {
       Book.define({
         name: 'Book',
         inspectField: 'title',
-        fields: {
-          title: 'text',
-          author: 'text',
-          pageCount: 'int2',
-          pages: 'jsonb',
-        },
+        fields: {title: 'text', author: 'text', pageCount: 'int2', pages: 'jsonb'},
       });
 
       await Book.docs.autoCreate();
@@ -83,10 +78,34 @@ isServer && define((require, exports, module) => {
        */
       const PsSql = api.class();
       //[
-      const bigBooks = new PsSql(`SELECT sum("pageCount") FROM "Book" WHERE "pageCount" > {$pageCount}`, Book);
+      const bigBooks = new PsSql(
+        `SELECT sum("pageCount") FROM "Book" WHERE "pageCount" > {$pageCount}`,
+        Book,
+      );
 
       assert.equals(await bigBooks.fetchOne({pageCount: 300}), {sum: 1214});
       //]
+    });
+
+    test('lazy dynamic init', async () => {
+      const bigBooks = new PsSql(
+        `SELECT sum("pageCount") FROM "Book" WHERE "pageCount" > {$pageCount}`,
+        Book,
+      );
+      assert.equals(await bigBooks.fetchOne({pageCount: 300}), {sum: 1214});
+      const restoreDocs = stubProperty(Book, 'docs', {
+        get() {
+          return {
+            withConn() {
+              throw new koru.Error(418, "I'm a teapot");
+            },
+          };
+        },
+      });
+      await assert.exception(() => bigBooks.fetchOne({pageCount: 300}), {error: 418});
+
+      restoreDocs();
+      assert.equals(await bigBooks.fetchOne({pageCount: 100}), {sum: 1674});
     });
 
     test('fetchOne', async () => {
@@ -95,7 +114,10 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`, Book);
+      const byAuthor = new PsSql(
+        `SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`,
+        Book,
+      );
 
       assert.equals(await byAuthor.fetchOne({author: 'Dima Zales'}), {title: 'Limbo'});
       //]
@@ -107,9 +129,14 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`, Book);
+      const byAuthor = new PsSql(
+        `SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`,
+        Book,
+      );
 
-      assert.equals(await byAuthor.fetch({author: 'Dima Zales'}), [{title: 'Limbo'}, {title: 'Oasis'}]);
+      assert.equals(await byAuthor.fetch({author: 'Dima Zales'}), [{title: 'Limbo'}, {
+        title: 'Oasis',
+      }]);
       //]
     });
 
@@ -119,10 +146,16 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const byAuthor = new PsSql(`UPDATE "Book" set "pageCount" = -1 WHERE "author" = {$author}`, Book);
+      const byAuthor = new PsSql(
+        `UPDATE "Book" set "pageCount" = -1 WHERE "author" = {$author}`,
+        Book,
+      );
 
       assert.equals(await byAuthor.execute({author: 'Dima Zales'}), 2);
-      assert.equals(await new PsSql(`SELECT count(1) FROM "Book" WHERE "pageCount" = -1`, Book).value(), 2);
+      assert.equals(
+        await new PsSql(`SELECT count(1) FROM "Book" WHERE "pageCount" = -1`, Book).value(),
+        2,
+      );
       //]
     });
 
@@ -133,15 +166,26 @@ isServer && define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const countByAuthor = new PsSql(`SELECT count(1) FROM "Book" WHERE "author" = {$author}`, Book);
+      const countByAuthor = new PsSql(
+        `SELECT count(1) FROM "Book" WHERE "author" = {$author}`,
+        Book,
+      );
 
       assert.equals(await countByAuthor.value({author: 'Dima Zales'}), 2);
 
       const bigBooks = new PsSql(
-        `SELECT title FROM "Book" WHERE "pageCount" > {$pageCount} ORDER BY "pageCount" DESC`, Book);
+        `SELECT title FROM "Book" WHERE "pageCount" > {$pageCount} ORDER BY "pageCount" DESC`,
+        Book,
+      );
 
-      assert.equals(await bigBooks.value({pageCount: 3000}, 'No book is that big'), 'No book is that big');
-      assert.equals(await bigBooks.value({pageCount: 300}, 'No book is that big'), 'The Eye of the World');
+      assert.equals(
+        await bigBooks.value({pageCount: 3000}, 'No book is that big'),
+        'No book is that big',
+      );
+      assert.equals(
+        await bigBooks.value({pageCount: 300}, 'No book is that big'),
+        'The Eye of the World',
+      );
 
       //]
     });

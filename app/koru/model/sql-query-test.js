@@ -5,12 +5,13 @@ isServer && define((require, exports, module) => {
    *
    * Note: all queries must be ran from withing a transaction
    */
+  const koru            = require('koru');
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const TH              = require('koru/model/test-db-helper');
   const api             = require('koru/test/api');
 
-  const {stub, spy, util} = TH;
+  const {stub, spy, util, stubProperty} = TH;
 
   const SqlQuery = require('./sql-query');
 
@@ -21,17 +22,14 @@ isServer && define((require, exports, module) => {
       Book = class extends BaseModel {
         authorize() {}
 
-        get summary() {return `${this.title} by ${this.author}`}
+        get summary() {
+          return `${this.title} by ${this.author}`;
+        }
       };
       Book.define({
         name: 'Book',
         inspectField: 'title',
-        fields: {
-          title: 'text',
-          author: 'text',
-          pageCount: 'int2',
-          pages: 'jsonb',
-        },
+        fields: {title: 'text', author: 'text', pageCount: 'int2', pages: 'jsonb'},
       });
 
       await Book.docs.autoCreate();
@@ -93,7 +91,10 @@ isServer && define((require, exports, module) => {
       //[
       const bigBooks = new SqlQuery(Book, `"pageCount" > {$pageCount} ORDER BY "pageCount"`);
 
-      assert.same(await bigBooks.fetchOne({pageCount: 300}), await Book.findBy('title', 'Pride and Prejudice'));
+      assert.same(
+        await bigBooks.fetchOne({pageCount: 300}),
+        await Book.findBy('title', 'Pride and Prejudice'),
+      );
 
       const count = new SqlQuery(Book, `author ~ {$author}`, `count(1)`);
 
@@ -111,8 +112,31 @@ isServer && define((require, exports, module) => {
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals(await byAuthor.fetchOne({author: 'Dima Zales'}), await Book.findBy('title', 'Limbo'));
+      assert.equals(
+        await byAuthor.fetchOne({author: 'Dima Zales'}),
+        await Book.findBy('title', 'Limbo'),
+      );
       //]
+    });
+
+    test('lazy dynamic init', async () => {
+      const countAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
+
+      assert.equals(await countAuthor.value({author: 'Dima Zales'}), 'Dima Zales');
+
+      const restoreDocs = stubProperty(Book, 'docs', {
+        get() {
+          return {
+            withConn() {
+              throw new koru.Error(418, "I'm a teapot");
+            },
+          };
+        },
+      });
+      await assert.exception(() => countAuthor.value({author: 'Dima Zales'}));
+
+      restoreDocs();
+      assert.equals(await countAuthor.value({author: 'Dima Zales'}), 'Dima Zales');
     });
 
     test('fetch', async () => {
@@ -125,8 +149,10 @@ isServer && define((require, exports, module) => {
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
-      assert.equals((await byAuthor.fetch({author: 'Dima Zales'})).map((d) => d.summary),
-        ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
+      assert.equals((await byAuthor.fetch({author: 'Dima Zales'})).map((d) => d.summary), [
+        'Limbo by Dima Zales',
+        'Oasis by Dima Zales',
+      ]);
       //]
     });
 

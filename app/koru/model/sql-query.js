@@ -5,19 +5,30 @@ define((require, exports, module) => {
   const PgError         = require('koru/pg/pg-error');
   const PgPrepSql       = require('koru/pg/pg-prep-sql');
 
+  const table$ = Symbol(), ps$ = Symbol();
+
   const {private$} = require('koru/symbols');
 
   const {makeDoc$} = Model[private$];
 
-  const conn = (model) => model.db.existingTran?.conn;
+  const conn = (q) => {
+    const table = q.model.docs;
+    if (q[table$] !== table) {
+      q[table$] = table;
+      q[ps$] = undefined;
+    }
+    return q.model.db.existingTran?.conn;
+  };
+
   const auto = async (model) => (await model.db.startAutoEndTran()).conn;
 
   class SqlQuery {
-    #pgsql = undefined;
-    constructor(model, queryStr, fields='*') {
+    constructor(model, queryStr, fields = '*') {
       this.queryStr = queryStr;
       this.model = model;
       this.fields = fields;
+      this[ps$] = undefined;
+      this[table$] = undefined;
     }
 
     async #initPs() {
@@ -30,18 +41,19 @@ define((require, exports, module) => {
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
       }
 
-      const table = this.model.docs;
+      const table = this[table$];
 
       table._ready !== true && await table._ensureTable();
       const ps = new PgPrepSql(text + parts[last]);
 
       ps.setMapped(nameMap, table._colMap);
       return ps;
-    };
+    }
 
     async #fetchOneRec(params) {
-      return (this.#pgsql ??= await this.#initPs()).fetchOne(conn(this.model) ?? await auto(this.model), params);
-    };
+      const c = conn(this) ?? await auto(this.model);
+      return (this[ps$] ??= await this.#initPs()).fetchOne(c, params);
+    }
 
     async fetchOne(params) {
       const {model} = this;
@@ -51,32 +63,43 @@ define((require, exports, module) => {
 
     async fetch(params) {
       const {model} = this;
-      const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= await this.#initPs());
+      const c = conn(this) ?? await auto(model);
+      const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
-      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {rows.push(model[makeDoc$](rec))}));
-      if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
+        rows.push(model[makeDoc$](rec));
+      }));
+      if (err !== undefined) {
+        throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      }
       return rows;
     }
 
     async forEach(params, callback) {
       const {model} = this;
-      const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= await this.#initPs());
+      const c = conn(this) ?? await auto(model);
+      const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
-      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {callback(model[makeDoc$](rec))}));
-      if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
+        callback(model[makeDoc$](rec));
+      }));
+      if (err !== undefined) {
+        throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      }
     }
 
     async *values(params) {
       const {model} = this;
-      const c = conn(model) ?? await auto(model);
-      const ps = (this.#pgsql ??= await this.#initPs());
+      const c = conn(this) ?? await auto(model);
+      const ps = (this[ps$] ??= await this.#initPs());
 
       const port = ps.portal(c, '', params);
       let promise, resolve;
-      const setPromise = () => promise = new Promise((r) => {resolve = r});
+      const setPromise = () =>
+        promise = new Promise((r) => {
+          resolve = r;
+        });
 
       setPromise();
 
@@ -89,7 +112,9 @@ define((require, exports, module) => {
         setPromise();
         if (rec === undefined) {
           const err = await errp;
-          if (err !== undefined) throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+          if (err !== undefined) {
+            throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+          }
           return;
         }
         yield model[makeDoc$](rec);
@@ -109,7 +134,9 @@ define((require, exports, module) => {
     }
   }
 
-  BaseModel.sqlWhere = function (queryStr, fields) {return new SqlQuery(this, queryStr, fields)}
+  BaseModel.sqlWhere = function (queryStr, fields) {
+    return new SqlQuery(this, queryStr, fields);
+  };
 
   return SqlQuery;
 });

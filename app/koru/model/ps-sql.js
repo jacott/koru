@@ -3,10 +3,20 @@ define((require, exports, module) => {
   const PgPrepSql       = require('koru/pg/pg-prep-sql');
 
   class PsSql {
-    #pgsql = undefined;
+    #ps = undefined;
+    #_table = undefined;
     constructor(queryStr, model) {
       this.queryStr = queryStr;
-      this.table = model.docs ?? model;
+      this.model = model;
+    }
+
+    #table() {
+      const table = this.model.docs ?? this.model;
+      if (table !== this.#_table) {
+        this.#ps = undefined;
+        this.#_table = table;
+      }
+      return table;
     }
 
     async #initPs() {
@@ -18,34 +28,40 @@ define((require, exports, module) => {
         const name = parts[i + 1];
         text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
       }
-      this.table._ready !== true && await this.table._ensureTable();
+      this.#_table._ready !== true && await this.#_table._ensureTable();
 
       const ps = new PgPrepSql(text + parts[last]);
 
-      ps.setMapped(nameMap, this.table._colMap);
+      ps.setMapped(nameMap, this.#_table._colMap);
       return ps;
-    };
+    }
 
     fetchOne(params) {
-      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).fetchOne(conn, params));
+      return this.#table().withConn(async (conn) =>
+        (this.#ps ??= await this.#initPs()).fetchOne(conn, params)
+      );
     }
 
     fetch(params) {
-      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).fetch(conn, params));
+      return this.#table().withConn(async (conn) =>
+        (this.#ps ??= await this.#initPs()).fetch(conn, params)
+      );
     }
 
     execute(params) {
-      return this.table.withConn(async (conn) => (this.#pgsql ??= await this.#initPs()).execute(conn, params));
+      return this.#table().withConn(async (conn) =>
+        (this.#ps ??= await this.#initPs()).execute(conn, params)
+      );
     }
 
     async value(params, defValue) {
-      const rec = (await this.fetchOne(params));
+      const rec = await this.fetchOne(params);
       for (const name in rec) return rec[name];
       return defValue;
     }
 
     async exists(params, defValue) {
-      const rec = (await this.fetchOne(params));
+      const rec = await this.fetchOne(params);
       return rec === undefined ? false : true;
     }
   }
