@@ -66,8 +66,7 @@ define((require, exports, module) => {
     setMapped(names, colMap) {
       this.#paramCount = names.length;
       this.#paramMapper = (obj, callback) => {
-        for (let i = 0; i < names.length; ++i) {
-          const name = names[i];
+        for (const name of names) {
           callback(obj[name], colMap[name]?.oid);
         }
       };

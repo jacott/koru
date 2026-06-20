@@ -22,12 +22,13 @@ define((require) => {
         paramMap[pos++] = key;
       }
     }
+    paramMap.length = pos;
   };
 
   class SQLStatement {
     constructor(text = '', oids) {
       const parts = text.split(/\{\$(\w+)\}/);
-      const paramMap = [], posMap = {};
+      const paramMap = new Array(parts.length >> 1), posMap = {};
       setParams(0, parts, paramMap, posMap);
       const argOids = oids == null ? undefined : paramMap.map((k) => oids[k] ?? 0);
       this[cache$] = {paramMap, argOids, posMap, parts, text: '', pos: -1};
@@ -36,6 +37,10 @@ define((require) => {
 
     argOids() {
       return this[cache$].argOids;
+    }
+
+    argMap() {
+      return this[cache$].paramMap;
     }
 
     convertArgs(params, initial = []) {

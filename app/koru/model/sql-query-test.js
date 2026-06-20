@@ -9,6 +9,7 @@ isServer && define((require, exports, module) => {
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const TH              = require('koru/model/test-db-helper');
+  const SQLStatement    = require('koru/pg/sql-statement');
   const api             = require('koru/test/api');
 
   const {stub, spy, util, stubProperty} = TH;
@@ -36,7 +37,7 @@ isServer && define((require, exports, module) => {
 
       await Book.create({
         title: 'Pride and Prejudice',
-        author: 'Jane Austin',
+        author: 'Jane Austen',
         pageCount: 432,
         pages: ['It is a truth universally acknowledged...'],
       });
@@ -110,13 +111,23 @@ isServer && define((require, exports, module) => {
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
-      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
+      const whereAuthorSql = new SQLStatement(
+        `SELECT * from "Book" where "author" = {$author} ORDER BY "pageCount"`,
+      ); // need full SELECT if using SQLStatement
+      const byAuthor = Book.sqlWhere(whereAuthorSql);
 
       assert.equals(
         await byAuthor.fetchOne({author: 'Dima Zales'}),
         await Book.findBy('title', 'Limbo'),
       );
       //]
+    });
+
+    test('oids', async () => {
+      const foo = Book.sqlWhere(
+        new SQLStatement(`SELECT ARRAY[{$foo}, {$bar}]`, {foo: 23, bar: 23}),
+      );
+      assert.equals(await foo.value({foo: 1234.5, bar: 'bar'}), [1234, 0]);
     });
 
     test('lazy dynamic init', async () => {
@@ -142,6 +153,8 @@ isServer && define((require, exports, module) => {
     test('fetch', async () => {
       /**
        * Fetch zero or more rows from the query and close the portal.
+       *
+       * @param raw return raw rows if false, otherwise model documents
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -153,12 +166,20 @@ isServer && define((require, exports, module) => {
         'Limbo by Dima Zales',
         'Oasis by Dima Zales',
       ]);
+
+      const pagesQ = Book.sqlWhere(
+        `SELECT "pageCount" FROM "Book" WHERE "pageCount" < {$max} ORDER BY "pageCount"`,
+      );
+      assert.equals(await pagesQ.fetch({max: 250}, true), [{pageCount: 222}, {pageCount: 238}]);
+
       //]
     });
 
     test('values', async () => {
       /**
        * return an asyncIterator over the rows returned from the query.
+       *
+       * @param raw iterate raw row if false, otherwise iterate model document
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -173,6 +194,18 @@ isServer && define((require, exports, module) => {
       }
 
       assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
+
+      const pagesQ = Book.sqlWhere(`
+SELECT "pageCount" FROM "Book" WHERE "pageCount" < {$max}`);
+      let pages = 0;
+      for await (const row of pagesQ.values({max: 300}, true)) {
+        await 1;
+        assert.equals(row, {pageCount: row.pageCount});
+        pages += row.pageCount;
+      }
+
+      assert.equals(pages, 460);
+
       //]
     });
 

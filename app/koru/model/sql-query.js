@@ -4,6 +4,7 @@ define((require, exports, module) => {
   const BaseModel       = require('koru/model/base-model');
   const PgError         = require('koru/pg/pg-error');
   const PgPrepSql       = require('koru/pg/pg-prep-sql');
+  const SQLStatement    = require('koru/pg/sql-statement');
 
   const table$ = Symbol(), ps$ = Symbol();
 
@@ -24,29 +25,43 @@ define((require, exports, module) => {
 
   class SqlQuery {
     constructor(model, queryStr, fields = '*') {
-      this.queryStr = queryStr;
       this.model = model;
       this.fields = fields;
+      this.queryStr = typeof queryStr === 'string'
+        ? new SQLStatement(
+          /^\s*select\b/i.test(queryStr)
+            ? queryStr
+            : `SELECT ${fields} FROM "${model.modelName}" WHERE ${queryStr}`,
+        )
+        : queryStr;
       this[ps$] = undefined;
       this[table$] = undefined;
     }
 
     async #initPs() {
-      const parts = this.queryStr.split(/\{\$(\w+)\}/);
-      const posMap = {}, nameMap = [];
-      const last = parts.length - 1;
-      let text = `SELECT ${this.fields} FROM "${this.model.modelName}" WHERE `;
-      for (let i = 0; i < last; i += 2) {
-        const name = parts[i + 1];
-        text += parts[i] + '$' + (posMap[name] ??= (nameMap.push(name), nameMap.length));
-      }
-
       const table = this[table$];
-
       table._ready !== true && await table._ensureTable();
-      const ps = new PgPrepSql(text + parts[last]);
 
-      ps.setMapped(nameMap, table._colMap);
+      const ps = new PgPrepSql(this.queryStr.text);
+
+      const argOids = this.queryStr.argOids();
+      const argMap = this.queryStr.argMap();
+
+      ps.setParamMapper(
+        argMap.length,
+        argOids == null
+          ? (obj, callback) => {
+            for (const name of argMap) {
+              callback(obj[name]);
+            }
+          }
+          : (obj, callback) => {
+            let i = 0;
+            for (const name of argMap) {
+              callback(obj[name], argOids[i++]);
+            }
+          },
+      );
       return ps;
     }
 
@@ -61,14 +76,14 @@ define((require, exports, module) => {
       return rec === undefined ? rec : model[makeDoc$](rec);
     }
 
-    async fetch(params) {
+    async fetch(params, raw = false) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
-        rows.push(model[makeDoc$](rec));
+        rows.push(raw ? rec : model[makeDoc$](rec));
       }));
       if (err !== undefined) {
         throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
@@ -89,19 +104,13 @@ define((require, exports, module) => {
       }
     }
 
-    async *values(params) {
+    async *values(params, raw = false) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
 
       const port = ps.portal(c, '', params);
-      let promise, resolve;
-      const setPromise = () =>
-        promise = new Promise((r) => {
-          resolve = r;
-        });
-
-      setPromise();
+      let {promise, resolve} = Promise.withResolvers();
 
       const pv = c.conn[private$];
 
@@ -109,7 +118,7 @@ define((require, exports, module) => {
       errp.then(() => resolve());
       while (true) {
         const rec = await promise;
-        setPromise();
+        ({promise, resolve} = Promise.withResolvers());
         if (rec === undefined) {
           const err = await errp;
           if (err !== undefined) {
@@ -117,7 +126,7 @@ define((require, exports, module) => {
           }
           return;
         }
-        yield model[makeDoc$](rec);
+        yield raw ? rec : model[makeDoc$](rec);
         pv.sendNext();
       }
     }
