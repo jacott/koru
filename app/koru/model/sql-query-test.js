@@ -154,7 +154,7 @@ isServer && define((require, exports, module) => {
       /**
        * Fetch zero or more rows from the query and close the portal.
        *
-       * @param raw return raw rows if false, otherwise model documents
+       * @param options use `raw: true` to get rows as basic object instead of models.
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -170,7 +170,9 @@ isServer && define((require, exports, module) => {
       const pagesQ = Book.sqlWhere(
         `SELECT "pageCount" FROM "Book" WHERE "pageCount" < {$max} ORDER BY "pageCount"`,
       );
-      assert.equals(await pagesQ.fetch({max: 250}, true), [{pageCount: 222}, {pageCount: 238}]);
+      assert.equals(await pagesQ.fetch({max: 250}, {raw: true}), [{pageCount: 222}, {
+        pageCount: 238,
+      }]);
 
       //]
     });
@@ -179,33 +181,51 @@ isServer && define((require, exports, module) => {
       /**
        * return an asyncIterator over the rows returned from the query.
        *
-       * @param raw iterate raw row if false, otherwise iterate model document
+       * @param options use `raw: true` to get rows as basic object instead of models.
+       * use `bufferSize: n` to specify how many rows are fetched at a time.
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
       const byAuthor = Book.sqlWhere(`author = {$author} ORDER BY "pageCount"`);
+      const pagesQ = Book.sqlWhere(
+        `SELECT "pageCount" FROM "Book" WHERE "pageCount" > {$pageCount}`,
+      );
 
       const titles = [];
 
-      for await (const row of byAuthor.values({author: 'Dima Zales'})) {
+      for await (const row of byAuthor.values({author: 'Dima Zales'}, {bufferSize: 1})) {
         titles.push(row.summary);
+        let count = 0;
+        let sameDoc = 0;
+
+        // can run same query with parent
+        for await (const row2 of byAuthor.values(row)) {
+          count += row2.pageCount;
+          sameDoc += row === row2 ? 10 : 1;
+        }
+        assert.same(sameDoc, 11);
+        assert.same(count, 460);
       }
+
+      const iter1 = byAuthor.values({author: 'Dima Zales'});
+      const iter2 = byAuthor.values({author: 'Jane Austen'});
+
+      assert.same((await iter1.next()).value.pageCount, 222);
+      assert.same((await iter2.next()).value.pageCount, 432);
+      assert.same((await iter1.next()).value.pageCount, 238);
 
       assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
 
-      const pagesQ = Book.sqlWhere(`
-SELECT "pageCount" FROM "Book" WHERE "pageCount" < {$max}`);
       let pages = 0;
-      for await (const row of pagesQ.values({max: 300}, true)) {
+      for await (const row of pagesQ.values({pageCount: 300}, {raw: true})) {
         await 1;
         assert.equals(row, {pageCount: row.pageCount});
         pages += row.pageCount;
       }
 
-      assert.equals(pages, 460);
-
+      assert.equals(pages, 1214);
       //]
     });
 

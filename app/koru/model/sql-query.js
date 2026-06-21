@@ -12,6 +12,8 @@ define((require, exports, module) => {
 
   const {makeDoc$} = Model[private$];
 
+  let portalName = 0;
+
   const conn = (q) => {
     const table = q.model.docs;
     if (q[table$] !== table) {
@@ -76,7 +78,7 @@ define((require, exports, module) => {
       return rec === undefined ? rec : model[makeDoc$](rec);
     }
 
-    async fetch(params, raw = false) {
+    async fetch(params, {raw = false} = {}) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
@@ -104,30 +106,34 @@ define((require, exports, module) => {
       }
     }
 
-    async *values(params, raw = false) {
+    async *values(params, {raw = false, bufferSize = 50} = {}) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
+      const name = 'p' + (++portalName).toString(36);
 
-      const port = ps.portal(c, '', params);
-      let {promise, resolve} = Promise.withResolvers();
+      const port = ps.portal(c, name, params);
 
-      const pv = c.conn[private$];
+      const rows = [];
 
-      const errp = port.fetch(ps._readyQuery(c, port, (rec) => (resolve(rec), rec === undefined)));
-      errp.then(() => resolve());
+      const callback = ps._readyQuery(c, port, (rec) => {
+        rows.push(rec);
+        return true;
+      });
+
       while (true) {
-        const rec = await promise;
-        ({promise, resolve} = Promise.withResolvers());
-        if (rec === undefined) {
-          const err = await errp;
-          if (err !== undefined) {
-            throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
-          }
+        await port.fetch(callback, bufferSize);
+        if (rows.length === 0) {
           return;
         }
-        yield raw ? rec : model[makeDoc$](rec);
-        pv.sendNext();
+        for (const row of rows) {
+          yield await raw ? row : model[makeDoc$](row);
+        }
+        if (!port.isMore) {
+          return;
+        }
+
+        rows.length = 0;
       }
     }
 

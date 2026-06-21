@@ -123,13 +123,52 @@ isServer && define((require, exports, module) => {
       }
     });
 
+    test('nested portals', async () => {
+      await startTransaction();
+
+      const pParent = conn.portal('parent_foo');
+      pParent.parse('', `select * from unnest(Array[$1, 20, 30, 40, 50, 60, 70]) as x(a);`, 1);
+      pParent.addParamOid(encodeBinary(pParent.prepareValues(), 10, 21));
+
+      const parentRows = [];
+
+      const firstMaxRowsParent = 3;
+      let pChild;
+
+      const ans = await runQuery(pParent, firstMaxRowsParent, 'name', async (parentRow) => {
+        parentRows.push(parentRow);
+
+        if (parentRows.length === 1) {
+          pChild = conn.portal('child_foo');
+          pChild.parse('', `select * from unnest(Array[$1 * 10, ($1 * 10) + 1]) as y(b);`, 1);
+          const b = pChild.prepareValues();
+          pChild.addParamOid(encodeBinary(b, parentRow.a, 21));
+
+          const {rows} = await runQuery(pChild, 5, 'name');
+          assert.equals(rows.length, 2);
+          assert.equals(rows[0].b, 100);
+          assert.equals(rows[1].b, 101);
+        }
+      });
+      assert.equals(parentRows.length, 7);
+
+      assert.equals(parentRows[0].a, 10);
+      assert.equals(parentRows[1].a, 20);
+      assert.equals(parentRows[6].a, 70);
+
+      assert.isFalse(pParent.isMore);
+      assert.same(ans.tag, 'SELECT 1');
+
+      assert.isFalse(pParent.isClosed);
+      assert.isFalse(pChild.isClosed);
+    });
+
     test('maxRows', async () => {
       await startTransaction();
 
       p = conn.portal('foo');
       p.parse('', `select * from unnest(Array[$1,2,3], Array[4,5,6]) as x(a,b);`, 1);
-      const b = p.prepareValues();
-      p.addParamOid(encodeBinary(b, 1, 21));
+      p.addParamOid(encodeBinary(p.prepareValues(), 1, 21));
 
       const rows = [];
       let tag;
@@ -137,7 +176,8 @@ isServer && define((require, exports, module) => {
       p.commandComplete((t) => {
         tag = t;
       });
-      let error = await p.fetch((row) => rows.push(1), 2);
+      const maxRows = 2;
+      let error = await p.fetch((row) => rows.push(1), maxRows);
       refute(error);
       assert.isTrue(p.isMore);
       assert.isTrue(p.isExecuting);
@@ -276,15 +316,11 @@ isServer && define((require, exports, module) => {
       assert.same(col0.name, '?column?');
       assert.same(col0.oid, 25);
       assert.same(col0.format, 1);
-      // assert.same(col0.size, -1);
-      // assert.same(col0.typeModifier, -1);
 
       const col2 = columns[2];
       assert.same(col2.name, 'col3');
       assert.same(col2.oid, 16);
       assert.same(col2.format, 1);
-      // assert.same(col1.size, 1);
-      // assert.same(col1.typeModifier, -1);
     });
 
     test('mixed binding', async () => {
@@ -308,15 +344,11 @@ isServer && define((require, exports, module) => {
       assert.same(col0.name, '?column?');
       assert.same(col0.oid, 23);
       assert.same(col0.format, 1);
-      // assert.same(col0.size, 4);
-      // assert.same(col0.typeModifier, -1);
 
       const col1 = result.columns[1];
       assert.same(col1.name, 'col2');
       assert.same(col1.oid, 701);
       assert.same(col1.format, 1);
-      // assert.same(col1.size, 8);
-      // assert.same(col1.typeModifier, -1);
     });
 
     test('no params execute', async () => {

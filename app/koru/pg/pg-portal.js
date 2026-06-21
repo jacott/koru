@@ -35,6 +35,7 @@ define((require, exports, module) => {
       this.state = 0;
       this.u8b = new Uint8ArrayBuilder(0);
       this.rowDescCallback = void 0;
+      this.done = util.voidFunc;
     }
 
     get conn() {
@@ -58,8 +59,6 @@ define((require, exports, module) => {
       this.conn.socket.write(u8);
       this.u8b.length = 0;
     }
-
-    done() {}
 
     closePortal() {
       const {portal} = this;
@@ -387,7 +386,6 @@ define((require, exports, module) => {
       finishBind(this, pv);
 
       const {u8name} = this;
-
       pv.describeState = pv.state;
       const {u8b} = pv;
 

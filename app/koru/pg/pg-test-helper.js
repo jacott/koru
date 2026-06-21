@@ -5,8 +5,7 @@ define((require, exports, module) => {
   const TH              = require('koru/test-helper');
   const net             = requirejs.nodeRequire('node:net');
 
-  const doQuery = async (query, maxRows = 0, field) => {
-    const rows = [];
+  const doQuery = async (query, maxRows = 0, field, callback) => {
     let columns, tag;
     query.describe((rawColumns) => {
       columns = buildNameOidColumns(rawColumns);
@@ -15,7 +14,7 @@ define((require, exports, module) => {
       tag = t;
     });
     do {
-      await query.fetch((rawRow) => {
+      await query.fetch(async (rawRow) => {
         const rec = {};
         forEachColumn(rawRow, (rawValue, i) => {
           const {name, format, oid} = columns[i];
@@ -23,13 +22,13 @@ define((require, exports, module) => {
           rec[field == null ? `${i}:${name},${oid}` : columns[i][field]] = rawValue &&
             (format == 0 ? decodeText(oid, rawValue) : decodeBinary(oid, rawValue));
         });
-        rows.push(rec);
+        await callback(rec);
       }, maxRows);
-    } while (query.isExecuting);
+    } while (query.isMore);
 
     refute(query.error);
 
-    return {rows, columns, tag};
+    return {rows: undefined, columns, tag};
   };
 
   return {
@@ -41,7 +40,18 @@ define((require, exports, module) => {
         });
       }),
 
-    runQuery: (query, maxRows, field) => doQuery(query, maxRows, field),
+    runQuery: async (query, maxRows, field, callback) => {
+      if (callback === undefined) {
+        const rows = [];
+        const ans = await doQuery(query, maxRows, field, (row) => {
+          rows.push(row);
+        });
+        ans.rows = rows;
+        return ans;
+      } else {
+        return doQuery(query, maxRows, field, callback);
+      }
+    },
 
     simpleExec: async (conn, str) => {
       let comp;

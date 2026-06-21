@@ -177,6 +177,7 @@ define((require, exports, module) => {
   class PgClient {
     constructor(types, options = {}) {
       this.types = types;
+      this.conn = undefined;
       this.formatOptions = options.formatOptions ?? {};
       this.tenant_id = options.tenant_id ?? 'tenant_id';
       this.hideTenantName = options.formatOptions?.hideTenant ? this.tenant_id : undefined;
