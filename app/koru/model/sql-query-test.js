@@ -177,6 +177,23 @@ isServer && define((require, exports, module) => {
       //]
     });
 
+    test('mapField', async () => {
+      /**
+       * Fetch zero or more values of `field` from the query and close the portal.
+       *
+       * @param field the name of the column's value to return for each retrieved row.
+       * @param params for the query
+       */
+      api.protoMethod();
+      Book.docs._colMap = undefined;
+      Book.docs._ready = false;
+      //[
+      const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
+
+      assert.equals(await byAuthor.mapField('pageCount', {author: 'Dima Zales'}), [222, 238]);
+      //]
+    });
+
     test('values', async () => {
       /**
        * return an asyncIterator over the rows returned from the query.

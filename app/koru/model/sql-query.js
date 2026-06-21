@@ -14,6 +14,9 @@ define((require, exports, module) => {
 
   let portalName = 0;
 
+  const RAW = {raw: true};
+  const DOCS = {raw: false};
+
   const conn = (q) => {
     const table = q.model.docs;
     if (q[table$] !== table) {
@@ -78,7 +81,7 @@ define((require, exports, module) => {
       return rec === undefined ? rec : model[makeDoc$](rec);
     }
 
-    async fetch(params, {raw = false} = {}) {
+    async fetch(params, {raw = false} = DOCS) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
@@ -93,20 +96,28 @@ define((require, exports, module) => {
       return rows;
     }
 
-    async forEach(params, callback) {
+    async mapField(field, params) {
+      const rows = [];
+      await this.forEach(params, (rec) => {
+        rows.push(rec[field]);
+      }, RAW);
+      return rows;
+    }
+
+    async forEach(params, callback, {raw = false} = DOCS) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
-        callback(model[makeDoc$](rec));
+        callback(raw ? rec : model[makeDoc$](rec));
       }));
       if (err !== undefined) {
         throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       }
     }
 
-    async *values(params, {raw = false, bufferSize = 50} = {}) {
+    async *values(params, {raw = false, bufferSize = 50} = DOCS) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
