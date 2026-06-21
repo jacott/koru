@@ -3,7 +3,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Object persistence manager. Defines application models.
-   **/
+   */
   const koru            = require('koru');
   const ModelEnv        = require('koru/env!./main');
   const BaseModel       = require('koru/model/base-model');
@@ -43,7 +43,9 @@ define((require, exports, module) => {
         module: v.mod = {id: 'test-model', onUnload},
         fields: {name: 'text'},
         proto: {
-          foo() {return this.name},
+          foo() {
+            return this.name;
+          },
         },
       });
 
@@ -103,8 +105,11 @@ define((require, exports, module) => {
         after(v.Book.beforeUpdate(obCalled));
         after(v.Book.beforeSave(obCalled));
         after(v.Book.afterLocalChange(({type, doc, undo}) => {
-          (v.obs.afterLocalChange = v.obs.afterLocalChange || [])
-            .push([type, Object.assign({}, doc.attributes), undo]);
+          (v.obs.afterLocalChange = v.obs.afterLocalChange || []).push([
+            type,
+            Object.assign({}, doc.attributes),
+            undo,
+          ]);
         }));
         after(v.Book.whenFinally((doc, ex) => {
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
@@ -147,11 +152,13 @@ define((require, exports, module) => {
       });
 
       test('update calls', async () => {
-        after(v.Book.onChange(({type, doc, undo}) => {
-          refute(v.docAttrs);
-          v.docAttrs = Object.assign({}, doc.attributes);
-          v.docChanges = Object.assign({}, undo);
-        }).stop);
+        after(
+          v.Book.onChange(({type, doc, undo}) => {
+            refute(v.docAttrs);
+            v.docAttrs = Object.assign({}, doc.attributes);
+            v.docChanges = Object.assign({}, undo);
+          }).stop,
+        );
 
         v.tc.name = 'bar';
         await v.tc.$save();
@@ -161,7 +168,9 @@ define((require, exports, module) => {
 
         assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
-        assert.equals(v.obs.afterLocalChange, [['chg', {name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
+        assert.equals(v.obs.afterLocalChange, [['chg', {name: 'bar', _id: v.tc._id}, {
+          name: 'foo',
+        }]]);
         assert.equals(v.obs.whenFinally, [[mModel(v.tc), undefined]]);
 
         refute(v.obs.beforeCreate);
@@ -170,7 +179,10 @@ define((require, exports, module) => {
       test('create calls', async () => {
         after(v.Book.onChange(v.onChange = stub()).stop);
         v.tc = await v.Book.create({name: 'foo'});
-        assert.calledOnceWith(v.onChange, DocChange.add(m((doc) => doc.attributes === v.tc.attributes)));
+        assert.calledOnceWith(
+          v.onChange,
+          DocChange.add(m((doc) => doc.attributes === v.tc.attributes)),
+        );
 
         assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
@@ -181,7 +193,9 @@ define((require, exports, module) => {
       });
 
       test('create exception', async () => {
-        after(v.Book.beforeCreate(() => {throw v.ex = new Error('tex')}));
+        after(v.Book.beforeCreate(() => {
+          throw v.ex = new Error('tex');
+        }));
 
         await assert.exception(() => v.Book.create({name: 'foo'}), 'Error', 'tex');
 
@@ -189,12 +203,18 @@ define((require, exports, module) => {
       });
 
       test('update exception', async () => {
-        after(v.Book.beforeUpdate(() => {throw v.ex = new Error('tex')}));
+        after(v.Book.beforeUpdate(() => {
+          throw v.ex = new Error('tex');
+        }));
 
-        await assert.exception(async () => {
-          v.tc.name = 'bar';
-          await v.tc.$save();
-        }, 'Error', 'tex');
+        await assert.exception(
+          async () => {
+            v.tc.name = 'bar';
+            await v.tc.$save();
+          },
+          'Error',
+          'tex',
+        );
 
         assert.equals(v.obs.whenFinally, [[mModel(v.tc), v.ex]]);
       });
@@ -269,12 +289,25 @@ define((require, exports, module) => {
       assert.same(foo.$reload().$cache.boo, undefined);
     });
 
+    test('findByIdDontCache', async () => {
+      const Book = Model.define('Book').defineFields({name: 'text'});
+      const foo = await Book.create({name: 'Foo'});
+
+      assert.same(foo, Book.findByIdDontCache(foo._id));
+
+      if (isServer) {
+        Book._$docCacheDelete(foo);
+        const foo2 = await Book.findByIdDontCache(foo._id);
+        const foo3 = await Book.findByIdDontCache(foo._id);
+        assert.same(foo2.constructor, Book);
+        assert.same(foo.name, foo2.name);
+        refute.same(foo, foo2);
+        refute.same(foo2, foo3);
+      }
+    });
+
     test('change recording', () => {
-      const Book = Model.define('Book').
-            defineFields({
-              name: 'text',
-              other: 'number',
-            });
+      const Book = Model.define('Book').defineFields({name: 'text', other: 'number'});
 
       const testAttrs = {_id: 123, name: 'orig name'};
       const tsc = new Book(testAttrs);
@@ -344,11 +377,14 @@ define((require, exports, module) => {
       assert.same(tsc.attributes, testAttrs);
       assert.same(tsc.t1, 123);
 
-      assert.same(Book.defineFields({
-        name: 'text',
-        level: 'not used yet',
-        withDef: {type: 'any', default: 0},
-      }), Book);
+      assert.same(
+        Book.defineFields({
+          name: 'text',
+          level: 'not used yet',
+          withDef: {type: 'any', default: 0},
+        }),
+        Book,
+      );
 
       tsc = new Book({name: 'abc'});
 

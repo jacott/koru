@@ -33,7 +33,7 @@ define((require, exports, module) => {
     for (const name in session._rpcs) adder(name);
   });
 
-  koru.onunload(module, () => {
+  module.onUnload(() => {
     session.deregisterGlobalDictionaryAdder?.(module);
   });
 
@@ -61,14 +61,23 @@ define((require, exports, module) => {
     }
   };
 
+  const asyncFindByIdDontCache = async (model, id) => {
+    const rec = await model.docs.findById(id);
+    if (rec !== undefined) {
+      return new model(rec);
+    }
+  };
+
   function findById(id) {
     if (id == null) return;
     if (typeof id !== 'string') throw new Error('invalid id: ' + id);
-    let doc = this._$docCacheGet(id);
-    if (doc === undefined) {
-      return asyncFindById(this, id);
-    }
-    return doc;
+    return this._$docCacheGet(id) ?? asyncFindById(this, id);
+  }
+
+  function findByIdDontCache(id) {
+    if (id == null) return;
+    if (typeof id !== 'string') throw new Error('invalid id: ' + id);
+    return this._$docCacheGet(id) ?? asyncFindByIdDontCache(this, id);
   }
 
   const assertAuthorize = (doc) => {
@@ -89,6 +98,7 @@ define((require, exports, module) => {
       BaseModel = _BaseModel;
       _support = _baseSupport;
       BaseModel.findById = findById;
+      BaseModel.findByIdDontCache = findByIdDontCache;
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 

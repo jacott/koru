@@ -1,4 +1,4 @@
-define((require, exports, module) => {
+define((require) => {
   'use strict';
   const koru            = require('koru');
   const ModelMap        = require('koru/model/map');
@@ -119,6 +119,7 @@ define((require, exports, module) => {
 
       util.merge(BaseModel, {
         findById,
+        findByIdDontCache: findById,
         get serverQuery() {
           const query = new Query(this);
           query.fromServer();

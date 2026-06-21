@@ -8,18 +8,26 @@ define((require, exports, module) => {
 
   const {private$} = require('koru/symbols');
 
-  koru.onunload(module, () => {koru.unload(koru.absId(require, './map'))});
+  koru.onunload(module, () => {
+    koru.unload(koru.absId(require, './map'));
+  });
 
   const {_support} = BaseModel[private$];
 
   ModelEnv.init(BaseModel, _support);
+
+  const moduleName = (module) =>
+    module &&
+    util.capitalize(
+      util.camelize(module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')),
+    );
 
   util.mergeNoEnum(ModelMap, {
     BaseModel,
 
     define(module, name, proto) {
       let model, fields;
-      if (typeof module === 'object' && ! module.id) {
+      if (typeof module === 'object' && !module.id) {
         name = module.name;
         proto = module.proto;
         fields = module.fields;
@@ -31,26 +39,26 @@ define((require, exports, module) => {
           module = void 0;
         }
         switch (typeof name) {
-        case 'string':
-          break;
-        case 'function':
-          model = name;
-          name = model.name;
-          break;
-        default:
-          proto = name;
-          name = null;
-          break;
+          case 'string':
+            break;
+          case 'function':
+            model = name;
+            name = model.name;
+            break;
+          default:
+            proto = name;
+            name = null;
+            break;
         }
       }
 
-      module && koru.onunload(module, () => ModelMap._destroyModel(name));
+      module?.onUnload(() => ModelMap._destroyModel(name));
 
-      if (! name) {
+      if (!name) {
         name = moduleName(module);
       }
 
-      if (! model) {
+      if (!model) {
         model = {[name]: class extends BaseModel {}}[name];
       }
 
@@ -63,15 +71,13 @@ define((require, exports, module) => {
 
     _destroyModel(name, drop) {
       const model = ModelMap[name];
-      if (! model) return;
+      if (!model) return;
 
-      return ifPromise(ModelEnv.destroyModel(model, drop), () => {delete ModelMap[name]});
+      return ifPromise(ModelEnv.destroyModel(model, drop), () => {
+        delete ModelMap[name];
+      });
     },
   });
-
-  const moduleName = (module) => module && util.capitalize(util.camelize(
-    module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, ''),
-  ));
 
   return ModelMap;
 });
