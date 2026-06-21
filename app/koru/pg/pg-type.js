@@ -566,6 +566,21 @@ define((require, exports, module) => {
     },
 
     toOid: (n) => toOidMap[n] ?? 0,
+    assertToOid: (n) => {
+      if ((n ?? 0) === 0) {
+        return 0;
+      }
+      if (typeof n === 'string') {
+        const v = toOidMap[n];
+        assert(v !== undefined, () => `unknown type name ${n}`);
+        return v;
+      }
+      if (typeof n === 'number') {
+        assert(oidNameMap[n] !== undefined, () => `unknown type name: ${n}`);
+        return n;
+      }
+      assert(false, `invalid type value: ${n}`);
+    },
 
     aryToSqlStr,
 

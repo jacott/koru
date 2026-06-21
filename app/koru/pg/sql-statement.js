@@ -2,6 +2,8 @@ define((require) => {
   'use strict';
   const cache$ = Symbol();
 
+  const pgType          = require('koru/pg/pg-type');
+
   const makeText = (parts, posMap, pos) => {
     let text = '';
     const last = parts.length - 1;
@@ -30,7 +32,9 @@ define((require) => {
       const parts = text.split(/\{\$(\w+)\}/);
       const paramMap = new Array(parts.length >> 1), posMap = {};
       setParams(0, parts, paramMap, posMap);
-      const argOids = oids == null ? undefined : paramMap.map((k) => oids[k] ?? 0);
+      const argOids = oids == null
+        ? undefined
+        : paramMap.map((k) => pgType.assertToOid(oids[k] ?? 0));
       this[cache$] = {paramMap, argOids, posMap, parts, text: '', pos: -1};
       this.oids = oids;
     }

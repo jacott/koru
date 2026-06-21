@@ -86,9 +86,7 @@ isServer && define((require, exports, module) => {
       //[
       const PgType = require('koru/pg/pg-type');
 
-      const statment = new SQLStatement(`SELECT pg_typeof({$foo}),{$bar}`, {
-        bar: PgType.toOid('bool'),
-      });
+      const statment = new SQLStatement(`SELECT pg_typeof({$foo}),{$bar}`, {bar: 'bool'});
 
       assert.equals(statment.argOids(), [0, 16]);
       //]

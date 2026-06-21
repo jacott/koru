@@ -3,7 +3,7 @@ isServer && define((require, exports, module) => {
   /**
    * An optimized Model query using sql for where statement.
    *
-   * Note: all queries must be ran from withing a transaction
+   * Note: all queries must be ran from within a transaction
    */
   const koru            = require('koru');
   const Model           = require('koru/model');
@@ -195,6 +195,7 @@ isServer && define((require, exports, module) => {
 
       const titles = [];
 
+      // --- Nesting ---
       for await (const row of byAuthor.values({author: 'Dima Zales'}, {bufferSize: 1})) {
         titles.push(row.summary);
         let count = 0;
@@ -208,7 +209,9 @@ isServer && define((require, exports, module) => {
         assert.same(sameDoc, 11);
         assert.same(count, 460);
       }
+      assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
 
+      // --- Zipping ---
       const iter1 = byAuthor.values({author: 'Dima Zales'});
       const iter2 = byAuthor.values({author: 'Jane Austen'});
 
@@ -216,8 +219,7 @@ isServer && define((require, exports, module) => {
       assert.same((await iter2.next()).value.pageCount, 432);
       assert.same((await iter1.next()).value.pageCount, 238);
 
-      assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
-
+      // --- Raw rows ---
       let pages = 0;
       for await (const row of pagesQ.values({pageCount: 300}, {raw: true})) {
         await 1;
