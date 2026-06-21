@@ -15,7 +15,7 @@ define((require, exports, module) => {
   let portalName = 0;
 
   const RAW = {raw: true};
-  const DOCS = {raw: false};
+  const DEFAULT = {raw: false};
 
   const conn = (q) => {
     const table = q.model.docs;
@@ -28,17 +28,61 @@ define((require, exports, module) => {
 
   const auto = async (model) => (await model.db.startAutoEndTran()).conn;
 
+  const basicMapper = (model, opts) => {
+    if (opts.raw) {
+      return (rec) => rec;
+    }
+    if (opts.dontCache) {
+      return (rec) => new model(rec);
+    }
+    return (rec) => model[makeDoc$](rec);
+  };
+
+  const recordMapper = (model, opts, type) => {
+    if (type === undefined) return basicMapper(model, opts);
+
+    if (typeof type === 'function') {
+      const callback = type;
+      if (opts.raw) {
+        return callback;
+      }
+      if (opts.dontCache) {
+        return (rec) => callback(new model(rec));
+      }
+      return (rec) => callback(model[makeDoc$](rec));
+    }
+
+    const list = type;
+    if (opts.raw) {
+      return (rec) => (list.push(rec), true);
+    }
+    if (opts.dontCache) {
+      return (rec) => (list.push(new model(rec)), true);
+    }
+    return (rec) => (list.push(model[makeDoc$](rec)), true);
+  };
+
+  const toSQLStatement = (model, fields, queryStr) => {
+    if (typeof queryStr !== 'string') return queryStr;
+
+    if (
+      /^[\s(]*(?:select|with|update|delete|insert|values|merge|create|alter|drop)\b/i.test(queryStr)
+    ) {
+      return new SQLStatement(queryStr);
+    }
+
+    const whereRegex = /^[\s]*where\b/i;
+    if (!whereRegex.test(queryStr)) {
+      queryStr = 'WHERE ' + queryStr;
+    }
+
+    return new SQLStatement(`SELECT ${fields} FROM "${model.modelName}" ${queryStr}`);
+  };
+
   class SqlQuery {
     constructor(model, queryStr, fields = '*') {
       this.model = model;
-      this.fields = fields;
-      this.queryStr = typeof queryStr === 'string'
-        ? new SQLStatement(
-          /^\s*select\b/i.test(queryStr)
-            ? queryStr
-            : `SELECT ${fields} FROM "${model.modelName}" WHERE ${queryStr}`,
-        )
-        : queryStr;
+      this.queryStr = toSQLStatement(model, fields, queryStr);
       this[ps$] = undefined;
       this[table$] = undefined;
     }
@@ -75,21 +119,19 @@ define((require, exports, module) => {
       return (this[ps$] ??= await this.#initPs()).fetchOne(c, params);
     }
 
-    async fetchOne(params) {
+    async fetchOne(params, options = DEFAULT) {
       const {model} = this;
       const rec = await this.#fetchOneRec(params);
-      return rec === undefined ? rec : model[makeDoc$](rec);
+      return rec === undefined ? undefined : basicMapper(model, options)(rec);
     }
 
-    async fetch(params, {raw = false} = DOCS) {
+    async fetch(params, options = DEFAULT) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
-      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
-        rows.push(raw ? rec : model[makeDoc$](rec));
-      }));
+      const err = await port.fetch(ps._readyQuery(c, port, recordMapper(model, options, rows)));
       if (err !== undefined) {
         throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       }
@@ -104,20 +146,22 @@ define((require, exports, module) => {
       return rows;
     }
 
-    async forEach(params, callback, {raw = false} = DOCS) {
+    async forEach(params, callback, options = DEFAULT) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
-      const err = await port.fetch(ps._readyQuery(c, port, (rec) => {
-        callback(raw ? rec : model[makeDoc$](rec));
-      }));
+      const {limit} = options;
+      const err = await port.fetch(
+        ps._readyQuery(c, port, recordMapper(model, options, callback)),
+        limit,
+      );
       if (err !== undefined) {
         throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       }
     }
 
-    async *values(params, {raw = false, bufferSize = 50} = DOCS) {
+    async *values(params, options = DEFAULT) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
@@ -127,18 +171,16 @@ define((require, exports, module) => {
 
       const rows = [];
 
-      const callback = ps._readyQuery(c, port, (rec) => {
-        rows.push(rec);
-        return true;
-      });
+      const callback = ps._readyQuery(c, port, recordMapper(model, options, rows));
+      const {limit = 50} = options;
 
       while (true) {
-        await port.fetch(callback, bufferSize);
+        await port.fetch(callback, limit);
         if (rows.length === 0) {
           return;
         }
         for (const row of rows) {
-          yield await raw ? row : model[makeDoc$](row);
+          yield await row;
         }
         if (!port.isMore) {
           return;

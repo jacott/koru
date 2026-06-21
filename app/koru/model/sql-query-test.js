@@ -12,7 +12,7 @@ isServer && define((require, exports, module) => {
   const SQLStatement    = require('koru/pg/sql-statement');
   const api             = require('koru/test/api');
 
-  const {stub, spy, util, stubProperty} = TH;
+  const {stub, spy, util, stubProperty, match: m} = TH;
 
   const SqlQuery = require('./sql-query');
 
@@ -106,6 +106,9 @@ isServer && define((require, exports, module) => {
     test('fetchOne', async () => {
       /**
        * Fetch one or zero rows from the query and close the portal.
+       *
+       * @param options use `raw: true` to get row as basic object instead of models.
+       * use `dontCache: true` to avoid caching result
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -120,6 +123,10 @@ isServer && define((require, exports, module) => {
         await byAuthor.fetchOne({author: 'Dima Zales'}),
         await Book.findBy('title', 'Limbo'),
       );
+
+      const rec = await byAuthor.fetchOne({author: 'Jane Austen'}, {raw: true});
+      assert.same(rec.author, 'Jane Austen');
+      assert.same(rec.constructor, Object);
       //]
     });
 
@@ -155,6 +162,7 @@ isServer && define((require, exports, module) => {
        * Fetch zero or more rows from the query and close the portal.
        *
        * @param options use `raw: true` to get rows as basic object instead of models.
+       * use `dontCache: true` to avoid caching results
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -199,7 +207,8 @@ isServer && define((require, exports, module) => {
        * return an asyncIterator over the rows returned from the query.
        *
        * @param options use `raw: true` to get rows as basic object instead of models.
-       * use `bufferSize: n` to specify how many rows are fetched at a time.
+       * Use `dontCache: true` to avoid caching results.
+       * Use `limit: n` to specify how many rows are fetched at a time.
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -213,7 +222,7 @@ isServer && define((require, exports, module) => {
       const titles = [];
 
       // --- Nesting ---
-      for await (const row of byAuthor.values({author: 'Dima Zales'}, {bufferSize: 1})) {
+      for await (const row of byAuthor.values({author: 'Dima Zales'}, {limit: 1})) {
         titles.push(row.summary);
         let count = 0;
         let sameDoc = 0;
@@ -283,7 +292,12 @@ isServer && define((require, exports, module) => {
       /**
        * call callback for each row returned from the query.
        *
-       * @param callback a function called for each row found. May not be async.
+       * @param callback a function called for each row found---Can be async. It may also be an
+       * array to push values into
+
+       * @param options use `raw: true` to get rows as basic object instead of models.
+       * Use `dontCache: true` to avoid caching results.
+       * Use `limit: n` to specify how many rows are fetched at a time.
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -296,6 +310,13 @@ isServer && define((require, exports, module) => {
       await byAuthor.forEach({author: 'Dima Zales'}, (row) => titles.push(row.summary));
 
       assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
+
+      await byAuthor.forEach({author: 'Jane Austen'}, titles, {dontCache: true});
+      assert.equals(titles, [
+        'Limbo by Dima Zales',
+        'Oasis by Dima Zales',
+        m.field('title', 'Pride and Prejudice'), // m matches a field
+      ]);
       //]
     });
   });
