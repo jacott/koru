@@ -22,8 +22,6 @@ define((require) => {
 
   const w = new Uint32Array(64);
 
-  const {idLen, u32Id, u8Id, id} = util;
-
   const zero = '000000000';
   const ab = new ArrayBuffer(4);
   const dv = new DataView(ab);
@@ -116,10 +114,8 @@ define((require) => {
     return core_sha256(toBinb(ab), ab.length * 8, hash);
   };
 
-  return {
+  const AccSha256 = {
     add,
-
-    toId: (text, hash) => (u32Id.set(add(text, hash)), id()),
 
     toHex: (hash) => {
       let hex = '';
@@ -131,4 +127,8 @@ define((require) => {
       return hex;
     },
   };
+
+  require('koru/env!./acc-sha256')(AccSha256);
+
+  return AccSha256;
 });
