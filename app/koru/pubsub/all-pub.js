@@ -1,7 +1,6 @@
 define((require, exports, module) => {
   'use strict';
   const koru            = require('koru');
-  const DLinkedList     = require('koru/dlinked-list');
   const LinkedList      = require('koru/linked-list');
   const DocChange       = require('koru/model/doc-change');
   const Val             = require('koru/model/validation');
@@ -50,8 +49,9 @@ define((require, exports, module) => {
 
     async init() {
       const {constructor} = this;
-      await (constructor.union ||
-             (constructor.union = new constructor.Union(constructor))).addSub(this);
+      await (constructor.union || (constructor.union = new constructor.Union(constructor))).addSub(
+        this,
+      );
     }
 
     stop() {
