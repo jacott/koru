@@ -1,98 +1,112 @@
-define(()=>{
+define(() => {
+  'use strict';
   const size$ = Symbol();
 
   class LinkedList {
-    constructor() {this.clear()}
+    constructor() {
+      this.clear();
+    }
 
     get frontValue() {
-      const {front} = this;
-      return front && front.value;
+      return this.front?.value;
     }
 
     get backValue() {
-      const {back} = this;
-      return back && back.value;
+      return this.back?.value;
     }
 
     clear() {
-      this.front = this.back = void 0;
+      this.front = this.back = undefined;
       this[size$] = 0;
     }
 
-    get size() {return this[size$]}
+    get size() {
+      return this[size$];
+    }
 
     push(value) {
       ++this[size$];
-      if (this.front === void 0)
-        return this.front = this.back = {value, next: void 0};
-      else
+      if (this.front === undefined) {
+        return this.front = this.back = {value, next: undefined};
+      } else {
         return this.front = {value, next: this.front};
+      }
     }
 
     popNode() {
       const node = this.front;
-      if (node !== void 0) {
+      if (node !== undefined) {
         --this[size$];
-        if (this.back === this.front)
+        if (this.back === this.front) {
           this.back = this.front.next;
+        }
         this.front = this.front.next;
-      };
+      }
       return node;
     }
 
     pop() {
-      const node = this.popNode();
-      return node && node.value;
+      return this.popNode()?.value;
     }
 
     addAfter(prev, value) {
       ++this[size$];
-      if (prev === void 0)
+      if (prev === undefined) {
         return this.addFront(value);
-      else
+      } else {
         return prev.next = {value, next: prev.next};
+      }
     }
 
     addBack(value) {
       ++this[size$];
-      if (this.front === void 0)
-        return this.front = this.back = {value, next: void 0};
-      else
-        return this.back.next = this.back = {value, next: void 0};
+      if (this.front === undefined) {
+        return this.front = this.back = {value, next: undefined};
+      } else {
+        return this.back.next = this.back = {value, next: undefined};
+      }
     }
 
     removeNode(node, prev) {
-      for (let curr = prev === void 0 ? this.front : prev.next;
-           curr !== void 0; prev = curr, curr = curr.next ) {
+      for (
+        let curr = prev === undefined ? this.front : prev.next;
+        curr !== undefined;
+        prev = curr, curr = curr.next
+      ) {
         if (curr === node) {
           --this[size$];
-          if (prev === void 0)
+          if (prev === undefined) {
             this.front = curr.next;
-          else
+          } else {
             prev.next = curr.next;
+          }
 
-          if (this.back === curr)
+          if (this.back === curr) {
             this.back = prev;
+          }
           return curr;
         }
       }
     }
 
     forEach(callback) {
-      for(let node = this.front; node !== void 0; node = node.next) {
-        if (node.value !== void 0)
+      for (let node = this.front; node !== undefined; node = node.next) {
+        if (node.value !== undefined) {
           callback(node.value);
+        }
       }
     }
 
     *values() {
-      for(let node = this.front; node !== void 0; node = node.next)
-        if (node.value !== void 0) yield(node.value);
+      for (let node = this.front; node !== undefined; node = node.next) {
+        if (node.value !== undefined) yield (node.value);
+      }
     }
 
     *nodes() {
-      for(let node = this.front; node !== void 0; node = node.next)
-        yield(node);
+      for (let node = this.front; node !== undefined; node = node.next) {
+        yield node;
+      }
     }
   }
 

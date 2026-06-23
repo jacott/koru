@@ -1,11 +1,11 @@
 define(() => {
-  const head$ = Symbol(),
-        next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
+  'use strict';
+  const head$ = Symbol(), next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
 
   const value$ = Symbol();
 
   class Node {
-    constructor(value=null, prev, next) {
+    constructor(value = null, prev, next) {
       this[value$] = value;
       this[prev$] = prev;
       this[next$] = next;
@@ -18,11 +18,19 @@ define(() => {
       this[next$][prev$] = this[prev$];
     }
 
-    get value() {return this[value$]}
-    set value(v=null) {this[value$] = v}
+    get value() {
+      return this[value$];
+    }
+    set value(v = null) {
+      this[value$] = v;
+    }
 
-    get prev() {return this[prev$]}
-    get next() {return this[next$]}
+    get prev() {
+      return this[prev$];
+    }
+    get next() {
+      return this[next$];
+    }
   }
 
   class DLinkedList {
@@ -41,10 +49,14 @@ define(() => {
       }
     }
 
-    get head() {return this[head$] === this ? null : this[head$]}
-    get tail() {return this[tail$] === this ? null : this[tail$]}
+    get head() {
+      return this[head$] === this ? null : this[head$];
+    }
+    get tail() {
+      return this[tail$] === this ? null : this[tail$];
+    }
 
-    add(value=null) {
+    add(value = null) {
       const tail = this[tail$];
       const node = new Node(value, tail, this);
       this[tail$] = node;
@@ -58,7 +70,7 @@ define(() => {
       return node;
     }
 
-    addFront(value=null) {
+    addFront(value = null) {
       const head = this[head$];
       const node = new Node(value, this, head);
       this[head$] = node;
@@ -81,13 +93,15 @@ define(() => {
     }
 
     *values() {
-      for (let node = this[head$]; node !== this; node = node[next$])
+      for (let node = this[head$]; node !== this; node = node[next$]) {
         if (node[value$] !== void 0) yield (node[value$]);
+      }
     }
 
     *nodes() {
-      for (let node = this[head$]; node !== this; node = node[next$])
-        yield (node);
+      for (let node = this[head$]; node !== this; node = node[next$]) {
+        yield node;
+      }
     }
 
     clear() {

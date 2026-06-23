@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * A double linked list. The list is iterable. Nodes can be deleted without needing this list.
-   **/
+   */
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -40,7 +40,7 @@ define((require, exports, module) => {
     test('head', () => {
       /**
        * Retrieve the node that is the head of the list
-       **/
+       */
       api.protoProperty();
 
       //[
@@ -58,7 +58,7 @@ define((require, exports, module) => {
     test('tail', () => {
       /**
        * Retrieve the node that is the tail of the list
-       **/
+       */
       api.protoProperty();
 
       //[
@@ -145,8 +145,7 @@ define((require, exports, module) => {
        * visit each entry
        *
        * @param {function} visitor called for each observer with the `value` from {##add}.
-       *
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new DLinkedList();
@@ -156,7 +155,9 @@ define((require, exports, module) => {
 
       const ans = [];
 
-      subject.forEach((v) => {ans.push(v)});
+      subject.forEach((v) => {
+        ans.push(v);
+      });
 
       assert.equals(ans, ['a', 'b']);
       //]
@@ -165,16 +166,13 @@ define((require, exports, module) => {
     test('nodes', () => {
       /**
        * Return an iterator over the nodes added to the list. ({##add} returns the `node`)
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new DLinkedList();
 
       const f = () => {};
-      const exp = [
-        m.is(subject.add(1)),
-        m.is(subject.add(f)),
-      ];
+      const exp = [m.is(subject.add(1)), m.is(subject.add(f))];
       subject.add('a');
 
       const ans = [];
@@ -207,15 +205,13 @@ define((require, exports, module) => {
     test('values', () => {
       /**
        * Return an iterator over the values added to the list.
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new DLinkedList();
 
       const f = () => {};
-      subject.add(1),
-      subject.add(f),
-      subject.add('a');
+      subject.add(1), subject.add(f), subject.add('a');
 
       const ans = [];
 
@@ -231,7 +227,7 @@ define((require, exports, module) => {
     test('clear', () => {
       /**
        * clear all entries. (calls `listEmpty` if present)
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new DLinkedList();
