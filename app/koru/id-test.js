@@ -26,6 +26,14 @@ define((require, exports, module) => {
       assert.same(id.toHex(), v7id.toHex());
     });
 
+    test('v1ToU64, u64ToV1', () => {
+      const [lo, hi] = Id.v1ToU64('zzz12345671234561');
+      assert.same(lo, 5874699564028813762n);
+      assert.same(hi, 17587821904656n);
+
+      assert.same(Id.u64ToV1(lo, hi), 'zzz12345671234561');
+    });
+
     test('fromV1', () => {
       let id = Id.fromV1('v1id');
       assert.same(id.toString(), 'v1id');

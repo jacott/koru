@@ -89,6 +89,14 @@ define((require, exports, module) => {
       return Id.fromUuidV7(Uuidv7.read(dv, offset));
     }
 
+    static v1ToU64(v1id) {
+      return packV1Id(v1id);
+    }
+
+    static u64ToV1(lo, hi) {
+      return unpackV1Id(lo, hi);
+    }
+
     static fromV1(v1id) {
       if (v1id == null || v1id.length == 0) {
         return Id.nullId();
