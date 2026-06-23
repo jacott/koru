@@ -388,6 +388,18 @@ isServer && define((require, exports, module) => {
       //]
     });
 
+    test('encodeUpdate', () => {
+      const db = new MockDB(['Book']);
+      const {Book} = db.models;
+      const book1 = new Book({_id: 'bk123'});
+
+      const msg = conn.encodeUpdate(DocChange.change(book1, {name: 'Shards of Earth'}));
+      assert.equals(
+        msg.toString('hex'),
+        '43426f6f6bff626b313233ff6e616d65ffff1101001101010701020200',
+      );
+    });
+
     test('buildUpdate', async () => {
       /**
        * BuildUpdate converts a {#koru/model/doc-change} object into a update command to send to

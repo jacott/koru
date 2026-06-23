@@ -111,6 +111,10 @@ define((require, exports, module) => {
       return message.encodeMessage(type, args, this._session.globalDict);
     }
 
+    encodeUpdate(dc) {
+      return this.encodeMessage(...ServerConnection.buildUpdate(dc));
+    }
+
     sendBinary(type, data) {
       this.sendEncoded(data === undefined ? type : this.encodeMessage(type, data));
     }
