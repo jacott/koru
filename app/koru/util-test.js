@@ -1712,6 +1712,20 @@ define((require, exports, module) => {
     });
 
     test('parseEmailAddresses', () => {
+      assert.equals(
+        util.parseEmailAddresses(
+          'Gödel <godel@vimaly-test.com> a b c <abc@def.international> foo-_+%bar@vimaly-test.com, ',
+        ),
+        {
+          addresses: [
+            'Gödel <godel@vimaly-test.com>',
+            'a b c <abc@def.international>',
+            'foo-_+%bar@vimaly-test.com',
+          ],
+          remainder: '',
+        },
+      );
+
       assert.isNull(util.parseEmailAddresses('foo@bar baz'));
       assert.isNull(util.parseEmailAddresses('foo@ba_r.com'));
 
@@ -1719,11 +1733,6 @@ define((require, exports, module) => {
         addresses: ['foo@bar.baz.com'],
         remainder: 'fnord',
       });
-
-      assert.equals(
-        util.parseEmailAddresses('a b c <abc@def.international> foo-_+%bar@vimaly-test.com, '),
-        {addresses: ['a b c <abc@def.international>', 'foo-_+%bar@vimaly-test.com'], remainder: ''},
-      );
     });
 
     test('toHex', () => {
