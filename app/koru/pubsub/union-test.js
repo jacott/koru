@@ -852,7 +852,7 @@ isServer && define((require, exports, module) => {
     test('encodeUpdate', async () => {
       /**
        * encode a {#koru/model/doc-change} ready for sending via {##sendEncoded} or
-       * {##sendEncodedWhenIdle}.
+       * {##sendEncodedWhenIdle} or {##callbackWhenIdle}.
        *
        * See {#koru/session/server-connection#buildUpdate}
 
@@ -904,6 +904,36 @@ isServer && define((require, exports, module) => {
 
       assert.calledWith(conn.sendEncoded, 'myEncodedMessage');
       assert.calledWith(conn2.sendEncoded, 'myEncodedMessage');
+      //]
+    });
+
+    test('callbackWhenIdle', async () => {
+      /**
+       * Queue callback until {##loadInitial} and {##loadByToken} have finished
+       */
+      api.protoMethod();
+      //[
+      const union = new Union();
+      union.sendEncoded = stub();
+      let callCount;
+
+      const callback = stub();
+
+      union.loadInitial = () => {
+        union.callbackWhenIdle(callback);
+        callCount = union.sendEncoded.callCount;
+      };
+
+      const sub1 = new Publication({id: 'sub123', conn});
+      await union.addSub(sub1);
+
+      assert.same(callCount, 0);
+      assert.calledOnceWith(callback, union);
+
+      const callback2 = stub();
+
+      union.callbackWhenIdle(callback2);
+      assert.calledOnceWith(callback2, union);
       //]
     });
 

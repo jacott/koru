@@ -42,7 +42,7 @@ define((require, exports, module) => {
       let loadQueue = union[loadQueue$];
       let myQueue;
       if (loadQueue === null) {
-        loadQueue = union[loadQueue$] = {msgQueue: [], map: new Map()};
+        loadQueue = union[loadQueue$] = {msgQueue: [], callbacks: [], map: new Map()};
       } else {
         myQueue = loadQueue.map.get(this);
       }
@@ -83,9 +83,11 @@ define((require, exports, module) => {
         loadQueue.map.delete(this.constructor);
         if (loadQueue.map.size == 0) {
           union[loadQueue$] = null;
-          const {msgQueue} = loadQueue;
-          for (let i = 0; i < msgQueue.length; ++i) {
-            union.sendEncoded(msgQueue[i]);
+          for (const msg of loadQueue.msgQueue) {
+            union.sendEncoded(msg);
+          }
+          for (const callback of loadQueue.callbacks) {
+            callback(union);
           }
         }
       }
@@ -267,15 +269,34 @@ define((require, exports, module) => {
     }
 
     sendEncoded(msg) {
-      for (const {conn} of this[subs$]) conn.sendEncoded(msg);
+      for (const sub of this[subs$]) {
+        if (sub.isStopped) {
+          this.removeSub(sub);
+        } else {
+          sub.conn.sendEncoded(msg);
+        }
+      }
+    }
+
+    isIdle() {
+      return this[loadQueue$] === null;
     }
 
     sendEncodedWhenIdle(msg) {
       const loadQueue = this[loadQueue$];
       if (loadQueue === null) {
-        this.sendEncoded(msg);
+        return this.sendEncoded(msg);
       } else {
         loadQueue.msgQueue.push(msg);
+      }
+    }
+
+    callbackWhenIdle(callback) {
+      const loadQueue = this[loadQueue$];
+      if (loadQueue === null) {
+        return callback(this);
+      } else {
+        loadQueue.callbacks.push(callback);
       }
     }
 
