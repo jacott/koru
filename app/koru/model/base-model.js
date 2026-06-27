@@ -84,6 +84,8 @@ define((require, exports, module) => {
         this.attributes = {};
         this.changes = {...this.constructor._defaults, ...attributes, ...changes};
       }
+      this[error$] = undefined;
+      this[cache$] = undefined;
     }
 
     static _saveDoc(doc, mode, saveFunc = ModelEnv.save) {
