@@ -35,7 +35,7 @@
     "@babel/generator": "^7",
     "@babel/parser": "^7",
     "autoprefixer": "^10",
-    "commander": "^13",
+    "commander": "^15",
     "css-selector-parser": "^3",
     "less": "^4",
     "marked": "^15",
