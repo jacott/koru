@@ -332,8 +332,41 @@ define((require, exports, module) => {
     },
   };
 
+  const applyAll = (attrs, changes, topUndo) => {
+    const match = changes.$match;
+    if (match !== undefined) {
+      for (const key in match) {
+        COMMANDS.$match(attrs, key, match[key]);
+      }
+    }
+    const partial = changes.$partial;
+    for (const key in partial) {
+      const cmd = partial[key];
+      if ((cmd == null || cmd.constructor !== Array) && key.indexOf('.') === -1) {
+        delete partial[key];
+        changes[key] = cmd;
+      } else {
+        const undo = [];
+        applyPartial(attrs, key, cmd, undo);
+        if (undo.length != 0) {
+          (topUndo.$partial === undefined ? (topUndo.$partial = {}) : topUndo.$partial)[key] = undo;
+        }
+      }
+    }
+
+    for (const key in changes) {
+      if (key[0] === '$') continue;
+      if (key.indexOf('.') === -1) {
+        applyAsDiff(attrs, key, changes[key], topUndo);
+      } else {
+        throw new Error('update format not recognized');
+      }
+    }
+    return topUndo;
+  };
+
   const applyPartial = (attrs, key, actions, undo) => {
-    if (actions != null) {
+    if (Array.isArray(actions)) {
       for (let i = 0; i < actions.length; i += 2) {
         const field = actions[i], nv = actions[i + 1];
         const cmd = COMMANDS[field];
@@ -359,6 +392,18 @@ define((require, exports, module) => {
           cmd(attrs, key, nv, undo);
         }
       }
+    } else if (actions?.constructor === Object) {
+      const ov = attrs[key];
+      if (undo !== undefined) {
+        if (ov == null) {
+          undo.push('$replace', null);
+        } else if (undo[0] !== '$replace') {
+          for (const field in actions) {
+            undo.push(field, ov[field]);
+          }
+        }
+      }
+      applyAll(attrs[key] ??= {}, actions, undo);
     }
     if (undo !== undefined && undo.length > 2) {
       const ei = undo.length - 1, len = undo.length >> 1;
@@ -594,38 +639,7 @@ define((require, exports, module) => {
     ],
 
     applyAll(attrs, changes) {
-      const topUndo = {[original$]: changes};
-      const match = changes.$match;
-      if (match !== undefined) {
-        for (const key in match) {
-          COMMANDS.$match(attrs, key, match[key]);
-        }
-      }
-      const partial = changes.$partial;
-      for (const key in partial) {
-        const cmd = partial[key];
-        if ((cmd == null || cmd.constructor !== Array) && key.indexOf('.') === -1) {
-          delete partial[key];
-          changes[key] = cmd;
-        } else {
-          const undo = [];
-          applyPartial(attrs, key, cmd, undo);
-          if (undo.length != 0) {
-            (topUndo.$partial === undefined ? (topUndo.$partial = {}) : topUndo.$partial)[key] =
-              undo;
-          }
-        }
-      }
-
-      for (const key in changes) {
-        if (key[0] === '$') continue;
-        if (key.indexOf('.') === -1) {
-          applyAsDiff(attrs, key, changes[key], topUndo);
-        } else {
-          throw new Error('update format not recognized');
-        }
-      }
-      return topUndo;
+      return applyAll(attrs, changes, {[original$]: changes});
     },
 
     applyOne,

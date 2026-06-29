@@ -927,6 +927,22 @@ define((require, exports, module) => {
           ]]);
         });
 
+        test('updating object', () => {
+          const changes = ['ol.1.li.$partial', {i: 'added'}];
+          const undo = [];
+          Changes.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs.html.ol[1], {li: {b: 'two', i: 'added'}});
+          assert.equals(undo, ['ol.1.li.$partial', ['i', null]]);
+        });
+
+        test('updating non existant object', () => {
+          const changes = ['ol.1.li.a.b.$partial', {i: 'added'}];
+          const undo = [];
+          Changes.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs.html.ol[1], {li: {b: 'two', a: {b: {i: 'added'}}}});
+          assert.equals(undo, ['ol.1.li.a', null]);
+        });
+
         test('simple replacement', () => {
           const changes = ['ol.1.li.b', '2'];
 
