@@ -119,6 +119,11 @@ define((require, exports, module) => {
       return (this[ps$] ??= await this.#initPs()).fetchOne(c, params);
     }
 
+    async execute(params) {
+      const c = conn(this) ?? await auto(this.model);
+      return (this[ps$] ??= await this.#initPs()).execute(c, params);
+    }
+
     async fetchOne(params, options = DEFAULT) {
       const {model} = this;
       const rec = await this.#fetchOneRec(params);

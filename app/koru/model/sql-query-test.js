@@ -273,6 +273,23 @@ isServer && define((require, exports, module) => {
       //]
     });
 
+    test('execute', async () => {
+      /**
+       * execute statement returning the tag count and closing the portal.
+       */
+      api.protoMethod();
+      Book.docs._colMap = undefined;
+      Book.docs._ready = false;
+      //[
+      const updatePageCount = Book.sqlWhere(`UPDATE "Book" set "pageCount" = {$pageCount}
+WHERE title = {$title}`);
+      const findPageCount = Book.sqlWhere(`"pageCount" = {$pageCount}`);
+
+      assert.equals(await updatePageCount.execute({title: 'Limbo', pageCount: 42}), 1);
+      assert.equals((await findPageCount.fetchOne({pageCount: 42})).title, 'Limbo');
+      //]
+    });
+
     test('exists', async () => {
       /**
        * Fetch the value of the first column retrieved or else defValue if none.
