@@ -225,7 +225,6 @@ define((require, exports, module) => {
         const model = doc.constructor;
         const _id = doc._id;
         let {changes} = doc;
-        doc.changes = {};
         const now = util.newDate();
 
         if (doc.attributes._id == null) {
