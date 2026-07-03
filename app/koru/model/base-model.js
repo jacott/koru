@@ -327,8 +327,8 @@ define((require, exports, module) => {
       return `Model.${type.modelName}("${this._id}"${arg2})`;
     }
 
-    async $save(mode) {
-      return await BaseModel._saveDoc(this, mode);
+    $save(mode) {
+      return BaseModel._saveDoc(this, mode);
     }
 
     async $$save() {
@@ -607,12 +607,14 @@ define((require, exports, module) => {
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  ('beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally ').split(' ')
-    .forEach((type) => {
-      BaseModel[type] = function (callback) {
-        return registerObserver(this, type, callback);
-      };
-    });
+  for (
+    const type of 'beforeCreate beforeUpdate beforeSave beforeRemove afterLocalChange whenFinally'
+      .split(' ')
+  ) {
+    BaseModel[type] = function (callback) {
+      return registerObserver(this, type, callback);
+    };
+  }
 
   const mapFieldType = (model, field, bt, name) => {
     if (!bt) throw Error(name + ' is not defined for field: ' + field);
