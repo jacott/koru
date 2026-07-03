@@ -265,11 +265,38 @@ isServer && define((require, exports, module) => {
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
-      const countAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
+      const findAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
 
-      assert.equals(await countAuthor.value({author: 'Dima Zales'}, 'none'), 'Dima Zales');
+      assert.equals(await findAuthor.value({author: 'Dima Zales'}, 'none'), 'Dima Zales');
 
-      assert.equals(await countAuthor.value({author: 'Andy Weir'}, 'none'), 'none');
+      assert.equals(await findAuthor.value({author: 'Andy Weir'}, 'none'), 'none');
+      //]
+    });
+
+    test('fetchOneField', async () => {
+      /**
+       * Fetch the value of column `field` from the first row retrieved or else defValue if none.
+       */
+      api.protoMethod();
+      Book.docs._colMap = undefined;
+      Book.docs._ready = false;
+      //[
+      const bookByAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
+
+      assert.equals(
+        await bookByAuthor.fetchOneField('title', {author: 'Dima Zales'}, 'none'),
+        'Limbo',
+      );
+
+      assert.equals(
+        await bookByAuthor.fetchOneField('pageCount', {author: 'Dima Zales'}, 'none'),
+        222,
+      );
+
+      assert.equals(
+        await bookByAuthor.fetchOneField('pageCount', {author: 'Andy Weir'}, 'none'),
+        'none',
+      );
       //]
     });
 

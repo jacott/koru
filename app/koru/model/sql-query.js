@@ -201,6 +201,10 @@ define((require, exports, module) => {
       return defValue;
     }
 
+    async fetchOneField(field, params, defValue) {
+      return (await this.#fetchOneRec(params))?.[field] ?? defValue;
+    }
+
     async exists(params) {
       const rec = await this.#fetchOneRec(params);
       return rec === undefined ? false : true;
@@ -210,6 +214,8 @@ define((require, exports, module) => {
   BaseModel.sqlWhere = function (queryStr, fields) {
     return new SqlQuery(this, queryStr, fields);
   };
+
+  BaseModel.sql = BaseModel.sqlWhere;
 
   return SqlQuery;
 });
