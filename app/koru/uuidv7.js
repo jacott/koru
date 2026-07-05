@@ -12,6 +12,11 @@ define((require, exports, module) => {
   const charToU6 = (c) =>
     (c === 45) ? 0 : (c < 58) ? c - 47 : (c < 91) ? c - 54 : (c === 126) ? 63 : c - 60;
 
+  const ARRAY_BUF = new ArrayBuffer(16);
+  const ARRAY_U64 = new BigUint64Array(ARRAY_BUF);
+  const ARRAY_U32 = new Uint32Array(ARRAY_BUF);
+  const RND_BUF = ARRAY_U64.subarray(0, 1);
+
   class Uuidv7 {
     #low = 0n;
     #high = 0n;
@@ -44,11 +49,10 @@ define((require, exports, module) => {
         counter = randA;
       }
 
-      const array = new BigUint64Array(1);
-      globalThis.crypto.getRandomValues(array);
+      globalThis.crypto.getRandomValues(RND_BUF);
 
       return new this(
-        (2n << 62n) | (array[0] & 0x3FFFFFFFFFFFFFFFn),
+        (2n << 62n) | (RND_BUF[0] & 0x3FFFFFFFFFFFFFFFn),
         (BigInt(ms) << 16n) | (7n << 12n) | BigInt(randA & 0xFFF),
       );
     }
@@ -68,24 +72,17 @@ define((require, exports, module) => {
       let w0 = 0, w1 = 0, w2 = 0, w3 = 0;
 
       for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        const b = charToU6(c);
-
         // Shift left by 6 bits to make room for 'b'
         w0 = ((w0 << 6) | (w1 >>> 26)) >>> 0;
         w1 = ((w1 << 6) | (w2 >>> 26)) >>> 0;
         w2 = ((w2 << 6) | (w3 >>> 26)) >>> 0;
-        w3 = ((w3 << 6) | b) >>> 0;
+        w3 = ((w3 << 6) | charToU6(str.charCodeAt(i))) >>> 0;
       }
 
-      // 3. REALIGNMENT: 22 chars shifted in 132 bits.
-      // We must shift the entire 128-bit result RIGHT by 4 bits.
-      const rw3 = ((w3 >>> 4) | (w2 << 28)) >>> 0;
-      const rw2 = ((w2 >>> 4) | (w1 << 28)) >>> 0;
-      const rw1 = ((w1 >>> 4) | (w0 << 28)) >>> 0;
-      const rw0 = (w0 >>> 4) >>> 0;
-
-      return new this((BigInt(rw2) << 32n) | BigInt(rw3), (BigInt(rw0) << 32n) | BigInt(rw1));
+      return new this(
+        (BigInt(((w2 >>> 4) | (w1 << 28)) >>> 0) << 32n) | BigInt(((w3 >>> 4) | (w2 << 28)) >>> 0),
+        (BigInt((w0 >>> 4) >>> 0) << 32n) | BigInt(((w1 >>> 4) | (w0 << 28)) >>> 0),
+      );
     }
 
     [inspect$]() {
@@ -100,28 +97,46 @@ define((require, exports, module) => {
       return new this.constructor(this.#low, this.#high);
     }
 
+    // Inside your UUIDv7 class:
     toString() {
-      // 1. Split into four 32-bit unsigned words
-      let w0 = Number(this.#high >> 32n) >>> 0;
-      let w1 = Number(this.#high & 0xFFFFFFFFn) >>> 0;
-      let w2 = Number(this.#low >> 32n) >>> 0;
-      let w3 = Number(this.#low & 0xFFFFFFFFn) >>> 0;
+      // 2. Cast the BigInts straight to the shared buffer slots.
+      // This extracts the 32-bit components instantly with ZERO memory allocations.
+      ARRAY_U64[1] = this.#high;
+      ARRAY_U64[0] = this.#low;
 
-      let ans = '';
-      // 2. Process 22 characters (132 bits worth of capacity)
-      for (let i = 0; i < 22; i++) {
-        // Grab the top 6 bits of the 128-bit block
-        ans += CHARS[w0 >>> 26];
+      // Map the buffer addresses straight to CPU registers (assuming Little-Endian system layout)
+      const w0 = ARRAY_U32[3]; // Upper 32 bits of high
+      const w1 = ARRAY_U32[2]; // Lower 32 bits of high
+      const w2 = ARRAY_U32[1]; // Upper 32 bits of low
+      const w3 = ARRAY_U32[0]; // Lower 32 bits of low
 
-        // Shift the entire 128-bit block left by 6 bits
-        w0 = ((w0 << 6) | (w1 >>> 26)) >>> 0;
-        w1 = ((w1 << 6) | (w2 >>> 26)) >>> 0;
-        w2 = ((w2 << 6) | (w3 >>> 26)) >>> 0;
-        w3 = (w3 << 6) >>> 0;
-      }
-      return ans;
+      // 3. Fully unrolled 22-character extraction map.
+      // Performs flat, absolute bit lookups and joins them in a single JIT pass.
+      return (
+        CHARS[(w0 >>> 26) & 0x3F] +
+        CHARS[(w0 >>> 20) & 0x3F] +
+        CHARS[(w0 >>> 14) & 0x3F] +
+        CHARS[(w0 >>> 8) & 0x3F] +
+        CHARS[(w0 >>> 2) & 0x3F] +
+        CHARS[((w0 & 0x03) << 4) | (w1 >>> 28)] +
+        CHARS[(w1 >>> 22) & 0x3F] +
+        CHARS[(w1 >>> 16) & 0x3F] +
+        CHARS[(w1 >>> 10) & 0x3F] +
+        CHARS[(w1 >>> 4) & 0x3F] +
+        CHARS[((w1 & 0x0F) << 2) | (w2 >>> 30)] +
+        CHARS[(w2 >>> 24) & 0x3F] +
+        CHARS[(w2 >>> 18) & 0x3F] +
+        CHARS[(w2 >>> 12) & 0x3F] +
+        CHARS[(w2 >>> 6) & 0x3F] +
+        CHARS[w2 & 0x3F] +
+        CHARS[(w3 >>> 26) & 0x3F] +
+        CHARS[(w3 >>> 20) & 0x3F] +
+        CHARS[(w3 >>> 14) & 0x3F] +
+        CHARS[(w3 >>> 8) & 0x3F] +
+        CHARS[(w3 >>> 2) & 0x3F] +
+        CHARS[(w3 & 0x03) << 4] // The remaining 2 bits padded with trailing zeros
+      );
     }
-
     toBigInt() {
       return this.#high * (1n << 64n) + this.#low;
     }
