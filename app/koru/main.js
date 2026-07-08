@@ -4,8 +4,7 @@ define((require, exports, module) => {
   const util            = require('./util');
 
   const reload = (mod) => {
-    console.log(`Unloading ${mod.id}`);
-    koru.reload();
+    koru.reload(mod);
   };
 
   const onunload = (moduleOrId, callback) => {

@@ -16,8 +16,9 @@ define((require, exports, module) => {
 
         reloading = true;
         window.stop();
-        mod?.id != null && koru.info(`reload requested by ${mod.id}`);
-        (window.top ?? window).location.reload(true);
+        mod?.id != null && (koru.config.env === 'test' || koru.config.env === 'demo') &&
+          koru.info(`reload requested by ${mod.id}`);
+        window.top.location.reload(true);
       },
 
       appDir: module.toUrl('').slice(0, -1),
