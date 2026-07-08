@@ -64,6 +64,14 @@ define((require, exports, module) => {
       const rec = await this.fetchOne(params);
       return rec === undefined ? false : true;
     }
+
+    openCursor(pname, ...args) {
+      const callback = args.pop();
+      return this.#table().withConn(async (conn) => {
+        const cursor = (this.#ps ??= await this.#initPs()).openCursor(conn, pname, ...args);
+        return callback(cursor);
+      });
+    }
   }
 
   return PsSql;

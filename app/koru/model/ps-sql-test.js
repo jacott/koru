@@ -204,5 +204,27 @@ isServer && define((require, exports, module) => {
       assert.equals(await authorRec.exists({author: 'Andy Weir'}), false);
       //]
     });
+
+    test('openCursor', async () => {
+      /**
+       * Open a Portal Cursor to fetch rows in batches
+       */
+      api.protoMethod();
+      //[
+      const byAuthor = new PsSql(
+        `SELECT title FROM "Book" WHERE "author" = {$author} order by "pageCount"`,
+        Book,
+      );
+
+      let called = false;
+      await byAuthor.openCursor('c1', {author: 'Dima Zales'}, async (cursor) => {
+        assert.equals(await cursor.fetch(1), [{title: 'Limbo'}]);
+        assert.equals(await cursor.fetch(1), [{title: 'Oasis'}]);
+        called = true;
+      });
+
+      assert.isTrue(called);
+      //]
+    });
   });
 });
