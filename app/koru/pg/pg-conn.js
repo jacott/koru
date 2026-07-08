@@ -247,7 +247,7 @@ define((require, exports, module) => {
       };
     }
 
-    async fetchRows(query, maxRows) {
+    async fetchRows(query) {
       try {
         const result = [];
         let ans, tag;
@@ -257,7 +257,7 @@ define((require, exports, module) => {
           });
           await query.fetch((row) => {
             result.push(row);
-          }, maxRows);
+          });
           if (query.error) throw query.error;
         } while (query.isExecuting);
         return result.length != 0 || isRowReturningTag(tag) ? result : tagToCount(tag);
