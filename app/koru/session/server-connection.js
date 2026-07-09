@@ -44,7 +44,7 @@ define((require, exports, module) => {
   };
 
   class ServerConnection {
-    engine;
+    _engine;
     remoteAddress;
     constructor(session, ws, request, sessId, close) {
       this._session = session;
@@ -81,6 +81,17 @@ define((require, exports, module) => {
           this.close();
         }, this));
       ws.on('close', () => koru.fiberConnWrapper(() => this.close(), this));
+    }
+
+    get engine() {
+      if (typeof this._engine === 'function') {
+        this._engine = this._engine();
+      }
+      return this._engine;
+    }
+
+    set engine(v) {
+      this._engine = v;
     }
 
     onClose(func) {

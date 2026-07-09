@@ -190,20 +190,30 @@ define((require, exports, module) => {
       return str;
     },
 
-    browserVersion(ua) {
-      const isMobile = /\bMobi(le)?\b/.test(ua);
-      const m =
-        ua.match(
-          /(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i,
-        ) ?? [];
-      if (/trident/i.test(m[1])) {
-        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) ?? [];
-        return 'IE ' + (tmp[1] ?? '');
+    versionFromUserAgent(ua) {
+      let name = 'Unknown';
+      let version = name;
+
+      if (typeof ua === 'string') {
+        if (/firefox|fxios/i.test(ua)) {
+          name = 'Firefox';
+          version = ua.match(/(?:firefox|fxios)\/([\d.]+)/i)?.[1] ?? version;
+        } else if (/safari/i.test(ua) && !/chrome|crios|crmo|edge|edg/i.test(ua)) {
+          name = 'Safari';
+          version = ua.match(/version\/([\d.]+)/i)?.[1] ?? version;
+        } else if (/opr|opera/i.test(ua)) {
+          name = 'Opera';
+          version = ua.match(/(?:opr|opera)\/([\d.]+)/i)?.[1] ?? version;
+        } else if (/edg/i.test(ua)) {
+          name = 'Edge';
+          version = ua.match(/edg\/([\d.]+)/i)?.[1] ?? version;
+        } else if (/chrome|crios|crmo/i.test(ua)) {
+          name = 'Chrome';
+          version = ua.match(/(?:chrome|crios|crmo)\/([\d.]+)/i)?.[1] ?? version;
+        }
       }
-      m[1] = m[1] != null ? m[1].replace(/\s.*/, '') : 'Unknown';
-      const tmp = ua.match(/version\/([\.\d]+)/i);
-      if (tmp != null) m[2] = tmp[1];
-      return (isMobile ? 'Mobile ' : '') + m.slice(1).join('-');
+
+      return `${name}-${version}`;
     },
 
     merge(dest, source) {

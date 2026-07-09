@@ -153,7 +153,7 @@ define((require) => {
     return keyMap;
   };
 
-  KMFactory.usesCommandKey = /Macintosh/.test(navigator.userAgent);
+  KMFactory.usesCommandKey = util.isMacPlatform();
 
   const isCtrlKey = {Ctrl: true, CTRL: true, ctrl: true};
 

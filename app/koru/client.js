@@ -7,7 +7,7 @@ define((require, exports, module) => {
 
   let lastLog = 0, logCount = 0;
 
-  const isRatelimit = ! isTest && koru.config.env !== 'demo';
+  const isRatelimit = !isTest && koru.config.env !== 'demo';
 
   koru.clientLogger = koru.logger = (type, ...args) => {
     if (isRatelimit && type !== 'D' && koru.config.env && ++logCount > 5) {
@@ -17,13 +17,13 @@ define((require, exports, module) => {
     lastLog = Date.now();
     if (type === 'E') {
       console.error(...args);
-      session.send('E', args.join(' '));
+      session.send(
+        'E',
+        `${globalThis.KORU_APP_VERSION} ${window.location.href}\n${args.join(' ')}`,
+      );
     } else {
       console.log(...args);
-      session.send('L', type + '> ' + (
-        type === 'D'
-          ? util.inspect(args, 7)
-          : args.join(' ')));
+      session.send('L', type + '> ' + (type === 'D' ? util.inspect(args, 7) : args.join(' ')));
     }
   };
 

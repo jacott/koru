@@ -10,17 +10,48 @@ define((require) => {
 
   util.engine = 'Server';
 
-  Buffer.prototype[inspect$] = function () {
-    return '    Buffer(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') + ')';
-  }
+  util.browserVersion = (headers) => {
+    if (headers == null) {
+      return 'Unknown';
+    }
 
-  util.waitCallback = (future, callTimeout=util.thread.callTimeout ?? 20*1000) => {
-    let cto = callTimeout === 0
-        ? 0
-        : setTimeout(() => {
-          cto = 0;
-          future.isResolved || future.resolve([{error: 504, reason: 'Timed out'}]);
-        }, callTimeout);
+    let ua;
+
+    if (typeof headers === 'string') {
+      ua = headers;
+    } else {
+      // 1. Try Modern Client Hints Header
+      const clientHints = headers['sec-ch-ua'];
+      if (clientHints != null) {
+        const brands = [...clientHints.matchAll(/"([^"]+)"\s*;\s*v="([^"]+)"/g)].map((m) => ({
+          brand: m[1],
+          version: m[2],
+        }));
+
+        const standardBrands = brands.filter((b) => !b.brand.includes('Not'));
+        const primaryBrand = standardBrands.find((b) => b.brand !== 'Chromium') ??
+          standardBrands[0];
+
+        if (primaryBrand != null) {
+          return `${primaryBrand.brand}-${primaryBrand.version}`;
+        }
+      }
+      ua = headers[`user-agent`];
+    }
+
+    return util.versionFromUserAgent(ua);
+  };
+
+  Buffer.prototype[inspect$] = function () {
+    return '    Buffer(' + Array.from(this).map((n) => n.toString(16).padStart(2, '0')).join(':') +
+      ')';
+  };
+
+  util.waitCallback = (future, callTimeout = util.thread.callTimeout ?? 20 * 1000) => {
+    let cto = callTimeout === 0 ? 0 : setTimeout(() => {
+      cto = 0;
+      future.isResolved || future.resolve([{error: 504, reason: 'Timed out'}]);
+    }, callTimeout);
 
     return (err, response) => {
       if (cto != 0) {
@@ -54,9 +85,12 @@ define((require) => {
 
   const koruThreadLocal = globalThis.__koruThreadLocal;
 
-  Object.defineProperty(util, 'thread', {configurable: true, get() {
-    return koruThreadLocal.getStore();
-  }});
+  Object.defineProperty(util, 'thread', {
+    configurable: true,
+    get() {
+      return koruThreadLocal.getStore();
+    },
+  });
 
   return util;
 });

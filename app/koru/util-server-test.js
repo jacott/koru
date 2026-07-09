@@ -17,11 +17,13 @@ define((require, exports, module) => {
       /**
        * An object associated with the current
        * [AsyncLocalStorage](https://nodejs.org/api/async_context.html#class-asynclocalstorage).
-       **/
+       */
       api.property();
       assert.same(util.thread, util.thread);
       let other;
-      globalThis.__koruThreadLocal.run({}, () => {other = util.thread});
+      globalThis.__koruThreadLocal.run({}, () => {
+        other = util.thread;
+      });
       refute.same(util.thread, other);
       assert.equals(util.thread.finally, m.func);
       assert.equals(other, TH.match.baseObject);
@@ -46,7 +48,7 @@ define((require, exports, module) => {
 
         const func = util.waitCallback(future);
 
-        assert.calledWith(setTimeout, TH.match.func, 20*1000);
+        assert.calledWith(setTimeout, TH.match.func, 20 * 1000);
         refute.called(clearTimeout);
 
         const err = new Error('foo');
@@ -63,7 +65,8 @@ define((require, exports, module) => {
         func(123);
         assert.calledWith(future.resolve, [{error: 500, reason: '123'}]);
 
-        future.reject.reset(); future.resolve.reset();
+        future.reject.reset();
+        future.resolve.reset();
         future.isResolved = true;
         func(123);
         refute.called(future.reject);
@@ -71,10 +74,10 @@ define((require, exports, module) => {
       });
 
       test('timeout', () => {
-        util.thread.callTimeout = 10*1000;
+        util.thread.callTimeout = 10 * 1000;
         setTimeout.restore();
         stub(global, 'setTimeout', (func, to) => {
-          assert.same(to, 10*1000);
+          assert.same(to, 10 * 1000);
         });
 
         const future = {reject: stub(), resolve: stub(), isResolved: false};
@@ -121,6 +124,47 @@ define((require, exports, module) => {
 
     test('engine', () => {
       assert.same(util.engine, 'Server');
+    });
+
+    group('Modern Chromium Headers (Sec-CH-UA)', () => {
+      test('parse Google Chrome from structured hints', () => {
+        const mockHeaders = {
+          'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not=A?Brand";v="24"',
+          'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36... (Reduced UA)',
+        };
+
+        assert.equals(util.browserVersion(mockHeaders), 'Google Chrome-143');
+      });
+
+      test('fall back to Chromium if no specific brand is present', () => {
+        const mockHeaders = {'sec-ch-ua': '"Chromium";v="143", "Not=A?Brand";v="24"'};
+
+        assert.equals(util.browserVersion(mockHeaders), 'Chromium-143');
+      });
+    });
+
+    group('Legacy String Fallbacks (Safari / Firefox)', () => {
+      test('extract Firefox details from the User-Agent string', () => {
+        const mockHeaders = {
+          'user-agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0',
+        };
+
+        assert.equals(util.browserVersion(mockHeaders), 'Firefox-140.0');
+      });
+
+      test('isolate Safari version details', () => {
+        const mockHeaders = {
+          'user-agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15',
+        };
+
+        assert.equals(util.browserVersion(mockHeaders), 'Safari-18.2');
+      });
+
+      test('handle empty header inputs gracefully', () => {
+        assert.equals(util.browserVersion({}), 'Unknown-Unknown');
+      });
     });
   });
 });

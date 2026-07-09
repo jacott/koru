@@ -73,7 +73,7 @@ define((require, exports, module) => {
             }
           },
         );
-        conn.engine = util.browserVersion(ugr.headers['user-agent'] ?? '');
+        conn.engine = () => util.browserVersion(ugr.headers);
         conn.remoteAddress = remoteAddress;
 
         const onMessage = conn.onMessage.bind(conn);
