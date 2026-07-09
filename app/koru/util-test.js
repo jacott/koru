@@ -1705,6 +1705,7 @@ define((require, exports, module) => {
       assert.same(util.compareVersion('v1', 'v1.0'), 0);
       assert.same(util.compareVersion('v1.10.0', 'v1.9.0'), 1);
       assert.same(util.compareVersion('v1.9.0', 'v1.10.0'), -1);
+      assert.same(util.compareVersion('v1.9.0', 'v2.1.0'), -2);
 
       assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-4'), 1);
       assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-40'), -1);

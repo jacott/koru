@@ -476,7 +476,7 @@ define((require) => {
           if (pa[i] !== pb[i]) {
             const an = +pa[i] || 0, bn = +pb[i] || 0;
             if (an !== bn) {
-              return an > bn ? 1 : -1;
+              return an > bn ? 1 : i === 0 ? -2 : -1;
             }
           }
         }
