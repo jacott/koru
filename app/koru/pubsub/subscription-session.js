@@ -114,8 +114,11 @@ define((require) => {
   };
 
   const added = modelUpdate('Add', (ss, model, attrs) => {
-    if (ss.match.has(new model(attrs))) {
+    const ansNow = ss.match.has(new model(attrs));
+    if (ansNow) {
       Query.insertFromServer(model, attrs);
+    } else {
+      model.query.fromServer(ansNow === false ? 'fromServer' : 'stopped').onId(attrs._id).remove();
     }
   });
 

@@ -321,10 +321,36 @@ isClient && define((require, exports, module) => {
       test('added no match', () => {
         dbBroker.dbId = 'foo01';
 
-        ss.match.register('Foo', (doc) => doc.age < 4);
+        const removable = (doc) => doc.age < 4;
+        const forgettable = (doc) => doc.age < 4 ? true : undefined;
+
+        let callback = removable;
+
+        ss.match.register('Foo', (doc) => callback(doc));
         const insertSpy = spy(Query, 'insertFromServer');
+        const remSpy = spy(Query.prototype, 'remove');
         const attrs = {_id: 'f123', name: 'bob', age: 5};
         sendMsg('A', 'Foo', attrs);
+
+        refute(Foo.findById('f123'));
+
+        assert.calledOnce(remSpy);
+        let query = remSpy.getCall(0).thisValue;
+        assert.same(query.model, Foo);
+        assert.same(query.singleId, 'f123');
+        assert.same(query.isFromServer, 'fromServer');
+
+        remSpy.reset();
+
+        callback = forgettable;
+
+        sendMsg('A', 'Foo', attrs);
+
+        assert.calledOnce(remSpy);
+        query = remSpy.getCall(0).thisValue;
+        assert.same(query.model, Foo);
+        assert.same(query.singleId, 'f123');
+        assert.same(query.isFromServer, 'stopped');
 
         refute(Foo.findById('f123'));
       });
