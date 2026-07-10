@@ -257,6 +257,20 @@ isServer && define((require, exports, module) => {
       //]
     });
 
+    test('values aborts', async () => {
+      const byAuthor = Book.sqlWhere(`author, = {$author} ORDER BY "pageCount"`);
+      let err;
+      try {
+        for await (const row of byAuthor.values({author: 'Dima Zales'})) {
+        }
+      } catch (e) {
+        err = e;
+      }
+      assert.same(err.error, 500);
+      assert.equals(err.code, '42601');
+      assert.equals(err.paramValues, {author: 'Dima Zales'});
+    });
+
     test('value', async () => {
       /**
        * Fetch the value of the first column retrieved or else defValue if none.

@@ -180,7 +180,11 @@ define((require, exports, module) => {
       const {limit = 50} = options;
 
       while (true) {
-        await port.fetch(callback, limit);
+        const err = await port.fetch(callback, limit);
+        if (err !== undefined) {
+          throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+        }
+
         if (rows.length === 0) {
           return;
         }
