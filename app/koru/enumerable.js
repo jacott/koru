@@ -1,7 +1,7 @@
 define(() => {
   const iter$ = Symbol();
 
-  const Generator = (function *() {}).constructor;
+  const Generator = (function* () {}).constructor;
 
   class Enumerable {
     constructor(iter) {
@@ -21,25 +21,28 @@ define(() => {
     }
 
     every(test) {
-      for (const v of this[iter$])
-        if (! test(v)) return false;
+      for (const v of this[iter$]) {
+        if (!test(v)) return false;
+      }
       return true;
     }
 
     some(test) {
-      for (const v of this[iter$])
+      for (const v of this[iter$]) {
         if (test(v)) return true;
+      }
       return false;
     }
 
     find(test) {
-      for (const v of this[iter$])
+      for (const v of this[iter$]) {
         if (test(v)) return v;
+      }
     }
 
     map(mapper) {
       const iter = this[iter$];
-      return new Enumerable(function *() {
+      return new Enumerable(function* () {
         for (const v of iter) {
           const ans = mapper(v);
           if (ans !== undefined) yield ans;
@@ -49,7 +52,7 @@ define(() => {
 
     filter(test) {
       const self = this;
-      return new Enumerable(function *() {
+      return new Enumerable(function* () {
         for (const v of self[iter$]) {
           if (test(v)) yield v;
         }
@@ -73,7 +76,29 @@ define(() => {
       }
     }
 
-    get [Symbol.iterator]() {return this[iter$][Symbol.iterator]}
+    get [Symbol.iterator]() {
+      return this[iter$][Symbol.iterator];
+    }
+
+    static asArray(object) {
+      if (Array.isArray(object)) {
+        return object;
+      }
+      if (object == null) {
+        return [];
+      }
+      if (object[Symbol.iterator] !== undefined) {
+        return Array.from(object);
+      }
+      if (typeof object === 'object') {
+        const result = [];
+        for (const name in object) {
+          result.push(object[name]);
+        }
+        return result;
+      }
+      return [object];
+    }
 
     static mapObjectToArray(object, mapper) {
       let i = -1;
@@ -93,8 +118,8 @@ define(() => {
       }
     }
 
-    static count(to, from=1, step=1) {
-      return new Enumerable(function *() {
+    static count(to, from = 1, step = 1) {
+      return new Enumerable(function* () {
         for (let i = from; i <= to; i += step) yield i;
       });
     }
@@ -109,7 +134,7 @@ define(() => {
     }
 
     static propertyValues(object) {
-      return new Enumerable(function *() {
+      return new Enumerable(function* () {
         for (const key in object) yield object[key];
       });
     }

@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Enumerable wraps iterables with Array like methods.
-   **/
+   */
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -14,15 +14,24 @@ define((require, exports, module) => {
     test('constructor', () => {
       /**
        * Create new Enumerable instance
-       **/
+       */
       const Enumerable = api.class();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 3;
+        },
+      });
       assert.same(iter.count(), 2);
       assert.equals(Array.from(iter), [1, 3]);
       assert.same(iter.count(), 2);
 
-      const iter2 = new Enumerable(function *() {yield 1; yield 3; yield 5});
+      const iter2 = new Enumerable(function* () {
+        yield 1;
+        yield 3;
+        yield 5;
+      });
 
       assert.same(iter2.filter((i) => i != 3).count(), 2);
       assert.equals(Array.from(iter2), [1, 3, 5]);
@@ -49,7 +58,13 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      });
       assert.isTrue(iter.every((i) => i));
       assert.isFalse(iter.every((i) => i != 5));
       //]
@@ -64,7 +79,13 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      });
       assert.isTrue(iter.some((i) => i == 5));
       assert.isFalse(iter.some((i) => false));
       //]
@@ -79,7 +100,13 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 2; yield 5; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 2;
+          yield 5;
+          yield 3;
+        },
+      });
       assert.equals(iter.find((i) => i % 2 == 1), 5);
       assert.same(iter.find((i) => i == 7), void 0);
       //]
@@ -94,11 +121,20 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      });
       const mapped = iter.filter((i) => i != 5);
       assert.equals(mapped.count(), 2);
       assert.equals(Array.from(mapped), [1, 3]);
-      assert.equals(iter.filter((i) => false)[Symbol.iterator]().next(), {done: true, value: void 0});
+      assert.equals(iter.filter((i) => false)[Symbol.iterator]().next(), {
+        done: true,
+        value: void 0,
+      });
       //]
     });
 
@@ -106,10 +142,16 @@ define((require, exports, module) => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
-       **/
+       */
       api.method();
       //[
-      const mapped = Enumerable.mapToArray({*[Symbol.iterator]() {yield 1; yield 5; yield 3}}, (i) => i == 5 ? undefined : 2 * i);
+      const mapped = Enumerable.mapToArray({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      }, (i) => i == 5 ? undefined : 2 * i);
       assert.equals(mapped.length, 2);
       assert.equals(mapped, [2, 6]);
       //]
@@ -119,7 +161,7 @@ define((require, exports, module) => {
       /**
        * Map (and filter) an object to array. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
-       **/
+       */
       api.method();
       //[
       const obj = {a: 1, b: 2, c: 3, d: 4};
@@ -133,12 +175,15 @@ define((require, exports, module) => {
       /**
        * return an iterator over an object while mapping (and filtering). If the `mapper` returns
        * `undefined` then the value is filtered out of the iterator results
-       **/
+       */
       api.method();
       //[
       const obj = {a: 1, b: 2, c: 3, d: 4};
       const names = [], values = [];
-      for (const [n, v] of Enumerable.mapObjectIter(obj, (n, v, i) => (i == 2) ? undefined : 2 * v)) {
+      for (
+        const [n, v] of Enumerable.mapObjectIter(obj, (n, v, i) =>
+          (i == 2) ? undefined : 2 * v)
+      ) {
         names.push(n);
         values.push(v);
       }
@@ -151,10 +196,16 @@ define((require, exports, module) => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
-       **/
+       */
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 5; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      });
       const mapped = iter.map((i) => i == 5 ? undefined : 2 * i);
       assert.equals(mapped.count(), 2);
       assert.equals(Array.from(mapped), [2, 6]);
@@ -165,10 +216,15 @@ define((require, exports, module) => {
     test('reduce', () => {
       /**
        * Run `reducer` on each member returning a single value
-       **/
+       */
       api.protoMethod();
       //[
-      const iter = new Enumerable({*[Symbol.iterator]() {yield 1; yield 3}});
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 3;
+        },
+      });
       assert.same(iter.reduce((sum, value) => sum + value, 5), 9);
       assert.same(iter.reduce((sum, value) => sum - value), -2);
       //]
@@ -177,7 +233,7 @@ define((require, exports, module) => {
     test('count', () => {
       /**
        * Create an iterator that counts
-       **/
+       */
       api.method();
       //[
       assert.equals(Array.from(Enumerable.count(3)), [1, 2, 3]);
@@ -188,10 +244,30 @@ define((require, exports, module) => {
     test('propertyValues', () => {
       /**
        * Create an iterator over an object's property values
-       **/
+       */
       api.method();
       //[
       assert.equals(Array.from(Enumerable.propertyValues({a: 1, b: 2})), [1, 2]);
+      //]
+    });
+
+    test('asArray', () => {
+      /**
+       * Convert object to array, if not already.
+       */
+      api.method();
+      //[
+      assert.equals(Enumerable.asArray({a: 1, b: 2}), [1, 2]);
+
+      const a = [1, 2, 3, 4];
+      assert.same(Enumerable.asArray(a), a);
+
+      assert.equals(Enumerable.asArray(Enumerable.count(3)), [1, 2, 3]);
+
+      assert.equals(Enumerable.asArray('hello'), ['h', 'e', 'l', 'l', 'o']);
+      assert.equals(Enumerable.asArray(123), [123]);
+      assert.equals(Enumerable.asArray(new Set([1, 2, 3])), [1, 2, 3]);
+      assert.equals(Enumerable.asArray(), []);
       //]
     });
   });
