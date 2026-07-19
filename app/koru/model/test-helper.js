@@ -13,7 +13,8 @@ define((require, exports, module) => {
     TH.match((actual) => {
       if (expect === actual) return true;
       if (
-        expect && actual && expect.constructor === actual.constructor && expect._id === actual._id
+        expect !== undefined && actual !== undefined && expect.constructor === actual.constructor &&
+        expect._id === actual._id
       ) {
         return deepEqual(actual.attributes, expect.attributes);
       }
@@ -23,7 +24,8 @@ define((require, exports, module) => {
     TH.match((actual) => {
       if (expect === actual) return true;
       if (
-        expect && actual && expect.constructor === actual.constructor && expect._id === actual._id
+        expect !== undefined && actual !== undefined && expect.constructor === actual.constructor &&
+        expect._id === actual._id
       ) {
         return true;
       }
