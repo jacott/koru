@@ -88,7 +88,7 @@ define((require) => {
       func: match(match.function[match$], 'match.func'),
       match: match(match.isMatch, 'match.match'),
       symbol: match((value) => value != null && value.constructor === Symbol, 'match.Symbol'),
-      id: match((value) => value !== 'undefined' && /^[a-z0-9]{3,24}$/i.test(value), 'match.id'),
+      id: match((value) => value !== 'undefined' && /^[-~a-z0-9]{3,24}$/i.test(value), 'match.id'),
     };
 
     for (const t in MATCHERS) {

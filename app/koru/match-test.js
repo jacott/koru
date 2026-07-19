@@ -129,17 +129,17 @@ define((require, exports, module) => {
       docProp('id', 'match a valid model `_id`');
       assert.isTrue(match.id.test('123'));
       assert.isTrue(match.id.test('aAgGzZqQ8901234567890123'));
+      assert.isTrue(match.id.test('aAgGzZqQ8901234567~-123'));
       assert.isFalse(match.id.test('0123456789012345678901234'));
       assert.isFalse(match.id.test('12'));
+      assert.isFalse(match.id.test('1212323+'));
       assert.isFalse(match.id.test('undefined'));
     });
 
     test('match naming', () => {
-      assert.same('' + match((arg) => true), 'match(arg => true)');
-      assert.same(
-        '' + match(function (arg) {
-          return true;
-        }),
+      assert.same('' + match((arg) => true), 'match((arg) => true)');
+      //fmt-ignore
+      assert.same('' + match(function (arg) {return true}),
         'match(function (arg) {return true})',
       );
       assert.same(
