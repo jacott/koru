@@ -121,6 +121,9 @@ define((require) => {
 
   Dom.dontFocus = false; // override in app logic
 
+  const origAddEventListener = window.addEventListener;
+  const origRemoveEventListener = window.removeEventListener;
+
   util.merge(Dom, {
     supportsPassiveEvents,
 
@@ -336,7 +339,23 @@ define((require) => {
         event = buildEvent(event, args);
       }
 
-      node.dispatchEvent(event);
+      let capturedError = null;
+      const errorHandler = (e) => {
+        capturedError = e.error;
+        e.preventDefault();
+      };
+
+      origAddEventListener.call(window, 'error', errorHandler);
+
+      try {
+        node.dispatchEvent(event);
+      } finally {
+        origRemoveEventListener.call(window, 'error', errorHandler);
+      }
+
+      if (capturedError) {
+        throw capturedError instanceof Error ? capturedError : new Error(capturedError);
+      }
 
       return event;
     },
