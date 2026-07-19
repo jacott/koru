@@ -154,14 +154,6 @@ define((require, exports, module) => {
     return result.join(',');
   };
 
-  const runOnCommit = (onCommit) => {
-    while (onCommit !== undefined) {
-      const {action} = onCommit;
-      onCommit = onCommit.next;
-      action();
-    }
-  };
-
   const normalizeQuery = (args) => {
     const text = args[0];
     const arg1 = args[1];
