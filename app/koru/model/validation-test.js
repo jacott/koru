@@ -2,7 +2,7 @@ define((require, exports, module) => {
   'use strict';
   /**
    * Utilities to help validate models.
-   **/
+   */
   const InclusionValidator = require('koru/model/validators/inclusion-validator');
   const RequiredValidator = require('koru/model/validators/required-validator');
   const TextValidator   = require('koru/model/validators/text-validator');
@@ -68,8 +68,10 @@ define((require, exports, module) => {
         //[
         const doc = {[error$]: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
 
-        assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; ' +
-                    'bar: is not valid');
+        assert.same(
+          Val.Error.toString(doc),
+          'foo: 34 characters is the maximum allowed; ' + 'bar: is not valid',
+        );
         //]
       });
     });
@@ -77,7 +79,7 @@ define((require, exports, module) => {
     test('addError', () => {
       /**
        * Add an error to an object; usually a {#../base-model;;model} document.
-       **/
+       */
       api.method();
       //[
       const doc = {};
@@ -100,9 +102,12 @@ define((require, exports, module) => {
       Val.transferErrors('foo', doc, doc2);
       assert.equals(doc2[error$], {foo: [['is_too_big', 400], ['is_wrong_color', 'red']]});
       Val.transferErrors('foo', doc, doc2);
-      assert.equals(doc2[error$], {foo: [
-        ['is_too_big', 400], ['is_wrong_color', 'red'],
-        ['is_too_big', 400], ['is_wrong_color', 'red']]});
+      assert.equals(doc2[error$], {
+        foo: [['is_too_big', 400], ['is_wrong_color', 'red'], ['is_too_big', 400], [
+          'is_wrong_color',
+          'red',
+        ]],
+      });
     });
 
     test('addSubErrors', () => {
@@ -120,8 +125,10 @@ define((require, exports, module) => {
       assert.equals(v.barErrors.length, 2);
 
       assert.equals(doc[error$], {
-        'foo.bar': [['is_too_big', 400], ['is_wrong_color', 'red'],
-                    ['is_wrong_type'], ['is_not_included', 'pink']],
+        'foo.bar': [['is_too_big', 400], ['is_wrong_color', 'red'], ['is_wrong_type'], [
+          'is_not_included',
+          'pink',
+        ]],
         'foo.fiz': [['is_invalid']],
         'foo.fuz': [['is_required']],
       });
@@ -160,15 +167,27 @@ define((require, exports, module) => {
       refute(Val.check('x', ['stirng']));
 
       // using match
-      spec = match(function (value) {return value % 3 === 1});
+      spec = match(function (value) {
+        return value % 3 === 1;
+      });
       assert(Val.check(1, spec));
       refute(Val.check(2, spec));
       assert(Val.check(4, spec));
 
       // types
-      spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
-      assert(Val.check(
-        {foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
+      spec = {
+        foo: 'string',
+        bar: {baz: 'number'},
+        'as if': 'date',
+        any: 'any',
+        numberAry: ['number'],
+      };
+      assert(
+        Val.check(
+          {foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}},
+          spec,
+        ),
+      );
 
       refute(Val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
       refute(Val.check({foo: 'x', bar: {baz: 'x'}, 'as if': new Date()}, spec));
@@ -185,27 +204,30 @@ define((require, exports, module) => {
       assert(Val.check({foo: ''}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
       assert(Val.check({foo: ''}, {foo: 'string'}, {altSpec: {foo: 'number'}}));
       refute(Val.check({foo: '', bar: 1, baz: ''}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
-      refute.msg('should not match sub field')(Val.check({foo: {bar: 1}}, {foo: {sub: 'string'}},
-                                                         {altSpec: {bar: 'number'}}));
+      refute.msg('should not match sub field')(
+        Val.check({foo: {bar: 1}}, {foo: {sub: 'string'}}, {altSpec: {bar: 'number'}}),
+      );
 
       // test onError, filter and baseName
 
       const data = {foo: {a: 1, b: 2, c: '3'}};
-      assert(Val.check(data, v.spec = {foo: {a: 'number', b: 'string'}}, {
-        baseName: 'x',
-        onError(name, obj, spec, key) {
-          if (key === 'c') {
-            assert.same(name, 'x.foo.c');
-            assert.same(obj, data.foo);
-            assert.same(spec, v.spec.foo);
-            delete obj[key];
-            return true;
-          }
-        },
-        filter(obj, key, spec, name) {
-          obj[key] = 'hello there';
-        },
-      }));
+      assert(
+        Val.check(data, v.spec = {foo: {a: 'number', b: 'string'}}, {
+          baseName: 'x',
+          onError(name, obj, spec, key) {
+            if (key === 'c') {
+              assert.same(name, 'x.foo.c');
+              assert.same(obj, data.foo);
+              assert.same(spec, v.spec.foo);
+              delete obj[key];
+              return true;
+            }
+          },
+          filter(obj, key, spec, name) {
+            obj[key] = 'hello there';
+          },
+        }),
+      );
 
       assert.equals(data, {foo: {a: 1, b: 'hello there'}});
     });
@@ -219,9 +241,13 @@ define((require, exports, module) => {
       const asyncMatch = {f1: new Match(() => true), f2: test, f3: test, f4: test};
 
       const data = {f1: 123, f2: 455, f3: 788, f4: 123};
-      assert.isFalse(await Val.check(data, asyncMatch, {onError(name, obj, subSpec) {
-        Val.addError(data, name, 'is_invalid');
-      }}));
+      assert.isFalse(
+        await Val.check(data, asyncMatch, {
+          onError(name, obj, subSpec) {
+            Val.addError(data, name, 'is_invalid');
+          },
+        }),
+      );
       assert.equals(data[error$], {f2: [['is_invalid']], f4: [['is_invalid']]});
     });
 
@@ -237,9 +263,11 @@ define((require, exports, module) => {
         Val.assertCheck({_id: 'abc'}, {name: 'string'});
       }, {error: 400, reason: {_id: [['is_invalid']]}});
 
-      Val.register(v.myModule, {valAbc(doc, field) {
-        this.addError(doc, field, 'is_abc');
-      }});
+      Val.register(v.myModule, {
+        valAbc(doc, field) {
+          this.addError(doc, field, 'is_abc');
+        },
+      });
 
       assert.exception(() => {
         Val.assertCheck({name: 'abc'}, Val.matchFields({name: {type: 'string', valAbc: true}}));
@@ -257,23 +285,35 @@ define((require, exports, module) => {
       api.method();
       //[
       spy(Val, 'assertCheck');
-      const existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
+      const existing = {
+        changes: {name: 'new name'},
+        $isNewRecord() {
+          return false;
+        },
+      };
       Val.assertDocChanges(existing, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, existing.changes, {name: 'string'});
 
       Val.assertCheck.reset();
-      const newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
+      const newDoc = {
+        changes: {_id: '123', name: 'new name'},
+        $isNewRecord() {
+          return true;
+        },
+      };
       Val.assertDocChanges(newDoc, {name: 'string'});
 
-      assert.calledWithExactly(
-        Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
+      assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {
+        altSpec: {_id: 'id'},
+      });
 
       Val.assertCheck.reset();
       Val.assertDocChanges(newDoc, {name: 'string'}, {_id: 'any'});
 
-      assert.calledWithExactly(
-        Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'any'}});
+      assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {
+        altSpec: {_id: 'any'},
+      });
 
       TH.noInfo();
       Val.assertCheck.reset();
@@ -293,20 +333,36 @@ define((require, exports, module) => {
     });
 
     test('allowIfSimple', () => {
-      assert.accessDenied(() => {Val.allowIfSimple([12, {}])});
-      assert.accessDenied(() => {Val.allowIfSimple({})});
-      refute.accessDenied(() => {Val.allowIfSimple('sdfs')});
-      refute.accessDenied(() => {Val.allowIfSimple(123)});
-      refute.accessDenied(() => {Val.allowIfSimple([], ['abc', 1234])});
+      assert.accessDenied(() => {
+        Val.allowIfSimple([12, {}]);
+      });
+      assert.accessDenied(() => {
+        Val.allowIfSimple({});
+      });
+      refute.accessDenied(() => {
+        Val.allowIfSimple('sdfs');
+      });
+      refute.accessDenied(() => {
+        Val.allowIfSimple(123);
+      });
+      refute.accessDenied(() => {
+        Val.allowIfSimple([], ['abc', 1234]);
+      });
     });
 
     test('allowIfValid', () => {
-      assert.invalidRequest(() => {Val.allowIfValid(false)});
+      assert.invalidRequest(() => {
+        Val.allowIfValid(false);
+      });
       assert.exception(() => {
         Val.allowIfValid(false, {[error$]: {x: 123}});
       }, {error: 400, reason: {x: 123}});
-      refute.invalidRequest(() => {Val.allowIfValid(true)});
-      assert.exception(() => {Val.allowIfValid(false)}, {error: 400, reason: 'is_invalid'});
+      refute.invalidRequest(() => {
+        Val.allowIfValid(true);
+      });
+      assert.exception(() => {
+        Val.allowIfValid(false);
+      }, {error: 400, reason: 'is_invalid'});
       assert.exception(() => {
         Val.allowIfValid(null, 'book');
       }, {error: 400, reason: {book: [['is_invalid']]}});
@@ -320,16 +376,23 @@ define((require, exports, module) => {
     });
 
     test('allowAccessIf', () => {
-      assert.accessDenied(() => {Val.allowAccessIf(false)});
-      refute.accessDenied(() => {Val.allowAccessIf(true)});
-      assert.exception(
-        () => Val.allowAccessIf(false, {[inspect$]: () => 'inspect msg'}),
-        {error: 403, reason: 'Access denied - inspect msg'},
-      );
-      assert.exception(
-        () => Val.allowAccessIf(false, {toString() {return this.foo}, foo: 'from toString'}),
-        {error: 403, reason: 'Access denied - from toString'},
-      );
+      assert.accessDenied(() => {
+        Val.allowAccessIf(false);
+      });
+      refute.accessDenied(() => {
+        Val.allowAccessIf(true);
+      });
+      assert.exception(() => Val.allowAccessIf(false, {[inspect$]: () => 'inspect msg'}), {
+        error: 403,
+        reason: 'Access denied - inspect msg',
+      });
+      assert.exception(() =>
+        Val.allowAccessIf(false, {
+          toString() {
+            return this.foo;
+          },
+          foo: 'from toString',
+        }), {error: 403, reason: 'Access denied - from toString'});
     });
 
     test('ensureString', () => {
@@ -395,16 +458,13 @@ define((require, exports, module) => {
     test('validators', () => {
       /**
        * Return a function that runs the validators with a given name. Called by BaseModel
-       **/
+       */
       const module = new require.module.constructor();
       module.id = 'models/model';
       module.onUnload = after;
 
       const fooStub = stub();
-      const barStub = {
-        bar1: stub(),
-        bar2: stub(),
-      };
+      const barStub = {bar1: stub(), bar2: stub()};
 
       const myunload = stub(koru, 'onunload').withArgs('mymod');
 
@@ -421,13 +481,15 @@ define((require, exports, module) => {
     test('validateFieldAsync', async () => {
       let errors = 'set';
       let fieldOpts;
-      Val.register(v.myModule, {async addIt(doc, field, x, _fieldOpts) {
-        await 1;
-        await 2;
-        fieldOpts = _fieldOpts;
-        doc[field] += x;
-        doc[error$] = errors;
-      }});
+      Val.register(v.myModule, {
+        async addIt(doc, field, x, _fieldOpts) {
+          await 1;
+          await 2;
+          fieldOpts = _fieldOpts;
+          doc[field] += x;
+          doc[error$] = errors;
+        },
+      });
       const doc = {age: 10};
 
       await Val.validateFieldAsync(doc, 'age', {type: 'number', addIt: 5});
@@ -447,11 +509,13 @@ define((require, exports, module) => {
     test('validateField', () => {
       let errors = 'set';
       let fieldOpts;
-      Val.register(v.myModule, {addIt(doc, field, x, _fieldOpts) {
-        fieldOpts = _fieldOpts;
-        doc[field] += x;
-        doc[error$] = errors;
-      }});
+      Val.register(v.myModule, {
+        addIt(doc, field, x, _fieldOpts) {
+          fieldOpts = _fieldOpts;
+          doc[field] += x;
+          doc[error$] = errors;
+        },
+      });
       const doc = {age: 10};
 
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
@@ -473,8 +537,7 @@ define((require, exports, module) => {
 
       sut.call({changes: {}}, 'foo');
 
-      refute.msg('Should not call when field value undefined')
-        .called(v.func);
+      refute.msg('Should not call when field value undefined').called(v.func);
 
       const doc = {changes: {foo: 'bar'}};
 
@@ -495,22 +558,27 @@ define((require, exports, module) => {
       v.opts.onError('xyz', {[error$]: {def: [['not_numeric']]}});
 
       assert.equals(doc[error$], {
-        foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
+        foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]],
+      });
     });
 
     test('typeSpec', () => {
       assert.equals(
-        Val.typeSpec({$fields: {foo: {type: 'a'}, bar: {type: 'b'},
-                                notMe: {type: 'b', readOnly: true}}}),
-        {foo: 'a', bar: 'b'});
+        Val.typeSpec({
+          $fields: {foo: {type: 'a'}, bar: {type: 'b'}, notMe: {type: 'b', readOnly: true}},
+        }),
+        {foo: 'a', bar: 'b'},
+      );
     });
 
     test('matchFields', () => {
-      Val.register(v.myModule, {divByx(doc, field, x) {
-        if (doc[field] % x !== 0) {
-          this.addError(doc, field, 'is_invalid');
-        }
-      }});
+      Val.register(v.myModule, {
+        divByx(doc, field, x) {
+          if (doc[field] % x !== 0) {
+            this.addError(doc, field, 'is_invalid');
+          }
+        },
+      });
 
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
       let doc = {foo: 4};
@@ -528,14 +596,16 @@ define((require, exports, module) => {
     });
 
     test('matchFieldsAsync', async () => {
-      Val.register(v.myModule, {async divByx(doc, field, x) {
-        await 1;
-        await 2;
-        if (doc[field] % x !== 0) {
-          await 3;
-          this.addError(doc, field, 'is_invalid');
-        }
-      }});
+      Val.register(v.myModule, {
+        async divByx(doc, field, x) {
+          await 1;
+          await 2;
+          if (doc[field] % x !== 0) {
+            await 3;
+            this.addError(doc, field, 'is_invalid');
+          }
+        },
+      });
 
       const matcher = Val.matchFieldsAsync({
         even: {type: 'number', divByx: 2},
