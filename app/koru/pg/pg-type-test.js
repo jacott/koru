@@ -52,6 +52,19 @@ isServer && define((require, exports, module) => {
         assert.same(PgType.oidToName(1007), 'int4[]');
       });
 
+      test('toOid', () => {
+        assert.same(PgType.toOid('text'), 25);
+        assert.same(PgType.toOid('text[]'), 1009);
+      });
+
+      test('assertToOid', () => {
+        assert.same(PgType.assertToOid('text'), 25);
+        assert.same(PgType.assertToOid(25), 25);
+        assert.same(PgType.assertToOid('text[]'), 1009);
+        assert.exception(() => PgType.assertToOid('tux'), {message: 'unknown type name: tux'});
+        assert.exception(() => PgType.assertToOid(3141), {message: 'unknown oid: 3141'});
+      });
+
       test('void', async () => {
         assert.equals(await client.exec(`SELECT '123'::void as a`, [], [0], [0]), [{a: undefined}]);
         assert.equals(await client.exec(`SELECT $1::void as a`, ['123'], [0], [0]), [{

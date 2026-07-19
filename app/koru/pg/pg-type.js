@@ -311,9 +311,11 @@ define((require, exports, module) => {
     arrayTextEncoders[oid] = arrayEncoderNames[name];
     oidNameMap[oid] = name;
     toOidMap[name] = oid;
-    oidNameMap[arrayOid] = name + '[]';
+    const arrayName = name + '[]';
+    oidNameMap[arrayOid] = arrayName;
 
     if (arrayOid != 0) {
+      toOidMap[arrayName] = arrayOid;
       arrayElementOids[arrayOid] = oid;
       elementArrayOids[oid] = arrayOid;
 
@@ -572,11 +574,11 @@ define((require, exports, module) => {
       }
       if (typeof n === 'string') {
         const v = toOidMap[n];
-        assert(v !== undefined, () => `unknown type name ${n}`);
+        assert(v !== undefined, () => `unknown type name: ${n}`);
         return v;
       }
       if (typeof n === 'number') {
-        assert(oidNameMap[n] !== undefined, () => `unknown type name: ${n}`);
+        assert(oidNameMap[n] !== undefined, () => `unknown oid: ${n}`);
         return n;
       }
       assert(false, `invalid type value: ${n}`);
