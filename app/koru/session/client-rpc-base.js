@@ -62,12 +62,12 @@ define((require) => {
     }
 
     if (this.isSimulation) {
-      this._rpcs[name]?.apply(util.thread, args);
+      return this._rpcs[name]?.apply(util.thread, args);
     } else {
       try {
         this.isSimulation = true;
         this._sendM(name, args, func);
-        this._rpcs[name]?.apply(util.thread, args);
+        return this._rpcs[name]?.apply(util.thread, args);
       } finally {
         this.isSimulation = false;
       }
