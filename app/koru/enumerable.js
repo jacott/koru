@@ -133,6 +133,12 @@ define(() => {
       return result;
     }
 
+    static propertyKeys(object) {
+      return new Enumerable(function* () {
+        for (const key in object) yield key;
+      });
+    }
+
     static propertyValues(object) {
       return new Enumerable(function* () {
         for (const key in object) yield object[key];

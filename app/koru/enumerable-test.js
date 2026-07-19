@@ -241,6 +241,16 @@ define((require, exports, module) => {
       //]
     });
 
+    test('propertyKeys', () => {
+      /**
+       * Create an iterator over an object's property keys
+       */
+      api.method();
+      //[
+      assert.equals(Array.from(Enumerable.propertyKeys({a: 1, b: 2})), ['a', 'b']);
+      //]
+    });
+
     test('propertyValues', () => {
       /**
        * Create an iterator over an object's property values
