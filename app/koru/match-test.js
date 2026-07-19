@@ -1,4 +1,4 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
@@ -7,7 +7,7 @@ define((require, exports, module)=>{
    *
    * Note when testing {#koru/test/core;.match} is a separate clone of this match framework. This
    * ensures any stubbing of match properties will not interfere with the test asserts.
-   **/
+   */
   const koru            = require('koru');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
@@ -16,36 +16,38 @@ define((require, exports, module)=>{
 
   const match = require('./match');
 
-  const assertThrows = (m, v, msg)=>{
+  const assertThrows = (m, v, msg) => {
     let aMsg;
     try {
       m.$throwTest(v);
-      assert.msg("failed")(false);
+      assert.msg('failed')(false);
+    } catch (ex) {
+      aMsg = ex;
     }
-    catch(ex) {aMsg = ex;}
-    assert.elide(()=>{assert.same(aMsg, msg)});
+    assert.elide(() => {
+      assert.same(aMsg, msg);
+    });
   };
 
-  const docProp = (name, info=`match any ${name}`)=>{
+  const docProp = (name, info = `match any ${name}`) => {
     api.property(name, {info});
   };
 
-  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
-    group("matchClass", ()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test}) => {
+    group('matchClass', () => {
       /**
        * Class of matchers.
-       *
-       **/
+       */
       let matchApi;
 
-      before(()=>{
+      before(() => {
         matchApi = api.innerSubject(match.constructor);
       });
 
-      test("test", ()=>{
+      test('test', () => {
         /**
          * Test if matcher matches.
-         **/
+         */
         matchApi.protoMethod();
         //[
         assert.isTrue(match.any.test(null));
@@ -53,27 +55,27 @@ define((require, exports, module)=>{
         //]
       });
 
-      test("$throwTest", ()=>{
+      test('$throwTest', () => {
         /**
          * Throw if test fails
-         **/
+         */
         matchApi.protoMethod();
         //[
         try {
           assert.isTrue(match.any.$throwTest(null));
-        } catch(ex) {
-          assert.fail("did not expect "+ex);
+        } catch (ex) {
+          assert.fail('did not expect ' + ex);
         }
         try {
           match.func.$throwTest(123);
-          assert.fail("expected expection");
-        } catch(ex) {
+          assert.fail('expected expection');
+        } catch (ex) {
           assert.same(ex, 'match.func');
         }
         //]
       });
     });
-    test("custom matchers", ()=>{
+    test('custom matchers', () => {
       /**
        * Build a custom matcher.
        *
@@ -85,11 +87,11 @@ define((require, exports, module)=>{
       {
         let match = api.custom(sut);
         //[
-        const match5 = match(arg => arg == 5);
+        const match5 = match((arg) => arg == 5);
         assert.isTrue(match5.test(5));
-        assert.isTrue(match5.test("5"));
+        assert.isTrue(match5.test('5'));
         assert.isFalse(match5.test(4));
-        assert.same(''+match(()=>true, 'my message'), 'my message');
+        assert.same('' + match(() => true, 'my message'), 'my message');
         //]
 
         api.done();
@@ -103,12 +105,15 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("match.optional", ()=>{
-      docProp('optional', 'match a standard matcher or `null` or `undefined`; `match.optional.date`');
+    test('match.optional', () => {
+      docProp(
+        'optional',
+        'match a standard matcher or `null` or `undefined`; `match.optional.date`',
+      );
       assert.isTrue(match.optional.id.test(null));
       assert.isTrue(match.optional.id.test(undefined));
-      assert.isTrue(match.optional.id.test("aAgGzZqQ8901234567890123"));
-      assert.isFalse(match.optional.id.test("0123456789012345678901234"));
+      assert.isTrue(match.optional.id.test('aAgGzZqQ8901234567890123'));
+      assert.isFalse(match.optional.id.test('0123456789012345678901234'));
 
       assert.isTrue(match.optional.date.test(null));
 
@@ -120,47 +125,62 @@ define((require, exports, module)=>{
       assert.isFalse(match.optional(match.string).test(0));
     });
 
-    test("match.id", ()=>{
+    test('match.id', () => {
       docProp('id', 'match a valid model `_id`');
-      assert.isTrue(match.id.test("123"));
-      assert.isTrue(match.id.test("aAgGzZqQ8901234567890123"));
-      assert.isFalse(match.id.test("0123456789012345678901234"));
-      assert.isFalse(match.id.test("12"));
-      assert.isFalse(match.id.test("undefined"));
+      assert.isTrue(match.id.test('123'));
+      assert.isTrue(match.id.test('aAgGzZqQ8901234567890123'));
+      assert.isFalse(match.id.test('0123456789012345678901234'));
+      assert.isFalse(match.id.test('12'));
+      assert.isFalse(match.id.test('undefined'));
     });
 
-    test("match naming", ()=>{
-      assert.same(''+match(arg => true), "match(arg => true)");
-      assert.same(''+match(function (arg) {return true}), "match(function (arg) {return true})");
-      assert.same(''+match(function fooMatch(arg) {return true}), 'match(fooMatch)');
-      assert.same(''+match(function (arg) {return true}, 'my message'), 'my message');
+    test('match naming', () => {
+      assert.same('' + match((arg) => true), 'match(arg => true)');
+      assert.same(
+        '' + match(function (arg) {
+          return true;
+        }),
+        'match(function (arg) {return true})',
+      );
+      assert.same(
+        '' + match(function fooMatch(arg) {
+          return true;
+        }),
+        'match(fooMatch)',
+      );
+      assert.same(
+        '' + match(function (arg) {
+          return true;
+        }, 'my message'),
+        'my message',
+      );
 
-      assert.same(''+match.optional.string, 'match.string[opt]');
-      assert.same(''+match.string, 'match.string');
-      assert.same(''+match.boolean, 'match.boolean');
-      assert.same(''+match.number, 'match.number');
-      assert.same(''+match.undefined, 'match.undefined');
-      assert.same(''+match.null, 'match.null');
-      assert.same(''+match.nil, 'match.nil');
-      assert.same(''+match.date, 'match.date');
-      assert.same(''+match.function, 'match.function');
-      assert.same(''+match.func, 'match.func');
-      assert.same(''+match.object, 'match.object');
-      assert.same(''+match.baseObject, 'match.baseObject');
-      assert.same(''+match.array, 'match.array');
-      assert.same(''+match.any, 'match.any');
-      assert.same(''+match.match, 'match.match');
+      assert.same('' + match.optional.string, 'match.string[opt]');
+      assert.same('' + match.string, 'match.string');
+      assert.same('' + match.boolean, 'match.boolean');
+      assert.same('' + match.number, 'match.number');
+      assert.same('' + match.undefined, 'match.undefined');
+      assert.same('' + match.null, 'match.null');
+      assert.same('' + match.nil, 'match.nil');
+      assert.same('' + match.date, 'match.date');
+      assert.same('' + match.function, 'match.function');
+      assert.same('' + match.func, 'match.func');
+      assert.same('' + match.object, 'match.object');
+      assert.same('' + match.baseObject, 'match.baseObject');
+      assert.same('' + match.array, 'match.array');
+      assert.same('' + match.any, 'match.any');
+      assert.same('' + match.match, 'match.match');
     });
 
-    test("match.equal", ()=>{
+    test('match.equal', () => {
       /**
        * Match `expected` using {#koru/util.deepEqual}
-       **/
+       */
       api.customIntercept(match, {name: 'equal', sig: 'match.'});
       //[
-      const me = match.equal([1,match.any]);
+      const me = match.equal([1, match.any]);
 
-      assert.isTrue(me.test([1,'x']));
+      assert.isTrue(me.test([1, 'x']));
       assert.isTrue(me.test([1, null]));
       assert.isFalse(me.test([1]));
       assert.isFalse(me.test([1, 1, null]));
@@ -170,16 +190,16 @@ define((require, exports, module)=>{
       assert.isTrue(me.$throwTest([1, null]));
     });
 
-    test("match.symbol", ()=>{
+    test('match.symbol', () => {
       docProp('symbol');
       assert.isTrue(match.symbol.test(Symbol()));
       assert.isFalse(match.symbol.test({}));
     });
 
-    test("match.is", ()=>{
+    test('match.is', () => {
       /**
        * Match exactly; like `Object.is`
-       **/
+       */
       api.customIntercept(match, {name: 'is', sig: 'match.'});
       const foo = {foo: 123};
       const me = match.is(foo);
@@ -187,21 +207,20 @@ define((require, exports, module)=>{
       assert.isFalse(me.test({foo: 123}));
     });
 
-    test("match.regExp", ()=>{
+    test('match.regExp', () => {
       const mr = match.regExp(/^ab*c$/i);
 
-      assert.isTrue(mr.test("abbbc"));
-      assert.isFalse(mr.test("abbbcd"));
+      assert.isTrue(mr.test('abbbc'));
+      assert.isFalse(mr.test('abbbcd'));
     });
 
-    test("match.between", ()=>{
+    test('match.between', () => {
       const mb = match.between(6, 9);
       assert.isTrue(mb.test(6));
       assert.isTrue(mb.test(7.5));
       assert.isTrue(mb.test(9));
       assert.isFalse(mb.test(9.1));
       assert.isFalse(mb.test(5.9));
-
 
       const mbe = match.between(6, 9, false, true);
       assert.isFalse(mbe.test(6));
@@ -214,7 +233,7 @@ define((require, exports, module)=>{
       assert.isTrue(mbtf.test(6));
     });
 
-    test("match.has", ()=>{
+    test('match.has', () => {
       const mi = match.has({a: 0, b: 2});
 
       assert.isTrue(mi.test('a'));
@@ -222,7 +241,7 @@ define((require, exports, module)=>{
       assert.isFalse(mi.test('c'));
     });
 
-    test("match.not", ()=>{
+    test('match.not', () => {
       /**
        * Match not. Invert the result of `arg` matcher.
 
@@ -235,7 +254,7 @@ define((require, exports, module)=>{
       //]
     });
 
-    test("match.or", ()=>{
+    test('match.or', () => {
       let mor = match.or(match.number, match.string, match.boolean, 'mymatch');
 
       assert.same(mor.message, 'mymatch');
@@ -251,12 +270,17 @@ define((require, exports, module)=>{
 
       mor = match.or(match.number, match.string);
       assert.isTrue(mor.test(1));
-      assert.isTrue(mor.test("a"));
+      assert.isTrue(mor.test('a'));
       assert.isFalse(mor.test(false));
     });
 
-    test("match.and", ()=>{
-      const mand = match.and(match.object, match.baseObject, match.equal({a: match.number}), 'mymatch');
+    test('match.and', () => {
+      const mand = match.and(
+        match.object,
+        match.baseObject,
+        match.equal({a: match.number}),
+        'mymatch',
+      );
 
       assert.same(mand.message, 'mymatch');
 
@@ -271,7 +295,7 @@ define((require, exports, module)=>{
       assertThrows(mand, {a: 'x'}, 'match.equal');
     });
 
-    test("match.tuple", ()=>{
+    test('match.tuple', () => {
       const mtup = match.tuple([match.object, match.number, match.equal({a: match.number})]);
 
       assert.same(mtup.message, 'match.tuple');
@@ -295,12 +319,11 @@ define((require, exports, module)=>{
       assertThrows(opt, ['1', 2], 'match.number');
     });
 
-    test("matching", ()=>{
+    test('matching', () => {
       docProp('string');
       assert.isTrue(match.string.test(''));
       assert.isFalse(match.string.test(1));
       assert.equals(match.string[inspect$](), 'match.string');
-
 
       docProp('undefined', 'match undefined');
       assert.isTrue(match.undefined.test());
@@ -318,7 +341,7 @@ define((require, exports, module)=>{
       assert.isTrue(match.nil.test(undefined));
 
       docProp('date');
-      assert.isTrue(match.date.test(new Date));
+      assert.isTrue(match.date.test(new Date()));
       assert.isFalse(match.date.test(''));
       assert.isFalse(match.date.test({}));
       assert.isFalse(match.date.test(new Date('invalid')));
@@ -340,7 +363,7 @@ define((require, exports, module)=>{
 
       docProp('func', 'match any function');
       assert.isTrue(match.func.test(function () {}));
-      assert.isTrue(match.func.test(()=>{}));
+      assert.isTrue(match.func.test(() => {}));
       assert.isFalse(match.func.test({}));
       assert.isFalse(match.func.test('hello'));
 
@@ -351,7 +374,7 @@ define((require, exports, module)=>{
       assert.isTrue(match.object.test(match.string));
       assert.isFalse(match.object.test(null));
       assert.isFalse(match.object.test(function () {}));
-      assert.isTrue(match.object.test(new Date));
+      assert.isTrue(match.object.test(new Date()));
       assert.isFalse(match.object.test('hello'));
 
       docProp('baseObject', 'match any object where constructor is Object');
@@ -359,7 +382,7 @@ define((require, exports, module)=>{
       assert.isFalse(match.baseObject.test(match.string));
       assert.isFalse(match.baseObject.test(null));
       assert.isFalse(match.baseObject.test(function () {}));
-      assert.isFalse(match.baseObject.test(new Date));
+      assert.isFalse(match.baseObject.test(new Date()));
       assert.isFalse(match.baseObject.test('hello'));
 
       docProp('array', 'match any object that is true for `Array.isArray`');

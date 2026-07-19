@@ -10,25 +10,27 @@ define((require) => {
 
   const constructor = () => {
     class Match {
-      constructor(test, message=`match(${test.name || test})`) {
+      constructor(test, message = `match(${test.name || test})`) {
         if (typeof test === 'function') {
           this[match$] = test;
         } else {
           switch (test.constructor) {
-          case RegExp:
-            this[match$] = (value) => typeof value === 'string' && test.test(value);
-            break;
-          default:
-            this[match$] = (value) => util.deepEqual(value, test);
+            case RegExp:
+              this[match$] = (value) => typeof value === 'string' && test.test(value);
+              break;
+            default:
+              this[match$] = (value) => util.deepEqual(value, test);
           }
         }
         this.message = message;
       }
 
-      test(actual, $throwTest) {return this[match$](actual, $throwTest)}
+      test(actual, $throwTest) {
+        return this[match$](actual, $throwTest);
+      }
 
       $throwTest(value) {
-        if (! this.test(value, '$throwTest')) {
+        if (!this.test(value, '$throwTest')) {
           throw this.toString();
         }
         return true;
@@ -36,9 +38,7 @@ define((require) => {
 
       toString() {
         const {message} = this;
-        return typeof message === 'function'
-          ? message()
-          : '' + message;
+        return typeof message === 'function' ? message() : '' + message;
       }
     }
 
@@ -46,31 +46,43 @@ define((require) => {
 
     match.constructor = Match;
 
-    match.make = (obj, test) => {obj[match$] = test};
+    match.make = (obj, test) => {
+      obj[match$] = test;
+    };
 
     match.isMatch = (matchable) => matchable?.[match$] !== undefined;
-    match.test = (matchable, actual) => matchable?.[match$] === undefined
-      ? util.deepEqual(actual, matchable)
-      : matchable[match$](actual);
+    match.test = (matchable, actual) =>
+      matchable?.[match$] === undefined
+        ? util.deepEqual(actual, matchable)
+        : matchable[match$](actual);
 
-    match.optional = (m) => match(
-      (value, mthd=match$) => value == null ||
-        m[mthd](value), m.message + '[opt]');
+    match.optional = (m) =>
+      match((value, mthd = match$) => value == null || m[mthd](value), m.message + '[opt]');
 
     'string number boolean undefined function'.split(' ').forEach((t) => {
       match.optional[t] = match.optional(
-        match[t] = match((value) => typeof value === t, `match.${t}`));
+        match[t] = match((value) => typeof value === t, `match.${t}`),
+      );
     });
 
     const MATCHERS = {
       any: match(() => true, 'match.any'),
       null: match((value) => value === null, 'match.null'),
       nil: match((value) => value == null, 'match.nil'),
-      date: match((value) => value != null && value.constructor === Date &&
-                  value.getDate() === value.getDate(), 'match.date'),
+      date: match(
+        (value) =>
+          value != null && value.constructor === Date && value.getDate() === value.getDate(),
+        'match.date',
+      ),
       error: match((value) => value instanceof Error, 'match.error'),
-      integer: match((value) => typeof value === 'number' && Math.floor(value) === value, 'match.integer'),
-      baseObject: match((value) => value != null && value.constructor === Object, 'match.baseObject'),
+      integer: match(
+        (value) => typeof value === 'number' && Math.floor(value) === value,
+        'match.integer',
+      ),
+      baseObject: match(
+        (value) => value != null && value.constructor === Object,
+        'match.baseObject',
+      ),
       object: match((value) => typeof value === 'object' && value !== null, 'match.object'),
       array: match((value) => Array.isArray(value), 'match.array'),
       func: match(match.function[match$], 'match.func'),
@@ -80,55 +92,59 @@ define((require) => {
     };
 
     for (const t in MATCHERS) {
-      match.optional[t] = match.optional(
-        match[t] = MATCHERS[t]);
+      match.optional[t] = match.optional(match[t] = MATCHERS[t]);
     }
 
     Object.assign(match, {
-      equal(expected, name='match.equal') {
-        return match((value) => {return util.deepEqual(value, expected)}, name);
+      equal(expected, name = 'match.equal') {
+        return match((value) => {
+          return util.deepEqual(value, expected);
+        }, name);
       },
-      is(expected, name=() => `match.is(${util.inspect(expected)})`) {
+      is(expected, name = () => `match.is(${util.inspect(expected)})`) {
         return match((value) => Object.is(value, expected), name);
       },
-      regExp(regexp, name='match.regExp') {
-        return match((value) => typeof value === 'string' &&
-                     regexp.test(value), name);
+      regExp(regexp, name = 'match.regExp') {
+        return match((value) => typeof value === 'string' && regexp.test(value), name);
       },
-      between(from, to, incFrom=true, incTo=true, name='match.between') {
-        return match((value) => (incFrom ? value >= from : value > from) &&
-                     (incTo ? value <= to : value < to), name);
+      between(from, to, incFrom = true, incTo = true, name = 'match.between') {
+        return match(
+          (value) => (incFrom ? value >= from : value > from) && (incTo ? value <= to : value < to),
+          name,
+        );
       },
-      has(set, name='match.has') {
+      has(set, name = 'match.has') {
         return match((value) => hasOwn(set, value), name);
       },
       or(...args) {
-        return match((value) => args.some((match) => match[match$](value)),
-                     typeof args[args.length - 1] === 'string' ? args.pop() : 'match.or');
+        return match(
+          (value) => args.some((match) => match[match$](value)),
+          typeof args[args.length - 1] === 'string' ? args.pop() : 'match.or',
+        );
       },
       and(...args) {
-        return match((value, mthd=match$) => {
+        return match((value, mthd = match$) => {
           return args.every((match) => match[mthd](value));
         }, typeof args[args.length - 1] === 'string' ? args.pop() : 'match.and');
       },
       not(arg) {
-        return match((value) => ! arg[match$](value), () => `match.not(${arg})`);
+        return match((value) => !arg[match$](value), () => `match.not(${arg})`);
       },
-      tuple(array, name='match.tuple') {
+      tuple(array, name = 'match.tuple') {
         const len = array.length;
-        return match((value, mthd=match$) => {
-          if (! Array.isArray(value) || value.length !== len) {
+        return match((value, mthd = match$) => {
+          if (!Array.isArray(value) || value.length !== len) {
             return false;
           }
 
           for (let i = 0; i < len; ++i) {
             const sm = array[i];
             if (mthd in sm) {
-              if (! sm[mthd](value[i])) {
+              if (!sm[mthd](value[i])) {
                 return false;
               }
             } else {
-              if (! util.deepEqual(value[i], sm)) {
+              if (!util.deepEqual(value[i], sm)) {
                 return false;
               }
             }
