@@ -85,19 +85,27 @@ isServer && define((require, exports, module) => {
 
        * @param model models used to resolve symbolic parameter types
 
-       * @param fields the select field expression to use defaults to `"*"`
+       * @param options can be:
+
+       *    `fields`: select field expression to use defaults to `"*"`
+
+       *    `cache`: by default cache the results with the current transaction tread. Defaults to true.
+
+       *    `raw`: by default return the row data. When false by default return model data. Defaults to false.
 
        */
       const SqlQuery = api.class();
       //[
-      const bigBooks = new SqlQuery(Book, `"pageCount" > {$pageCount} ORDER BY "pageCount"`);
+      const bigBooks = new SqlQuery(Book, `"pageCount" > {$pageCount} ORDER BY "pageCount"`, {
+        cache: true,
+      });
 
       assert.same(
         await bigBooks.fetchOne({pageCount: 300}),
         await Book.findBy('title', 'Pride and Prejudice'),
       );
 
-      const count = new SqlQuery(Book, `author ~ {$author}`, `count(1)`);
+      const count = new SqlQuery(Book, `author ~ {$author}`, {fields: 'count(1)'});
 
       assert.same(await count.value({author: '.*ima.*'}), 2);
       //]
@@ -107,8 +115,7 @@ isServer && define((require, exports, module) => {
       /**
        * Fetch one or zero rows from the query and close the portal.
        *
-       * @param options use `raw: true` to get row as basic object instead of models.
-       * use `dontCache: true` to avoid caching result
+       * @param options override the options set in the constructor
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -138,7 +145,7 @@ isServer && define((require, exports, module) => {
     });
 
     test('lazy dynamic init', async () => {
-      const countAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
+      const countAuthor = Book.sqlWhere(`"author" = {$author}`, {fields: 'author', raw: true});
 
       assert.equals(await countAuthor.value({author: 'Dima Zales'}), 'Dima Zales');
 
@@ -161,8 +168,7 @@ isServer && define((require, exports, module) => {
       /**
        * Fetch zero or more rows from the query and close the portal.
        *
-       * @param options use `raw: true` to get rows as basic object instead of models.
-       * use `dontCache: true` to avoid caching results
+       * @param options override the options set in the constructor
        */
       api.protoMethod();
       Book.docs._colMap = undefined;
@@ -207,7 +213,7 @@ isServer && define((require, exports, module) => {
        * return an asyncIterator over the rows returned from the query.
        *
        * @param options use `raw: true` to get rows as basic object instead of models.
-       * Use `dontCache: true` to avoid caching results.
+       * Use `cache: true` to cache results.
        * Use `limit: n` to specify how many rows are fetched at a time.
        */
       api.protoMethod();
@@ -222,13 +228,13 @@ isServer && define((require, exports, module) => {
       const titles = [];
 
       // --- Nesting ---
-      for await (const row of byAuthor.values({author: 'Dima Zales'}, {limit: 1})) {
+      for await (const row of byAuthor.values({author: 'Dima Zales'}, {limit: 1, cache: true})) {
         titles.push(row.summary);
         let count = 0;
         let sameDoc = 0;
 
         // can run same query with parent
-        for await (const row2 of byAuthor.values(row)) {
+        for await (const row2 of byAuthor.values(row, {cache: true})) {
           count += row2.pageCount;
           sameDoc += row === row2 ? 10 : 1;
         }
@@ -279,7 +285,7 @@ isServer && define((require, exports, module) => {
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
       //[
-      const findAuthor = Book.sqlWhere(`"author" = {$author}`, 'author');
+      const findAuthor = Book.sqlWhere(`"author" = {$author}`, {fields: 'author', raw: true});
 
       assert.equals(await findAuthor.value({author: 'Dima Zales'}, 'none'), 'Dima Zales');
 
@@ -354,7 +360,7 @@ WHERE title = {$title}`);
        * array to push values into
 
        * @param options use `raw: true` to get rows as basic object instead of models.
-       * Use `dontCache: true` to avoid caching results.
+       * Use `cache: true` to cache results.
        * Use `limit: n` to specify how many rows are fetched at a time.
        */
       api.protoMethod();
@@ -369,7 +375,7 @@ WHERE title = {$title}`);
 
       assert.equals(titles, ['Limbo by Dima Zales', 'Oasis by Dima Zales']);
 
-      await byAuthor.forEach({author: 'Jane Austen'}, titles, {dontCache: true});
+      await byAuthor.forEach({author: 'Jane Austen'}, titles, {cache: false});
       assert.equals(titles, [
         'Limbo by Dima Zales',
         'Oasis by Dima Zales',

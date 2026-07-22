@@ -14,8 +14,8 @@ define((require, exports, module) => {
 
   let portalName = 0;
 
-  const RAW = {raw: true};
-  const DEFAULT = {raw: false};
+  const RAW = {raw: true, cache: false};
+  const DEFAULT = {raw: false, cache: false};
 
   const conn = (q) => {
     const table = q.model.docs;
@@ -32,10 +32,7 @@ define((require, exports, module) => {
     if (opts.raw) {
       return (rec) => rec;
     }
-    if (opts.dontCache) {
-      return (rec) => new model(rec);
-    }
-    return (rec) => model[makeDoc$](rec);
+    return opts.cache ? (rec) => model[makeDoc$](rec) : (rec) => new model(rec);
   };
 
   const recordMapper = (model, opts, type) => {
@@ -46,20 +43,18 @@ define((require, exports, module) => {
       if (opts.raw) {
         return callback;
       }
-      if (opts.dontCache) {
-        return (rec) => callback(new model(rec));
-      }
-      return (rec) => callback(model[makeDoc$](rec));
+      return opts.cache
+        ? (rec) => callback(model[makeDoc$](rec))
+        : (rec) => callback(new model(rec));
     }
 
     const list = type;
     if (opts.raw) {
       return (rec) => (list.push(rec), true);
     }
-    if (opts.dontCache) {
-      return (rec) => (list.push(new model(rec)), true);
-    }
-    return (rec) => (list.push(model[makeDoc$](rec)), true);
+    return opts.cache
+      ? (rec) => (list.push(model[makeDoc$](rec)), true)
+      : (rec) => (list.push(new model(rec)), true);
   };
 
   const toSQLStatement = (model, fields, queryStr) => {
@@ -80,11 +75,13 @@ define((require, exports, module) => {
   };
 
   class SqlQuery {
-    constructor(model, queryStr, fields = '*') {
+    constructor(model, queryStr, options = DEFAULT) {
       this.model = model;
-      this.queryStr = toSQLStatement(model, fields, queryStr);
+      this.queryStr = toSQLStatement(model, options.fields ?? '*', queryStr);
       this[ps$] = undefined;
       this[table$] = undefined;
+      this.raw = options.raw ?? false;
+      this.cache = options.cache ?? false;
     }
 
     async #initPs() {
@@ -124,19 +121,21 @@ define((require, exports, module) => {
       return (this[ps$] ??= await this.#initPs()).execute(c, params);
     }
 
-    async fetchOne(params, options = DEFAULT) {
+    async fetchOne(params, options) {
       const {model} = this;
       const rec = await this.#fetchOneRec(params);
-      return rec === undefined ? undefined : basicMapper(model, options)(rec);
+      return rec === undefined ? undefined : basicMapper(model, options ?? this)(rec);
     }
 
-    async fetch(params, options = DEFAULT) {
+    async fetch(params, options) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
       const rows = [];
-      const err = await port.fetch(ps._readyQuery(c, port, recordMapper(model, options, rows)));
+      const err = await port.fetch(
+        ps._readyQuery(c, port, recordMapper(model, options ?? this, rows)),
+      );
       if (err !== undefined) {
         throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
       }
@@ -151,14 +150,14 @@ define((require, exports, module) => {
       return rows;
     }
 
-    async forEach(params, callback, options = DEFAULT) {
+    async forEach(params, callback, options) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
-      const {limit} = options;
+      const limit = options?.limit;
       const err = await port.fetch(
-        ps._readyQuery(c, port, recordMapper(model, options, callback)),
+        ps._readyQuery(c, port, recordMapper(model, options ?? this, callback)),
         limit,
       );
       if (err !== undefined) {
@@ -166,7 +165,7 @@ define((require, exports, module) => {
       }
     }
 
-    async *values(params, options = DEFAULT) {
+    async *values(params, options) {
       const {model} = this;
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
@@ -176,8 +175,8 @@ define((require, exports, module) => {
 
       const rows = [];
 
-      const callback = ps._readyQuery(c, port, recordMapper(model, options, rows));
-      const {limit = 50} = options;
+      const callback = ps._readyQuery(c, port, recordMapper(model, options ?? this, rows));
+      const limit = options?.limit ?? 50;
 
       while (true) {
         const err = await port.fetch(callback, limit);
