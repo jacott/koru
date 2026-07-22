@@ -13,7 +13,10 @@ define((require, exports, module) => {
     beforeEach(async () => {
       obs = [];
       TestModel = Model.define('TestModel').defineFields({
-        name: 'string', age: 'number', toys: 'object'});
+        name: 'string',
+        age: 'number',
+        toys: 'object',
+      });
       doc = await TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
     });
 
@@ -47,7 +50,12 @@ define((require, exports, module) => {
       const origId = dbBroker.dbId;
       let dbId = origId;
       intercept(dbBroker, 'dbId');
-      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return dbId}});
+      Object.defineProperty(dbBroker, 'dbId', {
+        configurable: true,
+        get() {
+          return dbId;
+        },
+      });
       const oc = spy(TestModel, 'onChange');
 
       const origOb = stub();
@@ -91,9 +99,13 @@ define((require, exports, module) => {
       const ob2 = stub();
       const ob3 = stub();
       obs.push(
-        TestModel.observeId(doc._id, async (v) => {await 1; ob1(v)}),
+        TestModel.observeId(doc._id, async (v) => {
+          await 1;
+          ob1(v);
+        }),
         TestModel.observeId(doc._id, ob2),
-        TestModel.onChange(ob3));
+        TestModel.onChange(ob3),
+      );
 
       doc.age = 17;
       await doc.$$save();
@@ -124,6 +136,16 @@ define((require, exports, module) => {
       await doc.$remove();
 
       assert.calledWith(ob, DocChange.delete(doc));
+    });
+
+    test('observeId added', async () => {
+      const ob = stub();
+      const id = 'newid';
+      obs.push(TestModel.observeId('newid', ob));
+
+      const doc = await TestModel.create({_id: 'newid', name: 'new one'});
+
+      assert.calledWith(ob, DocChange.add(doc));
     });
   });
 });

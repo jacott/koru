@@ -13,7 +13,7 @@ define((require) => {
       return [
         observers,
         model.onChange((dc) => {
-          const cbs = observers[dc.doc._id];
+          const cbs = observers[dc._id];
           if (cbs !== void 0) {
             return cbs.notify(dc);
           }
