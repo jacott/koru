@@ -917,8 +917,15 @@ define((require) => {
       return ans;
     },
 
-    pluralize(name, value) {
+    pluralize(name, value, plural = null) {
       if (value === 1) return name;
+
+      if (plural != null) return plural;
+
+      if (/(?:[sxz]|ch|sh)$/i.test(name)) return name + 'es';
+      if (/[^aeiou]y$/i.test(name)) return name.slice(0, -1) + 'ies';
+      if (name.endsWith('fe')) return name.slice(0, -2) + 'ves';
+      if (name.endsWith('f') && !name.endsWith('ff')) return name.slice(0, -1) + 'ves';
       return name + 's';
     },
 

@@ -1330,6 +1330,13 @@ define((require, exports, module) => {
     test('pluralize', () => {
       assert.same(util.pluralize('day', 1), 'day');
       assert.same(util.pluralize('day', 2), 'days');
+      assert.same(util.pluralize('knife', 5), 'knives');
+      assert.same(util.pluralize('leaf', 5), 'leaves');
+      assert.same(util.pluralize('rally', 5), 'rallies');
+      assert.same(util.pluralize('cuff', 2), 'cuffs');
+      assert.same(util.pluralize('bush', 2), 'bushes');
+      assert.same(util.pluralize('person', 1, 'people'), 'person');
+      assert.same(util.pluralize('person', 2, 'people'), 'people');
     });
 
     test('initials', () => {

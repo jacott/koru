@@ -281,6 +281,22 @@ define((require, exports, module) => {
         //]
       });
 
+      test('displayName', () => {
+        /**
+         * Return a human readable pluralized string of the model name. Assumes english and only
+         * applies simple pluralization rules.
+         */
+        api.method();
+        const {Book} = v;
+        class ClassOfService extends BaseModel {
+          static modelName = 'ClassOfService';
+        }
+        //[
+        assert.same(Book.displayName(), 'Books');
+        assert.same(ClassOfService.displayName(), 'Class Of Services');
+        //]
+      });
+
       test('isIdLocked', async () => {
         /**
          * Test if an id is locked.

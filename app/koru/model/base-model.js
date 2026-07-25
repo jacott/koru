@@ -112,6 +112,10 @@ define((require, exports, module) => {
       });
     }
 
+    static displayName() {
+      return util.pluralize(util.titleize(this.modelName), 2);
+    }
+
     static async create(attributes = {}) {
       const doc = new this(null, deepCopy(attributes));
       await doc.$save();
