@@ -59,6 +59,28 @@ define(() => {
       });
     }
 
+    skip(n) {
+      const iter = this[iter$];
+      return new Enumerable(function* () {
+        for (const v of iter) {
+          if (n > 0) --n;
+          else {
+            yield v;
+          }
+        }
+      });
+    }
+
+    take(n) {
+      const iter = this[iter$];
+      return new Enumerable(function* () {
+        for (const v of iter) {
+          if (--n < 0) return;
+          yield v;
+        }
+      });
+    }
+
     reduce(reducer, seed) {
       for (const v of this[iter$]) {
         if (seed === undefined) {
@@ -74,6 +96,14 @@ define(() => {
       for (const v of this[iter$]) {
         callback(v);
       }
+    }
+
+    toObject(callback) {
+      const object = {};
+      for (const v of this[iter$]) {
+        callback(object, v);
+      }
+      return object;
     }
 
     get [Symbol.iterator]() {

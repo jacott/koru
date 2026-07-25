@@ -138,6 +138,45 @@ define((require, exports, module) => {
       //]
     });
 
+    test('skip', () => {
+      /**
+       * Return an Enumerable that skips the first `n` elements.
+       */
+      api.protoMethod();
+      //[
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+          yield 6;
+        },
+      });
+      assert.equals(Array.from(iter.skip(2)), [3, 6]);
+      assert.equals(Array.from(iter.skip(1).skip(2)), [6]);
+      //]
+    });
+
+    test('take', () => {
+      /**
+       * Return an Enumerable that takes only the first `n` elements.
+       */
+      api.protoMethod();
+      //[
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+          yield 6;
+        },
+      });
+      assert.equals(Array.from(iter.take(2)), [1, 5]);
+      assert.equals(Array.from(iter.take(3).skip(1)), [5, 3]);
+      assert.equals(Array.from(iter.skip(1).take(2)), [5, 3]);
+      //]
+    });
+
     test('mapToArray', () => {
       /**
        * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
@@ -227,6 +266,22 @@ define((require, exports, module) => {
       });
       assert.same(iter.reduce((sum, value) => sum + value, 5), 9);
       assert.same(iter.reduce((sum, value) => sum - value), -2);
+      //]
+    });
+
+    test('toObject', () => {
+      /**
+       * Run `callback` on each member passing an object and the current iter entry.
+       */
+      api.protoMethod();
+      //[
+      const iter = new Enumerable({
+        *[Symbol.iterator]() {
+          yield 'a';
+          yield 'b';
+        },
+      });
+      assert.equals(iter.toObject((o, value) => o[value] = value), {a: 'a', b: 'b'});
       //]
     });
 
