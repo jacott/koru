@@ -255,7 +255,10 @@ define((require) => {
 
     validateField(doc, field, spec) {
       for (const name in spec) {
-        validators[name]?.call(this, doc, field, spec[name], spec);
+        const ans = validators[name]?.call(this, doc, field, spec[name], spec);
+        if (ans !== undefined) {
+          Val.addError(doc, field, ans);
+        }
       }
 
       if (doc[error$] !== undefined) return false;
@@ -271,7 +274,10 @@ define((require) => {
 
     async validateFieldAsync(doc, field, spec) {
       for (const name in spec) {
-        await validators[name]?.call(this, doc, field, spec[name], spec);
+        const ans = await validators[name]?.call(this, doc, field, spec[name], spec);
+        if (ans !== undefined) {
+          Val.addError(doc, field, ans);
+        }
       }
 
       if (doc[error$] !== undefined) return false;

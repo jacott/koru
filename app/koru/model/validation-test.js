@@ -532,6 +532,29 @@ define((require, exports, module) => {
       assert.same(doc.age, 'x5');
     });
 
+    test('simple validateField', () => {
+      Val.register(v.myModule, {
+        simple(doc, field) {
+          return 'simple_is_invalid';
+        },
+      });
+      const doc = {};
+      Val.validateField(doc, 'x', {type: 'text', simple: true});
+      assert.equals(doc[error$], {x: [['simple_is_invalid']]});
+    });
+
+    test('simple validateFieldAsync', async () => {
+      Val.register(v.myModule, {
+        async simple(doc, field) {
+          await 1;
+          return 'simple_is_invalid';
+        },
+      });
+      const doc = {};
+      await Val.validateFieldAsync(doc, 'x', {type: 'text', simple: true});
+      assert.equals(doc[error$], {x: [['simple_is_invalid']]});
+    });
+
     test('nestedFieldValidator', () => {
       const sut = Val.nestedFieldValidator(v.func = stub());
 

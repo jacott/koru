@@ -370,7 +370,10 @@ define((require, exports, module) => {
                   ? this[original$] === undefined || this[original$][field] !== value
                   : this.$hasChanged(field))
               ) {
-                await args[0].call(Val, this, field, args[1], args[2]);
+                const ans = await args[0].call(Val, this, field, args[1], args[2]);
+                if (ans !== undefined) {
+                  Val.addError(this, field, ans);
+                }
               }
             }
           }
