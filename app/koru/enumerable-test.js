@@ -17,15 +17,19 @@ define((require, exports, module) => {
        */
       const Enumerable = api.class();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 3;
         },
-      });
+      };
+      let iter = new Enumerable(source);
       assert.same(iter.count(), 2);
+      assert.equals(Array.from(iter), []);
+
+      iter = new Enumerable(source);
       assert.equals(Array.from(iter), [1, 3]);
-      assert.same(iter.count(), 2);
+      assert.same(iter.count(), 0); // iter is consumed
 
       const iter2 = new Enumerable(function* () {
         yield 1;
@@ -34,8 +38,7 @@ define((require, exports, module) => {
       });
 
       assert.same(iter2.filter((i) => i != 3).count(), 2);
-      assert.equals(Array.from(iter2), [1, 3, 5]);
-
+      assert.equals(Array.from(iter2), []);
       //]
     });
 
@@ -58,15 +61,15 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
         },
-      });
-      assert.isTrue(iter.every((i) => i));
-      assert.isFalse(iter.every((i) => i != 5));
+      };
+      assert.isTrue(new Enumerable(source).every((i) => i));
+      assert.isFalse(new Enumerable(source).every((i) => i != 5));
       //]
     });
 
@@ -79,15 +82,15 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
         },
-      });
-      assert.isTrue(iter.some((i) => i == 5));
-      assert.isFalse(iter.some((i) => false));
+      };
+      assert.isTrue(new Enumerable(source).some((i) => i == 5));
+      assert.isFalse(new Enumerable(source).some((i) => false));
       //]
     });
 
@@ -100,15 +103,15 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 2;
           yield 5;
           yield 3;
         },
-      });
-      assert.equals(iter.find((i) => i % 2 == 1), 5);
-      assert.same(iter.find((i) => i == 7), void 0);
+      };
+      assert.equals(new Enumerable(source).find((i) => i % 2 == 1), 5);
+      assert.same(new Enumerable(source).find((i) => i == 7), void 0);
       //]
     });
 
@@ -121,19 +124,18 @@ define((require, exports, module) => {
        **/
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
         },
-      });
-      const mapped = iter.filter((i) => i != 5);
-      assert.equals(mapped.count(), 2);
+      };
+      const mapped = new Enumerable(source).filter((i) => i != 5);
       assert.equals(Array.from(mapped), [1, 3]);
-      assert.equals(iter.filter((i) => false)[Symbol.iterator]().next(), {
+      assert.equals(new Enumerable(source).filter((i) => false)[Symbol.iterator]().next(), {
         done: true,
-        value: void 0,
+        value: undefined,
       });
       //]
     });
@@ -144,16 +146,16 @@ define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
           yield 6;
         },
-      });
-      assert.equals(Array.from(iter.skip(2)), [3, 6]);
-      assert.equals(Array.from(iter.skip(1).skip(2)), [6]);
+      };
+      assert.equals(Array.from(new Enumerable(source).skip(2)), [3, 6]);
+      assert.equals(Array.from(new Enumerable(source).skip(1).skip(2)), [6]);
       //]
     });
 
@@ -163,17 +165,17 @@ define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
           yield 6;
         },
-      });
-      assert.equals(Array.from(iter.take(2)), [1, 5]);
-      assert.equals(Array.from(iter.take(3).skip(1)), [5, 3]);
-      assert.equals(Array.from(iter.skip(1).take(2)), [5, 3]);
+      };
+      assert.equals(Array.from(new Enumerable(source).take(2)), [1, 5]);
+      assert.equals(Array.from(new Enumerable(source).take(3).skip(1)), [5, 3]);
+      assert.equals(Array.from(new Enumerable(source).skip(1).take(2)), [5, 3]);
       //]
     });
 
@@ -231,24 +233,26 @@ define((require, exports, module) => {
       //]
     });
 
-    test('map', () => {
+    test('filterMap', () => {
       /**
-       * Map (and filter) an iterator to another value. If the `mapper` returns `undefined` then the
+       * Filter and map an iterator to another value. If the `mapper` returns `undefined` then the
        * value is filtered out of the results
        */
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 5;
           yield 3;
         },
-      });
-      const mapped = iter.map((i) => i == 5 ? undefined : 2 * i);
-      assert.equals(mapped.count(), 2);
+      };
+      const mapped = new Enumerable(source).filterMap((i) => i == 5 ? undefined : 2 * i);
       assert.equals(Array.from(mapped), [2, 6]);
-      assert.equals(iter.map((i) => 2 * i)[Symbol.iterator]().next(), {done: false, value: 2});
+      assert.equals(new Enumerable(source).filterMap((i) => 2 * i)[Symbol.iterator]().next(), {
+        done: false,
+        value: 2,
+      });
       //]
     });
 
@@ -258,14 +262,28 @@ define((require, exports, module) => {
        */
       api.protoMethod();
       //[
-      const iter = new Enumerable({
+      const source = {
         *[Symbol.iterator]() {
           yield 1;
           yield 3;
         },
-      });
-      assert.same(iter.reduce((sum, value) => sum + value, 5), 9);
-      assert.same(iter.reduce((sum, value) => sum - value), -2);
+      };
+      assert.same(new Enumerable(source).reduce((sum, value) => sum + value, 5), 9);
+      assert.same(new Enumerable(source).reduce((sum, value) => sum - value), -2);
+      //]
+    });
+
+    test('forEach', () => {
+      /**
+       * Run `callback` on each member
+       */
+      api.protoMethod();
+      //[
+      let a = 0;
+      new Enumerable([1, 3]).forEach((n) => a += n);
+      assert.same(a, 4);
+      new Enumerable([5, 7]).forEach((n) => a *= n);
+      assert.same(a, 140);
       //]
     });
 

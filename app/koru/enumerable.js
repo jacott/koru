@@ -3,111 +3,159 @@ define(() => {
 
   const Generator = (function* () {}).constructor;
 
+  const INVALID = () => {
+    throw new Error('Invalid iterator');
+  };
+
+  const DONE = Object.freeze({value: undefined, done: true});
+
   class Enumerable {
     constructor(iter) {
-      if (iter.constructor === Generator) {
-        this[iter$] = {[Symbol.iterator]: iter};
-      } else {
+      if (typeof iter?.next === 'function') {
         this[iter$] = iter;
+      } else if (iter?.constructor === Generator) {
+        this[iter$] = iter();
+      } else if (typeof iter?.[Symbol.iterator] === 'function') {
+        this[iter$] = iter[Symbol.iterator]();
+      } else {
+        INVALID();
       }
     }
 
+    next() {
+      return this[iter$].next();
+    }
+
+    [Symbol.iterator]() {
+      return this;
+    }
+
     count() {
-      let len = 0;
       const iter = this[iter$];
-      if (Array.isArray(iter)) return iter.length;
-      for (const _ of iter) ++len;
-      return len;
+      let count = 0;
+      while (!iter.next().done) ++count;
+      return count;
     }
 
     every(test) {
-      for (const v of this[iter$]) {
-        if (!test(v)) return false;
+      const iter = this[iter$];
+      let n;
+      while (!(n = iter.next()).done) {
+        if (!test(n.value)) return false;
       }
       return true;
     }
 
     some(test) {
-      for (const v of this[iter$]) {
-        if (test(v)) return true;
+      const iter = this[iter$];
+      let n;
+      while (!(n = iter.next()).done) {
+        if (test(n.value)) return true;
       }
       return false;
     }
 
     find(test) {
-      for (const v of this[iter$]) {
-        if (test(v)) return v;
+      const iter = this[iter$];
+      let n;
+      while (!(n = iter.next()).done) {
+        if (test(n.value)) return n.value;
       }
     }
 
-    map(mapper) {
-      const iter = this[iter$];
-      return new Enumerable(function* () {
-        for (const v of iter) {
-          const ans = mapper(v);
-          if (ans !== undefined) yield ans;
-        }
-      });
+    filterMap(mapper) {
+      let iter = this[iter$];
+      this[iter$] = {
+        next: () => {
+          let n;
+          while (!(n = iter.next()).done) {
+            const value = mapper(n.value);
+            if (value !== undefined) {
+              return {value, done: false};
+            }
+          }
+          return n;
+        },
+      };
+      return this;
     }
 
     filter(test) {
-      const self = this;
-      return new Enumerable(function* () {
-        for (const v of self[iter$]) {
-          if (test(v)) yield v;
-        }
-      });
+      let iter = this[iter$];
+      this[iter$] = {
+        next: () => {
+          let n;
+          while (!(n = iter.next()).done) {
+            if (test(n.value)) return n;
+          }
+          return n;
+        },
+      };
+      return this;
     }
 
     skip(n) {
-      const iter = this[iter$];
-      return new Enumerable(function* () {
-        for (const v of iter) {
-          if (n > 0) --n;
-          else {
-            yield v;
+      let iter = this[iter$];
+      let skipped = false;
+      this[iter$] = {
+        next: () => {
+          if (!skipped) {
+            skipped = true;
+            while (n-- > 0 && !iter.next().done) {}
           }
-        }
-      });
+          return iter.next();
+        },
+      };
+      return this;
     }
 
     take(n) {
-      const iter = this[iter$];
-      return new Enumerable(function* () {
-        for (const v of iter) {
-          if (--n < 0) return;
-          yield v;
-        }
-      });
+      let iter = this[iter$];
+      this[iter$] = {
+        next: () => {
+          let x;
+          if (n > 0 && !(x = iter.next()).done) {
+            --n;
+            return x;
+          }
+          return DONE;
+        },
+      };
+      return this;
     }
 
     reduce(reducer, seed) {
-      for (const v of this[iter$]) {
-        if (seed === undefined) {
-          seed = v;
+      const iter = this[iter$];
+      let hasSeed = arguments.length > 1;
+      let n;
+      while (!(n = iter.next()).done) {
+        if (!hasSeed) {
+          seed = n.value;
+          hasSeed = true;
         } else {
-          seed = reducer(seed, v);
+          seed = reducer(seed, n.value);
         }
       }
       return seed;
     }
 
     forEach(callback) {
-      for (const v of this[iter$]) {
-        callback(v);
+      const iter = this[iter$];
+      let n;
+      while (!(n = iter.next()).done) {
+        callback(n.value);
       }
     }
 
     toObject(callback) {
       const object = {};
-      for (const v of this[iter$]) {
-        callback(object, v);
+
+      const iter = this[iter$];
+      let n;
+      while (!(n = iter.next()).done) {
+        callback(object, n.value);
       }
       return object;
-    }
-
-    get [Symbol.iterator]() {
-      return this[iter$][Symbol.iterator];
     }
 
     static asArray(object) {
