@@ -52,7 +52,7 @@ define((require) => {
           clientX: lastEvent.clientX,
           clientY: lastEvent.clientY,
         });
-      }, 520);
+      }, DRAGSTART_WAIT);
       document.addEventListener('pointermove', this.listener, Dom.captureEventOption);
       document.addEventListener('pointerup', this.listener, Dom.captureEventOption);
       document.addEventListener('pointercancel', this.listener, Dom.captureEventOption);

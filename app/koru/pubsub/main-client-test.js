@@ -32,12 +32,11 @@ define((require) => {
           constructor(args) {
             super(args);
             const {shelf} = this.args;
-            this.match(Book, (doc) => doc.shelf === self);
+            this.match(Book, (doc) => doc.shelf === shelf);
           }
           async connect() {
             // step 2 from below calls this
-            this.lastSubscribed =
-              await lookupLastSubscribed(this);
+            this.lastSubscribed = await lookupLastSubscribed(this);
             // connect to server
             super.connect();
           }
@@ -71,12 +70,10 @@ define((require) => {
         });
         //]
 
-
         //[
         // Step 7 - send close to server
         sub.stop();
         //]
-
 
         assert.same(sub.state, 'stopped');
       });
