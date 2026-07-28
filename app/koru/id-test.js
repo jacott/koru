@@ -1,6 +1,7 @@
 define((require, exports, module) => {
   'use strict';
   const AccSha256       = require('koru/crypto/acc-sha256');
+  const Enumerable      = require('koru/enumerable');
   const TH              = require('koru/test-helper');
   const Uuidv7          = require('koru/uuidv7');
 
@@ -10,7 +11,7 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('random', () => {
-      let before = Date.now();
+      let before = Date.now() - 0.6;
       Id.random();
       const id1 = Id.random();
       const id2 = Id.random();
@@ -77,6 +78,16 @@ define((require, exports, module) => {
       assert.same(new Id(1012n, 0n).toBase64(2), 'Ep');
     });
 
+    test('nextHash', () => {
+      const ans = Enumerable.count(4).reduce((a, n) => a.nextHash(BigInt(n)), new Id(1n, 2n));
+
+      assert.same(ans.toBase64(17), '3HVt889fYYIpWMEdW');
+      assert.same(ans.nextHash(ans.getLow(), ans.getHigh()).toBase64(17), 'h9R2etF3zAFrh-TwI');
+      assert.same(ans.nextHash().toBase64(17), 'h9R2etF3zAFrh-TwI');
+      assert.same(ans.nextHash(ans.getHigh()).toBase64(17), 'xjGYvC-x9EIR5bB4K');
+      assert.same(ans.nextHash(0n, 1n).nextHash(0n, 1n).toBase64(17), 'qBDcf6D7B4imh-rhS');
+    });
+
     test('v1HashStrings', () => {
       assert.same(
         Id.v1HashStrings(
@@ -86,6 +97,17 @@ define((require, exports, module) => {
         ),
         'oYpoTigKi3eSaVukC',
       );
+
+      const ans = Enumerable.count(4).reduce((a, n) => (a.push(Id.v1HashStrings([a.at(-1)])), a), [
+        '4',
+      ]);
+      assert.equals(ans, [
+        '4',
+        '6dDIAos3B4FZHoTtc',
+        'PThKPomAnqmTYOnin',
+        'eZDm6vj0FJhk6~o2Z',
+        'SEOA4ZpZVnqRwvsKM',
+      ]);
 
       assert.same(
         Id.v1HashStrings(['zzzzzzzzzzzzzzzzzzD', 'zzzzzzzzzzzzzzzzzz']),

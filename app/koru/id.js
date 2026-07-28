@@ -17,13 +17,10 @@ define((require) => {
   const SHARED_U32 = new Uint32Array(SHARED_BUFFER);
 
   /**
-   * Hashes a list of 64-bit number pairs into a single 64-bit pair.
+   * Hashes 12 32-bit numbers into four 32-bit numbers.
    * Designed for maximum speed and zero memory allocation in the inner loop.
-   *
-   * @param {BigUint64Array | Array<[bigint, bigint]>} inputPairs - The list of pairs.
-   * @returns {[bigint, bigint]} A pair of 64-bit BigInts representing the final 128-bit hash.
    */
-  const hash64BitPairs = () => {
+  const hashArray = (len = SHARED_U32.length) => {
     // MurmurHash3 128-bit internal state (4 x 32-bit registers)
     let h1 = 0x12345678;
     let h2 = 0x23456789;
@@ -35,9 +32,7 @@ define((require) => {
     const c3 = 0x38b34ae5;
     const c4 = 0xa1e38b93;
 
-    const len = SHARED_U32.length;
-
-    // Process 4 x 32-bit numbers (one 64-bit pair) per step
+    // Process 4 x 32-bit numbers per step
     for (let i = 0; i < len; i += 4) {
       let k1 = SHARED_U32[i];
       let k2 = SHARED_U32[i + 1];
@@ -229,6 +224,15 @@ define((require) => {
       return fastEncode128BitB64(SHARED_U32[3], SHARED_U32[2], SHARED_U32[1], SHARED_U32[0], len);
     }
 
+    nextHash(a = this.getLow(), b = this.getHigh()) {
+      SHARED_U64[0] = this.getLow();
+      SHARED_U64[1] = this.getHigh();
+      SHARED_U64[2] = a;
+      SHARED_U64[3] = b;
+      hashArray(8);
+      return new Id(SHARED_U64[0], SHARED_U64[1]);
+    }
+
     static v1HashStrings(items) {
       const len = items.length;
       let i;
@@ -242,7 +246,7 @@ define((require) => {
           }
         }
       }
-      hash64BitPairs();
+      hashArray();
       while (i < len) {
         i -= 1;
         // Start j at 1 so that the current hash is preserved
@@ -252,7 +256,7 @@ define((require) => {
 
         i += MAX_ITEMS;
 
-        hash64BitPairs(); // add to current hash
+        hashArray(); // add to current hash
       }
 
       return fastEncode128BitB64(SHARED_U32[0], SHARED_U32[1], SHARED_U32[2], SHARED_U32[3], 17);
