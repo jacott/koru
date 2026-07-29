@@ -1,93 +1,54 @@
 define((require) => {
   'use strict';
-  const AccSha256       = require('koru/crypto/acc-sha256');
+  const Id              = require('koru/id');
   const util            = require('koru/util');
-
-  const nodeCrypto = isServer ? requirejs.nodeRequire('crypto') : undefined;
-
-  const {idLen, u32Id, u8Id, id} = util;
 
   const toFrac = Math.pow(2, -32);
 
+  const prng = (seedArray) => {
+    let seq = Id.fromHashStrings(seedArray.join('').match(/[\s\S]{1,17}/g) ?? []).asSequence();
+    return () => seq.next();
+  };
+
+  const to53Frac = Math.pow(2, -53);
+
+  function uint64ToFraction(u64) {
+    // Shift off lower 11 bits -> top 53 bits -> divide by 2^53
+    return Number(u64 >> 11n) * to53Frac;
+  }
+
   const ab4 = new ArrayBuffer(4);
   const u32 = new Uint32Array(ab4);
-  const u8 = new Uint8Array(ab4);
-
-  const shaStr = '1';
-
-  const crypto = isServer ? undefined : globalThis.crypto;
-
-  const getBytes = isServer ? (numBytes) => nodeCrypto.randomBytes(numBytes) : (numBytes) => {
-    const bytes = new Uint8Array(numBytes);
-    crypto.getRandomValues(bytes);
-    return bytes;
-  };
-
-  const prng = (seedArray) => AccSha256.add(seedArray.join(''));
-
-  const prngGetBytes = (h, numBytes) => {
-    const size = ((numBytes + 3) >> 2) << 3;
-    const ab = new ArrayBuffer(Math.max(32, size));
-    const u32 = new Uint32Array(ab);
-    for (let i = 0; i < numBytes; i += 32) {
-      AccSha256.add(shaStr, h);
-      u32.set(h, i >> 2);
-    }
-
-    const ui8 = new Uint8Array(ab);
-
-    return ui8;
-  };
 
   class Random {
     constructor(...tokens) {
-      this.words = tokens.length == 0 ? undefined : prng(tokens);
+      this._seq = tokens.length == 0 ? undefined : prng(tokens);
     }
 
     fraction() {
-      if (this.words !== undefined) {
-        return (AccSha256.add(shaStr, this.words)[0] >>> 0) * toFrac;
+      if (this._seq !== undefined) {
+        return uint64ToFraction(this._seq().getLow());
       }
-      if (isClient) {
-        crypto.getRandomValues(u32);
-      } else {
-        u8.set(nodeCrypto.randomBytes(4));
-      }
-
+      globalThis.crypto.getRandomValues(u32);
       return u32[0] * toFrac;
     }
 
     hexString(digits) {
-      const numBytes = (digits + 1) >> 1;
-      let bytes = this.words === undefined
-        ? getBytes(numBytes)
-        : prngGetBytes(this.words, numBytes);
-      let result = '';
-      for (let i = 0; i < numBytes; ++i) {
-        const hex = bytes[i].toString(16);
-        result += hex.length === 1 ? `0${hex}` : hex;
-      }
-
+      const result = (this._seq === undefined ? Id.random() : this._seq()).hexString(
+        (digits + 1) >> 1,
+      );
       return result.length == digits ? result : result.slice(0, digits);
     }
 
     id() {
-      if (this.words !== undefined) {
-        u32Id.set(AccSha256.add(shaStr, this.words));
-      } else if (isClient) {
-        crypto.getRandomValues(u32Id);
-      } else {
-        u8Id.set(nodeCrypto.randomBytes(idLen));
-      }
-
-      return id();
+      return (this._seq === undefined ? Id.random() : this._seq()).toBase64(17);
     }
   }
 
   const random = new Random();
   Random.global = random;
-  Random.id = () => (util.thread.random || random).id();
-  Random.hexString = (value) => (util.thread.random || random).hexString(value);
+  Random.id = () => (util.thread.random ?? random).id();
+  Random.hexString = (value) => (util.thread.random ?? random).hexString(value);
 
   return Random;
 });

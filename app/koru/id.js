@@ -11,10 +11,16 @@ define((require) => {
 
   const {CHARS, charToU6} = Uuidv7;
 
+  const PRIME_64_LO = 18446744073709551557n; // 2^64 - 59
+  const PRIME_64_HI = 18446744073709551533n; // 2^64 - 83 (another 64-bit prime)
+  // Mixer constant for fast bit dispersion
+  const MIX_MULT = 0xd6e8feb86659fd93n;
+
   const MAX_ITEMS = 3;
   const SHARED_BUFFER = new ArrayBuffer(MAX_ITEMS * 16);
   const SHARED_U64 = new BigUint64Array(SHARED_BUFFER);
   const SHARED_U32 = new Uint32Array(SHARED_BUFFER);
+  const SHARED_U8 = new Uint8Array(SHARED_BUFFER);
 
   /**
    * Hashes 12 32-bit numbers into four 32-bit numbers.
@@ -173,10 +179,79 @@ define((require) => {
     return (len < 22 ? s5.slice(17 - len) : s5) + s17;
   };
 
+  const hashStrings = (items) => {
+    const len = items.length;
+    let i;
+
+    for (i = 0; i < MAX_ITEMS; ++i) {
+      if (i < len) {
+        packV1IdInto(items[i], SHARED_U32, i << 2);
+      } else {
+        for (i = i << 2; i < SHARED_U32.length; ++i) {
+          SHARED_U32[i] = 0;
+        }
+      }
+    }
+    hashArray();
+    while (i < len) {
+      i -= 1;
+      // Start j at 1 so that the current hash is preserved
+      for (let j = 1; j < MAX_ITEMS && i + j < len; ++j) {
+        packV1IdInto(items[i + j], SHARED_U32, j << 2);
+      }
+
+      i += MAX_ITEMS;
+
+      hashArray(); // add to current hash
+    }
+  };
+
+  const hexString = (numBytes) => {
+    if (numBytes > 16) {
+      numBytes = 16;
+    }
+    const bytes = SHARED_U8.subarray(0, numBytes);
+    return bytes.toHex === undefined ? Buffer.from(bytes).toString('hex') : bytes.toHex();
+  };
+
+  const mix = (num) => {
+    let x = BigInt.asUintN(64, num ^ (num >> 32n));
+    x = BigInt.asUintN(64, x * MIX_MULT);
+    return BigInt.asUintN(64, x ^ (x >> 32n));
+  };
+
+  class Sequence {
+    #seq = undefined;
+    #mixed = undefined;
+    constructor(id) {
+      this.#seq = id;
+      this.#mixed = id.clone();
+    }
+
+    next() {
+      const seq = this.#seq;
+      seq.set(
+        BigInt.asUintN(64, seq.getLow() + PRIME_64_LO),
+        BigInt.asUintN(64, seq.getHigh() + PRIME_64_HI),
+      );
+      this.#mixed.set(mix(seq.getLow()), mix(seq.getHigh()));
+      return this.#mixed;
+    }
+  }
+
   class Id extends Uuidv7 {
     static fromUuidV7(v7) {
-      const id = new Id(v7.getLow(), v7.getHigh());
-      return id;
+      return new Id(v7.getLow(), v7.getHigh());
+    }
+
+    static hexString(numBytes = 16) {
+      globalThis.crypto.getRandomValues(SHARED_U64.subarray(0, numBytes > 8 ? 2 : 1));
+      return hexString(numBytes);
+    }
+
+    static random() {
+      globalThis.crypto.getRandomValues(SHARED_U64.subarray(0, 2));
+      return new Id(SHARED_U64[0], SHARED_U64[1]);
     }
 
     static read(dv, offset) {
@@ -233,33 +308,33 @@ define((require) => {
       return new Id(SHARED_U64[0], SHARED_U64[1]);
     }
 
+    asSequence() {
+      return new Sequence(this.clone());
+    }
+
+    hexString(numBytes) {
+      SHARED_U64[0] = this.getLow();
+      if (numBytes > 8) {
+        SHARED_U64[1] = this.getHigh();
+      }
+
+      return hexString(numBytes);
+    }
+
+    getBytes() {
+      SHARED_U64[0] = this.getLow();
+      SHARED_U64[1] = this.getHigh();
+      return new Uint8Array(SHARED_BUFFER).subarray(0, 16);
+    }
+
+    static fromHashStrings(items) {
+      hashStrings(items);
+      return new Id(SHARED_U64[0], SHARED_U64[1]);
+    }
+
     static v1HashStrings(items) {
-      const len = items.length;
-      let i;
-
-      for (i = 0; i < MAX_ITEMS; ++i) {
-        if (i < len) {
-          packV1IdInto(items[i], SHARED_U32, i << 2);
-        } else {
-          for (i = i << 2; i < SHARED_U32.length; ++i) {
-            SHARED_U32[i] = 0;
-          }
-        }
-      }
-      hashArray();
-      while (i < len) {
-        i -= 1;
-        // Start j at 1 so that the current hash is preserved
-        for (let j = 1; j < MAX_ITEMS && i + j < len; ++j) {
-          packV1IdInto(items[i + j], SHARED_U32, j << 2);
-        }
-
-        i += MAX_ITEMS;
-
-        hashArray(); // add to current hash
-      }
-
-      return fastEncode128BitB64(SHARED_U32[0], SHARED_U32[1], SHARED_U32[2], SHARED_U32[3], 17);
+      hashStrings(items);
+      return fastEncode128BitB64(SHARED_U32[3], SHARED_U32[2], SHARED_U32[1], SHARED_U32[0], 17);
     }
 
     [inspect$]() {

@@ -89,6 +89,11 @@ define((require, exports, module) => {
       return `Uuidv7(${this.toString()})`;
     }
 
+    set(lo, hi) {
+      this.#low = lo;
+      this.#high = hi;
+    }
+
     equals(other) {
       return (other instanceof Uuidv7) && this.#high == other.#high && this.#low == other.#low;
     }
@@ -97,14 +102,10 @@ define((require, exports, module) => {
       return new this.constructor(this.#low, this.#high);
     }
 
-    // Inside your UUIDv7 class:
     toString() {
-      // 2. Cast the BigInts straight to the shared buffer slots.
-      // This extracts the 32-bit components instantly with ZERO memory allocations.
       ARRAY_U64[1] = this.#high;
       ARRAY_U64[0] = this.#low;
 
-      // Map the buffer addresses straight to CPU registers (assuming Little-Endian system layout)
       const w0 = ARRAY_U32[3]; // Upper 32 bits of high
       const w1 = ARRAY_U32[2]; // Lower 32 bits of high
       const w2 = ARRAY_U32[1]; // Upper 32 bits of low

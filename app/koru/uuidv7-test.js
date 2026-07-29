@@ -1,6 +1,10 @@
 define((require, exports, module) => {
   'use strict';
+  /**
+   * A UUID v7 class.
+   */
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, util} = TH;
 
@@ -8,15 +12,27 @@ define((require, exports, module) => {
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('toString', () => {
+      /**
+       * Clone the id
+       */
+      api.protoMethod();
+      //[
       let id = Uuidv7.fromTimeRand(0.0003, 0n);
       assert.same(id.toString(), '--------R-5-----------');
       id = Uuidv7.fromTimeRand(Date.UTC(2025, 5, 3, 1, 2, 3) + 0.1234567, 1234567890n);
       assert.same(id.toString(), '-ORoIpQtRUf-----HON1pV');
       id = new Uuidv7(5n, 6n);
       assert.same(id.toString(), '----------N---------0F');
+      //]
     });
 
     test('random', () => {
+      /**
+       * Create a cryptographically random v7 uuid.
+       */
+      api.method();
+
+      //[
       for (let i = 0; i < 100; ++i) {
         let id1 = Uuidv7.random();
         let id2 = Uuidv7.random();
@@ -26,6 +42,7 @@ define((require, exports, module) => {
         assert.same(id1.getHigh(), Uuidv7.fromString(id1.toString()).getHigh());
         assert.same(id1.getLow(), Uuidv7.fromString(id1.toString()).getLow());
       }
+      //]
     });
 
     test('nullId', () => {
@@ -35,10 +52,16 @@ define((require, exports, module) => {
     });
 
     test('clone', () => {
+      /**
+       * Clone the id
+       */
+      api.protoMethod();
+      //[
       const id = new Uuidv7(2n, 3n);
       const id2 = id.clone();
       refute.same(id, id2);
       assert.equals(id, id2);
+      //]
     });
   });
 });

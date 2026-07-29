@@ -12,7 +12,7 @@ define((require, exports, module) => {
    * If a CSRNG is not available on the client then some random like tokens will be used to seed a
    * PRNG instead.
    *
-   * The PRNG uses {#koru/crypto/acc-sha256} to generate the sequence.
+   * The PRNG uses `asSequence` in {#koru/id} to generate the sequence.
    *
    **/
   const TH              = require('koru/test-helper');
@@ -36,18 +36,19 @@ define((require, exports, module) => {
       //[
       // seeded
       const r1 = new Random(0);
-      assert.same(r1.id(), 'kFsE9G6DL26jiPd2U');
-      assert.same(r1.id(), 'o8kyB8YoOT2NCM03U');
+      assert.same(r1.id(), 'iOS64Lq3DR2IP9ZC1');
+      assert.same(r1.id(), 'KPO5qmd1YhMXcaGuK');
 
       // same seed produces same numbers
-      assert.same(new Random(0).id(), 'kFsE9G6DL26jiPd2U');
+      assert.same(new Random(0).id(), 'iOS64Lq3DR2IP9ZC1');
 
       // multiple tokens
       const r2 = new Random('hello', 'world');
-      assert.same(r2.id(), 'NTuiM1uEZR7vz2Nd5');
+      assert.same(r2.id(), 'l0sCeII8FPxy3ypeS');
 
       const csprng = new Random();
       refute.same(csprng.id(), 'IwillNeverMatchid');
+      assert.equals(csprng.id(), m(/^[-~0-9a-zA-Z]{17,17}$/));
       //]
     });
 
@@ -74,13 +75,13 @@ define((require, exports, module) => {
 
       const id = 'abc123';
       util.thread.random = new Random(id);
-      assert.same(Random.id(), 'kfx4FPotz6UerPhgc');
+      assert.same(Random.id(), 'kwQQybVKe2B2GKN4k');
       //]
     });
 
     test('hexString', () => {
       /**
-       * Like {#.id} but generate a {##hexString} instead.
+       * Like {#.id} but generate a {##hexString} (upto 32 chars) instead.
        */
       api.method();
 
@@ -93,7 +94,7 @@ define((require, exports, module) => {
 
       const token = 'abc123';
       util.thread.random = new Random(token);
-      assert.same(Random.hexString(33), 'ce8b9dfb29ed185b23fd764c97af4f108');
+      assert.same(Random.hexString(31), '6f8155d1c00c69059afdb6edaf9539b');
       //]
     });
 
@@ -106,12 +107,12 @@ define((require, exports, module) => {
          */
         api.protoMethod();
         //[
-        const random = new Random(0);
-        assert.same(random.id(), 'kFsE9G6DL26jiPd2U');
-        assert.same(random.id(), 'o8kyB8YoOT2NCM03U');
-        assert.same(random.id(), '3KkBsZqIxSLG9cNmT');
+        const random = new Random(1);
+        assert.same(random.id(), 'NAQ9ejpyZq-CQFrcd');
+        assert.same(random.id(), 'ZDK6jFbX6cElilhaV');
+        assert.same(random.id(), 'jsMp17ySTx1fUCFCY');
         //]
-        assert.same(random.id(), 'j1JePqz3IKW31RKSR');
+        assert.same(random.id(), 'rJqbAoZ7Vw5BovDfu');
       });
 
       test('fraction', () => {
@@ -122,9 +123,10 @@ define((require, exports, module) => {
         //[
         const random = new Random(1, 2, 3);
 
-        assert.equals(random.fraction(), 0.26225688261911273);
-        assert.equals(random.fraction(), 0.5628666188567877);
-        assert.equals(random.fraction(), 0.09692026115953922);
+        assert.equals(random.fraction(), 0.6270329139315577);
+        assert.equals(random.fraction(), 0.32087942231861044);
+        assert.equals(random.fraction(), 0.5668917679832505);
+        assert.equals(random.fraction(), 0.21724463278327122);
         //]
       });
 
@@ -137,25 +139,19 @@ define((require, exports, module) => {
         api.protoMethod();
         //[
         const random = new Random(6);
-        assert.same(random.hexString(2), 'c7');
-        assert.same(random.hexString(7), 'e8b19da');
+        assert.same(random.hexString(2), 'a3');
+        assert.same(random.hexString(7), '951c7ca');
         //]
       });
     });
 
     test('format', () => {
-      const randSpy = isServer
-        ? spy(requirejs.nodeRequire('crypto'), 'randomBytes')
-        : spy(window.crypto, 'getRandomValues');
+      const randSpy = spy(globalThis.crypto, 'getRandomValues');
       const id = Random.id();
       assert.same(id.length, util.idLen);
-      assert.match(id, /^[0-9a-zA-Z]*$/);
+      assert.match(id, /^[-~0-9a-zA-Z]*$/);
 
-      if (isServer) {
-        assert.calledWith(randSpy, 17);
-      } else {
-        assert.calledWith(randSpy, m((u32) => u32.constructor === Uint32Array));
-      }
+      assert.calledWith(randSpy, m((u32) => u32.constructor === BigUint64Array));
 
       randSpy.reset();
 
@@ -166,12 +162,7 @@ define((require, exports, module) => {
 
       let u8;
 
-      if (isServer) {
-        assert.calledWith(randSpy, 5);
-        u8 = randSpy.firstCall.returnValue;
-      } else {
-        assert.calledWith(randSpy, m((a) => u8 = a));
-      }
+      assert.calledWith(randSpy, m((a) => u8 = new Uint8Array(a.buffer)));
       assert.equals(util.twoDigits(u8[2].toString(16)), hexStr.substring(4, 6));
 
       assert.same(hexStr.length, numDigits);

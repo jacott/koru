@@ -104,21 +104,21 @@ define((require, exports, module) => {
       test('Random.id', async () => {
         v.msgId = 'a1212345671234567890';
         await v.run((arg) => {
-          assert.same(Random.id(), 'Fs3Fn26qRzQI9PL1H');
+          assert.same(Random.id(), 'wQ72oj~~Ssnfsy1VM');
           v.ans = Random.id();
         });
 
-        assert.same(v.ans, 'W2gquYPP21ZS1N14d');
+        assert.same(v.ans, 'RLV9GZxeOAIZjtPNE');
 
         v.msgId = 'a12123456712345678Aa';
         await v.run((arg) => {
           assert.same(util.thread.msgId, 'a12123456712345678Aa');
 
-          assert.same(Random.id(), 'FFykqEzyflL6oKnqR');
+          assert.same(Random.id(), '-RcgXNzmcjIDhCvg2');
           v.ans = Random.id();
         });
 
-        assert.same(v.ans, 'ygIaapK60J3Lx3KGY');
+        assert.same(v.ans, 'NfSDBcWkxzcQ6ccMG');
       });
 
       test('old msgId', async () => {

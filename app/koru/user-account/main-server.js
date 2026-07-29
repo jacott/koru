@@ -15,7 +15,7 @@ define((require, exports, module) => {
 
   const getToken = (data) => {
     data = data.toString();
-    if (data.match(/^[\d\w]+\|[\d\w]+$/)) {
+    if (data.match(/^[-~\d\w]+\|[-~\d\w]+$/)) {
       return data.split('|');
     }
     return [];
@@ -38,7 +38,7 @@ define((require, exports, module) => {
       const result = {};
       for (let i = 1; i <= max; ++i) {
         const pair = keyVal[keyVal.length - i].split('|');
-        result[pair[1]] = + pair[0];
+        result[pair[1]] = +pair[0];
       }
 
       return result;
@@ -47,7 +47,7 @@ define((require, exports, module) => {
     makeToken() {
       const token = Random.id();
       const tokens = this.unexpiredTokens();
-      tokens[token] = util.dateNow() + 180*24*1000*60*60;
+      tokens[token] = util.dateNow() + 180 * 24 * 1000 * 60 * 60;
       this.tokens = tokens;
       return token;
     }
@@ -69,28 +69,28 @@ define((require, exports, module) => {
   const configureEmail = () => {
     emailConfig = koru.config.userAccount && koru.config.userAccount.emailConfig || {};
 
-    if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
-    if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
-    if (! emailConfig.sendResetPasswordEmailText) {
+    if (!emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
+    if (!emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
+    if (!emailConfig.sendResetPasswordEmailText) {
       koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
     }
     if (typeof emailConfig.sendResetPasswordEmailText !== 'function') {
-      koru.throwConfigError('userAccount.sendResetPasswordEmailText',
-        'must be of type function(userId, resetToken)');
+      koru.throwConfigError(
+        'userAccount.sendResetPasswordEmailText',
+        'must be of type function(userId, resetToken)',
+      );
     }
   };
 
-  const makeScrypt = async (password, salt=crypto.randomBytes(16)) => {
+  const makeScrypt = async (password, salt = crypto.randomBytes(16)) => {
     const scrypt = await new Promise((resolve, reject) => {
-      crypto.scrypt(
-        password, salt, 64,
-        undefined, (err, key) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(key);
-          }
-        });
+      crypto.scrypt(password, salt, 64, undefined, (err, key) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(key);
+        }
+      });
     });
 
     const key = (await scrypt).toString('hex');
@@ -101,7 +101,7 @@ define((require, exports, module) => {
 
   const stop = () => {
     emailConfig = undefined;
-    if (! running) return;
+    if (!running) return;
     running = false;
     session.unprovide('V');
   };
@@ -125,7 +125,7 @@ define((require, exports, module) => {
     UserLogin,
     /**
      * @deprecated
-     **/
+     */
     model: UserLogin,
 
     makeScryptPassword: makeScrypt,
@@ -133,21 +133,23 @@ define((require, exports, module) => {
 
     async resetPassword(token, password) {
       Val.ensureString(token);
-      const parts = token.split('-');
-      const lu = await UserLogin.findById(parts[0]);
-      if (lu !== undefined) {
-        if (lu.password !== undefined && lu.password.type === 'scrypt') {
-          password = await makeScrypt(password);
-        } else {
-          Val.assertCheck(password, VERIFIER_SPEC);
-        }
+      const idx = token.lastIndexOf('-');
+      if (idx !== -1) {
+        const lu = await UserLogin.findById(token.slice(0, idx));
+        if (lu !== undefined) {
+          if (lu.password !== undefined && lu.password.type === 'scrypt') {
+            password = await makeScrypt(password);
+          } else {
+            Val.assertCheck(password, VERIFIER_SPEC);
+          }
 
-        if (lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
-          lu.password = password;
-          lu.resetToken = lu.resetTokenExpire = undefined;
-          const loginToken = lu.makeToken();
-          await lu.$$save();
-          return [lu, loginToken];
+          if (lu.resetToken === token.slice(idx + 1) && util.dateNow() < lu.resetTokenExpire) {
+            lu.password = password;
+            lu.resetToken = lu.resetTokenExpire = undefined;
+            const loginToken = lu.makeToken();
+            await lu.$$save();
+            return [lu, loginToken];
+          }
         }
       }
       throw new koru.Error(404, 'Expired or invalid reset request');
@@ -218,7 +220,7 @@ define((require, exports, module) => {
       const lu = await UserLogin.findBy('userId', user._id);
 
       lu.resetToken = Random.id() + Random.id();
-      lu.resetTokenExpire = util.dateNow() + 24*60*60*1000;
+      lu.resetTokenExpire = util.dateNow() + 24 * 60 * 60 * 1000;
       await lu.$$save();
 
       return lu;
@@ -240,12 +242,14 @@ define((require, exports, module) => {
 
     async updateOrCreateUserLogin(attrs) {
       const lu = await UserLogin.findBy('userId', attrs.userId);
-      if (! lu) return UserLogin.create({
-        email: attrs.email,
-        userId: attrs.userId,
-        tokens: {},
-        password: attrs.password,
-      });
+      if (!lu) {
+        return UserLogin.create({
+          email: attrs.email,
+          userId: attrs.userId,
+          tokens: {},
+          password: attrs.password,
+        });
+      }
 
       const update = {};
 
@@ -285,12 +289,13 @@ define((require, exports, module) => {
   };
 
   const assertScryptPassword = async (doc, password) => {
-    if (doc === undefined ||
-      doc.password == null || doc.password.type !== 'scrypt') {
-        throw new koru.Error(403, 'failure');
-      }
+    if (doc === undefined || doc.password == null || doc.password.type !== 'scrypt') {
+      throw new koru.Error(403, 'failure');
+    }
 
-    if ((await makeScrypt(password, Buffer.from(doc.password.salt, 'hex'))).key !== doc.password.key) {
+    if (
+      (await makeScrypt(password, Buffer.from(doc.password.salt, 'hex'))).key !== doc.password.key
+    ) {
       throw new koru.Error(403, 'incorrect_password');
     }
   };
@@ -308,10 +313,7 @@ define((require, exports, module) => {
 
     await this.setUserId(doc.userId);
 
-    return {
-      userId: doc.userId,
-      loginToken: doc._id + '|' + token,
-    };
+    return {userId: doc.userId, loginToken: doc._id + '|' + token};
   }
 
   session.defineRpc('UserAccount.secureCall', secureCall);
@@ -362,7 +364,10 @@ define((require, exports, module) => {
   }
 
   const VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {
-    identity: 'string', salt: 'string', verifier: 'string'};
+    identity: 'string',
+    salt: 'string',
+    verifier: 'string',
+  };
 
   session.defineRpc('SRPChangePassword', async function (response) {
     UserAccount.assertResponse(this, response);
@@ -375,9 +380,7 @@ define((require, exports, module) => {
       await this.$srpUserAccount.$update({password: response.newPassword});
     }
 
-    const result = {
-      HAMK: this.$srp && this.$srp.HAMK,
-    };
+    const result = {HAMK: this.$srp && this.$srp.HAMK};
     this.$srp = null;
     this.$srpUserAccount = null;
     return result;
@@ -412,22 +415,26 @@ define((require, exports, module) => {
     const cmd = data[0];
     let token;
     switch (cmd) {
-    case 'L': {
-      const [_id, token] = getToken(data.slice(1));
-      const lu = _id && await UserLogin.findById(_id);
+      case 'L':
+        {
+          const [_id, token] = getToken(data.slice(1));
+          const lu = _id && await UserLogin.findById(_id);
 
-      if (lu && lu.unexpiredTokens()[token]) {
-        conn.loginToken = token;
-        await conn.setUserId(lu.userId); // will send a VS + VC. See server-connection
-      } else {
-        conn.send('VF');
-      }
-    } break;
-    case 'X': { // logout me
-      const [_id, token] = getToken(data.slice(1));
-      token && await UserAccount.logout(_id, token);
-      await conn.setUserId(undefined); // will send a VS + VC. See server-connection
-    } break;
+          if (lu && lu.unexpiredTokens()[token]) {
+            conn.loginToken = token;
+            await conn.setUserId(lu.userId); // will send a VS + VC. See server-connection
+          } else {
+            conn.send('VF');
+          }
+        }
+        break;
+      case 'X':
+        { // logout me
+          const [_id, token] = getToken(data.slice(1));
+          token && await UserAccount.logout(_id, token);
+          await conn.setUserId(undefined); // will send a VS + VC. See server-connection
+        }
+        break;
     }
   }
 

@@ -1,24 +1,29 @@
 define((require, exports, module) => {
   'use strict';
-  const AccSha256       = require('koru/crypto/acc-sha256');
+  /**
+   * Utility for base64 ids.
+   */
   const Enumerable      = require('koru/enumerable');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
   const Uuidv7          = require('koru/uuidv7');
 
-  const {stub, spy, util, intercept} = TH;
+  const {stub, spy, util, intercept, match: m} = TH;
 
   const Id = require('./id');
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
     test('random', () => {
-      let before = Date.now() - 0.6;
-      Id.random();
+      /**
+       * Create a cryptographically random id
+       */
+      api.method();
+      //[
       const id1 = Id.random();
       const id2 = Id.random();
-      const id3 = Id.random();
-      let after = Date.now() + 2;
-      assert.between(id1.toMsFrac(), before, after);
-      assert.between(id2.toMsFrac(), id1.toMsFrac(), id2.toMsFrac());
+      refute.same(id1.toBase64(17), id2.toBase64(17));
+      assert.equals(id1.toBase64(17), m(/^[-~0-9a-zA-Z]{17,17}$/));
+      //]
     });
 
     test('uuidv7', () => {
@@ -26,31 +31,6 @@ define((require, exports, module) => {
       const id = Id.fromUuidV7(v7id);
 
       assert.same(id.toHex(), v7id.toHex());
-    });
-
-    false && test('benchmark', () => {
-      const list = ['zzz12345671234561', '671234561zzz12345', 'BZPRvtOkEq4EBxO3l'];
-      const c = 'P';
-
-      const a256 = (a, b, c) => AccSha256.toId(a + b + c);
-
-      let i = 0;
-
-      const args = ['', '', ''];
-
-      const ans = assert.benchmark({
-        duration: 1000,
-        subject() {
-          args[0] = list[(++i) % 3];
-          args[1] = list[(++i) % 3];
-          args[2] = c;
-          return Id.v1HashStrings(args);
-          //return a256(list[(++i) % 3], list[(++i) % 3], c);
-        },
-        control() {
-          return 'abcdef';
-        },
-      });
     });
 
     test('v1ToU64, u64ToV1', () => {
@@ -65,6 +45,11 @@ define((require, exports, module) => {
     });
 
     test('toBase64', () => {
+      /**
+       * Convert id to base64
+       */
+      api.protoMethod();
+      //[
       assert.same(
         new Id(0xffffffff_fffffffffn, 0xffffffff_ffffffffn).toBase64(32),
         '2~~~~~~~~~~~~~~~~~~~~~',
@@ -76,6 +61,20 @@ define((require, exports, module) => {
       assert.same(Id.fromV1('zzz12345671234568').toBase64(40), '----~zzz12345671234568');
       assert.same(Id.fromV1('abcdef').toBase64(40), '---------------~abcdef');
       assert.same(new Id(1012n, 0n).toBase64(2), 'Ep');
+      //]
+    });
+
+    test('asSequence', () => {
+      /**
+       * Create a sequence generator from an Id.
+       */
+      api.protoMethod();
+      //[
+      const seq = new Id(0n, 0n).asSequence();
+      assert.same(seq.next().toBase64(17), 'yj8HVPpekj2Gv2Biv');
+      assert.same(seq.next().toBase64(17), '5uS8-zS7XQABK-dXR');
+      assert.same(seq.next().toBase64(17), 'Fw64YT4cK7IB31sFY');
+      //]
     });
 
     test('nextHash', () => {
@@ -88,46 +87,75 @@ define((require, exports, module) => {
       assert.same(ans.nextHash(0n, 1n).nextHash(0n, 1n).toBase64(17), 'qBDcf6D7B4imh-rhS');
     });
 
+    test('fromHashStrings', () => {
+      /**
+       * Create an id from a list of strings.
+       */
+      api.method();
+      //[
+      assert.same(
+        Id.fromHashStrings(
+          'abfdfds fsdfdsfds fsdfdfds fdsfdfsfd fsdfdfds sfdfdsfsdfsdfsdfd 1211232323232323d'.split(
+            ' ',
+          ),
+        ).toBase64(17),
+        'CiLpHatyBsgN-rRko',
+      );
+      //]
+    });
+
     test('v1HashStrings', () => {
+      /**
+       * Create an v1 base64 id string from a list of strings.
+       */
+      api.method();
+      //[
       assert.same(
         Id.v1HashStrings(
           'abfdfds fsdfdsfds fsdfdfds fdsfdfsfd fsdfdfds sfdfdsfsdfsdfsdfd 1211232323232323d'.split(
             ' ',
           ),
         ),
-        'oYpoTigKi3eSaVukC',
+        'CiLpHatyBsgN-rRko',
       );
+      //]
 
       const ans = Enumerable.count(4).reduce((a, n) => (a.push(Id.v1HashStrings([a.at(-1)])), a), [
         '4',
       ]);
       assert.equals(ans, [
         '4',
-        '6dDIAos3B4FZHoTtc',
-        'PThKPomAnqmTYOnin',
-        'eZDm6vj0FJhk6~o2Z',
-        'SEOA4ZpZVnqRwvsKM',
+        'cRFlK1P2ZnxzmNtE6',
+        'Nh1mTHtjROvwE4RsX',
+        'UUTJGO7yoXvBoWM7v',
+        'tTg5QG6PcxFCyDZ1M',
       ]);
 
       assert.same(
         Id.v1HashStrings(['zzzzzzzzzzzzzzzzzzD', 'zzzzzzzzzzzzzzzzzz']),
-        'qMxePiJD91Uq9IJMy',
+        'yFtd8~K~9LgL0Mbwq',
       );
 
-      assert.same(Id.v1HashStrings(['b', 'a']), '75F5DUhBX0YAB0LyW');
-      assert.same(Id.v1HashStrings(['a', 'b']), 'k472OV7vXJaV8CU7b');
-      assert.same(Id.v1HashStrings(['+', 'b']), '5A8WtrtAd99Jyy1Q9');
-      assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz', '']), 'IgVNoDUys~aRkLQnO');
-      assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz']), '2Za4eqCH3eV12a2Je');
+      assert.same(Id.v1HashStrings(['b', 'a']), 'Wln75BWZ0YctEUL67');
+      assert.same(Id.v1HashStrings(['a', 'b']), 'bYf8HL0H-rN1o9aCk');
+      assert.same(Id.v1HashStrings(['+', 'b']), '9VjVdeHnNTCi0d6a5');
+      assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz', '']), 'O~sUzKvt5Bob74-wI');
+      assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz']), 'eq7Hb-88GPSIlg752');
       assert.same(
         Id.v1HashStrings(['zzz12345671234561', 'zzz12345671234568']),
-        'vbqBFu4BTa09lgY5t',
+        'tJmvJ3eiI3DG-Sofv',
       );
     });
 
     test('fromV1', () => {
+      /**
+       * Convert a v1 base64 id string to an Id
+       */
+      api.method();
+      //[
       assert.same(Id.fromV1('zzz12345671234561').toString(), 'zzz12345671234561');
       assert.same(Id.fromV1('0z12345671234561').toString(), '0z12345671234561');
+      //]
 
       let id;
       id = Id.fromV1('v1id');
