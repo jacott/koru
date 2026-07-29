@@ -134,6 +134,8 @@ define((require, exports, module) => {
       assert.isFalse(match.id.test('12'));
       assert.isFalse(match.id.test('1212323+'));
       assert.isFalse(match.id.test('undefined'));
+      assert.isFalse(match.id.test(null));
+      assert.isFalse(match.id.test(123));
     });
 
     test('match naming', () => {

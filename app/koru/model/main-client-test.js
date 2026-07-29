@@ -82,7 +82,7 @@ define((require, exports, module) => {
         save,
         'save',
         'TestModel',
-        TH.match.id,
+        null,
         {_id: TH.match.id, name: 'foo'},
         v.callback,
       );
