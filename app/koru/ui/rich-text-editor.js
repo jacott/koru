@@ -848,8 +848,8 @@ define((require, exports, module) => {
         return;
       }
 
-      ctx.inputElm.addEventListener('focusin', focusInput);
-      ctx.inputElm.addEventListener('focusout', focusInput);
+      ctx.inputElm.removeEventListener('focusin', focusInput);
+      ctx.inputElm.removeEventListener('focusout', focusInput);
       ctx.inputElm = null;
       Dom.remove(ctx.selectItem);
     },
