@@ -17,6 +17,9 @@ define((require, exports, module) => {
   const ARRAY_U32 = new Uint32Array(ARRAY_BUF);
   const RND_BUF = ARRAY_U64.subarray(0, 1);
 
+  const validLow = (w) => (2n << 62n) | (w & 0x3FFFFFFFFFFFFFFFn);
+  const validHigh = (w) => (w & ~0xF000n) | 0x7000n;
+
   class Uuidv7 {
     #low = 0n;
     #high = 0n;
@@ -60,29 +63,62 @@ define((require, exports, module) => {
     static fromTimeRand(time, rand) {
       const ms = Math.floor(time);
       let randA = Math.floor((time - ms) * 4096);
-      return new this(
-        (2n << 62n) | (rand & 0x3FFFFFFFFFFFFFFFn),
-        (BigInt(ms) << 16n) | (7n << 12n) | BigInt(randA & 0xFFF),
-      );
+      return new this(validLow(rand), (BigInt(ms) << 16n) | 0x7000n | BigInt(randA & 0xFFF));
     }
 
     static charToU6 = charToU6;
 
     static fromString(str) {
-      let w0 = 0, w1 = 0, w2 = 0, w3 = 0;
-
-      for (let i = 0; i < str.length; i++) {
-        // Shift left by 6 bits to make room for 'b'
-        w0 = ((w0 << 6) | (w1 >>> 26)) >>> 0;
-        w1 = ((w1 << 6) | (w2 >>> 26)) >>> 0;
-        w2 = ((w2 << 6) | (w3 >>> 26)) >>> 0;
-        w3 = ((w3 << 6) | charToU6(str.charCodeAt(i))) >>> 0;
+      // Handle canonical UUID formats (36-char hyphenated, 32-char hex, or URN prefixed)
+      if (
+        str.length >= 32 && (str.length === 36 || str.length === 32 || str.startsWith('urn:uuid:'))
+      ) {
+        const hex = str.length === 45 ? str.slice(9).replace(/-/g, '') : str.replace(/-/g, '');
+        return new this(
+          validLow(BigInt('0x' + hex.slice(16, 32))),
+          validHigh(BigInt('0x' + hex.slice(0, 16))),
+        );
       }
 
-      return new this(
-        (BigInt(((w2 >>> 4) | (w1 << 28)) >>> 0) << 32n) | BigInt(((w3 >>> 4) | (w2 << 28)) >>> 0),
-        (BigInt((w0 >>> 4) >>> 0) << 32n) | BigInt(((w1 >>> 4) | (w0 << 28)) >>> 0),
-      );
+      if (str.length < 22) {
+        str = str.padStart(22, '-');
+      }
+
+      // 22-character Base64 parsing (zero closure allocations)
+      const c0 = charToU6(str.charCodeAt(0));
+      const c1 = charToU6(str.charCodeAt(1));
+      const c2 = charToU6(str.charCodeAt(2));
+      const c3 = charToU6(str.charCodeAt(3));
+      const c4 = charToU6(str.charCodeAt(4));
+      const c5 = charToU6(str.charCodeAt(5));
+      const c6 = charToU6(str.charCodeAt(6));
+      const c7 = charToU6(str.charCodeAt(7));
+      const c8 = charToU6(str.charCodeAt(8));
+      const c9 = charToU6(str.charCodeAt(9));
+      const c10 = charToU6(str.charCodeAt(10));
+      const c11 = charToU6(str.charCodeAt(11));
+      const c12 = charToU6(str.charCodeAt(12));
+      const c13 = charToU6(str.charCodeAt(13));
+      const c14 = charToU6(str.charCodeAt(14));
+      const c15 = charToU6(str.charCodeAt(15));
+      const c16 = charToU6(str.charCodeAt(16));
+      const c17 = charToU6(str.charCodeAt(17));
+      const c18 = charToU6(str.charCodeAt(18));
+      const c19 = charToU6(str.charCodeAt(19));
+      const c20 = charToU6(str.charCodeAt(20));
+      const c21 = charToU6(str.charCodeAt(21));
+
+      ARRAY_U32[3] = ((c0 << 26) | (c1 << 20) | (c2 << 14) | (c3 << 8) | (c4 << 2) | (c5 >>> 4)) >>>
+        0;
+      ARRAY_U32[2] =
+        (((c5 & 0x0F) << 28) | (c6 << 22) | (c7 << 16) | (c8 << 10) | (c9 << 4) | (c10 >>> 2)) >>>
+        0;
+      ARRAY_U32[1] =
+        (((c10 & 0x03) << 30) | (c11 << 24) | (c12 << 18) | (c13 << 12) | (c14 << 6) | c15) >>> 0;
+      ARRAY_U32[0] =
+        ((c16 << 26) | (c17 << 20) | (c18 << 14) | (c19 << 8) | (c20 << 2) | (c21 >>> 4)) >>> 0;
+
+      return new this(validLow(ARRAY_U64[0]), validHigh(ARRAY_U64[1]));
     }
 
     [inspect$]() {
@@ -92,6 +128,12 @@ define((require, exports, module) => {
     set(lo, hi) {
       this.#low = lo;
       this.#high = hi;
+    }
+
+    enforceValid() {
+      this.#low = validLow(this.#low);
+      this.#high = validHigh(this.#high);
+      return this;
     }
 
     equals(other) {
@@ -169,6 +211,13 @@ define((require, exports, module) => {
 
     toHex() {
       return this.#high.toString(16).padStart(16, '0') + this.#low.toString(16).padStart(16, '0');
+    }
+
+    urn() {
+      const l = this.#low.toString(16).padStart(16, '0');
+      const h = this.#high.toString(16).padStart(16, '0');
+      return 'urn:uuid:' + h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12) + '-' +
+        l.slice(0, 4) + '-' + l.slice(4);
     }
 
     timeAsFloat() {

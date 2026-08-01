@@ -288,7 +288,7 @@ define((require) => {
         return Id.nullId();
       }
 
-      assert(v1id.length <= 18, {toString: () => v1id.length});
+      assert(v1id.length <= 18, v1id.length);
       packV1IdInto(v1id, SHARED_U32, 0);
       return new Id(SHARED_U64[0], SHARED_U64[1]);
     }

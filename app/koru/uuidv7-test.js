@@ -41,8 +41,29 @@ define((require, exports, module) => {
         assert(id1.toString() < id2.toString());
         assert.same(id1.getHigh(), Uuidv7.fromString(id1.toString()).getHigh());
         assert.same(id1.getLow(), Uuidv7.fromString(id1.toString()).getLow());
+
+        const id1c = id1.clone().enforceValid();
+        assert.equals(id1, id1c);
       }
       //]
+    });
+
+    test('enforceValid, fromString, toString', () => {
+      const id = new Uuidv7(0x123456789abcdef1n, 0xfedcba987654321fn).enforceValid();
+      assert.equals(id.urn(), 'urn:uuid:fedcba98-7654-721f-9234-56789abcdef1');
+
+      assert.equals(id, Uuidv7.fromString(id.toString()));
+
+      const idlow = new Uuidv7(0n, 0n).enforceValid();
+      assert.equals(idlow, Uuidv7.fromString(idlow.toString()));
+
+      const idhi = new Uuidv7(0xffffffffffffffffn, 0xffffffffffffffffn).enforceValid();
+      assert.equals(idhi, Uuidv7.fromString(idhi.toString()));
+
+      assert.equals(
+        Uuidv7.fromString('test').urn(),
+        'urn:uuid:00000000-0000-7000-8000-0000000e29df',
+      );
     });
 
     test('nullId', () => {
