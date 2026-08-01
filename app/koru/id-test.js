@@ -147,6 +147,19 @@ define((require, exports, module) => {
       );
     });
 
+    test('shortid', () => {
+      const assertToString = (str) =>
+        assert.elide(() => assert.same(Id.fromV1(str).toString(), str));
+      assertToString('~~~~~~~~~~~~~~~~~~');
+
+      assertToString('~~~~~~~~~~~~~~~~~');
+      assertToString('~~~~~~~~~~~~~~~~');
+      assertToString('-----------------');
+      assertToString('admingj');
+      assertToString('----------admingj');
+      assertToString('-----------admingj');
+    });
+
     test('fromV1', () => {
       /**
        * Convert a v1 base64 id string to an Id
@@ -179,7 +192,7 @@ define((require, exports, module) => {
       // some Old ids can be 18 chars long
       let idv1max = Id.fromV1('zzzzzzzzzzzzzzzzzz');
       assert.same(idv1max.toBigInt(), 20764036345986002153379395538775998n);
-      assert.same(idv1max.toString(), 'zzzzzzzzzzzzzzzzz');
+      assert.same(idv1max.toString(), 'zzzzzzzzzzzzzzzzzz');
       let uuidv7 = new Uuidv7(idv1max.getLow(), idv1max.getHigh());
       assert.same(uuidv7.toString(), '--E~kkkkkkkkkkkkkkkkkV');
       assert.same(

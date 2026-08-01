@@ -4,7 +4,9 @@ define((require) => {
 
   const {inspect$, equal$} = require('koru/symbols');
 
-  const OLD_MAX_TIME = 1125620665794299n;
+  const OLD_MAX_TIME = 0x3ffffffffffffn;
+  const FULL_ID = 0xfc000000000n;
+  const EXTENDED_ID = 0xfffffffffffn;
 
   const b64 = new BigUint64Array(2);
   const u8 = new Uint8Array(b64.buffer);
@@ -348,7 +350,9 @@ define((require) => {
     toString() {
       const high64 = this.getHigh();
       if (high64 <= OLD_MAX_TIME) {
-        return Id.u64ToV1(this.getLow(), high64);
+        if (high64 < FULL_ID) return Id.u64ToV1(this.getLow(), high64);
+
+        return this.toBase64(high64 > EXTENDED_ID ? 18 : 17);
       }
 
       return super.toString();

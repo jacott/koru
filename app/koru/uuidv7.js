@@ -130,6 +130,11 @@ define((require, exports, module) => {
       this.#high = hi;
     }
 
+    setValid(lo, hi) {
+      this.#low = validLow(lo);
+      this.#high = validHigh(hi);
+    }
+
     enforceValid() {
       this.#low = validLow(this.#low);
       this.#high = validHigh(this.#high);
