@@ -5,7 +5,7 @@ define((require, exports, module) => {
    * An Observable instance is iteratable.
    *
    * See also {#koru/make-subject}
-   **/
+   */
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
@@ -41,6 +41,30 @@ define((require, exports, module) => {
       handle3.stop();
     });
 
+    test('add during notify', () => {
+      const subject = new Observable();
+
+      const nonStop = stub(() => {
+        subject.add(nonStop);
+      });
+
+      const ob2 = stub();
+
+      subject.add(nonStop);
+      subject.add(ob2);
+
+      subject.notify();
+
+      assert.calledOnce(ob2);
+      assert.calledOnce(nonStop);
+
+      nonStop.reset();
+
+      subject.notify();
+
+      assert.calledTwice(nonStop);
+    });
+
     test('add', () => {
       /**
        * add an observer a subject
@@ -64,7 +88,7 @@ define((require, exports, module) => {
 
       assert.same(handle1.callback, observer1);
 
-      subject.notify(123, 'abc'),
+      subject.notify(123, 'abc');
 
       assert.calledWith(observer1, 123, 'abc');
       assert.calledWith(observer2, 123, 'abc');
@@ -88,7 +112,7 @@ define((require, exports, module) => {
        * @param {...any-type} args arguments to send to observers (see {##add})
        *
        * @returns {any-type} the first argument. Wrapped in a promise if any observers are async.
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new Observable();
@@ -97,10 +121,7 @@ define((require, exports, module) => {
       subject.add(observer1);
       subject.add(observer2);
 
-      assert.same(
-        subject.notify(123, 'abc'),
-        123,
-      );
+      assert.same(subject.notify(123, 'abc'), 123);
 
       assert.calledWith(observer1, 123, 'abc');
       assert.calledWith(observer2, 123, 'abc');
@@ -115,8 +136,14 @@ define((require, exports, module) => {
       const subject = new Observable();
 
       const stub1 = stub(), stub2 = stub();
-      subject.add(async (a, b) => {await 1; stub1(a, b)});
-      subject.add(async (a, b) => {stub2(a, b); await 2});
+      subject.add(async (a, b) => {
+        await 1;
+        stub1(a, b);
+      });
+      subject.add(async (a, b) => {
+        stub2(a, b);
+        await 2;
+      });
 
       const ans = subject.notify(123, 'abc');
 
@@ -124,10 +151,7 @@ define((require, exports, module) => {
 
       assert(isPromise(ans));
 
-      assert.same(
-        await ans,
-        123,
-      );
+      assert.same(await ans, 123);
 
       assert.calledWith(stub1, 123, 'abc');
       assert.calledWith(stub2, 123, 'abc');
@@ -142,21 +166,22 @@ define((require, exports, module) => {
        *
        * @param {function} visitor called for each observer with the `handle` (returned from
        * {##add}) as the argument.
-       *
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new Observable();
 
       const observer1 = stub(), observer2 = stub();
-      const exp = [
+      const exp = [ //
         m.is(subject.add(observer1)),
         m.is(subject.add(observer2)),
       ];
 
       const ans = [];
 
-      subject.forEach((h) => {ans.push(h)});
+      subject.forEach((h) => {
+        ans.push(h);
+      });
 
       assert.equals(ans, exp);
       //]
@@ -166,7 +191,7 @@ define((require, exports, module) => {
       const subject = new Observable();
 
       const f2 = () => {};
-      const exp = [
+      const exp = [ //
         m.is(subject.add(() => {})),
         m.is(subject.add(f2)),
       ];
@@ -185,7 +210,7 @@ define((require, exports, module) => {
     test('stopAll', () => {
       /**
        * Stop all observers
-       **/
+       */
       api.protoMethod();
       //[
       const subject = new Observable();

@@ -1,6 +1,7 @@
 define(() => {
-  const head$ = Symbol(),
-        next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
+  const head$ = Symbol(), next$ = Symbol(), prev$ = Symbol(), tail$ = Symbol();
+
+  const notify$ = Symbol();
 
   class Node {
     constructor(callback, prev, next) {
@@ -18,7 +19,7 @@ define(() => {
   }
 
   const asyncNotify = async (observer, node, args) => {
-    for (;node !== observer; node = node[next$]) {
+    for (; node !== observer; node = node[next$]) {
       if (node.callback !== null) {
         await node.callback(...args);
       }
@@ -30,10 +31,13 @@ define(() => {
     constructor(allStopped) {
       this[head$] = this[tail$] = this;
       this.allStopped = allStopped || undefined;
+      this[notify$] = undefined;
     }
+
     set [next$](value) {
       this[head$] = value;
     }
+
     set [prev$](value) {
       this[tail$] = value;
       if (value === this) {
@@ -57,17 +61,30 @@ define(() => {
         this[head$] = node;
       }
 
+      if (this[notify$] === null) {
+        this[notify$] = node;
+      }
+
       return node;
     }
 
     notify(...args) {
-      for (let node = this[head$]; node !== this; node = node[next$]) {
-        if (node.callback !== null) {
-          const p = node.callback(...args);
-          if (isPromise(p)) {
-            return p.then(() => asyncNotify(this, node[next$], args));
+      try {
+        this[notify$] = null;
+        for (let node = this[head$]; node !== this; node = node[next$]) {
+          if (node === this[notify$]) {
+            break;
+          }
+
+          if (node.callback !== null) {
+            const p = node.callback(...args);
+            if (isPromise(p)) {
+              return p.then(() => asyncNotify(this, node[next$], args));
+            }
           }
         }
+      } finally {
+        this[notify$] = undefined;
       }
 
       return args[0];
@@ -83,13 +100,15 @@ define(() => {
 
     [Symbol.iterator]() {
       let node = null;
-      return {next: () => {
-        if (node !== this) {
-          node = node === null ? this[head$] : node[next$];
-        }
+      return {
+        next: () => {
+          if (node !== this) {
+            node = node === null ? this[head$] : node[next$];
+          }
 
-        return {value: node === this ? undefined : node, done: node === this};
-      }};
+          return {value: node === this ? undefined : node, done: node === this};
+        },
+      };
     }
 
     stopAll() {
