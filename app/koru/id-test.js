@@ -21,6 +21,9 @@ define((require, exports, module) => {
       //[
       const id1 = Id.random();
       const id2 = Id.random();
+      const serdeid = Id.fromV1(id2.toString());
+      assert.equals(id2, serdeid);
+
       refute.same(id1.toBase64(17), id2.toBase64(17));
       assert.equals(id1.toBase64(17), m(/^[-~0-9a-zA-Z]{17,17}$/));
       //]
@@ -148,10 +151,21 @@ define((require, exports, module) => {
     });
 
     test('shortid', () => {
+      const id = Id.fromV1('short');
+      assert.same(id.toString(), 'short');
+      const idfull = Id.fromV1(id.toBase64(17));
+      assert.same(idfull.toString(), '-----------~short');
+      refute.equals(idfull.getHigh(), id.getHigh());
+      for (let i = 0; i < 1000; ++i) {
+        const idr = Id.random();
+        assert.msg(() => idr.toString()).isFalse(idr.toString().length < 17);
+        refute.msg(() => idr).same(idfull.getHigh() & idr.getHigh(), 0n);
+      }
+
       const assertToString = (str) =>
         assert.elide(() => assert.same(Id.fromV1(str).toString(), str));
-      assertToString('~~~~~~~~~~~~~~~~~~');
 
+      assertToString('~~~~~~~~~~~~~~~~~~');
       assertToString('~~~~~~~~~~~~~~~~~');
       assertToString('~~~~~~~~~~~~~~~~');
       assertToString('-----------------');

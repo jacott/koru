@@ -6,6 +6,7 @@ define((require) => {
 
   const OLD_MAX_TIME = 0x3ffffffffffffn;
   const FULL_ID = 0xfc000000000n;
+  const FULL_ID_MASK = FULL_ID - 1n | FULL_ID;
   const EXTENDED_ID = 0xfffffffffffn;
 
   const b64 = new BigUint64Array(2);
@@ -253,7 +254,7 @@ define((require) => {
 
     static random() {
       globalThis.crypto.getRandomValues(SHARED_U64.subarray(0, 2));
-      return new Id(SHARED_U64[0], SHARED_U64[1]);
+      return new Id(SHARED_U64[0], FULL_ID | (FULL_ID_MASK & SHARED_U64[1])).enforceValid();
     }
 
     static read(dv, offset) {
@@ -262,7 +263,7 @@ define((require) => {
 
     static v1ToU64(v1id) {
       packV1IdInto(v1id, SHARED_U32, 0);
-      return [SHARED_U64[0], SHARED_U64[1]];
+      return [SHARED_U64[0], FULL_ID_MASK & SHARED_U64[1]];
     }
 
     static u64ToV1(lo, hi) {
