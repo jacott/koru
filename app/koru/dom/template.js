@@ -84,7 +84,6 @@ define((require) => {
 
     Ctx._currentCtx = event.currentTarget[ctx$];
     const eventTypes = Ctx._currentCtx.__events[type];
-    const matches = Dom._matchesFunc;
 
     const later = createDictionary();
     let elm = event.target;
@@ -98,9 +97,9 @@ define((require) => {
             later[key] = true;
           }
         } else if (elm != null && elm.nodeType !== TEXT_NODE) {
-          if (matches.call(elm, key)) {
+          if (elm.matches(key)) {
             if (fire(event, elm, eventTypes[key])) return;
-          } else if (matches.call(elm, key.replace(/,/g, ' *,') + ' *')) {
+          } else if (elm.matches(key.replace(/,/g, ' *,') + ' *')) {
             later[key] = true;
           }
         }
@@ -111,7 +110,7 @@ define((require) => {
           elm = elm?.parentNode; elm != null && elm !== event.currentTarget; elm = elm.parentNode
         ) {
           for (const key in later) {
-            if (key !== ':TOP' && matches.call(elm, key)) {
+            if (key !== ':TOP' && elm.matches(key)) {
               if (fire(event, elm, eventTypes[key])) return;
               delete later[key];
             }
@@ -198,7 +197,7 @@ define((require) => {
       if (name === '.') return template;
       if (name === '..') return template.parent;
       result = template[name];
-      while (result == null && name.startsWith('../') && template !== void 0) {
+      while (result == null && name.startsWith('../') && template !== undefined) {
         name = name.slice(3);
         template = template.parent;
         if (name === '.') return template;
@@ -266,7 +265,7 @@ define((require) => {
         throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
       }
       Object.setPrototypeOf(tpl, sup);
-      tpl._helpers = sup._helpers != null && Object.create(sup._helpers);
+      tpl._helpers = sup._helpers == null ? null : Object.create(sup._helpers);
     }
     tpl.ns = blueprint.ns;
     tpl.nodes = blueprint.nodes;
@@ -285,18 +284,18 @@ define((require) => {
         elm != null && parent.appendChild(elm);
       } else {
         const {name, attrs, children} = node;
-        if (node.ns !== void 0) {
+        if (node.ns !== undefined) {
           ns = node.ns;
           if (ns === XHTMLNS) {
-            ns = void 0;
+            ns = undefined;
           }
         }
-        const elm = ns === void 0
+        const elm = ns === undefined
           ? (name === 'svg'
             ? document.createElementNS(ns = SVGNS, name)
             : document.createElement(name))
           : document.createElementNS(ns, name);
-        attrs !== void 0 && setAttrs(template, elm, attrs);
+        attrs !== undefined && setAttrs(template, elm, attrs);
         children != null && addNodes(template, elm, children, ns);
         parent.appendChild(elm);
       }
@@ -353,9 +352,9 @@ define((require) => {
       this.name = name;
       this.parent = parent !== root ? parent : null;
       this._events = [];
-      this.nodes = void 0;
+      this.nodes = undefined;
       blueprint != null && initBlueprint(this, blueprint);
-      if (this._helpers === void 0) {
+      if (this._helpers === undefined) {
         this._helpers = Object.create(Dom._helpers);
       }
     }
@@ -365,14 +364,14 @@ define((require) => {
     }
 
     static newTemplate(module, blueprint, parent = this.root) {
-      if (blueprint === void 0) {
+      if (blueprint === undefined) {
         return this.addTemplates(parent, module);
       }
 
       const tpl = this.addTemplates(parent, blueprint);
       tpl.$module = module;
       koru.onunload(module, () => {
-        (tpl.parent ?? parent)[tpl.name] = void 0;
+        (tpl.parent ?? parent)[tpl.name] = undefined;
         for (const name in tpl) {
           const sub = tpl[name];
           if (sub?.$module != null && sub instanceof Template) {
@@ -426,7 +425,7 @@ define((require) => {
       if (typeof origin === 'string') origin = document.getElementById(origin);
       if (origin == null) {
         origin = Ctx._currentCtx;
-      } else if (origin.parentNode !== void 0) {
+      } else if (origin.parentNode !== undefined) {
         origin = Dom.ctx(origin);
       }
 
@@ -560,7 +559,7 @@ define((require) => {
     const events = parent[ctx$].__events ?? (parent[ctx$].__events = {});
 
     let eventTypes = events[eventType];
-    if (eventTypes === void 0) {
+    if (eventTypes === undefined) {
       eventTypes = events[eventType] = {};
       switch (eventType) {
         case 'focus':

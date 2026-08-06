@@ -24,9 +24,6 @@ define((require) => {
 
   const vendorFuncPrefix = vendorStylePrefix.toLowerCase();
 
-  const matches = document.documentElement[vendorFuncPrefix + 'MatchesSelector'] ||
-    document.documentElement.matchesSelector;
-
   require('./next-frame')(Dom);
 
   Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
@@ -66,7 +63,7 @@ define((require) => {
     return e;
   };
 
-  if (document.caretPositionFromPoint === void 0) {
+  if (document.caretPositionFromPoint === undefined) {
     HTMLDocument.prototype.caretPositionFromPoint = function (x, y) {
       const range = this.caretRangeFromPoint(x, y);
       return range === null ? null : {offsetNode: range.startContainer, offset: range.startOffset};
@@ -78,7 +75,7 @@ define((require) => {
       const sc = range.startContainer;
       const so = range.startOffset;
       const tr = document.createRange();
-      const result = {width: 0, height: 0, left: void 0, top: 0, right: 0, bottom: 0};
+      const result = {width: 0, height: 0, left: undefined, top: 0, right: 0, bottom: 0};
       let dims;
       if (sc.nodeType === document.TEXT_NODE) {
         const text = sc.textContent;
@@ -97,7 +94,7 @@ define((require) => {
           dims = sc.parentNode.getBoundingClientRect();
         }
       } else {
-        const node = sc.childNodes[so] || sc;
+        const node = sc.childNodes[so] ?? sc;
         if (node.nodeType === document.TEXT_NODE) {
           tr.setStart(node, 0);
           return getRangeClientRect(tr);
@@ -109,7 +106,7 @@ define((require) => {
       result.top = dims.top;
       result.bottom = dims.bottom;
 
-      if (result.left === void 0) {
+      if (result.left === undefined) {
         result.left = dims.left;
       }
       result.right = result.left;
@@ -133,8 +130,6 @@ define((require) => {
       return Ctx._currentElement;
     },
 
-    _matchesFunc: matches,
-
     loadScript: (opts) => {
       return new Promise((resolve, reject) => {
         const script = Dom.h({...opts, script: []});
@@ -149,7 +144,7 @@ define((require) => {
     },
 
     isInView: (elm, regionOrNode) => {
-      const region = regionOrNode.getBoundingClientRect === void 0
+      const region = regionOrNode.getBoundingClientRect === undefined
         ? regionOrNode
         : regionOrNode.getBoundingClientRect();
       const bb = elm.getBoundingClientRect();
@@ -232,7 +227,7 @@ define((require) => {
     },
 
     setClass: (name, isAdd, elm) => {
-      (isAdd ? Dom.addClass : Dom.removeClass)(elm || Dom.element, name);
+      (isAdd ? Dom.addClass : Dom.removeClass)(elm ?? Dom.element, name);
     },
 
     setBoolean: (name, isAdd, elm = Dom.element) => {
@@ -248,7 +243,7 @@ define((require) => {
       if (elm == null) return;
       if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
       const focus = elm.querySelector(selector);
-      focus !== null && focus.focus();
+      focus?.focus();
     },
 
     setRange: (range) => {
@@ -268,7 +263,7 @@ define((require) => {
         return getRangeClientRect(object);
       } else if (object.getBoundingClientRect) {
         return object.getBoundingClientRect();
-      } else if (object.left !== void 0) {
+      } else if (object.left !== undefined) {
         return object;
       }
     },
@@ -302,7 +297,7 @@ define((require) => {
       if (elm !== null && elm.nodeType !== document.ELEMENT_NODE) {
         elm = elm.parentNode;
       }
-      return elm && elm.closest(selector);
+      return elm?.closest(selector) ?? null;
     },
 
     getClosestCtx: (elm, selector) => {
@@ -315,12 +310,12 @@ define((require) => {
       if (elm !== null) return elm.getElementsByClassName(downClass)[0];
     },
 
-    matches: (elm, selector) => matches.call(elm, selector),
+    matches: (elm, selector) => elm.matches(selector),
 
     nextSibling: (elm, selector) => {
       if (elm != null) {
         for (let next = elm.nextElementSibling; next !== null; next = next.nextElementSibling) {
-          if (matches.call(next, selector)) return next;
+          if (next.matches(selector)) return next;
         }
       }
       return null;
@@ -433,7 +428,7 @@ define((require) => {
       const elmCtx = elm[ctx$];
       const observers = ctx[destoryObservers$];
       elmCtx[destoryWith$] =
-        ((observers === void 0) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(
+        ((observers === undefined) ? (ctx[destoryObservers$] = new DLinkedList()) : observers).add(
           elm,
         );
     },
@@ -442,14 +437,14 @@ define((require) => {
       const ctx = elm == null ? null : elm[ctx$];
       if (ctx != null) {
         const dw = ctx[destoryWith$];
-        dw === void 0 || dw.delete();
+        dw === undefined || dw.delete();
         const observers = ctx[destoryObservers$];
-        if (observers !== void 0) {
-          ctx[destoryObservers$] = void 0;
+        if (observers !== undefined) {
+          ctx[destoryObservers$] = undefined;
           for (const withElm of observers) {
             const withCtx = withElm[ctx$];
             if (withCtx != null) {
-              withCtx[destoryWith$] = void 0;
+              withCtx[destoryWith$] = undefined;
             }
             Dom.remove(withElm);
           }
@@ -482,7 +477,7 @@ define((require) => {
       const parent = start.parentNode;
       if (!parent) return;
       const end = start[endMarker$];
-      for (let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
+      for (let elm = start.nextSibling; elm != null && elm !== end; elm = start.nextSibling) {
         elm.remove();
         Dom.destroyData(elm);
       }
@@ -509,16 +504,16 @@ define((require) => {
       }
     },
 
-    myCtx: (elm) => elm == null ? null : elm[ctx$] || null,
+    myCtx: (elm) => elm == null ? null : elm[ctx$] ?? null,
 
     ctx: (elm) => {
       if (elm == null) return;
       if (typeof elm === 'string') elm = document.querySelector(elm);
       let ctx = elm[ctx$];
-      while (ctx === void 0 && elm.parentNode !== null) {
+      while (ctx === undefined && elm.parentNode !== null) {
         ctx = (elm = elm.parentNode)[ctx$];
       }
-      return ctx === void 0 ? null : ctx;
+      return ctx === undefined ? null : ctx;
     },
 
     ctxById: (id) => {
@@ -526,20 +521,17 @@ define((require) => {
       return elm === null ? null : elm[ctx$];
     },
 
-    updateElement: (elm) => {
-      const ctx = Dom.ctx(elm);
-      ctx !== null && ctx.updateElement(elm);
-    },
+    updateElement: (elm) => Dom.ctx(elm)?.updateElement(elm),
 
     replaceElement: (newElm, oldElm, noRemove) => {
       const ast = oldElm[endMarker$];
-      if (ast !== void 0) {
+      if (ast !== undefined) {
         Dom.removeInserts(oldElm);
         Dom.remove(ast);
       }
 
-      const parentCtx = (oldElm[ctx$] != null && oldElm[ctx$].parentCtx) ||
-        Dom.ctx(oldElm.parentNode);
+      const parentCtx = oldElm?.[ctx$]?.parentCtx ?? Dom.ctx(oldElm.parentNode);
+
       if (parentCtx !== null) {
         const ctx = newElm[ctx$];
         if (ctx != null) ctx.parentCtx = parentCtx;
@@ -640,7 +632,7 @@ define((require) => {
     reposition: (pos = 'below', options) => {
       const height = window.innerHeight, width = window.innerWidth;
       const ps = options.popup.style;
-      const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
+      const bbox = options.boundingClientRect ?? options.origin.getBoundingClientRect();
       if (options.align === 'right') {
         ps.setProperty('right', (width - bbox.right) + 'px');
       } else if (options.align === 'justify') {
