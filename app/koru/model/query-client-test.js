@@ -220,6 +220,14 @@ define((require, exports, module) => {
       assert.equals(v.TestModel.docs.foo2.nested, {a: 1, b: 3});
     });
 
+    test('createStopGap while pending count', () => {
+      sessState.incPending();
+      const foo = v.TestModel.createStopGap({name: 'foo'});
+      assert.isTrue(foo[stopGap$]);
+      sessState.decPending();
+      assert.same(foo, v.TestModel.findById(foo._id));
+    });
+
     test('insertFromServer stopGap pending doc', () => {
       sessState.incPending();
       const foo = v.TestModel.createStopGap({name: 'foo'});

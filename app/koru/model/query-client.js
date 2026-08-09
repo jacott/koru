@@ -104,7 +104,8 @@ define((require, exports, module) => {
         assertValidAttributes(doc.attributes);
         return TransQueue.nonNested(() => {
           const model = doc.constructor;
-          if (session.state.pendingCount() != 0) {
+
+          if (doc[stopGap$] === undefined && session.state.pendingCount() != 0) {
             recordChange(model, doc._id, 'del');
           }
           model.docs[doc._id] = doc;
