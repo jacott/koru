@@ -141,7 +141,9 @@ define((require, exports, module) => {
 
       assert.same(Id.v1HashStrings(['b', 'a']), 'Wln75BWZ0YctEUL67');
       assert.same(Id.v1HashStrings(['a', 'b']), 'bYf8HL0H-rN1o9aCk');
-      assert.same(Id.v1HashStrings(['+', 'b']), '9VjVdeHnNTCi0d6a5');
+      assert.same(Id.v1HashStrings(['+', 'b']), 'qXxuddej~XYANH6Wy'); // invalid chars map to zero
+      assert.same(Id.v1HashStrings(['-', 'b']), 'qXxuddej~XYANH6Wy');
+      assert.same(Id.v1HashStrings(['~', 'b']), 'BDpVbr00so4qOKnsc');
       assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz', '']), 'O~sUzKvt5Bob74-wI');
       assert.same(Id.v1HashStrings(['zzzzzzzzzzzzzzzzzz']), 'eq7Hb-88GPSIlg752');
       assert.same(

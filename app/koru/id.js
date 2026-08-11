@@ -12,7 +12,7 @@ define((require) => {
   const b64 = new BigUint64Array(2);
   const u8 = new Uint8Array(b64.buffer);
 
-  const {CHARS, charToU6} = Uuidv7;
+  const {CHARS, B64_MAP} = Uuidv7;
 
   const PRIME_64_LO = 18446744073709551557n; // 2^64 - 59
   const PRIME_64_HI = 18446744073709551533n; // 2^64 - 83 (another 64-bit prime)
@@ -137,7 +137,7 @@ define((require) => {
       r3 = (r3 << 6) | (r2 >>> 26) & 0x3F;
       r2 = (r2 << 6) | (r1 >>> 26) & 0x3F;
       r1 = (r1 << 6) | (r0 >>> 26) & 0x3F;
-      r0 = (r0 << 6) | charToU6(strId.charCodeAt(i)) & 0x3F;
+      r0 = (r0 << 6) | B64_MAP[strId.charCodeAt(i)] & 0x3F;
     }
 
     targetU32[startIndex] = r0;

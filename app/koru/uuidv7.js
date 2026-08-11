@@ -3,14 +3,15 @@ define((require, exports, module) => {
   const UtilBase        = require('koru/util-base');
 
   const CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~';
+  const B64_MAP = new Uint8Array(128);
+  for (let i = 0; i < 64; i++) {
+    B64_MAP[CHARS.charCodeAt(i)] = i;
+  }
 
   const {inspect$, equal$} = require('koru/symbols');
 
   let lastMs = 0;
   let counter = 0;
-
-  const charToU6 = (c) =>
-    (c === 45) ? 0 : (c < 58) ? c - 47 : (c < 91) ? c - 54 : (c === 126) ? 63 : c - 60;
 
   const ARRAY_BUF = new ArrayBuffer(16);
   const ARRAY_U64 = new BigUint64Array(ARRAY_BUF);
@@ -66,7 +67,7 @@ define((require, exports, module) => {
       return new this(validLow(rand), (BigInt(ms) << 16n) | 0x7000n | BigInt(randA & 0xFFF));
     }
 
-    static charToU6 = charToU6;
+    static B64_MAP = B64_MAP;
 
     static fromString(str) {
       // Handle canonical UUID formats (36-char hyphenated, 32-char hex, or URN prefixed)
@@ -85,28 +86,28 @@ define((require, exports, module) => {
       }
 
       // 22-character Base64 parsing (zero closure allocations)
-      const c0 = charToU6(str.charCodeAt(0));
-      const c1 = charToU6(str.charCodeAt(1));
-      const c2 = charToU6(str.charCodeAt(2));
-      const c3 = charToU6(str.charCodeAt(3));
-      const c4 = charToU6(str.charCodeAt(4));
-      const c5 = charToU6(str.charCodeAt(5));
-      const c6 = charToU6(str.charCodeAt(6));
-      const c7 = charToU6(str.charCodeAt(7));
-      const c8 = charToU6(str.charCodeAt(8));
-      const c9 = charToU6(str.charCodeAt(9));
-      const c10 = charToU6(str.charCodeAt(10));
-      const c11 = charToU6(str.charCodeAt(11));
-      const c12 = charToU6(str.charCodeAt(12));
-      const c13 = charToU6(str.charCodeAt(13));
-      const c14 = charToU6(str.charCodeAt(14));
-      const c15 = charToU6(str.charCodeAt(15));
-      const c16 = charToU6(str.charCodeAt(16));
-      const c17 = charToU6(str.charCodeAt(17));
-      const c18 = charToU6(str.charCodeAt(18));
-      const c19 = charToU6(str.charCodeAt(19));
-      const c20 = charToU6(str.charCodeAt(20));
-      const c21 = charToU6(str.charCodeAt(21));
+      const c0 = B64_MAP[str.charCodeAt(0)];
+      const c1 = B64_MAP[str.charCodeAt(1)];
+      const c2 = B64_MAP[str.charCodeAt(2)];
+      const c3 = B64_MAP[str.charCodeAt(3)];
+      const c4 = B64_MAP[str.charCodeAt(4)];
+      const c5 = B64_MAP[str.charCodeAt(5)];
+      const c6 = B64_MAP[str.charCodeAt(6)];
+      const c7 = B64_MAP[str.charCodeAt(7)];
+      const c8 = B64_MAP[str.charCodeAt(8)];
+      const c9 = B64_MAP[str.charCodeAt(9)];
+      const c10 = B64_MAP[str.charCodeAt(10)];
+      const c11 = B64_MAP[str.charCodeAt(11)];
+      const c12 = B64_MAP[str.charCodeAt(12)];
+      const c13 = B64_MAP[str.charCodeAt(13)];
+      const c14 = B64_MAP[str.charCodeAt(14)];
+      const c15 = B64_MAP[str.charCodeAt(15)];
+      const c16 = B64_MAP[str.charCodeAt(16)];
+      const c17 = B64_MAP[str.charCodeAt(17)];
+      const c18 = B64_MAP[str.charCodeAt(18)];
+      const c19 = B64_MAP[str.charCodeAt(19)];
+      const c20 = B64_MAP[str.charCodeAt(20)];
+      const c21 = B64_MAP[str.charCodeAt(21)];
 
       ARRAY_U32[3] = ((c0 << 26) | (c1 << 20) | (c2 << 14) | (c3 << 8) | (c4 << 2) | (c5 >>> 4)) >>>
         0;
