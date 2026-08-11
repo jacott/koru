@@ -25,6 +25,31 @@ define((require) => {
   const SHARED_U32 = new Uint32Array(SHARED_BUFFER);
   const SHARED_U8 = new Uint8Array(SHARED_BUFFER);
 
+  // Pre-computed positional scale multipliers (64^5 down to 64^0)
+  const M0 = 1073741824; // 64^5 (bit 30)
+  const M1 = 16777216; // 64^4 (bit 24)
+  const M2 = 262144; // 64^3 (bit 18)
+  const M3 = 4096; // 64^2 (bit 12)
+  const M4 = 64; // 64^1 (bit 6)
+
+  // Pre-computed 1 / 2^36
+  const INV_2_36 = 1.4551915228366852e-11;
+
+  const fallbackToFrac = (str) => {
+    const len = str.length;
+    let x = 0;
+
+    // Add the value of the characters we actually have, exactly
+    // where they would sit if the string were 6 characters long.
+    if (len > 0) x += B64_MAP[str.charCodeAt(0)] * M0;
+    if (len > 1) x += B64_MAP[str.charCodeAt(1)] * M1;
+    if (len > 2) x += B64_MAP[str.charCodeAt(2)] * M2;
+    if (len > 3) x += B64_MAP[str.charCodeAt(3)] * M3;
+    if (len > 4) x += B64_MAP[str.charCodeAt(4)] * M4;
+
+    return x * INV_2_36;
+  };
+
   /**
    * Hashes 12 32-bit numbers into four 32-bit numbers.
    * Designed for maximum speed and zero memory allocation in the inner loop.
@@ -264,6 +289,16 @@ define((require) => {
     static v1ToU64(v1id) {
       packV1IdInto(v1id, SHARED_U32, 0);
       return [SHARED_U64[0], FULL_ID_MASK & SHARED_U64[1]];
+    }
+
+    static strToFrac(str) {
+      if (str.length < 6) return fallbackToFrac(str);
+      return ((B64_MAP[str.charCodeAt(0)] * M0) +
+        (B64_MAP[str.charCodeAt(1)] * M1) +
+        (B64_MAP[str.charCodeAt(2)] * M2) +
+        (B64_MAP[str.charCodeAt(3)] * M3) +
+        (B64_MAP[str.charCodeAt(4)] * M4) +
+        B64_MAP[str.charCodeAt(5)]) * INV_2_36;
     }
 
     static u64ToV1(lo, hi) {

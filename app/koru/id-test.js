@@ -47,6 +47,22 @@ define((require, exports, module) => {
       assert.same(Id.u64ToV1(5n, 1n), 'F---------4');
     });
 
+    test('strToFrac', () => {
+      assert.near(Id.strToFrac('a123456'), 0.5786249685043003, 0.0000001);
+      assert.near(Id.strToFrac('a123457'), 0.5786249685043003, 0.0000001);
+      assert.near(Id.strToFrac('b123457'), 0.5942499685043003, 0.0000001);
+      assert.near(Id.strToFrac('-123457'), 0.000499968504300341, 0.0000001);
+      assert.near(Id.strToFrac('-~123457'), 0.01538867138151545, 0.0000001);
+      assert.near(Id.strToFrac('~123457'), 0.9848749685043003, 0.0000001);
+
+      assert.near(Id.strToFrac('~'), 0.984375, 0.0000001);
+      assert.near(Id.strToFrac('a'), 0.578125, 0.0000001);
+      assert.near(Id.strToFrac('aa'), 0.587158203125, 0.0000001);
+      assert.near(Id.strToFrac('-1234'), 0.0004999684169888496, 0.0000001);
+      assert.near(Id.strToFrac('------'), 0, 0.0000001); // six chars
+      assert.near(Id.strToFrac('-----'), 0, 0.0000001); // five chars
+    });
+
     test('toBase64', () => {
       /**
        * Convert id to base64
