@@ -271,6 +271,10 @@ define((require, exports, module) => {
       return this;
     },
 
+    dblclick(node, args) {
+      TH.trigger(node, 'dblclick', args);
+    },
+
     buildEvent: Dom.buildEvent,
 
     keydown(node, key, args) {
