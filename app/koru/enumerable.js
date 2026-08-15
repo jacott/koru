@@ -63,6 +63,18 @@ define(() => {
       }
     }
 
+    map(mapper) {
+      let iter = this[iter$];
+      this[iter$] = {
+        next: () => {
+          let n;
+          if ((n = iter.next()).done) return n;
+          return {value: mapper(n.value), done: false};
+        },
+      };
+      return this;
+    }
+
     filterMap(mapper) {
       let iter = this[iter$];
       this[iter$] = {

@@ -233,6 +233,24 @@ define((require, exports, module) => {
       //]
     });
 
+    test('map', () => {
+      /**
+       * Map an iterator to another value.
+       */
+      api.protoMethod();
+      //[
+      const source = {
+        *[Symbol.iterator]() {
+          yield 1;
+          yield 5;
+          yield 3;
+        },
+      };
+      const mapped = new Enumerable(source).map((i) => i == 5 ? undefined : 2 * i);
+      assert.equals(Array.from(mapped), [2, undefined, 6]);
+      //]
+    });
+
     test('filterMap', () => {
       /**
        * Filter and map an iterator to another value. If the `mapper` returns `undefined` then the
