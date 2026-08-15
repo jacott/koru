@@ -425,6 +425,62 @@ define((require) => {
       return list;
     },
 
+    mergeUniqueSorted(arr1, arr2) {
+      const result = [];
+      const len1 = arr1.length;
+      const len2 = arr2.length;
+
+      let i = 0;
+      let j = 0;
+      let lastAdded = undefined;
+
+      while (i < len1 && j < len2) {
+        const val1 = arr1[i];
+        const val2 = arr2[j];
+        let nextVal;
+
+        if (val1 < val2) {
+          nextVal = val1;
+          i++;
+        } else if (val1 > val2) {
+          nextVal = val2;
+          j++;
+        } else {
+          nextVal = val1;
+          i++;
+          j++;
+        }
+
+        // Only push if it's not a duplicate of the last added item
+        if (nextVal !== lastAdded) {
+          result.push(nextVal);
+          lastAdded = nextVal;
+        }
+      }
+
+      // Append any remaining elements from arr1
+      while (i < len1) {
+        const val1 = arr1[i];
+        if (val1 !== lastAdded) {
+          result.push(val1);
+          lastAdded = val1;
+        }
+        i++;
+      }
+
+      // Append any remaining elements from arr2
+      while (j < len2) {
+        const val2 = arr2[j];
+        if (val2 !== lastAdded) {
+          result.push(val2);
+          lastAdded = val2;
+        }
+        j++;
+      }
+
+      return result;
+    },
+
     /**
      * Only for undefined, null, number, string, boolean, date, array
      * and object. All the immutable types are compared with

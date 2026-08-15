@@ -1137,6 +1137,35 @@ define((require, exports, module) => {
       //]
     });
 
+    test('mergeUniqueSorted', () => {
+      /**
+       * Merges two sorted arrays of strings into a single sorted array with unique values.
+       */
+      api.method();
+      //[
+      assert.equals(util.mergeUniqueSorted([], []), []);
+
+      assert.equals(util.mergeUniqueSorted(['a', 'c'], []), ['a', 'c']);
+      assert.equals(util.mergeUniqueSorted([], ['b', 'd']), ['b', 'd']);
+
+      assert.equals(
+        util.mergeUniqueSorted( //
+          ['a', 'c', 'e'],
+          ['b', 'd', 'f'],
+        ),
+        ['a', 'b', 'c', 'd', 'e', 'f'],
+      );
+
+      assert.equals(util.mergeUniqueSorted(['a', 'b', 'c'], ['b', 'c', 'd']), ['a', 'b', 'c', 'd']);
+
+      assert.equals(util.mergeUniqueSorted(['a', 'a', 'b'], ['b', 'b', 'c']), ['a', 'b', 'c']);
+
+      assert.equals(util.mergeUniqueSorted(['a'], ['b', 'c', 'd', 'e']), ['a', 'b', 'c', 'd', 'e']);
+
+      assert.equals(util.mergeUniqueSorted(['a', 'x', 'y', 'z'], ['b']), ['a', 'b', 'x', 'y', 'z']);
+      //]
+    });
+
     test('flatten', () => {
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8], true), [1, 2, 6, [4], 7, 8]);
