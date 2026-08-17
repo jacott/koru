@@ -5,17 +5,30 @@ define((require, exports, module) => {
 
   const {hasOwnProperty} = Object.prototype;
 
-  globalThis.assert = (truthy, msg = 'assertion failed') => {
-    if (!truthy) throw new Error(msg.toString());
-  };
+  Object.defineProperty(globalThis, 'assert', {
+    value: (truthy, msg = 'assertion failed') => {
+      if (!truthy) throw new Error(msg.toString());
+    },
+    writeable: false,
+    configurable: true,
+    enumerable: false,
+  });
 
   const isPromise = (object) => typeof object?.then === 'function';
 
   const ifPromise = (object, trueCallback, falseCallbase = trueCallback) =>
     isPromise(object) ? object.then(trueCallback) : falseCallbase(object);
 
-  globalThis.isPromise = isPromise;
-  globalThis.ifPromise = ifPromise;
+  Object.defineProperty(globalThis, 'isPromise', {
+    value: isPromise,
+    writeable: false,
+    enumerable: false,
+  });
+  Object.defineProperty(globalThis, 'ifPromise', {
+    value: ifPromise,
+    writeable: false,
+    enumerable: false,
+  });
 
   const LABEL_RE = /^(?:[a-z_$][a-z_$0-9]*|[0-9]+)$/i;
 

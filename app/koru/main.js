@@ -143,8 +143,16 @@ define((require, exports, module) => {
   }
 
   // avoid search for de-bug statements
-  globalThis['_\x6Boru_'] = koru;
-  globalThis['k\x64bg'] = logDebug;
+  Object.defineProperty(globalThis, '_\x6Boru_', {
+    value: koru,
+    writeable: false,
+    enumerable: false,
+  });
+  Object.defineProperty(globalThis, 'k\x64bg', {
+    value: logDebug,
+    writeable: false,
+    enumerable: false,
+  });
 
   require('koru/env!./main')(koru);
 
