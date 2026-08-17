@@ -25,54 +25,6 @@ define((require, exports, module) => {
       assert.same(a.at(-1), '3');
     });
 
-    test('id', () => {
-      const {u8Id} = util;
-      for (let i = 0; i < u8Id.length; ++i) {
-        u8Id[i] = i + 8;
-      }
-
-      assert.same(util.id(), '90abcdefghijklmno');
-    });
-
-    test('idToUint8Array', () => {
-      util.idToUint8Array('1234ABCDEFGHIJKLM', util.u8Id);
-      assert.same(util.id(), '1234ABCDEFGHIJKLM');
-
-      util.idToUint8Array('7890abcdefghijklm', util.u8Id);
-      assert.same(util.id(), '7890abcdefghijklm');
-    });
-
-    test('zipId', () => {
-      /**
-       * Pack an 17 Character id into a 13 byte Uint8Array
-       */
-
-      const {zipId, unzipId} = util;
-
-      const u8 = new Uint8Array(13);
-
-      zipId('demo', u8);
-      assert.same(unzipId(u8), 'demo');
-
-      zipId('', u8);
-      assert.same(unzipId(u8), '');
-
-      zipId('dem', u8);
-      assert.same(unzipId(u8), 'dem');
-
-      zipId('ZYXWVUTSRQPONMLKJ', u8);
-      assert.equals(unzipId(u8), 'ZYXWVUTSRQPONMLKJ');
-
-      zipId('1234ABCDEFGHIJKLZ', u8);
-      assert.same(unzipId(u8), '1234ABCDEFGHIJKLZ');
-
-      zipId('7890abcdefghijklm', u8);
-      assert.same(unzipId(u8), '7890abcdefghijklm');
-
-      zipId('hello', u8);
-      assert.same(unzipId(u8), 'hello');
-    });
-
     test('isPromise', () => {
       /**
        * Return true is `object` is an object with a `then` function.

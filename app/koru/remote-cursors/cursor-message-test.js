@@ -8,10 +8,6 @@ define((require, exports, module) => {
 
   const CursorMessage = require('./cursor-message');
 
-  const idLen = 13;
-
-  const {u8Id, zipId, unzipId} = util;
-
   const {MOVE_SIZE} = CursorMessage;
 
   const Square = 1;

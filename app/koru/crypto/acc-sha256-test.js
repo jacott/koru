@@ -25,7 +25,16 @@ define((require, exports, module) => {
       //[
       const h = [1, 2, 3, 4, 5, 6, 7, 8];
       assert.same(sut.add('hello world', h), h);
-      assert.equals(h, [4138495084, 3973010320, 2777164054, 2207796612, 615005229, 3241153105, 1397076350, 2212452408]);
+      assert.equals(h, [
+        4138495084,
+        3973010320,
+        2777164054,
+        2207796612,
+        615005229,
+        3241153105,
+        1397076350,
+        2212452408,
+      ]);
 
       assert.equals(sut.add('secret'), [
         733482323,
@@ -40,23 +49,6 @@ define((require, exports, module) => {
       //]
     });
 
-    test('toId', () => {
-      /**
-       * Convert a string into an id hash
-       */
-      api.method();
-      //[
-      assert.same(sut.toId('hello' + 'goodbye'), 'hef112kz6HMarjX36');
-      assert.same(sut.toId(''), '5aQFks5seW4uAZNtG');
-      assert.same(sut.toId('1'), 'RSaJD5Q8g5Jxp2s8M');
-
-      assert.same(sut.toId('hello'), '1fUIeDQxGXKCyEZbu');
-      //]
-      const u8 = new Uint8Array([255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-      assert.same(sut.toId(u8), 'HL7iBaOFoWMgDI3fK');
-      assert.same(sut.toId(new Uint32Array(u8.buffer)), 'HL7iBaOFoWMgDI3fK');
-    });
-
     test('toHex', () => {
       /**
        * Convert a `hash` to a hex string.
@@ -69,8 +61,14 @@ define((require, exports, module) => {
         sut.toHex(sut.add('hellogoodbye')),
         '3e4dc8cb9fce3f3e0aea6905faf58fd5baba4981c4f043ae03f58ef6a331de2f',
       );
-      assert.same(sut.toHex(sut.add('')), 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
-      assert.same(sut.toHex(sut.add('1')), '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b');
+      assert.same(
+        sut.toHex(sut.add('')),
+        'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      );
+      assert.same(
+        sut.toHex(sut.add('1')),
+        '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b',
+      );
 
       api.method();
       //[
@@ -90,11 +88,17 @@ define((require, exports, module) => {
       //]
       api.done();
       sut.add('363', h);
-      assert.same(sut.toHex(sut.add('Ჾ蠇', h)), 'f8165b4e4696d5f09d0a08ed60f3503b9f4b15bf5bec95ad1fd7c85a43b00ead');
+      assert.same(
+        sut.toHex(sut.add('Ჾ蠇', h)),
+        'f8165b4e4696d5f09d0a08ed60f3503b9f4b15bf5bec95ad1fd7c85a43b00ead',
+      );
 
       let long = new Array(29 + 1).join('1234567890');
 
-      assert.same(sut.toHex(sut.add(long, h)), '142513117c582aaca7a37386caada53880bf6b2e93be5b7fb6abf6e6c8ba504d');
+      assert.same(
+        sut.toHex(sut.add(long, h)),
+        '142513117c582aaca7a37386caada53880bf6b2e93be5b7fb6abf6e6c8ba504d',
+      );
     });
   });
 });

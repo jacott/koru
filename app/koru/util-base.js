@@ -114,11 +114,6 @@ define((require, exports, module) => {
   const regexEscape = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
   const idLen = 17;
-  const idBytes = ((2 * idLen - 1) >> 2) << 2;
-  const abId = new ArrayBuffer(idBytes);
-  const u32Id = new Uint32Array(abId);
-  const u8Id = new Uint8Array(abId);
-  const CHARS = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   const strCode = (str, i) => {
     if (str.length == i) return 63;
@@ -133,75 +128,10 @@ define((require, exports, module) => {
   };
 
   const util = {
+    prog1: (arg) => arg,
+    progn: (...args) => args[args.length - 1],
     hasOwn: (obj, prop) => hasOwnProperty.call(obj, prop),
     idLen,
-    u32Id,
-    u8Id,
-    CHARS,
-    id: () => {
-      let result = '';
-      for (let i = 0; i < idLen; ++i) result += CHARS[u8Id[i] % 62];
-
-      return result;
-    },
-    idToUint8Array: (str, u8Id) => {
-      for (let i = 0; i < str.length; ++i) u8Id[i] = strCode(str, i);
-
-      return u8Id;
-    },
-
-    zipId: (str, u8) => {
-      const mask = 63;
-      let shift = 2;
-      let strIdx = 0;
-      let o1 = strCode(str, strIdx);
-      let o2 = 0;
-      let i = 0;
-      while (i < 17) {
-        o2 = strCode(str, ++strIdx);
-        o1 |= (o2 & (mask >> (6 - shift))) << (8 - shift);
-        u8[i] = o1;
-        if (o2 === 63) {
-          if (shift != 0) ++i;
-          if (i < 13) u8[i] = 255;
-          return u8;
-        }
-        o1 = o2 >> shift;
-        shift = (shift + 2) % 8;
-        if (shift != 2) ++i;
-      }
-
-      return u8;
-    },
-
-    unzipId: (u8) => {
-      const mask = 63;
-      let shift = 0;
-      let str = '';
-      let o1 = 0, o2 = 0;
-
-      let i = 0;
-      while (i < 13) {
-        o2 = u8[i];
-        o1 |= (o2 & (mask >> shift)) << shift;
-        if (o1 == 63) return str;
-        str += CHARS[o1];
-        o1 = o2 >> (6 - shift);
-        shift = (shift + 2) % 8;
-        if (shift == 0) {
-          o1 = o2 & mask;
-          if (i == 12) {
-            if (o1 != 63) {
-              str += CHARS[o1];
-            }
-            return str;
-          }
-        } else {
-          ++i;
-        }
-      }
-      return str;
-    },
 
     versionFromUserAgent(ua) {
       let name = 'Unknown';

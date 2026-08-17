@@ -128,7 +128,5 @@ define((require) => {
     },
   };
 
-  require('koru/env!./acc-sha256')(AccSha256);
-
   return AccSha256;
 });
