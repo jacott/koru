@@ -1,18 +1,18 @@
-isClient && define((require, exports, module)=>{
+isClient && define((require, exports, module) => {
   'use strict';
-  const Dom             = require('../dom');
   const Each            = require('./each');
   const TH              = require('./test-helper');
+  const Dom             = require('../dom');
 
   const {stub, spy} = TH;
 
-  const sut  = require('./select-menu');
+  const sut = require('./select-menu');
   const $ = Dom.current;
 
   let v = {};
 
-  TH.testCase(module, ({after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({after, beforeEach, afterEach, group, test}) => {
+    beforeEach(() => {
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./select-menu-test'));
 
       document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
@@ -31,62 +31,66 @@ isClient && define((require, exports, module)=>{
               v.currentTarget = event.currentTarget;
               v.elm = elm;
               return v.result;
-            }}, pos);
+            },
+          }, pos);
           v.button = this;
         });
       };
     });
 
-    afterEach(()=>{
+    afterEach(() => {
       TH.domTearDown();
       v = {};
     });
 
-    group("closing", ()=>{
-      beforeEach(()=>{
+    group('closing', () => {
+      beforeEach(() => {
         v.onClose = stub();
         assert.dom('#TestSelectMenu [name=select]', function () {
           sut.popup(this, {
-            onClose(ctx) {v.onClose(ctx)},
-            onSelect() {return true},
+            onClose(ctx) {
+              v.onClose(ctx);
+            },
+            onSelect() {
+              return true;
+            },
           });
         });
-
-
       });
 
-      test("direct focus", ()=>{
+      test('direct focus', () => {
         const button = Dom.h({button: 'test'});
         document.body.appendChild(button);
-        v.onClose = ctx => {ctx.focusElm = button};
+        v.onClose = (ctx) => {
+          ctx.focusElm = button;
+        };
         Dom.remove(Dom('.glassPane'));
         assert.same(document.activeElement, button);
       });
 
-      test("onClose", ()=>{
+      test('onClose', () => {
         assert.dom('body>.glassPane', function () {
           Dom.remove(this);
         });
         assert.called(v.onClose);
       });
 
-      test("closes if parent ctx closes", ()=>{
+      test('closes if parent ctx closes', () => {
         Dom.remove(v.testSelectMenu);
         refute.dom('body>.glassPane');
         assert.called(v.onClose);
       });
-
     });
 
-    test("restores range", ()=>{
-      const html = Dom.h({div: "Hello world", '$contenteditable': true});
+    test('restores range', () => {
+      const html = Dom.h({div: 'Hello world', '$contenteditable': true});
       document.body.appendChild(html);
-      const input = Dom.h({input: ""});
+      const input = Dom.h({input: ''});
       document.body.appendChild(input);
       html.focus();
       TH.setRange(html.firstChild, 3, html.firstChild, 5);
       sut.popup(html, {
-        list: [["foo", "foo"]],
+        list: [['foo', 'foo']],
         search: sut.nameSearch,
         onSelect() {
           return true;
@@ -102,11 +106,11 @@ isClient && define((require, exports, module)=>{
       assert.same(range.endContainer, html.firstChild);
       assert.same(range.endOffset, 5);
       sut.popup(html, {
-        list: [["foo", "foo"]],
+        list: [['foo', 'foo']],
         search: sut.nameSearch,
         onSelect() {
           input.focus();
-          input.value = "foo";
+          input.value = 'foo';
           input.select();
           return true;
         },
@@ -118,7 +122,7 @@ isClient && define((require, exports, module)=>{
       assert.same(input.selectionEnd, 3);
     });
 
-    test("decorator", ()=>{
+    test('decorator', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -127,22 +131,29 @@ isClient && define((require, exports, module)=>{
         decorator: v.decorator = stub(),
       });
 
-      assert.calledWith(v.decorator, TH.match(arg => arg._id === 1),
-                        TH.match(arg => arg.textContent === 'One'));
+      assert.calledWith(
+        v.decorator,
+        TH.match((arg) => arg._id === 1),
+        TH.match((arg) => arg.textContent === 'One'),
+      );
 
-      assert.calledWith(v.decorator, TH.match(arg => arg._id === 2),
-                        TH.match(arg => arg.textContent === 'Two'));
+      assert.calledWith(
+        v.decorator,
+        TH.match((arg) => arg._id === 2),
+        TH.match((arg) => arg.textContent === 'Two'),
+      );
     });
 
-    test("class lines", ()=>{
-       assert.dom('#TestSelectMenu [name=select]', function () {
+    test('class lines', () => {
+      assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
       sut.popup(v.button, {
-        list: v.list = [
-          [1, 'One'], 'sep me', [2, 'Two'],
-          {id: 3, name: 'Three', parent: {class: 'foo', 'data-id': 'fuzz'}},
-          {id: 4, name: Dom.h({b: 'Four'}), icon: 'close'}],
+        list: v.list = [[1, 'One'], 'sep me', [2, 'Two'], {
+          id: 3,
+          name: 'Three',
+          parent: {class: 'foo', 'data-id': 'fuzz'},
+        }, {id: 4, name: Dom.h({b: 'Four'}), icon: 'close'}],
       });
 
       assert.dom('.glassPane', function () {
@@ -152,16 +163,15 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("updating", ()=>{
+    test('updating', () => {
       const list = [[1, 'One'], 'sep me', [2, 'Two']];
-      assert.dom('#TestSelectMenu [name=select]', button =>{
+      assert.dom('#TestSelectMenu [name=select]', (button) => {
         sut.popup(button, {list, search: true});
       });
 
-      assert.dom('.glassPane', gp =>{
+      assert.dom('.glassPane', (gp) => {
         const search = gp.querySelector('.search');
-        assert.dom('.ui-ul', ul =>{
-
+        assert.dom('.ui-ul', (ul) => {
           assert.dom('li:first-child', 'One');
 
           list[0][1] = 'changed';
@@ -174,7 +184,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("selected array data", ()=>{
+    test('selected array data', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -187,11 +197,11 @@ isClient && define((require, exports, module)=>{
       });
 
       assert.dom('body>.glassPane', function () {
-        assert.dom('.selected', {data:TH.match.field('_id', 0)});
+        assert.dom('.selected', {data: TH.match.field('_id', 0)});
       });
     });
 
-    test("selected object data", ()=>{
+    test('selected object data', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -205,11 +215,11 @@ isClient && define((require, exports, module)=>{
 
       assert.dom('body>.glassPane', function () {
         assert.dom('.selected', {count: 1});
-        assert.dom('.selected', {data:TH.match.field('_id', 2)});
+        assert.dom('.selected', {data: TH.match.field('_id', 2)});
       });
     });
 
-    test("multi select", ()=>{
+    test('multi select', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -223,17 +233,17 @@ isClient && define((require, exports, module)=>{
 
       assert.dom('body>.glassPane', function () {
         assert.dom('.selected', {count: 2});
-        assert.dom('.selected', {data:TH.match.field('_id', 2)});
-        assert.dom('.selected', {data:TH.match.field('_id', 3)});
+        assert.dom('.selected', {data: TH.match.field('_id', 2)});
+        assert.dom('.selected', {data: TH.match.field('_id', 3)});
       });
     });
 
-    test("nameSearch", ()=>{
+    test('nameSearch', () => {
       assert.same(sut.nameSearch(/foo/, {name: 'a foo'}), true);
       assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);
     });
 
-    test("noFocus", ()=>{
+    test('noFocus', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = stub();
         this.focus();
@@ -253,7 +263,7 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("search", ()=>{
+    test('search', () => {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = stub();
         this.focus();
@@ -280,7 +290,9 @@ isClient && define((require, exports, module)=>{
 
           v.search = this;
           v.search.addEventListener('keydown', v.inputel = stub());
-          after(()=>{v.search.removeEventListener('keydown', v.inputel)});
+          after(() => {
+            v.search.removeEventListener('keydown', v.inputel);
+          });
           TH.input(v.search, 'one');
           const ev = keydown(101 /* e */);
           assert.called(v.inputel);
@@ -301,7 +313,7 @@ isClient && define((require, exports, module)=>{
         let ev = keydown(40);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
-        assert.dom('li.selected', 'Two', elm =>{
+        assert.dom('li.selected', 'Two', (elm) => {
           assert.calledWith(Dom.ensureInView, elm);
         });
         assert.dom('li:not(.selected)', 'One');
@@ -332,8 +344,8 @@ isClient && define((require, exports, module)=>{
       }
     });
 
-    group("position", ()=>{
-      test("default", ()=>{
+    group('position', () => {
+      test('default', () => {
         v.popup();
         assert.dom('body>.glassPane>#SelectMenu', function () {
           const bbox = v.button.getBoundingClientRect();
@@ -342,7 +354,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("above", ()=>{
+      test('above', () => {
         v.testSelectMenu.style.position = 'absolute';
         v.testSelectMenu.style.bottom = '250px';
         v.popup(null, 'above');
@@ -354,7 +366,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("align right", ()=>{
+      test('align right', () => {
         v.testSelectMenu.style.position = 'absolute';
         v.testSelectMenu.style.right = '70px';
         v.align = 'right';
@@ -366,9 +378,9 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("full height", ()=>{
+      test('full height', () => {
         v.popup(function () {
-          $.element.style.height = (window.innerHeight + 200)+'px';
+          $.element.style.height = (window.innerHeight + 200) + 'px';
         });
         assert.dom('#SelectMenu', function () {
           const bbox = v.button.getBoundingClientRect();
@@ -377,40 +389,40 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("no room below", ()=>{
+      test('no room below', () => {
         assert.dom('#TestSelectMenu [name=select]', function () {
           this.style.position = 'absolute';
-          this.style.top = (window.innerHeight * .75)+'px';
+          this.style.top = (window.innerHeight * .75) + 'px';
         });
         v.popup(function () {
-          $.element.style.height = (window.innerHeight * .5)+'px';
+          $.element.style.height = (window.innerHeight * .5) + 'px';
         });
         assert.dom('#SelectMenu', function () {
           const bbox = v.button.getBoundingClientRect();
           assert.same(this.style.top, '');
-          assert.cssNear(this, 'bottom', (window.innerHeight - bbox.top), 2, 'px');
+          assert.cssNear(this, 'bottom', window.innerHeight - bbox.top, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       });
 
-      test("no room above", ()=>{
+      test('no room above', () => {
         v.popup(function () {
-          $.element.style.height = (window.innerHeight * .2)+'px';
+          $.element.style.height = (window.innerHeight * .2) + 'px';
         }, 'above');
         assert.dom('#SelectMenu', function () {
           const bbox = v.button.getBoundingClientRect();
           assert.same(this.style.bottom, '');
-          assert.cssNear(this, 'top', (bbox.top + bbox.height), 2, 'px');
+          assert.cssNear(this, 'top', bbox.top + bbox.height, 2, 'px');
         });
       });
     });
 
-    group("when open", ()=>{
-      beforeEach(()=>{
+    group('when open', () => {
+      beforeEach(() => {
         v.popup();
       });
 
-      test("content", ()=>{
+      test('content', () => {
         assert.dom('#SelectMenu ul[tabindex="0"].ui-ul', function () {
           refute.dom('input');
           assert.dom('li[tabindex="-1"][touch-action=auto]', 'One');
@@ -418,9 +430,9 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("select drag release", ()=>{
-        assert.dom('#SelectMenu>ul', ul=>{
-          assert.dom('li:first-child', li =>{
+      test('select drag release', () => {
+        assert.dom('#SelectMenu>ul', (ul) => {
+          assert.dom('li:first-child', (li) => {
             TH.trigger(li, 'pointermove', {clientX: 50, clientY: 150});
             TH.trigger(li, 'pointermove', {clientX: 57, clientY: 141});
             TH.trigger(li, 'pointerup');
@@ -429,9 +441,9 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("select small-drag release", ()=>{
-        assert.dom('#SelectMenu>ul', ul=>{
-          assert.dom('li:first-child', li =>{
+      test('select small-drag release', () => {
+        assert.dom('#SelectMenu>ul', (ul) => {
+          assert.dom('li:first-child', (li) => {
             TH.trigger(li, 'pointermove', {clientX: 50, clientY: 150});
             TH.trigger(li, 'pointermove', {clientX: 57, clientY: 143});
             TH.trigger(li, 'pointerup');
@@ -440,18 +452,18 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("select no-drag release", ()=>{
-        assert.dom('#SelectMenu>ul', ul=>{
-          assert.dom('li:first-child', li =>{
+      test('select no-drag release', () => {
+        assert.dom('#SelectMenu>ul', (ul) => {
+          assert.dom('li:first-child', (li) => {
             TH.trigger(li, 'pointerup');
             refute.same(v.elm, li);
           });
         });
       });
 
-      test("select by pointer", ()=>{
-        assert.dom('#SelectMenu>ul', ul=>{
-          assert.dom('li:first-child', li =>{
+      test('select by pointer', () => {
+        assert.dom('#SelectMenu>ul', (ul) => {
+          assert.dom('li:first-child', (li) => {
             spy(Dom, 'stopEvent');
             TH.click(li);
             assert.called(Dom.stopEvent);
@@ -461,9 +473,7 @@ isClient && define((require, exports, module)=>{
             TH.trigger(li, 'pointerdown');
             TH.trigger(li, 'pointerup');
             assert.same(v.elm, undefined);
-
           });
-
         });
         assert.dom('#SelectMenu');
         TH.trigger(document.body, 'click');
@@ -472,7 +482,7 @@ isClient && define((require, exports, module)=>{
         refute.dom('#SelectMenu');
       });
 
-      test("autoClose", ()=>{
+      test('autoClose', () => {
         document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
@@ -484,10 +494,13 @@ isClient && define((require, exports, module)=>{
           });
           refute.dom('#SelectMenu');
         });
-        assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
+        assert.same(
+          document.activeElement,
+          document.querySelector('#TestSelectMenu [name=select]'),
+        );
       });
 
-      test("tab closes list", ()=>{
+      test('tab closes list', () => {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -498,7 +511,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("escape closes list", ()=>{
+      test('escape closes list', () => {
         document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
@@ -508,16 +521,19 @@ isClient && define((require, exports, module)=>{
           });
           refute.dom('#SelectMenu');
         });
-        assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
+        assert.same(
+          document.activeElement,
+          document.querySelector('#TestSelectMenu [name=select]'),
+        );
       });
 
-      test("clicking off list closes list", ()=>{
+      test('clicking off list closes list', () => {
         assert.dom('#TestSelectMenu>br');
         TH.trigger('body>.glassPane', 'click');
         refute.dom('#SelectMenu');
       });
 
-      test("can't select disabled", ()=>{
+      test("can't select disabled", () => {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -535,6 +551,5 @@ isClient && define((require, exports, module)=>{
         });
       });
     });
-
   });
 });
