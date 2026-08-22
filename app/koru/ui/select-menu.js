@@ -22,7 +22,10 @@ define((require, exports, module) => {
   };
 
   const searchRegExp = (value) =>
-    new RegExp('.*' + util.regexEscape(value || '').replace(/\s+/g, '.*') + '.*', 'i');
+    new RegExp(
+      '.*' + util.regexEscape(typeof value === 'string' ? value : '').replace(/\s+/g, '.*') + '.*',
+      'i',
+    );
 
   Tpl.$extend({
     popup(elm, options, pos) {
@@ -37,15 +40,15 @@ define((require, exports, module) => {
           select(ctx, elm, event);
         },
       });
-      options.rendered && options.rendered(menu.firstElementChild);
-      elmCtx && Dom.destroyMeWith(menu, elmCtx);
+      options.rendered?.(menu.firstElementChild);
+      elmCtx != null && Dom.destroyMeWith(menu, elmCtx);
       ctx.focusElm = document.activeElement;
       ctx.focusRange = Dom.getRange();
 
       Modal.append(pos, {
         align: options.align,
         container: menu,
-        boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
+        boundingClientRect: options.boundingClientRect ?? elm.getBoundingClientRect(),
       });
       Dom.dontFocus || options.noFocus || Dom.focus(menu.firstChild);
       return menu.firstChild;
@@ -68,11 +71,11 @@ define((require, exports, module) => {
     },
 
     $destroyed(ctx) {
-      ctx.data.onClose && ctx.data.onClose(ctx);
+      ctx.data.onClose?.(ctx);
       const elm = ctx.focusElm;
-      Dom.dontFocus || (elm && elm.focus());
+      Dom.dontFocus || elm?.focus();
       const range = ctx.focusRange;
-      range && Dom.setRange(range);
+      range != null && Dom.setRange(range);
     },
 
     searchRegExp,
@@ -88,7 +91,7 @@ define((require, exports, module) => {
       }
     },
     search() {
-      if ($.element.nodeType !== document.ELEMENT_NODE && this.search) {
+      if ($.element.nodeType !== document.ELEMENT_NODE && this.search != null) {
         return Tpl.Search.$autoRender(this);
       }
     },
@@ -97,7 +100,7 @@ define((require, exports, module) => {
   Tpl.List.$helpers({
     items() {
       const {list} = this;
-      if (list !== void 0) {
+      if (list !== undefined) {
         return list.map((row) => {
           if (typeof row === 'string') {
             return {parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}};
@@ -118,7 +121,7 @@ define((require, exports, module) => {
 
       const li = elm.parentNode;
 
-      if (this.parent !== void 0) {
+      if (this.parent !== undefined) {
         const {parent} = this;
         for (let key in parent) {
           if (key === 'class') {
@@ -133,15 +136,15 @@ define((require, exports, module) => {
           }
         }
       }
-      if (this.icon !== void 0) {
+      if (this.icon !== undefined) {
         li.setAttribute('icon', this.icon);
       }
 
-      const id = this.id !== void 0 ? this.id : this._id;
-      if (selected !== void 0 && selected[id]) {
+      const id = this.id !== undefined ? this.id : this._id;
+      if (selected !== undefined && selected[id]) {
         elm.parentNode.classList.add('selected');
       }
-      decorator !== void 0 && decorator(this, elm);
+      decorator?.(this, elm);
       return this.name;
     },
   });
@@ -187,7 +190,7 @@ define((require, exports, module) => {
       util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), (li) => {
         li.classList.toggle('hide', !func(searchRe, $.data(li)));
       });
-      options.searchDone && options.searchDone(this, event.currentTarget.parentNode);
+      options.searchDone?.(this, event.currentTarget.parentNode);
     },
   });
 
