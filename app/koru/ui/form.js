@@ -331,7 +331,13 @@ define((require) => {
           koru.unexpectedError('Save invalid', JSON.stringify(otherMsgs));
         }
 
-        focus?.focus();
+        if (focus != null) {
+          focus.focus();
+          requestAnimationFrame(() => {
+            focus.blur();
+            focus.focus();
+          });
+        }
         return true;
       }
 
