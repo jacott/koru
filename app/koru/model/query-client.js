@@ -104,8 +104,7 @@ define((require, exports, module) => {
         assertValidAttributes(doc.attributes);
         return TransQueue.nonNested(() => {
           const model = doc.constructor;
-
-          if (doc[stopGap$] === undefined && session.state.pendingCount() != 0) {
+          if (session.state.pendingCount() != 0) {
             recordChange(model, doc._id, 'del');
           }
           model.docs[doc._id] = doc;
@@ -125,21 +124,16 @@ define((require, exports, module) => {
         return TransQueue.nonNested(() => {
           const id = attrs._id;
           const doc = model.docs[id];
-
-          const isSimManaged = session.state.pendingCount() != 0 && fromServer(model, id, attrs);
-
-          if (doc === undefined) {
-            if (isSimManaged) return;
-            notify(DocChange.add(model.docs[id] = new model(attrs), 'serverUpdate'));
-          } else {
-            if (doc[stopGap$] !== undefined) {
-              doc[stopGap$] = undefined; // avoid hidden class change
-              doc.attributes = attrs;
-              notify(DocChange.add(doc, 'serverUpdate'));
+          if (session.state.pendingCount() != 0) {
+            if (fromServer(model, id, attrs)) {
+              if (doc?.[stopGap$] !== undefined) doc[stopGap$] = undefined;
               return;
             }
+          }
 
-            if (isSimManaged) return;
+          if (doc !== undefined) {
+            // already exists; convert to update
+            if (doc[stopGap$] !== undefined) doc[stopGap$] = undefined; // avoid hidden class change
 
             const old = doc.attributes;
             for (const key in old) {
@@ -158,6 +152,9 @@ define((require, exports, module) => {
               model.serverQuery.onId(id).update(attrs);
               break;
             }
+          } else {
+            // insert doc
+            notify(DocChange.add(model.docs[id] = new model(attrs), 'serverUpdate'));
           }
         });
       },

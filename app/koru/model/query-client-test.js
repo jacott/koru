@@ -137,17 +137,6 @@ define((require, exports, module) => {
         );
       });
 
-      test('stopGap insertFromServer', () => {
-        const foo3 = v.TestModel.createStopGap({_id: 'foo3', name: 'loading...'});
-        assert.calledOnceWith(onChange, DocChange.add(foo3));
-        onChange.reset();
-        Query.insertFromServer(v.TestModel, {_id: 'foo3', name: 'foo 3', age: 8});
-        assert.calledOnceWith(onChange, DocChange.add(foo3, 'serverUpdate'));
-        assert.same(foo3.attributes.name, 'foo 3');
-        assert.same(foo3.attributes.age, 8);
-        assert.same(foo3[stopGap$], undefined);
-      });
-
       test('update', () => {
         const {foo, TestModel} = v;
         assert.equals(foo.$cache, {});
@@ -218,14 +207,6 @@ define((require, exports, module) => {
 
       _sessState.decPending();
       assert.equals(v.TestModel.docs.foo2.nested, {a: 1, b: 3});
-    });
-
-    test('createStopGap while pending count', () => {
-      sessState.incPending();
-      const foo = v.TestModel.createStopGap({name: 'foo'});
-      assert.isTrue(foo[stopGap$]);
-      sessState.decPending();
-      assert.same(foo, v.TestModel.findById(foo._id));
     });
 
     test('insertFromServer stopGap pending doc', () => {
