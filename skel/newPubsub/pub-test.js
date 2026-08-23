@@ -27,10 +27,10 @@ define((require, exports, module) => {
 
       const sub = conn.onSubscribe('sub1', 1, '$$publishName$$');
 
-      assert.calledWith(conn.sendBinary, 'A' ['$$modelName$$', doc1._id, doc1.attributes]);
+      assert.calledWith(conn.sendBinary, 'A', ['$$modelName$$', doc1.attributes]);
 
       const doc2 = Factory.create$$modelName$$();
-      assert.calledWith(conn.sendBinary, 'A', ['$$modelName$$', doc2._id, doc2.attributes]);
+      assert.calledWith(conn.sendBinary, 'A', ['$$modelName$$', doc2.attributes]);
     });
   });
 });

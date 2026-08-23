@@ -6,14 +6,19 @@ define((require, exports, module) => {
 
   class $$publishName$$Pub extends Publication {
     init() {
-      this.handles = [$$modelName$$.onChange((dc) => {this.sendUpdate(dc)})];
-      $$modelName$$.query.forEach((doc) => {this.conn.added($$modelName$$, doc._id, doc.attributes)});
+      this.handles = [$$modelName$$.onChange((dc) => {
+        this.sendUpdate(dc);
+      })];
+      $$modelName$$.query.forEach((doc) => {
+        this.conn.added($$modelName$$, doc.attributes);
+      });
     }
 
     stop() {
       if (this.handles !== void 0) {
-        for (const handle of this.handles)
+        for (const handle of this.handles) {
           handle.stop();
+        }
         this.handles = void 0;
       }
     }
