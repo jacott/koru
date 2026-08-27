@@ -92,25 +92,35 @@ define((require) => {
         }
         if (typeof options === 'object') {
           if (options[compiled$] === void 0) {
+            const coerce = options.coerce ?? false;
             const tests = options[compiled$] = [];
             {
               let exp = options['<='];
               if (exp === void 0) exp = options.$lte;
               if (exp !== void 0) {
-                tests.push({test: (val) => val <= exp, args: ['cant_be_greater_than', exp]});
+                if (coerce) {
+                  tests.push({coerce: (val) => val <= exp ? val : exp});
+                } else {
+                  tests.push({test: (val) => val <= exp, args: ['cant_be_greater_than', exp]});
+                }
               }
             }
             {
               let exp = options['>='];
               if (exp === void 0) exp = options.$gte;
               if (exp !== void 0) {
-                tests.push({test: (val) => val >= exp, args: ['cant_be_less_than', exp]});
+                if (coerce) {
+                  tests.push({coerce: (val) => val >= exp ? val : exp});
+                } else {
+                  tests.push({test: (val) => val >= exp, args: ['cant_be_less_than', exp]});
+                }
               }
             }
             {
               let exp = options['<'];
               if (exp === void 0) exp = options.$lt;
               if (exp !== void 0) {
+                assert(!coerce, 'coerce not allowed with strictly <');
                 tests.push({test: (val) => val < exp, args: ['must_be_less_than', exp]});
               }
             }
@@ -118,6 +128,7 @@ define((require) => {
               let exp = options['>'];
               if (exp === void 0) exp = options.$gt;
               if (exp !== void 0) {
+                assert(!coerce, 'coerce not allowed with strictly >');
                 tests.push({test: (val) => val > exp, args: ['must_be_greater_than', exp]});
               }
             }
@@ -125,7 +136,9 @@ define((require) => {
           const tests = options[compiled$];
           for (let i = tests.length - 1; i >= 0; --i) {
             const row = tests[i];
-            if (!row.test(val)) {
+            if (row.coerce !== undefined) {
+              val = row.coerce(val);
+            } else if (!row.test(val)) {
               return void this.addError(doc, field, ...row.args);
             }
           }

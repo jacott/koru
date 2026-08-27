@@ -229,6 +229,38 @@ define((require, exports, module) => {
         assert.equals(doc[error$]['order'], [['cant_be_less_than', 0]]);
       });
 
+      test('coerce', () => {
+        let doc = {order: 45};
+        TextValidator.number.call(Val, doc, 'order', {
+          integer: true,
+          $gte: 0,
+          $lte: 999,
+          coerce: true,
+        });
+        assert.same(doc[error$], undefined);
+        assert.same(doc.order, 45);
+
+        doc = {order: -4};
+        TextValidator.number.call(Val, doc, 'order', {
+          integer: true,
+          $gte: 0,
+          $lte: 999,
+          coerce: true,
+        });
+        assert.same(doc[error$], undefined);
+        assert.same(doc.order, 0);
+
+        doc = {order: 4500};
+        TextValidator.number.call(Val, doc, 'order', {
+          integer: true,
+          $gte: 0,
+          $lte: 999,
+          coerce: true,
+        });
+        assert.same(doc[error$], undefined);
+        assert.same(doc.order, 999);
+      });
+
       test('max value', () => {
         let doc = {order: 123};
 
