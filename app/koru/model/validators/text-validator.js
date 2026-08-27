@@ -1,23 +1,20 @@
-define((require)=>{
+define((require) => {
   'use strict';
   /**
    * Text validation and conversion.
-   **/
+   */
   const UtilDate        = require('koru/util-date');
 
   const compiled$ = Symbol();
 
   const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
-
-
   return {
     normalize(doc, field, options) {
-      if (! doc.$hasChanged(field)) return;
+      if (!doc.$hasChanged(field)) return;
 
       const val = doc[field];
-      if (val !== '' && val != null &&
-          (options === 'downcase' || options == 'upcase')) {
+      if (val !== '' && val != null && (options === 'downcase' || options == 'upcase')) {
         if (typeof val !== 'string') {
           this.addErrorIfNone(doc, field, 'not_a_string');
         } else {
@@ -36,12 +33,12 @@ define((require)=>{
             doc[field] = val.slice(0, 7);
           }
         } else {
-          this.addError(doc, field,'is_invalid');
+          this.addError(doc, field, 'is_invalid');
         }
       }
     },
 
-    date(doc,field, options) {
+    date(doc, field, options) {
       let val = doc[field];
 
       if (val === '') {
@@ -53,16 +50,18 @@ define((require)=>{
 
       if (options === true || options == null) options = {};
 
-      if (! (val && val.constructor === Date && val.getDate() === val.getDate())) {
-        if (typeof val !== 'string' ||
-            (val = UtilDate.parse(val)) && val.getDate() !== val.getDate())
-          return this.addErrorIfNone(doc,field,'not_a_date');
+      if (!(val && val.constructor === Date && val.getDate() === val.getDate())) {
+        if (
+          typeof val !== 'string' || (val = UtilDate.parse(val)) && val.getDate() !== val.getDate()
+        ) {
+          return this.addErrorIfNone(doc, field, 'not_a_date');
+        }
       }
 
       doc[field] = val;
     },
 
-    number(doc,field, options) {
+    number(doc, field, options) {
       let val = doc[field];
 
       if (val === '') {
@@ -73,20 +72,22 @@ define((require)=>{
       if (val == null) return;
 
       if (typeof val !== 'number') {
-        if (typeof val === 'string' && +val === +val)
+        if (typeof val === 'string' && +val === +val) {
           val = +val;
-        else
-          return this.addErrorIfNone(doc,field,'not_a_number');
+        } else {
+          return this.addErrorIfNone(doc, field, 'not_a_number');
+        }
       }
 
       if (options != null) {
         if (options === 'integer' || options.integer) {
           const rnd = Math.round(val);
           if (val !== rnd) {
-            if (options.integer === 'convert')
+            if (options.integer === 'convert') {
               val = rnd;
-            else
+            } else {
               return void this.addErrorIfNone(doc, field, 'not_an_integer');
+            }
           }
         }
         if (typeof options === 'object') {
@@ -95,33 +96,38 @@ define((require)=>{
             {
               let exp = options['<='];
               if (exp === void 0) exp = options.$lte;
-              if (exp !== void 0)
-                tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
+              if (exp !== void 0) {
+                tests.push({test: (val) => val <= exp, args: ['cant_be_greater_than', exp]});
+              }
             }
             {
               let exp = options['>='];
               if (exp === void 0) exp = options.$gte;
-              if (exp !== void 0)
-                tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
+              if (exp !== void 0) {
+                tests.push({test: (val) => val >= exp, args: ['cant_be_less_than', exp]});
+              }
             }
             {
               let exp = options['<'];
               if (exp === void 0) exp = options.$lt;
-              if (exp !== void 0)
-                tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
+              if (exp !== void 0) {
+                tests.push({test: (val) => val < exp, args: ['must_be_less_than', exp]});
+              }
             }
             {
               let exp = options['>'];
               if (exp === void 0) exp = options.$gt;
-              if (exp !== void 0)
-                tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
+              if (exp !== void 0) {
+                tests.push({test: (val) => val > exp, args: ['must_be_greater_than', exp]});
+              }
             }
           }
           const tests = options[compiled$];
-          for(let i = tests.length-1; i >= 0; --i) {
+          for (let i = tests.length - 1; i >= 0; --i) {
             const row = tests[i];
-            if (! row.test(val))
+            if (!row.test(val)) {
               return void this.addError(doc, field, ...row.args);
+            }
           }
         }
       }
@@ -136,12 +142,18 @@ define((require)=>{
         if (typeof val === 'string') {
           val = val.trim().toLowerCase();
           switch (val) {
-          case 'true': case 'on': case '1': case 't':
-            val = true;
-            break;
-          case 'false': case 'off': case '0': case 'f':
-            val = false;
-            break;
+            case 'true':
+            case 'on':
+            case '1':
+            case 't':
+              val = true;
+              break;
+            case 'false':
+            case 'off':
+            case '0':
+            case 'f':
+              val = false;
+              break;
           }
         }
 
@@ -149,8 +161,9 @@ define((require)=>{
           doc[field] = void 0;
         } else if (val === false || val === true) {
           if (val !== orig) doc[field] = val;
-        } else
+        } else {
           this.addErrorIfNone(doc, field, 'not_a_boolean');
+        }
       }
     },
 
@@ -158,18 +171,18 @@ define((require)=>{
       let val = doc[field];
 
       if (val != null) {
-        if (typeof val !== 'string')
+        if (typeof val !== 'string') {
           this.addErrorIfNone(doc, field, 'not_a_string');
-        else {
+        } else {
           val = val.trim();
-          if (! val) {
-            switch(type) {
-            case 'toNull':
-              val = null;
-              break;
-            case 'toUndefined':
-              val = void 0;
-              break;
+          if (!val) {
+            switch (type) {
+              case 'toNull':
+                val = null;
+                break;
+              case 'toUndefined':
+                val = void 0;
+                break;
             }
           }
           doc[field] = val;
