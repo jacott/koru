@@ -10,9 +10,11 @@ define((require, exports, module) => {
         callback?.();
         const location = koru.getLocation();
         Route.replacePage(null);
-        require(module.id, (sc) => {
-          sc.start();
-          Route.replacePath(location);
+        requestAnimationFrame(() => {
+          require(module.id, (sc) => {
+            sc.start();
+            Route.replacePath(location);
+          });
         });
       });
     },
