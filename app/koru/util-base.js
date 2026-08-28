@@ -130,7 +130,7 @@ define((require, exports, module) => {
   const util = {
     prog1: (arg) => arg,
     progn: (...args) => args[args.length - 1],
-    hasOwn: (obj, prop) => hasOwnProperty.call(obj, prop),
+    hasOwn: Object.hasOwn, // deprecated
     idLen,
 
     versionFromUserAgent(ua) {

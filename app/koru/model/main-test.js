@@ -408,5 +408,32 @@ define((require, exports, module) => {
       tsc = new Book({name: 'foo', withDef: 1});
       assert.same(tsc.withDef, 1);
     });
+
+    test('nullDefault', () => {
+      const Book = Model.define('Book', {t1: 123});
+
+      assert.same(Book.defineFields({name: {type: 'text', nullDefault: 'Untitled'}}), Book);
+
+      let tsc = new Book({name: 'abc'});
+      assert.same(tsc.name, 'abc');
+
+      assert.equals(tsc.changes, {name: 'abc'});
+
+      tsc.name = 'Untitled';
+
+      assert.equals(tsc.changes, {});
+      assert.same(tsc.name, 'Untitled');
+
+      tsc.attributes.name = 'Don Quixote';
+
+      tsc.name = 'Les Misérables';
+      assert.same(tsc.name, 'Les Misérables');
+
+      assert.equals(tsc.changes, {name: 'Les Misérables'});
+
+      tsc.name = undefined;
+      assert.equals(tsc.changes, {name: null});
+      assert.same(tsc.name, 'Untitled');
+    });
   });
 });

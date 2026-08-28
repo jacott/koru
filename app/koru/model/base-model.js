@@ -253,7 +253,13 @@ define((require, exports, module) => {
         if (options.default !== undefined) this._defaults[field] = options.default;
         if (options.pseudo_field === undefined) {
           $fields[field] = options;
-          if (options.accessor !== false) defineField(proto, field, options.accessor);
+          if (options.accessor !== false) {
+            if (options.nullDefault) {
+              defineNullDefaultField(proto, field, options.accessor, options.nullDefault);
+            } else {
+              defineField(proto, field, options.accessor);
+            }
+          }
         }
       }
       _support.resetDocs(this);
@@ -596,19 +602,34 @@ define((require, exports, module) => {
     const {changes} = doc;
     if (value === null) value = undefined;
     if (value === doc.attributes[field]) {
-      if (hasOwn(changes, field)) {
-        if (value === undefined && doc.constructor._defaults[field] !== undefined) {
-          changes[field] = deepCopy(doc.constructor._defaults[field]);
-        } else {
-          delete doc.changes[field];
-        }
-
-        typeof doc._setChanges === 'function' && doc._setChanges(field, value);
+      if (!hasOwn(changes, field)) return;
+      if (value === undefined && doc.constructor._defaults[field] !== undefined) {
+        changes[field] = deepCopy(doc.constructor._defaults[field]);
+      } else {
+        delete doc.changes[field];
       }
     } else {
       changes[field] = value;
-      typeof doc._setChanges === 'function' && doc._setChanges(field, value);
     }
+    typeof doc._setChanges === 'function' && doc._setChanges(field, value);
+  };
+
+  const getNullDefaultField = (doc, field, nullDefault) => {
+    const val = hasOwn(doc.changes, field) ? doc.changes[field] : doc.attributes[field];
+    return val ?? nullDefault;
+  };
+
+  const setNullDefaultField = (doc, field, value, nullDefault) => {
+    const {changes} = doc;
+    value ??= nullDefault;
+    const orig = doc.attributes[field];
+    if (value === orig || (value === nullDefault && orig == null)) {
+      if (!hasOwn(changes, field)) return;
+      delete doc.changes[field];
+    } else {
+      changes[field] = value === nullDefault ? null : value;
+    }
+    typeof doc._setChanges === 'function' && doc._setChanges(field, value);
   };
 
   BaseModel.getField = getField;
@@ -637,6 +658,15 @@ define((require, exports, module) => {
     });
   };
 
+  const defineNullDefaultField = (proto, field, accessor, nullDefault) => {
+    Object.defineProperty(proto, field, {
+      configurable: true,
+      get: accessor?.get ?? getNullDefaultValue(field, nullDefault),
+
+      set: accessor?.set ?? setNullDefaultValue(field, nullDefault),
+    });
+  };
+
   const belongsTo = (model, name, field) =>
     function () {
       const value = this[field];
@@ -650,6 +680,15 @@ define((require, exports, module) => {
   const setValue = (field) =>
     function setValue(value) {
       setField(this, field, value);
+    };
+
+  const getNullDefaultValue = (field, nullDefault) =>
+    function getValue() {
+      return getNullDefaultField(this, field, nullDefault);
+    };
+  const setNullDefaultValue = (field, nullDefault) =>
+    function setValue(value) {
+      setNullDefaultField(this, field, value, nullDefault);
     };
 
   const setUpValidators = (model, field, options) => {
