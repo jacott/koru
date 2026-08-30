@@ -530,14 +530,38 @@ define((require, exports, module) => {
           reason: 'Expired or invalid reset request',
         });
 
-        lu.resetToken = 'secretToken';
+        lu.resetToken = 'secret-Token';
         lu.resetTokenExpire = Date.now() + 2000;
         await lu.$$save();
 
-        await session._rpcs.resetPassword.call(v.conn, v.lu._id + '-secretToken', 'new password');
+        await session._rpcs.resetPassword.call(conn, v.lu._id + '-secret-Token', 'new password');
 
         v.lu.$reload();
         assert.equals(v.lu.password, {
+          type: 'scrypt',
+          salt: '000102030405060708090a0b0c0d0e0f',
+          key: m(/^3c3f.*b9$/),
+        });
+      });
+
+      test('short-id', async () => {
+        const lu = await UserAccount.UserLogin.create({
+          _id: 'shortId',
+          userId: 'uid111',
+          password: {type: 'scrypt'},
+          email: 'foo@bar.co',
+          resetToken: 'secret-Token',
+          resetTokenExpire: Date.now() + 2000,
+          tokens: {
+            abc: Date.now() + 24 * 1000 * 60 * 60,
+            exp: Date.now(),
+            def: Date.now() + 48 * 1000 * 60 * 60,
+          },
+        });
+        await session._rpcs.resetPassword.call(v.conn, lu._id + '-secret-Token', 'new password');
+
+        lu.$reload();
+        assert.equals(lu.password, {
           type: 'scrypt',
           salt: '000102030405060708090a0b0c0d0e0f',
           key: m(/^3c3f.*b9$/),

@@ -133,23 +133,27 @@ define((require, exports, module) => {
 
     async resetPassword(token, password) {
       Val.ensureString(token);
-      const idx = token.lastIndexOf('-');
-      if (idx !== -1) {
-        const lu = await UserLogin.findById(token.slice(0, idx));
-        if (lu !== undefined) {
-          if (lu.password !== undefined && lu.password.type === 'scrypt') {
-            password = await makeScrypt(password);
-          } else {
-            Val.assertCheck(password, VERIFIER_SPEC);
-          }
+      let idx = util.idLen;
+      let lu = await UserLogin.findById(token.slice(0, idx));
+      if (lu === undefined) {
+        idx = token.indexOf('-');
+        if (idx !== -1) {
+          lu = await UserLogin.findById(token.slice(0, idx));
+        }
+      }
+      if (lu !== undefined) {
+        if (lu.password !== undefined && lu.password.type === 'scrypt') {
+          password = await makeScrypt(password);
+        } else {
+          Val.assertCheck(password, VERIFIER_SPEC);
+        }
 
-          if (lu.resetToken === token.slice(idx + 1) && util.dateNow() < lu.resetTokenExpire) {
-            lu.password = password;
-            lu.resetToken = lu.resetTokenExpire = undefined;
-            const loginToken = lu.makeToken();
-            await lu.$$save();
-            return [lu, loginToken];
-          }
+        if (lu.resetToken === token.slice(idx + 1) && util.dateNow() < lu.resetTokenExpire) {
+          lu.password = password;
+          lu.resetToken = lu.resetTokenExpire = undefined;
+          const loginToken = lu.makeToken();
+          await lu.$$save();
+          return [lu, loginToken];
         }
       }
       throw new koru.Error(404, 'Expired or invalid reset request');
