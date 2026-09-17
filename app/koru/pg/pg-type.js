@@ -602,12 +602,16 @@ define((require, exports, module) => {
       const query = conn.execRows(
         `select oid::int,typname,typarray::int,typinput from pg_type where typarray <> 0`,
       );
-      do {
-        let count = 0;
-        await query.fetch((n) => {
-          registerOid(n.typname, n.oid, n.typarray);
-        });
-      } while (query.isExecuting);
+      try {
+        do {
+          let count = 0;
+          await query.fetch((n) => {
+            registerOid(n.typname, n.oid, n.typarray);
+          });
+        } while (query.isExecuting);
+      } finally {
+        await query.close();
+      }
     },
   };
 

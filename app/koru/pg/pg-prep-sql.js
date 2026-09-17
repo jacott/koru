@@ -84,43 +84,54 @@ define((require, exports, module) => {
 
     async fetchOne(client, ...args) {
       const port = this.portal(client, '', ...args);
-      let rec;
-      const err = await port.fetch(this._readyQuery(client, port, (r) => {
-        rec ??= r;
-      }));
-      if (err !== void 0) {
-        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      try {
+        let rec;
+        const err = await port.fetch(this._readyQuery(client, port, (r) => {
+          rec ??= r;
+        }));
+        if (err !== void 0) {
+          throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+        }
+        return rec;
+      } finally {
+        await port.close();
       }
-      if (port.isMore) await port.close();
-      return rec;
     }
 
     async fetch(client, ...args) {
       const port = this.portal(client, '', ...args);
-      const rows = [];
-      const err = await port.fetch(this._readyQuery(client, port, (rec) => {
-        rows.push(rec);
-      }));
-      if (err !== void 0) {
-        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      try {
+        const rows = [];
+        const err = await port.fetch(this._readyQuery(client, port, (rec) => {
+          rows.push(rec);
+        }));
+        if (err !== void 0) {
+          throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+        }
+        return rows;
+      } finally {
+        await port.close();
       }
-      return rows;
     }
 
     async execute(client, ...args) {
       const port = this.portal(client, '', ...args);
-      let tag;
-      port.commandComplete((t) => {
-        tag = t;
-      });
-      const rows = [];
-      const err = await port.fetch(this._readyQuery(client, port, (rec) => {
-        rows.push(rec);
-      }));
-      if (err !== void 0) {
-        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      try {
+        let tag;
+        port.commandComplete((t) => {
+          tag = t;
+        });
+        const rows = [];
+        const err = await port.fetch(this._readyQuery(client, port, (rec) => {
+          rows.push(rec);
+        }));
+        if (err !== void 0) {
+          throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+        }
+        return rows.length == 0 && !tag.startsWith('SELECT ') ? tagToCount(tag) : rows;
+      } finally {
+        await port.close();
       }
-      return rows.length == 0 && !tag.startsWith('SELECT ') ? tagToCount(tag) : rows;
     }
 
     openCursor(client, pname, ...args) {
@@ -132,14 +143,18 @@ define((require, exports, module) => {
       const {excludeNulls = true} = client.formatOptions;
       const hideTenant = client.hideTenantName;
       const port = this.portal(client, '', ...args);
-      let {columns} = this;
-      const err = await port.describe((rawColumns) => {
-        columns = this.columns = buildColumns(rawColumns, fields);
-      }, true);
-      if (err !== void 0) {
-        throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+      try {
+        let {columns} = this;
+        const err = await port.describe((rawColumns) => {
+          columns = this.columns = buildColumns(rawColumns, fields);
+        }, true);
+        if (err !== void 0) {
+          throw (err instanceof Error) ? err : new PgError(err, this.queryStr, args);
+        }
+        return columns;
+      } finally {
+        await port.close();
       }
-      return columns;
     }
 
     _readyQuery(client, port, callback) {

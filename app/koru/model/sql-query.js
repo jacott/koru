@@ -132,14 +132,18 @@ define((require, exports, module) => {
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
-      const rows = [];
-      const err = await port.fetch(
-        ps._readyQuery(c, port, recordMapper(model, options ?? this, rows)),
-      );
-      if (err !== undefined) {
-        throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      try {
+        const rows = [];
+        const err = await port.fetch(
+          ps._readyQuery(c, port, recordMapper(model, options ?? this, rows)),
+        );
+        if (err !== undefined) {
+          throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+        }
+        return rows;
+      } finally {
+        await port.close();
       }
-      return rows;
     }
 
     async mapField(field, params) {
@@ -155,13 +159,17 @@ define((require, exports, module) => {
       const c = conn(this) ?? await auto(model);
       const ps = (this[ps$] ??= await this.#initPs());
       const port = ps.portal(c, '', params);
-      const limit = options?.limit;
-      const err = await port.fetch(
-        ps._readyQuery(c, port, recordMapper(model, options ?? this, callback)),
-        limit,
-      );
-      if (err !== undefined) {
-        throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+      try {
+        const limit = options?.limit;
+        const err = await port.fetch(
+          ps._readyQuery(c, port, recordMapper(model, options ?? this, callback)),
+          limit,
+        );
+        if (err !== undefined) {
+          throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+        }
+      } finally {
+        await port.close();
       }
     }
 
@@ -178,23 +186,27 @@ define((require, exports, module) => {
       const callback = ps._readyQuery(c, port, recordMapper(model, options ?? this, rows));
       const limit = options?.limit ?? 50;
 
-      while (true) {
-        const err = await port.fetch(callback, limit);
-        if (err !== undefined) {
-          throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
-        }
+      try {
+        while (true) {
+          const err = await port.fetch(callback, limit);
+          if (err !== undefined) {
+            throw (err instanceof Error) ? err : new PgError(err, ps.queryStr, params);
+          }
 
-        if (rows.length === 0) {
-          return;
-        }
-        for (const row of rows) {
-          yield await row;
-        }
-        if (!port.isMore) {
-          return;
-        }
+          if (rows.length === 0) {
+            return;
+          }
+          for (const row of rows) {
+            yield await row;
+          }
+          if (!port.isMore) {
+            return;
+          }
 
-        rows.length = 0;
+          rows.length = 0;
+        }
+      } finally {
+        await port.close();
       }
     }
 

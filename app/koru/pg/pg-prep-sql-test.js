@@ -1,6 +1,7 @@
 isServer && define((require, exports, module) => {
   'use strict';
   const Enumerable      = require('koru/enumerable');
+  const PgPortal        = require('koru/pg/pg-portal');
   const PgType          = require('koru/pg/pg-type');
   const TH              = require('koru/test-helper');
   const PgConn          = require('./pg-conn');
@@ -30,11 +31,14 @@ isServer && define((require, exports, module) => {
       });
 
     test('fetchOne', async () => {
+      const spyClose = spy(PgPortal.prototype, 'close');
       const ps1 = new PgPrepSql(
         `select * from unnest(Array[1,2,2], Array[4,$1,6]) as x(a,b) where a = $2 order by b`,
       ).setMapped(['p1', 'p2'], {p1: {oid: 21}, p2: {oid: 21}});
 
       assert.equals(await ps1.fetchOne(client, {p1: 5, p2: 2}), {a: 2, b: 5});
+      assert.calledOnce(spyClose);
+
       const {columns} = ps1;
 
       ps1.queryStr = void 0; // not needed
@@ -44,12 +48,14 @@ isServer && define((require, exports, module) => {
     });
 
     test('describe', async () => {
+      const spyClose = spy(PgPortal.prototype, 'close');
       const ps = new PgPrepSql(`SELECT * from unnest(Array[1,2,2], Array[4,5,6]) as x(a,b)`);
       assert.equals(await ps.describe(client, ['name', 'oid', 'size']), [{
         name: 'a',
         oid: 23,
         size: 4,
       }, {name: 'b', oid: 23, size: 4}]);
+      assert.calledOnce(spyClose);
     });
 
     test('execute/fetch with rows, setMapped', async () => {
@@ -71,10 +77,12 @@ isServer && define((require, exports, module) => {
       const {columns} = ps1;
 
       ps1.queryStr = void 0; // not needed
+      const spyClose = spy(PgPortal.prototype, 'close');
       assert.equals(
         await ps1.fetch(client, {a1: 'ax1', a2: 'ax2', a3: 'ax3', b1: 11, b2: 22, b3: 33}),
         [{a: 'ax1', b: 11}, {a: 'ax2', b: 22}, {a: 'ax3', b: 33}],
       );
+      assert.calledOnce(spyClose);
 
       assert.same(ps1.columns, columns);
       assert.equals(columns, [{name: 'a', oid: 25, format: 1}, {name: 'b', oid: 21, format: 1}]);
@@ -82,7 +90,9 @@ isServer && define((require, exports, module) => {
 
     test('execute no rows', async () => {
       const ps = new PgPrepSql(`set search_path TO DEFAULT`);
+      const spyClose = spy(PgPortal.prototype, 'close');
       assert.equals(await ps.execute(client), 'SET');
+      assert.calledOnce(spyClose);
     });
 
     test('cursor', async () => {

@@ -244,6 +244,9 @@ define((require, exports, module) => {
           return query.isExecuting;
         },
         commandComplete: (callback) => query.commandComplete(callback),
+        close() {
+          return query.close();
+        },
       };
     }
 
@@ -264,6 +267,8 @@ define((require, exports, module) => {
       } catch (err) {
         if (err instanceof Error) throw err;
         throw new PgError(err);
+      } finally {
+        await query.close();
       }
     }
 

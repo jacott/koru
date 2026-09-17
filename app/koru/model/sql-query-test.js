@@ -9,6 +9,7 @@ isServer && define((require, exports, module) => {
   const Model           = require('koru/model');
   const BaseModel       = require('koru/model/base-model');
   const TH              = require('koru/model/test-db-helper');
+  const PgPortal        = require('koru/pg/pg-portal');
   const SQLStatement    = require('koru/pg/sql-statement');
   const api             = require('koru/test/api');
 
@@ -173,6 +174,8 @@ isServer && define((require, exports, module) => {
       api.protoMethod();
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
+
+      const spyClose = spy(PgPortal.prototype, 'close');
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
@@ -187,8 +190,8 @@ isServer && define((require, exports, module) => {
       assert.equals(await pagesQ.fetch({max: 250}, {raw: true}), [{pageCount: 222}, {
         pageCount: 238,
       }]);
-
       //]
+      assert.calledTwice(spyClose);
     });
 
     test('mapField', async () => {
@@ -201,11 +204,13 @@ isServer && define((require, exports, module) => {
       api.protoMethod();
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
+      const spyClose = spy(PgPortal.prototype, 'close');
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
       assert.equals(await byAuthor.mapField('pageCount', {author: 'Dima Zales'}), [222, 238]);
       //]
+      assert.calledOnce(spyClose);
     });
 
     test('values', async () => {
@@ -266,6 +271,9 @@ isServer && define((require, exports, module) => {
     test('values aborts', async () => {
       const byAuthor = Book.sqlWhere(`author, = {$author} ORDER BY "pageCount"`);
       let err;
+
+      const spyClose = spy(PgPortal.prototype, 'close');
+
       try {
         for await (const row of byAuthor.values({author: 'Dima Zales'})) {
         }
@@ -275,6 +283,8 @@ isServer && define((require, exports, module) => {
       assert.same(err.error, 500);
       assert.equals(err.code, '42601');
       assert.equals(err.paramValues, {author: 'Dima Zales'});
+
+      assert.calledOnce(spyClose);
     });
 
     test('value', async () => {
@@ -366,6 +376,7 @@ WHERE title = {$title}`);
       api.protoMethod();
       Book.docs._colMap = undefined;
       Book.docs._ready = false;
+      const spyClose = spy(PgPortal.prototype, 'close');
       //[
       const byAuthor = Book.sqlWhere(`"author" = {$author} ORDER BY "pageCount"`);
 
@@ -382,6 +393,7 @@ WHERE title = {$title}`);
         m.field('title', 'Pride and Prejudice'), // m matches a field
       ]);
       //]
+      assert.calledTwice(spyClose);
     });
   });
 });
