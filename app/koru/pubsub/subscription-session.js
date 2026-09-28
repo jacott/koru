@@ -216,7 +216,7 @@ define((require) => {
     }
 
     static get(session) {
-      return sessions[session._id] || (sessions[session._id] = new SubscriptionSession(session));
+      return sessions[session._id] ??= new SubscriptionSession(session);
     }
 
     static unload({_id}) {

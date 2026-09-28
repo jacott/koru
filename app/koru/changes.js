@@ -616,7 +616,7 @@ define((require, exports, module) => {
         if (dif === undefined) return;
         const u = [];
         applyPartial(attrs, key, dif, u);
-        const partial = undo.$partial || (undo.$partial = {});
+        const partial = undo.$partial ??= {};
         partial[key] = u;
         return;
       }

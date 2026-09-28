@@ -41,7 +41,7 @@ define((require) => {
       const len = this.size - 1;
       let i = 0;
       for (; i < len; ++i) {
-        res = res[args[i]] || (res[args[i]] = Object.create(null));
+        res = res[args[i]] ??= Object.create(null);
       }
 
       res[args[i]] = args[i + 1];

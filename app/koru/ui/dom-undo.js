@@ -28,7 +28,7 @@ define((require) => {
 
   const setAttr = ({attributeNamespace, attributeName, oldValue}, value) => {
     const ans = attributeNamespace || '';
-    const attrs = value[ans] || (value[ans] = {});
+    const attrs = value[ans] ??= {};
     attrs[attributeName] = oldValue;
     return value;
   };

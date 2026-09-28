@@ -1,13 +1,12 @@
-define((require)=>{
+define((require) => {
   'use strict';
   const BTree           = require('koru/btree');
   const util            = require('koru/util');
 
-  const cacheCompare = (a, b)=>{
+  const cacheCompare = (a, b) => {
     if (a.url === b.url) return 0;
     return a.url < b.url ? -1 : 1;
   };
-
 
   class MockCache {
     constructor() {
@@ -45,7 +44,7 @@ define((require)=>{
     }
 
     open(name) {
-      return Promise.resolve(this._caches[name] || (this._caches[name] = new MockCache()));
+      return Promise.resolve(this._caches[name] ??= new MockCache());
     }
 
     match(req) {
@@ -63,9 +62,8 @@ define((require)=>{
 
     delete(name) {
       return Promise.resolve(
-        this._caches[name] === undefined ? false : (
-          delete this._caches[name], true
-        ));
+        this._caches[name] === undefined ? false : (delete this._caches[name], true),
+      );
     }
   }
 

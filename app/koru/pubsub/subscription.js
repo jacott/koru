@@ -9,8 +9,11 @@ define((require, exports, module) => {
 
   const {inspect$, private$} = require('koru/symbols');
 
-  const module$ = Symbol(), messages$ = Symbol(),
-        state$ = Symbol(), pubName$ = Symbol(), onConnect$ = Symbol();
+  const module$ = Symbol(),
+    messages$ = Symbol(),
+    state$ = Symbol(),
+    pubName$ = Symbol(),
+    onConnect$ = Symbol();
 
   const {messageResponse$, connected$} = SubscriptionSession[private$];
 
@@ -26,7 +29,7 @@ define((require, exports, module) => {
   };
 
   class Subscription {
-    constructor(args, session=Session) {
+    constructor(args, session = Session) {
       this.args = args;
       this.subSession = SubscriptionSession.get(session);
       this._id = this.subSession.makeId();
@@ -38,7 +41,7 @@ define((require, exports, module) => {
     }
 
     onConnect(callback) {
-      return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+      return (this[onConnect$] ??= new Observable()).add(callback);
     }
     reconnecting() {}
 
@@ -58,7 +61,9 @@ define((require, exports, module) => {
 
     onMessage(message) {}
 
-    filterDoc(doc) {return this.subSession.filterDoc(doc)}
+    filterDoc(doc) {
+      return this.subSession.filterDoc(doc);
+    }
 
     stop(error) {
       const {_matches} = this;
@@ -75,7 +80,9 @@ define((require, exports, module) => {
         const onConnect = this[onConnect$];
         if (onConnect !== void 0) this[onConnect$] = void 0;
         try {
-          this.stopped((doc) => {subSession.filterDoc(doc, 'stopped')});
+          this.stopped((doc) => {
+            subSession.filterDoc(doc, 'stopped');
+          });
         } finally {
           if (error !== void 0) {
             this.error = error;
@@ -90,12 +97,18 @@ define((require, exports, module) => {
       }
     }
 
-    [inspect$]() {return `${this.constructor.pubName}Subscription("${this._id}")`}
+    [inspect$]() {
+      return `${this.constructor.pubName}Subscription("${this._id}")`;
+    }
 
     stopped(unmatch) {} // just for overriding
 
-    get state() {return STATE_NAMES[this[state$]]}
-    get isClosed() {return this[state$] <= 1}
+    get state() {
+      return STATE_NAMES[this[state$]];
+    }
+    get isClosed() {
+      return this[state$] <= 1;
+    }
 
     match(modelName, test) {
       if (typeof modelName !== 'string') {
@@ -128,19 +141,25 @@ define((require, exports, module) => {
       if (msgId == -1 && callback !== void 0) {
         this.onConnect(callback);
       } else if (callback !== void 0) {
-        (this[messages$] || (this[messages$] = []))[msgId] = callback;
+        (this[messages$] ??= [])[msgId] = callback;
       }
     }
 
-    static get pubName() {return this[pubName$] || this.name}
-    static set pubName(v) {this[pubName$] = v}
+    static get pubName() {
+      return this[pubName$] || this.name;
+    }
+    static set pubName(v) {
+      this[pubName$] = v;
+    }
 
     static set module(module) {
       this[module$] = module;
       this[pubName$] = util.moduleName(module).replace(/Sub(?:scription)?$/, '');
     }
 
-    static get module() {return this[module$]}
+    static get module() {
+      return this[module$];
+    }
 
     static subscribe(args, callback) {
       const sub = new this(args);
@@ -149,7 +168,9 @@ define((require, exports, module) => {
       return sub;
     }
 
-    static get lastSubscribedMaximumAge() {return -1}
+    static get lastSubscribedMaximumAge() {
+      return -1;
+    }
 
     [connected$]({lastSubscribed}) {
       if (this[state$] == STATE_MAP.connect) {

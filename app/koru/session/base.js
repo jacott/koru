@@ -59,7 +59,7 @@ define((require) => {
     }
 
     onStop(func) {
-      (this._onStops || (this._onStops = [])).push(func);
+      (this._onStops ??= []).push(func);
     }
 
     _onMessage(conn, data) {

@@ -15,7 +15,7 @@ define((require, exports, module) => {
       if (this.state === 'active' || this.state === 'stopped') {
         super.onConnect(callback);
       } else {
-        return (this[onConnect$] || (this[onConnect$] = new Observable())).add(callback);
+        return (this[onConnect$] ??= new Observable()).add(callback);
       }
     }
 
@@ -29,14 +29,16 @@ define((require, exports, module) => {
       return super.state === 'active';
     }
 
-    onServerConnect(callback) {return super.onConnect(callback);}
+    onServerConnect(callback) {
+      return super.onConnect(callback);
+    }
 
     preload(idb) {}
     getQueryIDB() {}
     serverResponse(err, idb) {}
 
     async connect() {
-      const finished = (err=null) => {
+      const finished = (err = null) => {
         if (this[state$] === 'active') return;
         this[state$] = 'active';
         const onConnect = this[onConnect$];
@@ -51,7 +53,7 @@ define((require, exports, module) => {
       try {
         let nextAction = 'waitServer';
         if (idb !== void 0) {
-          if (! idb.isReady) await idb.whenReady();
+          if (!idb.isReady) await idb.whenReady();
           nextAction = await this.preload(idb);
           if (nextAction === 'skipServer') {
             finished(null);

@@ -346,7 +346,7 @@ define((require) => {
     }
 
     open(name, newVersion) {
-      const db = this._dbs[name] || (this._dbs[name] = new Database(name, 0, this));
+      const db = this._dbs[name] ??= new Database(name, 0, this);
       const oldVersion = db._version;
       return {
         result: db,

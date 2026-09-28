@@ -119,7 +119,9 @@ define((require) => {
     const expected = new Set(list);
     return (doc) => {
       const value = doc[param];
-      return Array.isArray(value) ? value.some((value) => expected.has(value)) : expected.has(value);
+      return Array.isArray(value)
+        ? value.some((value) => expected.has(value))
+        : expected.has(value);
     };
   };
 
@@ -140,7 +142,7 @@ define((require) => {
   const copyConditions = (type, from, to) => {
     const f = from[type];
     if (f === void 0) return;
-    const t = to[type] || (to[type] = {[func$]: []});
+    const t = to[type] ??= {[func$]: []};
     for (const field in f) {
       t[field] = f[field];
     }
@@ -151,7 +153,7 @@ define((require) => {
     conditions[field] = value;
     const func = exprToFunc(query, field, value);
     if (func === void 0) {
-      (conditions[matches$] || (conditions[matches$] = {}))[field] = value;
+      (conditions[matches$] ??= {})[field] = value;
     } else {
       conditions[func$].push(func);
     }
@@ -174,8 +176,7 @@ define((require) => {
   };
 
   const buildList = (query, listName, field, values) => {
-    const items = query[listName] || (query[listName] = {});
-    const list = items[field] || (items[field] = []);
+    const list = (query[listName] ??= {})[field] ??= [];
 
     if (Array.isArray(values)) {
       values.forEach((value) => list.push(value));
@@ -234,7 +235,7 @@ define((require) => {
           copyConditions('_wheres', params, this);
           copyConditions('_whereNots', params, this);
           const {_whereSomes} = params;
-          _whereSomes === void 0 || (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
+          _whereSomes === void 0 || (this._whereSomes ??= []).push(..._whereSomes);
         } else {
           condition(this, '_wheres', params, value);
         }
@@ -299,7 +300,9 @@ define((require) => {
 
           for (let i = 0; i < slen; ++i) {
             const key = _sort[i];
-            const dir = i + 1 == slen || typeof _sort[i + 1] !== 'number' ? 1 : Math.sign(_sort[++i]);
+            const dir = i + 1 == slen || typeof _sort[i + 1] !== 'number'
+              ? 1
+              : Math.sign(_sort[++i]);
             const type = $fields[key]?.type;
             if (type === void 0) throw new Error('invalid field: ' + key);
 
@@ -373,7 +376,10 @@ define((require) => {
           return false;
         }
 
-        if (this._whereSomes !== void 0 && !this._whereSomes.every((ors) => ors.some((o) => foundIn(doc, attrs, o)))) {
+        if (
+          this._whereSomes !== void 0 &&
+          !this._whereSomes.every((ors) => ors.some((o) => foundIn(doc, attrs, o)))
+        ) {
           return false;
         }
         return true;

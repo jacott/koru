@@ -91,7 +91,7 @@ define((require) => {
       const procMod = () => {
         if (mod != 0) {
           const key = '*' + String.fromCharCode(mod);
-          km = km[key] || (km[key] = {});
+          km = km[key] ??= {};
           mod = 0;
         }
       };
@@ -116,7 +116,7 @@ define((require) => {
                 continue;
               }
               procMod();
-              km = km[code] || (km[code] = {});
+              km = km[code] ??= {};
               if (Array.isArray(km)) {
                 throw new Error(`Not a key map for: '${keySeq.slice(0, i + 1)}' => ${km}`);
               }
@@ -140,7 +140,7 @@ define((require) => {
     getTitle(desc, name) {
       const sc = this.descMap[name];
       if (!sc) return (this.descMap[name] = ['', null, desc])[2];
-      return sc[2] || (sc[2] = makeTitle(desc, sc[0]));
+      return sc[2] ??= makeTitle(desc, sc[0]);
     }
   }
 

@@ -95,7 +95,7 @@ define((require, exports, module) => {
     }
 
     onClose(func) {
-      const subj = this[onClose$] || (this[onClose$] = new Observable());
+      const subj = this[onClose$] ??= new Observable();
       return subj.onChange(func);
     }
 
@@ -135,7 +135,7 @@ define((require, exports, module) => {
         throw new Error('batchMessage called when not in transaction');
       }
 
-      const map = this[batch$] || (this[batch$] = new Map());
+      const map = this[batch$] ??= new Map();
       const {thread} = util;
       (map.get(thread) || startBatch(this, map, thread))([type, data]);
     }

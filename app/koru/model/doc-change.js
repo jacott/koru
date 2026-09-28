@@ -251,7 +251,7 @@ define((require) => {
                 }
               }
             } else {
-              const ov = composite[id] || (composite[id] = {});
+              const ov = composite[id] ??= {};
               const ridx = rem.indexOf('.');
               if (ridx === -1) {
                 ov[rem] = u[i + 1];

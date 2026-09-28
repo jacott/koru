@@ -49,9 +49,7 @@ define((require, exports, module) => {
 
     async init() {
       const {constructor} = this;
-      await (constructor.union || (constructor.union = new constructor.Union(constructor))).addSub(
-        this,
-      );
+      await (constructor.union ??= new constructor.Union(constructor)).addSub(this);
     }
 
     stop() {

@@ -53,7 +53,7 @@ define((require) => {
 
     util.merge(Query.prototype, {
       whereSql(...args) {
-        (this._whereSqls || (this._whereSqls = [])).push(args);
+        (this._whereSqls ??= []).push(args);
         return this;
       },
 

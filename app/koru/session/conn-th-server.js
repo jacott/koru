@@ -10,29 +10,36 @@ define((require, exports, module) => {
 
   const {stub, spy} = TH;
 
-  const decodeMessage = (msg, conn) => message.decodeMessage(
-    msg.subarray(1), conn._session.globalDict);
+  const decodeMessage = (msg, conn) =>
+    message.decodeMessage(msg.subarray(1), conn._session.globalDict);
 
   const ConnTH = {
-    mockConnection(sessId='s123', session=Session) {
+    mockConnection(sessId = 's123', session = Session) {
       let userId = koru.userId();
-      const conn = new ServerConnection(session, {
-        send: stub(), on: stub()}, {}, sessId, () => {},
-                                       );
+      const conn = new ServerConnection(session, {send: stub(), on: stub()}, {}, sessId, () => {});
       const origSetUserId = conn.setUserId;
       util.merge(conn, {
-        get userId() {return userId},
-        set userId(v) {throw new Error('set not allowed; use setUserId');},
-        setUserId(v) {v ??= undefined;userId = v; return origSetUserId.call(this, v)}});
+        get userId() {
+          return userId;
+        },
+        set userId(v) {
+          throw new Error('set not allowed; use setUserId');
+        },
+        setUserId(v) {
+          v ??= undefined;
+          userId = v;
+          return origSetUserId.call(this, v);
+        },
+      });
       conn.sendBinary = stub();
       conn.sendEncoded = stub();
       conn.added = stub();
       conn.changed = stub();
       conn.removed = stub();
-      conn.onSubscribe = (...args) => TransQueue.transaction(() => {
-        return ifPromise(conn._session._commands.Q.call(conn, args),
-                         () => conn._subs[args[0]]);
-      });
+      conn.onSubscribe = (...args) =>
+        TransQueue.transaction(() => {
+          return ifPromise(conn._session._commands.Q.call(conn, args), () => conn._subs[args[0]]);
+        });
 
       return conn;
     },
@@ -47,7 +54,8 @@ define((require, exports, module) => {
 
     decodeEncodedCall: (conn, call) => ({
       type: String.fromCharCode(call.args[0][0]),
-      data: decodeMessage(call.args[0], conn)}),
+      data: decodeMessage(call.args[0], conn),
+    }),
 
     hasEncodedCall: (conn, expType, expData) => {
       cacheConn(conn);
@@ -62,19 +70,25 @@ define((require, exports, module) => {
 
   const LINE_SEP = '\n   ';
 
-  const callsToString = (calls) => 'Calls:' + LINE_SEP + calls.map(
-    (msg) => util.inspect(msg)).join(LINE_SEP);
+  const callsToString = (calls) =>
+    'Calls:' + LINE_SEP + calls.map((msg) => util.inspect(msg)).join(LINE_SEP);
 
   const cache = {
-    sendEncoded: null, lastCall: null,
-    calls: null, _callsString: null,
+    sendEncoded: null,
+    lastCall: null,
+    calls: null,
+    _callsString: null,
     get callsString() {
-      return this._callsString || (this._callsString = callsToString(this.calls));
+      return this._callsString ??= callsToString(this.calls);
     },
   };
 
   const clearCache = () => {
-    cache.sendEncoded = cache.lastCall = cache.calls = cache._callsString = null;
+    cache.sendEncoded =
+      cache.lastCall =
+      cache.calls =
+      cache._callsString =
+        null;
   };
 
   const cacheConn = (conn) => {
@@ -82,21 +96,24 @@ define((require, exports, module) => {
       if (cache.sendEncoded === null) {
         TH.after(clearCache);
       }
-      cache.sendEncoded = conn.sendEncoded; cache.lastCall = conn.sendEncoded.lastCall;
+      cache.sendEncoded = conn.sendEncoded;
+      cache.lastCall = conn.sendEncoded.lastCall;
       cache.calls = [];
-      if (conn.sendEncoded.calls !== void 0) for (const call of conn.sendEncoded.calls) {
-        const {type, data} = ConnTH.decodeEncodedCall(conn, call);
-        if (type === 'W') {
-          cache.calls.push(...data);
-        } else {
-          cache.calls.push([type, data]);
+      if (conn.sendEncoded.calls !== void 0) {
+        for (const call of conn.sendEncoded.calls) {
+          const {type, data} = ConnTH.decodeEncodedCall(conn, call);
+          if (type === 'W') {
+            cache.calls.push(...data);
+          } else {
+            cache.calls.push([type, data]);
+          }
         }
       }
     }
   };
 
-  const hasEncodedCall = (expType, expData) => cache.calls
-        .some((msg) => msg[0] === expType && util.deepEqual(msg[1], expData));
+  const hasEncodedCall = (expType, expData) =>
+    cache.calls.some((msg) => msg[0] === expType && util.deepEqual(msg[1], expData));
 
   TH.Core.assertions.add('encodedCall', {
     assert(conn, type, exp) {
@@ -116,7 +133,7 @@ define((require, exports, module) => {
   });
 
   TH.Core.assertions.add('encodedCount', {
-    assert(conn, count, type='') {
+    assert(conn, count, type = '') {
       cacheConn(conn);
 
       const calls = type === '' ? cache.calls : cache.calls.filter((call) => call[0] === type);
@@ -128,7 +145,7 @@ define((require, exports, module) => {
       this.type = type;
       this.calls = (this.callCount = calls.length) == 0 ? '' : cache.callsString;
 
-      return ! this._asserting;
+      return !this._asserting;
     },
 
     message: 'sendEncoded {$type} call count to be {$count} but was {$callCount}. {$calls}',
