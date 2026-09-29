@@ -32,19 +32,19 @@
   "main": "./lib/koru",
   "bin": "./bin/koru",
   "dependencies": {
-    "@babel/generator": "^8.0.5",
-    "@babel/parser": "^8.0.5",
-    "autoprefixer": "^10.6.1",
+    "@babel/generator": "^8.0.6",
+    "@babel/parser": "^8.0.6",
+    "autoprefixer": "^10",
     "commander": "^15",
     "css-selector-parser": "^3",
     "less": "^4.9.1",
     "marked": "^15",
     "marked-gfm-heading-id": "^4",
     "marked-highlight": "^2",
-    "postcss": "^8.5.28",
-    "send": "^1.1.0",
+    "postcss": "^8",
+    "send": "^1",
     "source-map": "^0.8",
-    "ws": "^8.21.3"
+    "ws": "^8.22.0"
   },
   "engines": {
     "node": ">=24"
