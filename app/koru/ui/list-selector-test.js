@@ -1,8 +1,8 @@
-define((require, exports, module)=>{
+define((require, exports, module) => {
   'use strict';
   /**
    * Helper for build a selectable list.
-   **/
+   */
   const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
@@ -11,12 +11,12 @@ define((require, exports, module)=>{
 
   const ListSelector = require('./list-selector');
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    afterEach(()=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test}) => {
+    afterEach(() => {
       TH.domTearDown();
     });
 
-    test("attach", ()=>{
+    test('attach', () => {
       /**
        * Attach events for highlighting and selecting a list element.
 
@@ -38,25 +38,19 @@ define((require, exports, module)=>{
       const ul = Dom.h({
         tabindex: 0,
         class: 'ui-ul',
-        ul: [
-          {li: ['one']},
-          {li: ['two'], class: 'disabled'},
-          {li: ['sep'], class: 'sep'},
-          {li: ['hidden'], class: 'hide'},
-          {li: ['three']},
-        ]
+        ul: [{li: ['one']}, {li: ['two'], class: 'disabled'}, {li: ['sep'], class: 'sep'}, {
+          li: ['hidden'],
+          class: 'hide',
+        }, {li: ['three']}],
       });
       const ctx = Dom.setCtx(ul);
       document.body.append(ul);
       const onClick = stub();
 
-      ListSelector.attach({
-        ul,
-        onClick,
-      });
+      ListSelector.attach({ul, onClick});
 
       ul.focus();
-      assert.dom(ul, ()=>{
+      assert.dom(ul, () => {
         // select via keyboard
         TH.keydown(ul, 40); // down
         assert.dom('.selected', 'one');
@@ -67,8 +61,8 @@ define((require, exports, module)=>{
 
         // onClick via keyboard
         refute.called(onClick);
-        TH.keydown(ul, 13);// enter
-        assert.calledWith(onClick, ul.firstChild, m(e => e.type === 'keydown'));
+        TH.keydown(ul, 13); // enter
+        assert.calledWith(onClick, ul.firstChild, m((e) => e.type === 'keydown'));
 
         // pointerover selects too
         TH.trigger(ul.lastChild, 'pointerover');
@@ -82,7 +76,7 @@ define((require, exports, module)=>{
         onClick.reset();
         // onClick via pointer
         TH.click(ul.lastChild);
-        assert.calledWith(onClick, ul.lastChild, m(e => e.type === 'click'));
+        assert.calledWith(onClick, ul.lastChild, m((e) => e.type === 'click'));
       });
 
       ul.querySelector('.selected').classList.remove('selected');
@@ -100,24 +94,18 @@ define((require, exports, module)=>{
       document.body.append(div);
       const onHover = stub();
 
-      ListSelector.attach({
-        ul,
-        ctx: divCtx,
-        keydownElm: document,
-        onClick,
-        onHover,
-      });
-      assert.dom(ul, ()=>{
+      ListSelector.attach({ul, ctx: divCtx, keydownElm: document, onClick, onHover});
+      assert.dom(ul, () => {
         TH.keydown(document, 38); // up
         assert.dom('.selected', 'three'); // select from bottom of list
 
         TH.trigger(ul.firstChild.firstChild, 'pointerover');
-        assert.calledWith(onHover, ul.firstChild, m(e => e.type === 'pointerover'));
+        assert.calledWith(onHover, ul.firstChild, m((e) => e.type === 'pointerover'));
       });
       //]
     });
 
-    test("keydownHandler", ()=>{
+    test('keydownHandler', () => {
       /**
        * Used by {#.attach} to listen for `Up/Down` events to change the selected item and `Enter`
        * events to choose the selected item.
@@ -135,33 +123,21 @@ define((require, exports, module)=>{
       const ul = Dom.h({
         tabindex: 0,
         class: 'ui-ul',
-        ul: [
-          {li: ['one']},
-          {li: ['two'], class: 'disabled'},
-          {li: ['sep'], class: 'sep'},
-          {li: ['hidden'], class: 'hide'},
-          {li: ['three']},
-        ]
+        ul: [{li: ['one']}, {li: ['two'], class: 'disabled'}, {li: ['sep'], class: 'sep'}, {
+          li: ['hidden'],
+          class: 'hide',
+        }, {li: ['three']}],
       });
       const selected = ul.getElementsByClassName('selected');
       const onClick = stub();
 
-      ListSelector.keydownHandler(
-        Dom.buildEvent('keydown', {which: 40}),
-        ul
-      );
+      ListSelector.keydownHandler(Dom.buildEvent('keydown', {which: 40}), ul);
 
       const event2 = Dom.buildEvent('keydown', {which: 13});
-      ListSelector.keydownHandler(
-        event2,
-        ul,
-        selected,
-        onClick
-      );
+      ListSelector.keydownHandler(event2, ul, selected, onClick);
 
       assert.calledOnceWith(onClick, ul.firstChild, event2);
       //]
     });
-
   });
 });
