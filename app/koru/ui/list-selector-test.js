@@ -38,10 +38,14 @@ define((require, exports, module) => {
       const ul = Dom.h({
         tabindex: 0,
         class: 'ui-ul',
-        ul: [{li: ['one']}, {li: ['two'], class: 'disabled'}, {li: ['sep'], class: 'sep'}, {
-          li: ['hidden'],
-          class: 'hide',
-        }, {li: ['three']}],
+        ul: [
+          {li: ['one']},
+          {li: ['two'], class: 'disabled'},
+          {li: ['displayNone'], style: 'display:none'},
+          {li: ['sep'], class: 'sep'},
+          {li: ['hidden'], class: 'hide'},
+          {li: ['three']},
+        ],
       });
       const ctx = Dom.setCtx(ul);
       document.body.append(ul);
@@ -128,6 +132,7 @@ define((require, exports, module) => {
           class: 'hide',
         }, {li: ['three']}],
       });
+      document.body.append(ul);
       const selected = ul.getElementsByClassName('selected');
       const onClick = stub();
 
@@ -137,6 +142,7 @@ define((require, exports, module) => {
       ListSelector.keydownHandler(event2, ul, selected, onClick);
 
       assert.calledOnceWith(onClick, ul.firstChild, event2);
+
       //]
     });
   });

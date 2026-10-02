@@ -152,13 +152,22 @@ define((require, exports, module) => {
   Tpl.List.$extend({
     $created(ctx, elm) {
       let moved = false;
+      let down = false;
       const pu = (event) => {
         Dom.stopEvent(event);
-        if (!moved) return;
+        if (!moved || down) {
+          down = false;
+          return;
+        }
+
         const li = event.target.closest('.ui-ul>li:not(.disabled)');
         if (li != null) {
           select(ctx.parentCtx, li, event);
         }
+      };
+
+      const pd = (event) => {
+        down = true;
       };
 
       let x = 0, y = 0;
@@ -173,9 +182,11 @@ define((require, exports, module) => {
         }
       };
 
+      elm.addEventListener('pointerdown', pd, true);
       elm.addEventListener('pointerup', pu, true);
       elm.addEventListener('pointermove', pm, true);
       ctx.onDestroy(() => {
+        elm.removeEventListener('pointerdown', pd, true);
         elm.removeEventListener('pointerup', pu, true);
         elm.removeEventListener('pointermove', pm, true);
       });
