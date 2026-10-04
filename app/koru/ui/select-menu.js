@@ -51,6 +51,10 @@ define((require, exports, module) => {
         boundingClientRect: options.boundingClientRect ?? elm.getBoundingClientRect(),
       });
       Dom.dontFocus || options.noFocus || Dom.focus(menu.firstChild);
+      if (options.selected !== undefined) {
+        Dom.ensureInView(menu.getElementsByClassName('selected')[0]);
+      }
+
       return menu.firstChild;
     },
 

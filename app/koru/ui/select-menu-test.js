@@ -189,6 +189,8 @@ isClient && define((require, exports, module) => {
         v.button = this;
       });
 
+      spy(Dom, 'ensureInView');
+
       sut.popup(v.button, {
         list: [[1, 'One'], [0, 'Zero']],
         selected: 0,
@@ -197,7 +199,9 @@ isClient && define((require, exports, module) => {
       });
 
       assert.dom('body>.glassPane', function () {
-        assert.dom('.selected', {data: TH.match.field('_id', 0)});
+        assert.dom('.selected', {data: TH.match.field('_id', 0)}, (elm) => {
+          assert.calledOnceWith(Dom.ensureInView, elm);
+        });
       });
     });
 
@@ -272,6 +276,7 @@ isClient && define((require, exports, module) => {
             v.searchStub();
             return reg.test(data.name);
           },
+          selected: 'not_found',
           searchDone: v.searchDone = stub(),
           rendered: v.rendered = stub(),
           list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
