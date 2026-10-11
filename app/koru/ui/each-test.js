@@ -19,17 +19,11 @@ isClient && define((require, exports, module) => {
     beforeEach(() => {
       v.Each = Dom.newTemplate(util.deepCopy(eachTpl));
 
-      v.Each.$helpers({
-        fooList: v.fooList = stub(),
-      });
+      v.Each.$helpers({fooList: v.fooList = stub()});
 
       Dom.newTemplate({
         name: 'Test.Each.Each_fooList',
-        nodes: [{
-          name: 'li',
-          attrs: [['=', 'id', ['', 'id']]],
-          children: [['', 'name']],
-        }],
+        nodes: [{name: 'li', attrs: [['=', 'id', ['', 'id']]], children: [['', 'name']]}],
       });
     });
 
@@ -45,25 +39,27 @@ isClient && define((require, exports, module) => {
       const query = {
         compare: util.compareByName,
         compareKeys: ['name', 'id'],
-        matches() {return true},
-        forEach(func) {func({id: 'id1', name: 'r1'})},
+        matches() {
+          return true;
+        },
+        forEach(func) {
+          func({id: 'id1', name: 'r1'});
+        },
       };
 
       assert.dom(v.Each.$render({}), (elm) => {
-        v.fooList.firstCall.args[0].autoList({
-          query,
-        });
+        v.fooList.firstCall.args[0].autoList({query});
         assert.dom('li#id1', 'r1');
       });
     });
 
     test('calling global helper', () => {
       delete v.Each._helpers.fooList;
-      Dom.registerHelpers({
-        fooList: stub(),
-      });
+      Dom.registerHelpers({fooList: stub()});
 
-      after(() => {delete Dom._helpers.fooList});
+      after(() => {
+        delete Dom._helpers.fooList;
+      });
 
       v.Each.$render({});
 
@@ -85,6 +81,41 @@ isClient && define((require, exports, module) => {
 
       afterEach(() => {
         Model._destroyModel('TestModel', 'drop');
+      });
+
+      test('stopAutolList', () => {
+        let query = {
+          forEach(callback) {
+            callback(v.doc1);
+          },
+        };
+
+        let eachCopy;
+
+        v.Each.$helpers({
+          fooList(each) {
+            if (each.list !== null) return;
+            eachCopy = each;
+            return each.autoList({query});
+          },
+        });
+
+        assert.dom(v.Each.$render({}), (elm) => {
+          assert.dom('li', {count: 1, text: 'bob'});
+          Dom.myCtx(elm).updateAllTags();
+          assert.dom('li', {count: 1, text: 'bob'});
+          eachCopy.stopAutolList();
+          refute.dom('li');
+
+          query = {
+            forEach(callback) {
+              callback(v.doc2);
+            },
+          };
+
+          Dom.myCtx(elm).updateAllTags();
+          assert.dom('li', {count: 1, text: 'alice'});
+        });
       });
 
       test('sort by field name', () => {
@@ -118,9 +149,7 @@ isClient && define((require, exports, module) => {
               }
             } else {
               each.autoList({
-                query: v.TestModel.
-                       where({id1: each._major = this.major, id2: '2'})
-                       .sort('name'),
+                query: v.TestModel.where({id1: each._major = this.major, id2: '2'}).sort('name'),
               });
             }
           },
@@ -159,7 +188,8 @@ isClient && define((require, exports, module) => {
           refute(v.list);
           Dom.ctx(elm).updateAllTags({major: '2'});
           assert.called(v.oldCtx);
-          assert(v.list); v.list = null;
+          assert(v.list);
+          v.list = null;
 
           assert.dom('li', {count: 1, text: 'Caprice'});
           const m12 = v.TestModel.create({id1: '1', id2: '2', name: 'm12'});
@@ -205,15 +235,18 @@ isClient && define((require, exports, module) => {
     });
 
     test('helper returns query', () => {
-      after((_) => {Ctx._currentCtx = null});
+      after((_) => {
+        Ctx._currentCtx = null;
+      });
       Ctx._currentCtx = new Ctx(v.Each);
 
       const container = Dom.h({div: ['']});
 
-      each(
-        container.firstChild, {}, {
-          forEach(body) {body({_id: 1, name: 'Alice'})},
-          compare: util.compareByName,
+      each(container.firstChild, {}, {
+        forEach(body) {
+          body({_id: 1, name: 'Alice'});
+        },
+        compare: util.compareByName,
       }, {template: v.Each.Row});
 
       assert.dom(container, (pn) => {
@@ -224,15 +257,18 @@ isClient && define((require, exports, module) => {
     });
 
     test('Dynamic templateName', () => {
-      after((_) => {Ctx._currentCtx = null});
+      after((_) => {
+        Ctx._currentCtx = null;
+      });
       Ctx._currentCtx = new Ctx(v.Each);
 
       const container = Dom.h({div: ['']});
 
-      each(
-        container.firstChild, {}, {
-          forEach(body) {body({_id: 1, name: 'Alice'})},
-          compare: util.compareByName,
+      each(container.firstChild, {}, {
+        forEach(body) {
+          body({_id: 1, name: 'Alice'});
+        },
+        compare: util.compareByName,
       }, {template: {toString: () => 'Each_fooList'}});
 
       assert.dom(container, (pn) => {

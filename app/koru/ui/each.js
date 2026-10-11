@@ -12,10 +12,8 @@ define((require, exports, module) => {
   const each$ = Symbol();
   const {COMMENT_NODE} = document;
 
-  const each = (startEach, data, args=null, options={}) => {
-    let {
-      template: templateName=typeof args === 'string' ? `Each_${args}` : 'Each_row',
-    } = options;
+  const each = (startEach, data, args = null, options = {}) => {
+    let {template: templateName = typeof args === 'string' ? `Each_${args}` : 'Each_row'} = options;
     let each = startEach[each$];
     if (each === undefined) {
       each = new Each(startEach);
@@ -34,7 +32,8 @@ define((require, exports, module) => {
       if (pv.helper === undefined) {
         throw new Error(
           (typeof args === 'string' ? `helper "${args}" not found` : `invalid call to each`) +
-            ` in template "${ctpl.name}"`);
+            ` in template "${ctpl.name}"`,
+        );
       }
     }
 
@@ -54,16 +53,15 @@ define((require, exports, module) => {
         const ctpl = $.template;
         template = Template.lookupTemplate(ctpl, templateName) ||
           Template.lookupTemplate(Dom.tpl, templateName);
-        if (template == null) throw new Error(
-          `template "${templateName}" not found in template "${ctpl.name}"`);
+        if (template == null) {
+          throw new Error(`template "${templateName}" not found in template "${ctpl.name}"`);
+        }
       }
 
       pv.template = template;
     }
 
-    let result = typeof pv.helper === 'function'
-      ? pv.helper.call(data, each, options)
-      : pv.helper;
+    let result = typeof pv.helper === 'function' ? pv.helper.call(data, each, options) : pv.helper;
 
     if (result != null) {
       if (Array.isArray(result)) {
@@ -84,15 +82,14 @@ define((require, exports, module) => {
   };
 
   Dom.registerHelpers({
-    each(func, options) {return each($.element, this, func, options)},
+    each(func, options) {
+      return each($.element, this, func, options);
+    },
   });
 
   class Each {
     constructor(insertPoint) {
-      this[private$] = {
-        template: null, templateName: null, args: null,
-        helper: null, list: null,
-      };
+      this[private$] = {template: null, templateName: null, args: null, helper: null, list: null};
       this.parentCtx = $.ctx;
       this.startEach = document.createComment('start');
       this.endEach = this.startEach[endMarker$] = document.createComment('end');
@@ -103,10 +100,12 @@ define((require, exports, module) => {
     autoList(options) {
       const pv = this[private$];
       if (pv.list !== null) pv.list.stop();
-      pv.list = new AutoList(Object.assign({
-        template: pv.template,
-        container: this.startEach,
-        parentCtx: this.parentCtx}, options));
+      pv.list = new AutoList(
+        Object.assign(
+          {template: pv.template, container: this.startEach, parentCtx: this.parentCtx},
+          options,
+        ),
+      );
     }
 
     clear() {
@@ -119,19 +118,32 @@ define((require, exports, module) => {
       }
     }
 
-    get list() {return this[private$].list}
+    stopAutolList() {
+      const pv = this[private$];
+      if (pv.list !== null) {
+        pv.list.stop();
+        pv.list = null;
+      }
+    }
+
+    get list() {
+      return this[private$].list;
+    }
 
     append(row) {
-      if (! row) return;
+      if (!row) return;
       const {endEach} = this;
-      const elm = (row.nodeType) ? row : this[private$].template.$autoRender(
-        Array.isArray(row) ? {_id: row[0], name: row[1]} : row,
-        this.parentCtx);
+      const elm = (row.nodeType)
+        ? row
+        : this[private$].template.$autoRender(
+          Array.isArray(row) ? {_id: row[0], name: row[1]} : row,
+          this.parentCtx,
+        );
       endEach.parentNode.insertBefore(elm, endEach);
       return elm;
     }
 
-    staticList(list, options={}) {
+    staticList(list, options = {}) {
       this.clear();
 
       const {map} = options;
