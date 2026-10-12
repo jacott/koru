@@ -52,9 +52,24 @@ define((require) => {
     };
 
     util.merge(Query.prototype, {
+      sqlFields(...fields) {
+        const _fields = this._fields = this._fields ?? {};
+        for (let i = 0; i < fields.length; ++i) {
+          _fields[fields[i]] = 'sql';
+        }
+        return this;
+      },
+
       whereSql(...args) {
         (this._whereSqls ??= []).push(args);
         return this;
+      },
+
+      sqlJoin(value, params) {
+        this._sqlJoin = [
+          typeof value === 'string' && !value.startsWith(' ') ? ' ' + value : value,
+          params,
+        ];
       },
 
       from({direction = 1, values, order, excludeFirst = false}) {

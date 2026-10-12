@@ -134,18 +134,24 @@ define((require, exports, module) => {
   const selectFields = (table, fields) => {
     if (fields === undefined) return '*';
     let add = false, col;
-    const result = ['_id'];
+    const result = [];
     for (col in fields) {
+      const value = fields[col];
       if (!add) {
-        add = !!fields[col];
-      } else if (add !== !!fields[col]) {
-        throw new Error('fields must be all true or all false');
+        add = !!value;
+      } else if (add !== !!value) {
+        throw new Error('fields must be all true (or sql) or all false');
       }
+      if (result.length === 0 && value !== 'sql') {
+        result.push('_id');
+      }
+
       if (col !== '_id' && add) {
-        result.push('"' + col + '"');
+        result.push(value === 'sql' ? col : '"' + col + '"');
       }
     }
     if (!add) {
+      result.push('_id');
       for (col in table._colMap) {
         if (col === '_id') continue;
         hasOwn(fields, col) || result.push('"' + col + '"');
@@ -971,6 +977,10 @@ SET ${this.tenant_var} = '`;
       if (query.constructor === Object) {
         foundIn(query, whereSql);
       } else {
+        if (query._sqlJoin) {
+          foundInSql(query._sqlJoin, whereSql);
+        }
+
         if (query.singleId) {
           whereSql.push('"_id"=$' + ++count);
           whereValues.push(query.singleId);
@@ -1033,10 +1043,11 @@ SET ${this.tenant_var} = '`;
       const table = this;
       let sql = 'SELECT ' + selectFields(this, options?.fields) + ' FROM "' + this._name + '"';
 
-      let values, oids;
-      if (where != undefined) {
+      let values, oids, hasJoin;
+      if (where !== undefined) {
         values = [];
         oids = [];
+        hasJoin = where._sqlJoin;
         where = table.where(where, values, oids);
       }
 
@@ -1046,9 +1057,14 @@ SET ${this.tenant_var} = '`;
 
       if (isPromise(where)) {
         const head = sql;
-        sql = where.then((where) => where === undefined ? head : head + ' WHERE ' + where);
+        sql = where.then((where) =>
+          where === undefined ? head : head + (hasJoin === undefined ? ' WHERE ' : '') + where
+        );
       } else {
-        sql += ' WHERE ' + where;
+        if (hasJoin === undefined) {
+          sql += ' WHERE ';
+        }
+        sql += where;
       }
       return new Cursor(this, sql, values, oids, options);
     }

@@ -767,7 +767,7 @@ isServer && define((require, exports, module) => {
           try {
             foo.find({}, {fields: {age: true, name: false}});
           } catch (err) {
-            assert.exception(err, 'Error', 'fields must be all true or all false');
+            assert.exception(err, 'Error', 'fields must be all true (or sql) or all false');
           }
         });
       });
